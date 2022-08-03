@@ -1,3 +1,10 @@
+"""
+This script performs a basic request to each of the domains in the current list of 
+dotgov domains hosted at https://flatgithub.com/cisagov/dotgov-data/blob/main/?filename=current-full.csv
+
+This script can be run locally to generate data and currently takes some time to run.
+"""
+
 import csv
 import requests
 

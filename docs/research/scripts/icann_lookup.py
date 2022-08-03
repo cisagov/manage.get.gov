@@ -1,3 +1,10 @@
+"""
+This script takes each domain in a dataset of non-.gov government domains and looks for 
+which registrar they are currently registered with. 
+
+This script can be run locally to generate data and currently takes some time to run.
+"""
+
 import csv
 import requests
 import whois
