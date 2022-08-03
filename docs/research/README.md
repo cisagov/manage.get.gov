@@ -1,3 +1,3 @@
-# Dotgov Research
+# .gov Research
 
-This contains scripts for gathering data about dotgov usage and answering various secondary research questions.
+This contains scripts for gathering data about .gov usage and answering various secondary research questions.

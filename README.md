@@ -1,6 +1,6 @@
-# Dotgov documentation
+# .gov documentation
 
-Welcome to dotgov! This is a repository to house work on the current dotgov site(s). 
+Welcome to .gov! This is a repository to house work on the current .gov site(s). 
 
 ## Onboarding
 
