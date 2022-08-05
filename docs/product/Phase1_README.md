@@ -2,7 +2,7 @@
 Purpose: Summarize the priorities for 18F and CISA in pursuing an initial build of a new .gov registrar.
 **The below was agreed upon on 08/04/2022**
 
-## Goals for 18F Build
+## Goals for Phase 1
 **Primary Goal:** Replicate the necessary core functionality in a new system
 **Secondary Goal:** Reduce the CISA admin burden while maintaining high security standards
 
@@ -15,7 +15,7 @@ Deprioritized for later:
 _To be prioritized and posted_
 
 ## Considerations and Tradeoffs
-### Success for 18F is...
+### Success for Phase 1 is...
 * A new system that 
   * Can respond to user needs for all long term goals
   * Can reduce the number of actors or decisions in a successful flow
