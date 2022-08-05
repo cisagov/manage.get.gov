@@ -1,7 +1,7 @@
-# Background
-CISA and 18F are partnering to build a new .gov registrar.
+# A new .gov system: Phase 1
+Purpose: Summarize the priorities for 18F and CISA in pursuing an initial build of a new .gov registrar.
 
-# Goals for 18F Build (as of 08/04/2022)
+## Goals for 18F Build (as of 08/04/2022)
 **Primary Goal:** Replicate the necessary core functionality in a new system
 **Secondary Goal:** Reduce the CISA admin burden while maintaining high security standards
 
@@ -10,11 +10,11 @@ Deprioritized for later:
 * Help more government entities set up and maintain their .gov site and infrastructure
 * Build awareness and credibility of .gov domains
 
-# Milestones
+## Milestones
 _To be prioritized and posted_
 
-# Considerations and Tradeoffs
-## Success for 18F is...
+## Considerations and Tradeoffs
+### Success for 18F is...
 * A new system that 
   * Can respond to user needs for all long term goals
   * Can reduce the number of actors or decisions in a successful flow
@@ -25,13 +25,13 @@ _To be prioritized and posted_
 * Has or is ready for an ATO
 * Coordinating and navigating with procurement processes (RFPs and current vendor agreement) 
 
-## Risks 
+### Risks 
 * App may be supported by a combination of manual work and automation, not fully automated
 * Scope creep – we build a system that can’t be ATO’d prior to June or Nov 2023
 * We build out a narrow slice of the system, which may be insufficient for all registrant and administrative use cases
 * We wouldn’t be intentionally and directly focused on or prioritizing improving the registrant / admin experience 
 
-## Example User Stories (to be prioritized)
+### Example User Stories (to be prioritized)
 * As a potential registrant, I want to learn what I should know about .gov so I can build support inside my organization to get a .gov domain.
 * As a registrant, I need the registrar to have strong user authentication so that sensitive domain- or account-impacting actions take place post-authentication.
 * As a program lead, I need to ensure that issued domains are from authentic, eligible organizations and requested by someone with authority so that domains are only given to bona fide US-based government organizations.
