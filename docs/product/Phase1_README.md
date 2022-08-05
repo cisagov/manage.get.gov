@@ -1,7 +1,8 @@
 # A new .gov system: Phase 1
 Purpose: Summarize the priorities for 18F and CISA in pursuing an initial build of a new .gov registrar.
+**The below was agreed upon on 08/04/2022**
 
-## Goals for 18F Build (as of 08/04/2022)
+## Goals for 18F Build
 **Primary Goal:** Replicate the necessary core functionality in a new system
 **Secondary Goal:** Reduce the CISA admin burden while maintaining high security standards
 
