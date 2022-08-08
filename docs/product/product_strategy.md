@@ -5,7 +5,11 @@ Purpose: Clarify our focus for developing a new .gov TLD system and align it to 
 _TBD - once we synthesize initial research and align as a product team_
 
 ## Primary, Secondary, Tertiary Users
-_TBD - once we segment and prioritize all users and stakeholders_
+### Primary:
+* US-based government organizations and publicly-controlled entities who use or should use the registrar
+  * _NOTE: Segmenting our audience is a separate conversation and so this intentionally broad as placeholder_
+* CISA .gov administrators
+
 
 ## Problem Statements
 _TBD - once we synthesize initial research and prioritize areas of need_
@@ -23,7 +27,21 @@ _TBD - once we synthesize initial research and prioritize areas of need_
 * A product plan that coordinates with other RFP actions
 
 ## Long-term Success for .gov
-_To be prioritized and posted_
+### Primary:
+* Increase the number of governments, currently on non-.gov TLDs, to .gov
+* Develop services to support “the security, privacy, reliability, accessibility, and speed of registered .gov internet domains” (DOTGOV ACT)
+* Sustainable long-term skills and capacity to scale up the program
+
+### Secondary
+* Increase number of domain registrations
+* Reduce time to get an application approved from 20 days to 1-2 business days
+* Increase the percentage of domains which resolve to content
+* Reduce time to ship changes to production
+* Enable the discoverability of government services to the public and to domain registrants (DOTGOV ACT)
+* A “simple and secure” registration process that works to “ensure that domains are registered and maintained only by authorized individuals” (DOTGOV ACT)
+* Active .gov community of practice where members ask and answer questions, provide feedback, and where CISA can communicate with all .gov domain managers
+* Demonstrated commitment to working in the open
+* A clear role for humans or a call center to support registrant use cases
 
 ## Problems .gov registrar needs to solve (now)
 _TBD - once we synthesize initial research and align as a product team_
