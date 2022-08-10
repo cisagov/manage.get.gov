@@ -7,6 +7,10 @@ Welcome to .gov! This is a repository to house work on the current .gov site(s).
 
 TBD
 
+## Code
+
+Code is located in the [src](./src/) directory.
+
 ## Documentation
 
 ### Architectural Decision Records
