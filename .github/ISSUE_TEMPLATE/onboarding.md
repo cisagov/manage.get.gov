@@ -14,3 +14,4 @@ Name: _Name of person being onboarded_
 
 - [ ] [Team Charter](https://docs.google.com/document/d/1xhMKlW8bMcxyF7ipsOYxw1SQYVi-lWPkcDHSUS6miNg/edit), in particular our Github Policy
 - [ ] [Architecture Decision Records](docs/architecture/decisions)
+- [ ] [Github Policy](CONTRIBUTING.md)
