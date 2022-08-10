@@ -1,4 +1,4 @@
-# Conributing
+# Contributing
 
 ## What not to commit to the repo
 
