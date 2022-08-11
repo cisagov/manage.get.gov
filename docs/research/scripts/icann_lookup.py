@@ -8,6 +8,8 @@ This script can be run locally to generate data and currently takes some time to
 import csv
 import requests
 import whois
+import argparse
+import sys
 
 GOV_URLS_CSV_URL = "https://raw.githubusercontent.com/GSA/govt-urls/master/1_govt_urls_full.csv"
 
@@ -21,16 +23,32 @@ def check_registration(name):
         domain_info = whois.whois(name)
         return domain_info['registrar']
     except:
-        print('Something went wrong')
+        print(f'Something went wrong with that domain lookup for {name}, continuing...')
 
-full_data = []
-for domain in domains:
-    domain_name = domain[0].lower()
-    if domain_name.endswith('.com') or domain_name.endswith('.edu') or domain_name.endswith('.net'):
-        registrar = check_registration(domain_name)
-        full_data.append(domain + [registrar])
 
-with open('../data/registrar_data.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerow(fields)
-    writer.writerows(full_data)
+def main(domain):
+    full_data = []
+    if domain:
+        registrar = check_registration(domain)
+        print(registrar)
+    else:
+        for idx, domain in enumerate(domains):
+            domain_name = domain[0].lower()
+            if domain_name.endswith('.com') or domain_name.endswith('.edu') or domain_name.endswith('.net'):
+                print(idx)
+                print(domain_name)
+                registrar = check_registration(domain_name)
+                full_data.append(domain + [registrar])
+
+    with open('../data/registrar_data.csv', 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(fields)
+        writer.writerows(full_data)
+
+
+if __name__ == '__main__':
+    cl = argparse.ArgumentParser(description="This performs ICANN lookups on domains.")
+    cl.add_argument("--domain", help="finds the registrar for a single domain", default=None)
+    args = cl.parse_args()
+
+    sys.exit(main(args.domain))
