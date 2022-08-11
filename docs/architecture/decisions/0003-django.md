@@ -8,13 +8,13 @@ Accepted
 
 ## Context
 
-The [Federal Audit Clearinghouse](https://github.com/GSA-TTS/FAC) project is a similar project to ours, from which we are taking many examples for reuse. FAC uses Django.
-
 Django is a web framework based on Python that has been in active development since 2005.
 
 It follows a very standard MVC architecture (made popular by Ruby on Rails), although in Django parlance, a “view” is a controller (whereas the views are “templates”).
 
 It comes with a robust object relational mapper for database access and includes a built-in admin interface suitable for simple use cases.
+
+The [Federal Audit Clearinghouse](https://github.com/GSA-TTS/FAC) project is a similar project to ours, from which we are taking many examples for reuse. FAC uses Django.
 
 Numerous other web frameworks exist in many languages, such as Ruby, PHP, Perl, Go, Elixir, etc. Other web frameworks exist in Python, such as Twisted and Flask.
 
