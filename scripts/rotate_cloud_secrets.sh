@@ -1,6 +1,4 @@
-if brew ls --versions jq gh > /dev/null; then
-  continue
-else
+if [ ! $(command -v gh) ] || [ ! $(command -v jq) ]; then
   echo "jq and gh packages must be installed. Please run 'brew install jq gh'"
   exit 1
 fi
