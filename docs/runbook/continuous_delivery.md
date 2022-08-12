@@ -8,6 +8,8 @@ Secrets are set and rotated using the [cloud.gov secret rotation script](./scrip
 
 Prerequistes for running the script are installations of `jq`, `gh`, and the `cf` CLI tool. 
 
+NOTE: Secrets must be rotated every 90 days. This script can be used for that routine rotation or it can be used to revoke and re-create tokens if they are compromised.
+
 ## Github Action
 
 TBD info about how we are using the github action to deploy.
