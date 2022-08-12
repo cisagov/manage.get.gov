@@ -1,16 +1,6 @@
 # NOTE: This script does not work with cf v8. We recommend using cf v7 for all cloud.gov commands.
-
-if brew ls --versions jq gh > /dev/null; then
-  continue
-else
-  echo "jq and gh packages must be installed. Please run 'brew install jq gh'"
-  exit 1
-fi
-
-if cf --version > /dev/null; then
-  continue
-else
-  echo "The cf CLI must be installed. Please see more information: https://docs.cloudfoundry.org/cf-cli/install-go-cli.html"
+if [ ! $(command -v gh) ] || [ ! $(command -v jq) ] || [ ! $(command -v cf) ]; then
+  echo "jq, cf, and gh packages must be installed. Please install via your preferred manager."
   exit 1
 fi
 
