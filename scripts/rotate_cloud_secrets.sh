@@ -1,3 +1,5 @@
+# NOTE: This script does not work with cf v8. We recommend using cf v7 for all cloud.gov commands.
+
 if brew ls --versions jq gh > /dev/null; then
   continue
 else

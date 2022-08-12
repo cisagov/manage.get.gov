@@ -4,6 +4,8 @@ We use a [cloud.gov service account](https://cloud.gov/docs/services/cloud-gov-s
 
 ## Rotating Cloud.gov Secrets
 
+Make sure that you have cf v7 and not cf v8 as it will not work with this script. 
+
 Secrets are set and rotated using the [cloud.gov secret rotation script](./scripts/rotate_cloud_secrets.sh).
 
 Prerequistes for running the script are installations of `jq`, `gh`, and the `cf` CLI tool. 
