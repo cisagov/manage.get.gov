@@ -25,7 +25,7 @@ read -p "Are you logged into a Github account with access to cisagov/dotgov? (y/
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
-    cf login -a https://api.fr.cloud.gov --sso
+    gh auth login
 fi
 
 echo "Great, removing and replacing Github CD account..."
