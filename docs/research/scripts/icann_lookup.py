@@ -3,11 +3,13 @@ This script takes each domain in a dataset of non-.gov government domains and lo
 which registrar they are currently registered with. 
 
 This script can be run locally to generate data and currently takes some time to run.
+
+NOTE: This requries python-whois and argparse to be installed. 
 """
 
 import csv
 import requests
-import whois
+import whois # this is python-whois
 import argparse
 import sys
 
