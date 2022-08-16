@@ -13,7 +13,7 @@ Deprioritized for later:
 * Build awareness and credibility of .gov domains
 
 ## Milestones
-_To be prioritized and posted_
+April 2023 - projected month 18F agreement ends
 
 ## Considerations and Tradeoffs
 ### Success for Phase 1 is...
