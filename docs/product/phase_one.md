@@ -22,14 +22,14 @@ April 2023 - projected month 18F agreement ends
   * Can reduce the number of actors or decisions in a successful flow
   * Upholds a security review process for getting a .gov domain
   * Meets code and accessibility standards + open source policy
-  * Lays the foundation for a “a simple and secure registration process that works to ensure that domains are registered and maintained only by authorized individuals (Dotgov Act)”
+  * Lays the foundation for a “a simple and secure registration process that works to ensure that domains are registered and maintained only by authorized individuals (DOTGOV ACT)”
 * Supporting 1-2 registrant and admin flows with limited improvement and automation, based on value and complexity
 * Has or is ready for an ATO
 * Coordinating and navigating with procurement processes (RFPs and current vendor agreement) 
 
 ### Risks 
 * App may be supported by a combination of manual work and automation, not fully automated
-* Scope creep – we build a system that can’t be ATO’d prior to June or Nov 2023
+* Scope creep – we build a system that can’t be ATO’d prior to Summer or Fall 2023
 * We build out a narrow slice of the system, which may be insufficient for all registrant and administrative use cases
 * We wouldn’t be intentionally and directly focused on or prioritizing improving the registrant / admin experience 
 
