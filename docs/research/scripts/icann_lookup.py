@@ -12,7 +12,7 @@ import requests
 import whois # this is python-whois
 import argparse
 import sys
-
+from pathlib import Path
 GOV_URLS_CSV_URL = "https://raw.githubusercontent.com/GSA/govt-urls/master/1_govt_urls_full.csv"
 
 data = requests.get(GOV_URLS_CSV_URL).text
