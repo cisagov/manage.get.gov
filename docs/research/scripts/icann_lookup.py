@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 This script takes each domain in a dataset of non-.gov government domains and looks for 
 which registrar they are currently registered with. 

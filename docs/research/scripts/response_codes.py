@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 This script performs a basic request to each of the domains in the current list of 
 dotgov domains hosted at https://flatgithub.com/cisagov/dotgov-data/blob/main/?filename=current-full.csv
