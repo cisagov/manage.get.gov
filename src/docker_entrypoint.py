@@ -11,7 +11,7 @@ container are also owned by the same user on the host system.
 import sys
 import os
 import pwd
-import subprocess  # nosec
+import subprocess
 
 HOST_UID = os.stat("/app").st_uid
 HOST_USER = "james"
@@ -41,7 +41,7 @@ if __name__ == "__main__":
                 username += "0"
             home_dir = "/home/%s" % username
             subprocess.check_call(
-                [  # nosec
+                [
                     "useradd",
                     "-d",
                     home_dir,
@@ -53,4 +53,4 @@ if __name__ == "__main__":
             )
         os.environ["HOME"] = "/home/%s" % pwd.getpwuid(HOST_UID).pw_name
         os.setuid(HOST_UID)
-    os.execvp(sys.argv[1], sys.argv[1:])  # nosec
+    os.execvp(sys.argv[1], sys.argv[1:])

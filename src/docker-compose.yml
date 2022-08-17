@@ -2,8 +2,10 @@ version: "3.0"
 services:
   app:
     build: .
+    depends_on:
+      - db
     volumes:
-      - ./app:/app
+      - .:/app
     links:
       - db
     working_dir: /app
@@ -13,19 +15,22 @@ services:
         condition: on-failure
         max_attempts: 5
     environment:
-      # Ensure stdout and stderr are sent straight to the terminal without buffering
+      # Send stdout and stderr straight to the terminal without buffering
       - PYTHONUNBUFFERED=yup
-      # In case we'd like to know
-      - RUNNING_IN_DOCKER=yup
       # How to connect to Postgre container
       - DATABASE_URL=postgres://user:feedabee@db/app
-      # Run in development mode on our local
-      - DJANGO_SETTINGS_MODULE=app.settings.dev
+      # Tell Django where to find its configuration
+      - DJANGO_SETTINGS_MODULE=registrar.config.settings
+      # Set a local key for Django
+      - DJANGO_SECRET_KEY=feedabee
+      # Run Django in debug mode on local
+      - DJANGO_DEBUG=True
     stdin_open: true
     tty: true
     ports:
-      - "8000:8000"
-    command: "python"
+      - "8080:8000"
+    # command: "python"
+    command: "python manage.py runserver 0.0.0.0:8000"
 
   db:
     image: postgres:latest
