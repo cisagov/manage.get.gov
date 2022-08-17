@@ -1,0 +1,37 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+    tags:
+      - v*
+
+  workflow_dispatch:
+
+jobs:
+  deploy-dev:
+    # if this job runs on a branch, we deduce that code
+    # has been pushed to main and should be deployed to dev
+    if: ${{ github.ref_type == 'branch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to cloud.gov sandbox
+        uses: 18f/cg-deploy-action@main
+        env:
+          DEPLOY_NOW: thanks
+        with:
+          cf_username: ${{ secrets.CF_USERNAME }}
+          cf_password: ${{ secrets.CF_PASSWORD }}
+          cf_org: sandbox-gsa
+          cf_space: dotgov-poc
+          push_arguments: "-f ops/manifests/manifest-dev.yaml"
+
+  # deploy:
+  #   # if this job runs on a tag, we deduce that code
+  #   # has been tagged for release and should be deployed to
+  #   # ____? (staging? prod?)
+  #   if: ${{ github.ref_type == 'tag' }}

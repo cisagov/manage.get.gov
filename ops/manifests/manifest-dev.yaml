@@ -1,0 +1,23 @@
+---
+applications:
+- name: getgov-dev
+  buildpacks:
+    - python_buildpack
+  path: ../../src
+  instances: 1
+  memory: 512M
+  stack: cflinuxfs3
+  timeout: 180
+  command: gunicorn registrar.config.wsgi -t 60
+  health-check-type: http
+  health-check-http-endpoint: /health
+  env:
+    # Send stdout and stderr straight to the terminal without buffering
+    PYTHONUNBUFFERED: yup
+    # Tell Django where to find its configuration
+    DJANGO_SETTINGS_MODULE: registrar.config.settings
+  routes:
+    - route: getgov-dev.app.cloud.gov
+  services:
+  - getgov-credentials
+  - getgov-database
