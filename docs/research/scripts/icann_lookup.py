@@ -42,6 +42,8 @@ def main(domain):
                 registrar = check_registration(domain_name)
                 full_data.append(domain + [registrar])
 
+    Path("../data").mkdir(exist_ok=True)
+
     with open('../data/registrar_data.csv', 'w') as f:
         writer = csv.writer(f)
         writer.writerow(fields)
