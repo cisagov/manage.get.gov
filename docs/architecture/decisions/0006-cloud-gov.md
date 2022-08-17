@@ -12,7 +12,7 @@ Accepted
 
 ## Decision
 
-To use cloud.gov with Docker images instead of buildpaks.
+To use cloud.gov to host our application. 
 
 ## Consequences
 
