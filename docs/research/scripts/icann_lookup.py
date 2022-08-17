@@ -24,6 +24,8 @@ def check_registration(name):
     try:
         domain_info = whois.whois(name)
         return domain_info['registrar']
+    except KeyboardInterrupt:
+        sys.exit(1)
     except:
         print(f'Something went wrong with that domain lookup for {name}, continuing...')
 
