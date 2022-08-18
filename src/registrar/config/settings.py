@@ -44,7 +44,7 @@ DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 # TODO: configure and document security settings
 ALLOWED_HOSTS = [
-    'getgov-dev.app.cloud.gov',
+    'getgov-unstable.app.cloud.gov',
     'get.gov'
 ]
 ALLOWED_CIDR_NETS = ['10.0.0.0/8']  # nosec

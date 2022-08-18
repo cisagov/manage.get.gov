@@ -17,9 +17,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-dev:
+  deploy-unstable:
     # if this job runs on a branch, we deduce that code
-    # has been pushed to main and should be deployed to dev
+    # has been pushed to main and should be deployed to unstable
     if: ${{ github.ref_type == 'branch' }}
     runs-on: ubuntu-latest
     steps:
@@ -34,10 +34,9 @@ jobs:
           cf_password: ${{ secrets.CF_PASSWORD }}
           cf_org: sandbox-gsa
           cf_space: dotgov-poc
-          push_arguments: "-f ops/manifests/manifest-dev.yaml"
+          push_arguments: "-f ops/manifests/manifest-unstable.yaml"
 
-  # deploy:
+  # deploy-staging:
   #   # if this job runs on a tag, we deduce that code
-  #   # has been tagged for release and should be deployed to
-  #   # ____? (staging? prod?)
+  #   # has been tagged for release and should be deployed to staging
   #   if: ${{ github.ref_type == 'tag' }}

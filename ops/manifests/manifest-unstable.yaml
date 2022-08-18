@@ -1,6 +1,6 @@
 ---
 applications:
-- name: getgov-dev
+- name: getgov-unstable
   buildpacks:
     - python_buildpack
   path: ../../src
@@ -17,7 +17,7 @@ applications:
     # Tell Django where to find its configuration
     DJANGO_SETTINGS_MODULE: registrar.config.settings
   routes:
-    - route: getgov-dev.app.cloud.gov
+    - route: getgov-unstable.app.cloud.gov
   services:
   - getgov-credentials
   - getgov-database

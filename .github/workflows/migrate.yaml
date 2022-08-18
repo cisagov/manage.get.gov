@@ -3,7 +3,7 @@ name: Run Migrations
 # This workflow can be run from the CLI
 #     gh workflow run migrate.yaml -f environment=sandbox
 # OR
-#     cf run-task getgov-dev --wait \
+#     cf run-task getgov-unstable --wait \
 #        --command 'python manage.py migrate' --name migrate
 
 on:
@@ -13,22 +13,22 @@ on:
         type: choice
         description: Where should we run migrations
         options:
-        - sandbox
-        - production
+        - unstable
+        - staging
 
 jobs:
-  migrate-dev:
-    if: ${{ github.event.inputs.environment == 'sandbox' }}
+  migrate-unstable:
+    if: ${{ github.event.inputs.environment == 'unstable' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Run Django migrations for sandbox
+      - name: Run Django migrations for unstable
         uses: 18f/cg-deploy-action@main
         with:
           cf_username: ${{ secrets.CF_USERNAME }}
           cf_password: ${{ secrets.CF_PASSWORD }}
           cf_org: sandbox-gsa
           cf_space: dotgov-poc
-          full_command: "cf run-task getgov-dev --wait --command 'python manage.py migrate' --name migrate"
+          full_command: "cf run-task getgov-unstable --wait --command 'python manage.py migrate' --name migrate"
 
   # migrate:
-  #   if: ${{ github.event.inputs.environment == 'production' }}
+  #   if: ${{ github.event.inputs.environment == 'staging' }}
