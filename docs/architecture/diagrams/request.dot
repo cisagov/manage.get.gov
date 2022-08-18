@@ -1,0 +1,41 @@
+digraph sequenceDiagram {
+  # Install graphviz and run `fdp -Tpng request.dot -o request_diagram.png`
+  subgraph cluster_1 {
+    label="Request and Response";
+    browserHead [ label="{Browser|user makes request}" pos="0.1,4.75!" shape="record" ];
+    browserPoint0 [ pos="0.1,4!" shape="point" width="0" ]
+    browserPoint5 [ pos="0.1,0.75!" shape="point" width="0" ]
+    browserFoot [ label="Browser" pos="0,0!" shape="record" ];
+
+    viewHead [ label="{Django Views|business logic applied}" pos="2.5,4.75!" shape="record" ];
+    viewPoint0 [ pos="2.5,4!" shape="point" width="0" ]
+    viewPoint1 [ pos="2.5,3.75!" shape="point" width="0" ]
+    viewPoint2 [ pos="2.5,3.5!" shape="point" width="0" ]
+    viewPoint3 [ pos="2.5,1.25!" shape="point" width="0" ]
+    viewPoint4 [ pos="2.5,1!" shape="point" width="0" ]
+    viewPoint5 [ pos="2.5,0.75!" shape="point" width="0" ]
+    viewFoot [ label="Django view" pos="2.5,0!" shape="record" ];
+
+    databaseHead [ label="{Django ORM|database consulted}" pos="5,4.75!" shape="record" ];
+    databasePoint1 [ pos="5,3.75!" shape="point" width="0" ]
+    databasePoint2 [ pos="5,3.5!" shape="point" width="0" ]
+    databaseFoot [ label="Django ORM" pos="5,2.5!" shape="record" ];
+
+    templateHead [ label="{Django Templates|html response prepared}" pos="5,2.25!" shape="record" ];
+    templatePoint3 [ pos="5,1.25!" shape="point" width="0" ]
+    templatePoint4 [ pos="5,1!" shape="point" width="0" ]
+    templateFoot [ label="Django Templates" pos="5,0!" shape="record" ];
+
+    browserHead -> browserPoint0 -> browserFoot [ dir="none" style="dashed" ]
+    viewHead -> viewPoint0 -> viewFoot [ dir="none" style="dashed" ]
+    databaseHead -> databasePoint1 -> databaseFoot [ dir="none" style="dashed" ]
+    templateHead -> templatePoint3 -> templateFoot [ dir="none" style="dashed" ]
+
+    browserPoint0 -> viewPoint0 [ style="solid" ]
+    viewPoint1 -> databasePoint1 [ style="solid" ]
+    databasePoint2 -> viewPoint2 [ style="solid" ]
+    viewPoint3 -> templatePoint3 [ style="solid" ]
+    templatePoint4 -> viewPoint4 [ style="solid" ]
+    viewPoint5 -> browserPoint5 [ style="solid" ]
+  }
+}
