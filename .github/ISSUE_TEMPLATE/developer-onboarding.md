@@ -1,7 +1,16 @@
+---
+name: Developer Onboarding
+about: Onboarding steps for developers.
+title: 'Developer Onboarding: GH_HANDLE'
+labels: dev, onboarding
+assignees: loganmeetsworld
+
+---
+
 # Developer Onboarding
 
-Onboardee: _GH handle of person being onboarded_
-Onboarder: _GH handle of onboard buddy_ 
+- Onboardee: _GH handle of person being onboarded_
+- Onboarder: _GH handle of onboard buddy_ 
 
 ## Installation
 
@@ -51,4 +60,4 @@ gpg --armor --export <YOUR KEY>
 
 when setting up your key in Github.
 
-Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your GPG credential) and push it to Github. Look on Github at your branch and ensure the commit is `verified`. 
+Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your GPG credential) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
