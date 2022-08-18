@@ -1,5 +1,11 @@
 name: Build and deploy
 
+# This workflow runs on pushes to main (typically,
+# a merged pull request) and on pushes of tagged commits.
+
+# Pushes to main will deploy to Unstable; tagged commits
+# will deploy to Staging
+
 on:
   push:
     branches:

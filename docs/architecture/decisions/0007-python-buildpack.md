@@ -12,6 +12,8 @@ We had previously drafted ADRs to use Docker to build images for containerized d
 
 Cloud.gov uses Cloud Foundry which provides several “buildpacks”. These are automated environments which will take a code repository of a certain language and do the usual setup steps to prepare a deployment of that code. In the case of Python, this means automated detection of Pipfile and installation of packages.
 
+We do not anticipate needing a custom buildpack, because our current use case falls completely within the Python buildpack's purview.
+
 ## Decision
 
 To use Cloud Foundry’s Python buildpack.
