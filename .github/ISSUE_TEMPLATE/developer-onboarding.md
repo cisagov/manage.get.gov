@@ -9,8 +9,8 @@ assignees: loganmeetsworld
 
 # Developer Onboarding
 
-Onboardee: _GH handle of person being onboarded_
-Onboarder: _GH handle of onboard buddy_ 
+- Onboardee: _GH handle of person being onboarded_
+- Onboarder: _GH handle of onboard buddy_ 
 
 ## Installation
 
