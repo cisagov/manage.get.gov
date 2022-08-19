@@ -19,3 +19,7 @@ To use cloud.gov to host our application(s).
 Choosing cloud.gov for our solution means we are locked into its opinionated choices for our infrastructure. It forces us to run 12-factor applications. It doesn't support brokering for services we may need like email notifications. 
 
 It also means the compliance lift is much lighter. We do not need to prove we are compliance for the majority of our infrastructure and our runtime enviornment.
+
+## Alternatives Considered
+
+Run our application on in either CISA's Azure or AWS environment with a continerized deployment.
