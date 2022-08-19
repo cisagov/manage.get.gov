@@ -29,7 +29,7 @@ cf login -a api.fr.cloud.gov  --sso
 ```
 - [ ] Have an admin add you to cloud.gov org and relevant spaces as a SpaceDeveloper
 ```bash
-cf set-space-role cloud.account@email.gov ORG SPACE SpaceDeveloper
+cf set-space-role <cloud.account@email.gov> sandbox-gsa dotgov-poc SpaceDeveloper
 ```
 - [ ] Add to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 - [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
@@ -39,7 +39,7 @@ cf set-space-role cloud.account@email.gov ORG SPACE SpaceDeveloper
 
 - [ ] [Team Charter](https://docs.google.com/document/d/1xhMKlW8bMcxyF7ipsOYxw1SQYVi-lWPkcDHSUS6miNg/edit), in particular our Github Policy
 - [ ] [Architecture Decision Records](https://github.com/cisagov/dotgov/tree/main/docs/architecture/decisions)
-- [ ] [Github Policy](https://github.com/cisagov/dotgov/tree/main/CONTRIBUTING.md)
+- [ ] [Contributing Policy](https://github.com/cisagov/dotgov/tree/main/CONTRIBUTING.md)
 
 
 ## Setting up commit signing
