@@ -5,4 +5,12 @@ name = "pypi"
 
 [packages]
 django = "*"
+cfenv = "*"
+django-allow-cidr = "*"
+django-csp = "*"
+environs = {extras=["django"]}
+gunicorn = "*"
+psycopg2-binary = "*"
 
+[dev-packages]
+django-debug-toolbar = "*"
