@@ -10,17 +10,18 @@ assignees: loganmeetsworld
 # Developer Onboarding
 
 - Onboardee: _GH handle of person being onboarded_
-- Onboarder: _GH handle of onboard buddy_ 
+- Onboarder: _GH handle of onboard buddy_
 
 ## Installation
 
 There are several tools we use locally that you will need to have.
-- [ ] [Install the cf CLI v7](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) for the ability to deploy 
+- [ ] [Install the cf CLI v7](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) for the ability to deploy
 - [ ] Make sure you have `gpg` >2.1.7. Run `gpg --version` to check.
 - [ ] Install the [Github CLI](https://cli.github.com/)
 
 ## Access
 
+### Steps for the onboardee
 - [ ] [Create a cloud.gov account](https://cloud.gov/docs/getting-started/accounts/)
 - [ ] Have an admin add you to the CISA Github organization and Dotgov Team.
 - [ ] Ensure you can login to your cloud.gov account via the CLI
@@ -28,11 +29,18 @@ There are several tools we use locally that you will need to have.
 cf login -a api.fr.cloud.gov  --sso
 ```
 - [ ] Have an admin add you to cloud.gov org and relevant spaces as a SpaceDeveloper
+- [ ] Have an admin add you to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/).
+
+ **Note:** As mentioned in the [Login documentation](https://developers.login.gov/testing/), the sandbox Login account is different account from your regular, production Login account. If you have not created a Login account for the sandbox before, you will need to create a new account first.
+- [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
+
+### Steps for the onboarder
+- [ ] Add the onboardee to cloud.gov org and relevant spaces as a SpaceDeveloper
+
 ```bash
 cf set-space-role <cloud.account@email.gov> sandbox-gsa dotgov-poc SpaceDeveloper
 ```
-- [ ] Add to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
-- [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
+- [ ] Add the onboardee to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 
 
 ## Documents to Review
@@ -46,7 +54,7 @@ cf set-space-role <cloud.account@email.gov> sandbox-gsa dotgov-poc SpaceDevelope
 
 Follow the instructions [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) to generate a new GPG key and add it to your GPG keys on Github.
 
-Configure your key locally: 
+Configure your key locally:
 
 ```bash
 git config --global commit.gpgsign true
