@@ -34,20 +34,10 @@ cf login -a api.fr.cloud.gov  --sso
  **Note:** As mentioned in the [Login documentation](https://developers.login.gov/testing/), the sandbox Login account is different account from your regular, production Login account. If you have not created a Login account for the sandbox before, you will need to create a new account first.
 - [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
 
- **Note:** if you are on a mac and not able to successfully create a signed commit, getting the following error:
-```zsh
-error: gpg failed to sign the data
-fatal: failed to write commit object
-```
- You may need to add these two lines to your shell's rc file (e.g. `.bashrc` or `.zshrc`)
-```zsh
-GPG_TTY=$(tty)
-export GPG_TTY
-```
 ### Steps for the onboarder
 - [ ] Add the onboardee to cloud.gov org and relevant spaces as a SpaceDeveloper
 
-```bash
+ ```bash
 cf set-space-role <cloud.account@email.gov> sandbox-gsa dotgov-poc SpaceDeveloper
 ```
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
@@ -80,3 +70,14 @@ gpg --armor --export <YOUR KEY>
 when setting up your key in Github.
 
 Now test commit signing is working by checking out a branch (`yourname/test-commit-signing`) and making some small change to a file. Commit the change (it should prompt you for your GPG credential) and push it to Github. Look on Github at your branch and ensure the commit is `verified`.
+
+**Note:** if you are on a mac and not able to successfully create a signed commit, getting the following error:
+```zsh
+error: gpg failed to sign the data
+fatal: failed to write commit object
+```
+You may need to add these two lines to your shell's rc file (e.g. `.bashrc` or `.zshrc`)
+```zsh
+GPG_TTY=$(tty)
+export GPG_TTY
+```
