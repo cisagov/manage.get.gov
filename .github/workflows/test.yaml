@@ -25,7 +25,7 @@ jobs:
           pip install bandit black flake8 mypy types-requests
       - name: Lint with flake8
         working-directory: ./src
-        run: flake8 . --count --max-complexity=10  --show-source --statistics --max-line-length=120
+        run: flake8 . --count --show-source --statistics
       - name: Check formatting with black
         working-directory: ./src
         run: black --check .
