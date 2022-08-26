@@ -3,8 +3,6 @@ name: Testing
 
 on:
   push:
-    branches:
-    - main
   pull_request:
     branches:
     - main
@@ -15,12 +13,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
+      - name: Set up Python
+        working-directory: ./src
         uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
       - name: Install linters
         run: |
+          python --version
           python -m pip install --upgrade pip
           pip install bandit black flake8 mypy types-requests
       - name: Lint with flake8
@@ -32,3 +30,6 @@ jobs:
       - name: Run type checking
         working-directory: ./src
         run: mypy .
+      - name: Run bandit security scanning
+        working-directory: ./src
+        run: bandit -r .
