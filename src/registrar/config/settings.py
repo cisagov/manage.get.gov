@@ -20,23 +20,23 @@ import environs
 from cfenv import AppEnv
 from pathlib import Path
 
-###                            ###
+# # #                          ###
 #      Setup code goes here      #
-###                            ###
+# # #                          ###
 
 env = environs.Env()
 
 # Get secrets from Cloud.gov user provided service, if exists
 # If not, get secrets from environment variables
-key_service = AppEnv().get_service(name='getgov-credentials')
+key_service = AppEnv().get_service(name="getgov-credentials")
 if key_service and key_service.credentials:
     secret = key_service.credentials.get
 else:
     secret = env
 
-###                            ###
+# # #                          ###
 #   Values obtained externally   #
-###                            ###
+# # #                          ###
 
 path = Path(__file__)
 
@@ -64,7 +64,6 @@ INSTALLED_APPS = [
     # from database models to provide a quick, model-centric
     # interface where trusted users can manage content
     "django.contrib.admin",
-
     # vv Required by django.contrib.admin vv
     # the "user" model! *\o/*
     "django.contrib.auth",
@@ -75,7 +74,6 @@ INSTALLED_APPS = [
     # framework for displaying messages to the user
     "django.contrib.messages",
     # ^^ Required by django.contrib.admin ^^
-
     # collects static files from each of your applications
     # (and any other places you specify) into a single location
     # that can easily be served in production
@@ -88,29 +86,21 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # django-allow-cidr: enable use of CIDR IP ranges in ALLOWED_HOSTS
     "allow_cidr.middleware.AllowCIDRMiddleware",
-
     # provide security enhancements to the request/response cycle
     "django.middleware.security.SecurityMiddleware",
-
     # store and retrieve arbitrary data on a per-site-visitor basis
     "django.contrib.sessions.middleware.SessionMiddleware",
-
     # add a few conveniences for perfectionists, see documentation
     "django.middleware.common.CommonMiddleware",
-
     # add protection against Cross Site Request Forgeries by adding
     # hidden form fields to POST forms and checking requests for the correct value
     "django.middleware.csrf.CsrfViewMiddleware",
-
     # add `user` (the currently-logged-in user) to incoming HttpRequest objects
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-
     # provide framework for displaying messages to the user, see documentation
     "django.contrib.messages.middleware.MessageMiddleware",
-
     # provide clickjacking protection via the X-Frame-Options header
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-
     # django-csp: enable use of Content-Security-Policy header
     "csp.middleware.CSPMiddleware",
 ]
@@ -118,7 +108,7 @@ MIDDLEWARE = [
 # application object used by Django’s built-in servers (e.g. `runserver`)
 WSGI_APPLICATION = "registrar.config.wsgi.application"
 
-#endregion
+# endregion
 # region: Assets and HTML and Caching---------------------------------------###
 
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
@@ -165,7 +155,7 @@ TEMPLATES = [
     },
 ]
 
-#endregion
+# endregion
 # region: Database----------------------------------------------------------###
 
 # Wrap each view in a transaction on the database
@@ -175,7 +165,7 @@ TEMPLATES = [
 env_db_url["ATOMIC_REQUESTS"] = True
 
 DATABASES = {
-    # dj-database-url package takes the supplied Postgres connection string 
+    # dj-database-url package takes the supplied Postgres connection string
     # and converts it into a dictionary with the correct USER, HOST, etc
     "default": env_db_url,
 }
@@ -183,7 +173,7 @@ DATABASES = {
 # Specify default field type to use for primary keys
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-#endregion
+# endregion
 # region: Email-------------------------------------------------------------###
 
 # email address to use for various automated correspondence
@@ -216,12 +206,13 @@ EMAIL_TIMEOUT = 30
 # email address to use for sending error reports
 SERVER_EMAIL = "root@get.gov"
 
-#endregion
+# endregion
 # region: Headers-----------------------------------------------------------###
 
 # Content-Length header is set by django.middleware.common.CommonMiddleware
 
-# X-Frame-Options header is set by django.middleware.clickjacking.XFrameOptionsMiddleware
+# X-Frame-Options header is set by
+#     django.middleware.clickjacking.XFrameOptionsMiddleware
 #     and configured in the Security and Privacy section of this file.
 # Strict-Transport-Security is set by django.middleware.security.SecurityMiddleware
 #     and configured in the Security and Privacy section of this file.
@@ -230,7 +221,7 @@ SERVER_EMAIL = "root@get.gov"
 # as Host header may contain a proxy rather than the actual client
 USE_X_FORWARDED_HOST = True
 
-#endregion
+# endregion
 # region: Internationalisation----------------------------------------------###
 
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
@@ -262,7 +253,7 @@ USE_L10N = True
 # make datetimes timezone-aware by default
 USE_TZ = True
 
-#endregion
+# endregion
 # region: Logging-----------------------------------------------------------###
 
 # No file logger is configured, because containerized apps
@@ -307,7 +298,7 @@ LOGGING = {
     },
 }
 
-#endregion
+# endregion
 # region: Login-------------------------------------------------------------###
 
 # TODO: FAC example for login.gov
@@ -322,7 +313,7 @@ LOGGING = {
 # }
 # TOKEN_AUTH = {"TOKEN_TTL": 3600}
 
-#endregion
+# endregion
 # region: Rest Framework/API------------------------------------------------###
 
 # Enable CORS if api is served at subdomain
@@ -346,10 +337,10 @@ LOGGING = {
 #     "TEST_REQUEST_DEFAULT_FORMAT": "api",
 # }
 
-#endregion
+# endregion
 # region: Routing-----------------------------------------------------------###
 
-## Set by django.middleware.common.CommonMiddleware
+# ~ Set by django.middleware.common.CommonMiddleware
 # APPEND_SLASH = True
 # PREPEND_WWW = False
 
@@ -360,23 +351,23 @@ ROOT_URLCONF = "registrar.config.urls"
 # Must be relative and end with "/"
 STATIC_URL = "public/"
 
-#endregion
+# endregion
 # region: Security and Privacy----------------------------------------------###
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = secret_key
 
 # Use this variable for doing SECRET_KEY rotation, see documentation
-SECRET_KEY_FALLBACKS = []
+SECRET_KEY_FALLBACKS: "list[str]" = []
 
-## Set by django.middleware.security.SecurityMiddleware
+# ~ Set by django.middleware.security.SecurityMiddleware
 # SECURE_CONTENT_TYPE_NOSNIFF = True
 # SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 # SECURE_REDIRECT_EXEMPT = []
 # SECURE_REFERRER_POLICY = "same-origin"
 # SECURE_SSL_HOST = None
 
-## Overridden from django.middleware.security.SecurityMiddleware
+# ~ Overridden from django.middleware.security.SecurityMiddleware
 # adds the includeSubDomains directive to the HTTP Strict Transport Security header
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # adds the preload directive to the HTTP Strict Transport Security header
@@ -386,7 +377,7 @@ SECURE_HSTS_SECONDS = 300
 # redirect all non-HTTPS requests to HTTPS
 SECURE_SSL_REDIRECT = True
 
-## Set by django.middleware.common.CommonMiddleware
+# ~ Set by django.middleware.common.CommonMiddleware
 # DISALLOWED_USER_AGENTS = []
 
 # The host/domain names that Django can serve.
@@ -404,7 +395,7 @@ ALLOWED_HOSTS = [
 # load balancers for health checks, etc.
 ALLOWED_CIDR_NETS = ["10.0.0.0/8"]
 
-## Below are some protections from cross-site request forgery.
+# ~ Below are some protections from cross-site request forgery.
 # This is canonically done by including a nonce value
 # in pages sent to the user, which the user is expected
 # to send back. The specifics of implementation are
@@ -466,25 +457,25 @@ SESSION_COOKIE_SAMESITE = "Strict"
 # instruct browser to only send cookie via HTTPS
 SESSION_COOKIE_SECURE = True
 
-## Set by django.middleware.clickjacking.XFrameOptionsMiddleware
+# ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
 # our site within an iframe
 # X_FRAME_OPTIONS = "Deny"
 
-#endregion
+# endregion
 # region: Testing-----------------------------------------------------------###
 
 # Additional directories searched for fixture files.
 # The fixtures directory of each application is searched by default.
 # Must use unix style "/" path separators.
-FIXTURE_DIRS = []
+FIXTURE_DIRS: "list[str]" = []
 
-#endregion
+# endregion
 
 
-###                            ###
+# # #                          ###
 #      Development settings      #
-###                            ###
+# # #                          ###
 
 if DEBUG:
     # used by debug() context processor
