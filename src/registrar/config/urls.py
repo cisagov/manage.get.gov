@@ -10,10 +10,7 @@ from django.urls import include, path
 
 from registrar.views import health
 
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("health/", health.health)
-]
+urlpatterns = [path("admin/", admin.site.urls), path("health/", health.health)]
 
 if settings.DEBUG:
     import debug_toolbar

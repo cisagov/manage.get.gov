@@ -43,11 +43,8 @@ SECRET_KEY = secret("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 # TODO: configure and document security settings
-ALLOWED_HOSTS = [
-    'getgov-unstable.app.cloud.gov',
-    'get.gov'
-]
-ALLOWED_CIDR_NETS = ['10.0.0.0/8']  # nosec
+ALLOWED_HOSTS = ["getgov-unstable.app.cloud.gov", "get.gov"]
+ALLOWED_CIDR_NETS = ["10.0.0.0/8"]  # nosec
 USE_X_FORWARDED_HOST = True
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
@@ -58,39 +55,39 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 # TODO: are all of these needed? Need others?
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 ]
 
 # TODO: document these for future maintainers
 MIDDLEWARE = [
-    'allow_cidr.middleware.AllowCIDRMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'csp.middleware.CSPMiddleware',
+    "allow_cidr.middleware.AllowCIDRMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "csp.middleware.CSPMiddleware",
 ]
 
 # TODO: decide on template engine and document in ADR
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -104,7 +101,7 @@ LOGGING = {
     "formatters": {
         "verbose": {
             "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] "
-            "%(message)s",
+            "%(message)s",  # noqa
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {
@@ -141,15 +138,15 @@ LOGGING = {
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 DATABASES = {
-    'default': env.dj_db_url('DATABASE_URL'),
+    "default": env.dj_db_url("DATABASE_URL"),
 }
 
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 USE_L10N = True
@@ -157,13 +154,13 @@ USE_L10N = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR / "static"
 
-STATIC_URL = 'static/'
-ADMIN_URL = 'admin/'
+STATIC_URL = "static/"
+ADMIN_URL = "admin/"
 
-ROOT_URLCONF = 'registrar.config.urls'
-WSGI_APPLICATION = 'registrar.config.wsgi.application'
+ROOT_URLCONF = "registrar.config.urls"
+WSGI_APPLICATION = "registrar.config.wsgi.application"
 
 # TODO: FAC example for REST framework
 API_VERSION = "0"
@@ -186,13 +183,13 @@ REST_FRAMEWORK = {
 
 # TODO: FAC example for login.gov
 SIMPLE_JWT = {
-    'ALGORITHM': 'RS256',
-    'AUDIENCE': None,
-    'ISSUER': 'https://idp.int.identitysandbox.gov/',
-    'JWK_URL': 'https://idp.int.identitysandbox.gov/api/openid_connect/certs',
-    'LEEWAY': 0,
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.UntypedToken',),
-    'USER_ID_CLAIM': 'sub',
+    "ALGORITHM": "RS256",
+    "AUDIENCE": None,
+    "ISSUER": "https://idp.int.identitysandbox.gov/",
+    "JWK_URL": "https://idp.int.identitysandbox.gov/api/openid_connect/certs",
+    "LEEWAY": 0,
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.UntypedToken",),
+    "USER_ID_CLAIM": "sub",
 }
 TOKEN_AUTH = {"TOKEN_TTL": 3600}
 
@@ -200,4 +197,4 @@ TOKEN_AUTH = {"TOKEN_TTL": 3600}
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
