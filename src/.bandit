@@ -1,0 +1,2 @@
+[bandit]
+exclude: docker_entrypoint.py
