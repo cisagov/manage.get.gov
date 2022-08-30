@@ -1,7 +1,6 @@
-# .gov documentation
-========================
+# getgov
 
-Welcome to .gov! This is a repository to house work on the current .gov site(s). 
+The [.gov top-level domain](https://home.dotgov.gov/) helps the public to identify US-based government organizations online. This repository houses work on a new .gov registrar, built for **.gov**ernment.
 
 ## Onboarding
 
