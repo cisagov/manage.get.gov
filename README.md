@@ -1,11 +1,11 @@
-# .gov documentation
+# Get (your very own) .gov
 ========================
 
-Welcome to .gov! This is a repository to house work on the current .gov site(s). 
+Welcome to the repo for a WIP brand new registrar for .gov domains. Get.gov intends to serve all government entities in the United States looking for a .gov domain to use pubicly (for a website, for an email address, etc.). Here you can find the code for the registrar and other artifacts about our product strategy and research. 
 
 ## Onboarding
 
-TBD
+For new members of the @cisagov/dotgov team looking to contribute to the registrar, please open an [onboarding ticket](https://github.com/cisagov/getgov/issues/new?assignees=loganmeetsworld&labels=dev%2C+onboarding&template=developer-onboarding.md&title=Developer+Onboarding%3A+GH_HANDLE). 
 
 ## Code
 
