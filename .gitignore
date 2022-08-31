@@ -148,3 +148,6 @@ cython_debug/
 
 # Node
 node_modules
+
+# MacBook
+.DS_Store

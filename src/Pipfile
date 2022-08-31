@@ -14,4 +14,7 @@ psycopg2-binary = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
+django-extensions = "*"
 nplusone = "*"
+pyparsing = "*"
+pydot = "*"

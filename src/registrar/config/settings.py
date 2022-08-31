@@ -78,6 +78,9 @@ INSTALLED_APPS = [
     # (and any other places you specify) into a single location
     # that can easily be served in production
     "django.contrib.staticfiles",
+
+    # let's be sure to install our own application!
+    "registrar",
 ]
 
 # Middleware are routines for processing web requests.
@@ -498,6 +501,9 @@ if DEBUG:
     # insert the amazing django-debug-toolbar
     INSTALLED_APPS += ("debug_toolbar",)
     MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
+
+    # for using the model graph maker
+    INSTALLED_APPS += ("django_extensions",)
 
     DEBUG_TOOLBAR_CONFIG = {
         # due to Docker, bypass Debug Toolbar's check on INTERNAL_IPS
