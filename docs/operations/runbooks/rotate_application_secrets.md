@@ -1,24 +1,7 @@
-# Operations
+# HOWTO Rotate the Application's Secrets
 ========================
 
-## Authenticating
-
-You'll need the [Cloud Foundry CLI](https://docs.cloud.gov/getting-started/setup/).
-
-We use the V7 Cloud Foundry CLI.
-
-```shell
-cf login -a api.fr.cloud.gov --sso
-```
-
-After authenticating, make sure you are targeting the correct org and space!
-
-```bash
-cf spaces
-cf target -o <ORG> -s <SPACE>
-```
-
-## Rotating Environment Secrets
+Secrets are read from the running environment.
 
 Secrets were originally created with:
 
@@ -49,11 +32,3 @@ cf restage getgov-unstable --strategy rolling
 ```
 
 Non-secret environment variables can be declared in `manifest-<ENVIRONMENT>.json` directly.
-
-## Database
-
-In sandbox, created with `cf create-service aws-rds micro-psql getgov-database`.
-
-Binding the database in `manifest-<ENVIRONMENT>.json` automatically inserts the connection string into the environment as `DATABASE_URL`.
-
-[Cloud.gov RDS documentation](https://cloud.gov/docs/services/relational-database/).
