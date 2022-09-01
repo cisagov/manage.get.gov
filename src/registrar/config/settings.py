@@ -128,7 +128,13 @@ WSGI_APPLICATION = "registrar.config.wsgi.application"
 # will place static files for deployment.
 # Do not use this directory for permanent storage -
 # it is for Django!
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR / "public"
+
+# Django's collectstatic command will search here
+# to obtain files for copying into the STATIC_ROOT
+STATICFILES_DIRS = [
+    BASE_DIR / "assets",
+]
 
 # TODO: decide on template engine and document in ADR
 TEMPLATES = [

@@ -2,6 +2,7 @@
 
 docs/research/data/**
 static/
+public/
 credentials*
 
 ### The usual garbage files ###
