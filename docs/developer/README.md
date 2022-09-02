@@ -34,4 +34,20 @@ You can change the logging verbosity, if needed. Do a web search for "django log
 
 ## Running tests
 
-tbd.
+Django's test suite:
+
+```shell
+docker-compose up -d
+docker-compose exec app ./manage.py test
+docker-compose stop
+```
+
+Linters:
+
+```shell
+docker-compose up -d
+docker-compose exec app ./manage.py test
+docker-compose stop
+```
+
+(Starting a container manually is optional. You can also use `docker-compose run` which will start the container for you. That method is slower, which is why you may prefer `exec` if you already have the application running.)
