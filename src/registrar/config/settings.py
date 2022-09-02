@@ -78,7 +78,6 @@ INSTALLED_APPS = [
     # (and any other places you specify) into a single location
     # that can easily be served in production
     "django.contrib.staticfiles",
-
     # let's be sure to install our own application!
     "registrar",
 ]
