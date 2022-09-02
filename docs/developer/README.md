@@ -34,20 +34,24 @@ You can change the logging verbosity, if needed. Do a web search for "django log
 
 ## Running tests
 
+Crash course on Docker's `run` vs `exec`: in order to run the tests inside of a container, a container must be running. If you already have a container running, you can use `exec`. If you do not, you can use `run`, which will attempt to start one.
+
+To get a container running:
+
+```shell
+cd src
+docker-compose build
+docker-compose up -d
+```
+
 Django's test suite:
 
 ```shell
-docker-compose up -d
 docker-compose exec app ./manage.py test
-docker-compose stop
 ```
 
 Linters:
 
 ```shell
-docker-compose up -d
-docker-compose exec app ./manage.py test
-docker-compose stop
+docker-compose exec app ./manage.py lint
 ```
-
-(Starting a container manually is optional. You can also use `docker-compose run` which will start the container for you. That method is slower, which is why you may prefer `exec` if you already have the application running.)
