@@ -33,3 +33,40 @@ jobs:
       - name: Run bandit security scanning
         working-directory: ./src
         run: bandit -r .
+
+  python-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: feedabee
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+      - name: Install Django
+        working-directory: ./src
+        run: |
+          python -m pip install --upgrade pip
+          pip install pipenv
+          pipenv install --system --dev
+      - name: Test
+        working-directory: ./src
+        env:
+          PYTHONUNBUFFERED: yup
+          DATABASE_URL: postgres://user:feedabee@localhost/app
+          DJANGO_SETTINGS_MODULE: registrar.config.settings
+          DJANGO_SECRET_KEY: feedabee
+          DJANGO_DEBUG: True
+        run: ./manage.py test
