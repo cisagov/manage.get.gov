@@ -2,6 +2,7 @@
 
 docs/research/data/**
 static/
+public/
 credentials*
 
 ### The usual garbage files ###
@@ -148,3 +149,9 @@ cython_debug/
 
 # Node
 node_modules
+
+# Mac
+.DS_Store
+
+# Vim
+*.swp
