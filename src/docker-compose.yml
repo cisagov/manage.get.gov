@@ -38,3 +38,12 @@ services:
       - POSTGRES_DB=app
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=feedabee
+
+  node:
+    image: node
+    volumes:
+      - .:/app
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    command: ./run_node_watch.sh
