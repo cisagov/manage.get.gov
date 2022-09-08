@@ -1,0 +1,28 @@
+name: "Run Django server"
+description: "Run django server in the background for scans to access"
+inputs:
+  django_settings_module:
+    description: DJANGO_SETTINGS_MODULE to use. Defaults to registrar.config.settings
+    required: false
+    default: registrar.config.settings
+  database_url:
+    description: DATABASE_URL to set
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: "Start server in background"
+      shell: bash
+      env:
+        DJANGO_SETTINGS_MODULE: ${{ inputs.django_settings_module }}
+        DATABASE_URL: ${{ inputs.database_url }}
+      run: pipenv run python manage.py runserver 0.0.0.0:8080 &
+      working-directory: ./src
+
+    - name: "Wait for startup"
+      shell: bash
+      run: sleep 5
+
+    - name: "Verify response working"
+      shell: bash
+      run: curl http://localhost:8080/health -I

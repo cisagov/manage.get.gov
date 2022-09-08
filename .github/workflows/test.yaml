@@ -36,7 +36,7 @@ jobs:
 
   python-test:
     runs-on: ubuntu-latest
-    services:
+    services: &service-dependencies  # store this block to use it again
       postgres:
         image: postgres
         env:
@@ -53,15 +53,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
-      - name: Install Django
-        working-directory: ./src
-        run: |
-          python -m pip install --upgrade pip
-          pip install pipenv
-          pipenv install --system --dev
-      - name: Test
+
+      - name: Set up python and dependencies
+        uses: ./.github/actions/setup-project
+
+      - name: Unit tests
         working-directory: ./src
         env:
           PYTHONUNBUFFERED: yup
@@ -70,3 +66,22 @@ jobs:
           DJANGO_SECRET_KEY: feedabee
           DJANGO_DEBUG: True
         run: ./manage.py test
+
+  pa11y-scan:
+    runs-on: ubuntu-latest
+    services: *service-dependencies  # repeat service description from above
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up python and dependencies
+        id: setup
+        uses: ./.github/actions/setup-project
+
+      - uses: ./.github/actions/run-server
+        with:
+          database_url: ${{ steps.setup.outputs.database_url }}
+
+      - name: Accessibility Scan
+        working-directory: ./src
+        run: npm run pa11y-ci
