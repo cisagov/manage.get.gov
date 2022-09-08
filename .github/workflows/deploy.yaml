@@ -3,8 +3,7 @@ name: Build and deploy
 # This workflow runs on pushes to main (typically,
 # a merged pull request) and on pushes of tagged commits.
 
-# Pushes to main will deploy to Unstable; tagged commits
-# will deploy to Staging
+# Pushes to main will deploy to Staging
 
 on:
   push:
@@ -17,9 +16,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-unstable:
+  deploy-staging:
     # if this job runs on a branch, we deduce that code
-    # has been pushed to main and should be deployed to unstable
+    # has been pushed to main and should be deployed to staging
     if: ${{ github.ref_type == 'branch' }}
     runs-on: ubuntu-latest
     steps:
@@ -30,13 +29,8 @@ jobs:
         env:
           DEPLOY_NOW: thanks
         with:
-          cf_username: ${{ secrets.CF_USERNAME }}
-          cf_password: ${{ secrets.CF_PASSWORD }}
-          cf_org: sandbox-gsa
-          cf_space: dotgov-poc
-          push_arguments: "-f ops/manifests/manifest-unstable.yaml"
-
-  # deploy-staging:
-  #   # if this job runs on a tag, we deduce that code
-  #   # has been tagged for release and should be deployed to staging
-  #   if: ${{ github.ref_type == 'tag' }}
+          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
+          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+          cf_org: cisa-getgov-prototyping
+          cf_space: staging
+          push_arguments: "-f ops/manifests/manifest-staging.yaml"
