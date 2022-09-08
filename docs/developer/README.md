@@ -50,6 +50,12 @@ Django's test suite:
 docker-compose exec app ./manage.py test
 ```
 
+OR
+
+```shell
+docker-compose exec app python -Wa ./manage.py test  # view deprecation warnings
+```
+
 Linters:
 
 ```shell
