@@ -1,11 +1,16 @@
 # NOTE: This script does not work with cf v8. We recommend using cf v7 for all cloud.gov commands.
 if [ ! $(command -v gh) ] || [ ! $(command -v jq) ] || [ ! $(command -v cf) ]; then
-  echo "jq, cf, and gh packages must be installed. Please install via your preferred manager."
-  exit 1
+    echo "jq, cf, and gh packages must be installed. Please install via your preferred manager."
+    exit 1
 fi
 
-cf spaces
-read -p "Are you logged in to the dotgov-poc CF space above? (y/n) " -n 1 -r
+if [ -z "$1" ]; then
+    echo 'Please specify a space to target (i.e. unstable, staging)' >&2
+    exit 1
+fi
+
+cf target -o cisa-getgov-prototyping -s $1
+read -p "Are you logged in to the cisa-getgov-prototyping CF org above and targeting the correct space? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
@@ -13,7 +18,7 @@ then
 fi
 
 gh auth status
-read -p "Are you logged into a Github account with access to cisagov/dotgov? (y/n) " -n 1 -r
+read -p "Are you logged into a Github account with access to cisagov/getgov? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
@@ -21,6 +26,7 @@ then
 fi
 
 echo "Great, removing and replacing Github CD account..."
+cf target -s $1
 cf delete-service-key github-cd-account github-cd-key
 cf create-service-key github-cd-account github-cd-key
 cf service-key github-cd-account github-cd-key
@@ -31,8 +37,9 @@ then
     exit 1
 fi
 
+upcase_space=$(printf "%s" "$1" | tr '[:lower:]' '[:upper:]')
 cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.username, .password]|@tsv' | 
 while read -r username password; do
-    gh secret --repo cisagov/dotgov set CF_USERNAME --body $username
-    gh secret --repo cisagov/dotgov set CF_PASSWORD --body $password
+    gh secret --repo cisagov/getgov set CF_${upcase_space}_USERNAME --body $username
+    gh secret --repo cisagov/getgov set CF_${upcase_space}_PASSWORD --body $password
 done
