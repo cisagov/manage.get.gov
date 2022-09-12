@@ -1,0 +1,9 @@
+implementation-status:
+  - c-not-implemented
+  - c-implemented
+  - c-not-applicable
+control-origination:
+  - c-inherited-cloud-gov
+  - c-inherited-cisa
+  - c-common-control
+  - c-system-specific-control
