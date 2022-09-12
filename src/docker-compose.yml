@@ -40,3 +40,18 @@ services:
       - POSTGRES_DB=app
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=feedabee
+
+  pa11y:
+    build:
+      context: .
+      dockerfile: node.Dockerfile
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - .:/app
+      - /app/node_modules
+    working_dir: /app
+    links:
+      - app
+    profiles:
+      - pa11y

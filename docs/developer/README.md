@@ -61,3 +61,17 @@ Linters:
 ```shell
 docker-compose exec app ./manage.py lint
 ```
+
+## Accessibility Scanning
+
+The tool `pa11y-ci` is used to scan pages for compliance with a set of
+accessibility rules. The scan runs as part of our CI setup (see
+`.github/workflows/test.yaml`) but it can also be run locally. To run locally,
+just
+
+```shell
+docker-compose run pa11y npm run pa11y-ci
+```
+
+The URLs that `pa11y-ci` will scan are configured in `src/.pa11yci`. When new
+views and pages are added, their URLs should also be added to that file.

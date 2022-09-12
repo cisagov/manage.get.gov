@@ -486,8 +486,8 @@ if DEBUG:
         "::1",
     ]
 
-    # allow dev laptop to connect
-    ALLOWED_HOSTS += ("localhost",)
+    # allow dev laptop and docker-compose network to connect
+    ALLOWED_HOSTS += ("localhost", "app")
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_PRELOAD = False
 
