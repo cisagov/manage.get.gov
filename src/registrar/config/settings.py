@@ -86,6 +86,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # django-allow-cidr: enable use of CIDR IP ranges in ALLOWED_HOSTS
     "allow_cidr.middleware.AllowCIDRMiddleware",
+    # serve static assets in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
     "django.middleware.security.SecurityMiddleware",
     # store and retrieve arbitrary data on a per-site-visitor basis

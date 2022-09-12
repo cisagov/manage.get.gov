@@ -11,6 +11,7 @@ django-csp = "*"
 environs = {extras=["django"]}
 gunicorn = "*"
 psycopg2-binary = "*"
+whitenoise = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
