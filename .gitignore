@@ -21,6 +21,8 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+# We do want the dist in compliance documentation
+!docs/compliance/dist
 downloads/
 eggs/
 .eggs/
