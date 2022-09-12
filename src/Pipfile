@@ -16,3 +16,8 @@ whitenoise = "*"
 [dev-packages]
 django-debug-toolbar = "*"
 nplusone = "*"
+bandit = "*"
+black = "*"
+flake8 = "*"
+mypy = "*"
+types-requests = "*"

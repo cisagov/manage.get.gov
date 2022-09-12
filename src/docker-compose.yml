@@ -28,9 +28,11 @@ services:
     stdin_open: true
     tty: true
     ports:
-      - "8080:8000"
+      - "8080:8080"
     # command: "python"
-    command: "python manage.py runserver 0.0.0.0:8000"
+    command: >
+      bash -c " python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8080"
 
   db:
     image: postgres:latest
