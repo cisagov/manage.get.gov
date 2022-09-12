@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # cm-5 - \[catalog\] Access Restrictions for Change
@@ -31,6 +28,8 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control cm-5
+We inherit all of this from cloud.gov. 
+
+cloud.gov enforces restrictions on available actions according to the system-provided org and space roles. All actions are logged and available to customers for auditing purposes.
 
 ______________________________________________________________________
