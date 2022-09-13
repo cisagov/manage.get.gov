@@ -164,6 +164,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "registrar.context_processors.language_code",
+                "registrar.context_processors.canonical_path",
             ],
         },
     },

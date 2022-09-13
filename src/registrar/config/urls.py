@@ -7,7 +7,7 @@ For more information see:
 from django.contrib import admin
 from django.urls import include, path
 
-from registrar.views import health, index
+from registrar.views import health, index, whoami
 
 urlpatterns = [
     path("", index.index, name="home"),
