@@ -11,9 +11,12 @@ from django.urls import include, path
 from registrar.views import health, index
 
 urlpatterns = [
+    path("", index.index, name="home"),
     path("admin/", admin.site.urls),
-    path("", index.index),
     path("health/", health.health),
+    path("openid/", include("djangooidc.urls")),
+    # these views respect the DEBUG setting
+    path("__debug__/", include("debug_toolbar.urls")),
 ]
 
 if settings.DEBUG:

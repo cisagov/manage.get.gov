@@ -8,7 +8,7 @@ applications:
   memory: 512M
   stack: cflinuxfs3
   timeout: 180
-  command: gunicorn registrar.config.wsgi -t 60
+  command: ./run.sh
   health-check-type: http
   health-check-http-endpoint: /health
   env:
@@ -16,6 +16,10 @@ applications:
     PYTHONUNBUFFERED: yup
     # Tell Django where to find its configuration
     DJANGO_SETTINGS_MODULE: registrar.config.settings
+    # Tell Django where it is being hosted
+    DJANGO_BASE_URL: getgov-staging.app.cloud.gov
+    # Tell Django how much stuff to log
+    DJANGO_LOG_LEVEL: INFO
   routes:
     - route: getgov-staging.app.cloud.gov
   services:

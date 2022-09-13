@@ -6,10 +6,13 @@ name = "pypi"
 [packages]
 django = "*"
 cfenv = "*"
+pycryptodomex = "*"
 django-allow-cidr = "*"
 django-csp = "*"
 environs = {extras=["django"]}
 gunicorn = "*"
+oic = "*"
+pyjwkest = "*"
 psycopg2-binary = "*"
 whitenoise = "*"
 

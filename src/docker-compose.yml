@@ -10,10 +10,10 @@ services:
       - db
     working_dir: /app
     entrypoint: python /app/docker_entrypoint.py
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 5
+    env_file:
+      # Non-version controlled file containing DJANGO_SP_PRIVATE_KEY
+      # and other sensitive values
+      - .env
     environment:
       # Send stdout and stderr straight to the terminal without buffering
       - PYTHONUNBUFFERED=yup
@@ -25,6 +25,8 @@ services:
       - DJANGO_SECRET_KEY=feedabee
       # Run Django in debug mode on local
       - DJANGO_DEBUG=True
+      # Tell Django where it is being hosted
+      - DJANGO_BASE_URL="localhost:8080"
     stdin_open: true
     tty: true
     ports:

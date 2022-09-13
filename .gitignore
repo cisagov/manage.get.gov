@@ -6,6 +6,11 @@ docs/research/data/**
 public/
 credentials*
 
+*pem
+*crt
+
+*bk
+
 ### The usual garbage files ###
 
 # Byte-compiled / optimized / DLL files
