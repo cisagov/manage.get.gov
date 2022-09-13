@@ -36,52 +36,19 @@ jobs:
 
   python-test:
     runs-on: ubuntu-latest
-    services: &service-dependencies  # store this block to use it again
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_DB: app
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: feedabee
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - uses: actions/checkout@v3
-
-      - name: Set up python and dependencies
-        uses: ./.github/actions/setup-project
 
       - name: Unit tests
         working-directory: ./src
-        env:
-          PYTHONUNBUFFERED: yup
-          DATABASE_URL: postgres://user:feedabee@localhost/app
-          DJANGO_SETTINGS_MODULE: registrar.config.settings
-          DJANGO_SECRET_KEY: feedabee
-          DJANGO_DEBUG: True
-        run: ./manage.py test
+        run: docker compose run app python manage.py test
 
   pa11y-scan:
     runs-on: ubuntu-latest
-    services: *service-dependencies  # repeat service description from above
-
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up python and dependencies
-        id: setup
-        uses: ./.github/actions/setup-project
-
-      - uses: ./.github/actions/run-server
-        with:
-          database_url: ${{ steps.setup.outputs.database_url }}
-
       - name: Accessibility Scan
         working-directory: ./src
-        run: npm run pa11y-ci
+        # leverage the docker compose setup that we already have for local development
+        run: docker compose run pa11y npm run pa11y-ci
