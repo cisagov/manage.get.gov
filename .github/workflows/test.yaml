@@ -12,27 +12,14 @@ on:
 jobs:
   python-linting:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
-      - name: Install linters
-        run: |
-          python -m pip install --upgrade pip
-          pip install bandit black flake8 mypy types-requests
-      - name: Lint with flake8
+
+      - name: Linting
         working-directory: ./src
-        run: flake8 . --count --show-source --statistics
-      - name: Check formatting with black
-        working-directory: ./src
-        run: black --check .
-      - name: Run type checking
-        working-directory: ./src
-        run: mypy .
-      - name: Run bandit security scanning
-        working-directory: ./src
-        run: bandit -r .
+        # all of our linting is configured in
+        # registrar/management/commands/lint.py
+        run: docker compose run app python manage.py lint
 
   python-test:
     runs-on: ubuntu-latest
