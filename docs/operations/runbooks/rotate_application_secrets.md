@@ -27,7 +27,7 @@ To rotate secrets, create a new `credentials-<ENVIRONMENT>.json` file, upload it
 Example:
 
 ```bash
-cf uups getgov-credentials -p credentials-unstable.json
+cf cups getgov-credentials -p credentials-unstable.json
 cf restage getgov-unstable --strategy rolling
 ```
 

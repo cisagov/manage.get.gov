@@ -1,6 +1,6 @@
 ---
 applications:
-- name: getgov-unstable
+- name: getgov-staging
   buildpacks:
     - python_buildpack
   path: ../../src
@@ -8,7 +8,7 @@ applications:
   memory: 512M
   stack: cflinuxfs3
   timeout: 180
-  command: ./run.sh
+  command: gunicorn registrar.config.wsgi -t 60
   health-check-type: http
   health-check-http-endpoint: /health
   env:
@@ -17,7 +17,7 @@ applications:
     # Tell Django where to find its configuration
     DJANGO_SETTINGS_MODULE: registrar.config.settings
   routes:
-    - route: getgov-unstable.app.cloud.gov
+    - route: getgov-staging.app.cloud.gov
   services:
   - getgov-credentials
-  - getgov-unstable-database
+  - getgov-staging-database

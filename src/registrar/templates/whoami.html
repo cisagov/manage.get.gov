@@ -1,0 +1,18 @@
+<!-- Test page -->
+{% extends 'base.html' %}
+
+{% block title %} Hello {% endblock %}
+{% block hero %}
+  <section class="usa-hero">
+    <div class="usa-grid">
+      <div class="usa-hero-callout usa-section-dark">
+        <h2>
+          <span class="usa-hero-callout-alt">This is sample content.</span>
+          This is only sample content.
+        </h2>
+        <p> {{ name }} You'll want to replace it with content of your own.</p>
+				<button class="usa-button usa-button--accent-cool">Click a usa button</button>
+      </div>
+    </div>
+  </section>
+{% endblock %}

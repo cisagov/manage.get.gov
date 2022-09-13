@@ -8,9 +8,13 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
-from registrar.views import health
+from registrar.views import health, index
 
-urlpatterns = [path("admin/", admin.site.urls), path("health/", health.health)]
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("", index.index),
+    path("health/", health.health),
+]
 
 if settings.DEBUG:
     import debug_toolbar

@@ -35,10 +35,10 @@ cf login -a api.fr.cloud.gov  --sso
 - [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
 
 ### Steps for the onboarder
-- [ ] Add the onboardee to cloud.gov org and relevant spaces as a SpaceDeveloper
+- [ ] Add the onboardee to cloud.gov org (cisa-getgov-prototyping) and relevant spaces (unstable) as a SpaceDeveloper
 
  ```bash
-cf set-space-role <cloud.account@email.gov> sandbox-gsa dotgov-poc SpaceDeveloper
+cf set-space-role <cloud.account@email.gov> cisa-getgov-prototyping unstable SpaceDeveloper
 ```
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 
