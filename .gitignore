@@ -1,7 +1,8 @@
 ### Project specific ###
 
 docs/research/data/**
-static/
+**/assets/*
+!**/assets/sass/
 public/
 credentials*
 
