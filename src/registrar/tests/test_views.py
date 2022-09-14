@@ -8,4 +8,4 @@ class HealthTest(TestCase):
     def test_health_check_endpoint(self):
         response = self.client.get("/health/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, b"OK")
+        self.assertContains(response, "OK")

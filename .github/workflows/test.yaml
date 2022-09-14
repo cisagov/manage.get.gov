@@ -12,61 +12,30 @@ on:
 jobs:
   python-linting:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
-      - name: Install linters
-        run: |
-          python -m pip install --upgrade pip
-          pip install bandit black flake8 mypy types-requests
-      - name: Lint with flake8
+
+      - name: Linting
         working-directory: ./src
-        run: flake8 . --count --show-source --statistics
-      - name: Check formatting with black
-        working-directory: ./src
-        run: black --check .
-      - name: Run type checking
-        working-directory: ./src
-        run: mypy .
-      - name: Run bandit security scanning
-        working-directory: ./src
-        run: bandit -r .
+        # all of our linting is configured in
+        # registrar/management/commands/lint.py
+        run: docker compose run app python manage.py lint
 
   python-test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_DB: app
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: feedabee
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
-      - name: Install Django
+
+      - name: Unit tests
         working-directory: ./src
-        run: |
-          python -m pip install --upgrade pip
-          pip install pipenv
-          pipenv install --system --dev
-      - name: Test
+        run: docker compose run app python manage.py test
+
+  pa11y-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Accessibility Scan
         working-directory: ./src
-        env:
-          PYTHONUNBUFFERED: yup
-          DATABASE_URL: postgres://user:feedabee@localhost/app
-          DJANGO_SETTINGS_MODULE: registrar.config.settings
-          DJANGO_SECRET_KEY: feedabee
-          DJANGO_DEBUG: True
-        run: ./manage.py test
+        # leverage the docker compose setup that we already have for local development
+        run: docker compose run pa11y npm run pa11y-ci

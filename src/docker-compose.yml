@@ -49,3 +49,20 @@ services:
     stdin_open: true
     tty: true
     command: ./run_node_watch.sh
+
+  pa11y:
+    build:
+      context: .
+      dockerfile: node.Dockerfile
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - .:/app
+      # internal Docker volume that will cover up the host's
+      # node_modules directory inside of the container
+      - /app/node_modules
+    working_dir: /app
+    links:
+      - app
+    profiles:
+      - pa11y

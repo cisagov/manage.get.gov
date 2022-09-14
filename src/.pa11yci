@@ -1,0 +1,6 @@
+{
+    "urls": [
+        "http://app:8080/",
+        "http://app:8080/health/"
+    ]
+}

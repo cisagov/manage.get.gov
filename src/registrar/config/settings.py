@@ -158,6 +158,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "registrar.context_processors.language_code",
             ],
         },
     },
@@ -493,8 +494,8 @@ if DEBUG:
         "::1",
     ]
 
-    # allow dev laptop to connect
-    ALLOWED_HOSTS += ("localhost",)
+    # allow dev laptop and docker-compose network to connect
+    ALLOWED_HOSTS += ("localhost", "app")
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_PRELOAD = False
 

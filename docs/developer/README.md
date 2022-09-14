@@ -62,6 +62,20 @@ Linters:
 docker-compose exec app ./manage.py lint
 ```
 
+## Accessibility Scanning
+
+The tool `pa11y-ci` is used to scan pages for compliance with a set of
+accessibility rules. The scan runs as part of our CI setup (see
+`.github/workflows/test.yaml`) but it can also be run locally. To run locally,
+type
+
+```shell
+docker-compose run pa11y npm run pa11y-ci
+```
+
+The URLs that `pa11y-ci` will scan are configured in `src/.pa11yci`. When new
+views and pages are added, their URLs should also be added to that file.
+
 ## USWDS and styling
 We use the U.S. Web Design System (USWDS) for building and styling our applications. Additionally, we utilize the [uswds-compile tool](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) from USWDS  to compile and package the static assets.
 When you run `docker-compose up` the `node` service in the container will begin to watch for changes in the `registrar/assets` folder, and will recompile once any changes are made.
