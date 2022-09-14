@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # sc-7.3 - \[catalog\] Access Points
@@ -26,6 +23,6 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control sc-7.3
+cloud.gov controls and limits the set of networks that can be used to reach the customer application.
 
 ______________________________________________________________________

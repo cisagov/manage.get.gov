@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # mp-6 - \[catalog\] Media Sanitization
@@ -37,12 +34,12 @@ ______________________________________________________________________
 
 ## Implementation a.
 
-Add control implementation description here for item mp-6_smt.a
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________
 
 ## Implementation b.
 
-Add control implementation description here for item mp-6_smt.b
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________

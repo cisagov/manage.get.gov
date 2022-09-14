@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # cp-8.1 - \[catalog\] Priority of Service Provisions
@@ -36,12 +33,10 @@ ______________________________________________________________________
 
 ## Implementation (a)
 
-Add control implementation description here for item cp-8.1_smt.a
-
+cloud.gov leverages redundant telecommunications services from AWS GovCloud.
 ______________________________________________________________________
 
 ## Implementation (b)
 
-Add control implementation description here for item cp-8.1_smt.b
-
+cloud.gov leverages redundant telecommunications services from AWS GovCloud.
 ______________________________________________________________________

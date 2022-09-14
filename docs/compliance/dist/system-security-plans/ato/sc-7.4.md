@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-partially-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # sc-7.4 - \[catalog\] External Telecommunications Services
@@ -61,25 +58,25 @@ ______________________________________________________________________
 
 ## Implementation (b)
 
-Add control implementation description here for item sc-7.4_smt.b
+cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces. 
 
 ______________________________________________________________________
 
 ## Implementation (c)
 
-Add control implementation description here for item sc-7.4_smt.c
+cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces. 
 
 ______________________________________________________________________
 
 ## Implementation (d)
 
-Add control implementation description here for item sc-7.4_smt.d
+cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces. 
 
 ______________________________________________________________________
 
 ## Implementation (e)
 
-Add control implementation description here for item sc-7.4_smt.e
+cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces. 
 
 ______________________________________________________________________
 

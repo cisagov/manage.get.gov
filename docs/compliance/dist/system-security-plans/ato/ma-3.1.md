@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # ma-3.1 - \[catalog\] Inspect Tools
@@ -26,6 +23,6 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control ma-3.1
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________

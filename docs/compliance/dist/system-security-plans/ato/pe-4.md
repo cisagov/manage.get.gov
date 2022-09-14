@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # pe-4 - \[catalog\] Access Control for Transmission
@@ -26,6 +23,5 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control pe-4
-
+Customer applications fully inherit this control from cloud.gov.
 ______________________________________________________________________
