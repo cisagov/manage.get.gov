@@ -58,6 +58,8 @@ services:
       - SYS_ADMIN
     volumes:
       - .:/app
+      # internal Docker volume that will cover up the host's
+      # node_modules directory inside of the container
       - /app/node_modules
     working_dir: /app
     links:

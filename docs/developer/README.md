@@ -67,7 +67,7 @@ docker-compose exec app ./manage.py lint
 The tool `pa11y-ci` is used to scan pages for compliance with a set of
 accessibility rules. The scan runs as part of our CI setup (see
 `.github/workflows/test.yaml`) but it can also be run locally. To run locally,
-just
+type
 
 ```shell
 docker-compose run pa11y npm run pa11y-ci
