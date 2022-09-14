@@ -160,5 +160,4 @@ node_modules
 *.swp
 
 # Compliance/trestle related
-.trestle/cache
-.trestle/_trash/
+docs/compliance/.trestle/cache
