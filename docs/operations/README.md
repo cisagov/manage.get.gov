@@ -49,9 +49,10 @@ cf target -o cisa-getgov-prototyping -s unstable
 cf push getgov-unstable -f ops/manifests/manifest-unstable.yaml
 cf run-task getgov-unstable --command 'python manage.py migrate' --name migrate
 ```
+Alternatively, you could run the `deploy.sh` script in the `/src` directory to build the assets and deploy to `unstable`. Similarly, you could run `bash.sh` script to just compile and collect the assets without deploying.
 
 
 ## Serving static assets
 We are using [WhiteNoise](http://whitenoise.evans.io/en/stable/index.html) plugin to serve our static assets on cloud.gov. This plugin is added to the `MIDDLEWARE` list in our apps `settings.py`.
 
-Note that it’s a good idea to run `collectstatic` locally or in the docker container before pushing files up to `unstable`. This is because `collectstatic` relies on timestamps when deciding to whether to overwrite the existing assets in `/public`. Due the way files are uploaded, the compiled css in the `/assets/css` folder on `unstable` will have a slightly earlier timestamp than the files in `/public/css`, and consequently running `collectstatic` on`unstable` will not update `public/css` as you may expect.
+Note that it’s a good idea to run `collectstatic` locally or in the docker container before pushing files up to `unstable`. This is because `collectstatic` relies on timestamps when deciding to whether to overwrite the existing assets in `/public`. Due the way files are uploaded, the compiled css in the `/assets/css` folder on `unstable` will have a slightly earlier timestamp than the files in `/public/css`, and consequently running `collectstatic` on`unstable` will not update `public/css` as you may expect. For convenience, both the `deploy.sh` and `build.sh` scripts will take care of that. 
