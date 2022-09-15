@@ -36,9 +36,15 @@ Binding the database in `manifest-<ENVIRONMENT>.json` automatically inserts the 
 
 # Deploy
 
-We have two environments: `unstable` and `staging`. Developers can deploy locally to unstable whenever they want. However, only our CD service can deploy to `staging`, and it does so on every commit to `main`. This is to ensure that we have a "golden" environment to point to, and can still test things out in an unstable space. To deploy locally to `unstable`:
+We have two environments: `unstable` and `staging`. Developers can deploy locally to unstable whenever they want. However, only our CD service can deploy to `staging`, and it does so on every commit to `main`. This is to ensure that we have a "golden" environment to point to, and can still test things out in an unstable space. You should make sure all of the USWDS assets are compiled and collected before deploying to unstable. To deploy locally to `unstable`:
 
 ```bash
+# Compile and collect the assets
+docker-compose run node npx gulp compile
+docker-compose run node npx gulp copyAssets
+docker-compose run app ./manage.py collectstatic
+
+# Deploy to unstable
 cf target -o cisa-getgov-prototyping -s unstable
 cf push getgov-unstable -f ops/manifests/manifest-unstable.yaml
 cf run-task getgov-unstable --command 'python manage.py migrate' --name migrate

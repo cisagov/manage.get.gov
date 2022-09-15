@@ -28,6 +28,7 @@ uswds.paths.dist.img = ASSETS_DIR + 'img';
  * Add as many as you need
  */
 
+exports.default = uswds.compile;
 exports.init = uswds.init;
 exports.compile = uswds.compile;
 exports.watch = uswds.watch;
