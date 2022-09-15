@@ -15,5 +15,4 @@ else
   fi
 fi
 
-python manage.py collectstatic --settings=registrar.config.settings --noinput
 gunicorn registrar.config.wsgi -t 60
