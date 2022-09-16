@@ -1,0 +1,1 @@
+../ops/scripts/deploy.sh
