@@ -49,7 +49,7 @@ cf target -o cisa-getgov-prototyping -s unstable
 cf push getgov-unstable -f ops/manifests/manifest-unstable.yaml
 cf run-task getgov-unstable --command 'python manage.py migrate' --name migrate
 ```
-Alternatively, you could run the `deploy.sh` script in the `/src` directory to build the assets and deploy to `unstable`. Similarly, you could run `bash.sh` script to just compile and collect the assets without deploying.
+Alternatively, you could run the `deploy.sh` script in the `/src` directory to build the assets and deploy to `unstable`. Similarly, you could run `build.sh` script to just compile and collect the assets without deploying.
 
 
 ## Serving static assets
