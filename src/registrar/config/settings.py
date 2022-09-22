@@ -54,6 +54,9 @@ BASE_DIR = path.resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_debug
 
+# Use our user model instead of the default
+AUTH_USER_MODEL = "registrar.User"
+
 
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.
@@ -504,6 +507,10 @@ if DEBUG:
     INSTALLED_APPS += ("nplusone.ext.django",)
     MIDDLEWARE += ("nplusone.ext.django.NPlusOneMiddleware",)
     NPLUSONE_RAISE = True
+    NPLUSONE_WHITELIST = [
+        {"model": "admin.LogEntry", "field": "user"},
+        {"model": "registrar.UserProfile"},
+    ]
 
     # insert the amazing django-debug-toolbar
     INSTALLED_APPS += ("debug_toolbar",)
