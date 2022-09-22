@@ -10,6 +10,7 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+
 class OpenIdConnectBackend(ModelBackend):
     """
     This backend checks a previously performed OIDC authentication.
@@ -33,18 +34,12 @@ class OpenIdConnectBackend(ModelBackend):
         # Some OP may actually choose to withhold some information, so we must
         # test if it is present
         openid_data = {"last_login": timezone.now()}
-        if "first_name" in kwargs.keys():
-            openid_data["first_name"] = kwargs["first_name"]
-        if "given_name" in kwargs.keys():
-            openid_data["first_name"] = kwargs["given_name"]
-        if "christian_name" in kwargs.keys():
-            openid_data["first_name"] = kwargs["christian_name"]
-        if "family_name" in kwargs.keys():
-            openid_data["last_name"] = kwargs["family_name"]
-        if "last_name" in kwargs.keys():
-            openid_data["last_name"] = kwargs["last_name"]
-        if "email" in kwargs.keys():
-            openid_data["email"] = kwargs["email"]
+        openid_data["first_name"] = kwargs.get("first_name", "")
+        openid_data["first_name"] = kwargs.get("given_name", "")
+        openid_data["first_name"] = kwargs.get("christian_name", "")
+        openid_data["last_name"] = kwargs.get("family_name", "")
+        openid_data["last_name"] = kwargs.get("last_name", "")
+        openid_data["email"] = kwargs.get("email", "")
 
         # Note that this could be accomplished in one try-except clause, but
         # instead we use get_or_create when creating unknown users since it has

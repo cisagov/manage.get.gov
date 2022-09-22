@@ -309,7 +309,7 @@ LOGGING = {
             "()": "django.utils.log.ServerFormatter",
             "format": "[{server_time}] {message}",
             "style": "{",
-        }
+        },
     },
     # define where log messages will be sent;
     # each logger can have one or more handlers
@@ -381,7 +381,8 @@ LOGIN_URL = "openid/openid/login"
 # where to go after logging out
 LOGOUT_REDIRECT_URL = "home"
 
-# disable dynamic client registration, only the OP inside OIDC_PROVIDERS will be available
+# disable dynamic client registration,
+# only the OP inside OIDC_PROVIDERS will be available
 OIDC_ALLOW_DYNAMIC_OP = False
 
 # which provider to use if multiple are available

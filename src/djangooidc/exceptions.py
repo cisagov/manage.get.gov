@@ -9,16 +9,12 @@ class OIDCException(Exception):
     `.locator`, if used, should be a useful, unique identifier for
     locating related log messages.
     """
+
     status = status.INTERNAL_SERVER_ERROR
     friendly_message = "A server error occurred."
     locator = None
 
-    def __init__(
-        self,
-        friendly_message=None,
-        status=None,
-        locator=None
-    ):
+    def __init__(self, friendly_message=None, status=None, locator=None):
         if friendly_message is not None:
             self.friendly_message = friendly_message
         if status is not None:

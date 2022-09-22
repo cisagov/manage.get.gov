@@ -4,11 +4,6 @@ from __future__ import unicode_literals
 import logging
 import json
 
-try:
-    from builtins import unicode as str
-except ImportError:
-    pass
-
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from Cryptodome.PublicKey.RSA import importKey
@@ -50,7 +45,8 @@ class Client(oic.Client):
         except Exception as err:
             logger.error(err)
             logger.error(
-                "Key jar preparation failed for %s", provider["srv_discovery_url"],
+                "Key jar preparation failed for %s",
+                provider["srv_discovery_url"],
             )
             raise o_e.InternalError()
 
@@ -68,7 +64,8 @@ class Client(oic.Client):
         except Exception as err:
             logger.error(err)
             logger.error(
-                "Client creation failed for %s", provider["srv_discovery_url"],
+                "Client creation failed for %s",
+                provider["srv_discovery_url"],
             )
             raise o_e.InternalError()
 
@@ -81,7 +78,8 @@ class Client(oic.Client):
         except Exception as err:
             logger.error(err)
             logger.error(
-                "Provider info discovery failed for %s", provider["srv_discovery_url"],
+                "Provider info discovery failed for %s",
+                provider["srv_discovery_url"],
             )
             raise o_e.InternalError()
 
@@ -104,7 +102,7 @@ class Client(oic.Client):
                 "state": session["state"],
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
-                "acr_values": self.behaviour.get("acr_value")
+                "acr_values": self.behaviour.get("acr_value"),
             }
 
             if extra_args is not None:
@@ -160,7 +158,7 @@ class Client(oic.Client):
                 AuthorizationResponse,
                 unparsed_response,
                 sformat="dict",
-                keyjar=self.keyjar
+                keyjar=self.keyjar,
             )
         except Exception as err:
             logger.error(err)
@@ -171,7 +169,9 @@ class Client(oic.Client):
         if isinstance(authn_response, ErrorResponse):
             error = authn_response.get("error", "")
             if error == "login_required":
-                logger.warning("User was not logged in (%s), trying again for %s" % (error, state))
+                logger.warning(
+                    "User was not logged in (%s), trying again for %s" % (error, state)
+                )
                 return self.create_authn_request(session)
             else:
                 logger.error("Unable to process response %s for %s" % (error, state))
@@ -189,56 +189,19 @@ class Client(oic.Client):
             raise o_e.AuthenticationFailed(locator=state)
 
         if self.behaviour.get("response_type") == "code":
-            try:
-                # request a new token by which we may interact with OP
-                # on behalf of the user
-                token_response = self.do_access_token_request(
-                    scope="openid",
-                    state=authn_response["state"],
-                    request_args={
-                        "code": authn_response["code"],
-                        "redirect_uri": self.registration_response["redirect_uris"][0],
-                        "client_id": self.client_id,
-                        "client_secret": self.client_secret,
-                    },
-                    authn_method=self.registration_response[
-                        "token_endpoint_auth_method"
-                    ],
-                )
-            except Exception as err:
-                logger.error(err)
-                logger.error("Unable to obtain access token for %s" % state)
-                raise o_e.AuthenticationFailed(locator=state)
+            # need an access token to get user info (and to log the user out later)
+            self._request_token(
+                authn_response["state"], authn_response["code"], session
+            )
 
-            # ErrorResponse is not raised, it is passed back...
-            if isinstance(token_response, ErrorResponse):
-                logger.error("Unable to get token (%s) for %s" % (token_response.get("error",""), state))
-                raise o_e.AuthenticationFailed(locator=state)
+        user_info = self._get_user_info(state, session)
 
-            logger.debug("token response %s" % token_response)
+        return user_info
 
-            try:
-                # get the token and other bits of info
-                id_token = token_response["id_token"]._dict
-
-                if id_token["nonce"] != session["nonce"]:
-                    logger.error("Received nonce not the same as expected for %s" % state)
-                    raise o_e.AuthenticationFailed(locator=state)
-
-                session["id_token"] = id_token
-                session["id_token_raw"] = getattr(self, "id_token_raw", None)
-                session["access_token"] = token_response["access_token"]
-                session["refresh_token"] = token_response.get("refresh_token", "")
-                session["expires_in"] = token_response.get("expires_in", "")
-                self.id_token[authn_response["state"]] = getattr(self, "id_token_raw", None)
-            except Exception as err:
-                logger.error(err)
-                logger.error("Unable to parse access token response for %s" % state)
-                raise o_e.AuthenticationFailed(locator=state)
-
+    def _get_user_info(self, state, session):
+        """Get information from OP about the user."""
         scopes = list(self.behaviour.get("user_info_request", []))
         scopes.append("openid")
-
         try:
             # get info about the user from OP
             info_response = self.do_user_info_request(
@@ -253,13 +216,62 @@ class Client(oic.Client):
 
         # ErrorResponse is not raised, it is passed back...
         if isinstance(info_response, ErrorResponse):
-            logger.error("Unable to get user info (%s) for %s" % (info_response.get("error",""), state))
+            logger.error(
+                "Unable to get user info (%s) for %s"
+                % (info_response.get("error", ""), state)
+            )
             raise o_e.AuthenticationFailed(locator=state)
 
-        user_info = info_response.to_dict()
-        logger.debug("user info: %s" % user_info)
+        logger.debug("user info: %s" % info_response)
+        return info_response.to_dict()
 
-        return user_info
+    def _request_token(self, state, code, session):
+        """Request a token from OP to allow us to then request user info."""
+        try:
+            token_response = self.do_access_token_request(
+                scope="openid",
+                state=state,
+                request_args={
+                    "code": code,
+                    "redirect_uri": self.registration_response["redirect_uris"][0],
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                },
+                authn_method=self.registration_response["token_endpoint_auth_method"],
+            )
+        except Exception as err:
+            logger.error(err)
+            logger.error("Unable to obtain access token for %s" % state)
+            raise o_e.AuthenticationFailed(locator=state)
+
+        # ErrorResponse is not raised, it is passed back...
+        if isinstance(token_response, ErrorResponse):
+            logger.error(
+                "Unable to get token (%s) for %s"
+                % (token_response.get("error", ""), state)
+            )
+            raise o_e.AuthenticationFailed(locator=state)
+
+        logger.debug("token response %s" % token_response)
+
+        try:
+            # get the token and other bits of info
+            id_token = token_response["id_token"]._dict
+
+            if id_token["nonce"] != session["nonce"]:
+                logger.error("Received nonce not the same as expected for %s" % state)
+                raise o_e.AuthenticationFailed(locator=state)
+
+            session["id_token"] = id_token
+            session["id_token_raw"] = getattr(self, "id_token_raw", None)
+            session["access_token"] = token_response["access_token"]
+            session["refresh_token"] = token_response.get("refresh_token", "")
+            session["expires_in"] = token_response.get("expires_in", "")
+            self.id_token[state] = getattr(self, "id_token_raw", None)
+        except Exception as err:
+            logger.error(err)
+            logger.error("Unable to parse access token response for %s" % state)
+            raise o_e.AuthenticationFailed(locator=state)
 
     def store_response(self, resp, info):
         """Make raw ID token available for internal use."""

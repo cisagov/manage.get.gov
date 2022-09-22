@@ -2,18 +2,13 @@
 
 import logging
 
-try:
-    from urllib.parse import parse_qs, urlencode
-except ImportError:
-    from urllib import urlencode
-    from urlparse import parse_qs
-
-
 from django.conf import settings
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
+from urllib.parse import parse_qs, urlencode
+
 from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
 
@@ -35,9 +30,9 @@ def error_page(request, error):
             "401.html",
             context={
                 "friendly_message": error.friendly_message,
-                "log_identifier": error.locator
+                "log_identifier": error.locator,
             },
-            status=401
+            status=401,
         )
     if isinstance(error, o_e.InternalError):
         return render(
@@ -45,12 +40,13 @@ def error_page(request, error):
             "500.html",
             context={
                 "friendly_message": error.friendly_message,
-                "log_identifier": error.locator
+                "log_identifier": error.locator,
             },
-            status=500
+            status=500,
         )
     if isinstance(error, Exception):
         return render(request, "500.html", status=500)
+
 
 def openid(request):
     """Redirect the user to an authentication provider (OP)."""
@@ -60,6 +56,7 @@ def openid(request):
         return CLIENT.create_authn_request(request.session)
     except Exception as err:
         return error_page(request, err)
+
 
 def login_callback(request):
     """Analyze the token returned by the authentication provider (OP)."""
@@ -90,11 +87,13 @@ def logout(request, next_page=None):
             "post_logout_redirect_uris" in CLIENT.registration_response.keys()
             and len(CLIENT.registration_response["post_logout_redirect_uris"]) > 0
         ):
-            request_args.update({
-                "post_logout_redirect_uri":
-                    CLIENT.registration_response["post_logout_redirect_uris"][0]
-            })
-
+            request_args.update(
+                {
+                    "post_logout_redirect_uri": CLIENT.registration_response[
+                        "post_logout_redirect_uris"
+                    ][0]
+                }
+            )
 
         url = CLIENT.provider_info["end_session_endpoint"]
         url += "?" + urlencode(request_args)
@@ -109,6 +108,7 @@ def logout(request, next_page=None):
         next_page = getattr(settings, "LOGOUT_REDIRECT_URL", None)
         if next_page:
             request.session["next"] = next_page
+
 
 def logout_callback(request):
     """Simple redirection view: after logout, redirect to `next`."""
