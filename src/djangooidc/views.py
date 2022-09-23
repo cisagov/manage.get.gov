@@ -15,10 +15,14 @@ from djangooidc import exceptions as o_e
 
 logger = logging.getLogger(__name__)
 
-# Initialize provider using pyOICD
-OP = getattr(settings, "OIDC_ACTIVE_PROVIDER")
-CLIENT = Client(OP)
-logger.debug("client initialized %s" % CLIENT)
+try:
+    # Initialize provider using pyOICD
+    OP = getattr(settings, "OIDC_ACTIVE_PROVIDER")
+    CLIENT = Client(OP)
+    logger.debug("client initialized %s" % CLIENT)
+except Exception as err:
+    logger.warning(err)
+    logger.warning("Unable to configure OpenID Connect provider. Users cannot log in.")
 
 
 def error_page(request, error):

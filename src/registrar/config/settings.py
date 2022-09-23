@@ -46,7 +46,7 @@ env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_base_url = env.str("DJANGO_BASE_URL")
 
-secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY"))
+secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
 
 # region: Basic Django Config-----------------------------------------------###
@@ -388,6 +388,7 @@ OIDC_ALLOW_DYNAMIC_OP = False
 # which provider to use if multiple are available
 # (code does not currently support user selection)
 OIDC_ACTIVE_PROVIDER = "login.gov"
+
 
 OIDC_PROVIDERS = {
     "login.gov": {
