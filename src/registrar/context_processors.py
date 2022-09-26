@@ -12,6 +12,7 @@ def language_code(request):
     """
     return {"LANGUAGE_CODE": settings.LANGUAGE_CODE}
 
+
 def canonical_path(request):
     """Add a canonical URL to the template context.
 
