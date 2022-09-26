@@ -25,6 +25,11 @@ services:
       - DJANGO_SECRET_KEY=feedabee
       # Run Django in debug mode on local
       - DJANGO_DEBUG=True
+      # Tell Django where it is being hosted
+      - DJANGO_BASE_URL="localhost:8080"
+      # --- These keys are obtained from `.env` file ---
+      # Set a private JWT signing key for Login.gov
+      - DJANGO_SECRET_LOGIN_KEY
     stdin_open: true
     tty: true
     ports:
