@@ -10,6 +10,10 @@ services:
       - db
     working_dir: /app
     entrypoint: python /app/docker_entrypoint.py
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
     environment:
       # Send stdout and stderr straight to the terminal without buffering
       - PYTHONUNBUFFERED=yup
