@@ -3,12 +3,17 @@ from django.contrib.auth.admin import UserAdmin
 from .models import User, UserProfile
 
 
-# edit a user's profile on the user page
 class UserProfileInline(admin.StackedInline):
+
+    """Edit a user's profile on the user page."""
+
     model = UserProfile
 
 
 class MyUserAdmin(UserAdmin):
+
+    """Custom user admin class to use our inlines."""
+
     inlines = [UserProfileInline]
 
 

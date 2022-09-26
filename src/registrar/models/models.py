@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -9,9 +10,9 @@ class User(AbstractUser):
     """
 
     def __str__(self):
-        if self.userprofile.display_name:
+        try:
             return self.userprofile.display_name
-        else:
+        except ObjectDoesNotExist:
             return self.username
 
 
@@ -78,4 +79,7 @@ class UserProfile(TimeStampedModel, ContactModel, AddressModel):
         if self.display_name:
             return self.display_name
         else:
-            return self.user.username
+            try:
+                return self.user.username
+            except ObjectDoesNotExist:
+                return "No username"

@@ -15,7 +15,6 @@ class HealthTest(TestCase):
 
 
 class LoggedInTests(TestCase):
-
     def setUp(self):
         username = "test_user"
         first_name = "First"
@@ -24,7 +23,7 @@ class LoggedInTests(TestCase):
         self.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email
         )
-        profile = UserProfile.objects.create(user=self.user)
+        self.profile = UserProfile.objects.create(user=self.user)
         self.client.force_login(self.user)
 
     def test_edit_profile(self):

@@ -54,9 +54,6 @@ BASE_DIR = path.resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_debug
 
-# Use our user model instead of the default
-AUTH_USER_MODEL = "registrar.User"
-
 
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.
@@ -184,6 +181,9 @@ DATABASES = {
 
 # Specify default field type to use for primary keys
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Use our user model instead of the default
+AUTH_USER_MODEL = "registrar.User"
 
 # endregion
 # region: Email-------------------------------------------------------------###
