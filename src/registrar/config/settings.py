@@ -403,9 +403,9 @@ OIDC_PROVIDERS = {
         },
         "client_registration": {
             "client_id": "cisa_dotgov_registrar",
-            "redirect_uris": [f"https://{env_base_url}/openid/callback/login/"],
+            "redirect_uris": [f"{env_base_url}/openid/callback/login/"],
             "post_logout_redirect_uris": [
-                f"https://{env_base_url}/openid/callback/logout/"
+                f"{env_base_url}/openid/callback/logout/"
             ],
             "token_endpoint_auth_method": ["private_key_jwt"],
             "sp_private_key": secret_login_key,

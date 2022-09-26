@@ -11,6 +11,7 @@ from registrar.views import health, index, whoami
 
 urlpatterns = [
     path("", index.index, name="home"),
+    path("whoami", whoami.whoami, name="whoami"),
     path("admin/", admin.site.urls),
     path("health/", health.health),
     path("openid/", include("djangooidc.urls")),
