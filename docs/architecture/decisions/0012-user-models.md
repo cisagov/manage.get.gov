@@ -1,4 +1,4 @@
-# 10. Use custom User model with separate UserProfile
+# 12. Use custom User model with separate UserProfile
 
 Date: 2022-09-26
 
