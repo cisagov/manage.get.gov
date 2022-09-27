@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Edit your User Profile
+{% endblock title %}
+
+{% block content %}
+<form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <fieldset class="usa-fieldset">
+    <legend class="usa-legend usa-legend--large">Your profile</legend>
+    <p>
+      Required fields are marked with an asterisk (<abbr
+        title="required"
+        class="usa-hint usa-hint--required"
+        >*</abbr
+      >).
+    </p>
+		{% for field in profile_form %}
+		<label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
+    {{ field }}
+    {% endfor %}
+	</fieldset>
+	<button type="submit" class="usa-button usa-button--big">Save Changes</button>
+</form>
+{% endblock content %}

@@ -2,3 +2,5 @@
 max-line-length = 88
 max-complexity = 10
 extend-ignore = E203
+# migrations are auto-generated and often break rules
+exclude=registrar/migrations/*
