@@ -1,5 +1,5 @@
 from django.test import Client, TestCase
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 
 class TestViews(TestCase):
@@ -16,23 +16,32 @@ class TestViews(TestCase):
         self.assertContains(response, "registrar", status_code=200)
         self.assertContains(response, "log in")
 
-    def test_whoami_page(self):
-        """User information appears on the whoami page."""
-        username = "test_user"
-        first_name = "First"
-        last_name = "Last"
-        email = "info@example.com"
-        user = User.objects.create(
-            username=username, first_name=first_name, last_name=last_name, email=email
-        )
-        self.client.force_login(user)
-        response = self.client.get("/whoami")
-        self.assertContains(response, first_name)
-        self.assertContains(response, last_name)
-        self.assertContains(response, email)
-
     def test_whoami_page_no_user(self):
         """Whoami page not accessible without a logged-in user."""
         response = self.client.get("/whoami")
         self.assertEqual(response.status_code, 302)
         self.assertIn("?next=/whoami", response.headers["Location"])
+
+
+class LoggedInTests(TestCase):
+
+    def setUp(self):
+        username = "test_user"
+        first_name = "First"
+        last_name = "Last"
+        email = "info@example.com"
+        self.user = get_user_model().objects.create(
+            username=username, first_name=first_name, last_name=last_name, email=email
+        )
+        self.client.force_login(user)
+
+    def test_whoami_page(self):
+        """User information appears on the whoami page."""
+        response = self.client.get("/whoami")
+        self.assertContains(response, first_name)
+        self.assertContains(response, last_name)
+        self.assertContains(response, email)
+
+    def test_edit_profile(self):
+        response = self.client.get("/edit_profile/")
+        self.assertContains(response, "Display Name")

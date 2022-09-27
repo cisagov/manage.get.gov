@@ -188,6 +188,9 @@ DATABASES = {
 # Specify default field type to use for primary keys
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Use our user model instead of the default
+AUTH_USER_MODEL = "registrar.User"
+
 # endregion
 # region: Email-------------------------------------------------------------###
 
@@ -569,6 +572,10 @@ if DEBUG:
     INSTALLED_APPS += ("nplusone.ext.django",)
     MIDDLEWARE += ("nplusone.ext.django.NPlusOneMiddleware",)
     NPLUSONE_RAISE = True
+    NPLUSONE_WHITELIST = [
+        {"model": "admin.LogEntry", "field": "user"},
+        {"model": "registrar.UserProfile"},
+    ]
 
     # insert the amazing django-debug-toolbar
     INSTALLED_APPS += ("debug_toolbar",)
