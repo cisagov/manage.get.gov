@@ -1,0 +1,10 @@
+Python module to integrate pyoic into django
+Copyright 2014 Andrea Biancini
+
+This product includes software developed by
+Andrea Biancini <andrea.biancini@gmail.com>
+
+Portions of this software is derived from the pyoidc project
+avaialble from
+   https://github.com/rohe/pyoidc
+
