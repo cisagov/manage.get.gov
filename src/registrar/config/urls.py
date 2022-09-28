@@ -16,6 +16,15 @@ urlpatterns = [
     path("health/", health.health),
     path("edit_profile/", profile.edit_profile, name="edit-profile"),
     path("openid/", include("djangooidc.urls")),
-    # these views respect the DEBUG setting
-    path("__debug__/", include("debug_toolbar.urls")),
 ]
+
+# we normally would guard these with `if settings.DEBUG` but tests run with
+# DEBUG = False even when these apps have been loaded because settings.DEBUG
+# was actually True. Instead, let's add these URLs any time we are able to
+# import the debug toolbar package.
+try:
+    import debug_toolbar
+
+    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
+except ImportError:
+    pass
