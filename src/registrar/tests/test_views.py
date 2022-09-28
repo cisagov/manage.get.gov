@@ -24,7 +24,6 @@ class TestViews(TestCase):
 
 
 class LoggedInTests(TestCase):
-
     def setUp(self):
         username = "test_user"
         first_name = "First"
