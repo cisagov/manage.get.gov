@@ -1,8 +1,6 @@
 from django.test import Client, TestCase
 from django.contrib.auth import get_user_model
 
-from registrar.models import UserProfile
-
 
 class HealthTest(TestCase):
     def setUp(self):
