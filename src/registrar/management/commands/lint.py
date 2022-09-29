@@ -62,9 +62,7 @@ class Command(BaseCommand):
                         f"[manage.py lint] {linter['purpose']} completed with success!"
                     )
             if errors:
-                self.stdout.write(
-                    f"[manage.py lint] {len(errors)} linter(s) failed."
-                )
+                self.stdout.write(f"[manage.py lint] {len(errors)} linter(s) failed.")
                 raise LinterError(errors)
         except (CalledProcessError, LinterError) as e:
             raise CommandError(e)
