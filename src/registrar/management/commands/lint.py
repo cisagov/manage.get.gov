@@ -3,6 +3,10 @@ from subprocess import run, CalledProcessError  # nosec
 from django.core.management.base import BaseCommand, CommandError
 
 
+class LinterError(Exception):
+    pass
+
+
 class Command(BaseCommand):
     """
     Helper command for running installed linters.
@@ -41,6 +45,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
+            errors = []
             for linter in self.linters.values():
                 self.stdout.write(f"[manage.py lint] {linter['purpose']}. . .")
                 result = run(linter["args"])
@@ -51,12 +56,17 @@ class Command(BaseCommand):
                             f"{' '.join(linter['args'])}"
                         )
                     )
-                    raise CalledProcessError(result.returncode, linter["args"])
+                    errors.append(CalledProcessError(result.returncode, linter["args"]))
                 else:
                     self.stdout.write(
                         f"[manage.py lint] {linter['purpose']} completed with success!"
                     )
-        except CalledProcessError as e:
+            if errors:
+                self.stdout.write(
+                    f"[manage.py lint] {len(errors)} linter(s) failed."
+                )
+                raise LinterError(errors)
+        except (CalledProcessError, LinterError) as e:
             raise CommandError(e)
         self.stdout.write(
             self.style.SUCCESS("[manage.py lint] All linters ran successfully.")
