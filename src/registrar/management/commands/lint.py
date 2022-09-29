@@ -51,7 +51,7 @@ class Command(BaseCommand):
                             f"{' '.join(linter['args'])}"
                         )
                     )
-                    break
+                    raise CalledProcessError(result.returncode, linter["args"])
                 else:
                     self.stdout.write(
                         f"[manage.py lint] {linter['purpose']} completed with success!"
