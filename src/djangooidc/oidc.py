@@ -7,7 +7,7 @@ import json
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from Cryptodome.PublicKey.RSA import importKey
-from jwkest.jwk import RSAKey
+from jwkest.jwk import RSAKey  # type: ignore
 from oic import oic, rndstr
 from oic.oauth2 import ErrorResponse
 from oic.oic import AuthorizationRequest, AuthorizationResponse, RegistrationResponse
