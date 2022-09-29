@@ -22,7 +22,7 @@ urlpatterns = [
 # was actually True. Instead, let's add these URLs any time we are able to
 # import the debug toolbar package.
 try:
-    import debug_toolbar
+    import debug_toolbar  # type: ignore
 
     urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
 except ImportError:
