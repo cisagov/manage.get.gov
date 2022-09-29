@@ -116,5 +116,5 @@ def logout(request, next_page=None):
 
 def logout_callback(request):
     """Simple redirection view: after logout, redirect to `next`."""
-    next = request.session["next"] if "next" in request.session.keys() else "/"
+    next = request.session.get("next", "/")
     return redirect(next)

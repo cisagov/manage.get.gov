@@ -17,6 +17,7 @@ $ docker-compose exec app python manage.py shell
 
 """
 import environs
+from sys import argv as sys_argv
 from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
 from pathlib import Path
@@ -48,6 +49,8 @@ env_base_url = env.str("DJANGO_BASE_URL")
 
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
+
+cli_testing_mode = True if "test" in sys_argv else False
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -350,6 +353,12 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        # Django's runserver requests
+        "django.request": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
         # OpenID Connect logger
         "oic": {
             "handlers": ["console"],
@@ -366,6 +375,12 @@ LOGGING = {
             "level": "DEBUG",
         },
     },
+    # root logger catches anything, unless
+    # defined by a more specific logger
+    "root": {
+       "handlers": ["console"],
+       "level": "INFO"
+    }
 }
 
 # endregion
