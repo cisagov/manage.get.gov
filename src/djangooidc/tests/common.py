@@ -1,6 +1,7 @@
 import os
 import logging
 
+
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
     handlers = {}
@@ -18,6 +19,7 @@ def get_handlers():
 
     return handlers
 
+
 def dont_print_garbage(f):
     """
     Decorator to place on tests to silence console logging.
@@ -27,10 +29,11 @@ def dont_print_garbage(f):
 
     It can easily be removed to debug a failing test.
     """
+
     def wrapper(*args, **kwargs):
         restore = {}
         handlers = get_handlers()
-        devnull = open(os.devnull, 'w')
+        devnull = open(os.devnull, "w")
 
         # redirect all the streams
         for handler in handlers.values():

@@ -21,6 +21,7 @@ try:
     CLIENT = Client(OP)
     logger.debug("client initialized %s" % CLIENT)
 except Exception as err:
+    CLIENT = None  # type: ignore
     logger.warning(err)
     logger.warning("Unable to configure OpenID Connect provider. Users cannot log in.")
 

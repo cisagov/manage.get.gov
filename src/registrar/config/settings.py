@@ -378,9 +378,9 @@ LOGGING = {
     # root logger catches anything, unless
     # defined by a more specific logger
     "root": {
-       "handlers": ["console"],
-       "level": "INFO"
-    }
+        "handlers": ["console"],
+        "level": "INFO",
+    },
 }
 
 # endregion

@@ -1,10 +1,11 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from django.http import HttpResponse
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from .common import dont_print_garbage
+
 
 @patch("djangooidc.views.CLIENT", autospec=True)
 class ViewsTest(TestCase):
@@ -16,11 +17,11 @@ class ViewsTest(TestCase):
 
     def user_info(*args):
         return {
-            "sub": "51234512345123",
+            "sub": "TEST",
             "email": "test@example.com",
             "first_name": "Testy",
             "last_name": "Tester",
-            "phone": "814564000"
+            "phone": "814564000",
         }
 
     def test_error_page(self, mock_client):
@@ -81,8 +82,8 @@ class ViewsTest(TestCase):
     def test_logout_redirect_url(self, mock_client):
         # setup
         session = self.client.session
-        session["id_token_raw"] = "83450234852349"
-        session["state"] = "7534298229506"
+        session["id_token_raw"] = "TEST"  # nosec B105
+        session["state"] = "TEST"  # nosec B105
         session.save()
         # mock
         mock_client.callback.side_effect = self.user_info
@@ -95,8 +96,10 @@ class ViewsTest(TestCase):
         # test
         response = self.client.get(reverse("logout"))
         # assert
-        expected = "http://example.com/log_me_out?id_token_hint=83450234852349&state" \
-            "=7534298229506&post_logout_redirect_uri=http%3A%2F%2Fexample.com%2Fback"
+        expected = (
+            "http://example.com/log_me_out?id_token_hint=TEST&state"
+            "=TEST&post_logout_redirect_uri=http%3A%2F%2Fexample.com%2Fback"
+        )
         actual = response.url
         self.assertEqual(response.status_code, 302)
         self.assertEqual(actual, expected)
