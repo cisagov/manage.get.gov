@@ -11,3 +11,13 @@ def language_code(request):
     TEMPLATES dict of our settings file).
     """
     return {"LANGUAGE_CODE": settings.LANGUAGE_CODE}
+
+
+def canonical_path(request):
+    """Add a canonical URL to the template context.
+
+    To make a correct "rel=canonical" link in the HTML page, we need to
+    construct an absolute URL for the page, and we can't do that in the
+    template itself, so we do it here and pass the information on.
+    """
+    return {"CANONICAL_PATH": request.build_absolute_uri(request.path)}
