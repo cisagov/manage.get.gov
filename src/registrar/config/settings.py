@@ -529,8 +529,9 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = "JSESSIONID"
 
 # Prevents session cookie from being sent if the user
-# is coming to our site from an external page.
-SESSION_COOKIE_SAMESITE = "Strict"
+# is coming to our site from an external page via
+# "risky" paths, i.e. POST requests
+SESSION_COOKIE_SAMESITE = "Lax"
 
 # instruct browser to only send cookie via HTTPS
 SESSION_COOKIE_SECURE = True
