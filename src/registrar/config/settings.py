@@ -17,7 +17,6 @@ $ docker-compose exec app python manage.py shell
 
 """
 import environs
-from sys import argv as sys_argv
 from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
 from pathlib import Path

@@ -3,6 +3,7 @@ import logging
 
 from contextlib import contextmanager
 
+
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
     handlers = {}
@@ -46,4 +47,3 @@ def less_console_noise():
         # restore the streams
         for handler in handlers.values():
             handler.setStream(restore[handler.name])
-
