@@ -50,7 +50,6 @@ env_base_url = env.str("DJANGO_BASE_URL")
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
 
-cli_testing_mode = True if "test" in sys_argv else False
 
 # region: Basic Django Config-----------------------------------------------###
 

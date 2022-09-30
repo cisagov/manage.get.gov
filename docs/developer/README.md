@@ -28,7 +28,7 @@ Secrets (for example, if you'd like to have a working Login.gov authentication) 
 DJANGO_SECRET_LOGIN_KEY="<...>"
 ```
 
-You'll need to create the `.env` file yourself. Get the secrets from Cloud.gov by running `cf env getgov-unstable`.
+You'll need to create the `.env` file yourself. Get the secrets from Cloud.gov by running `cf env getgov-unstable`. More information is available in [rotate_application_secrets.md](../operations/runbooks/rotate_application_secrets.md).
 
 ## Viewing Logs
 
