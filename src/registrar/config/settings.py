@@ -49,6 +49,7 @@ env_base_url = env.str("DJANGO_BASE_URL")
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
 
+
 # region: Basic Django Config-----------------------------------------------###
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
@@ -351,6 +352,12 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        # Django's runserver requests
+        "django.request": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
         # OpenID Connect logger
         "oic": {
             "handlers": ["console"],
@@ -366,6 +373,12 @@ LOGGING = {
             "handlers": ["console"],
             "level": "DEBUG",
         },
+    },
+    # root logger catches anything, unless
+    # defined by a more specific logger
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
     },
 }
 

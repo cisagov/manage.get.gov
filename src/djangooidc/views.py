@@ -21,6 +21,7 @@ try:
     CLIENT = Client(OP)
     logger.debug("client initialized %s" % CLIENT)
 except Exception as err:
+    CLIENT = None  # type: ignore
     logger.warning(err)
     logger.warning("Unable to configure OpenID Connect provider. Users cannot log in.")
 
@@ -116,5 +117,5 @@ def logout(request, next_page=None):
 
 def logout_callback(request):
     """Simple redirection view: after logout, redirect to `next`."""
-    next = request.session["next"] if "next" in request.session.keys() else "/"
+    next = request.session.get("next", "/")
     return redirect(next)

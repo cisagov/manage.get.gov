@@ -14,9 +14,12 @@ Where `credentials-<ENVIRONMENT>.json` looks like:
 ```json
 {
   "DJANGO_SECRET_KEY": "EXAMPLE",
+  "DJANGO_SECRET_LOGIN_KEY": "EXAMPLE",
   ...
 }
 ```
+
+(Specific credentials are mentioned below.)
 
 You can see the current environment with `cf env <APP>`, for example `cf env getgov-unstable`.
 
@@ -32,3 +35,23 @@ cf restage getgov-unstable --strategy rolling
 ```
 
 Non-secret environment variables can be declared in `manifest-<ENVIRONMENT>.json` directly.
+
+## DJANGO_SECRET_KEY
+
+This is a standard Django secret key. See Django documentation for tips on generating a new one. 
+
+## DJANGO_SECRET_LOGIN_KEY
+
+This is the base64 encoded private key used in the OpenID Connect authentication flow with Login.gov. It is used to sign a token during user login; the signature is examined by Login.gov before their API grants access to user data.
+
+Generate a new key using this command (or whatever is most recently recommended by Login.gov):
+
+```bash
+openssl req -nodes -x509 -days 365 -newkey rsa:2048 -keyout private.pem -out public.crt
+```
+
+Encode it using:
+
+```bash
+base64 private.pem
+```

@@ -20,9 +20,15 @@ Visit the running application at [http://localhost:8080](http://localhost:8080).
 
 ## Setting Vars
 
-Every environment variable for local development is set in [src/docker-compose.yml](../../src/docker-compose.yml).
+Non-secret environment variables for local development are set in [src/docker-compose.yml](../../src/docker-compose.yml).
 
-Including variables which would be secrets and set via a different mechanism elsewhere.
+Secrets (for example, if you'd like to have a working Login.gov authentication) go in `.env` in [src/](../../src/) with contents like this:
+
+```
+DJANGO_SECRET_LOGIN_KEY="<...>"
+```
+
+You'll need to create the `.env` file yourself. Get the secrets from Cloud.gov by running `cf env getgov-unstable`. More information is available in [rotate_application_secrets.md](../operations/runbooks/rotate_application_secrets.md).
 
 ## Viewing Logs
 
