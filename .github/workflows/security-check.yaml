@@ -20,9 +20,8 @@ env:
 
 jobs:
   security-check:
-
+    name: Django security check
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out
         uses: actions/checkout@v3
@@ -36,7 +35,7 @@ jobs:
           path: output.txt
 
   owasp-scan:
-
+    name: OWASP security scan
     runs-on: ubuntu-latest
 
     steps:
@@ -50,4 +49,3 @@ jobs:
         with:
           name: owasp-scan-output
           path: ./src/zap_report.html
-
