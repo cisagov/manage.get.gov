@@ -1,4 +1,4 @@
-name: Django Security Check
+name: Security Checks
 
 on:
   push:
@@ -34,3 +34,20 @@ jobs:
         with:
           name: security-check-output
           path: output.txt
+
+  owasp-scan:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+      - name: OWASP scan
+        run: docker compose run owasp
+        working-directory: ./src
+      - name: Upload output
+        uses: actions/upload-artifact@v2
+        with:
+          name: owasp-scan-output
+          path: ./src/zap_report.html
+
