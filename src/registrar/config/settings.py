@@ -240,6 +240,12 @@ SERVER_EMAIL = "root@get.gov"
 # as Host header may contain a proxy rather than the actual client
 USE_X_FORWARDED_HOST = True
 
+# Content-security policy header configuration
+CSP_DEFAULT_SRC = ["'none'"]
+CSP_STYLE_SRC = ["'self'"]
+CSP_SCRIPT_SRC = ["'self'"]
+CSP_IMG_SRC = ["'self'"]
+
 # endregion
 # region: Internationalisation----------------------------------------------###
 
