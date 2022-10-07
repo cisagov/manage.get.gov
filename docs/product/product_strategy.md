@@ -14,7 +14,9 @@ CISA intends to create a modern, user-centered, responsive web application to en
 
 
 ## Problem Statements
-CISA and U.S.-based government organizations and publicly controlled entities lack a clear, usable, and efficient way to register, maintain, secure, and operate a .gov domain.
+U.S.-based government organizations and publicly controlled entities lack a clear, usable, and efficient way to apply, register, and a .gov domain and related infrastructure in order to build public trust of their website and communications.
+
+CISA lacks a scalable, efficient, and secure method of managing the outreach and operations of .gov TLD program in order to facilitate government agencies building public trust of their website and communications.
 
 ## Short-term Success for .gov
 * A production-ready, modern .gov registrar that can replace the current system with improved user experience and operational efficiency
