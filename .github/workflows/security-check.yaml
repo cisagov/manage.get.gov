@@ -45,9 +45,3 @@ jobs:
       - name: OWASP scan
         run: docker compose run owasp
         working-directory: ./src
-      - name: Upload output
-        uses: actions/upload-artifact@v2
-        with:
-          name: owasp-scan-output
-          path: ./src/zap_report.html
-
