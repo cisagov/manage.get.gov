@@ -33,7 +33,7 @@ class ViewsTest(TestCase):
         # mock
         mock_client.create_authn_request.side_effect = self.say_hi
         # test
-        response = self.client.get(reverse("openid"), {"next": callback_url})
+        response = self.client.get(reverse("login"), {"next": callback_url})
         # assert
         session = mock_client.create_authn_request.call_args[0][0]
         self.assertEqual(session["next"], callback_url)
@@ -45,7 +45,7 @@ class ViewsTest(TestCase):
         mock_client.create_authn_request.side_effect = Exception("Test")
         # test
         with less_console_noise():
-            response = self.client.get(reverse("openid"))
+            response = self.client.get(reverse("login"))
         # assert
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, "500.html")
