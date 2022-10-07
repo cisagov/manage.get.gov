@@ -23,9 +23,14 @@ urlpatterns = [
 if not settings.DEBUG:
     urlpatterns += [
         # redirect to login.gov
-        path("admin/login/", RedirectView.as_view(pattern_name='login', permanent=False)),
+        path(
+            "admin/login/", RedirectView.as_view(pattern_name="login", permanent=False)
+        ),
         # redirect to login.gov
-        path("admin/logout/", RedirectView.as_view(pattern_name='logout', permanent=False)),
+        path(
+            "admin/logout/",
+            RedirectView.as_view(pattern_name="logout", permanent=False),
+        ),
     ]
 
 # we normally would guard these with `if settings.DEBUG` but tests run with

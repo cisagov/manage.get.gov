@@ -18,9 +18,9 @@ class TestViews(TestCase):
 
     def test_whoami_page_no_user(self):
         """Whoami page not accessible without a logged-in user."""
-        response = self.client.get("/whoami")
+        response = self.client.get("/whoami/")
         self.assertEqual(response.status_code, 302)
-        self.assertIn("?next=/whoami", response.headers["Location"])
+        self.assertIn("?next=/whoami/", response.headers["Location"])
 
 
 class LoggedInTests(TestCase):
@@ -36,7 +36,7 @@ class LoggedInTests(TestCase):
 
     def test_whoami_page(self):
         """User information appears on the whoami page."""
-        response = self.client.get("/whoami")
+        response = self.client.get("/whoami/")
         self.assertContains(response, self.user.first_name)
         self.assertContains(response, self.user.last_name)
         self.assertContains(response, self.user.email)

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
+
 class MockUserLogin:
     def __init__(self, get_response):
         self.get_response = get_response
