@@ -35,6 +35,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Disable Login
+        working-directory: ./src
+        # by adding MockUserLogin to settings.MIDDLEWARE
+        run: |
+          perl -pi \
+          -e 's/"csp.middleware.CSPMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
+          src/registrar/config/settings.py
+
       - name: Accessibility Scan
         working-directory: ./src
         # leverage the docker compose setup that we already have for local development
