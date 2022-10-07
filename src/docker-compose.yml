@@ -73,7 +73,7 @@ services:
       - pa11y
 
   owasp:
-    image: owasp/zap2docker-weekly
+    image: owasp/zap2docker-stable
     command: zap-baseline.py -t http://app:8080 -c zap.conf -I -r zap_report.html
     volumes:
       - .:/zap/wrk/

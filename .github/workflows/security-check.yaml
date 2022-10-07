@@ -8,31 +8,32 @@ on:
     branches:
       - main
 
-env:
-  FAIL_LEVEL: WARNING
-  ENV_TYPE: pipenv
-  DEP_PATH: src/
-  APP_PATH: src/
-  EXTRA_ARGS: "--settings=registrar.config.settings"
-  DJANGO_SECRET_KEY: not-a-secret-jw7kQcb35fcDRIKp7K4fqZBmVvb+Sy4nkAGf44DxHi6EJl
-  DATABASE_URL: "postgres://not_a_user:not_a_password@not_a_host"
-  DJANGO_BASE_URL: "https://not_a_host"
-
 jobs:
   security-check:
     name: Django security check
     runs-on: ubuntu-latest
+    env:
+      # fail the Django security check even on warnings
+      FAIL_LEVEL: WARNING
+      ENV_TYPE: pipenv
+      DEP_PATH: src/
+      APP_PATH: src/
+      EXTRA_ARGS: "--settings=registrar.config.settings"
+      DJANGO_SECRET_KEY: not-a-secret-jw7kQcb35fcDRIKp7K4fqZBmVvb+Sy4nkAGf44DxHi6EJl
+      DATABASE_URL: "postgres://not_a_user:not_a_password@not_a_host"
+      DJANGO_BASE_URL: "https://not_a_host"
+
     steps:
       - name: Check out
         uses: actions/checkout@v3
       - name: Scan Django settings for security issues
         id: check
-        uses: victoriadrake/django-security-check@master
+        uses: ./.github/actions/django-security-check
       - name: Upload output
         uses: actions/upload-artifact@v2
         with:
           name: security-check-output
-          path: output.txt
+          path: ./src/output.txt
 
   owasp-scan:
     name: OWASP security scan
