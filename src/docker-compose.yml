@@ -22,7 +22,7 @@ services:
       # Tell Django where to find its configuration
       - DJANGO_SETTINGS_MODULE=registrar.config.settings
       # Set a local key for Django
-      - DJANGO_SECRET_KEY=feedabee
+      - DJANGO_SECRET_KEY=really-long-random-string-BNPecI7+s8jMahQcGHZ3XQ5yUfRrSibdapVLIz0UemdktVPofDKcoy
       # Run Django in debug mode on local
       - DJANGO_DEBUG=True
       # Tell Django where it is being hosted
@@ -71,3 +71,11 @@ services:
       - app
     profiles:
       - pa11y
+
+  owasp:
+    image: owasp/zap2docker-stable
+    command: zap-baseline.py -t http://app:8080 -c zap.conf -I -r zap_report.html
+    volumes:
+      - .:/zap/wrk/
+    links: ["app"]
+    profiles: ["owasp-scan"]

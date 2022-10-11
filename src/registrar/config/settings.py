@@ -228,6 +228,16 @@ SERVER_EMAIL = "root@get.gov"
 # endregion
 # region: Headers-----------------------------------------------------------###
 
+# Content-Security-Policy configuration
+# this can be restrictive because we have few external scripts
+allowed_sources = ("'self'",)
+CSP_DEFAULT_SRC = allowed_sources
+# Most things fall back to default-src, but these two do not and should be
+# explicitly set
+CSP_FRAME_ANCESTORS = allowed_sources
+CSP_FORM_ACTION = allowed_sources
+
+
 # Content-Length header is set by django.middleware.common.CommonMiddleware
 
 # X-Frame-Options header is set by
