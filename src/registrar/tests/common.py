@@ -14,16 +14,12 @@ class MockUserLogin:
             args = {
                 UserModel.USERNAME_FIELD: username,
             }
-            try:
-                user = UserModel.objects.get(**args)
-            except UserModel.DoesNotExist:
-                user = UserModel(**args)
-                user.is_staff = True
-                user.is_superuser = True
-                user.save()
-            if user is not None:
-                backend = settings.AUTHENTICATION_BACKENDS[-1]
-                login(request, user, backend=backend)
+            user = UserModel.objects.get_or_create(**args)
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
+            backend = settings.AUTHENTICATION_BACKENDS[-1]
+            login(request, user, backend=backend)
 
         response = self.get_response(request)
         return response
