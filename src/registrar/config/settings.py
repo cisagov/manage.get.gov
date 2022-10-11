@@ -403,7 +403,7 @@ AUTHENTICATION_BACKENDS = [
 
 # this is where unauthenticated requests are redirected when using
 # the login_required() decorator, LoginRequiredMixin, or AccessMixin
-LOGIN_URL = "openid/login"
+LOGIN_URL = "/openid/login"
 
 # where to go after logging out
 LOGOUT_REDIRECT_URL = "home"

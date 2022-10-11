@@ -68,7 +68,17 @@ Linters:
 docker-compose exec app ./manage.py lint
 ```
 
-## Accessibility Scanning
+### Testing behind logged in pages
+
+To test behind logged in pages with external tools, like `pa11y-ci` or `OWASP Zap`, add
+
+```
+"registrar.tests.common.MockUserLogin"
+```
+
+to MIDDLEWARE in settings.py. **Remove it when you are finished testing.**
+
+### Accessibility Scanning
 
 The tool `pa11y-ci` is used to scan pages for compliance with a set of
 accessibility rules. The scan runs as part of our CI setup (see
@@ -81,6 +91,17 @@ docker-compose run pa11y npm run pa11y-ci
 
 The URLs that `pa11y-ci` will scan are configured in `src/.pa11yci`. When new
 views and pages are added, their URLs should also be added to that file.
+
+### Security Scanning
+
+The tool OWASP Zap is used for scanning the codebase for compliance with
+security rules. The scan runs as part of our CI setup (see
+`.github/workflows/test.yaml`) but it can also be run locally. To run locally,
+type
+
+```shell
+docker-compose run owasp
+```
 
 ## USWDS and styling
 We use the U.S. Web Design System (USWDS) for building and styling our applications. Additionally, we utilize the [uswds-compile tool](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) from USWDS  to compile and package the static assets.
