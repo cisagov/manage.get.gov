@@ -43,7 +43,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v3
       - name: MockUserLogin should not be in settings.MIDDLEWARE
-        run: ! grep -rwn * --exclude-dir=node_modules -e registrar.tests.common.MockUserLogin
+        run: "! grep -rwn * --exclude-dir=node_modules -e registrar.tests.common.MockUserLogin"
         working-directory: ./src
 
   owasp-scan:
