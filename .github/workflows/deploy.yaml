@@ -7,6 +7,9 @@ name: Build and deploy
 
 on:
   push:
+    paths-ignore:
+      - 'docs/**'
+      
     branches:
       - main
 

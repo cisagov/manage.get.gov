@@ -2,6 +2,8 @@ name: Security Checks
 
 on:
   push:
+    paths-ignore:
+      - 'docs/**'
     branches:
       - main
   pull_request:
