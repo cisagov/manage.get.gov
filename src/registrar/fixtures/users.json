@@ -1,0 +1,40 @@
+[
+  {
+    "model": "registrar.user",
+    "pk": 1,
+    "fields": {
+      "password": "",
+      "last_login": "2022-10-04T15:07:34.590Z",
+      "is_superuser": true,
+      "username": "c4a0e101-73b4-4d7d-9e5e-7f19a726a0fa",
+      "first_name": "Seamus",
+      "last_name": "Johnston",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2022-09-30T14:14:02.280Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "registrar.userprofile",
+    "pk": 1,
+    "fields": {
+      "created_at": "2022-09-30T14:14:02.284Z",
+      "updated_at": "2022-10-04T15:07:34.593Z",
+      "street1": "",
+      "street2": "",
+      "street3": "",
+      "city": "",
+      "sp": "",
+      "pc": "",
+      "cc": "",
+      "voice": "",
+      "fax": "",
+      "email": "",
+      "user": 1,
+      "display_name": ""
+    }
+  }
+]

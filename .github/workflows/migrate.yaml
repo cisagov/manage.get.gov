@@ -1,4 +1,4 @@
-name: Run Migrations
+name: Run migrations
 
 # This workflow can be run from the CLI
 #     gh workflow run migrate.yaml -f environment=sandbox

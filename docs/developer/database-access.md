@@ -21,10 +21,26 @@ can manually run the task with
 cf run-task getgov-unstable --command 'python manage.py migrate' --name migrate
 ```
 
+Optionally, load data from fixtures as well
+
+```shell
+cf run-task getgov-unstable --wait --command 'python manage.py loaddata registrar/fixtures/*' --name loaddata
+```
+
 For the `staging` environment, developers don't have credentials so we need to
 run that command using Github Actions. Go to
 <https://github.com/cisagov/getgov/actions/workflows/migrate.yaml> and select
 the "Run workflow" button, making sure that `staging` is selected.
+
+## Getting data for fixtures
+
+To run the `dumpdata` command, you'll need to ssh to a running container. `cf run-task` is useless for this, as you will not be able to see the output.
+
+```shell
+cf ssh getgov-unstable
+/tmp/lifecycle/shell  # this configures your environment
+./manage.py dumpdata
+```
 
 ## Dropping and re-creating the database
 
