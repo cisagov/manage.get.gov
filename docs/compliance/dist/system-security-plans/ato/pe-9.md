@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # pe-9 - \[catalog\] Power Equipment and Cabling
@@ -27,6 +24,6 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control pe-9
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________

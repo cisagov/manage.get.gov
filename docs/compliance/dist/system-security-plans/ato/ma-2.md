@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # ma-2 - \[catalog\] Controlled Maintenance
@@ -50,36 +47,36 @@ ______________________________________________________________________
 
 ## Implementation a.
 
-Add control implementation description here for item ma-2_smt.a
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________
 
 ## Implementation b.
 
-Add control implementation description here for item ma-2_smt.b
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________
 
 ## Implementation c.
 
-Add control implementation description here for item ma-2_smt.c
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________
 
 ## Implementation d.
 
-Add control implementation description here for item ma-2_smt.d
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________
 
 ## Implementation e.
 
-Add control implementation description here for item ma-2_smt.e
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________
 
 ## Implementation f.
 
-Add control implementation description here for item ma-2_smt.f
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________

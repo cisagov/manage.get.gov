@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # cp-8.2 - \[catalog\] Single Points of Failure
@@ -26,6 +23,6 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control cp-8.2
+cloud.gov leverages redundant telecommunications services from AWS GovCloud.
 
 ______________________________________________________________________

@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # mp-7 - \[catalog\] Media Use
@@ -35,12 +32,12 @@ ______________________________________________________________________
 
 ## Implementation a.
 
-Add control implementation description here for item mp-7_smt.a
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________
 
 ## Implementation b.
 
-Add control implementation description here for item mp-7_smt.b
+Customer applications fully inherit this control from cloud.gov.
 
 ______________________________________________________________________

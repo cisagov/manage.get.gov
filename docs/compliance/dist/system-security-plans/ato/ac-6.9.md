@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # ac-6.9 - \[catalog\] Log Use of Privileged Functions
@@ -26,6 +23,6 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control ac-6.9
+cloud.gov automatically logs privileged actions taken within cloud.gov.
 
 ______________________________________________________________________

@@ -1,11 +1,8 @@
 ---
 implementation-status:
-  - c-not-implemented
+  - c-implemented
 control-origination:
   - c-inherited-cloud-gov
-  - c-inherited-cisa
-  - c-common-control
-  - c-system-specific-control
 ---
 
 # ac-6.10 - \[catalog\] Prohibit Non-privileged Users from Executing Privileged Functions
@@ -26,6 +23,6 @@ ______________________________________________________________________
 
 ## What is the solution and how is it implemented?
 
-Add control implementation description here for control ac-6.10
+The cloud.gov role-based access control system prevents non-privileged users from executing privileged functions.
 
 ______________________________________________________________________

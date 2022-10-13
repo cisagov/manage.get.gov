@@ -1,9 +1,9 @@
 {
   "system-security-plan": {
-    "uuid": "0f7930a5-326f-426e-b012-c6dc0efdaa90",
+    "uuid": "f8f4bc5e-47a7-4b59-95ee-ad94eb73fdd0",
     "metadata": {
       "title": "REPLACE_ME",
-      "last-modified": "2022-09-12T13:06:14.625069-04:00",
+      "last-modified": "2022-10-13T10:34:54.334685-04:00",
       "version": "REPLACE_ME",
       "oscal-version": "1.0.0"
     },
@@ -51,12 +51,12 @@
     "system-implementation": {
       "users": [
         {
-          "uuid": "66ed0e4e-1408-4d43-b4a6-2a88e3e39cba"
+          "uuid": "903468bc-0426-45da-84b7-1a02c4dfa092"
         }
       ],
       "components": [
         {
-          "uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
+          "uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
           "type": "REPLACE_ME",
           "title": "REPLACE_ME",
           "description": "The System",
@@ -70,16 +70,16 @@
       "description": "This is the control implementation for the system.",
       "implemented-requirements": [
         {
-          "uuid": "712316aa-f731-497f-9f68-3f4657267774",
+          "uuid": "a663b417-eb51-42a0-b2d4-26fa9c1338eb",
           "control-id": "cm-10",
           "statements": [
             {
               "statement-id": "cm-10_smt.c.",
-              "uuid": "9ec5e874-5e0d-4354-8f61-7a39f4e20aec",
+              "uuid": "216d5349-2706-4277-93f2-8d923f149120",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "ef9c5cd4-b386-4f07-9dd9-96bc6e3e4537",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b3b2d5e4-595c-499e-b96e-84470883ea3a",
                   "description": "Add control implementation description here for item cm-10_smt.c"
                 }
               ]
@@ -87,33 +87,67 @@
           ]
         },
         {
-          "uuid": "416f6053-5f25-4e33-ba5c-885c237d2011",
-          "control-id": "ma-3",
+          "uuid": "98763298-5a64-4944-9920-e9107e959d99",
+          "control-id": "cp-8",
           "statements": [
             {
-              "statement-id": "ma-3_smt.b.",
-              "uuid": "15130bbd-ba89-4b69-85c8-91a21a4b107a",
+              "statement-id": "cp-8_smt.top_level_description",
+              "uuid": "aec6d0e4-b949-4667-8a65-1e96221eba25",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "a910ae18-0bb2-4a6d-8986-85be9462c054",
-                  "description": "Add control implementation description here for item ma-3_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "6201828b-900c-4e72-a646-44eaa40c440f",
+                  "description": "cloud.gov leverages redundant telecommunications services from AWS GovCloud."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "7eb8c48f-a992-4c3a-88b9-ecb6d098ac9f",
+          "uuid": "842eccd9-72ef-4ba2-8dfc-e5f75cd4ce95",
+          "control-id": "ma-3",
+          "statements": [
+            {
+              "statement-id": "ma-3_smt.a.",
+              "uuid": "17e6161b-135d-4513-8d0d-eef3291c0482",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "137a1daf-9cb9-4f4c-8ebe-f063e319b248",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "3b4075c3-87d8-4cf4-b903-33709837baf2",
+          "control-id": "ma-3",
+          "statements": [
+            {
+              "statement-id": "ma-3_smt.b.",
+              "uuid": "e1b96960-d6c6-4185-97f2-ca390b11e91d",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "e21fb8bb-6228-4e6b-be93-7a29d6519032",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "133c6f1e-5cb0-4761-a57b-8d5c5dbea765",
           "control-id": "sr-2",
           "statements": [
             {
               "statement-id": "sr-2_smt.c.",
-              "uuid": "9e800f2f-1259-40b0-bcc4-57107a05d44f",
+              "uuid": "fd6289da-2231-4c7a-a4da-f959a635ebda",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "65058b5f-0c50-46f5-aff1-6444383e956b",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "036742bd-755c-4c0a-b552-092bb45b4a5c",
                   "description": "Add control implementation description here for item sr-2_smt.c"
                 }
               ]
@@ -121,16 +155,16 @@
           ]
         },
         {
-          "uuid": "36d9e4f8-eaf8-43a2-9c3e-49508d960668",
+          "uuid": "917f7ada-dcf9-4906-900f-7e519f9efcd4",
           "control-id": "at-4",
           "statements": [
             {
               "statement-id": "at-4_smt.b.",
-              "uuid": "c22654c2-1b40-47b4-9f67-d0346e88921d",
+              "uuid": "dc480e6c-51a6-4d75-903d-83124e73741b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "9dc288cd-1a85-4d13-8407-e0bad47583b3",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c9370a81-5c6d-4b3e-9f58-23784ed34bb7",
                   "description": "Add control implementation description here for item at-4_smt.b"
                 }
               ]
@@ -138,16 +172,16 @@
           ]
         },
         {
-          "uuid": "9eceb2f5-bcc0-49b6-8040-82d30165fcf5",
+          "uuid": "1379aad9-ce7f-491c-8952-85ce78513a3a",
           "control-id": "ac-2",
           "statements": [
             {
               "statement-id": "ac-2_smt.l.",
-              "uuid": "319eb1ae-d09b-4088-9919-7dbfbd7cd80a",
+              "uuid": "d557a49d-346c-470b-b73b-3ccabc82a626",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "6a2752ea-be1e-4ca2-931e-adc2e12f3439",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "17f78cc5-76b9-4e67-b367-94775c9f62dd",
                   "description": "Add control implementation description here for item ac-2_smt.l"
                 }
               ]
@@ -155,16 +189,16 @@
           ]
         },
         {
-          "uuid": "8129ddfa-d3dc-4b60-90d9-fd7067125a14",
+          "uuid": "7daf9e5c-e999-4e43-af35-15349815645b",
           "control-id": "au-5",
           "statements": [
             {
               "statement-id": "au-5_smt.b.",
-              "uuid": "bec83e90-aa96-40d0-9e30-9a9d6bd00490",
+              "uuid": "817ac0f7-0a3f-4f1c-a8b5-05d2d8ffdd09",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "1e1aec6d-0ff6-443f-83b0-73cada91c97c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a024bb17-cd35-425a-9686-9b68318f4159",
                   "description": "Add control implementation description here for item au-5_smt.b"
                 }
               ]
@@ -172,16 +206,16 @@
           ]
         },
         {
-          "uuid": "b7186d9f-d3c8-4ed0-805d-c1781f993530",
+          "uuid": "d5a6ef79-5e92-4649-9d6a-bc2fcd474be8",
           "control-id": "ac-20.1",
           "statements": [
             {
               "statement-id": "ac-20.1_smt.b",
-              "uuid": "009082b5-e1dd-4f28-aa41-6f91f0212152",
+              "uuid": "f1ac547f-e00b-42cc-b978-2b2ada83622c",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "b375d9c8-5505-40db-977b-506bf74d6e8f",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "75bafb19-8616-4c79-b297-967d6c106e22",
                   "description": "Add control implementation description here for item ac-20.1_smt.b"
                 }
               ]
@@ -189,16 +223,16 @@
           ]
         },
         {
-          "uuid": "2edbd852-008a-4a3e-963e-3629d182b821",
+          "uuid": "744e08d4-e6a1-49e0-8463-cc5e9a8ed0bc",
           "control-id": "ra-2",
           "statements": [
             {
               "statement-id": "ra-2_smt.c.",
-              "uuid": "302b40e7-4874-4662-8b34-bb6c411fea9c",
+              "uuid": "d7d48e8c-bd70-4a68-afd2-df7187f5315e",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "518019bc-01b5-47e0-83a8-c8a14d2b5851",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "90de24a2-bafa-4ca9-9d00-89bc1ce46a59",
                   "description": "Add control implementation description here for item ra-2_smt.c"
                 }
               ]
@@ -206,33 +240,67 @@
           ]
         },
         {
-          "uuid": "7d8d7c1b-7ee9-43cb-84f0-8df3f1f00784",
+          "uuid": "b4ac1c93-cff2-432d-9bf7-2098144afe11",
           "control-id": "pe-10",
           "statements": [
             {
-              "statement-id": "pe-10_smt.c.",
-              "uuid": "5d75769a-fc24-41eb-ae70-f4852608eca3",
+              "statement-id": "pe-10_smt.a.",
+              "uuid": "87c7b6f0-db48-4606-9031-f53361a86fb8",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "0b64b938-8f6e-440b-a6ac-700b5c86a563",
-                  "description": "Add control implementation description here for item pe-10_smt.c"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "941fb56c-ffdc-4ffb-bcf4-0e989d5489a2",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "a56d0836-300e-4182-a2d4-46d7e9514e4f",
+          "uuid": "e5568034-498f-4972-adaa-6ba4cb9d6d4c",
+          "control-id": "pe-10",
+          "statements": [
+            {
+              "statement-id": "pe-10_smt.b.",
+              "uuid": "f05c329c-6141-4f0d-9708-a337242f005d",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "423b2856-56b5-4b20-ba24-093b5debd63e",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "1a026b03-75fa-4b3c-bcf0-913f35c38f52",
+          "control-id": "pe-10",
+          "statements": [
+            {
+              "statement-id": "pe-10_smt.c.",
+              "uuid": "5056b1f6-c497-404e-be0d-bf32a4ea7f34",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "509b14a3-3f2c-44a4-952c-c7fb1bcc9bc2",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "73526256-c552-4b41-9ab8-595278c40417",
           "control-id": "ac-17.4",
           "statements": [
             {
               "statement-id": "ac-17.4_smt.b",
-              "uuid": "a7774dc4-d23b-4fe9-9615-e5f835324d8e",
+              "uuid": "07dc83aa-9fef-4c09-92b5-39545a942df2",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "2d292b2e-6b18-40d6-9578-c124a98e5db0",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b64ea4a4-cdf8-4b5a-88f5-40bd1a4eaed3",
                   "description": "Add control implementation description here for item ac-17.4_smt.b"
                 }
               ]
@@ -240,16 +308,16 @@
           ]
         },
         {
-          "uuid": "654c0796-205a-42c4-b28a-4909c453268d",
+          "uuid": "979ea299-9f60-4848-adb2-e3a9e85b1af5",
           "control-id": "sc-18",
           "statements": [
             {
               "statement-id": "sc-18_smt.b.",
-              "uuid": "8ac6b62e-45a8-40a3-a1e7-d325d53d34e3",
+              "uuid": "39d7b87f-024b-4ce9-a6ca-be8993aac643",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "0a3d920b-2b36-4b3e-ae45-bb6b872b6ff8",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2a69bef2-2d08-4527-b857-8d97627f103a",
                   "description": "Add control implementation description here for item sc-18_smt.b"
                 }
               ]
@@ -257,16 +325,16 @@
           ]
         },
         {
-          "uuid": "295f3251-6a5e-4e97-b59f-d2969304633c",
+          "uuid": "692a2671-4ab7-4330-9852-8ebc397a0928",
           "control-id": "ir-8",
           "statements": [
             {
               "statement-id": "ir-8_smt.e.",
-              "uuid": "41daf8c3-9ed9-42d1-bdf8-d93f413a270d",
+              "uuid": "f654855f-1287-4dbe-b868-08e086bca529",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "3ebac4b6-d2f3-430c-b3aa-c54cb3c7bb4b",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f33d68d3-eae1-4bc4-86b8-f55c4fe5b458",
                   "description": "Add control implementation description here for item ir-8_smt.e"
                 }
               ]
@@ -274,16 +342,16 @@
           ]
         },
         {
-          "uuid": "0853b63f-f466-4c91-9379-daf980d77058",
+          "uuid": "058d2d41-f22c-4380-93cb-605cae4d9ec6",
           "control-id": "ia-5.1",
           "statements": [
             {
               "statement-id": "ia-5.1_smt.h",
-              "uuid": "c6a7c575-6254-4a77-89ac-ecc54da851ee",
+              "uuid": "30e2cc3a-4f42-40c5-a5ed-083a13a77a9a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4fce5152-d3ad-405c-bde0-36ea1074e22e",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "dd17c58a-1b70-4ccc-9be7-9226d60872e0",
                   "description": "Add control implementation description here for item ia-5.1_smt.h"
                 }
               ]
@@ -291,16 +359,16 @@
           ]
         },
         {
-          "uuid": "a5c319b4-e4ad-482e-aa0f-2d19efe3664c",
+          "uuid": "a8abfc70-aa31-4d20-bfda-e4dafa485c9d",
           "control-id": "ac-22",
           "statements": [
             {
               "statement-id": "ac-22_smt.d.",
-              "uuid": "88f479ed-6ded-420f-b65f-3c47fe266c85",
+              "uuid": "5d38b630-c83f-4fa6-8e0e-de15e3a29c8b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "49422266-09d0-4888-84d2-68d040b512b1",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "30cc41c7-5667-4994-927a-85cd9ed6b69d",
                   "description": "Add control implementation description here for item ac-22_smt.d"
                 }
               ]
@@ -308,16 +376,16 @@
           ]
         },
         {
-          "uuid": "8780061c-97ec-4a76-ba4c-9d5babe8a2e0",
+          "uuid": "08030fbd-2b31-4c53-9183-b50a64b5cbc9",
           "control-id": "si-4",
           "statements": [
             {
               "statement-id": "si-4_smt.g.",
-              "uuid": "b6a1b728-e300-4a72-9960-f1592d0f8f3f",
+              "uuid": "2106485e-8cd3-4bdc-892a-df44fa98bdbf",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "418a3e11-615f-4716-8b35-de922a5a0a31",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fa27e272-0c98-466e-a5e8-907a86944bff",
                   "description": "Add control implementation description here for item si-4_smt.g"
                 }
               ]
@@ -325,16 +393,16 @@
           ]
         },
         {
-          "uuid": "d7a9a161-8820-4341-9e77-c6a3b2048e0f",
+          "uuid": "ac6e8a0b-b724-4ad9-a6c6-9988e6635a9c",
           "control-id": "sa-15.3",
           "statements": [
             {
               "statement-id": "sa-15.3_smt.b",
-              "uuid": "6fab08a1-73d0-4874-ace2-82a97cfa0c2e",
+              "uuid": "28ff2601-2c7f-46d3-aa19-5178947eae2b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "24a9d827-cb51-473b-810e-3d61a9305d2f",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "74e2c28a-2e3f-4242-8593-4e5780d942c7",
                   "description": "Add control implementation description here for item sa-15.3_smt.b"
                 }
               ]
@@ -342,16 +410,16 @@
           ]
         },
         {
-          "uuid": "51477821-fe63-40e3-9793-de8d48a2b5b4",
+          "uuid": "08cb7225-632f-452d-81a3-5f7490009259",
           "control-id": "au-1",
           "statements": [
             {
               "statement-id": "au-1_smt.c.",
-              "uuid": "047b5856-310c-4fee-b3fa-d78eca564a5f",
+              "uuid": "a5ec8e80-f0da-44f5-81e3-da3d640c775f",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "9f2577c1-eb24-43e0-8a5d-b8f2f0afb086",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a8cc8108-28cd-47e3-bc27-566f9a1a3508",
                   "description": "Add control implementation description here for item au-1_smt.c"
                 }
               ]
@@ -359,33 +427,50 @@
           ]
         },
         {
-          "uuid": "0ce1bbf1-92d5-4123-8b28-013c930f9058",
+          "uuid": "c29dc808-f237-4167-a2b9-fd5ebaa897c7",
           "control-id": "pe-14",
           "statements": [
             {
-              "statement-id": "pe-14_smt.b.",
-              "uuid": "549c2f8f-06bf-4b3a-967e-ee76aa533e7a",
+              "statement-id": "pe-14_smt.a.",
+              "uuid": "592423f2-540f-436a-b881-ace8f4fe2f27",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "f61c2ff9-1219-4d3d-a029-00245bb47159",
-                  "description": "Add control implementation description here for item pe-14_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a5408f2c-8177-4094-9df7-3033d2a3f3d3",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "918de679-a8b4-43ee-a7b2-096f6d35cf6c",
+          "uuid": "72a05fd0-c10b-4118-ab11-1179b6639137",
+          "control-id": "pe-14",
+          "statements": [
+            {
+              "statement-id": "pe-14_smt.b.",
+              "uuid": "13bf5cf4-ffd3-4e82-a0f1-6538e97da97e",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2d49a348-5b47-45d4-a144-6a7cabf74247",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "25eeaab9-0ebb-42ac-972f-64664104d1a1",
           "control-id": "ac-17",
           "statements": [
             {
               "statement-id": "ac-17_smt.b.",
-              "uuid": "9f16eaeb-2062-409c-8a53-edf89823e9d9",
+              "uuid": "c3f9036c-b707-4e90-9229-0adfb3947bae",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "36b71997-0ed8-4557-b7f3-7c7913db5cb6",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3bd478b8-812d-4fc9-887e-34d701a6343f",
                   "description": "Add control implementation description here for item ac-17_smt.b"
                 }
               ]
@@ -393,16 +478,16 @@
           ]
         },
         {
-          "uuid": "569dc9dd-da8a-448a-a827-483d71a396b4",
+          "uuid": "5fa0a80f-ca8b-4d4e-b71b-fa9963527b17",
           "control-id": "at-1",
           "statements": [
             {
               "statement-id": "at-1_smt.c.",
-              "uuid": "7f5b7459-2e0a-4c48-8bf3-56fc004745ee",
+              "uuid": "8bd120f6-f6ee-4f90-a9b2-e1c4438e1a1e",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "d8c9c003-435d-44d1-a919-e5268e9dc4e6",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "60f80494-3586-4ec6-947e-278377f428d9",
                   "description": "Add control implementation description here for item at-1_smt.c"
                 }
               ]
@@ -410,16 +495,33 @@
           ]
         },
         {
-          "uuid": "41d55d01-ad16-4575-9a66-45eafa161104",
+          "uuid": "a52b95e9-6408-4f56-9f50-6a4e09eebe0f",
+          "control-id": "cp-10",
+          "statements": [
+            {
+              "statement-id": "cp-10_smt.top_level_description",
+              "uuid": "b253276e-e7e7-464d-8e23-60c771441775",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "60eb484c-ab41-4893-ae93-6d7707b47813",
+                  "description": "In accordance with application owner SLAs established with cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ac9aeb73-c098-4bf6-b9ee-91034df20548",
           "control-id": "ac-7",
           "statements": [
             {
               "statement-id": "ac-7_smt.b.",
-              "uuid": "71694c12-2252-4e20-80a9-002355bc56d6",
+              "uuid": "15675b2f-44d6-4ddf-ad42-d343f654ccc6",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "cede0638-ff0f-4251-9aed-b1d4f441c68f",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f89fcb6b-d1b6-4c02-a19f-f2bc905970f1",
                   "description": "Add control implementation description here for item ac-7_smt.b"
                 }
               ]
@@ -427,16 +529,16 @@
           ]
         },
         {
-          "uuid": "406f6345-068d-48da-90b6-6f02bb8fdc5a",
+          "uuid": "65aa18b3-4aa8-4713-abe5-7d6a7969ba43",
           "control-id": "cm-1",
           "statements": [
             {
               "statement-id": "cm-1_smt.c.",
-              "uuid": "da1f8b53-ee98-4bd3-8f43-ffdf318bc122",
+              "uuid": "04b1db0b-652a-499d-88ac-abed475bcb09",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "60bb8e19-2867-4153-b98b-13ffd2727d95",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2f29fd59-1ad1-43f0-9760-ed49629c4bec",
                   "description": "Add control implementation description here for item cm-1_smt.c"
                 }
               ]
@@ -444,16 +546,33 @@
           ]
         },
         {
-          "uuid": "6e63e400-4d83-4c3d-89cd-07e7d8dbc2e8",
+          "uuid": "29d8c042-5305-48a8-8dff-0a2ad76c80ff",
+          "control-id": "ma-6",
+          "statements": [
+            {
+              "statement-id": "ma-6_smt.top_level_description",
+              "uuid": "a6c3f693-d8c7-4fc3-8815-cef801f5e705",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c156b889-0f4c-4994-aaf7-91f310c8f682",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "23cc5364-fd0d-49a7-beab-31b59570df0e",
           "control-id": "ca-5",
           "statements": [
             {
               "statement-id": "ca-5_smt.b.",
-              "uuid": "e542811f-b9ff-4fe6-af39-2e65a5cc631f",
+              "uuid": "74fcf65a-45cf-4da4-a6ae-d0f9212cd560",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "82c8d77e-ec5a-43af-bd00-91ec4291b88a",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "43040996-e469-4e93-ad0e-020b9a4e1199",
                   "description": "Add control implementation description here for item ca-5_smt.b"
                 }
               ]
@@ -461,16 +580,16 @@
           ]
         },
         {
-          "uuid": "8978e374-0f52-49d0-bb49-104f22a6910f",
+          "uuid": "ea9efbec-da11-4f2c-93d8-5f6c8d697d8e",
           "control-id": "si-5",
           "statements": [
             {
               "statement-id": "si-5_smt.d.",
-              "uuid": "a43fcfe9-3ce2-401e-ba43-3d99c69e7162",
+              "uuid": "15561e55-9683-4ad2-8065-3d298307fa2c",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "c5087c27-811b-47a6-83fe-a7c06e0eebe3",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2cf85c66-85dc-4d3b-b315-2886e102e4dd",
                   "description": "Add control implementation description here for item si-5_smt.d"
                 }
               ]
@@ -478,16 +597,33 @@
           ]
         },
         {
-          "uuid": "59eba588-d2bb-4e40-a287-4e57a60731a7",
+          "uuid": "8d10bf1a-622e-424d-862e-6450c453530f",
+          "control-id": "pe-15",
+          "statements": [
+            {
+              "statement-id": "pe-15_smt.top_level_description",
+              "uuid": "c92f93bb-4c2c-4fe0-86db-806f115c9d4e",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fcd527f2-8a37-46fd-9e29-b72c14aab7a1",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "56efb6d1-ad37-49c3-b257-f75a5385d64b",
           "control-id": "sa-9",
           "statements": [
             {
               "statement-id": "sa-9_smt.c.",
-              "uuid": "3264d1e2-a816-47b5-a059-ae002f1cf82c",
+              "uuid": "10762782-6fc0-4511-b0b0-fb06b7254b56",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "56e7ead2-2f9c-4b4f-9f60-39381a1f4a55",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b79ed285-b877-417d-827b-377cc5b7b47d",
                   "description": "Add control implementation description here for item sa-9_smt.c"
                 }
               ]
@@ -495,16 +631,33 @@
           ]
         },
         {
-          "uuid": "191b81a8-60a7-47e3-b3df-c28b4b69a0f8",
+          "uuid": "ee2b7dc7-609a-400d-bf74-9872422a0930",
+          "control-id": "ac-17.1",
+          "statements": [
+            {
+              "statement-id": "ac-17.1_smt.top_level_description",
+              "uuid": "a0c3aa03-8513-41d6-a630-0ede47a5512e",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "96d0e3b3-3ed8-4df7-a344-9bdd77417882",
+                  "description": "cloud.gov logs all remote access to applications and application instances, and makes those events available for audit."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "884481f5-52dc-4f61-be23-bb74786c8369",
           "control-id": "cm-11",
           "statements": [
             {
               "statement-id": "cm-11_smt.c.",
-              "uuid": "d91f20a9-abf5-44d7-bc93-8a98f243a304",
+              "uuid": "d1ea6644-ced4-4331-8f56-e1230707ef58",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "01b30ee8-3cd0-4555-b85f-99fc352c9569",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "07f70414-9b65-4caf-868f-11db06bdc899",
                   "description": "Add control implementation description here for item cm-11_smt.c"
                 }
               ]
@@ -512,16 +665,16 @@
           ]
         },
         {
-          "uuid": "64eaabbf-30b4-4ec0-ab96-902229c42bc8",
+          "uuid": "f1966dc3-5914-4ea2-b728-60db4f1b6138",
           "control-id": "cp-9",
           "statements": [
             {
               "statement-id": "cp-9_smt.d.",
-              "uuid": "397bc13f-627a-4f37-81d6-0e1a8a2f2a7b",
+              "uuid": "b3dda48f-c9e8-4766-b49e-880100883fed",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "a1180c77-98fb-43f2-97b0-7f24b6409332",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "869ccb69-4ba7-49f3-a8a3-846d9c80fc76",
                   "description": "Add control implementation description here for item cp-9_smt.d"
                 }
               ]
@@ -529,16 +682,16 @@
           ]
         },
         {
-          "uuid": "ccef1cf3-22a1-4a3d-b4c5-2c9de2669ab0",
+          "uuid": "d74cfd11-87ab-44a6-b582-dd74cfba35e4",
           "control-id": "ca-1",
           "statements": [
             {
               "statement-id": "ca-1_smt.c.",
-              "uuid": "594985c3-c2ec-413e-a61b-54f4d0e19543",
+              "uuid": "c9e6f00e-9034-4797-98f7-cecac7e209c2",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "927d88d6-230d-4fed-ac7b-98c9a8e9b4db",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "ad9b4698-280d-4d73-b6c6-37a1832234e4",
                   "description": "Add control implementation description here for item ca-1_smt.c"
                 }
               ]
@@ -546,33 +699,118 @@
           ]
         },
         {
-          "uuid": "f5dd66c4-103f-43c9-82e1-0e6e5dfee692",
+          "uuid": "83464bd0-80e7-45e6-8d50-8c1ad268576c",
           "control-id": "ma-2",
           "statements": [
             {
-              "statement-id": "ma-2_smt.f.",
-              "uuid": "32822915-7be8-41e4-bf78-86612c3d7402",
+              "statement-id": "ma-2_smt.a.",
+              "uuid": "44a840bf-1ff5-419e-8146-7ab7c83b815c",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "3a278423-142f-4136-8c40-8eae3e5fba2e",
-                  "description": "Add control implementation description here for item ma-2_smt.f"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "997f1db9-0d71-4ee7-88e5-06e00c4f2f14",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "9dc306fd-32fe-4c9d-aaf5-38d56a35c0e6",
+          "uuid": "c6f14d44-e70d-42ac-883b-dcd10084bf4d",
+          "control-id": "ma-2",
+          "statements": [
+            {
+              "statement-id": "ma-2_smt.b.",
+              "uuid": "949c4c54-4d11-414b-b864-43c1bbfa3216",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f25f8232-8c17-4a20-8532-f7cfbec964a9",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a314d96a-c21e-46e8-82a2-157984e75af2",
+          "control-id": "ma-2",
+          "statements": [
+            {
+              "statement-id": "ma-2_smt.c.",
+              "uuid": "6a573b2d-79aa-48fb-bd19-d087e8d96790",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "51e26ffd-d101-49c8-98b3-cc72adf2c18d",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "b329e0f7-03d7-4e71-b904-37026196f947",
+          "control-id": "ma-2",
+          "statements": [
+            {
+              "statement-id": "ma-2_smt.d.",
+              "uuid": "c2a5efdb-af9b-4fdb-a1f3-55cdd33a3950",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "0f46c923-f915-439f-856f-9253b3aac00c",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5736790f-95ea-4b9f-a8c1-05235e8d0c8b",
+          "control-id": "ma-2",
+          "statements": [
+            {
+              "statement-id": "ma-2_smt.e.",
+              "uuid": "5ac2b809-66b1-4827-97a9-0ee0e855342c",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "4770ea3e-0c63-438e-8976-3d93d8aefb66",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "b51caa54-07b8-4b1e-98b1-be057ec09e9f",
+          "control-id": "ma-2",
+          "statements": [
+            {
+              "statement-id": "ma-2_smt.f.",
+              "uuid": "1790ea15-419a-4afc-8550-7bef56b83056",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "4042eefb-afdc-45f4-8ba5-a4718a69b7f2",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "e3240fa2-a23b-4860-9b57-0ae912c6e35c",
           "control-id": "si-1",
           "statements": [
             {
               "statement-id": "si-1_smt.c.",
-              "uuid": "7617ba62-93cf-42c5-adac-0586cbb0cd19",
+              "uuid": "625fdb91-37a0-4da8-a593-6d934e07533e",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "3140573d-97ec-44ad-9604-6a710a34d6b9",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "da19b58e-dda7-4a23-82c6-7054c4fd3da2",
                   "description": "Add control implementation description here for item si-1_smt.c"
                 }
               ]
@@ -580,16 +818,16 @@
           ]
         },
         {
-          "uuid": "261c7c61-4789-49a5-a860-7419eb36bfdc",
+          "uuid": "346bd78c-9b41-4e05-a7bd-e5694ff5e9c6",
           "control-id": "ac-6.7",
           "statements": [
             {
               "statement-id": "ac-6.7_smt.b",
-              "uuid": "557ec274-1a47-4d71-bcb4-5a95a35ed11e",
+              "uuid": "87c6ff7a-74cd-4780-9b79-3262746ba055",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "7f2e5c85-60df-40f6-a919-f5428d3cc2ab",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "93de09e1-32b9-45b5-8ee5-5a81752ab590",
                   "description": "Add control implementation description here for item ac-6.7_smt.b"
                 }
               ]
@@ -597,16 +835,16 @@
           ]
         },
         {
-          "uuid": "c509ad21-57f4-4aaf-8ce7-a04e227507e5",
+          "uuid": "62880bc6-e223-473e-adc4-ca78fd80963c",
           "control-id": "sr-3",
           "statements": [
             {
               "statement-id": "sr-3_smt.c.",
-              "uuid": "2ff97dbb-5db8-4708-89b0-897abf9a3a9b",
+              "uuid": "55d70c02-cbc3-455d-a795-43fceb0659a6",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "d875a7de-d622-48b0-b30b-7b37d273ab9e",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "e27a12ec-fc6f-4780-a886-930404711a8a",
                   "description": "Add control implementation description here for item sr-3_smt.c"
                 }
               ]
@@ -614,16 +852,16 @@
           ]
         },
         {
-          "uuid": "855c9d0e-6187-40b3-a1ce-56e719832be1",
+          "uuid": "e8f1afce-9541-4279-9760-4ba3a05bbb19",
           "control-id": "ps-8",
           "statements": [
             {
               "statement-id": "ps-8_smt.b.",
-              "uuid": "7feae146-8b06-4b6a-af05-d8565947299b",
+              "uuid": "b6f01e4c-7184-485b-a4bd-9028d76b9837",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "aaa0bd00-5041-4a39-b7fc-22700d5aeb31",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "eee140ff-1e65-44f0-a7c2-ba8b9186f6d6",
                   "description": "Add control implementation description here for item ps-8_smt.b"
                 }
               ]
@@ -631,16 +869,16 @@
           ]
         },
         {
-          "uuid": "2a2c2f89-f5d8-4359-874f-43cf61e76049",
+          "uuid": "742cddf1-9ae7-4162-aa58-a61b081f922f",
           "control-id": "cm-5",
           "statements": [
             {
               "statement-id": "cm-5_smt.top_level_description",
-              "uuid": "957caa05-18a4-4866-8cc2-47a33215bf75",
+              "uuid": "3addce3e-b4db-4f47-92ef-c102a67439f7",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "2e16b066-daca-4e06-8610-20c6a8051781",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c314049a-1b07-4d54-8716-a3d79ee19608",
                   "description": "We inherit all of this from cloud.gov.\ncloud.gov enforces restrictions on available actions according to the system-provided org and space roles. All actions are logged and available to customers for auditing purposes."
                 }
               ]
@@ -648,16 +886,16 @@
           ]
         },
         {
-          "uuid": "a3bbbca1-dd9c-4e11-a7e0-5959036cb382",
+          "uuid": "966a0fa5-0a96-4e5c-8af3-17a09973d915",
           "control-id": "au-4",
           "statements": [
             {
               "statement-id": "au-4_smt.top_level_description",
-              "uuid": "8e6a8ec4-994f-412c-8213-10fc23a2a29a",
+              "uuid": "2c140e0a-02b2-45a7-b9b6-521aded6e15b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "28c6234a-c2d7-47b1-8bd3-2b307b869b9a",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "9dc3980c-a458-49ce-a157-b8122d350532",
                   "description": "cloud.gov ensures sufficient capacity for application logging from tenant applications."
                 }
               ]
@@ -665,16 +903,16 @@
           ]
         },
         {
-          "uuid": "00a40c53-8f05-4fa8-bbec-af159c7f1c25",
+          "uuid": "40767540-0a0e-452a-b596-df864c1201f2",
           "control-id": "ra-3",
           "statements": [
             {
               "statement-id": "ra-3_smt.f.",
-              "uuid": "4cc8e3b4-9450-4c56-a48f-c1932a254bf5",
+              "uuid": "7c2c9b40-2f02-4639-b4a9-e9f0c6486e1f",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "45d0a223-f796-4d7e-ae8a-f17013649883",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "4b1af8d0-04bb-4ef2-bc17-1a82d774687a",
                   "description": "Add control implementation description here for item ra-3_smt.f"
                 }
               ]
@@ -682,16 +920,50 @@
           ]
         },
         {
-          "uuid": "b3748fde-e436-4481-bdf7-67afc396dc12",
+          "uuid": "e990fa91-ec5d-477f-9718-22f7c99167ee",
+          "control-id": "pe-11",
+          "statements": [
+            {
+              "statement-id": "pe-11_smt.top_level_description",
+              "uuid": "5f321022-8c93-452e-8786-a5f9d80e11ed",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "8054a9d6-b713-4fe2-8d80-64243f817ed1",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f7d4fc7f-c628-416b-a3a9-f03e1accc7c9",
+          "control-id": "sc-39",
+          "statements": [
+            {
+              "statement-id": "sc-39_smt.top_level_description",
+              "uuid": "4e08a514-2e1e-4cb1-bae5-f777895bd571",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "e10b5b9d-9949-4644-8ab6-8d3132193e33",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "cf4a3b73-5d18-4dd4-b1ac-9a6e11bc74df",
           "control-id": "pl-2",
           "statements": [
             {
               "statement-id": "pl-2_smt.e.",
-              "uuid": "cfcca0fc-6a87-4928-8cca-e5afbf02b94e",
+              "uuid": "13d3ccf5-4bda-4bb0-9241-a6251a81dafd",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "9b0c87ad-5174-4b52-87f5-22dc790cc588",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "ca6f6ba1-3bf9-4b60-a8ee-91f71a39d1ad",
                   "description": "Add control implementation description here for item pl-2_smt.e"
                 }
               ]
@@ -699,16 +971,16 @@
           ]
         },
         {
-          "uuid": "ef308946-0b2d-427e-b93d-667ff2575032",
+          "uuid": "e977f38b-3c48-4909-8032-49869b4ffdce",
           "control-id": "ir-6",
           "statements": [
             {
               "statement-id": "ir-6_smt.b.",
-              "uuid": "0da2fd87-c4ed-4092-833f-bcced0126e5c",
+              "uuid": "f1adf6c4-ea5f-4f8d-84df-a60ff7c797e2",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "f5a25fd4-09bc-4ed5-bd9b-d7b32678f2d5",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "90298c5d-440f-4e64-9166-4ea56424a26e",
                   "description": "Add control implementation description here for item ir-6_smt.b"
                 }
               ]
@@ -716,16 +988,16 @@
           ]
         },
         {
-          "uuid": "ed3c7735-05b0-4d46-9efb-0255bc96a5c5",
+          "uuid": "d3d4f8b2-652d-40f3-8550-f3f1e2a54bad",
           "control-id": "ps-3",
           "statements": [
             {
               "statement-id": "ps-3_smt.b.",
-              "uuid": "83ce1473-76fb-417b-b561-d5788b00b39a",
+              "uuid": "d1d44b04-cb09-48d2-898c-7bb72419cb01",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "0315add0-b102-47da-87fa-4709c0f5d918",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f1192056-852e-4a24-b55f-dd489e6db1f1",
                   "description": "Add control implementation description here for item ps-3_smt.b"
                 }
               ]
@@ -733,16 +1005,16 @@
           ]
         },
         {
-          "uuid": "0435856a-3863-4c6b-86bc-9c0e2430af15",
+          "uuid": "b0ab8463-46ae-496c-bc28-ec6fea14c7f8",
           "control-id": "ac-8",
           "statements": [
             {
               "statement-id": "ac-8_smt.c.",
-              "uuid": "7f97b320-2879-4f1f-8301-1c76bc1c6c71",
+              "uuid": "8162c9c1-cc9e-41b7-bf4d-516db206ff27",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "bf517f71-b71d-46e9-9537-b12fe8ce3133",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "323dbcf8-ee6b-4da3-9be7-d7a053ebb619",
                   "description": "Add control implementation description here for item ac-8_smt.c"
                 }
               ]
@@ -750,33 +1022,50 @@
           ]
         },
         {
-          "uuid": "d1b8cb69-ae6f-4e18-b62f-61ec5ab6af9c",
+          "uuid": "7a5ebeaf-646c-48c7-a05e-e40eb9739c9d",
           "control-id": "ac-18",
           "statements": [
             {
-              "statement-id": "ac-18_smt.b.",
-              "uuid": "86cf6644-17ea-44dc-9c7a-264cf14505f4",
+              "statement-id": "ac-18_smt.a.",
+              "uuid": "50f47780-170f-451b-b09f-415208d8dad7",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "00bfe881-8732-4c4e-a2ed-b0dbcae53b80",
-                  "description": "Add control implementation description here for item ac-18_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "4285faf1-e580-43c8-813f-634b86702736",
+                  "description": "Since cloud.gov is completely virtualized within AWS, there are no wireless capabilities possible."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "33a10873-2efd-43fc-8c26-0167067a3ffa",
+          "uuid": "52fde53a-d0db-43f4-9232-cdd36f3e01cd",
+          "control-id": "ac-18",
+          "statements": [
+            {
+              "statement-id": "ac-18_smt.b.",
+              "uuid": "f45deed9-bba9-4b09-b5ea-c1776058b6f6",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "61e0dbc2-6be0-4934-ab25-1bd1f9d8b5a3",
+                  "description": "Since cloud.gov is completely virtualized within AWS, there are no wireless capabilities possible."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "21095056-62b3-4b57-9664-91c0759721b7",
           "control-id": "mp-1",
           "statements": [
             {
               "statement-id": "mp-1_smt.c.",
-              "uuid": "9b889bec-deaa-4d1b-8e49-d979f465a85b",
+              "uuid": "9d48cb9e-eb07-464c-8853-c275d0b00930",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "b7fce2ec-ad04-4f16-a76e-9377acbb4b15",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "db979418-ea5e-443e-81de-2176fdbab1ed",
                   "description": "Add control implementation description here for item mp-1_smt.c"
                 }
               ]
@@ -784,16 +1073,16 @@
           ]
         },
         {
-          "uuid": "a85bdef8-7baf-466b-a1d1-57271d52c599",
+          "uuid": "669692fc-d2c3-4f4b-91d5-47ed73334643",
           "control-id": "cp-2",
           "statements": [
             {
               "statement-id": "cp-2_smt.h.",
-              "uuid": "0d791f52-d0e9-4503-972d-a25bcfff831d",
+              "uuid": "7cd736db-ecc0-4a50-9fb0-b9ba60880201",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "6346805d-fb49-4c63-97ac-a1fdf84b1636",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "bd668381-4b83-42bb-9fe1-88cf577a7979",
                   "description": "Add control implementation description here for item cp-2_smt.h"
                 }
               ]
@@ -801,16 +1090,33 @@
           ]
         },
         {
-          "uuid": "e8bd4df4-ea73-449c-bf9b-7af525f4057b",
+          "uuid": "2f98a1d4-c1f3-46d1-bff6-26225e4aa362",
+          "control-id": "pe-4",
+          "statements": [
+            {
+              "statement-id": "pe-4_smt.top_level_description",
+              "uuid": "1ec723f0-e80e-4915-8ed6-5377ba345f3c",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d003552d-976d-4482-a287-1cec45e328c3",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "eaa63ad3-288a-41a7-831a-3e83ae550f7b",
           "control-id": "ps-7",
           "statements": [
             {
               "statement-id": "ps-7_smt.e.",
-              "uuid": "4464fcf5-9a45-4f1f-9fda-414ff97304b6",
+              "uuid": "e15a08c1-1f35-43b4-b033-8a5285656a82",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "1659bc85-f8b1-4971-8767-a5e7e0d004a8",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "918f459d-cf7e-48a0-a30f-3378daf71667",
                   "description": "Add control implementation description here for item ps-7_smt.e"
                 }
               ]
@@ -818,16 +1124,16 @@
           ]
         },
         {
-          "uuid": "9d07f383-a5b6-4640-b54e-1ee82278453e",
+          "uuid": "6fa21ded-d924-4739-99f7-b9ac5ceec757",
           "control-id": "ir-2",
           "statements": [
             {
               "statement-id": "ir-2_smt.b.",
-              "uuid": "79222bb8-9477-4314-b968-79d6b0149b01",
+              "uuid": "85a2ed58-faed-48fc-9be1-63b254a6b26f",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "1e065314-6e44-412d-9c5d-f0c8bf98e894",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "65b6f1dd-9c49-4ea9-8ce2-1a961f3df24d",
                   "description": "Add control implementation description here for item ir-2_smt.b"
                 }
               ]
@@ -835,16 +1141,16 @@
           ]
         },
         {
-          "uuid": "8be30275-410c-4bf5-8e0e-c47a149a0318",
+          "uuid": "34cc455a-de58-427a-a142-8a4ee8ed9bfb",
           "control-id": "cp-6",
           "statements": [
             {
               "statement-id": "cp-6_smt.b.",
-              "uuid": "55b8fd46-db2a-46d1-a9eb-1587568958a2",
+              "uuid": "e7e88695-eaf7-4243-96fa-598a69c2eef5",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "9874bcba-45dc-4896-84d1-90a090b1dfdf",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "6afd0e39-803f-4e23-bba3-3dbe76659797",
                   "description": "Add control implementation description here for item cp-6_smt.b"
                 }
               ]
@@ -852,33 +1158,84 @@
           ]
         },
         {
-          "uuid": "87fe60bc-bd2c-47c4-b3d1-1a6480c24a3d",
+          "uuid": "ad04b5b5-cb0e-425c-9513-29aa27789089",
           "control-id": "mp-5",
           "statements": [
             {
-              "statement-id": "mp-5_smt.d.",
-              "uuid": "f6916e2f-07dc-41ee-89b2-90d2cb1c93b5",
+              "statement-id": "mp-5_smt.a.",
+              "uuid": "8acd2e10-6bed-406e-959e-52680126c4b3",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4d4b1694-ad6d-4136-8f3c-a3f4d033987a",
-                  "description": "Add control implementation description here for item mp-5_smt.d"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "8e235d0c-3134-4be3-9e9a-5ee2daaeee2c",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "6103f996-da70-4d27-8f90-2628da9b0701",
+          "uuid": "e6ce8f45-76d5-4fef-a2a7-ccbc3d84285f",
+          "control-id": "mp-5",
+          "statements": [
+            {
+              "statement-id": "mp-5_smt.b.",
+              "uuid": "0773cbdf-8520-4cc9-8fac-f2a36b22b691",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "afbe8b16-2e7c-4924-9a53-14d31fd2f365",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "58a357c6-813c-4ce7-af50-e257b4360459",
+          "control-id": "mp-5",
+          "statements": [
+            {
+              "statement-id": "mp-5_smt.c.",
+              "uuid": "2404699c-4906-4dcf-952f-48968475f0d3",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "ead5ffd9-c604-4da5-b298-23b262255f3c",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ef138b9a-9981-4425-9a92-532e2d9d5249",
+          "control-id": "mp-5",
+          "statements": [
+            {
+              "statement-id": "mp-5_smt.d.",
+              "uuid": "00ca1e15-0bf9-4082-b662-e38fd316a7c7",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "df7adafa-2a63-4eee-97bc-d53f3c8a93e4",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "e948d0bd-d960-430f-9b35-040fb14505a5",
           "control-id": "sa-2",
           "statements": [
             {
               "statement-id": "sa-2_smt.c.",
-              "uuid": "9df25a47-8061-4394-8210-64d43b7a4feb",
+              "uuid": "a617b277-2ffc-4d01-9a48-0c7fa4eeac61",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "c657d286-8477-450f-aab7-6230436f381d",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b9c485e4-514c-47cf-9dfc-3465d5ed7324",
                   "description": "Add control implementation description here for item sa-2_smt.c"
                 }
               ]
@@ -886,16 +1243,16 @@
           ]
         },
         {
-          "uuid": "d4ba05f9-9024-4abe-adab-89bf32d8738d",
+          "uuid": "733c6100-2eb2-42bd-9bd7-f8c303e2a3cb",
           "control-id": "sa-22",
           "statements": [
             {
               "statement-id": "sa-22_smt.b.",
-              "uuid": "c27dbb81-34bb-4981-9004-1ef3b26b1172",
+              "uuid": "5dba5983-746d-4e4f-8e43-93bb868444db",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "32641d14-e84b-467f-8734-aec9470d67eb",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "72254749-797a-4138-9f36-3fad14f42d03",
                   "description": "Add control implementation description here for item sa-22_smt.b"
                 }
               ]
@@ -903,16 +1260,16 @@
           ]
         },
         {
-          "uuid": "76d06416-3aab-4f51-b100-b787486b9181",
+          "uuid": "7a0742a5-ef51-4bff-855e-7c821cd66b33",
           "control-id": "pl-4.1",
           "statements": [
             {
               "statement-id": "pl-4.1_smt.c",
-              "uuid": "c3b77487-68a9-4e94-9b36-265f89e57865",
+              "uuid": "5fdc3e89-c506-465d-8dfe-a8af8707dd57",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4cdb7925-6aa9-48f3-bb8b-1bb76a5bd62d",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2081d538-66b7-4545-b0ed-d6ebc88f7b78",
                   "description": "Add control implementation description here for item pl-4.1_smt.c"
                 }
               ]
@@ -920,33 +1277,84 @@
           ]
         },
         {
-          "uuid": "29ac156c-d984-4add-b65d-961ac64a7f98",
+          "uuid": "2f8b9136-ff4d-4a8d-95cb-6b0956044e3e",
           "control-id": "ma-3.3",
           "statements": [
             {
-              "statement-id": "ma-3.3_smt.d",
-              "uuid": "6fe0492c-0474-46a5-a6ac-f3ae0e15d9a0",
+              "statement-id": "ma-3.3_smt.a",
+              "uuid": "b55d070f-ddfd-405c-be96-b2555b33d035",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "79156065-d8f1-4aac-ab84-fba4593af51b",
-                  "description": "Add control implementation description here for item ma-3.3_smt.d"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f40f50a2-30a1-4700-91dd-16ef82bf9da9",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "2a68122d-0886-4647-bf6e-122f78acd613",
+          "uuid": "501c613e-70de-4e98-89f9-28612e5af53e",
+          "control-id": "ma-3.3",
+          "statements": [
+            {
+              "statement-id": "ma-3.3_smt.b",
+              "uuid": "b982d2ad-6482-43ef-b10f-ac96ebdc7361",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3875a9cc-5dd8-4799-84a9-ddb60d04775b",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a6717115-eb8b-4dcc-a660-a42de66a1e02",
+          "control-id": "ma-3.3",
+          "statements": [
+            {
+              "statement-id": "ma-3.3_smt.c",
+              "uuid": "996d422a-b4bd-4778-b98c-c08f0aada7be",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b648ff27-c38a-4141-aa98-6ce12567211d",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a66bcb42-6cf5-4876-a9ec-5711d3cd8cc1",
+          "control-id": "ma-3.3",
+          "statements": [
+            {
+              "statement-id": "ma-3.3_smt.d",
+              "uuid": "3481bd64-ea6e-4d26-b634-dc9ca08e03ef",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "642e9f50-0539-492c-a142-0294638d7e7e",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "9e982cda-faae-4aa9-8001-16bc08eb56dd",
           "control-id": "ps-6",
           "statements": [
             {
               "statement-id": "ps-6_smt.c.",
-              "uuid": "950578fd-08e2-4360-9465-d419be36e066",
+              "uuid": "18c0e9f9-2422-40d8-bc37-020048fdbb13",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "f48d75e7-c119-4898-abe0-6b098eaeb576",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a0ca784d-4a9f-4ca1-ad8e-95b53af33814",
                   "description": "Add control implementation description here for item ps-6_smt.c"
                 }
               ]
@@ -954,16 +1362,50 @@
           ]
         },
         {
-          "uuid": "f9b3fbd4-ba56-4e78-9f7b-bd8a9d5df110",
+          "uuid": "3b6a9a3f-adb5-46cd-8f10-d9747be2f504",
+          "control-id": "ac-6.9",
+          "statements": [
+            {
+              "statement-id": "ac-6.9_smt.top_level_description",
+              "uuid": "a0639a15-560c-4047-8aa5-ae65a15ab54b",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c805b4df-9380-44ab-b958-2595ef417eac",
+                  "description": "cloud.gov automatically logs privileged actions taken within cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f08c02f7-f12c-499e-aafd-e6f7548da5ea",
+          "control-id": "pe-6.1",
+          "statements": [
+            {
+              "statement-id": "pe-6.1_smt.top_level_description",
+              "uuid": "c19c3a6d-8ec9-4436-9099-951091b6e583",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "45094f51-f9b8-4e13-a2f4-d43d36a560ef",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "50d0a5cc-857f-408a-a6f6-095fe7b383e0",
           "control-id": "cp-7",
           "statements": [
             {
               "statement-id": "cp-7_smt.c.",
-              "uuid": "030f6000-db77-4181-98da-c9642fd1103c",
+              "uuid": "9f74bb05-a95f-4ea6-83dc-504b6adf8ea4",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "2ab3cf03-7889-4fe1-ba64-e69b6434bdd9",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "5f7bdeda-8436-40a0-b468-caae2087c90f",
                   "description": "Add control implementation description here for item cp-7_smt.c"
                 }
               ]
@@ -971,33 +1413,50 @@
           ]
         },
         {
-          "uuid": "4cd33bd1-c17e-4c03-9319-dd3d0b748c87",
+          "uuid": "21c63baf-3bd0-40fe-9345-919bbd6b1f44",
           "control-id": "mp-4",
           "statements": [
             {
-              "statement-id": "mp-4_smt.b.",
-              "uuid": "a2d2cf1e-e026-45ef-af54-96d1ab74501a",
+              "statement-id": "mp-4_smt.a.",
+              "uuid": "85d66b9a-80a3-4987-863c-aaa58ba984ac",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4adeda0a-f296-4c5a-a003-719e1ad0e6ba",
-                  "description": "Add control implementation description here for item mp-4_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fd334c25-f450-4e2e-9e94-9166aa21e406",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "4f5fb290-b05e-4667-9e95-24bfbb7312f9",
+          "uuid": "0c5322f9-c3e8-4840-83d9-e2d15f946547",
+          "control-id": "mp-4",
+          "statements": [
+            {
+              "statement-id": "mp-4_smt.b.",
+              "uuid": "033c6665-c22e-4e82-8550-889bec85b1da",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c846ab0c-dfb5-4a39-a9ac-fb4162d90cad",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "429e8bf5-5e0a-4ad6-a59d-b4cd5d857cbe",
           "control-id": "sc-13",
           "statements": [
             {
               "statement-id": "sc-13_smt.b.",
-              "uuid": "113e4af5-8469-4fc1-8542-b80db31eb123",
+              "uuid": "1252f952-d40c-4d76-bda3-ee871fa9e4fd",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "6075c6bc-e75d-4a44-ac4f-bd8eab1894fb",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "cb2e3c20-8c90-4ebe-94d0-9856ae708512",
                   "description": "Add control implementation description here for item sc-13_smt.b"
                 }
               ]
@@ -1005,16 +1464,16 @@
           ]
         },
         {
-          "uuid": "fe07c897-74a0-4d26-8665-925f6e344cc0",
+          "uuid": "887f474f-aadf-4622-89d3-87ef8e0e342b",
           "control-id": "sc-5",
           "statements": [
             {
               "statement-id": "sc-5_smt.b.",
-              "uuid": "a74cd4fc-d3be-44a9-8cd4-6e83d3dba821",
+              "uuid": "dbbc63a2-214f-4bf8-9ec7-009854b72a6c",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "7156b3b4-6b0e-4723-a16a-f460b6cbae9e",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7eebc736-c328-415a-9464-6922ee94a48d",
                   "description": "Add control implementation description here for item sc-5_smt.b"
                 }
               ]
@@ -1022,16 +1481,33 @@
           ]
         },
         {
-          "uuid": "a8272a1f-e898-49c0-bb16-f6d260973a25",
+          "uuid": "d1b9fbbc-907b-4ac0-bf30-c368df50915c",
+          "control-id": "cp-8.2",
+          "statements": [
+            {
+              "statement-id": "cp-8.2_smt.top_level_description",
+              "uuid": "519551f0-9bc6-466d-b272-2ced09b41428",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7cc02203-97ed-4e08-bce2-bf67a4048330",
+                  "description": "cloud.gov leverages redundant telecommunications services from AWS GovCloud."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "331d87a0-bf45-4e44-8852-2f51b6f6e612",
           "control-id": "sa-3",
           "statements": [
             {
               "statement-id": "sa-3_smt.d.",
-              "uuid": "30380966-2eef-46fa-af70-31ccd64da59a",
+              "uuid": "4b3104e9-59ac-4088-ac45-c5b2fddf9979",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "28400bd1-9c10-4710-9afc-ba3ab641b3c2",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "ab57ae36-e0da-4039-a296-3a73e04f6b84",
                   "description": "Add control implementation description here for item sa-3_smt.d"
                 }
               ]
@@ -1039,16 +1515,33 @@
           ]
         },
         {
-          "uuid": "7bced259-e97e-4a7f-a2dc-d22b00b7df4a",
+          "uuid": "ee293b54-2edd-4997-895e-6fa8dfff7ef5",
+          "control-id": "ma-3.2",
+          "statements": [
+            {
+              "statement-id": "ma-3.2_smt.top_level_description",
+              "uuid": "89ccde35-91e2-4ab0-b0ce-5c7be3b69c08",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fad39b04-6d58-4db0-b8e6-aa5bc34f59a7",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "0f12ba9f-7f72-44c6-b565-333d30b530fb",
           "control-id": "si-11",
           "statements": [
             {
               "statement-id": "si-11_smt.b.",
-              "uuid": "6692ca86-47b8-4ab5-ac36-1ef6bc338384",
+              "uuid": "b8e893a3-8051-4cb2-b35c-fa074d0fc997",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "447cc38d-ee18-49a2-b77a-dd97db718d5b",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b071cce0-d7ea-43f6-aa4b-2ce67418bc03",
                   "description": "Add control implementation description here for item si-11_smt.b"
                 }
               ]
@@ -1056,16 +1549,16 @@
           ]
         },
         {
-          "uuid": "1401ac79-1618-4900-9efb-bd7c3090f4a7",
+          "uuid": "ed32a7fe-d43a-40a0-816d-a3101b2f6fc0",
           "control-id": "sr-11",
           "statements": [
             {
               "statement-id": "sr-11_smt.b.",
-              "uuid": "48952cb9-9b71-4924-be80-c2f3fbc2b5ce",
+              "uuid": "58f13b64-51cb-4785-a3fb-c7070559f125",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "f4ba5da8-167e-42ca-a9a9-85270d8addcf",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "09d5b683-06a9-4f91-88d8-280d1a6bd853",
                   "description": "Add control implementation description here for item sr-11_smt.b"
                 }
               ]
@@ -1073,33 +1566,67 @@
           ]
         },
         {
-          "uuid": "a1a589b5-78c1-4297-9c4d-197bcf4b2822",
+          "uuid": "e4bb3429-ac1c-4e67-997f-6a9f7a39d9a2",
           "control-id": "pe-1",
           "statements": [
             {
-              "statement-id": "pe-1_smt.c.",
-              "uuid": "1b6e33b0-74f2-44bb-a90b-0f7a9f016d92",
+              "statement-id": "pe-1_smt.a.",
+              "uuid": "685ed9f3-ed58-4369-992d-2e0156246dee",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "07955b80-ec4b-4d0c-9d5c-d369f93e1c54",
-                  "description": "Add control implementation description here for item pe-1_smt.c"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7da29b8b-16fb-4ce5-931d-5c812daf42bf",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "8b7447cb-d08e-4c16-b63a-d681b53f04f0",
+          "uuid": "f8e023c5-6003-4f8c-b8c3-3198f88a31a1",
+          "control-id": "pe-1",
+          "statements": [
+            {
+              "statement-id": "pe-1_smt.b.",
+              "uuid": "ea4f6e9a-c708-43a2-8552-c174c0ea9179",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fa7d016e-e1ce-4020-8908-fee34293ce17",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a8ee5147-0e5a-4b5b-a1db-0524e7904ce2",
+          "control-id": "pe-1",
+          "statements": [
+            {
+              "statement-id": "pe-1_smt.c.",
+              "uuid": "058fc71d-85b8-43dd-b61d-cb42101bb589",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "687e4e10-8157-4b22-b10d-651c7708f483",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5a66b306-be45-477b-b23f-56c6beba6a3a",
           "control-id": "ia-12",
           "statements": [
             {
               "statement-id": "ia-12_smt.c.",
-              "uuid": "ec715c11-7e0a-46cb-be18-8d98473be2bc",
+              "uuid": "578b1fc5-ee47-4a1c-a3bd-493075b4e52e",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "0dd88a35-6706-402b-9746-577c73543790",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "024ba24e-1d63-4126-a62e-76ebf3ea83ec",
                   "description": "Add control implementation description here for item ia-12_smt.c"
                 }
               ]
@@ -1107,16 +1634,84 @@
           ]
         },
         {
-          "uuid": "72706142-058f-452b-a515-85b2bac9aff9",
+          "uuid": "90227638-29fc-4d14-a330-499b210875a7",
+          "control-id": "sc-7.4",
+          "statements": [
+            {
+              "statement-id": "sc-7.4_smt.b",
+              "uuid": "d3ddd554-c8fd-4cdf-bb65-c0cc50f7241e",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "90fc648d-0c74-4b45-bc13-784bf4aeb154",
+                  "description": "cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "3539c6ff-7278-4a76-9b46-7e947802a465",
+          "control-id": "sc-7.4",
+          "statements": [
+            {
+              "statement-id": "sc-7.4_smt.c",
+              "uuid": "4ca517d7-ecaf-4758-a60d-e7e5d24a8e6b",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fa6294b4-80e1-46e5-b1ab-56930a1c95c8",
+                  "description": "cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "23f5db29-3061-4400-943b-485efb5dda84",
+          "control-id": "sc-7.4",
+          "statements": [
+            {
+              "statement-id": "sc-7.4_smt.d",
+              "uuid": "0aad759f-79e2-4e42-aee2-9b24f48ad8f3",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "14bc3303-138a-4547-a432-724940ed3d7e",
+                  "description": "cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "2d2fa310-344b-4dda-b7f1-142d56f4fd91",
+          "control-id": "sc-7.4",
+          "statements": [
+            {
+              "statement-id": "sc-7.4_smt.e",
+              "uuid": "881baba5-9d12-493f-a3a2-2b1e785e3b23",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "963214e2-8737-4c8d-aa80-258c2221ba6b",
+                  "description": "cloud.gov is responsible for monitoring, security, and policy enforcement for the configuration of external interfaces."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "68ab3338-5eb5-4fe8-a3dc-15e73a4d1c42",
           "control-id": "sc-7.4",
           "statements": [
             {
               "statement-id": "sc-7.4_smt.h",
-              "uuid": "2878b30e-beaf-4184-87d7-90a053e517f0",
+              "uuid": "ec56b452-c8de-43fc-a326-579169ca5c0b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4bc75816-2275-4297-b045-45734f1086c4",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c06d96ed-e439-4bac-9821-b52f973f0834",
                   "description": "Add control implementation description here for item sc-7.4_smt.h"
                 }
               ]
@@ -1124,16 +1719,16 @@
           ]
         },
         {
-          "uuid": "0b04ba0a-d05d-4cb4-a44e-e044958113e7",
+          "uuid": "493da84d-469d-4d9e-8bbb-faf739ae464c",
           "control-id": "ps-2",
           "statements": [
             {
               "statement-id": "ps-2_smt.c.",
-              "uuid": "d24ec70a-fe31-4ebc-a18b-01fca04c153c",
+              "uuid": "f1d29f55-e07b-4dde-870b-1078e1cf6197",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "094603ed-1f1f-455a-91aa-a6c4fff02d6c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2849afa1-71a7-4ec2-9618-f4f5ebccf72a",
                   "description": "Add control implementation description here for item ps-2_smt.c"
                 }
               ]
@@ -1141,16 +1736,16 @@
           ]
         },
         {
-          "uuid": "1f4237fd-b020-4ed1-8f54-fd6f14f788c9",
+          "uuid": "29629f5e-b88e-42d7-a9d1-8aae70f6a346",
           "control-id": "ac-19",
           "statements": [
             {
               "statement-id": "ac-19_smt.b.",
-              "uuid": "8bdf97d6-902f-40e7-80b6-c83ee83d8d0f",
+              "uuid": "b809be77-f286-42d2-bbdc-74f01f955d74",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "37216c8b-4034-4fc4-8dad-bf8bcd4c2809",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "90a7b251-b503-43d6-b386-3cc65b48e424",
                   "description": "Add control implementation description here for item ac-19_smt.b"
                 }
               ]
@@ -1158,16 +1753,16 @@
           ]
         },
         {
-          "uuid": "facadbcc-a46b-44f5-8422-adb237e2b747",
+          "uuid": "34525782-59d1-4808-b566-a4fd72fdffca",
           "control-id": "sc-1",
           "statements": [
             {
               "statement-id": "sc-1_smt.c.",
-              "uuid": "f45fa637-8861-4bd2-8516-8d3b5c53347d",
+              "uuid": "cab1929c-fc83-4530-aa08-e2dcb17b1d29",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "ca345a7e-2a53-4f17-80b1-9622e26aa94e",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "cbb023b8-5de0-4025-8e3f-f5c13dd4db5c",
                   "description": "Add control implementation description here for item sc-1_smt.c"
                 }
               ]
@@ -1175,16 +1770,16 @@
           ]
         },
         {
-          "uuid": "d5d4ef2c-f379-4ca5-ba6a-ec68533262a0",
+          "uuid": "5fb686f9-a52b-4739-bcd3-57a9deeda6e9",
           "control-id": "sc-17",
           "statements": [
             {
               "statement-id": "sc-17_smt.b.",
-              "uuid": "023df9c0-952f-4fd8-bdfe-a5aa1e161b5c",
+              "uuid": "7b9f85b2-87e6-4575-bb12-d0bdccd7077e",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "23b5a933-9d10-43ac-8e81-1c24cccb3d88",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "cbb73f26-482d-4fc3-bc16-8df4ca86b79d",
                   "description": "Add control implementation description here for item sc-17_smt.b"
                 }
               ]
@@ -1192,16 +1787,16 @@
           ]
         },
         {
-          "uuid": "dd8dd16e-9146-498a-813b-e28bd4a315bb",
+          "uuid": "70e5ff41-f21c-4516-9a34-70cf7c174cd0",
           "control-id": "cp-3",
           "statements": [
             {
               "statement-id": "cp-3_smt.b.",
-              "uuid": "67fa257e-18bc-45fa-b000-b3b88b8b8052",
+              "uuid": "0e4a9e38-380e-49bd-b146-221b953234fa",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "662b2a23-baaa-4ec4-bc0b-817c624140a9",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f8a1f6b9-9adc-48c7-929e-5a6a90526f57",
                   "description": "Add control implementation description here for item cp-3_smt.b"
                 }
               ]
@@ -1209,16 +1804,33 @@
           ]
         },
         {
-          "uuid": "ef42b16a-a00b-4beb-9dac-1040ae0a006a",
+          "uuid": "4253caad-30d4-4a98-acb3-c871ecbfa6fb",
+          "control-id": "sc-23",
+          "statements": [
+            {
+              "statement-id": "sc-23_smt.top_level_description",
+              "uuid": "49a63333-6fff-4bb1-9f69-d3c7f3eff2cc",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c74ad323-1def-43ce-9f6d-951dacda4295",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "b03b558e-affa-4ecd-bbed-04fffb5d184f",
           "control-id": "pl-8",
           "statements": [
             {
               "statement-id": "pl-8_smt.c.",
-              "uuid": "5c357e24-9e5d-4d82-91f6-a159e347d882",
+              "uuid": "aef4592e-bd07-4256-b5d6-8bee6e96014d",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "573b95d2-3dd7-4a34-8563-a4057e75b0a0",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "acfd4a41-02a1-4815-9b00-9c2ab05de39b",
                   "description": "Add control implementation description here for item pl-8_smt.c"
                 }
               ]
@@ -1226,16 +1838,50 @@
           ]
         },
         {
-          "uuid": "c83ee9ef-00b6-498e-926b-f36ec029e2b8",
+          "uuid": "c17961c0-67ad-46c7-aebd-1d01a3f61826",
+          "control-id": "pe-5",
+          "statements": [
+            {
+              "statement-id": "pe-5_smt.top_level_description",
+              "uuid": "8519d486-7945-460f-ba59-38285ab39930",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d530cb28-5a40-465e-bfe0-302c87a7d941",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5a937ebf-1e64-4760-bd84-b2f0bf36b853",
+          "control-id": "sc-7.3",
+          "statements": [
+            {
+              "statement-id": "sc-7.3_smt.top_level_description",
+              "uuid": "01513bc6-81e5-46bf-b48e-77bc7e46c742",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2e7de788-db8b-4c0a-b879-a56eaa3af317",
+                  "description": "cloud.gov controls and limits the set of networks that can be used to reach the customer application."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f59ade76-3a4f-46c2-9c3e-349dfe2b3a69",
           "control-id": "ps-5",
           "statements": [
             {
               "statement-id": "ps-5_smt.d.",
-              "uuid": "4dc6ca2b-a33f-4c9d-9f2d-89268737de82",
+              "uuid": "21426f64-86ef-42d6-a092-f9baea208721",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "abb053b9-5c60-426a-be48-234e37fac62f",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "dfbb5f57-7e9a-43e8-84df-7f9242593839",
                   "description": "Add control implementation description here for item ps-5_smt.d"
                 }
               ]
@@ -1243,16 +1889,16 @@
           ]
         },
         {
-          "uuid": "817c5eff-0e02-43e0-9199-67ed02a8b18b",
+          "uuid": "4ebe3709-25e8-48e9-814b-05c350472232",
           "control-id": "cm-8",
           "statements": [
             {
               "statement-id": "cm-8_smt.b.",
-              "uuid": "1e29e2c4-350f-4686-ae85-6e5ac0cbed1d",
+              "uuid": "1050efb7-74a3-4710-b8f5-9af749d98bd1",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "2d26b632-0ce3-4760-9500-303d55fb88bf",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "57212fa8-778f-45fc-9415-e230af3e18a5",
                   "description": "Add control implementation description here for item cm-8_smt.b"
                 }
               ]
@@ -1260,33 +1906,50 @@
           ]
         },
         {
-          "uuid": "56579d85-771e-4c74-99d2-04fdf3cca5ad",
+          "uuid": "58895235-f960-4ebb-b2b6-6a652dfff143",
           "control-id": "mp-7",
           "statements": [
             {
-              "statement-id": "mp-7_smt.b.",
-              "uuid": "3c8a9258-3212-4713-962d-78a120cdd987",
+              "statement-id": "mp-7_smt.a.",
+              "uuid": "c1e1cc17-c695-436b-81ef-8e2c7221712b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "63ce9c49-8c28-4513-884a-586a302e3dd7",
-                  "description": "Add control implementation description here for item mp-7_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a3a1a629-fb64-42de-94d8-f63d2067ad8a",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "500d14c0-71cf-4939-97ab-6d8e3e65b5e1",
+          "uuid": "5499a6e1-99c5-48f7-a0d3-af880e313a89",
+          "control-id": "mp-7",
+          "statements": [
+            {
+              "statement-id": "mp-7_smt.b.",
+              "uuid": "ae5a4123-e881-44e1-8730-59e70e899952",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "5b580543-606e-4468-982e-a37e074a336a",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c41da1fc-1023-4bf7-b0e7-2e54295b3e21",
           "control-id": "cp-4",
           "statements": [
             {
               "statement-id": "cp-4_smt.c.",
-              "uuid": "f61deec2-3e0a-4eb9-8b14-4fa07998bf44",
+              "uuid": "8f87e264-bea3-4e79-a0a0-629ea170305a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4f826ba4-8631-4cd7-beb8-3cd7754033ee",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a4610a75-8823-4c08-a1cd-e7110b972998",
                   "description": "Add control implementation description here for item cp-4_smt.c"
                 }
               ]
@@ -1294,50 +1957,135 @@
           ]
         },
         {
-          "uuid": "818b3a15-e80b-4549-80c1-5a05ccaa4361",
+          "uuid": "40fffd4e-f55a-4786-bd0e-432c86c6f9af",
+          "control-id": "cp-8.1",
+          "statements": [
+            {
+              "statement-id": "cp-8.1_smt.a",
+              "uuid": "176f2184-d4d8-4c39-8555-e580cfbe4515",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d72aabc7-bb23-4532-a1be-1cfb6568539a",
+                  "description": "cloud.gov leverages redundant telecommunications services from AWS GovCloud."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "db030cee-ad36-494f-a35f-33f2574ed1a7",
           "control-id": "cp-8.1",
           "statements": [
             {
               "statement-id": "cp-8.1_smt.b",
-              "uuid": "cd791c14-1e18-4719-8a1e-cf45a20fb509",
+              "uuid": "1b1753db-1364-4e97-bdad-362e33b66bcc",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "e05d5c0d-1616-42ab-b20a-e98827145ec8",
-                  "description": "Add control implementation description here for item cp-8.1_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "08aa3047-59fb-4879-9013-59817d3988e9",
+                  "description": "cloud.gov leverages redundant telecommunications services from AWS GovCloud."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "a0fe6fa9-a1f6-4849-a950-b91ee06f7e52",
+          "uuid": "9dfdcf8a-4218-4fe0-b21b-7334f4616aa0",
+          "control-id": "ma-3.1",
+          "statements": [
+            {
+              "statement-id": "ma-3.1_smt.top_level_description",
+              "uuid": "0b933203-ce28-4b45-ac67-c4daf88b58fb",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3a52c3fe-cd44-470c-81b7-29d22532f4f5",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "7fdd5ddc-bc45-468a-bf74-669626772733",
+          "control-id": "pe-2",
+          "statements": [
+            {
+              "statement-id": "pe-2_smt.a.",
+              "uuid": "2979e461-eb31-42df-a216-acbfe9443baf",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "71114e06-20bf-42e4-8a90-78766f7885b3",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "b3b5811d-668d-4924-818d-da11571861d5",
+          "control-id": "pe-2",
+          "statements": [
+            {
+              "statement-id": "pe-2_smt.b.",
+              "uuid": "de8e51ec-e26f-41d5-91d8-e46972c3d871",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "e016f5f7-7dff-4221-8347-e91be0607c8f",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "88d1a447-dd3f-4fbb-97c3-f18b0abcffe8",
+          "control-id": "pe-2",
+          "statements": [
+            {
+              "statement-id": "pe-2_smt.c.",
+              "uuid": "25088860-d601-489e-849b-e2e556e760d4",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "45710eca-7b94-49a0-9faa-3aacab0b6ef5",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "05c820cf-9c70-4611-9020-06e9336564ac",
           "control-id": "pe-2",
           "statements": [
             {
               "statement-id": "pe-2_smt.d.",
-              "uuid": "f3fa479f-1c77-486d-9f6d-2bae399a11bc",
+              "uuid": "587467e0-1c5f-4fde-a171-7248b34b02f7",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "fd9079d7-b282-4fe6-9e4f-a5caf8b670c8",
-                  "description": "Add control implementation description here for item pe-2_smt.d"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "03ad4847-9820-49be-9b39-13730f2f22d0",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "7002e3fb-9834-4c46-a978-f144616d1fae",
+          "uuid": "5a472686-07ce-4d69-8469-352b9f00f68b",
           "control-id": "au-9",
           "statements": [
             {
               "statement-id": "au-9_smt.b.",
-              "uuid": "41ada017-122f-4516-a94d-34fb9f778c93",
+              "uuid": "e821eb06-1fe8-44bc-b8e9-93d77cc008dc",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "f36d085c-d36e-4ec3-b005-32828f2009a8",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b2b57fd6-be07-488b-b122-99b43f263aa1",
                   "description": "Add control implementation description here for item au-9_smt.b"
                 }
               ]
@@ -1345,16 +2093,16 @@
           ]
         },
         {
-          "uuid": "bc7e7d54-06d7-4083-adbc-5dd539584b5f",
+          "uuid": "046ff84e-70dc-4a9a-8d13-f8d9f77a78b5",
           "control-id": "cm-7.5",
           "statements": [
             {
               "statement-id": "cm-7.5_smt.c",
-              "uuid": "f9ecd323-27bb-4da6-9872-b3bd8eeeb8c8",
+              "uuid": "711f8db3-7f97-4742-b47c-280fc2eace8f",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "6be5dc33-aa76-4224-be99-041c9854615f",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2030ca2f-1070-4436-aabe-16735981823a",
                   "description": "Add control implementation description here for item cm-7.5_smt.c"
                 }
               ]
@@ -1362,16 +2110,16 @@
           ]
         },
         {
-          "uuid": "e6c3c37f-31a9-4225-bc4d-b0cc090cac92",
+          "uuid": "edade3f3-67f7-4fd1-97eb-0cc22edf8183",
           "control-id": "ir-4",
           "statements": [
             {
               "statement-id": "ir-4_smt.d.",
-              "uuid": "e804a335-e620-4096-934e-d9b9f0e13e0e",
+              "uuid": "dd08811e-04b5-46fe-b24a-c50d5d68d92d",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "f4cec7cf-3f74-439e-93d5-330bedc22cad",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "1e3a9d27-cdac-45a3-b07f-94102b303725",
                   "description": "Add control implementation description here for item ir-4_smt.d"
                 }
               ]
@@ -1379,16 +2127,16 @@
           ]
         },
         {
-          "uuid": "ddbbad54-cbd9-4974-b177-16db30bd0217",
+          "uuid": "0443cfd2-aa2f-49d7-ba54-0f8d95682c4e",
           "control-id": "si-8",
           "statements": [
             {
               "statement-id": "si-8_smt.b.",
-              "uuid": "e6598ea3-9b6c-472a-9d2c-5a683a4da9d3",
+              "uuid": "176c8e9e-b895-46da-bf08-fd2ed0a9c34b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "6ed4b841-7d68-4d07-8c77-5a811364430d",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3e19b20a-121b-4c85-b938-2ea8b70cebf4",
                   "description": "Add control implementation description here for item si-8_smt.b"
                 }
               ]
@@ -1396,16 +2144,16 @@
           ]
         },
         {
-          "uuid": "ebb3f8b8-eb6c-4404-b22f-38cbfebfb0b5",
+          "uuid": "927b7da4-e28f-40f9-9350-46820c3f4bd9",
           "control-id": "ps-1",
           "statements": [
             {
               "statement-id": "ps-1_smt.c.",
-              "uuid": "b83dbc73-cce9-4bba-b4d1-49c35bc967c0",
+              "uuid": "21c5fdaf-01d1-47a2-bfef-89c51475d2cb",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "00db6ea8-13de-4594-a830-53d2cc883973",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "8b60f93f-105d-40a8-8cdb-1abfc0623ad8",
                   "description": "Add control implementation description here for item ps-1_smt.c"
                 }
               ]
@@ -1413,16 +2161,16 @@
           ]
         },
         {
-          "uuid": "f2ed9499-50a8-4a6a-9d19-110d23cdceea",
+          "uuid": "a9bab694-dc6f-431e-b3e0-3dfd5f6b4880",
           "control-id": "sc-20",
           "statements": [
             {
               "statement-id": "sc-20_smt.b.",
-              "uuid": "cad673a5-dc65-499d-a05a-f76daac7f89d",
+              "uuid": "0128bea3-23b6-4af5-8ce5-c46799d98286",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "1a07234f-c388-41f8-bb23-94a2061ba8dc",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a0a9adf5-2eaf-4dfd-8c32-c831585f17b4",
                   "description": "Add control implementation description here for item sc-20_smt.b"
                 }
               ]
@@ -1430,33 +2178,50 @@
           ]
         },
         {
-          "uuid": "f166b9c7-a12e-4299-96ba-e417f69cf6e3",
+          "uuid": "a49396cf-7c26-427b-988c-92e7f4ac7711",
           "control-id": "mp-3",
           "statements": [
             {
-              "statement-id": "mp-3_smt.b.",
-              "uuid": "5f56f4cc-4387-488e-be83-8eadea577cfb",
+              "statement-id": "mp-3_smt.a.",
+              "uuid": "1d1e97e8-1ff7-4ff6-8ada-e4a82b8b2099",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "a3240777-4b92-4ce7-8e93-a575d17706d2",
-                  "description": "Add control implementation description here for item mp-3_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "20cf166c-89c0-4c36-89b9-0486dc3dec88",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "611546e5-e48f-4a4b-89c1-fa8e9014d8d9",
+          "uuid": "0c781cfe-16e6-4a54-83b0-b4678b3728d9",
+          "control-id": "mp-3",
+          "statements": [
+            {
+              "statement-id": "mp-3_smt.b.",
+              "uuid": "ee3769bb-59bf-4c49-ab2a-4c57c41deaa8",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "645f5191-6cf8-4c8e-98b8-168306b8495b",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "761d4f11-8943-466c-904e-3d539fcf989a",
           "control-id": "sa-4",
           "statements": [
             {
               "statement-id": "sa-4_smt.i.",
-              "uuid": "68fa2617-0ce0-4020-ac80-b8f35f8f1bc7",
+              "uuid": "d265da49-b5ab-4292-8b9d-5efb9a582a09",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "e2fd8004-66ab-4f82-ba70-1f10b6c7024e",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b1c84473-0387-455c-831e-75d3b7400920",
                   "description": "Add control implementation description here for item sa-4_smt.i"
                 }
               ]
@@ -1464,16 +2229,16 @@
           ]
         },
         {
-          "uuid": "85f7c166-eaf3-429c-a7dd-02bb1b639714",
+          "uuid": "53fb33fe-9aa2-4bb0-9460-a5aec34312ee",
           "control-id": "sa-10",
           "statements": [
             {
               "statement-id": "sa-10_smt.e.",
-              "uuid": "19a1409a-7a6e-4749-b760-6f295397a72f",
+              "uuid": "f70de0a8-ca3b-4e7c-ac03-db8c4cc04668",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "33480b26-a0a4-4b28-b118-62d087b307f0",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fc864cc4-1f09-4497-9130-cd068da152a3",
                   "description": "Add control implementation description here for item sa-10_smt.e"
                 }
               ]
@@ -1481,16 +2246,16 @@
           ]
         },
         {
-          "uuid": "1b804b13-f69e-489a-a72a-25fd35ee7e7d",
+          "uuid": "ca2d037f-92fc-4dea-8993-1e344afff71d",
           "control-id": "cm-7.1",
           "statements": [
             {
               "statement-id": "cm-7.1_smt.b",
-              "uuid": "9337d5f8-2abd-4e93-96f7-45e3ce6122d1",
+              "uuid": "e427c9c0-1447-4c75-b173-825a4c2c03e3",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "c60f471e-db64-4174-bd38-3aebd9258e12",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a9dc2a11-71e8-4c1b-8a8c-8ffb2abfa8e3",
                   "description": "Add control implementation description here for item cm-7.1_smt.b"
                 }
               ]
@@ -1498,33 +2263,84 @@
           ]
         },
         {
-          "uuid": "29f6abb8-bda5-4bec-866c-1c73c6dd1c28",
+          "uuid": "3034bcca-eb3b-44d9-9934-e7135a222072",
           "control-id": "pe-6",
           "statements": [
             {
-              "statement-id": "pe-6_smt.c.",
-              "uuid": "c41e094f-cd7b-4c49-a991-3beebe36b33e",
+              "statement-id": "pe-6_smt.a.",
+              "uuid": "dc7fec29-acaf-4578-a7cb-f00c12f5586b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "d68869e0-def2-4bf7-800c-b9fe6e4e354c",
-                  "description": "Add control implementation description here for item pe-6_smt.c"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "39e9a3e5-29f0-4ec6-b15b-b0cbba326e40",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "a8d57ebd-296c-44b3-87e4-394e4a0f6b85",
+          "uuid": "e0f79b4a-009e-4af1-b337-f2728961a697",
+          "control-id": "pe-6",
+          "statements": [
+            {
+              "statement-id": "pe-6_smt.b.",
+              "uuid": "d9e9eff1-193d-4b57-924d-5abb55d69b87",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7e990374-f636-4c73-979d-1eb8153f8332",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "11248063-227c-4d60-9112-041c3e31f399",
+          "control-id": "pe-6",
+          "statements": [
+            {
+              "statement-id": "pe-6_smt.c.",
+              "uuid": "e6bee47f-184e-4d8f-9d31-5a1548b34784",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "460859b5-9d90-4df0-b044-754fbbde108e",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "4e1a5e17-fd70-4c92-ac02-238e7577df99",
+          "control-id": "si-16",
+          "statements": [
+            {
+              "statement-id": "si-16_smt.top_level_description",
+              "uuid": "159e00a6-9cc2-4367-9084-e27f56b99b60",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b3042caa-0633-4530-bd69-18a62d4b34c2",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "13e412a4-5206-4450-bca7-608e5339ea1c",
           "control-id": "ca-9",
           "statements": [
             {
               "statement-id": "ca-9_smt.d.",
-              "uuid": "532a92dc-bea5-4c8e-83da-f13b27beec15",
+              "uuid": "60a8050a-fd23-4271-a2a7-0778f7519d26",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "41f284bc-40a7-4ec8-b04c-7b186ae61488",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "496f123d-a242-4c7a-87f2-9baf4ec3e2bf",
                   "description": "Add control implementation description here for item ca-9_smt.d"
                 }
               ]
@@ -1532,16 +2348,16 @@
           ]
         },
         {
-          "uuid": "f07f7d3d-7448-47d0-9168-0657f2593165",
+          "uuid": "ba5309ef-22bc-4108-961c-7397923ed341",
           "control-id": "sc-15",
           "statements": [
             {
               "statement-id": "sc-15_smt.b.",
-              "uuid": "c210372a-0c92-48b1-a6d8-e32d90461a49",
+              "uuid": "e23e02c3-3385-40c7-be71-8c615080a3f8",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "b4b867ba-3495-4695-8c33-9fc957c111aa",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c792a3be-0262-41f1-8866-ae4238f93af9",
                   "description": "Add control implementation description here for item sc-15_smt.b"
                 }
               ]
@@ -1549,16 +2365,16 @@
           ]
         },
         {
-          "uuid": "ce04d106-4b2c-43c6-bfb5-e11928640381",
+          "uuid": "9dd0b969-1480-4b0d-ac90-a3bb02c6fd75",
           "control-id": "cp-1",
           "statements": [
             {
               "statement-id": "cp-1_smt.c.",
-              "uuid": "b36cfe9f-4f05-435f-975d-15e1e64b7d3e",
+              "uuid": "01f74744-2b2b-412e-acb1-8539a3309edc",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "65667b82-4c08-4690-b500-6b972c2c57df",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "1fbbce53-4a06-4200-936a-930008a5a196",
                   "description": "Add control implementation description here for item cp-1_smt.c"
                 }
               ]
@@ -1566,16 +2382,50 @@
           ]
         },
         {
-          "uuid": "a13ed108-edba-4f27-b400-fd91185d3589",
+          "uuid": "8e00a325-a1d0-4a38-8109-9f324e95517b",
+          "control-id": "sc-21",
+          "statements": [
+            {
+              "statement-id": "sc-21_smt.top_level_description",
+              "uuid": "4d15d1bd-8262-457e-b775-641747b30497",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d5dd9839-aa55-43e0-8e41-dce67581e866",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f9ea6225-e688-4f9d-8656-bc3373a1196a",
+          "control-id": "mp-2",
+          "statements": [
+            {
+              "statement-id": "mp-2_smt.top_level_description",
+              "uuid": "25f699ec-4ad1-4ea3-8b09-b3aff7802bb0",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "15672088-c289-49f4-a208-8484b1a0cc64",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "61851bb6-7970-42f0-8263-a9072c3bce0e",
           "control-id": "sa-5",
           "statements": [
             {
               "statement-id": "sa-5_smt.d.",
-              "uuid": "c0961d31-b7b6-4d91-99dc-6902b7e4b9a7",
+              "uuid": "2e61657a-de89-4eb9-af11-86a188cb6516",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "764e7dfa-c4d1-44ca-a2e5-06197dd4cfc7",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d4eb0e24-b6d5-4184-ad21-127bb1343ef1",
                   "description": "Add control implementation description here for item sa-5_smt.d"
                 }
               ]
@@ -1583,16 +2433,16 @@
           ]
         },
         {
-          "uuid": "377a9abf-f77d-4947-90fc-f9f6d4d0a6a7",
+          "uuid": "97a6fbfa-c7ef-46e3-9e47-7982471a8f53",
           "control-id": "sa-11",
           "statements": [
             {
               "statement-id": "sa-11_smt.e.",
-              "uuid": "f50d447e-b3de-4662-947a-b36e1d448e1f",
+              "uuid": "08f2bcc7-6a51-4a58-a8bb-3f9ccbf69e8a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "cfa4c368-bc40-4868-bc08-65eabdb9f0f6",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "358ebc5d-1c21-4701-b1e9-94b6b302425a",
                   "description": "Add control implementation description here for item sa-11_smt.e"
                 }
               ]
@@ -1600,16 +2450,16 @@
           ]
         },
         {
-          "uuid": "110ebd63-22f7-43df-b14e-f698e991f493",
+          "uuid": "e23edfc0-9f3f-4155-bd24-01289ddb4f14",
           "control-id": "cm-8.3",
           "statements": [
             {
               "statement-id": "cm-8.3_smt.b",
-              "uuid": "78791598-10c9-495f-a37f-b83702ff6c60",
+              "uuid": "cd47afbd-a7e5-4ddf-acaf-bd8054953ee1",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "6fd3d0dd-6d88-46ac-b5fe-fb84913ed2ee",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7b00bd96-0d03-4f35-b426-632aa4861519",
                   "description": "Add control implementation description here for item cm-8.3_smt.b"
                 }
               ]
@@ -1617,16 +2467,16 @@
           ]
         },
         {
-          "uuid": "5008747d-f773-4f31-88a1-44d609eb1be2",
+          "uuid": "9b85d6c5-0aab-400b-ab74-7579a1cff653",
           "control-id": "au-12",
           "statements": [
             {
               "statement-id": "au-12_smt.c.",
-              "uuid": "1d17c83b-7060-41bb-a5df-f66e68cc2bc1",
+              "uuid": "e6256967-de48-45b6-af88-f09b71602ab5",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "7b5027a1-0725-464f-a7e9-a7356083966e",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f537b4c5-38e8-425d-8944-9444150bbbea",
                   "description": "Add control implementation description here for item au-12_smt.c"
                 }
               ]
@@ -1634,16 +2484,33 @@
           ]
         },
         {
-          "uuid": "47e293ab-e687-4de5-82e7-2bd03b972de6",
+          "uuid": "efd8b379-ba1b-4b1a-8e9f-ea89cfe8aee3",
+          "control-id": "sc-8.1",
+          "statements": [
+            {
+              "statement-id": "sc-8.1_smt.top_level_description",
+              "uuid": "06993a7c-6db5-4645-b572-a24248cfd2ca",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "effc38b3-41b2-4c42-b791-0df251d3e2e9",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "8502232f-d7e9-4e53-81ee-d6afd4604200",
           "control-id": "ps-4",
           "statements": [
             {
               "statement-id": "ps-4_smt.e.",
-              "uuid": "18a683ae-15b5-47d8-adf9-c3f5a6932da0",
+              "uuid": "5fa6b426-b17d-4c27-a0ef-dfff5a2a0971",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "eccad887-1e74-4b99-a4e7-b2b679492244",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a7720f43-dd5e-4367-9046-c8ca42b81bc1",
                   "description": "Add control implementation description here for item ps-4_smt.e"
                 }
               ]
@@ -1651,16 +2518,16 @@
           ]
         },
         {
-          "uuid": "492a1427-62bb-48ec-9b65-e4b7dd8a495f",
+          "uuid": "9130edd4-3dbc-47eb-993e-3af6b9ead4e7",
           "control-id": "cm-9",
           "statements": [
             {
               "statement-id": "cm-9_smt.e.",
-              "uuid": "36beade0-9723-4c1b-8a91-29f480be3c75",
+              "uuid": "f9cfe273-46e9-4b90-b01e-a81b90d82e24",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "cea5cdae-2984-45d9-a6bb-5885520b4e2c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "df02719d-fb7c-40e4-a621-59c04cc1184e",
                   "description": "Add control implementation description here for item cm-9_smt.e"
                 }
               ]
@@ -1668,16 +2535,16 @@
           ]
         },
         {
-          "uuid": "fbcfaf80-5056-4502-b4c5-aab3e7de0b67",
+          "uuid": "26b828c6-6aff-4f72-8097-7432967ce758",
           "control-id": "ir-1",
           "statements": [
             {
               "statement-id": "ir-1_smt.c.",
-              "uuid": "32ee73ff-d039-4689-b478-610e03eab7d8",
+              "uuid": "4c3e3cef-f56c-4370-975d-f7a843616713",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "7f27454b-ea33-4d09-829b-250c97578f2d",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "9b8d17db-f5b8-4654-9b44-f942b280551a",
                   "description": "Add control implementation description here for item ir-1_smt.c"
                 }
               ]
@@ -1685,33 +2552,50 @@
           ]
         },
         {
-          "uuid": "981bc6f2-98b0-438f-8a7a-f32fb0e00e56",
+          "uuid": "1ca23649-628c-41c0-93ef-27464d12d534",
           "control-id": "mp-6",
           "statements": [
             {
-              "statement-id": "mp-6_smt.b.",
-              "uuid": "fb481091-d80c-4d8e-ba9e-5a69131bd78e",
+              "statement-id": "mp-6_smt.a.",
+              "uuid": "275368fa-eca6-40f5-b6fa-99b274166f3b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "85dce8f3-f9d1-4237-b682-1a08afe7f800",
-                  "description": "Add control implementation description here for item mp-6_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "6da30228-8a86-4e83-b63e-3f2acd434b0c",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "9ddb4aca-5089-43d3-a930-fb0fc1c2d266",
+          "uuid": "c688d927-37d9-48ab-9844-285938e8b296",
+          "control-id": "mp-6",
+          "statements": [
+            {
+              "statement-id": "mp-6_smt.b.",
+              "uuid": "edd36239-2e2e-447d-81da-3238ea8f226d",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "096fba53-1058-4181-9d9f-2722a961a78d",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "0f2380ec-87ed-49ac-9041-90803b4fa2b8",
           "control-id": "sc-7",
           "statements": [
             {
               "statement-id": "sc-7_smt.c.",
-              "uuid": "b6e42f49-31a7-4870-af22-e72703869616",
+              "uuid": "3ee3221d-52c0-414a-bf0c-4a9be166a0a4",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "64b5c602-5ba4-4017-8e3a-652d7eecca87",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d422a1e0-9fdf-4ae1-baf2-bdcf7d6985c7",
                   "description": "Add control implementation description here for item sc-7_smt.c"
                 }
               ]
@@ -1719,16 +2603,16 @@
           ]
         },
         {
-          "uuid": "42aca525-4de6-45e3-ba8e-193556f3dfde",
+          "uuid": "7589b28f-9647-4cc9-be96-f884715ff432",
           "control-id": "ca-7.4",
           "statements": [
             {
               "statement-id": "ca-7.4_smt.c",
-              "uuid": "c181d34e-35fc-4bab-b04e-6e80cda725c6",
+              "uuid": "e9fa7817-40b2-43b1-9022-43c193f3eed9",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "49d80a27-4fa1-4e1a-a90f-76c046e0b71b",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "510d0d26-75c2-4f53-8dfa-f25f9ecb124f",
                   "description": "Add control implementation description here for item ca-7.4_smt.c"
                 }
               ]
@@ -1736,16 +2620,16 @@
           ]
         },
         {
-          "uuid": "c7dd3928-ffd7-4003-9ae2-e3984db1ff59",
+          "uuid": "64ce3d08-3cc9-4b4c-bca6-d25094579b41",
           "control-id": "sa-15",
           "statements": [
             {
               "statement-id": "sa-15_smt.b.",
-              "uuid": "4c95dcf1-eec7-49e7-b311-219fada6afa1",
+              "uuid": "923f7027-fbd8-4362-bb29-b341eaa5a8fc",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "d540dfb2-7ad5-42a7-b269-087308430ddd",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7b5965e7-e8c2-4782-bdce-8c3882fcbbb6",
                   "description": "Add control implementation description here for item sa-15_smt.b"
                 }
               ]
@@ -1753,16 +2637,16 @@
           ]
         },
         {
-          "uuid": "eb2c8d90-b040-4060-80d1-43f141edff98",
+          "uuid": "800e3979-05d1-49fe-be4b-37e838f0def5",
           "control-id": "ac-2.3",
           "statements": [
             {
               "statement-id": "ac-2.3_smt.d",
-              "uuid": "4d8e8ac8-d342-44ef-a905-fc0a76d346ee",
+              "uuid": "728909c9-f713-477e-9047-8c7aafe7faac",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "76d59f91-f7cf-4990-8959-e4062ceef3fc",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "62d4400d-72a2-4872-b410-526a93c0535b",
                   "description": "Add control implementation description here for item ac-2.3_smt.d"
                 }
               ]
@@ -1770,16 +2654,33 @@
           ]
         },
         {
-          "uuid": "2aeae3cb-9daf-4bcb-9fb8-0fe2b252a902",
+          "uuid": "6bb35c5c-d29b-436c-b4b4-a86a80befacd",
+          "control-id": "cp-10.2",
+          "statements": [
+            {
+              "statement-id": "cp-10.2_smt.top_level_description",
+              "uuid": "a7004b48-d009-4fee-87cb-4a90cd5fee14",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "ae088768-3ab5-4f79-8416-9c9b8124decb",
+                  "description": "In accordance with application owner SLAs established with cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "272ec9af-824b-4a23-a602-e427a731fdbf",
           "control-id": "sa-1",
           "statements": [
             {
               "statement-id": "sa-1_smt.c.",
-              "uuid": "2a75f8f3-6741-4040-ba03-53b4df587773",
+              "uuid": "7bbc9245-2939-49da-b879-e627b38e1b9c",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "ffc43031-a871-4f37-96bf-b3f69e696672",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "85e77514-8d0e-45c4-8d01-ec6c77d88d2c",
                   "description": "Add control implementation description here for item sa-1_smt.c"
                 }
               ]
@@ -1787,33 +2688,152 @@
           ]
         },
         {
-          "uuid": "58ad258a-84f0-4d29-9009-28200adb221b",
-          "control-id": "pe-3",
+          "uuid": "3e7e51fa-7339-43cd-8307-7e0eb38dbd82",
+          "control-id": "ac-6.10",
           "statements": [
             {
-              "statement-id": "pe-3_smt.g.",
-              "uuid": "451a3c79-da43-432b-a0bd-8ea005d751d3",
+              "statement-id": "ac-6.10_smt.top_level_description",
+              "uuid": "11ae2341-e6d9-42dd-9854-a7a66f0ec53a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "b2f36cea-b9a2-41ad-9c72-df621ee71b44",
-                  "description": "Add control implementation description here for item pe-3_smt.g"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "eb3512de-6dec-40da-b3b3-3a17a03ad67b",
+                  "description": "The cloud.gov role-based access control system prevents non-privileged users from executing privileged functions."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "d96210bb-2806-4e3f-9f63-8dd531e1ea24",
+          "uuid": "cd3aca82-2c3b-4a06-a9e0-bf3fe4c5d937",
+          "control-id": "pe-3",
+          "statements": [
+            {
+              "statement-id": "pe-3_smt.a.",
+              "uuid": "16adffe5-c4d8-4850-8b15-2754afe2fff1",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "ac24ba1a-df73-4807-a64e-bb45f20ca936",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "9fd347f4-8f00-43ac-a8cf-fb70b4969a1c",
+          "control-id": "pe-3",
+          "statements": [
+            {
+              "statement-id": "pe-3_smt.b.",
+              "uuid": "55ac6db0-d042-4139-80dd-e7b94f7988ae",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a8d28ca9-bedb-4a52-83da-088defb41353",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "2e1e476e-391a-4277-84f8-49cb6cd22635",
+          "control-id": "pe-3",
+          "statements": [
+            {
+              "statement-id": "pe-3_smt.c.",
+              "uuid": "7d9d53b6-6b6b-4df2-be7d-96270658667a",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c573e4a1-fceb-4cfc-827d-d0dadb617085",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "0e89d80f-ab56-4d0e-9b04-3d7381d58120",
+          "control-id": "pe-3",
+          "statements": [
+            {
+              "statement-id": "pe-3_smt.d.",
+              "uuid": "958c6168-864f-4fdd-b56c-7d2e5ed8cd4c",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3d3cde42-5b20-450e-b6f2-112ec18d1a95",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "43263e91-3bc0-43aa-9928-0d03b556be85",
+          "control-id": "pe-3",
+          "statements": [
+            {
+              "statement-id": "pe-3_smt.e.",
+              "uuid": "b1dd1887-492a-48ff-bab7-80abcfebf67c",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "5c0361cf-cd5d-44c2-98b0-2c9a0aafc638",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "05ead304-f505-4ccf-80b7-dd52000c0a0d",
+          "control-id": "pe-3",
+          "statements": [
+            {
+              "statement-id": "pe-3_smt.f.",
+              "uuid": "80eb696f-35a5-4543-8243-20bed0652c95",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "64364b57-2f69-4595-82bd-5340c6022fed",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "93323743-7bec-4627-92bb-ad4d1be5487a",
+          "control-id": "pe-3",
+          "statements": [
+            {
+              "statement-id": "pe-3_smt.g.",
+              "uuid": "9dac0189-4068-460a-af71-e7bd16561d1e",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c0272ca0-e627-4b83-b9d5-216bfcf56072",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "7c3b2991-3271-40af-ac3f-ded0b5b319b7",
           "control-id": "au-8",
           "statements": [
             {
               "statement-id": "au-8_smt.b.",
-              "uuid": "36538b3f-dd6c-4f15-b48e-bc09bff06617",
+              "uuid": "ca9713df-d6ed-4f89-9e2c-f2f2297e9bdc",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "ae242fa5-1c7f-43a5-910e-f3c9c8a809ca",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "87c25205-a152-4f1a-b609-476e05222852",
                   "description": "Add control implementation description here for item au-8_smt.b"
                 }
               ]
@@ -1821,16 +2841,16 @@
           ]
         },
         {
-          "uuid": "46f82268-9a58-44d9-9e51-b717e89a5d4d",
+          "uuid": "daf8a39d-fbd3-4006-a5d9-64eb5e433560",
           "control-id": "at-2",
           "statements": [
             {
               "statement-id": "at-2_smt.d.",
-              "uuid": "bc2da8aa-af37-410f-bc37-fae7cda51b22",
+              "uuid": "fe941d89-0bf2-404c-b037-745a46d366ff",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "b2acc5de-d667-49af-8865-6272752db8f3",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "5484f6de-8d60-464d-88f7-52b6fa18f52b",
                   "description": "Add control implementation description here for item at-2_smt.d"
                 }
               ]
@@ -1838,16 +2858,16 @@
           ]
         },
         {
-          "uuid": "62c9c151-255e-43da-848a-7411c569abb0",
+          "uuid": "ba384a64-959e-4f55-a227-803874c8664c",
           "control-id": "cm-2",
           "statements": [
             {
               "statement-id": "cm-2_smt.b.",
-              "uuid": "ba4a4e7f-5819-4470-a91a-7edbc729c1d4",
+              "uuid": "3468f6ba-d5e6-474a-bc26-3deee92b5180",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "92f2c310-f2d3-4232-83e5-39d080a8eda3",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "39bb7e0c-95b3-4da4-9e41-cf0d4c7f51f7",
                   "description": "Add control implementation description here for item cm-2_smt.b"
                 }
               ]
@@ -1855,16 +2875,16 @@
           ]
         },
         {
-          "uuid": "63ab7300-10b3-4bbb-91dd-904d97b6e1a2",
+          "uuid": "6adafae7-58a2-4399-bdf8-5d84bef464ca",
           "control-id": "ac-14",
           "statements": [
             {
               "statement-id": "ac-14_smt.b.",
-              "uuid": "3dc3b211-f90c-4dd4-a25e-ddc722a8b6ea",
+              "uuid": "4642d97b-f767-4598-93aa-4441dbfdc9d7",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "3a6197cc-7f2c-4dc7-a279-e9b08706915c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7bf493b0-4449-4f85-8065-0012a4f275fb",
                   "description": "Add control implementation description here for item ac-14_smt.b"
                 }
               ]
@@ -1872,16 +2892,16 @@
           ]
         },
         {
-          "uuid": "ca5c7ace-a0ab-43d8-8e35-d036069ee537",
+          "uuid": "be4c543f-ff8c-47b8-989b-1d84ceb6766a",
           "control-id": "ca-6",
           "statements": [
             {
               "statement-id": "ca-6_smt.e.",
-              "uuid": "e34db3fe-486a-4757-94b5-837bd28d66fd",
+              "uuid": "51f3faf2-deef-4db7-9c3c-9e9ca51560d1",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "c8977449-b15b-4ca9-bfcd-3162d75b699e",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a21fb8d1-69b7-43c1-b840-5fab1a3d6247",
                   "description": "Add control implementation description here for item ca-6_smt.e"
                 }
               ]
@@ -1889,33 +2909,67 @@
           ]
         },
         {
-          "uuid": "16050cb5-3c29-4041-8a2f-7b9805f3fbae",
+          "uuid": "ebaf1187-1e79-43f1-a0b9-86f7e11504f8",
           "control-id": "ma-5",
           "statements": [
             {
-              "statement-id": "ma-5_smt.c.",
-              "uuid": "105a5dd3-9016-40ee-a294-614d3193213f",
+              "statement-id": "ma-5_smt.a.",
+              "uuid": "04f035f3-e68f-4023-8401-031f49fb4147",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "486d9e23-8685-4413-88a8-a7fed75b5a21",
-                  "description": "Add control implementation description here for item ma-5_smt.c"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c46020a4-c19b-4ac0-b0b4-7db4467be2f1",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "810022e2-78d9-460e-8bba-f045bc5ea54c",
+          "uuid": "ea74d6b5-6ded-4903-84ab-58b7a0c0ea27",
+          "control-id": "ma-5",
+          "statements": [
+            {
+              "statement-id": "ma-5_smt.b.",
+              "uuid": "4257ac94-32e8-4592-a0de-23f32cd30d70",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "1a736505-8a15-49ba-87ed-0983f2562384",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c3461196-ce75-42d4-9a19-3a5e348ee536",
+          "control-id": "ma-5",
+          "statements": [
+            {
+              "statement-id": "ma-5_smt.c.",
+              "uuid": "24111118-2f10-4a93-9ca3-733cc30cb18b",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "bed347ab-a3c6-44b1-afca-34507672f428",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "228297b2-8ceb-468a-863b-387becdebdc1",
           "control-id": "ac-20",
           "statements": [
             {
               "statement-id": "ac-20_smt.b.",
-              "uuid": "885940f5-ebc3-43cc-a25d-7f02a3c89fac",
+              "uuid": "3ffb71ca-2e64-47f4-91b2-1698c0bb5132",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "a31e704b-6a17-466f-ac4b-225ea26403e1",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "41840244-6443-49e2-9bb5-9b27b704473e",
                   "description": "Add control implementation description here for item ac-20_smt.b"
                 }
               ]
@@ -1923,33 +2977,67 @@
           ]
         },
         {
-          "uuid": "a2c3a2bf-a1dd-472e-af62-74b3bce0529b",
+          "uuid": "8db7ec27-345d-436f-8d49-2ce0c8cfafa4",
           "control-id": "pe-8",
           "statements": [
             {
-              "statement-id": "pe-8_smt.c.",
-              "uuid": "9b47d90d-b2bd-43f3-a9ae-f59882df5b45",
+              "statement-id": "pe-8_smt.a.",
+              "uuid": "9f5ff339-f4b5-412a-8c5d-83783ac4832d",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "5869c14d-0cd8-42d2-8cbd-aaaf48cd0fdf",
-                  "description": "Add control implementation description here for item pe-8_smt.c"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "b39fe9a9-855a-461f-ad59-e352c0376376",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "c5c5f482-8fca-4db4-8d34-6f28190d5ba7",
+          "uuid": "91ab3450-1ee3-422c-a464-29bb7d2937c1",
+          "control-id": "pe-8",
+          "statements": [
+            {
+              "statement-id": "pe-8_smt.b.",
+              "uuid": "2d8b9abd-3075-4d3f-baae-29aed978c873",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "1558d8aa-4a66-40cc-99a9-931d9d5ce891",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "e62f1c4d-0665-4de9-8d68-b20d3038722c",
+          "control-id": "pe-8",
+          "statements": [
+            {
+              "statement-id": "pe-8_smt.c.",
+              "uuid": "e11116e7-d68e-4ef6-a9df-aecfdcd0505c",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "8879c4f0-e91b-4a0e-8729-06660c1f9838",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "230b4e97-64cb-4891-81bc-44de48e2053e",
           "control-id": "ra-3.1",
           "statements": [
             {
               "statement-id": "ra-3.1_smt.b",
-              "uuid": "8e92877c-387f-4162-ae7f-c1ca811edef7",
+              "uuid": "0478f284-2721-47f1-9daa-5ed7b9b24e9c",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "e483e5b8-c684-4f21-8624-ac3463750a44",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "363736f7-299e-46fa-9d03-b541c282eade",
                   "description": "Add control implementation description here for item ra-3.1_smt.b"
                 }
               ]
@@ -1957,16 +3045,16 @@
           ]
         },
         {
-          "uuid": "10335298-f1bf-4051-9e00-eeb7a0c6a5cb",
+          "uuid": "b6968300-b9ae-4c3e-9a13-0c6ee59aefc6",
           "control-id": "au-3",
           "statements": [
             {
               "statement-id": "au-3_smt.f.",
-              "uuid": "604f52f0-ea3a-494d-a852-21121bbbb15d",
+              "uuid": "b39403f4-14af-4769-aa0c-cf58676556d9",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4465f4ee-4f90-43c2-a734-63f1296d156d",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "80070990-8103-48b5-a47f-822ec62c26d1",
                   "description": "Add control implementation description here for item au-3_smt.f"
                 }
               ]
@@ -1974,16 +3062,16 @@
           ]
         },
         {
-          "uuid": "d8174f70-b9d5-430a-8365-843abf299b5d",
+          "uuid": "d72622a1-5c1b-4432-9cc9-6ca7a8d92398",
           "control-id": "ia-4",
           "statements": [
             {
               "statement-id": "ia-4_smt.d.",
-              "uuid": "666d1184-8fd9-48eb-9ab5-b71cd5c6ca15",
+              "uuid": "ac4cd669-adf6-46eb-93b9-c27dc3e3329e",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "a45ccfc7-3586-464b-8a57-68940b9adabb",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2690d578-3761-4738-9b6f-d33b29113bc3",
                   "description": "Add control implementation description here for item ia-4_smt.d"
                 }
               ]
@@ -1991,33 +3079,84 @@
           ]
         },
         {
-          "uuid": "c60c8db0-88ca-451e-a104-fe42bc3a7d63",
-          "control-id": "pe-16",
+          "uuid": "7c484adb-dda7-4560-a99a-125dc42e17ad",
+          "control-id": "ac-17.2",
           "statements": [
             {
-              "statement-id": "pe-16_smt.b.",
-              "uuid": "bcb72b0d-dee3-4868-aee4-48ef8b575a71",
+              "statement-id": "ac-17.2_smt.top_level_description",
+              "uuid": "7530b45b-ffd7-4853-b5aa-33aebd5f427f",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "d740a040-18bd-463b-9523-c0a198fa05b3",
-                  "description": "Add control implementation description here for item pe-16_smt.b"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3b1a1f06-081c-444b-be30-668d9c88b54b",
+                  "description": "All remote access to cloud.gov-hosted applications happens over TLS and access to application instances happens via SSH."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "1aea24a9-7841-40f0-a456-3354fc51b6ea",
+          "uuid": "e50be3c8-afc0-4a36-9dee-adf8f3c3820e",
+          "control-id": "ac-18.1",
+          "statements": [
+            {
+              "statement-id": "ac-18.1_smt.top_level_description",
+              "uuid": "71f27b51-782b-44ef-932f-17d1f1a481cd",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "114e8e24-b5d8-43ab-a93f-dae8f2de8ace",
+                  "description": "Since cloud.gov is completely virtualized within AWS, there are no wireless capabilities possible."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "62ad5e6d-5952-47af-804d-9f69acc3d757",
+          "control-id": "pe-16",
+          "statements": [
+            {
+              "statement-id": "pe-16_smt.a.",
+              "uuid": "14aa24be-36b0-4a91-b417-9af44529ea8a",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "76c7565f-eee3-4dab-b759-bbec3f011b63",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "29ecd5db-9775-492d-a14c-deaa8b594320",
+          "control-id": "pe-16",
+          "statements": [
+            {
+              "statement-id": "pe-16_smt.b.",
+              "uuid": "ff7b9fbb-8185-466d-b9bb-c46afca8c5ca",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "33aea180-6e07-4e99-8cf3-1f3b75449d01",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5730bf38-12cc-45f7-b01a-4ad722f77284",
           "control-id": "cm-12",
           "statements": [
             {
               "statement-id": "cm-12_smt.c.",
-              "uuid": "dd11d28d-c8ef-4ca5-a419-5bf641c2a48e",
+              "uuid": "4a6bcaae-0bd4-4565-bdeb-2c159ea2ee10",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "06f43fab-a8f2-4364-b88c-54f351f18c95",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "267af5d4-29c3-4216-ae2e-bc95ab8896c9",
                   "description": "Add control implementation description here for item cm-12_smt.c"
                 }
               ]
@@ -2025,16 +3164,16 @@
           ]
         },
         {
-          "uuid": "ce97e822-20d4-4629-9969-9c75d656a9ad",
+          "uuid": "1a8ecde5-bd89-4e6d-92b6-e3e1e442b3c8",
           "control-id": "si-2",
           "statements": [
             {
               "statement-id": "si-2_smt.d.",
-              "uuid": "9ef29582-465e-4ad3-a0b5-ce8d759c0564",
+              "uuid": "b3ca6ecc-b3ab-4b74-b015-2e0b91b2d1ec",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "49651b9e-8e5c-4d23-b756-214a34017136",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "8f277c54-05d1-4821-8680-30dda32e40d7",
                   "description": "Add control implementation description here for item si-2_smt.d"
                 }
               ]
@@ -2042,16 +3181,16 @@
           ]
         },
         {
-          "uuid": "03f513a3-9555-45e1-a6f4-547c00e43c53",
+          "uuid": "d48e4462-e748-4044-abdd-f7c78385b57c",
           "control-id": "ma-1",
           "statements": [
             {
               "statement-id": "ma-1_smt.c.",
-              "uuid": "8bf1a224-dacb-4601-9a39-b4581b563da3",
+              "uuid": "17236dd8-d281-42a3-950a-60ce9231a053",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "e4446d33-203e-42a6-91b0-8b875abe7273",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c7b7e99e-f262-4a7a-8396-d867811accb7",
                   "description": "Add control implementation description here for item ma-1_smt.c"
                 }
               ]
@@ -2059,16 +3198,16 @@
           ]
         },
         {
-          "uuid": "c2b9ca23-6b93-4ddb-8d23-e57588a95978",
+          "uuid": "8ce4a901-92f1-450f-a75b-4420fbdc81c1",
           "control-id": "ca-2",
           "statements": [
             {
               "statement-id": "ca-2_smt.f.",
-              "uuid": "1542c02e-9bfa-4b3d-a963-707a474673fd",
+              "uuid": "c6b1aa66-a033-4aa4-b189-758ce10bd0f5",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "cfc27fba-8c02-45ea-bfd7-3797df2aad93",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "c3f6b463-3036-49d4-8ccb-e374188bce9b",
                   "description": "Add control implementation description here for item ca-2_smt.f"
                 }
               ]
@@ -2076,16 +3215,16 @@
           ]
         },
         {
-          "uuid": "4f542a98-3c30-4bbf-9f18-391fa97c0d1f",
+          "uuid": "b7acf408-a8c4-4dc2-8ada-a13c94b2a5be",
           "control-id": "cm-6",
           "statements": [
             {
               "statement-id": "cm-6_smt.d.",
-              "uuid": "8cd506e2-2388-4996-82f6-748ca5fa1077",
+              "uuid": "68f0fbd3-c8ef-4d87-ba18-7f7d65f64455",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "c0046b42-c97a-486a-b64b-9e0c8fa8a1a4",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "9697565a-a8d4-4926-b164-66ff837d70f8",
                   "description": "Add control implementation description here for item cm-6_smt.d"
                 }
               ]
@@ -2093,16 +3232,16 @@
           ]
         },
         {
-          "uuid": "12867959-9c6e-47ce-8bfe-46b4f34ab137",
+          "uuid": "e28eada4-9659-4eb7-b1e9-2667b968c4c3",
           "control-id": "au-7",
           "statements": [
             {
               "statement-id": "au-7_smt.b.",
-              "uuid": "f0f8c7e4-40e3-48ce-8c80-ece6ca8900be",
+              "uuid": "5eaf86db-31e0-4765-819b-bc2f1609ada2",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "68fb6883-e7a8-4a00-9979-a069712f958c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3631e4dc-bccf-4512-8898-15df903652a9",
                   "description": "Add control implementation description here for item au-7_smt.b"
                 }
               ]
@@ -2110,16 +3249,16 @@
           ]
         },
         {
-          "uuid": "fc71df8b-d6c7-4814-92a7-e8451fbf7aa7",
+          "uuid": "d4471fc8-cf43-459b-8a8c-c6ba4aba4e14",
           "control-id": "ia-8.2",
           "statements": [
             {
               "statement-id": "ia-8.2_smt.b",
-              "uuid": "19faeaf6-75ec-4070-a873-dd5bc581b516",
+              "uuid": "ecdb580d-3fdc-493c-ae71-7525c474246e",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "b1062d12-6d62-4932-a2b4-e4760ccc6685",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "e064b873-0b91-4420-b4aa-5c1a4fa41ecf",
                   "description": "Add control implementation description here for item ia-8.2_smt.b"
                 }
               ]
@@ -2127,16 +3266,33 @@
           ]
         },
         {
-          "uuid": "808e0892-5dc2-4d9d-98e1-7b16a5ccf95d",
+          "uuid": "2c56a6b3-0404-47e7-a2da-a71fb16d8a2a",
+          "control-id": "pe-12",
+          "statements": [
+            {
+              "statement-id": "pe-12_smt.top_level_description",
+              "uuid": "e547e766-6883-4117-9674-c9d67f1e30b1",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "61bca4e1-2c92-4199-a032-3a04caf71ada",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "65b28eff-0421-476f-8919-f0d3dafa7c34",
           "control-id": "pl-1",
           "statements": [
             {
               "statement-id": "pl-1_smt.c.",
-              "uuid": "8f592267-156f-4a53-acca-f02e48c0bffe",
+              "uuid": "5ff3fc92-b55f-4b3e-8f39-f14ffaf385e9",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "84b741d1-eeaf-4f21-849a-dfe55470f4ed",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "9fa81395-acfa-4922-b008-7262f8d17fa4",
                   "description": "Add control implementation description here for item pl-1_smt.c"
                 }
               ]
@@ -2144,16 +3300,16 @@
           ]
         },
         {
-          "uuid": "aa7c308a-c1c8-4883-bc7b-9f27eb2ae24f",
+          "uuid": "626009fd-2c92-4d20-a697-c80a451c7e20",
           "control-id": "si-4.4",
           "statements": [
             {
               "statement-id": "si-4.4_smt.b",
-              "uuid": "d38cb363-b3c8-43fc-9a91-a160f7c2af58",
+              "uuid": "d139f6b5-a931-4837-af59-36d68788d656",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "261059a0-8e4b-4641-a7d3-f338dc4b7d05",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2c3aab03-1e4c-4b17-a928-834d5688cc9c",
                   "description": "Add control implementation description here for item si-4.4_smt.b"
                 }
               ]
@@ -2161,16 +3317,33 @@
           ]
         },
         {
-          "uuid": "9411639e-cb7e-4fb3-94e6-e4dfc7e3a7ec",
+          "uuid": "7f97bf9f-a50a-4a39-88f3-b825d6365572",
+          "control-id": "pe-13.1",
+          "statements": [
+            {
+              "statement-id": "pe-13.1_smt.top_level_description",
+              "uuid": "34837c63-71fe-4f4f-bd57-99efd5e042c5",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "7e4c6ee5-fbd8-4d1c-9de5-e26fc3259b98",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "fb7b3f8c-d37d-45c7-8451-231f0ad264fd",
           "control-id": "si-3",
           "statements": [
             {
               "statement-id": "si-3_smt.d.",
-              "uuid": "1df66c10-525f-4491-8cbf-5041f037d768",
+              "uuid": "841ce747-16fa-4ea7-99b4-f26d3aa48d9a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "2dc732ba-2e51-4ec4-abb7-dafdc8cd94ab",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "02645f3a-52cf-4a59-9c0e-94ee73d59adb",
                   "description": "Add control implementation description here for item si-3_smt.d"
                 }
               ]
@@ -2178,16 +3351,16 @@
           ]
         },
         {
-          "uuid": "0d88f484-64b8-4776-b674-5b90bf470091",
+          "uuid": "a70fe7f0-01c9-4313-942e-11a0e33109e5",
           "control-id": "ca-3",
           "statements": [
             {
               "statement-id": "ca-3_smt.c.",
-              "uuid": "bab1a58b-60c2-4e92-8426-3a831017111c",
+              "uuid": "16f9c275-088a-4f10-9374-fe26d80cdb3a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "9d8cd1fa-ad47-43e8-91a5-ea2efb2befea",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fcf8167d-3166-4f28-a76d-8c716341e7a3",
                   "description": "Add control implementation description here for item ca-3_smt.c"
                 }
               ]
@@ -2195,16 +3368,16 @@
           ]
         },
         {
-          "uuid": "c02807ee-d371-407b-960e-fc5ed7faa39c",
+          "uuid": "d97c4b7f-2537-4827-be27-c35fa1b628c8",
           "control-id": "ac-1",
           "statements": [
             {
               "statement-id": "ac-1_smt.c.",
-              "uuid": "1aee9361-cf60-4e03-b00a-5a12d1b1893f",
+              "uuid": "8c5a2dff-3c4d-4ef8-82fb-a93419f297a0",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "8814fcf5-95d0-416d-b997-6a1d762e58b2",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "eb953ec9-cb13-45a3-8540-adcea78b61f2",
                   "description": "Add control implementation description here for item ac-1_smt.c"
                 }
               ]
@@ -2212,16 +3385,16 @@
           ]
         },
         {
-          "uuid": "5e4589c9-3776-42ec-9b15-db6ac7add689",
+          "uuid": "24d07393-7ba6-4ea7-9d52-5d7a62c2e35d",
           "control-id": "cm-7",
           "statements": [
             {
               "statement-id": "cm-7_smt.b.",
-              "uuid": "201c6e8c-705e-4daf-be88-fb386bd93a6f",
+              "uuid": "05bd53d1-fa5b-4280-9769-070b3df39389",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "4a1f1131-7fc3-41ba-b840-e7d0e6ff786c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "1c897c57-1b90-45ba-9bc3-13c7f17ac8bc",
                   "description": "Add control implementation description here for item cm-7_smt.b"
                 }
               ]
@@ -2229,16 +3402,16 @@
           ]
         },
         {
-          "uuid": "731116ef-6947-4f97-8b96-2a4324c6399a",
+          "uuid": "4cc677ad-b0ea-453e-a7c7-044b7a0bf126",
           "control-id": "sr-1",
           "statements": [
             {
               "statement-id": "sr-1_smt.c.",
-              "uuid": "c6841b10-2945-471d-845c-a2bddf10d0b3",
+              "uuid": "97189e19-8259-405c-853e-b5f1316f7059",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "e8f8f07d-5643-4530-bfa1-034ecbd86c13",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "29d687fa-daa8-4932-8fa2-46cefcb22998",
                   "description": "Add control implementation description here for item sr-1_smt.c"
                 }
               ]
@@ -2246,16 +3419,16 @@
           ]
         },
         {
-          "uuid": "cef19e6d-89fa-4eb8-8533-3c33f1d39547",
+          "uuid": "b21aa9a0-b264-4d7e-8260-76a757b52c81",
           "control-id": "ac-11",
           "statements": [
             {
               "statement-id": "ac-11_smt.b.",
-              "uuid": "ab2f8137-49aa-454f-962c-e5652895605f",
+              "uuid": "ae189cd9-7567-4514-823e-a61d2cfec492",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "95dcebed-1e27-43ae-ab4f-f46d3883124c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a722f3be-62f4-4d78-96c5-891e389c9de2",
                   "description": "Add control implementation description here for item ac-11_smt.b"
                 }
               ]
@@ -2263,16 +3436,16 @@
           ]
         },
         {
-          "uuid": "4614d9ff-ecec-4b6e-9215-1c9af0d5ca90",
+          "uuid": "0184a366-6c1a-4e4e-8ff0-d22ad2cb1a78",
           "control-id": "au-6",
           "statements": [
             {
               "statement-id": "au-6_smt.c.",
-              "uuid": "5c88da37-c9a4-4027-b311-9388c6d68261",
+              "uuid": "d54a86df-fc1d-4400-9dc1-aa02cae8138c",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "f2708960-87bf-4872-aaf5-c1973a5e25f7",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "1f5aca60-dee4-407b-8eca-b379a4ffe47b",
                   "description": "Add control implementation description here for item au-6_smt.c"
                 }
               ]
@@ -2280,16 +3453,16 @@
           ]
         },
         {
-          "uuid": "1f0499bf-7978-496b-a104-f880191324d5",
+          "uuid": "aa76c1f1-5e79-4b96-a92c-88b79a34fbd9",
           "control-id": "ra-1",
           "statements": [
             {
               "statement-id": "ra-1_smt.c.",
-              "uuid": "9c4d9c08-ce89-4705-8feb-5b99d4911b87",
+              "uuid": "692744ae-3d23-4148-9c0c-54b097ad4aa9",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "232ddecf-f1b2-4551-856a-f9a5c8280b1c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "3bea08ce-8824-4174-ad9b-b7c45505ffcd",
                   "description": "Add control implementation description here for item ra-1_smt.c"
                 }
               ]
@@ -2297,16 +3470,33 @@
           ]
         },
         {
-          "uuid": "4c2d11ea-0379-4c61-b8d8-5361b617abe7",
+          "uuid": "445dd6d9-62b1-4bff-9b89-4b5c5eb7439a",
+          "control-id": "pe-13",
+          "statements": [
+            {
+              "statement-id": "pe-13_smt.top_level_description",
+              "uuid": "7a821fb8-905a-4cff-8452-f7e52b5f9cd2",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d57cb8fc-04d1-48a8-a564-7f5e69dc9e5f",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "867da603-74da-4a2c-bb9b-e0a36f536bd9",
           "control-id": "ia-1",
           "statements": [
             {
               "statement-id": "ia-1_smt.c.",
-              "uuid": "c1ebd916-ca82-44fa-8e96-1ffeff0785e9",
+              "uuid": "a39e474b-7027-41ed-9af1-cb419c6b0a16",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "356065cd-7f05-4a00-b83b-5814aba5c039",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "db1bc441-b984-4e14-954e-0f91f7f8f517",
                   "description": "Add control implementation description here for item ia-1_smt.c"
                 }
               ]
@@ -2314,16 +3504,16 @@
           ]
         },
         {
-          "uuid": "d0b426bf-3b5a-465c-b35b-ec893876b37f",
+          "uuid": "3a4e2723-5088-41d8-bce3-646b4a0c6063",
           "control-id": "at-3",
           "statements": [
             {
               "statement-id": "at-3_smt.c.",
-              "uuid": "108f764b-5d68-42a5-b46e-409688627106",
+              "uuid": "dd534afd-f74e-47b7-9929-d51a86e6b68a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "c9d1cdfe-4ef4-4f9b-9209-0f432ddcb6c0",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fe651fd3-8c14-4922-8e13-68923ba092dc",
                   "description": "Add control implementation description here for item at-3_smt.c"
                 }
               ]
@@ -2331,16 +3521,16 @@
           ]
         },
         {
-          "uuid": "7dae5b6a-4454-4abc-88d7-f590808d42de",
+          "uuid": "3b224a50-7fa4-4904-8ac7-dfba613fbd21",
           "control-id": "cm-3",
           "statements": [
             {
               "statement-id": "cm-3_smt.g.",
-              "uuid": "b1c1e01d-9765-44d4-9997-d89f093c684c",
+              "uuid": "7a819280-ca8a-4cf4-908d-f780054ac70b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "906e917e-6d54-4bd4-ae98-49762c04e62b",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "5bfd895c-f291-4e74-8453-2738f8b31395",
                   "description": "Add control implementation description here for item cm-3_smt.g"
                 }
               ]
@@ -2348,16 +3538,16 @@
           ]
         },
         {
-          "uuid": "cd091bf1-a08e-4bdc-9c3b-0e20e80ea955",
+          "uuid": "df18e1a9-f2f3-4e85-956b-b32dc3716e1e",
           "control-id": "ac-5",
           "statements": [
             {
               "statement-id": "ac-5_smt.b.",
-              "uuid": "29830e5d-1f2b-449d-b0ac-e97e63d989eb",
+              "uuid": "b92a3583-0e94-4b31-be4d-82639c06b652",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "0a72f909-8766-4b41-9fac-b1cba2922e6f",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2824fab8-7e00-4ed3-829c-989e20561ae7",
                   "description": "Add control implementation description here for item ac-5_smt.b"
                 }
               ]
@@ -2365,16 +3555,16 @@
           ]
         },
         {
-          "uuid": "044ed2d3-4183-4ebe-a4f2-c128f5ce79eb",
+          "uuid": "cebb1bb3-a33d-42f9-ae8f-e1e367f52439",
           "control-id": "si-7",
           "statements": [
             {
               "statement-id": "si-7_smt.b.",
-              "uuid": "54386057-a0a6-420a-bcfd-c3cb478c67d9",
+              "uuid": "40c30370-31cc-4a3e-afea-6572eec3275b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "e04dbb6d-8511-4cb8-809f-4ff76a6a7337",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "fc85b301-2f50-4f18-a23b-984c1e5dfca6",
                   "description": "Add control implementation description here for item si-7_smt.b"
                 }
               ]
@@ -2382,16 +3572,16 @@
           ]
         },
         {
-          "uuid": "e2ccce57-d62e-4656-a9cd-1d42c5f9c6d7",
+          "uuid": "2ea8c7b6-05d2-4878-97f7-23521e3e3196",
           "control-id": "ac-6.1",
           "statements": [
             {
               "statement-id": "ac-6.1_smt.b",
-              "uuid": "8c1bda82-95e3-4c4b-ae3b-3ed91df365c9",
+              "uuid": "5dd240d4-4c98-4d29-ba1a-f3d4e9786435",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "28842212-8b86-4f34-b7fd-54668e9f3883",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "e9731526-171f-4e5b-9ceb-9e30313fc348",
                   "description": "Add control implementation description here for item ac-6.1_smt.b"
                 }
               ]
@@ -2399,16 +3589,16 @@
           ]
         },
         {
-          "uuid": "666d4453-81e8-49f4-8f10-c90b6d6d7ecd",
+          "uuid": "369328df-85ce-4946-a1b2-2cf0a44468ba",
           "control-id": "ca-7",
           "statements": [
             {
               "statement-id": "ca-7_smt.g.",
-              "uuid": "b719575b-7dc0-4dd7-8c0d-4b2cac26b682",
+              "uuid": "6374d046-a025-4f4d-ab52-087ed6171a1f",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "21513374-e3f3-49eb-b4c1-a61857423eb3",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "25e17ccd-504c-4111-ada2-6a70f2030edf",
                   "description": "Add control implementation description here for item ca-7_smt.g"
                 }
               ]
@@ -2416,16 +3606,16 @@
           ]
         },
         {
-          "uuid": "c3eaab9a-9c8f-4076-b4f3-5e1f223a7235",
+          "uuid": "e669881b-55bf-440c-9c79-cdd92c5ffa09",
           "control-id": "ia-5.2",
           "statements": [
             {
               "statement-id": "ia-5.2_smt.b",
-              "uuid": "d5070fd0-5f93-4b64-b9ed-56070cd3f0f4",
+              "uuid": "aca9a2a0-2667-41be-bd00-ae3187fd3f32",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "1418bf0e-a3da-4eec-8a1d-e0d8db4a9f3c",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "0fefe5c5-0457-4a49-8670-2b688404a452",
                   "description": "Add control implementation description here for item ia-5.2_smt.b"
                 }
               ]
@@ -2433,16 +3623,16 @@
           ]
         },
         {
-          "uuid": "e56fd580-0826-47fa-a942-6675fd36decf",
+          "uuid": "9d009f36-ebd5-4400-b46e-e5920365d751",
           "control-id": "ac-21",
           "statements": [
             {
               "statement-id": "ac-21_smt.b.",
-              "uuid": "41316339-063b-4520-96ca-0f47b9826213",
+              "uuid": "9afff28d-2f37-4b4e-ac80-14a1ab9710f4",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "ce986120-d45e-48cb-b037-6fb4254a1ccc",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2bee281f-70b6-46dd-8961-103a004de28a",
                   "description": "Add control implementation description here for item ac-21_smt.b"
                 }
               ]
@@ -2450,33 +3640,118 @@
           ]
         },
         {
-          "uuid": "3f62b6ad-40e2-481f-a6c6-539c7d0cb437",
+          "uuid": "6d60dbc7-b8f5-4da7-821d-e0c74d1e5608",
           "control-id": "ma-4",
           "statements": [
             {
-              "statement-id": "ma-4_smt.e.",
-              "uuid": "cf96d797-9e3e-4136-b4b0-dac09edc9f7c",
+              "statement-id": "ma-4_smt.a.",
+              "uuid": "3a119c87-6bc5-4175-aa1d-24e05b73bd8b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "a5ad2359-6895-4180-942c-ec15c4830258",
-                  "description": "Add control implementation description here for item ma-4_smt.e"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "9f0a10d5-2aee-4339-95f1-cb99e73fba01",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "7eeecbb0-6c0f-4bbe-a5ba-db4a9754d98f",
+          "uuid": "2855e240-f65e-4a3c-8dc8-b87923335941",
+          "control-id": "ma-4",
+          "statements": [
+            {
+              "statement-id": "ma-4_smt.b.",
+              "uuid": "f7186216-b23a-455c-a09b-02aafba0a395",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "9a2be9e8-8857-4a6e-8b95-9109f4090d0b",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "6f92559a-9814-4bec-930f-86794ba7d2fe",
+          "control-id": "ma-4",
+          "statements": [
+            {
+              "statement-id": "ma-4_smt.c.",
+              "uuid": "b1f0cc11-9511-4d86-98df-f4a446c2755f",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "d3c6c55e-1d17-42f8-b44f-1415a7e2409f",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ba65aa12-7347-4f91-af37-d32782341dab",
+          "control-id": "ma-4",
+          "statements": [
+            {
+              "statement-id": "ma-4_smt.d.",
+              "uuid": "63b2a634-7a7d-4cda-aa67-0d77029b9de3",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "9d393c84-2d43-4d55-bc40-471f3bc743d2",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "84f8e2be-7ba6-4fed-8a5c-25f46e48f387",
+          "control-id": "ma-4",
+          "statements": [
+            {
+              "statement-id": "ma-4_smt.e.",
+              "uuid": "50abfd4b-db8b-49ab-ab3c-d3c3373a5f1f",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "e9e38605-f102-4cbd-853f-246be80d88e2",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c73cac60-b092-4751-814a-c1a32ec64dd5",
+          "control-id": "pe-9",
+          "statements": [
+            {
+              "statement-id": "pe-9_smt.top_level_description",
+              "uuid": "afe6dfdf-cae2-45e9-83ab-8c90e3482072",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2125603a-f61c-44a8-9298-7d2ed027d1bf",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f96be3e4-857d-4fd7-9192-da4f1fc5b86a",
           "control-id": "au-2",
           "statements": [
             {
               "statement-id": "au-2_smt.e.",
-              "uuid": "0827a6b7-dbb6-4f7b-8657-044c656f1adf",
+              "uuid": "1dc92458-c3f5-4cdd-9f24-ed4bb783123b",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "464237b6-885d-4a80-953c-99ed7daba2a7",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f8ffac2a-a306-47ad-aad0-04e41f06ca87",
                   "description": "Add control implementation description here for item au-2_smt.e"
                 }
               ]
@@ -2484,16 +3759,16 @@
           ]
         },
         {
-          "uuid": "e4874a3a-53c6-492b-b9ed-57e370c9fd5b",
+          "uuid": "95c73260-2336-4809-8677-2b1e120dd7e7",
           "control-id": "ia-5",
           "statements": [
             {
               "statement-id": "ia-5_smt.i.",
-              "uuid": "0ce0be9d-bae9-434c-8e50-a8dd42863b88",
+              "uuid": "30c50e68-5525-40cd-8bc7-d914a46bc8e3",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "3381742d-4b79-409e-880f-8bc6212c5171",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "a2b7f524-318e-4bff-85f6-74c22b826089",
                   "description": "Add control implementation description here for item ia-5_smt.i"
                 }
               ]
@@ -2501,16 +3776,16 @@
           ]
         },
         {
-          "uuid": "7b38d48c-a483-40b8-9626-f902a746fb96",
+          "uuid": "40378829-7971-4eb2-9001-6038d9434466",
           "control-id": "pl-4",
           "statements": [
             {
               "statement-id": "pl-4_smt.d.",
-              "uuid": "8301ecca-47ce-4dbc-b7e6-d8603a3cbb6c",
+              "uuid": "3872da11-ac60-4128-8200-f8f0154afc8a",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "c91aa423-da32-41cf-a8ef-a7f8f83a2197",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "2708dab8-0ea1-4bb3-ba4c-5ffae82984f5",
                   "description": "Add control implementation description here for item pl-4_smt.d"
                 }
               ]
@@ -2518,16 +3793,33 @@
           ]
         },
         {
-          "uuid": "c0e8abe2-83fc-4ef9-9ee3-e4fcf635d67a",
+          "uuid": "9dc917c4-9b0b-4fed-b1d7-a0476e32d5cc",
+          "control-id": "ac-17.3",
+          "statements": [
+            {
+              "statement-id": "ac-17.3_smt.top_level_description",
+              "uuid": "310ae16a-54b0-46e2-9474-d10843cf194b",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "153ac76b-f892-4981-920a-bc83854bbc72",
+                  "description": "All remote access to cloud.gov-hosted applications passes through virtual AWS internet gateways, whose configuration is managed by the cloud.gov operations team. For information about customer network interconnections, see CA-3 (3)."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "8d77e1d3-7c11-4189-a982-0e35930fb482",
           "control-id": "ra-5",
           "statements": [
             {
               "statement-id": "ra-5_smt.f.",
-              "uuid": "700774b7-b324-4ea4-b87f-fc94af39002d",
+              "uuid": "997af11a-1a06-4baf-ab87-5567ab9718b4",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "377c22ec-ace6-4a99-a87f-1fb51a0bd8fc",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "57d9dbc3-0f8c-43a8-8c7c-46721acdc306",
                   "description": "Add control implementation description here for item ra-5_smt.f"
                 }
               ]
@@ -2535,33 +3827,84 @@
           ]
         },
         {
-          "uuid": "05307d9c-3583-40cb-984a-bf21c19e84be",
+          "uuid": "fc9fadfa-8b7d-41d0-ae56-cb33538683f8",
           "control-id": "pe-17",
           "statements": [
             {
-              "statement-id": "pe-17_smt.d.",
-              "uuid": "4fa8f1d7-8350-440e-a5f1-77ea21934f43",
+              "statement-id": "pe-17_smt.a.",
+              "uuid": "c8ff7db1-511f-4216-80b5-0e3d92139745",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "88001a38-5c4e-459e-b701-ee65c7de1373",
-                  "description": "Add control implementation description here for item pe-17_smt.d"
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "0e08ff96-b5b4-4529-8d8f-538044ad6818",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
                 }
               ]
             }
           ]
         },
         {
-          "uuid": "d083d4d7-6823-46cb-b12c-5d32a472b8ec",
+          "uuid": "bf52b312-270b-4749-b3b5-8658b001f52c",
+          "control-id": "pe-17",
+          "statements": [
+            {
+              "statement-id": "pe-17_smt.b.",
+              "uuid": "53d73599-8fac-4483-835a-e8f4a3c556f1",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "50defff0-a3fc-4245-ac2f-f7b6ed240e88",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "227983e1-6d45-4463-a967-28f3cbfeb5f7",
+          "control-id": "pe-17",
+          "statements": [
+            {
+              "statement-id": "pe-17_smt.c.",
+              "uuid": "136f0b7b-f9fd-4532-9977-45b920eb6e7c",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "f388b377-a553-4ae6-b3cb-aad8562efe19",
+                  "description": "Customer applications fully inherit this control from cloud.gov."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "91dae106-18a5-457e-969a-4e4ba96e3fe6",
+          "control-id": "pe-17",
+          "statements": [
+            {
+              "statement-id": "pe-17_smt.d.",
+              "uuid": "79da494c-ef1f-4b00-81e4-2ca03ae0d954",
+              "by-components": [
+                {
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "5551a3f8-7cd0-4a56-9f6b-d1a35f0416c4",
+                  "description": "CISA provides devices for communication between employees."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "41e7e694-58b3-4207-8a8e-87163842b5cc",
           "control-id": "cm-2.7",
           "statements": [
             {
               "statement-id": "cm-2.7_smt.b",
-              "uuid": "6dc83a50-c4bc-4032-8a03-15cd7fa2ebf1",
+              "uuid": "8a81055a-a1b4-436e-8281-2e00c94bcf4f",
               "by-components": [
                 {
-                  "component-uuid": "6c5ed044-c20a-4679-aa42-ab5dfac82076",
-                  "uuid": "b1d773f7-cdd1-4dae-8960-14d068b3872a",
+                  "component-uuid": "57ee86c5-c256-4f82-a99c-e25f61fec900",
+                  "uuid": "1368bf36-8f31-4372-b86f-6db66bd80e4e",
                   "description": "Add control implementation description here for item cm-2.7_smt.b"
                 }
               ]
