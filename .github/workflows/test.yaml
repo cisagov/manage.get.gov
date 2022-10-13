@@ -3,11 +3,13 @@ name: Testing
 
 on:
   push:
+    paths-ignore:
+      - 'docs/**'
     branches:
-    - main
+      - main
   pull_request:
     branches:
-    - main
+      - main
 
 jobs:
   python-linting:
