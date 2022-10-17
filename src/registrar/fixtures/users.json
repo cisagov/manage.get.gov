@@ -1,0 +1,116 @@
+[
+  {
+    "model": "registrar.user",
+    "pk": 1,
+    "fields": {
+      "password": "",
+      "last_login": "2022-10-04T15:07:34.590Z",
+      "is_superuser": true,
+      "username": "c4a0e101-73b4-4d7d-9e5e-7f19a726a0fa",
+      "first_name": "Seamus",
+      "last_name": "Johnston",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2022-09-30T14:14:02.280Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "registrar.userprofile",
+    "pk": 1,
+    "fields": {
+      "created_at": "2022-09-30T14:14:02.284Z",
+      "updated_at": "2022-10-04T15:07:34.593Z",
+      "street1": "",
+      "street2": "",
+      "street3": "",
+      "city": "",
+      "sp": "",
+      "pc": "",
+      "cc": "",
+      "voice": "",
+      "fax": "",
+      "email": "",
+      "user": 1,
+      "display_name": ""
+    }
+  },
+  {
+    "model": "registrar.user",
+    "pk": 2,
+    "fields": {
+      "password": "",
+      "last_login": "2022-10-04T16:43:07.738Z",
+      "is_superuser": true,
+      "username": "d4c3bd84-dc3a-48bc-a3c3-f53111df2ec6",
+      "first_name": "Igor",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2022-10-04T16:39:30.529Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "registrar.userprofile",
+    "pk": 2,
+    "fields": {
+      "created_at": "2022-10-04T16:39:30.531Z",
+      "updated_at": "2022-10-04T16:43:07.740Z",
+      "street1": "",
+      "street2": "",
+      "street3": "",
+      "city": "",
+      "sp": "",
+      "pc": "",
+      "cc": "",
+      "voice": "",
+      "fax": "",
+      "email": "",
+      "user": 2,
+      "display_name": ""
+    }
+  },
+  {
+    "model": "registrar.user",
+    "pk": 3,
+    "fields": {
+      "password": "",
+      "last_login": "2022-10-13T13:57:52.133Z",
+      "is_superuser": true,
+      "username": "ee80bfe0-49ad-456d-8d82-e2b608a66517",
+      "first_name": "Logan",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2022-10-13T13:57:52.124Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "registrar.userprofile",
+    "pk": 3,
+    "fields": {
+      "created_at": "2022-10-04T16:39:30.531Z",
+      "updated_at": "2022-10-04T16:43:07.740Z",
+      "street1": "",
+      "street2": "",
+      "street3": "",
+      "city": "",
+      "sp": "",
+      "pc": "",
+      "cc": "",
+      "voice": "",
+      "fax": "",
+      "email": "",
+      "user": 3,
+      "display_name": ""
+    }
+  }
+]

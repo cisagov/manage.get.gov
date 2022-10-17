@@ -1,0 +1,40 @@
+name: Reset database
+
+# This workflow can be run from the CLI
+#     gh workflow run loaddata.yaml -f environment=staging
+# OR
+#     cf run-task getgov-staging --wait \
+#        --command 'python manage.py flush' --name flush
+#     cf run-task getgov-staging --wait \
+#        --command 'python manage.py loaddata registrar/fixtures/*' --name loaddata
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Where should we load data
+        options:
+        - staging
+
+jobs:
+  reset-db-staging:
+    if: ${{ github.event.inputs.environment == 'staging' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete existing data for staging
+        uses: 18f/cg-deploy-action@main
+        with:
+          cf_username: ${{ secrets.CF_USERNAME }}
+          cf_password: ${{ secrets.CF_PASSWORD }}
+          cf_org: cisa-getgov-prototyping
+          cf_space: staging
+          full_command: "cf run-task getgov-staging --wait --command 'python manage.py flush' --name flush"
+
+      - name: Load fake data for staging
+        uses: 18f/cg-deploy-action@main
+        with:
+          cf_username: ${{ secrets.CF_USERNAME }}
+          cf_password: ${{ secrets.CF_PASSWORD }}
+          cf_org: cisa-getgov-prototyping
+          cf_space: staging
+          full_command: "cf run-task getgov-staging --wait --command 'python manage.py loaddata registrar/fixtures/*' --name loaddata"
