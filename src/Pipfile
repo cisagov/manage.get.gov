@@ -15,6 +15,7 @@ oic = "*"
 pyjwkest = "*"
 psycopg2-binary = "*"
 whitenoise = "*"
+django-formtools = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

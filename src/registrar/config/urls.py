@@ -6,10 +6,14 @@ For more information see:
 
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views.generic import RedirectView
 
 from registrar.views import health, index, profile, whoami
+from registrar.forms import ApplicationWizard
+
+APPLICATION_URL_NAME = "application_step"
+application_wizard = ApplicationWizard.as_view(url_name=APPLICATION_URL_NAME, done_step_name="finished")
 
 urlpatterns = [
     path("", index.index, name="home"),
@@ -18,6 +22,9 @@ urlpatterns = [
     path("health/", health.health),
     path("edit_profile/", profile.edit_profile, name="edit-profile"),
     path("openid/", include("djangooidc.urls")),
+    path('register/', application_wizard, name="application"),
+    re_path(r'^register/(?P<step>.+)/$', application_wizard, name=APPLICATION_URL_NAME),
+
 ]
 
 if not settings.DEBUG:

@@ -1,0 +1,17 @@
+<!-- Test page -->
+{% extends 'base.html' %}
+
+{% block title %}Apply for a .gov domain - Requirements{% endblock %}
+{% block content %}
+
+{% include 'application_sidebar.html' %}
+
+<h1>About your organization</h1>
+
+<h2> What kind of government organization do you represent?</h2>
+
+<form action="" method="post">{% csrf_token %}
+{{ wizard.management_form }}
+{{ wizard.form }}
+</form>
+{% endblock %}

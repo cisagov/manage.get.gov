@@ -1,0 +1,38 @@
+<!-- Test page -->
+{% extends 'base.html' %}
+
+{% block title %}Apply for a .gov domain - Requirements{% endblock %}
+{% block content %}
+
+{% include 'application_sidebar.html' %}
+
+<h1>Requirements</h1>
+
+<p>In order to request and register a .gov domain: </p>
+
+<ol>
+<li> You must be a government employee</li>
+<li> You need to have the approval within your organization to make this request</li>
+</ol>
+
+<form action="" method="post">{% csrf_token %}
+{{ wizard.management_form }}
+<form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <fieldset class="usa-fieldset">
+    <legend class="usa-legend usa-legend--large">Your profile</legend>
+    <p>
+      Required fields are marked with an asterisk (<abbr
+        title="required"
+        class="usa-hint usa-hint--required"
+        >*</abbr
+      >).
+    </p>
+                {% for field in wizard.form %}
+                <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
+    {{ field }}
+    {% endfor %}
+        </fieldset>
+        <button type="submit" class="usa-button usa-button--big">Save Changes</button>
+</form>
+{% endblock %}
