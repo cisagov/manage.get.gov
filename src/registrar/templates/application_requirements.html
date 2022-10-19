@@ -15,12 +15,10 @@
 <li> You need to have the approval within your organization to make this request</li>
 </ol>
 
-<form action="" method="post">{% csrf_token %}
-{{ wizard.management_form }}
-<form class="usa-form usa-form--large" method="post" enctype="multipart/form-data">
+<form class="usa-form usa-form--large" method="post">
+  {{ wizard.management_form }}
   {% csrf_token %}
   <fieldset class="usa-fieldset">
-    <legend class="usa-legend usa-legend--large">Your profile</legend>
     <p>
       Required fields are marked with an asterisk (<abbr
         title="required"
@@ -28,11 +26,14 @@
         >*</abbr
       >).
     </p>
-                {% for field in wizard.form %}
-                <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
-    {{ field }}
+    {% for field in wizard.form %}
+      <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
+      {{ field }}
     {% endfor %}
-        </fieldset>
-        <button type="submit" class="usa-button usa-button--big">Save Changes</button>
+    </fieldset>
+    {% if wizard.steps.prev %}
+      <button name="wizard_goto_step" type="submit" class="usa-button usa-button--base" value="{{ wizard.steps.prev }}">Previous</button>
+    {% endif %}
+    <button name="wizard_goto_step" type="submit" class="usa-button" value="{{ wizard.steps.prev }}">Next</button>
 </form>
 {% endblock %}

@@ -1,18 +1,18 @@
 <div class="tablet:grid-col-4 margin-bottom-4 tablet:margin-bottom-0">
   <nav aria-label="Form steps,">
     <ul class="usa-sidenav">
-		{% for this_step in wizard.steps.all %}
-			<li class="usa-sidenav__item">
-				{% if forloop.counter <= wizard.step1 %}
-					<a href="{% url wizard.url_name step=this_step %}" 
-					{% if this_step == wizard.steps.current %}class="usa-current"{% endif%}>
-					{{ this_step }} {{ forloop.counter }} {{ wizard.step1 }}
-					</a>
-				{% else %}
-					{{ this_step }} {{ forloop.counter }} {{ wizard.step1 }}
-				{% endif %}
-			</li>
-		{% endfor %}
+    {% for this_step in wizard.steps.all %}
+      <li class="usa-sidenav__item">
+        {% if forloop.counter <= wizard.steps.step1 %}
+          <a href="{% url wizard.url_name step=this_step %}" 
+          {% if this_step == wizard.steps.current %}class="usa-current"{% endif%}>
+          {{ this_step }}
+          </a>
+        {% else %}
+          {{ this_step }}
+        {% endif %}
+      </li>
+    {% endfor %}
     </ul>
   </nav>
 </div>
