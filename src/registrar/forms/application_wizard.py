@@ -4,7 +4,7 @@ import logging
 
 from django import forms
 
-from formtools.wizard.views import NamedUrlSessionWizardView
+from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 
 
 logger = logging.getLogger(__name__)
