@@ -10,25 +10,50 @@ from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 logger = logging.getLogger(__name__)
 
 
-class RequirementsForm(forms.Form):
-    template_name = "application_requirements.html"
-    agree_box = forms.BooleanField()
-
-
 class OrganizationForm(forms.Form):
-    template_name = "application_organization.html"
-    organization_type = forms.ChoiceField(widget=forms.RadioSelect)
+    organization_type = forms.ChoiceField(
+        required=True,
+        choices=[
+            ("Federal", "Federal: a federal agency"),
+            ("Interstate", "Interstate: an organization of two or more states"),
+            (
+                "State_or_Territory",
+                "State or Territory: One of the 50 U.S. states, the District of Columbia, American Samoa, Guam, Northern Mariana Islands, Puerto Rico, or the U.S. Virgin Islands",
+            ),
+            (
+                "Tribal",
+                "Tribal: a tribal government recognized by the federal or state government",
+            ),
+            ("County", "County: a county, parish, or borough"),
+            ("City", "City: a city, town, township, village, etc."),
+            (
+                "Special_District",
+                "Special District: an independent organization within a single state",
+            ),
+        ],
+        widget=forms.RadioSelect,
+    )
 
 
+class ContactForm(forms.Form):
+    organization_name = forms.CharField(label="Organization Name")
+    street_address = forms.CharField(label="Street address")
+
+
+ORGANIZATION_TITLE = "About your organization"
+CONTACT_TITLE = "Your organization's contact information"
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
-FORMS = [("requirements", RequirementsForm), ("organization", OrganizationForm)]
+FORMS = [
+    (ORGANIZATION_TITLE, OrganizationForm),
+    (CONTACT_TITLE, ContactForm),
+]
 
 # Dict to match up the right template with the right step. Keys here must
 # match the first elements of the tuples above
 TEMPLATES = {
-    "requirements": "application_requirements.html",
-    "organization": "application_organization.html",
+    ORGANIZATION_TITLE: "application_organization.html",
+    CONTACT_TITLE: "application_contact.html",
 }
 
 

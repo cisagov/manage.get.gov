@@ -1,31 +1,25 @@
 <!-- Test page -->
 {% extends 'application_form.html' %}
+{% load widget_tweaks %}
 
 {% block title %}Apply for a .gov domain - About your organization{% endblock %}
 
 {% block form_content %}
 <h1>About your organization</h1>
 
-<h2> What kind of government organization do you represent?</h2>
-
 <form class="usa-form usa-form--large" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
+
   <fieldset class="usa-fieldset">
-    <p>
-      Required fields are marked with an asterisk (<abbr
-        title="required"
-        class="usa-hint usa-hint--required"
-        >*</abbr>).
-    </p>
-    {% for field in wizard.form %}
-      <label class="usa-label" for="id_{{ field.name }}">{{ field.label }}</label>
-      {{ field }}
-    {% endfor %}
-    </fieldset>
-    {% if wizard.steps.prev %}
-      <button name="wizard_goto_step" type="submit" class="usa-button usa-button--base" value="{{ wizard.steps.prev }}">Previous</button>
-    {% endif %}
-    <button name="wizard_goto_step" type="submit" class="usa-button" value="{{ wizard.steps.prev }}">Next</button>
+  <legend>
+    <h2> What kind of government organization do you represent?</h2>
+  </legend>
+
+  {{ wizard.form.organization_type|add_class:"usa-radio" }}
+
+  </fieldset>
+  <button name="wizard_goto_step" type="submit" class="usa-button" value="{{ wizard.steps.next }}">Next</button>
+
 </form>
 {% endblock %}

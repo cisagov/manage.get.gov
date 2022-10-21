@@ -84,6 +84,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # application used for integrating with Login.gov
     "djangooidc",
+    # library to simplify form templating
+    "widget_tweaks",
     # let's be sure to install our own application!
     "registrar",
 ]
