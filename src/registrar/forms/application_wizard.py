@@ -18,11 +18,18 @@ class OrganizationForm(forms.Form):
             ("Interstate", "Interstate: an organization of two or more states"),
             (
                 "State_or_Territory",
-                "State or Territory: One of the 50 U.S. states, the District of Columbia, American Samoa, Guam, Northern Mariana Islands, Puerto Rico, or the U.S. Virgin Islands",
+                (
+                    "State or Territory: One of the 50 U.S. states, the District of "
+                    "Columbia, American Samoa, Guam, Northern Mariana Islands, "
+                    "Puerto Rico, or the U.S. Virgin Islands"
+                ),
             ),
             (
                 "Tribal",
-                "Tribal: a tribal government recognized by the federal or state government",
+                (
+                    "Tribal: a tribal government recognized by the federal or "
+                    "state government"
+                ),
             ),
             ("County", "County: a county, parish, or borough"),
             ("City", "City: a city, town, township, village, etc."),
