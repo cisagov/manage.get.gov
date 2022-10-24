@@ -81,7 +81,6 @@ class ViewsTest(TestCase):
     def test_logout_redirect_url(self, mock_client):
         # setup
         session = self.client.session
-        session["id_token_raw"] = "TEST"  # nosec B105
         session["state"] = "TEST"  # nosec B105
         session.save()
         # mock
@@ -92,12 +91,13 @@ class ViewsTest(TestCase):
         mock_client.provider_info = {
             "end_session_endpoint": "http://example.com/log_me_out"
         }
+        mock_client.client_id = "TEST"
         # test
         with less_console_noise():
             response = self.client.get(reverse("logout"))
         # assert
         expected = (
-            "http://example.com/log_me_out?id_token_hint=TEST&state"
+            "http://example.com/log_me_out?client_id=TEST&state"
             "=TEST&post_logout_redirect_uri=http%3A%2F%2Fexample.com%2Fback"
         )
         actual = response.url
