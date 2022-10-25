@@ -47,7 +47,7 @@
   <script src="{% static 'js/uswds.min.js' %}" defer></script>
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
-  <section class="usa-banner" aria-label="Official government website">
+  <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">
         <div class="usa-banner__inner">
@@ -58,17 +58,15 @@
             <p class="usa-banner__header-text">
               An official website of the United States government
             </p>
-            <p class="usa-banner__header-action" aria-hidden="true">
-              Here’s how you know
-            </p>
+            <p class="usa-banner__header-action">Here’s how you know</p>
           </div>
           <button class="usa-accordion__button usa-banner__button" aria-expanded="false"
-            aria-controls="gov-banner-default-default">
+            aria-controls="gov-banner-default">
             <span class="usa-banner__button-text">Here’s how you know</span>
           </button>
         </div>
       </header>
-      <div class="usa-banner__content usa-accordion__content" id="gov-banner-default-default">
+      <div class="usa-banner__content usa-accordion__content" id="gov-banner-default">
         <div class="grid-row grid-gap-lg">
           <div class="usa-banner__guidance tablet:grid-col-6">
             <img class="usa-banner__icon usa-media-block__img" src="{% static 'img/icon-dot-gov.svg' %}" role="img"
@@ -90,9 +88,9 @@
                 <strong>lock</strong> (
                 <span class="icon-lock"><svg xmlns="http://www.w3.org/2000/svg" width="52" height="64"
                     viewBox="0 0 52 64" class="usa-banner__lock-image" role="img"
-                    aria-labelledby="banner-lock-title-default banner-lock-description-default" focusable="false">
-                    <title id="banner-lock-title-default">Lock</title>
-                    <desc id="banner-lock-description-default">A locked padlock</desc>
+                    aria-labelledby="banner-lock-description" focusable="false">
+                    <title id="banner-lock-title">Lock</title>
+                    <desc id="banner-lock-description">Locked padlock icon</desc>
                     <path fill="#000000" fill-rule="evenodd"
                       d="M26 0c10.493 0 19 8.507 19 19v9h3a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V32a4 4 0 0 1 4-4h3v-9C7 8.507 15.507 0 26 0zm0 8c-5.979 0-10.843 4.77-10.996 10.712L15 19v9h22v-9c0-6.075-4.925-11-11-11z" />
                   </svg> </span>) or <strong>https://</strong> means you’ve safely connected to
@@ -107,8 +105,9 @@
   </section>
 
 
+  {% block usa_overlay %}<div class="usa-overlay"></div>{% endblock %}
   {% block banner %}
-  <header class="usa-header usa-header-basic" role="navigation">
+  <header class="usa-header usa-header-basic">
     <div class="usa-nav-container">
       <div class="usa-navbar">
         {% block logo %}
@@ -120,10 +119,10 @@
           </em>
         </div>
         {% endblock %}
-        <button class="usa-menu-btn">Menu</button>
+        <button type="button" class="usa-menu-btn">Menu</button>
       </div>
       {% block usa_nav %}
-      <nav class="usa-nav">
+      <nav class="usa-nav" aria-label="Primary navigation,">
         <button type="button" class="usa-nav__close">
           <img src="/public/img/usa-icons/close.svg" role="img" alt="Close" />
         </button>
@@ -142,7 +141,6 @@
     </div>
   </header>
   {% endblock banner %}
-  {% block usa_overlay %}<div class="usa-overlay"></div>{% endblock %}
   <div id="wrapper">
     {% block messages %}
     {% if messages %}

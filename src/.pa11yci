@@ -2,6 +2,15 @@
     "urls": [
         "http://app:8080/",
         "http://app:8080/health/",
-        "http://app:8080/whoami/"
+        "http://app:8080/whoami/",
+        "http://app:8080/register/",
+        {
+            "url": "http://app:8080/register/",
+            "actions": [
+                "check field #id_About\\ your\\ organization-organization_type_0",
+                "click element #main-content > div > div.grid-col-9 > form > button",
+                "wait for path to be /register/Your%20organization's%20contact%20information/"
+            ]
+        }
     ]
 }
