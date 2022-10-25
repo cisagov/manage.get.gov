@@ -84,8 +84,7 @@ def logout(request, next_page=None):
     try:
         username = request.user.username
         request_args = {
-            # it is perfectly fine to send the token, even if it is expired
-            "id_token_hint": request.session["id_token_raw"],
+            "client_id": CLIENT.client_id,
             "state": request.session["state"],
         }
         if (
