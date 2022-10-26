@@ -4,6 +4,8 @@ import logging
 
 from django import forms
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 
 
@@ -64,7 +66,16 @@ TEMPLATES = {
 }
 
 
-class ApplicationWizard(NamedUrlSessionWizardView):
+class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
+
+    """Multi-page form ("wizard") for new domain applications.
+
+    This sets up a sequence of forms that gather information for new
+    domain applications. Each form in the sequence has its own URL and
+    the progress through the form is stored in the Django session (thus
+    "NamedUrlSessionWizardView").
+    """
+
     form_list = FORMS
 
     def get_template_names(self):
