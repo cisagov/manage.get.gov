@@ -10,6 +10,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar.views import health, index, profile, whoami
+from api.views import available
 
 urlpatterns = [
     path("", index.index, name="home"),
@@ -18,6 +19,7 @@ urlpatterns = [
     path("health/", health.health),
     path("edit_profile/", profile.edit_profile, name="edit-profile"),
     path("openid/", include("djangooidc.urls")),
+    path("available/<domain>", available, name="available"),
 ]
 
 if not settings.DEBUG:

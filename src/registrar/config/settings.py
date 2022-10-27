@@ -86,6 +86,8 @@ INSTALLED_APPS = [
     "djangooidc",
     # let's be sure to install our own application!
     "registrar",
+    # Our internal API application
+    "api",
 ]
 
 # Middleware are routines for processing web requests.
