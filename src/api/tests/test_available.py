@@ -2,7 +2,8 @@
 
 import json
 
-from django.test import client, TestCase, RequestFactory
+from django.contrib.auth import get_user_model
+from django.test import TestCase, RequestFactory
 
 from ..views import available
 
@@ -11,10 +12,12 @@ class AvailableViewTest(TestCase):
     """Test that the view function works as expected."""
 
     def setUp(self):
+        self.user = get_user_model().objects.create(username="username")
         self.factory = RequestFactory()
 
     def test_view_function(self):
-        request = self.factory.get("available/test.gov")
+        request = self.factory.get("/available/test.gov")
+        request.user = self.user
         response = available(request, domain="test.gov")
         # has the right text in it
         self.assertContains(response, "available")
@@ -27,7 +30,11 @@ class AvailableAPITest(TestCase):
 
     """Test that the API can be called as expected."""
 
+    def setUp(self):
+        self.user = get_user_model().objects.create(username="username")
+
     def test_available_get(self):
+        self.client.force_login(self.user)
         response = self.client.get("/available/nonsense")
         self.assertContains(response, "available")
         response_object = json.loads(response.content)
