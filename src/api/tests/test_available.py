@@ -7,6 +7,7 @@ from django.test import TestCase, RequestFactory
 
 from ..views import available, _domains, in_domains
 
+
 class AvailableViewTest(TestCase):
 
     """Test that the view function works as expected."""

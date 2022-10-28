@@ -10,7 +10,9 @@ import requests
 
 from cachetools.func import ttl_cache
 
-DOMAIN_FILE_URL = "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
+DOMAIN_FILE_URL = (
+    "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
+)
 
 
 # this file doesn't change that often, nor is it that big, so cache the result
@@ -52,4 +54,3 @@ def available(request, domain=""):
     """
     # a domain is available if it is NOT in the list of current domains
     return JsonResponse({"available": not in_domains(domain)})
-
