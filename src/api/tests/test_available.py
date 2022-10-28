@@ -5,7 +5,7 @@ import json
 from django.contrib.auth import get_user_model
 from django.test import TestCase, RequestFactory
 
-from ..views import available
+from ..views import available, _domains, in_domains
 
 class AvailableViewTest(TestCase):
 
@@ -24,6 +24,39 @@ class AvailableViewTest(TestCase):
         # can be parsed as JSON
         response_object = json.loads(response.content)
         self.assertIn("available", response_object)
+
+    def test_domain_list(self):
+        """Test the domain list that is returned."""
+        domains = _domains()
+        self.assertIn("gsa.gov", domains)
+        # entries are all lowercase so GSA.GOV is not in the set
+        self.assertNotIn("GSA.GOV", domains)
+        self.assertNotIn("igorville.gov", domains)
+        # all the entries have dots
+        self.assertNotIn("gsa", domains)
+
+    def test_in_domains(self):
+        self.assertTrue(in_domains("gsa.gov"))
+        # input is lowercased so GSA.GOV should be found
+        self.assertTrue(in_domains("GSA.GOV"))
+        # This domain should not have been registered
+        self.assertFalse(in_domains("igorville.gov"))
+        # all the entries have dots
+        self.assertFalse(in_domains("gsa"))
+
+    def test_not_available_domain(self):
+        """gsa.gov is not available"""
+        request = self.factory.get("/available/gsa.gov")
+        request.user = self.user
+        response = available(request, domain="gsa.gov")
+        self.assertFalse(json.loads(response.content)["available"])
+
+    def test_available_domain(self):
+        """igorville.gov is still available"""
+        request = self.factory.get("/available/igorville.gov")
+        request.user = self.user
+        response = available(request, domain="igorville.gov")
+        self.assertTrue(json.loads(response.content)["available"])
 
 
 class AvailableAPITest(TestCase):
