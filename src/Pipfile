@@ -15,6 +15,8 @@ oic = "*"
 pyjwkest = "*"
 psycopg2-binary = "*"
 whitenoise = "*"
+django-formtools = "*"
+django-widget-tweaks = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
@@ -25,3 +27,4 @@ flake8 = "*"
 mypy = "*"
 types-requests = "*"
 django-stubs = "*"
+django-webtest = "*"
