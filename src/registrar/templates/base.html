@@ -103,6 +103,20 @@
       </div>
     </div>
   </section>
+  {% if IS_DEMO_SITE %}
+    <section
+    class="usa-site-alert usa-site-alert--emergency usa-site-alert--no-icon"
+    aria-label="Site alert,,,,,"
+    >
+      <div class="usa-alert">
+        <div class="usa-alert__body">
+          <p class="usa-alert__text">
+            <strong>TEST SITE</strong> - Do not use real personal information. Demo purposes only.
+          </p>
+        </div>
+      </div>
+    </section>
+  {% endif %}
 
 
   {% block usa_overlay %}<div class="usa-overlay"></div>{% endblock %}
