@@ -49,20 +49,25 @@ class ContactForm(forms.Form):
     street_address = forms.CharField(label="Street address")
 
 
-ORGANIZATION_TITLE = "About your organization"
-CONTACT_TITLE = "Your organization's contact information"
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
-    (ORGANIZATION_TITLE, OrganizationForm),
-    (CONTACT_TITLE, ContactForm),
+    ("organization", OrganizationForm),
+    ("contact", ContactForm),
 ]
 
 # Dict to match up the right template with the right step. Keys here must
-# match the first elements of the tuples above
+# match the first elements of the tuples in FORMS
 TEMPLATES = {
-    ORGANIZATION_TITLE: "application_organization.html",
-    CONTACT_TITLE: "application_contact.html",
+    "organization": "application_organization.html",
+    "contact": "application_contact.html",
+}
+
+# We need to pass our page titles as context to the templates, indexed
+# by the step names
+TITLES = {
+    "organization": "About your organization",
+    "contact": "Your organization's contact information",
 }
 
 
@@ -84,6 +89,12 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         The return is a singleton list.
         """
         return [TEMPLATES[self.steps.current]]
+
+    def get_context_data(self, form, **kwargs):
+        """Add title information to the context for all steps."""
+        context = super().get_context_data(form=form, **kwargs)
+        context["form_titles"] = TITLES
+        return context
 
     def done(self, form_list, **kwargs):
         logger.info("Application form submitted.")

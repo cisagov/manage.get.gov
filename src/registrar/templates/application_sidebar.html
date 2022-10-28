@@ -6,10 +6,10 @@
         {% if forloop.counter <= wizard.steps.step1 %}
           <a href="{% url wizard.url_name step=this_step %}" 
           {% if this_step == wizard.steps.current %}class="usa-current"{% endif%}>
-          {{ this_step }}
+          {{ form_titles|get_item:this_step }}
           </a>
         {% else %}
-          {{ this_step }}
+          {{ form_titles|get_item:this_step }}
         {% endif %}
       </li>
     {% endfor %}

@@ -90,7 +90,7 @@ class FormTests(TestWithUser, WebTest):
         # 302 redirect to the first form
         page = self.app.get(reverse("application")).follow()
         form = page.form
-        form["About your organization-organization_type"] = "Federal"
+        form["organization-organization_type"] = "Federal"
         result = page.form.submit().follow()
         # Got the next form page
         self.assertIn("contact information", result)
