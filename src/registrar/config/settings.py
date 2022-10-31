@@ -146,7 +146,6 @@ STATICFILES_DIRS = [
     BASE_DIR / "assets",
 ]
 
-# TODO: decide on template engine and document in ADR
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -168,10 +167,15 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "registrar.context_processors.language_code",
                 "registrar.context_processors.canonical_path",
+                "registrar.context_processors.is_demo_site",
             ],
         },
     },
 ]
+
+# IS_DEMO_SITE controls whether or not we show our big red "TEST SITE" banner
+# underneath the "this is a real government website" banner.
+IS_DEMO_SITE = True
 
 # endregion
 # region: Database----------------------------------------------------------###
