@@ -1,0 +1,25 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Apply for a .gov domain - About your organization{% endblock %}
+
+{% block form_content %}
+<h1>About your organization</h1>
+
+<form class="usa-form usa-form--large" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
+  <fieldset class="usa-fieldset">
+  <legend>
+    <h2> What kind of government organization do you represent?</h2>
+  </legend>
+
+  {{ wizard.form.organization_type|add_class:"usa-radio" }}
+
+  </fieldset>
+  <button type="submit" class="usa-button">Next</button>
+
+</form>
+{% endblock %}

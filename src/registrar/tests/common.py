@@ -14,7 +14,7 @@ class MockUserLogin:
             args = {
                 UserModel.USERNAME_FIELD: username,
             }
-            user = UserModel.objects.get_or_create(**args)
+            user, _ = UserModel.objects.get_or_create(**args)
             user.is_staff = True
             user.is_superuser = True
             user.save()

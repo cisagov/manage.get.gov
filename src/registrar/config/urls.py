@@ -10,7 +10,13 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar.views import health, index, profile, whoami
+from registrar.forms import ApplicationWizard
 from api.views import available
+
+APPLICATION_URL_NAME = "application_step"
+application_wizard = ApplicationWizard.as_view(
+    url_name=APPLICATION_URL_NAME, done_step_name="finished"
+)
 
 urlpatterns = [
     path("", index.index, name="home"),
@@ -19,6 +25,8 @@ urlpatterns = [
     path("health/", health.health),
     path("edit_profile/", profile.edit_profile, name="edit-profile"),
     path("openid/", include("djangooidc.urls")),
+    path("register/", application_wizard, name="application"),
+    path("register/<step>/", application_wizard, name=APPLICATION_URL_NAME),
     path("available/<domain>", available, name="available"),
 ]
 

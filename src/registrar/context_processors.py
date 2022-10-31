@@ -21,3 +21,13 @@ def canonical_path(request):
     template itself, so we do it here and pass the information on.
     """
     return {"CANONICAL_PATH": request.build_absolute_uri(request.path)}
+
+
+def is_demo_site(request):
+    """Add a boolean if this is a demo site.
+
+    To be able to render or not our "demo site" banner, we need a context
+    variable for the template that indicates if this banner should or
+    should not appear.
+    """
+    return {"IS_DEMO_SITE": settings.IS_DEMO_SITE}
