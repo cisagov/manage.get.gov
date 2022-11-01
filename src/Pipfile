@@ -17,6 +17,8 @@ psycopg2-binary = "*"
 whitenoise = "*"
 django-formtools = "*"
 django-widget-tweaks = "*"
+cachetools = "*"
+requests = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
@@ -28,3 +30,4 @@ mypy = "*"
 types-requests = "*"
 django-stubs = "*"
 django-webtest = "*"
+types-cachetools = "*"
