@@ -27,7 +27,7 @@ urlpatterns = [
     path("openid/", include("djangooidc.urls")),
     path("register/", application_wizard, name="application"),
     path("register/<step>/", application_wizard, name=APPLICATION_URL_NAME),
-    path("available/<domain>", available, name="available"),
+    path("api/v1/available/<domain>", available, name="available"),
 ]
 
 if not settings.DEBUG:
