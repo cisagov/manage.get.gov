@@ -42,6 +42,23 @@ class OrganizationForm(forms.Form):
         ],
         widget=forms.RadioSelect,
     )
+    federal_type = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("Executive", "Executive"),
+            ("Judicial", "Judicial"),
+            ("Legislative", "Legislative"),
+        ],
+        widget=forms.RadioSelect,
+    )
+    is_election_board = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("Yes", "Yes"),
+            ("No", "No"),
+        ],
+        widget=forms.RadioSelect,
+    )
 
 
 class ContactForm(forms.Form):

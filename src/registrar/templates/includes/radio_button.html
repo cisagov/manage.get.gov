@@ -1,0 +1,14 @@
+<div>
+  <label for="{{ choice.id_for_label }}"
+    ><input
+    type="{{ choice.data.type }}"
+    name="{{ choice.data.name }}"
+    value="{{ choice.data.value }}"
+    class="usa-radio"
+    id="{{ choice.id_for_label }}"
+    {% if choice.data.attrs.required %}required{% endif %}
+    {% if choice.data.selected %}checked{% endif %}
+    />
+    {{ choice.data.label }}</label
+  >
+</div>

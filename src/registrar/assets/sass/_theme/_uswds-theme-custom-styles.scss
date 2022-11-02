@@ -22,7 +22,7 @@ i.e.
 
 @use "uswds-core" as *;
 
-// Test custom style (except this has not enough contrast)
-//p {
-//  color: color('blue-10v');
-//}
+/* Styles for making visible to screen reader / AT users only. */
+.sr-only {
+   @include sr-only;
+ }
