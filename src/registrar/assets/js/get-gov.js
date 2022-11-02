@@ -4,6 +4,9 @@ var ARIA = {
   QUESTION_ADDED: "New follow-up question required"
 }
 
+var REQUIRED = "required";
+var INPUT = "input";
+
 /** Helper function. Makes an element invisible. */
 function makeHidden(el) {
   el.style.position = "absolute";
@@ -22,29 +25,25 @@ function makeVisible(el) {
   el.style.visibility = "visible";
 }
 
-/** Inputs which are required (if visible). */
-var requiredInputs = {}
-
-/** Helper function. Removes `required` attribute. */
-function removeRequired(el) {
-  const inputs = el.querySelectorAll("input");
-  for (const input of inputs) {
-    if (input.required) {
-      requiredInputs[input.id] = true;
-      input.removeAttribute("required");
-    }
+/** Executes `func` once per selected child of a given element. */
+function forEachChild(el, selector, func) {
+  const children = el.querySelectorAll(selector);
+  for (const child of children) {
+    func(child)
   }
 }
 
-/** Helper function. Adds `required` attribute. */
-function markRequired(el) {
-  const inputs = el.querySelectorAll("input");
-  for (const input of inputs) {
-    if (input.id in requiredInputs) {
-      input.setAttribute("required", "");
-    }
-  }
-}
+/** Helper function. Removes `required` attribute from input. */
+const removeRequired = input => input.removeAttribute(REQUIRED);
+
+/** Helper function. Adds `required` attribute to input. */
+const setRequired = input => input.setAttribute(REQUIRED, "");
+
+/** Helper function. Removes `checked` attribute from input. */
+const removeChecked = input => input.checked = false;
+
+/** Helper function. Adds `checked` attribute to input. */
+const setChecked = input => input.checked = true;
 
 /** Helper function. Creates and returns a live region element. */
 function createLiveRegion(id) {
@@ -63,6 +62,7 @@ var selected = {};
 /** Mapping of radio buttons to the toggleables they control. */
 var radioToggles = {};
 
+
 /**
  * Helper function. Tracks state of selected radio button.
  * 
@@ -71,7 +71,7 @@ var radioToggles = {};
  * which button has been deselected (and hiding the associated
  * toggleable) is a manual task.
  * */
-function setSelected(radioButton) {
+function rememberSelected(radioButton) {
   selected[radioButton.name] = radioButton;
 }
 
@@ -81,36 +81,54 @@ function announce(id, text) {
   liveRegion.innerHTML = text;
 }
 
-/** On radio button selection change, handles associated toggleables. */
-function handleToggle(e) {
-  // remove toggleable for deselected radio button
+/** 
+ * Used by an event handler to hide HTML.
+ *
+ * Hides any previously visible HTML associated with
+ * previously selected radio buttons.
+ */
+function hideToggleable(e) {
+  // has any button in this radio button group been selected?
   const selectionExists = e.target.name in selected;
-
   if (selectionExists) {
+    // does the selection have any hidden content associated with it?
     const hasToggleable = selected[e.target.name].id in radioToggles;
     if (hasToggleable) {
       const prevRadio = selected[e.target.name];
       const prevToggleable = radioToggles[prevRadio.id];
-  
+
+      // is this event handler for a different button?
       const selectionHasChanged = (e.target != prevRadio);
-      const prevSelectionVisible = (prevToggleable.style.visibility === "visible");
+      // is the previous button's content still visible?
+      const prevSelectionVisible = (prevToggleable.style.visibility !== "hidden");
       if (selectionHasChanged && prevSelectionVisible) {
         makeHidden(prevToggleable);
-        removeRequired(prevToggleable);
+        forEachChild(prevToggleable, INPUT, removeChecked);
+        forEachChild(prevToggleable, INPUT, removeRequired);
         announce(prevToggleable.id, ARIA.QUESTION_REMOVED);
       }
     }
   }
+}
 
+function revealToggleable(e) {
   // if the currently selected radio button has a toggle
   // make it visible
   if (e.target.id in radioToggles) {
     const toggleable = radioToggles[e.target.id];
-    setSelected(e.target);
-    markRequired(toggleable);
+    rememberSelected(e.target);
+    if (e.target.required) forEachChild(toggleable, INPUT, setRequired);
     makeVisible(toggleable);
     announce(toggleable.id, ARIA.QUESTION_ADDED);
   }
+}
+
+/** On radio button selection change, handles associated toggleables. */
+function handleToggle(e) {
+  // hide any previously visible HTML associated with previously selected radio buttons
+  hideToggleable(e);
+  // display any HTML associated with the newly selected radio button
+  revealToggleable(e);
 }
 
 /**
@@ -124,14 +142,14 @@ function handleToggle(e) {
   const hiddens = document.querySelectorAll('[hide-on-load]');
   for(const hidden of hiddens) {
     makeHidden(hidden);
-    removeRequired(hidden);
+    forEachChild(hidden, INPUT, removeRequired);
   }
 })();
 
 /**
  * An IIFE that adds onChange listeners to radio buttons.
  * 
- * An element with `toggle-by="<id>"` will be hidden/shown
+ * An element with `toggle-by="<id>,<id>"` will be hidden/shown
  * by a radio button with `id="<id>"`.
  * 
  * It also inserts the ARIA live region to be used when
@@ -151,13 +169,12 @@ function handleToggle(e) {
     const radioIDs = attribute.split(",");
 
     createLiveRegion(toggleable.id)
-    console.log('toggleable :', toggleable);
-    console.log('toggleable.id :', toggleable.id);
 
     for (const id of radioIDs) {
       radioToggles[id] = toggleable;
       // if it is already selected, track that
-      if (document.getElementById(id).selected) setSelected(radioButton);
+      const radioButton = document.getElementById(id);
+      if (radioButton.checked) rememberSelected(radioButton);
     }
   }
 

@@ -36,7 +36,7 @@
     <noscript>
       Only required if you selected "Federal".
     </noscript>
-    {{ wizard.form.federal_type|add_class:"usa-radio"|attr:"required" }}
+    {{ wizard.form.federal_type|add_class:"usa-radio" }}
   </fieldset>
 
   <fieldset id="is_election_board__fieldset" {% trigger wizard.form.is_election_board choices.Tribal choices.County choices.City choices.Special_District%} class="usa-fieldset">
@@ -46,7 +46,7 @@
     <noscript>
       Only required if you selected "Tribal", "County", "City" or "Special District".
     </noscript>
-    {{ wizard.form.is_election_board|add_class:"usa-radio"|attr:"required" }}
+    {{ wizard.form.is_election_board|add_class:"usa-radio" }}
   </fieldset>
 
   <button type="submit" class="usa-button">Next</button>
