@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     "registrar",
     # Our internal API application
     "api",
+    "django_fsm",
 ]
 
 # Middleware are routines for processing web requests.

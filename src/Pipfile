@@ -19,6 +19,7 @@ django-formtools = "*"
 django-widget-tweaks = "*"
 cachetools = "*"
 requests = "*"
+django-fsm = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
@@ -31,3 +32,4 @@ types-requests = "*"
 django-stubs = "*"
 django-webtest = "*"
 types-cachetools = "*"
+graphviz = ">=0.4"
