@@ -65,12 +65,20 @@ class ContactForm(forms.Form):
     organization_name = forms.CharField(label="Organization Name")
     street_address = forms.CharField(label="Street address")
 
+class PurposeForm(forms.Form):
+    purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea(
+        attrs={ 'class':'usa-textarea usa-character-count__field',
+               'id':'with-hint',
+               'aria-describedby':'instructions',
+               'maxlength':'500',
+            }))
 
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
     ("organization", OrganizationForm),
     ("contact", ContactForm),
+    ("purpose", PurposeForm),
 ]
 
 # Dict to match up the right template with the right step. Keys here must
@@ -78,6 +86,7 @@ FORMS = [
 TEMPLATES = {
     "organization": "application_organization.html",
     "contact": "application_contact.html",
+    "purpose": "application_purpose.html",
 }
 
 # We need to pass our page titles as context to the templates, indexed
@@ -85,6 +94,7 @@ TEMPLATES = {
 TITLES = {
     "organization": "About your organization",
     "contact": "Your organization's contact information",
+    "purpose": "Purpose of your domain",
 }
 
 

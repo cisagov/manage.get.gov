@@ -1,0 +1,34 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Apply for a .gov domain - Puprose{% endblock %}
+
+{% block form_content %}
+<h1>Purpose of your domain</h1>
+
+<p id="instructions">Explain how you plan to use this domain. Will you use it for a website and/or email? Are you moving your website from another top-level domain (like .com or .org)?Read about <a href="#">activities that are prohibited on .gov domains.</a></p>
+
+<p>All fields are required unless they are marked optional.</p>
+
+<form class="usa-form usa-form--large" method="post">
+  <div class="usa-form-group">
+    {{ wizard.management_form }}
+    {% csrf_token %}
+   
+    <div class="usa-character-count">
+      {{ wizard.form.purpose_field|add_label_class:"usa-label" }}
+      {{ wizard.form.purpose_field}}
+      <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
+    </div>
+
+    <!-- {{ wizard.form.purpose_field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=50" }} -->
+  </div>
+
+  {% if wizard.steps.prev %}
+    <button name="wizard_goto_step" type="submit" class="usa-button usa-button--base" value="{{ wizard.steps.prev }}">Previous</button>
+  {% endif %}
+  <button type="submit" class="usa-button">Next</button>
+</form>
+
+{% endblock %}
