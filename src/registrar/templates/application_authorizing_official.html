@@ -3,17 +3,14 @@
 {% load widget_tweaks %}
 {% load static %}
 
-{% block title %}Apply for a .gov domain – Authorizing official{% endblock %}
+{% block backnav %}
+  {% with form_name="step__ao" %}
+    {{ block.super }}
+  {% endwith %}
+{% endblock %}
 
 {% block form_content %}
-{% if wizard.steps.prev %}
-    <button name="wizard_goto_step" type="submit" class="usa-button usa-button--unstyled" value="{{ wizard.steps.prev }}">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-            <use xlink:href="{%static '/img/sprite.svg'%}#arrow_back"></use>
-        </svg>
-    Back
-    </button>
-{% endif %}
+
 <h1>Authorizing official</h1>
 {{wizard.steps.current}}
 {{form_titles|get_item:wizard.steps.current}}
@@ -24,7 +21,7 @@
 
 <p>All fields are required unless they are marked optional.</p>
 
-<form class="usa-form usa-form--large" method="post">
+<form class="usa-form usa-form--large" id="step__ao" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
 
@@ -49,7 +46,8 @@
   </fieldset>
 
 
-  <button type="submit" class="usa-button">Next</button>
+  {{ block.super }}
+
 </form>
 
 {% endblock %}
