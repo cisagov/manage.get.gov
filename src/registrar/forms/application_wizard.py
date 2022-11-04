@@ -73,11 +73,23 @@ class PurposeForm(forms.Form):
                'maxlength':'500',
             }))
 
+class AuthorizingOfficialForm(forms.Form):
+    ao_given_name = forms.CharField(label="First name/given name")
+    ao_middle_name = forms.CharField(
+            required=False,
+            label="Middle name (optional)",
+            )
+    ao_family_name = forms.CharField(label="Last name/family name")
+    ao_title = forms.CharField(label="Title or role in your organization")
+    ao_email = forms.EmailField(label="Email")
+    ao_phone = forms.CharField(label="Phone")
+
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
     ("organization", OrganizationForm),
     ("contact", ContactForm),
+    ("authorizing_official", AuthorizingOfficialForm),
     ("purpose", PurposeForm),
 ]
 
@@ -86,6 +98,7 @@ FORMS = [
 TEMPLATES = {
     "organization": "application_organization.html",
     "contact": "application_contact.html",
+    "authorizing_official": "application_authorizing_official.html",
     "purpose": "application_purpose.html",
 }
 
@@ -94,6 +107,7 @@ TEMPLATES = {
 TITLES = {
     "organization": "About your organization",
     "contact": "Your organization's contact information",
+    "authorizing_official": "Authorizing official",
     "purpose": "Purpose of your domain",
 }
 

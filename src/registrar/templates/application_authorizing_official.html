@@ -1,0 +1,55 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block title %}Apply for a .gov domain – Authorizing official{% endblock %}
+
+{% block form_content %}
+{% if wizard.steps.prev %}
+    <button name="wizard_goto_step" type="submit" class="usa-button usa-button--unstyled" value="{{ wizard.steps.prev }}">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{%static '/img/sprite.svg'%}#arrow_back"></use>
+        </svg>
+    Back
+    </button>
+{% endif %}
+<h1>Authorizing official</h1>
+{{wizard.steps.current}}
+{{form_titles|get_item:wizard.steps.current}}
+<h2>Who is the authorizing official for your organization</h2>
+
+<p id="instructions">Your authorizing official is the person within your organization who can authorize your domain request. This is generally the highest ranking or highest elected official in your organization. Read more about <a href="#">who can serve as an authorizing official</a>.
+</p>
+
+<p>All fields are required unless they are marked optional.</p>
+
+<form class="usa-form usa-form--large" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
+  <fieldset class="usa-fieldset">
+    {{ wizard.form.ao_given_name|add_label_class:"usa-label" }}
+    {{ wizard.form.ao_given_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.ao_middle_name|add_label_class:"usa-label" }}
+    {{ wizard.form.ao_middle_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.ao_family_name|add_label_class:"usa-label" }}
+    {{ wizard.form.ao_family_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    
+    {{ wizard.form.ao_title|add_label_class:"usa-label" }}
+    {{ wizard.form.ao_title|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.ao_email|add_label_class:"usa-label" }}
+    {{ wizard.form.ao_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.ao_phone|add_label_class:"usa-label" }}
+    {{ wizard.form.ao_phone|add_class:"usa-input usa-input"|attr:"aria-describedby:instructions" }}
+  </fieldset>
+
+
+  <button type="submit" class="usa-button">Next</button>
+</form>
+
+{% endblock %}
