@@ -3,12 +3,16 @@
 {% load widget_tweaks %}
 {% load dynamic_question_tags %}
 
-{% block title %}Apply for a .gov domain - About your organization{% endblock %}
+{% block backnav %}
+  {% with form_name="step__about-org" %}
+    {{ block.super }}
+  {% endwith %}
+{% endblock %}
 
 {% block form_content %}
 <h1>About your organization</h1>
 
-<form class="usa-form usa-form--large" method="post">
+<form id="step__about-org" class="usa-form usa-form--large" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
 
@@ -48,7 +52,7 @@
     {{ wizard.form.is_election_board|add_class:"usa-radio" }}
   </fieldset>
 
-  <button type="submit" class="usa-button">Next</button>
+  {{ block.super }}  
 
 </form>
 {% endblock %}

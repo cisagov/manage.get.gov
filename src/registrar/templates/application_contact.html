@@ -2,7 +2,11 @@
 {% extends 'application_form.html' %}
 {% load widget_tweaks %}
 
-{% block title %}Apply for a .gov domain - Your organization's contact information{% endblock %}
+{% block backnav %}
+  {% with form_name="step__org-contact" %}
+    {{ block.super }}
+  {% endwith %}
+{% endblock %}
 
 {% block form_content %}
 <h1>Your organization's contact information</h1>
@@ -14,7 +18,7 @@ of a larger entity. If so, enter information about your part of the larger entit
 
 <p>All fields are required unless they are marked optional.</p>
 
-<form class="usa-form usa-form--large" method="post">
+<form id="step__org-contact" class="usa-form usa-form--large" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
 
@@ -26,10 +30,8 @@ of a larger entity. If so, enter information about your part of the larger entit
     {{ wizard.form.street_address|add_class:"usa-input" }}
   </fieldset>
 
-  {% if wizard.steps.prev %}
-    <button name="wizard_goto_step" type="submit" class="usa-button usa-button--base" value="{{ wizard.steps.prev }}">Previous</button>
-  {% endif %}
-  <button type="submit" class="usa-button">Submit</button>
+  {{ block.super }}
+  
 </form>
 
 {% endblock %}
