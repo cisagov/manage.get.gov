@@ -20,13 +20,7 @@
       {{ wizard.form.purpose_field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
       <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
     </div>
-
   </div>
-
-  {% if wizard.steps.prev %}
-    <button name="wizard_goto_step" type="submit" class="usa-button usa-button--base" value="{{ wizard.steps.prev }}">Previous</button>
-  {% endif %}
-  <button type="submit" class="usa-button">Next</button>
 </form>
 
 {% endblock %}
