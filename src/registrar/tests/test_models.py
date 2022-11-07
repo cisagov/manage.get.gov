@@ -3,8 +3,8 @@ from django.db.utils import IntegrityError
 
 from registrar.models import Contact, DomainApplication, User, Website
 
-class TestDomainApplication(TestCase):
 
+class TestDomainApplication(TestCase):
     def test_empty_create_fails(self):
         """Can't create a completely empty domain application."""
         with self.assertRaisesRegex(IntegrityError, "creator"):

@@ -1,8 +1,6 @@
 """Internal API views"""
 
 
-import re
-
 from django.core.exceptions import BadRequest
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
@@ -13,22 +11,11 @@ import requests
 
 from cachetools.func import ttl_cache
 
+from registrar.models import Website
+
 DOMAIN_FILE_URL = (
     "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
 )
-# a domain name is alphanumeric or hyphen, up to 63 characters, doesn't
-# begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
-DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
-
-
-def string_could_be_domain(domain):
-    """Return True if the string could be a domain name, otherwise False.
-
-    TODO: when we have a Domain class, this could be a classmethod there.
-    """
-    if DOMAIN_REGEX.match(domain):
-        return True
-    return False
 
 
 # this file doesn't change that often, nor is it that big, so cache the result
@@ -48,7 +35,7 @@ def _domains():
         # get the domain before the first comma
         domain = line.split(",", 1)[0]
         # sanity-check the string we got from the file here
-        if string_could_be_domain(domain):
+        if Website.string_could_be_domain(domain):
             # lowercase everything when we put it in domains
             domains.add(domain.lower())
     return domains
@@ -80,7 +67,10 @@ def available(request, domain=""):
     """
     # validate that the given domain could be a domain name and fail early if
     # not.
-    if not (string_could_be_domain(domain) or string_could_be_domain(domain + ".gov")):
+    if not (
+        Website.string_could_be_domain(domain)
+        or Website.string_could_be_domain(domain + ".gov")
+    ):
         raise BadRequest("Invalid request.")
     # a domain is available if it is NOT in the list of current domains
     return JsonResponse({"available": not in_domains(domain)})

@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-import django_fsm
+import django_fsm  # type: ignore
 
 
 class Migration(migrations.Migration):
