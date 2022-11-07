@@ -66,12 +66,7 @@ class ContactForm(forms.Form):
     street_address = forms.CharField(label="Street address")
 
 class PurposeForm(forms.Form):
-    purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea(
-        attrs={ 'class':'usa-textarea usa-character-count__field',
-               'id':'with-hint',
-               'aria-describedby':'instructions',
-               'maxlength':'500',
-            }))
+    purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea())
 
 class AuthorizingOfficialForm(forms.Form):
     given_name = forms.CharField(label="First name/given name")
