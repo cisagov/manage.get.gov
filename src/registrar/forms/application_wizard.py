@@ -65,9 +65,6 @@ class ContactForm(forms.Form):
     organization_name = forms.CharField(label="Organization Name")
     street_address = forms.CharField(label="Street address")
 
-class PurposeForm(forms.Form):
-    purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea())
-
 class AuthorizingOfficialForm(forms.Form):
     given_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
@@ -79,12 +76,28 @@ class AuthorizingOfficialForm(forms.Form):
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
+class CurrentSitesForm(forms.Form):
+    current_site = forms.CharField(label="Enter your organization’s public website, if you have one. For example, www.city.com.")
+
+class DotGovDomainForm(forms.Form):
+    dotgov_domain = forms.CharField(label="What .gov domain do you want?")
+    alternative_domain = forms.CharField(
+            required = False,
+            label="Are there other domains you’d like if we can’t give you your first choice? Entering alternative domains is optional.",
+            )
+
+class PurposeForm(forms.Form):
+    purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea())
+
+
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
     ("organization", OrganizationForm),
     ("contact", ContactForm),
     ("authorizing_official", AuthorizingOfficialForm),
+    ("current_sites", CurrentSitesForm),
+    ("dotgov_domain", DotGovDomainForm),
     ("purpose", PurposeForm),
 ]
 
@@ -94,6 +107,8 @@ TEMPLATES = {
     "organization": "application_organization.html",
     "contact": "application_contact.html",
     "authorizing_official": "application_authorizing_official.html",
+    "current_sites": "application_current_sites.html",
+    "dotgov_domain": "application_dotgov_domain.html",
     "purpose": "application_purpose.html",
 }
 
@@ -103,6 +118,8 @@ TITLES = {
     "organization": "About your organization",
     "contact": "Your organization's contact information",
     "authorizing_official": "Authorizing official",
+    "current_sites": "Website for your organization",
+    "dotgov_domain": ".gov domain",
     "purpose": "Purpose of your domain",
 }
 
