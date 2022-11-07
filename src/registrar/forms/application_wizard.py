@@ -74,15 +74,15 @@ class PurposeForm(forms.Form):
             }))
 
 class AuthorizingOfficialForm(forms.Form):
-    ao_given_name = forms.CharField(label="First name/given name")
-    ao_middle_name = forms.CharField(
+    given_name = forms.CharField(label="First name/given name")
+    middle_name = forms.CharField(
             required=False,
             label="Middle name (optional)",
             )
-    ao_family_name = forms.CharField(label="Last name/family name")
-    ao_title = forms.CharField(label="Title or role in your organization")
-    ao_email = forms.EmailField(label="Email")
-    ao_phone = forms.CharField(label="Phone")
+    family_name = forms.CharField(label="Last name/family name")
+    title = forms.CharField(label="Title or role in your organization")
+    email = forms.EmailField(label="Email")
+    phone = forms.CharField(label="Phone")
 
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass

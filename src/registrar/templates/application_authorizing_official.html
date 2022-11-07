@@ -26,23 +26,23 @@
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
-    {{ wizard.form.ao_given_name|add_label_class:"usa-label" }}
-    {{ wizard.form.ao_given_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ wizard.form.given_name|add_label_class:"usa-label" }}
+    {{ wizard.form.given_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.ao_middle_name|add_label_class:"usa-label" }}
-    {{ wizard.form.ao_middle_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ wizard.form.middle_name|add_label_class:"usa-label" }}
+    {{ wizard.form.middle_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.ao_family_name|add_label_class:"usa-label" }}
-    {{ wizard.form.ao_family_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ wizard.form.family_name|add_label_class:"usa-label" }}
+    {{ wizard.form.family_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
     
-    {{ wizard.form.ao_title|add_label_class:"usa-label" }}
-    {{ wizard.form.ao_title|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ wizard.form.title|add_label_class:"usa-label" }}
+    {{ wizard.form.title|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.ao_email|add_label_class:"usa-label" }}
-    {{ wizard.form.ao_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ wizard.form.email|add_label_class:"usa-label" }}
+    {{ wizard.form.email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.ao_phone|add_label_class:"usa-label" }}
-    {{ wizard.form.ao_phone|add_class:"usa-input usa-input"|attr:"aria-describedby:instructions" }}
+    {{ wizard.form.phone|add_label_class:"usa-label" }}
+    {{ wizard.form.phone|add_class:"usa-input usa-input"|attr:"aria-describedby:instructions" }}
   </fieldset>
 
 
