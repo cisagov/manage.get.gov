@@ -17,6 +17,7 @@
       </button>
       {% endif %}
     {% endblock %}
+    <h1> {{form_titles|get_item:wizard.steps.current}} </h1>
     {% block form_content %}
      <button type="submit" class="usa-button">Next</button>
      <button type="button" class="usa-button usa-button--outline">Save</button>
