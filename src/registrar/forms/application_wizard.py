@@ -89,38 +89,52 @@ class DotGovDomainForm(forms.Form):
 class PurposeForm(forms.Form):
     purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea())
 
+class YourContactForm(forms.Form):
+    given_name = forms.CharField(label="First name/given name")
+    middle_name = forms.CharField(
+            required=False,
+            label="Middle name (optional)",
+            )
+    family_name = forms.CharField(label="Last name/family name")
+    title = forms.CharField(label="Title or role in your organization")
+    email = forms.EmailField(label="Email")
+    phone = forms.CharField(label="Phone")
+
 
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
     ("organization", OrganizationForm),
-    ("contact", ContactForm),
+    ("org_contact", ContactForm),
     ("authorizing_official", AuthorizingOfficialForm),
     ("current_sites", CurrentSitesForm),
     ("dotgov_domain", DotGovDomainForm),
     ("purpose", PurposeForm),
+    ("your_contact", YourContactForm),
 ]
 
 # Dict to match up the right template with the right step. Keys here must
 # match the first elements of the tuples in FORMS
 TEMPLATES = {
     "organization": "application_organization.html",
-    "contact": "application_contact.html",
+    "org_contact": "application_org_contact.html",
     "authorizing_official": "application_authorizing_official.html",
     "current_sites": "application_current_sites.html",
     "dotgov_domain": "application_dotgov_domain.html",
     "purpose": "application_purpose.html",
+    "your_contact": "application_your_contact.html",
 }
 
 # We need to pass our page titles as context to the templates, indexed
 # by the step names
 TITLES = {
     "organization": "About your organization",
-    "contact": "Your organization's contact information",
+    "org_contact": "Your organization's contact information",
     "authorizing_official": "Authorizing official",
-    "current_sites": "Website for your organization",
+    "current_sites": "Organization website",
     "dotgov_domain": ".gov domain",
     "purpose": "Purpose of your domain",
+    "your_contact": "Your contact information",
 }
 
 
