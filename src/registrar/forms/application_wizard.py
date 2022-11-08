@@ -64,7 +64,10 @@ class OrganizationForm(forms.Form):
 class OrgContactForm(forms.Form):
     organization_name = forms.CharField(label="Organization Name")
     address_line1 = forms.CharField(label="Address line 1")
-    address_line2 = forms.CharField(label="Address line 2")
+    address_line2 = forms.CharField(
+            required=False,
+            label="Address line 2",
+            )
     us_state = forms.CharField(label="State")
     zipcode = forms.CharField(label="ZIP code")
 
@@ -80,7 +83,9 @@ class AuthorizingOfficialForm(forms.Form):
     phone = forms.CharField(label="Phone")
 
 class CurrentSitesForm(forms.Form):
-    current_site = forms.CharField(label="Enter your organization’s public website, if you have one. For example, www.city.com.")
+    current_site = forms.CharField(
+            required=False,
+            label="Enter your organization’s public website, if you have one. For example, www.city.com.")
 
 class DotGovDomainForm(forms.Form):
     dotgov_domain = forms.CharField(label="What .gov domain do you want?")
