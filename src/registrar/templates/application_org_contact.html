@@ -2,12 +2,6 @@
 {% extends 'application_form.html' %}
 {% load widget_tweaks %}
 
-{% block backnav %}
-  {% with form_name="step__org-contact" %}
-    {{ block.super }}
-  {% endwith %}
-{% endblock %}
-
 {% block form_content %}
 
 <h2>What is the name and mailing address of your organization?</h2>
@@ -17,7 +11,7 @@ of a larger entity. If so, enter information about your part of the larger entit
 
 <p>All fields are required unless they are marked optional.</p>
 
-<form id="step__org-contact" class="usa-form usa-form--large" method="post">
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
 

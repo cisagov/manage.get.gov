@@ -8,15 +8,13 @@
     {% include 'application_sidebar.html' %}
   </div>
   <div class="grid-col-9">
-    {% block backnav %}
-      {% if wizard.steps.prev %}
-      <button form="step__{{wizard.steps.current}}" name="wizard_goto_step" type="submit" class="usa-button usa-button--unstyled" value="{{ wizard.steps.prev }}">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-          <use xlink:href="{%static '/img/sprite.svg'%}#arrow_back"></use>
-        </svg><span class="margin-left-05">Previous step </span>
-      </button>
-      {% endif %}
-    {% endblock %}
+    {% if wizard.steps.prev %}
+    <button form="step__{{wizard.steps.current}}" name="wizard_goto_step" type="submit" class="usa-button usa-button--unstyled" value="{{ wizard.steps.prev }}">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="{%static '/img/sprite.svg'%}#arrow_back"></use>
+      </svg><span class="margin-left-05">Previous step </span>
+    </button>
+    {% endif %}
     <h1> {{form_titles|get_item:wizard.steps.current}} </h1>
     {% block form_content %}
      <button type="submit" class="usa-button">Next</button>

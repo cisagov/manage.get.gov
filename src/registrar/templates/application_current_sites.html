@@ -3,15 +3,9 @@
 {% load widget_tweaks %}
 {% load static %}
 
-{% block backnav %}
-  {% with form_name="step__current-site" %}
-    {{ block.super }}
-  {% endwith %}
-{% endblock %}
-
 {% block form_content %}
 
-<form class="usa-form usa-form--large" id="step__current-site" method="post">
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
 

@@ -2,15 +2,13 @@
 {% extends 'application_form.html' %}
 {% load widget_tweaks %}
 
-{% block title %}Apply for a .gov domain - Puprose{% endblock %}
-
 {% block form_content %}
 
 <p id="instructions">Explain how you plan to use this domain. Will you use it for a website and/or email? Are you moving your website from another top-level domain (like .com or .org)?Read about <a href="#">activities that are prohibited on .gov domains.</a></p>
 
 <p>All fields are required unless they are marked optional.</p>
 
-<form class="usa-form usa-form--large" method="post">
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
   <div class="usa-form-group">
     {{ wizard.management_form }}
     {% csrf_token %}

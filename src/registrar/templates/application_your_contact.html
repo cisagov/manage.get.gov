@@ -3,12 +3,6 @@
 {% load widget_tweaks %}
 {% load static %}
 
-{% block backnav %}
-  {% with form_name="step__ao" %}
-    {{ block.super }}
-  {% endwith %}
-{% endblock %}
-
 {% block form_content %}
 
 <div id="instructions">
@@ -21,7 +15,7 @@
 
 <p>All fields are required unless they are marked optional.</p>
 
-<form class="usa-form usa-form--large" id="step__ao" method="post">
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
 
