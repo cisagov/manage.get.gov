@@ -25,8 +25,15 @@ of a larger entity. If so, enter information about your part of the larger entit
   {{ wizard.form.organization_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
   <fieldset class="usa-fieldset">
-    {{ wizard.form.street_address|add_label_class:"usa-label" }}
-    {{ wizard.form.street_address|add_class:"usa-input" }}
+    {{ wizard.form.address_line1|add_label_class:"usa-label" }}
+    {{ wizard.form.address_line1|add_class:"usa-input" }}
+    {{ wizard.form.address_line2|add_label_class:"usa-label" }}
+    {{ wizard.form.address_line2|add_class:"usa-input" }}
+    {{ wizard.form.us_state|add_label_class:"usa-label" }}
+    {{ wizard.form.us_state|add_class:"usa-input" }}
+    {{ wizard.form.zipcode|add_label_class:"usa-label" }}
+    {{ wizard.form.zipcode|add_class:"usa-input" }}
+
   </fieldset>
 
   {{ block.super }}

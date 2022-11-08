@@ -61,9 +61,12 @@ class OrganizationForm(forms.Form):
     )
 
 
-class ContactForm(forms.Form):
+class OrgContactForm(forms.Form):
     organization_name = forms.CharField(label="Organization Name")
-    street_address = forms.CharField(label="Street address")
+    address_line1 = forms.CharField(label="Address line 1")
+    address_line2 = forms.CharField(label="Address line 2")
+    us_state = forms.CharField(label="State")
+    zipcode = forms.CharField(label="ZIP code")
 
 class AuthorizingOfficialForm(forms.Form):
     given_name = forms.CharField(label="First name/given name")
@@ -105,7 +108,7 @@ class YourContactForm(forms.Form):
 # subclass
 FORMS = [
     ("organization", OrganizationForm),
-    ("org_contact", ContactForm),
+    ("org_contact", OrgContactForm),
     ("authorizing_official", AuthorizingOfficialForm),
     ("current_sites", CurrentSitesForm),
     ("dotgov_domain", DotGovDomainForm),
@@ -128,8 +131,8 @@ TEMPLATES = {
 # We need to pass our page titles as context to the templates, indexed
 # by the step names
 TITLES = {
-    "organization": "About your organization",
-    "org_contact": "Your organization's contact information",
+    "organization": "Type of organization",
+    "org_contact": "Organization name and mailing address",
     "authorizing_official": "Authorizing official",
     "current_sites": "Organization website",
     "dotgov_domain": ".gov domain",
