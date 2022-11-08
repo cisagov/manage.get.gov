@@ -128,6 +128,13 @@ class SecurityEmailForm(forms.Form):
             label="Email",
             )
 
+class AnythingElseForm(forms.Form):
+    anything_else = forms.CharField(
+            required=False,
+            label="Anything else we should know", 
+            widget=forms.Textarea()
+            )
+
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
@@ -140,6 +147,7 @@ FORMS = [
     ("your_contact", YourContactForm),
     ("other_contacts", OtherContactsForm),
     ("security_email", SecurityEmailForm),
+    ("anything_else", AnythingElseForm),
 ]
 
 # Dict to match up the right template with the right step. Keys here must
@@ -154,6 +162,7 @@ TEMPLATES = {
     "your_contact": "application_your_contact.html",
     "other_contacts": "application_other_contacts.html",
     "security_email": "application_security_email.html",
+    "anything_else": "application_anything_else.html",
 }
 
 # We need to pass our page titles as context to the templates, indexed
@@ -168,6 +177,7 @@ TITLES = {
     "your_contact": "Your contact information",
     "other_contacts": "Other contacts for your domain",
     "security_email": "Security email for public use",
+    "anything_else": "Anything else we should know?",
 }
 
 
