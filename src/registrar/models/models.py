@@ -103,7 +103,7 @@ class Website(models.Model):
     DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
 
     @classmethod
-    def string_could_be_domain(cls, domain):
+    def string_could_be_domain(cls, domain: str) -> bool:
         """Return True if the string could be a domain name, otherwise False.
 
         TODO: when we have a Domain class, this could be a classmethod there.
@@ -112,21 +112,34 @@ class Website(models.Model):
             return True
         return False
 
+    def could_be_domain(self) -> bool:
+        """Could this instance be a domain?"""
+        # short-circuit if self.website is null/None
+        if not self.website:
+            return False
+        return self.string_could_be_domain(str(self.website))
+
+    def __str__(self) -> str:
+        return str(self.website)
+
 
 class Contact(models.Model):
 
     """Contact information follows a similar pattern for each contact."""
 
-    first_name = models.TextField(null=True, help_text="First name")
+    first_name = models.TextField(null=True, help_text="First name", db_index=True)
     middle_name = models.TextField(null=True, help_text="Middle name")
-    last_name = models.TextField(null=True, help_text="Last name")
+    last_name = models.TextField(null=True, help_text="Last name", db_index=True)
     title = models.TextField(null=True, help_text="Title")
-    email = models.TextField(null=True, help_text="Email")
-    phone = models.TextField(null=True, help_text="Phone")
+    email = models.TextField(null=True, help_text="Email", db_index=True)
+    phone = models.TextField(null=True, help_text="Phone", db_index=True)
 
 
 class DomainApplication(TimeStampedModel):
 
+    """A registrant's application for a new domain."""
+
+    # #### Contants for choice fields ####
     STARTED = "started"
     SUBMITTED = "submitted"
     INVESTIGATING = "investigating"
@@ -137,22 +150,6 @@ class DomainApplication(TimeStampedModel):
         (INVESTIGATING, INVESTIGATING),
         (APPROVED, APPROVED),
     ]
-    status = FSMField(
-        choices=STATUS_CHOICES,  # possible states as an array of constants
-        default=STARTED,  # sensible default
-        protected=True,  # cannot change state directly, must use methods!
-    )
-    creator = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name="applications_created"
-    )
-    investigator = models.ForeignKey(
-        User,
-        null=True,
-        on_delete=models.SET_NULL,
-        related_name="applications_investigating",
-    )
-
-    # data fields from the initial form
 
     FEDERAL = "federal"
     INTERSTATE = "interstate"
@@ -178,14 +175,35 @@ class DomainApplication(TimeStampedModel):
         (CITY, "a city, town, township, village, etc."),
         (SPECIAL_DISTRICT, "an independent organization within a single state"),
     ]
-    organization_type = models.CharField(
-        max_length=255, choices=ORGANIZATION_CHOICES, help_text="Type of Organization"
-    )
 
     EXECUTIVE = "Executive"
     JUDICIAL = "Judicial"
     LEGISLATIVE = "Legislative"
     BRANCH_CHOICES = [(x, x) for x in (EXECUTIVE, JUDICIAL, LEGISLATIVE)]
+
+    # #### Internal fields about the application #####
+    status = FSMField(
+        choices=STATUS_CHOICES,  # possible states as an array of constants
+        default=STARTED,  # sensible default
+        protected=False,  # can change state directly, particularly in Django admin
+    )
+    # This is the application user who created this application. The contact
+    # information that they gave is in the `submitter` field
+    creator = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="applications_created"
+    )
+    investigator = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="applications_investigating",
+    )
+
+    # ##### data fields from the initial form #####
+    organization_type = models.CharField(
+        max_length=255, choices=ORGANIZATION_CHOICES, help_text="Type of Organization"
+    )
+
     federal_branch = models.CharField(
         max_length=50,
         choices=BRANCH_CHOICES,
@@ -197,14 +215,18 @@ class DomainApplication(TimeStampedModel):
         null=True, help_text="Is your ogranization an election office?"
     )
 
-    organization_name = models.TextField(null=True, help_text="Organization name")
+    organization_name = models.TextField(
+        null=True, help_text="Organization name", db_index=True
+    )
     street_address = models.TextField(null=True, help_text="Street Address")
     unit_type = models.CharField(max_length=15, null=True, help_text="Unit type")
     unit_number = models.CharField(max_length=255, null=True, help_text="Unit number")
     state_territory = models.CharField(
         max_length=2, null=True, help_text="State/Territory"
     )
-    zip_code = models.CharField(max_length=10, null=True, help_text="ZIP code")
+    zip_code = models.CharField(
+        max_length=10, null=True, help_text="ZIP code", db_index=True
+    )
 
     authorizing_official = models.ForeignKey(
         Contact,
@@ -225,6 +247,8 @@ class DomainApplication(TimeStampedModel):
     )
     alternative_domains = models.ManyToManyField(Website, related_name="alternatives+")
 
+    # This is the contact information provided by the applicant. The
+    # application user who created it is in the `creator` field.
     submitter = models.ForeignKey(
         Contact,
         null=True,
@@ -250,16 +274,17 @@ class DomainApplication(TimeStampedModel):
         null=True, help_text="Acknowledged .gov acceptable use policy"
     )
 
-    def can_submit(self):
-        """Return True if this instance can be marked as submitted."""
-        if not Website.string_could_be_domain(self.requested_domain):
-            return False
-        return True
-
-    @transition(
-        field="status", source=STARTED, target=SUBMITTED, conditions=[can_submit]
-    )
+    @transition(field="status", source=STARTED, target=SUBMITTED)
     def submit(self):
         """Submit an application that is started."""
-        # don't need to do anything inside this method although we could
+
+        # check our conditions here inside the `submit` method so that we
+        # can raise more informative exceptions
+
+        # requested_domain could be None here
+        if (not self.requested_domain) or (not self.requested_domain.could_be_domain()):
+            raise ValueError("Requested domain is not a legal domain name.")
+
+        # if no exception was raised, then we don't need to do anything
+        # inside this method, keep the `pass` here to remind us of that
         pass

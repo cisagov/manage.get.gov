@@ -112,3 +112,10 @@ Within the `registrar/assets` folder, the `_theme` folder contains three files i
 3. `styles.css` a entry point or index for the styles, forwards all of the other style files used in the project (i.e. the USWDS source code, the settings, and all custom stylesheets).
 
 You can also compile the sass at any time using `npx gulp compile`. Similarly, you can copy over other static assets (images and javascript files), using `npx gulp copyAssets`.
+
+## Finite State Machines
+
+In an effort to keep our domain logic centralized, we are representing the state of 
+objects in the application using the [django-fsm](https://github.com/viewflow/django-fsm)
+library. See the [ADR number 15](../architecture/decisions/0015-use-django-fs.md) for
+more information on the topic.

@@ -46,3 +46,19 @@ class TestDomainApplication(TestCase):
         application.alternative_domains.add(gov_website)
         application.other_contacts.add(contact)
         application.save()
+
+    def test_status_fsm_submit_fail(self):
+        user, _ = User.objects.get_or_create()
+        application = DomainApplication.objects.create(creator=user)
+        with self.assertRaises(ValueError):
+            # can't submit an application with a null domain name
+            application.submit()
+
+    def test_status_fsm_submit_succeed(self):
+        user, _ = User.objects.get_or_create()
+        site = Website.objects.create(website="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=site
+        )
+        application.submit()
+        self.assertEqual(application.status, application.SUBMITTED)
