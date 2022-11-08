@@ -135,6 +135,9 @@ class AnythingElseForm(forms.Form):
             widget=forms.Textarea()
             )
 
+class RequirementsForm(forms.Form):
+    agree_check = forms.BooleanField(label="I read and agree to the .gov domain requirements.")
+
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
@@ -148,6 +151,7 @@ FORMS = [
     ("other_contacts", OtherContactsForm),
     ("security_email", SecurityEmailForm),
     ("anything_else", AnythingElseForm),
+    ("requirements", RequirementsForm),
 ]
 
 # Dict to match up the right template with the right step. Keys here must
@@ -163,6 +167,7 @@ TEMPLATES = {
     "other_contacts": "application_other_contacts.html",
     "security_email": "application_security_email.html",
     "anything_else": "application_anything_else.html",
+    "requirements": "application_requirements.html",
 }
 
 # We need to pass our page titles as context to the templates, indexed
@@ -178,6 +183,7 @@ TITLES = {
     "other_contacts": "Other contacts for your domain",
     "security_email": "Security email for public use",
     "anything_else": "Anything else we should know?",
+    "requirements": "Requirements for registration and operation of .gov domains",
 }
 
 
