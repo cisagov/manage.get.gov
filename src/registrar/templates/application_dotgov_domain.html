@@ -48,9 +48,9 @@
   {% csrf_token %}
   {{ wizard.form.dotgov_domain|add_label_class:"usa-label" }}
   <div class="display-flex flex-align-center">
-    <span class="padding-top-05">www.</span>
+    <span class="padding-top-05 padding-right-2px">www.</span>
     {{ wizard.form.dotgov_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
-    <span class="padding-top-05">.gov </span>
+    <span class="padding-top-05 padding-left-2px">.gov </span>
   </div>
 
   <h2>Alternative domains</h2>
@@ -58,9 +58,9 @@
   <div>
     {{ wizard.form.alternative_domain|add_label_class:"usa-label" }}
     <div class="display-flex flex-align-center">
-      <span class="padding-top-05">www.</span>
+      <span class="padding-top-05 padding-right-2px">www.</span>
       {{ wizard.form.alternative_domain|add_class:"usa-input" }}
-      <span class="padding-top-05">.gov </span>
+      <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
 
     <button type="button" class="usa-button usa-button--unstyled">
