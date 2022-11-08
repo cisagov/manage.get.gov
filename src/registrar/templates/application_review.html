@@ -1,0 +1,24 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load static widget_tweaks %}
+
+{% block form_content %}
+
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+  {% for this_step in wizard.steps.all|slice:":-1" %}
+  <div class="review__step margin-top-2">
+    <div class="review__step__title display-flex flex-justify"> 
+      <span class="review__step__name">{{ form_titles|get_item:this_step }}</span>
+      <a href="{% url wizard.url_name step=this_step %}">Edit </a>
+    </div>
+    <div class="review__step__value">
+      &lt;Answer value&gt;
+    </div>
+  </div>
+  {% endfor %}
+
+  {{ block.super }}
+
+</form>
+
+{% endblock %}
