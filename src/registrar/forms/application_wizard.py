@@ -111,6 +111,17 @@ class YourContactForm(forms.Form):
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
+class OtherContactsForm(forms.Form):
+    given_name = forms.CharField(label="First name/given name")
+    middle_name = forms.CharField(
+            required=False,
+            label="Middle name (optional)",
+            )
+    family_name = forms.CharField(label="Last name/family name")
+    title = forms.CharField(label="Title or role in your organization")
+    email = forms.EmailField(label="Email")
+    phone = forms.CharField(label="Phone")
+
 
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
@@ -122,6 +133,7 @@ FORMS = [
     ("dotgov_domain", DotGovDomainForm),
     ("purpose", PurposeForm),
     ("your_contact", YourContactForm),
+    ("other_contacts", OtherContactsForm),
 ]
 
 # Dict to match up the right template with the right step. Keys here must
@@ -134,6 +146,7 @@ TEMPLATES = {
     "dotgov_domain": "application_dotgov_domain.html",
     "purpose": "application_purpose.html",
     "your_contact": "application_your_contact.html",
+    "other_contacts": "application_other_contacts.html",
 }
 
 # We need to pass our page titles as context to the templates, indexed
@@ -146,6 +159,7 @@ TITLES = {
     "dotgov_domain": ".gov domain",
     "purpose": "Purpose of your domain",
     "your_contact": "Your contact information",
+    "other_contacts": "Other contacts for your domain",
 }
 
 
