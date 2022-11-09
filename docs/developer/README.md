@@ -116,3 +116,10 @@ You can also compile the sass at any time using `npx gulp compile`. Similarly, y
 ## Nightly Builds
 
 We run a deploy to staging from `main` nightly. You can see the deploys [here](https://github.com/cisagov/getgov/actions/workflows/deploy.yaml).
+
+## Finite State Machines
+
+In an effort to keep our domain logic centralized, we are representing the state of 
+objects in the application using the [django-fsm](https://github.com/viewflow/django-fsm)
+library. See the [ADR number 15](../architecture/decisions/0015-use-django-fs.md) for
+more information on the topic.
