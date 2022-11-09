@@ -113,6 +113,10 @@ Within the `registrar/assets` folder, the `_theme` folder contains three files i
 
 You can also compile the sass at any time using `npx gulp compile`. Similarly, you can copy over other static assets (images and javascript files), using `npx gulp copyAssets`.
 
+## Nightly Builds
+
+We run a deploy to staging from `main` nightly. You can see the deploys [here](https://github.com/cisagov/getgov/actions/workflows/deploy.yaml).
+
 ## Finite State Machines
 
 In an effort to keep our domain logic centralized, we are representing the state of 
