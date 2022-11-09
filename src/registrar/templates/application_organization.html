@@ -12,37 +12,49 @@
   {% radio_buttons_by_value wizard.form.organization_type as choices %}
 
   <fieldset id="organization_type__fieldset" class="usa-fieldset">
-    <legend>
+    <legend class="usa-legend">
       <h2> What kind of government organization do you represent?</h2>
     </legend>
     {{ wizard.form.organization_type.errors }}
-    {% include "includes/radio_button.html" with choice=choices.Federal %}
-    {% include "includes/radio_button.html" with choice=choices.Interstate %}
-    {% include "includes/radio_button.html" with choice=choices.State_or_Territory %}
-    {% include "includes/radio_button.html" with choice=choices.Tribal %}
-    {% include "includes/radio_button.html" with choice=choices.County %}
-    {% include "includes/radio_button.html" with choice=choices.City %}
-    {% include "includes/radio_button.html" with choice=choices.Special_District %}
+    {% include "includes/radio_button.html" with choice=choices.Federal tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.Interstate tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.State_or_Territory tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.Tribal tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.County tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.City tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.Special_District tile="true" %}
   </fieldset>
 
   <fieldset id="federal_type__fieldset" {% trigger wizard.form.federal_type choices.Federal %} class="usa-fieldset">
-    <legend>
+    <legend class="usa-legend">
       <h2> Which federal branch does your organization belong to?</h2>
     </legend>
     <noscript>
       Only required if you selected "Federal".
     </noscript>
-    {{ wizard.form.federal_type|add_class:"usa-radio" }}
+    {% radio_buttons_by_value wizard.form.federal_type as federal_choices %}
+    {% include "includes/radio_button.html" with choice=federal_choices.Executive%}
+    {% include "includes/radio_button.html" with choice=federal_choices.Judicial%}
+    {% include "includes/radio_button.html" with choice=federal_choices.Legislative%}
   </fieldset>
 
   <fieldset id="is_election_board__fieldset" {% trigger wizard.form.is_election_board choices.Tribal choices.County choices.City choices.Special_District%} class="usa-fieldset">
-    <legend>
+    <legend class="usa-legend">
       <h2> Is your organization an election office?</h2>
     </legend>
     <noscript>
       Only required if you selected "Tribal", "County", "City" or "Special District".
     </noscript>
-    {{ wizard.form.is_election_board|add_class:"usa-radio" }}
+    {% for radio in wizard.form.is_election_board %}
+      <div class="usa-radio"> 
+        {{radio.tag}}
+        <label for="{{radio.id_for_label}}" class="usa-radio__label"> 
+          {{ radio.choice_label }}
+        </label>
+      </div>
+    {% endfor %}
+    <!-- {{ wizard.form.is_election_board|add_label_class:"usa-label" }} -->
+    <!-- {{ wizard.form.is_election_board|add_class:"usa-radio" }} -->
   </fieldset>
 
   {{ block.super }}  

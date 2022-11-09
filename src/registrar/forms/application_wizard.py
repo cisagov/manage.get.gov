@@ -57,7 +57,7 @@ class OrganizationForm(forms.Form):
             ("Yes", "Yes"),
             ("No", "No"),
         ],
-        widget=forms.RadioSelect,
+        widget=forms.RadioSelect(attrs={"class":"usa-radio__input"}),
     )
 
 
