@@ -11,8 +11,12 @@ from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 
 logger = logging.getLogger(__name__)
 
+class RegistrarForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('label_suffix', '')
+        super(RegistrarForm, self).__init__(*args, **kwargs)
 
-class OrganizationForm(forms.Form):
+class OrganizationForm(RegistrarForm):
     organization_type = forms.ChoiceField(
         required=True,
         choices=[
@@ -61,7 +65,7 @@ class OrganizationForm(forms.Form):
     )
 
 
-class OrgContactForm(forms.Form):
+class OrgContactForm(RegistrarForm):
     organization_name = forms.CharField(label="Organization Name")
     address_line1 = forms.CharField(label="Address line 1")
     address_line2 = forms.CharField(
@@ -74,7 +78,7 @@ class OrgContactForm(forms.Form):
             )
     zipcode = forms.CharField(label="ZIP code")
 
-class AuthorizingOfficialForm(forms.Form):
+class AuthorizingOfficialForm(RegistrarForm):
     given_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
             required=False,
@@ -85,22 +89,22 @@ class AuthorizingOfficialForm(forms.Form):
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
-class CurrentSitesForm(forms.Form):
+class CurrentSitesForm(RegistrarForm):
     current_site = forms.CharField(
             required=False,
             label="Enter your organization’s public website, if you have one. For example, www.city.com.")
 
-class DotGovDomainForm(forms.Form):
+class DotGovDomainForm(RegistrarForm):
     dotgov_domain = forms.CharField(label="What .gov domain do you want?")
     alternative_domain = forms.CharField(
             required = False,
             label="Are there other domains you’d like if we can’t give you your first choice? Entering alternative domains is optional.",
             )
 
-class PurposeForm(forms.Form):
+class PurposeForm(RegistrarForm):
     purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea())
 
-class YourContactForm(forms.Form):
+class YourContactForm(RegistrarForm):
     given_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
             required=False,
@@ -111,7 +115,7 @@ class YourContactForm(forms.Form):
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
-class OtherContactsForm(forms.Form):
+class OtherContactsForm(RegistrarForm):
     given_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
             required=False,
@@ -122,23 +126,23 @@ class OtherContactsForm(forms.Form):
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
-class SecurityEmailForm(forms.Form):
+class SecurityEmailForm(RegistrarForm):
     email = forms.EmailField(
             required=False,
-            label="Email",
+            label="Security email",
             )
 
-class AnythingElseForm(forms.Form):
+class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
             required=False,
             label="Anything else we should know", 
             widget=forms.Textarea()
             )
 
-class RequirementsForm(forms.Form):
+class RequirementsForm(RegistrarForm):
     agree_check = forms.BooleanField(label="I read and agree to the .gov domain requirements.")
 
-class ReviewForm(forms.Form):
+class ReviewForm(RegistrarForm):
     pass
 
 # List of forms in our wizard. Each entry is a tuple of a name and a form

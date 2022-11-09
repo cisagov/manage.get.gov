@@ -12,27 +12,28 @@
   </ul>
   </p>
 
-  <p>Note that <em> only federal agencies can request generic terms </em>like vote.gov.</p> 
+  <p>Note that <strong> only federal agencies can request generic terms </strong>like vote.gov.</p> 
 
   <p>We’ll try to give you the domain you want. We first need to make sure your request meets our requirements. We’ll work with you to find the best domain for your organization.</p>
 
   <p>Here are a few domain examples for your type of organization.</p>
-
-  <p> Most city domains must include the two-letter state abbreviation or clearly spell out the state name. Using phrases like “City of” or “Town of” is optional.</p>
-  <p>Examples:
-  <ul class="usa-list">
-    <li>www.BlufftonIndiana.gov</li>
-    <li>www.CityofEudoraKS.gov</li>
-    <li>www.WallawallaWA.gov</li>
-  </ul>
-  </p>
-  <p> Some cities don’t have to refer to their state.
-  <ul class="usa-list">
-    <li> City names that are not shared by any other U.S. city, town, or village can be requested without referring to the state. We use the Census Bureau’s National Places Gazetteer Files to determine if names are unique. </li>
-    <li>Certain cities are so well-known that they may not require a state reference to communicate location. We use the list of U.S. “dateline cities” in the Associated Press Stylebook to make this determination.</li>
-    <li>The 50 largest cities, as measured by population according to the Census Bureau, can have .gov domain names that don’t refer to their state.</li>
-  </ul>
-  </p>
+  <div class="domain-example">
+    <p> Most city domains must include the two-letter state abbreviation or clearly spell out the state name. Using phrases like “City of” or “Town of” is optional.</p>
+    <p>Examples:
+    <ul class="usa-list">
+      <li>www.BlufftonIndiana.gov</li>
+      <li>www.CityofEudoraKS.gov</li>
+      <li>www.WallawallaWA.gov</li>
+    </ul>
+    </p>
+    <p> Some cities don’t have to refer to their state.
+    <ul class="usa-list">
+      <li> City names that are not shared by any other U.S. city, town, or village can be requested without referring to the state. We use the Census Bureau’s National Places Gazetteer Files to determine if names are unique. </li>
+      <li>Certain cities are so well-known that they may not require a state reference to communicate location. We use the list of U.S. “dateline cities” in the Associated Press Stylebook to make this determination.</li>
+      <li>The 50 largest cities, as measured by population according to the Census Bureau, can have .gov domain names that don’t refer to their state.</li>
+    </ul>
+    </p>
+  </div>
 
 <form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
   <h2> What .gov domain do you want? </h2>
@@ -46,6 +47,7 @@
     {{ wizard.form.dotgov_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
     <span class="padding-top-05 padding-left-2px">.gov </span>
   </div>
+  <button type="button" class="usa-button">Check availability </button>
 
   <h2>Alternative domains</h2>
 
@@ -63,6 +65,8 @@
       </svg><span class="margin-left-05">Add another alternative</span>
     </button>
   </div>
+
+  <p>If you’re not sure this is the domain you want, that’s okay. You can change it later.</p> 
 
   {{ block.super }}
   

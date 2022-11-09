@@ -12,6 +12,7 @@
   {{ wizard.management_form }}
   {% csrf_token %}
 
+  <h2> Contact 2 </h2>
   <fieldset class="usa-fieldset">
     {{ wizard.form.given_name|add_label_class:"usa-label" }}
     {{ wizard.form.given_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
