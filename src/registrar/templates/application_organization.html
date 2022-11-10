@@ -25,38 +25,6 @@
     {% include "includes/radio_button.html" with choice=choices.Special_District tile="true" %}
   </fieldset>
 
-  <fieldset id="federal_type__fieldset" {% trigger wizard.form.federal_type choices.Federal %} class="usa-fieldset">
-    <legend class="usa-legend">
-      <h2> Which federal branch does your organization belong to?</h2>
-    </legend>
-    <noscript>
-      Only required if you selected "Federal".
-    </noscript>
-    {% radio_buttons_by_value wizard.form.federal_type as federal_choices %}
-    {% include "includes/radio_button.html" with choice=federal_choices.Executive%}
-    {% include "includes/radio_button.html" with choice=federal_choices.Judicial%}
-    {% include "includes/radio_button.html" with choice=federal_choices.Legislative%}
-  </fieldset>
-
-  <fieldset id="is_election_board__fieldset" {% trigger wizard.form.is_election_board choices.Tribal choices.County choices.City choices.Special_District%} class="usa-fieldset">
-    <legend class="usa-legend">
-      <h2> Is your organization an election office?</h2>
-    </legend>
-    <noscript>
-      Only required if you selected "Tribal", "County", "City" or "Special District".
-    </noscript>
-    {% for radio in wizard.form.is_election_board %}
-      <div class="usa-radio"> 
-        {{radio.tag}}
-        <label for="{{radio.id_for_label}}" class="usa-radio__label"> 
-          {{ radio.choice_label }}
-        </label>
-      </div>
-    {% endfor %}
-    <!-- {{ wizard.form.is_election_board|add_label_class:"usa-label" }} -->
-    <!-- {{ wizard.form.is_election_board|add_class:"usa-radio" }} -->
-  </fieldset>
-
   {{ block.super }}  
 
 </form>

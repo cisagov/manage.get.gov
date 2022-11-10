@@ -1,0 +1,22 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+{% load dynamic_question_tags %}
+
+{% block form_content %}
+
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+  <h2>Which federal branch is your organization in?</h2>
+  <fieldset id="federal_type__fieldset" class="usa-fieldset">
+    {% radio_buttons_by_value wizard.form.federal_type as federal_choices %}
+    {% include "includes/radio_button.html" with choice=federal_choices.Executive%}
+    {% include "includes/radio_button.html" with choice=federal_choices.Judicial%}
+    {% include "includes/radio_button.html" with choice=federal_choices.Legislative%}
+  </fieldset>
+
+  {{ block.super }}  
+
+</form>
+{% endblock %}

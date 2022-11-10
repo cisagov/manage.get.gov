@@ -64,6 +64,26 @@ class OrganizationForm(RegistrarForm):
         widget=forms.RadioSelect(attrs={"class":"usa-radio__input"}),
     )
 
+class OrganizationFederalForm(RegistrarForm):
+    federal_type = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("Executive", "Executive"),
+            ("Judicial", "Judicial"),
+            ("Legislative", "Legislative"),
+        ],
+        widget=forms.RadioSelect,
+    )
+
+class OrganizationElectionForm(RegistrarForm):
+    is_election_board = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("Yes", "Yes"),
+            ("No", "No"),
+        ],
+        widget=forms.RadioSelect(),
+    )
 
 class OrgContactForm(RegistrarForm):
     organization_name = forms.CharField(label="Organization Name")
@@ -149,6 +169,8 @@ class ReviewForm(RegistrarForm):
 # subclass
 FORMS = [
     ("organization", OrganizationForm),
+    ("organization_federal", OrganizationFederalForm),
+    ("organization_election", OrganizationElectionForm),
     ("org_contact", OrgContactForm),
     ("authorizing_official", AuthorizingOfficialForm),
     ("current_sites", CurrentSitesForm),
@@ -166,6 +188,8 @@ FORMS = [
 # match the first elements of the tuples in FORMS
 TEMPLATES = {
     "organization": "application_organization.html",
+    "organization_federal": "application_org_federal.html",
+    "organization_election": "application_org_election.html",
     "org_contact": "application_org_contact.html",
     "authorizing_official": "application_authorizing_official.html",
     "current_sites": "application_current_sites.html",
@@ -183,6 +207,8 @@ TEMPLATES = {
 # by the step names
 TITLES = {
     "organization": "Type of organization",
+    "organization_federal": "Type of organization — Federal",
+    "organization_election": "Type of organization — Election board",
     "org_contact": "Organization name and mailing address",
     "authorizing_official": "Authorizing official",
     "current_sites": "Organization website",
