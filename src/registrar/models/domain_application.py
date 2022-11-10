@@ -1,174 +1,10 @@
-import re
-
-from django.contrib.auth.models import AbstractUser
 from django.db import models
-
 from django_fsm import FSMField, transition  # type: ignore
 
-
-class User(AbstractUser):
-    """
-    A custom user model that performs identically to the default user model
-    but can be customized later.
-    """
-
-    def __str__(self):
-        # this info is pulled from Login.gov
-        if self.first_name or self.last_name:
-            return f"{self.first_name or ''} {self.last_name or ''}"
-        elif self.email:
-            return self.email
-        else:
-            return self.username
-
-
-class TimeStampedModel(models.Model):
-    """
-    An abstract base model that provides self-updating
-    `created_at` and `updated_at` fields.
-    """
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
-        # don't put anything else here, it will be ignored
-
-
-class AddressModel(models.Model):
-    """
-    An abstract base model that provides common fields
-    for postal addresses.
-    """
-
-    # contact's street (null ok)
-    street1 = models.TextField(blank=True)
-    # contact's street (null ok)
-    street2 = models.TextField(blank=True)
-    # contact's street (null ok)
-    street3 = models.TextField(blank=True)
-    # contact's city
-    city = models.TextField(blank=True)
-    # contact's state or province (null ok)
-    sp = models.TextField(blank=True)
-    # contact's postal code (null ok)
-    pc = models.TextField(blank=True)
-    # contact's country code
-    cc = models.TextField(blank=True)
-
-    class Meta:
-        abstract = True
-        # don't put anything else here, it will be ignored
-
-
-class Website(models.Model):
-
-    """Keep domain names in their own table so that applications can refer to
-    many of them."""
-
-    # domain names have strictly limited lengths, 255 characters is more than
-    # enough.
-    website = models.CharField(
-        max_length=255,
-        null=False,
-        help_text="",
-    )
-
-    # a domain name is alphanumeric or hyphen, up to 63 characters, doesn't
-    # begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
-    DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
-
-    @classmethod
-    def string_could_be_domain(cls, domain: str) -> bool:
-        """Return True if the string could be a domain name, otherwise False.
-
-        TODO: when we have a Domain class, this could be a classmethod there.
-        """
-        if cls.DOMAIN_REGEX.match(domain):
-            return True
-        return False
-
-    def could_be_domain(self) -> bool:
-        """Could this instance be a domain?"""
-        # short-circuit if self.website is null/None
-        if not self.website:
-            return False
-        return self.string_could_be_domain(str(self.website))
-
-    def __str__(self) -> str:
-        return str(self.website)
-
-
-class Contact(models.Model):
-
-    """Contact information follows a similar pattern for each contact."""
-
-    first_name = models.TextField(
-        null=True,
-        blank=True,
-        help_text="First name",
-        db_index=True,
-    )
-    middle_name = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Middle name",
-    )
-    last_name = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Last name",
-        db_index=True,
-    )
-    title = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Title",
-    )
-    email = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Email",
-        db_index=True,
-    )
-    phone = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Phone",
-        db_index=True,
-    )
-
-    def __str__(self):
-        if self.first_name or self.last_name:
-            return f"{self.title or ''} {self.first_name or ''} {self.last_name or ''}"
-        elif self.email:
-            return self.email
-        elif self.pk:
-            return str(self.pk)
-        else:
-            return ""
-
-
-class UserProfile(TimeStampedModel, Contact, AddressModel):
-    """User information, unrelated to their login/auth details."""
-
-    user = models.OneToOneField(
-        User,
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-    )
-    display_name = models.TextField()
-
-    def __str__(self):
-        # use info stored in User rather than Contact,
-        # because Contact is user-editable while User
-        # pulls from identity-verified Login.gov
-        if self.user:
-            return str(self.user)
-        else:
-            return "Orphaned account"
+from .utility.time_stamped_model import TimeStampedModel
+from .contact import Contact
+from .user import User
+from .website import Website
 
 
 class DomainApplication(TimeStampedModel):
@@ -367,13 +203,13 @@ class DomainApplication(TimeStampedModel):
     )
 
     def __str__(self):
-        if self.requested_domain and self.requested_domain.website:
-            return self.requested_domain.website
-        else:
-            try:
+        try:
+            if self.requested_domain and self.requested_domain.website:
+                return self.requested_domain.website
+            else:
                 return f"{self.status} application created by {self.creator}"
-            except Exception:
-                return ""
+        except Exception:
+            return ""
 
     @transition(field="status", source=STARTED, target=SUBMITTED)
     def submit(self):
