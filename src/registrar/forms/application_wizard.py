@@ -11,10 +11,12 @@ from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 
 logger = logging.getLogger(__name__)
 
+
 class RegistrarForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('label_suffix', '')
+        kwargs.setdefault("label_suffix", "")
         super(RegistrarForm, self).__init__(*args, **kwargs)
+
 
 class OrganizationForm(RegistrarForm):
     organization_type = forms.ChoiceField(
@@ -61,8 +63,9 @@ class OrganizationForm(RegistrarForm):
             ("Yes", "Yes"),
             ("No", "No"),
         ],
-        widget=forms.RadioSelect(attrs={"class":"usa-radio__input"}),
+        widget=forms.RadioSelect(attrs={"class": "usa-radio__input"}),
     )
+
 
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
@@ -75,6 +78,7 @@ class OrganizationFederalForm(RegistrarForm):
         widget=forms.RadioSelect,
     )
 
+
 class OrganizationElectionForm(RegistrarForm):
     is_election_board = forms.ChoiceField(
         required=False,
@@ -85,85 +89,155 @@ class OrganizationElectionForm(RegistrarForm):
         widget=forms.RadioSelect(),
     )
 
+
 class OrgContactForm(RegistrarForm):
     organization_name = forms.CharField(label="Organization Name")
     address_line1 = forms.CharField(label="Address line 1")
     address_line2 = forms.CharField(
-            required=False,
-            label="Address line 2",
-            )
+        required=False,
+        label="Address line 2",
+    )
     us_state = forms.ChoiceField(
-            label="State",
-            choices=[('AL', 'Alabama'), ('AK', 'Alaska'), ('AZ', 'Arizona'), ('AR', 'Arkansas'), ('CA', 'California'), ('CO', 'Colorado'), ('CT', 'Connecticut'), ('DE', 'Delaware'), ('DC', 'District of Columbia'), ('FL', 'Florida'), ('GA', 'Georgia'), ('HI', 'Hawaii'), ('ID', 'Idaho'), ('IL', 'Illinois'), ('IN', 'Indiana'), ('IA', 'Iowa'), ('KS', 'Kansas'), ('KY', 'Kentucky'), ('LA', 'Louisiana'), ('ME', 'Maine'), ('MD', 'Maryland'), ('MA', 'Massachusetts'), ('MI', 'Michigan'), ('MN', 'Minnesota'), ('MS', 'Mississippi'), ('MO', 'Missouri'), ('MT', 'Montana'), ('NE', 'Nebraska'), ('NV', 'Nevada'), ('NH', 'New Hampshire'), ('NJ', 'New Jersey'), ('NM', 'New Mexico'), ('NY', 'New York'), ('NC', 'North Carolina'), ('ND', 'North Dakota'), ('OH', 'Ohio'), ('OK', 'Oklahoma'), ('OR', 'Oregon'), ('PA', 'Pennsylvania'), ('RI', 'Rhode Island'), ('SC', 'South Carolina'), ('SD', 'South Dakota'), ('TN', 'Tennessee'), ('TX', 'Texas'), ('UT', 'Utah'), ('VT', 'Vermont'), ('VA', 'Virginia'), ('WA', 'Washington'), ('WV', 'West Virginia'), ('WI', 'Wisconsin'), ('WY', 'Wyoming'), ('AS', 'American Samoa'), ('GU', 'Guam'), ('MP', 'Northern Mariana Islands'), ('PR', 'Puerto Rico'), ('VI', 'Virgin Islands'),],
-            )
+        label="State",
+        choices=[
+            ("AL", "Alabama"),
+            ("AK", "Alaska"),
+            ("AZ", "Arizona"),
+            ("AR", "Arkansas"),
+            ("CA", "California"),
+            ("CO", "Colorado"),
+            ("CT", "Connecticut"),
+            ("DE", "Delaware"),
+            ("DC", "District of Columbia"),
+            ("FL", "Florida"),
+            ("GA", "Georgia"),
+            ("HI", "Hawaii"),
+            ("ID", "Idaho"),
+            ("IL", "Illinois"),
+            ("IN", "Indiana"),
+            ("IA", "Iowa"),
+            ("KS", "Kansas"),
+            ("KY", "Kentucky"),
+            ("LA", "Louisiana"),
+            ("ME", "Maine"),
+            ("MD", "Maryland"),
+            ("MA", "Massachusetts"),
+            ("MI", "Michigan"),
+            ("MN", "Minnesota"),
+            ("MS", "Mississippi"),
+            ("MO", "Missouri"),
+            ("MT", "Montana"),
+            ("NE", "Nebraska"),
+            ("NV", "Nevada"),
+            ("NH", "New Hampshire"),
+            ("NJ", "New Jersey"),
+            ("NM", "New Mexico"),
+            ("NY", "New York"),
+            ("NC", "North Carolina"),
+            ("ND", "North Dakota"),
+            ("OH", "Ohio"),
+            ("OK", "Oklahoma"),
+            ("OR", "Oregon"),
+            ("PA", "Pennsylvania"),
+            ("RI", "Rhode Island"),
+            ("SC", "South Carolina"),
+            ("SD", "South Dakota"),
+            ("TN", "Tennessee"),
+            ("TX", "Texas"),
+            ("UT", "Utah"),
+            ("VT", "Vermont"),
+            ("VA", "Virginia"),
+            ("WA", "Washington"),
+            ("WV", "West Virginia"),
+            ("WI", "Wisconsin"),
+            ("WY", "Wyoming"),
+            ("AS", "American Samoa"),
+            ("GU", "Guam"),
+            ("MP", "Northern Mariana Islands"),
+            ("PR", "Puerto Rico"),
+            ("VI", "Virgin Islands"),
+        ],
+    )
     zipcode = forms.CharField(label="ZIP code")
+
 
 class AuthorizingOfficialForm(RegistrarForm):
     given_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
-            required=False,
-            label="Middle name (optional)",
-            )
+        required=False,
+        label="Middle name (optional)",
+    )
     family_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
+
 class CurrentSitesForm(RegistrarForm):
     current_site = forms.CharField(
-            required=False,
-            label="Enter your organization’s public website, if you have one. For example, www.city.com.")
+        required=False,
+        label="Enter your organization’s public website, if you have one. For example, www.city.com.",
+    )
+
 
 class DotGovDomainForm(RegistrarForm):
     dotgov_domain = forms.CharField(label="What .gov domain do you want?")
     alternative_domain = forms.CharField(
-            required = False,
-            label="Are there other domains you’d like if we can’t give you your first choice? Entering alternative domains is optional.",
-            )
+        required=False,
+        label="Are there other domains you’d like if we can’t give you your first choice? Entering alternative domains is optional.",
+    )
+
 
 class PurposeForm(RegistrarForm):
     purpose_field = forms.CharField(label="Purpose", widget=forms.Textarea())
 
+
 class YourContactForm(RegistrarForm):
     given_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
-            required=False,
-            label="Middle name (optional)",
-            )
+        required=False,
+        label="Middle name (optional)",
+    )
     family_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
+
 
 class OtherContactsForm(RegistrarForm):
     given_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
-            required=False,
-            label="Middle name (optional)",
-            )
+        required=False,
+        label="Middle name (optional)",
+    )
     family_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
+
 class SecurityEmailForm(RegistrarForm):
     email = forms.EmailField(
-            required=False,
-            label="Security email",
-            )
+        required=False,
+        label="Security email",
+    )
+
 
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
-            required=False,
-            label="Anything else we should know", 
-            widget=forms.Textarea()
-            )
+        required=False, label="Anything else we should know", widget=forms.Textarea()
+    )
+
 
 class RequirementsForm(RegistrarForm):
-    agree_check = forms.BooleanField(label="I read and agree to the .gov domain requirements.")
+    agree_check = forms.BooleanField(
+        label="I read and agree to the .gov domain requirements."
+    )
+
 
 class ReviewForm(RegistrarForm):
     pass
+
 
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
