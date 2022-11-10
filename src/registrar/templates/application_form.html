@@ -3,26 +3,30 @@
 
 {% block title %}Apply for a .gov domain – {{form_titles|get_item:wizard.steps.current}}{% endblock %}
 {% block content %}
-<div class="grid-row grid-gap">
-  <div class="grid-col-3">
-    {% include 'application_sidebar.html' %}
-  </div>
-  <div class="grid-col-9">
-    {% if wizard.steps.prev %}
-    <a href="{% url wizard.url_name step=wizard.steps.prev %}">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-        <use xlink:href="{%static '/img/sprite.svg'%}#arrow_back"></use>
-      </svg><span class="margin-left-05">Previous step </span>
-    </a>
-    {% endif %}
-    <h1> {{form_titles|get_item:wizard.steps.current}} </h1>
-    {% block form_content %}
-      {% if wizard.steps.next %}
+<div class="grid-container">
+  <div class="grid-row grid-gap">
+    <div class="grid-col-3">
+      {% include 'application_sidebar.html' %}
+    </div>
+    <div class="grid-col-9">
+      <main id="main-content" class="grid-container">
+        {% if wizard.steps.prev %}
+        <a href="{% url wizard.url_name step=wizard.steps.prev %}">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{%static '/img/sprite.svg'%}#arrow_back"></use>
+          </svg><span class="margin-left-05">Previous step </span>
+        </a>
+        {% endif %}
+        <h1> {{form_titles|get_item:wizard.steps.current}} </h1>
+        {% block form_content %}
+        {% if wizard.steps.next %}
         <button type="submit" class="usa-button">Next</button>
-      {% else %}
+        {% else %}
         <button type="submit" class="usa-button">Submit your domain request</button>
-      {% endif %}
-      <button type="button" class="usa-button usa-button--outline">Save</button>
+        {% endif %}
+        <button type="button" class="usa-button usa-button--outline">Save</button>
+      </main>
+    </div> 
     {% endblock %}
   </div>
 </div>
