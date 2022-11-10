@@ -1,6 +1,5 @@
 import re
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -14,9 +13,12 @@ class User(AbstractUser):
     """
 
     def __str__(self):
-        try:
-            return self.userprofile.display_name
-        except ObjectDoesNotExist:
+        # this info is pulled from Login.gov
+        if self.first_name or self.last_name:
+            return f"{self.first_name or ''} {self.last_name or ''}"
+        elif self.email:
+            return self.email
+        else:
             return self.username
 
 
@@ -60,35 +62,6 @@ class AddressModel(models.Model):
         # don't put anything else here, it will be ignored
 
 
-class ContactInfo(models.Model):
-    """
-    An abstract base model that provides common fields
-    for contact information.
-    """
-
-    voice = models.TextField(blank=True)
-    fax = models.TextField(blank=True)
-    email = models.TextField(blank=True)
-
-    class Meta:
-        abstract = True
-        # don't put anything else here, it will be ignored
-
-
-class UserProfile(TimeStampedModel, ContactInfo, AddressModel):
-    user = models.OneToOneField(User, null=True, on_delete=models.CASCADE)
-    display_name = models.TextField()
-
-    def __str__(self):
-        if self.display_name:
-            return self.display_name
-        else:
-            try:
-                return self.user.username
-            except ObjectDoesNotExist:
-                return "No username"
-
-
 class Website(models.Model):
 
     """Keep domain names in their own table so that applications can refer to
@@ -96,7 +69,11 @@ class Website(models.Model):
 
     # domain names have strictly limited lengths, 255 characters is more than
     # enough.
-    website = models.CharField(max_length=255, null=False, help_text="")
+    website = models.CharField(
+        max_length=255,
+        null=False,
+        help_text="",
+    )
 
     # a domain name is alphanumeric or hyphen, up to 63 characters, doesn't
     # begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
@@ -127,12 +104,71 @@ class Contact(models.Model):
 
     """Contact information follows a similar pattern for each contact."""
 
-    first_name = models.TextField(null=True, help_text="First name", db_index=True)
-    middle_name = models.TextField(null=True, help_text="Middle name")
-    last_name = models.TextField(null=True, help_text="Last name", db_index=True)
-    title = models.TextField(null=True, help_text="Title")
-    email = models.TextField(null=True, help_text="Email", db_index=True)
-    phone = models.TextField(null=True, help_text="Phone", db_index=True)
+    first_name = models.TextField(
+        null=True,
+        blank=True,
+        help_text="First name",
+        db_index=True,
+    )
+    middle_name = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Middle name",
+    )
+    last_name = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Last name",
+        db_index=True,
+    )
+    title = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Title",
+    )
+    email = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Email",
+        db_index=True,
+    )
+    phone = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Phone",
+        db_index=True,
+    )
+
+    def __str__(self):
+        if self.first_name or self.last_name:
+            return f"{self.title or ''} {self.first_name or ''} {self.last_name or ''}"
+        elif self.email:
+            return self.email
+        elif self.pk:
+            return str(self.pk)
+        else:
+            return ""
+
+
+class UserProfile(TimeStampedModel, Contact, AddressModel):
+    """User information, unrelated to their login/auth details."""
+
+    user = models.OneToOneField(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+    display_name = models.TextField()
+
+    def __str__(self):
+        # use info stored in User rather than Contact,
+        # because Contact is user-editable while User
+        # pulls from identity-verified Login.gov
+        if self.user:
+            return str(self.user)
+        else:
+            return "Orphaned account"
 
 
 class DomainApplication(TimeStampedModel):
@@ -195,84 +231,149 @@ class DomainApplication(TimeStampedModel):
     investigator = models.ForeignKey(
         User,
         null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name="applications_investigating",
     )
 
     # ##### data fields from the initial form #####
     organization_type = models.CharField(
-        max_length=255, choices=ORGANIZATION_CHOICES, help_text="Type of Organization"
+        max_length=255,
+        choices=ORGANIZATION_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Type of Organization",
     )
 
     federal_branch = models.CharField(
         max_length=50,
         choices=BRANCH_CHOICES,
         null=True,
+        blank=True,
         help_text="Branch of federal government",
     )
 
     is_election_office = models.BooleanField(
-        null=True, help_text="Is your ogranization an election office?"
+        null=True,
+        blank=True,
+        help_text="Is your ogranization an election office?",
     )
 
     organization_name = models.TextField(
-        null=True, help_text="Organization name", db_index=True
+        null=True,
+        blank=True,
+        help_text="Organization name",
+        db_index=True,
     )
-    street_address = models.TextField(null=True, help_text="Street Address")
-    unit_type = models.CharField(max_length=15, null=True, help_text="Unit type")
-    unit_number = models.CharField(max_length=255, null=True, help_text="Unit number")
+    street_address = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Street Address",
+    )
+    unit_type = models.CharField(
+        max_length=15,
+        null=True,
+        blank=True,
+        help_text="Unit type",
+    )
+    unit_number = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Unit number",
+    )
     state_territory = models.CharField(
-        max_length=2, null=True, help_text="State/Territory"
+        max_length=2,
+        null=True,
+        blank=True,
+        help_text="State/Territory",
     )
     zip_code = models.CharField(
-        max_length=10, null=True, help_text="ZIP code", db_index=True
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text="ZIP code",
+        db_index=True,
     )
 
     authorizing_official = models.ForeignKey(
         Contact,
         null=True,
+        blank=True,
         related_name="authorizing_official",
         on_delete=models.PROTECT,
     )
 
     # "+" means no reverse relation to lookup applications from Website
-    current_websites = models.ManyToManyField(Website, related_name="current+")
+    current_websites = models.ManyToManyField(
+        Website,
+        blank=True,
+        related_name="current+",
+    )
 
     requested_domain = models.ForeignKey(
         Website,
         null=True,
+        blank=True,
         help_text="The requested domain",
         related_name="requested+",
         on_delete=models.PROTECT,
     )
-    alternative_domains = models.ManyToManyField(Website, related_name="alternatives+")
+    alternative_domains = models.ManyToManyField(
+        Website,
+        blank=True,
+        related_name="alternatives+",
+    )
 
     # This is the contact information provided by the applicant. The
     # application user who created it is in the `creator` field.
     submitter = models.ForeignKey(
         Contact,
         null=True,
+        blank=True,
         related_name="submitted_applications",
         on_delete=models.PROTECT,
     )
 
-    purpose = models.TextField(null=True, help_text="Purpose of the domain")
+    purpose = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Purpose of the domain",
+    )
 
     other_contacts = models.ManyToManyField(
-        Contact, related_name="contact_applications"
+        Contact,
+        blank=True,
+        related_name="contact_applications",
     )
 
     security_email = models.CharField(
-        max_length=320, null=True, help_text="Security email for public use"
+        max_length=320,
+        null=True,
+        blank=True,
+        help_text="Security email for public use",
     )
 
     anything_else = models.TextField(
-        null=True, help_text="Anything else we should know?"
+        null=True,
+        blank=True,
+        help_text="Anything else we should know?",
     )
 
     acknowledged_policy = models.BooleanField(
-        null=True, help_text="Acknowledged .gov acceptable use policy"
+        null=True,
+        blank=True,
+        help_text="Acknowledged .gov acceptable use policy",
     )
+
+    def __str__(self):
+        if self.requested_domain and self.requested_domain.website:
+            return self.requested_domain.website
+        else:
+            try:
+                return f"{self.status} application created by {self.creator}"
+            except Exception:
+                return ""
 
     @transition(field="status", source=STARTED, target=SUBMITTED)
     def submit(self):

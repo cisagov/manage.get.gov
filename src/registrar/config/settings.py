@@ -84,6 +84,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # application used for integrating with Login.gov
     "djangooidc",
+    # audit logging of changes to models
+    "auditlog",
     # library to simplify form templating
     "widget_tweaks",
     # library for Finite State Machine statuses
@@ -119,6 +121,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # django-csp: enable use of Content-Security-Policy header
     "csp.middleware.CSPMiddleware",
+    # django-auditlog: obtain the request User for use in logging
+    "auditlog.middleware.AuditlogMiddleware",
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)
@@ -605,7 +609,8 @@ if DEBUG:
     # TODO: use settings overrides to ensure this always is True during tests
     INSTALLED_APPS += ("nplusone.ext.django",)
     MIDDLEWARE += ("nplusone.ext.django.NPlusOneMiddleware",)
-    NPLUSONE_RAISE = True
+    # turned off for now, because django-auditlog has some issues
+    NPLUSONE_RAISE = False
     NPLUSONE_WHITELIST = [
         {"model": "admin.LogEntry", "field": "user"},
         {"model": "registrar.UserProfile"},
