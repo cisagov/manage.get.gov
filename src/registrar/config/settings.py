@@ -86,6 +86,8 @@ INSTALLED_APPS = [
     "djangooidc",
     # library to simplify form templating
     "widget_tweaks",
+    # library for Finite State Machine statuses
+    "django_fsm",
     # let's be sure to install our own application!
     "registrar",
     # Our internal API application

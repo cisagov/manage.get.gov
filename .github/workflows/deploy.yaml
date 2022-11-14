@@ -4,8 +4,13 @@ name: Build and deploy
 # a merged pull request) and on pushes of tagged commits.
 
 # Pushes to main will deploy to Staging
+# This will also deploy nightly
 
 on:
+  schedule:
+    # 3am UTC
+    - cron: '0 3 * * *'
+
   push:
     paths-ignore:
       - 'docs/**'
