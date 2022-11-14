@@ -64,7 +64,7 @@ class LoggedInTests(TestWithUser):
 
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
-        self.assertContains(response, "About your organization")
+        self.assertContains(response, "What kind of government organization do you represent?")
 
 
 class FormTests(TestWithUser, WebTest):
@@ -84,7 +84,7 @@ class FormTests(TestWithUser, WebTest):
         page = self.app.get(reverse("application")).follow()
         # submitting should get back the same page if the required field is empty
         result = page.form.submit()
-        self.assertIn("About your organization", result)
+        self.assertIn("What kind of government organization do you represent?", result)
 
     def test_application_form_organization(self):
         # 302 redirect to the first form
