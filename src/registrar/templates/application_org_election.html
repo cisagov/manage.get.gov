@@ -8,8 +8,10 @@
 <form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
   {{ wizard.management_form }}
   {% csrf_token %}
-  <h2>Is your organization an election office?</h2>
   <fieldset id="election_board__fieldset" class="usa-fieldset">
+    <legend>
+      <h2>Is your organization an election office?</h2>
+    </legend>
     {% radio_buttons_by_value wizard.form.is_election_board as choices %}
     {% include "includes/radio_button.html" with choice=choices.Yes%}
     {% include "includes/radio_button.html" with choice=choices.No%}
