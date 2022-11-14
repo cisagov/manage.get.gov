@@ -12,6 +12,7 @@ from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 logger = logging.getLogger(__name__)
 
 
+# Subclass used to remove the default colon suffix from all fields
 class RegistrarForm(forms.Form):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("label_suffix", "")
@@ -176,7 +177,8 @@ class AuthorizingOfficialForm(RegistrarForm):
 class CurrentSitesForm(RegistrarForm):
     current_site = forms.CharField(
         required=False,
-        label="Enter your organization’s public website, if you have one. For example, www.city.com.",
+        label="Enter your organization’s public website, if you have one. For example, "
+        "www.city.com.",
     )
 
 
@@ -184,7 +186,8 @@ class DotGovDomainForm(RegistrarForm):
     dotgov_domain = forms.CharField(label="What .gov domain do you want?")
     alternative_domain = forms.CharField(
         required=False,
-        label="Are there other domains you’d like if we can’t give you your first choice? Entering alternative domains is optional.",
+        label="Are there other domains you’d like if we can’t give you your first "
+        "choice? Entering alternative domains is optional.",
     )
 
 
