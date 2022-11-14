@@ -141,9 +141,8 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         return application
 
     def done(self, form_list, form_dict, **kwargs):
-        logger.info("Application form submitted.")
         application = self.forms_to_object(form_dict)
         application.submit()  # change the status to submitted
         application.save()
-        logger.info("Application object saved.")
+        logger.debug("Application object saved:", application.id)
         return redirect("home")
