@@ -3,7 +3,7 @@
         "http://app:8080/",
         "http://app:8080/health/",
         "http://app:8080/whoami/",
-        "http://app:8080/register/"
+        "http://app:8080/register/",
         "http://app:8080/register/organization.html",
         "http://app:8080/register/org_federal.html",
         "http://app:8080/register/org_election.html",
@@ -17,6 +17,6 @@
         "http://app:8080/register/security_email.html",
         "http://app:8080/register/anything_else.html",
         "http://app:8080/register/requirements.html",
-        "http://app:8080/register/review.html",
+        "http://app:8080/register/review.html"
     ]
 }
