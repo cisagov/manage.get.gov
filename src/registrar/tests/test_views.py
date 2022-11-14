@@ -64,7 +64,9 @@ class LoggedInTests(TestWithUser):
 
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
-        self.assertContains(response, "What kind of government organization do you represent?")
+        self.assertContains(
+            response, "What kind of government organization do you represent?"
+        )
 
 
 class FormTests(TestWithUser, WebTest):

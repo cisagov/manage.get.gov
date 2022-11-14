@@ -4,19 +4,19 @@
         "http://app:8080/health/",
         "http://app:8080/whoami/",
         "http://app:8080/register/"
-        "http://app:8080/register/organization.html"
-        "http://app:8080/register/org_federal.html"
-        "http://app:8080/register/org_election.html"
-        "http://app:8080/register/org_contact.html"
-        "http://app:8080/register/authorizing_official.html"
-        "http://app:8080/register/current_sites.html"
-        "http://app:8080/register/dotgov_domain.html"
-        "http://app:8080/register/purpose.html"
-        "http://app:8080/register/your_contact.html"
-        "http://app:8080/register/other_contacts.html"
-        "http://app:8080/register/security_email.html"
-        "http://app:8080/register/anything_else.html"
-        "http://app:8080/register/requirements.html"
-        "http://app:8080/register/review.html"
+        "http://app:8080/register/organization.html",
+        "http://app:8080/register/org_federal.html",
+        "http://app:8080/register/org_election.html",
+        "http://app:8080/register/org_contact.html",
+        "http://app:8080/register/authorizing_official.html",
+        "http://app:8080/register/current_sites.html",
+        "http://app:8080/register/dotgov_domain.html",
+        "http://app:8080/register/purpose.html",
+        "http://app:8080/register/your_contact.html",
+        "http://app:8080/register/other_contacts.html",
+        "http://app:8080/register/security_email.html",
+        "http://app:8080/register/anything_else.html",
+        "http://app:8080/register/requirements.html",
+        "http://app:8080/register/review.html",
     ]
 }
