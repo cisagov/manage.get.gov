@@ -13,7 +13,7 @@
         {% if wizard.steps.prev %}
         <a href="{% url wizard.url_name step=wizard.steps.prev %}">
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-            <use xlink:href="{%static '/img/sprite.svg'%}#arrow_back"></use>
+            <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
           </svg><span class="margin-left-05">Previous step </span>
         </a>
         {% endif %}
