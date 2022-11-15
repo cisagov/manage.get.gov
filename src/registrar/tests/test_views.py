@@ -113,7 +113,8 @@ class FormTests(TestWithUser, WebTest):
         result = page.form.submit()
         # final submission results in a redirect
         self.assertEquals(result.status_code, 302)
+        self.assertEquals(result["Location"], "/register/finished/")
         page = result.follow()
-        self.assertContains(page, "registrar")
+        self.assertContains(page, "Thank you for your domain request")
         # TODO: when we have a page that lists applications, visit it and
         # make sure that the new one exists
