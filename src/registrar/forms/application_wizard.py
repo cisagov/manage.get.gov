@@ -7,6 +7,7 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
+from registrar.models import DomainApplication
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class RegistrarForm(forms.Form):
         super(RegistrarForm, self).__init__(*args, **kwargs)
 
 
-class OrganizationForm(RegistrarForm):
+class OrganizationTypeForm(RegistrarForm):
     organization_type = forms.ChoiceField(
         required=True,
         choices=[
@@ -51,11 +52,7 @@ class OrganizationForm(RegistrarForm):
     )
     federal_type = forms.ChoiceField(
         required=False,
-        choices=[
-            ("Executive", "Executive"),
-            ("Judicial", "Judicial"),
-            ("Legislative", "Legislative"),
-        ],
+        choices=DomainApplication.BRANCH_CHOICES,
         widget=forms.RadioSelect,
     )
     is_election_board = forms.ChoiceField(
@@ -71,27 +68,23 @@ class OrganizationForm(RegistrarForm):
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
         required=False,
-        choices=[
-            ("Executive", "Executive"),
-            ("Judicial", "Judicial"),
-            ("Legislative", "Legislative"),
-        ],
+        choices=DomainApplication.BRANCH_CHOICES,
         widget=forms.RadioSelect,
     )
 
 
 class OrganizationElectionForm(RegistrarForm):
-    is_election_board = forms.ChoiceField(
-        required=False,
-        choices=[
-            ("Yes", "Yes"),
-            ("No", "No"),
-        ],
-        widget=forms.RadioSelect(),
+    is_election_board = forms.BooleanField(
+        widget=forms.RadioSelect(
+            choices=[
+                (True, "Yes"),
+                (False, "No"),
+            ],
+        )
     )
 
 
-class OrgContactForm(RegistrarForm):
+class OrganizationContactForm(RegistrarForm):
     organization_name = forms.CharField(label="Organization Name")
     address_line1 = forms.CharField(label="Address line 1")
     address_line2 = forms.CharField(
@@ -163,12 +156,12 @@ class OrgContactForm(RegistrarForm):
 
 
 class AuthorizingOfficialForm(RegistrarForm):
-    given_name = forms.CharField(label="First name/given name")
+    first_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
         required=False,
         label="Middle name (optional)",
     )
-    family_name = forms.CharField(label="Last name/family name")
+    last_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
@@ -196,24 +189,24 @@ class PurposeForm(RegistrarForm):
 
 
 class YourContactForm(RegistrarForm):
-    given_name = forms.CharField(label="First name/given name")
+    first_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
         required=False,
         label="Middle name (optional)",
     )
-    family_name = forms.CharField(label="Last name/family name")
+    last_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
 
 
 class OtherContactsForm(RegistrarForm):
-    given_name = forms.CharField(label="First name/given name")
+    first_name = forms.CharField(label="First name/given name")
     middle_name = forms.CharField(
         required=False,
         label="Middle name (optional)",
     )
-    family_name = forms.CharField(label="Last name/family name")
+    last_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
     email = forms.EmailField(label="Email")
     phone = forms.CharField(label="Phone")
@@ -238,6 +231,8 @@ class RequirementsForm(RegistrarForm):
     )
 
 
+# Empty class for the review page which gets included as part of the form, but does not
+# have any form fields itself
 class ReviewForm(RegistrarForm):
     pass
 
@@ -245,10 +240,10 @@ class ReviewForm(RegistrarForm):
 # List of forms in our wizard. Each entry is a tuple of a name and a form
 # subclass
 FORMS = [
-    ("organization", OrganizationForm),
+    ("organization_type", OrganizationTypeForm),
     ("organization_federal", OrganizationFederalForm),
     ("organization_election", OrganizationElectionForm),
-    ("org_contact", OrgContactForm),
+    ("organization_contact", OrganizationContactForm),
     ("authorizing_official", AuthorizingOfficialForm),
     ("current_sites", CurrentSitesForm),
     ("dotgov_domain", DotGovDomainForm),
@@ -264,10 +259,10 @@ FORMS = [
 # Dict to match up the right template with the right step. Keys here must
 # match the first elements of the tuples in FORMS
 TEMPLATES = {
-    "organization": "application_organization.html",
+    "organization_type": "application_org_type.html",
     "organization_federal": "application_org_federal.html",
     "organization_election": "application_org_election.html",
-    "org_contact": "application_org_contact.html",
+    "organization_contact": "application_org_contact.html",
     "authorizing_official": "application_authorizing_official.html",
     "current_sites": "application_current_sites.html",
     "dotgov_domain": "application_dotgov_domain.html",
@@ -283,10 +278,10 @@ TEMPLATES = {
 # We need to pass our page titles as context to the templates, indexed
 # by the step names
 TITLES = {
-    "organization": "Type of organization",
+    "organization_type": "Type of organization",
     "organization_federal": "Type of organization — Federal",
     "organization_election": "Type of organization — Election board",
-    "org_contact": "Organization name and mailing address",
+    "organization_contact": "Organization name and mailing address",
     "authorizing_official": "Authorizing official",
     "current_sites": "Organization website",
     "dotgov_domain": ".gov domain",

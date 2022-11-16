@@ -13,8 +13,20 @@
       <h2>Is your organization an election office?</h2>
     </legend>
     {% radio_buttons_by_value wizard.form.is_election_board as choices %}
-    {% include "includes/radio_button.html" with choice=choices.Yes%}
-    {% include "includes/radio_button.html" with choice=choices.No%}
+    <!-- {{ choices.True.data.value }} -->
+    <!-- {{ choices.False.data.value }} -->
+    <!-- {{ choices|get_item:True }} -->
+    <!-- {{ choices|get_item:False }} -->
+    <!-- {% for radio in wizard.form.is_election_board %} -->
+    <!-- <div class="usa-radio"> --> 
+    <!--   {{radio.tag}} -->
+    <!--   <label for="{{radio.id_for_label}}" class="usa-radio__label"> --> 
+    <!--     {{ radio.choice_label }} -->
+    <!--   </label> -->
+    <!-- </div> -->
+    <!-- {% endfor %} -->
+    {% include "includes/radio_button.html" with choice=choices|get_item:True %}
+    {% include "includes/radio_button.html" with choice=choices|get_item:False %}
   </fieldset>
 
   {{ block.super }}  
