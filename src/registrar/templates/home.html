@@ -14,12 +14,13 @@
 {% endblock %}
 
 {% block content %}
-<p>This is the .gov registrar.</p>
+<main id="main-content" class="grid-container">
+  <p>This is the .gov registrar.</p>
 
-{% if user.is_authenticated %}
-<p><a href="/openid/logout/">Click here to log out.</a></p>
-{% else %}
-<p><a href="/openid/login/">Click here to log in.</a></p>
-{% endif %}
-
+  {% if user.is_authenticated %}
+  <p><a href="/openid/logout/">Click here to log out.</a></p>
+  {% else %}
+  <p><a href="/openid/login/">Click here to log in.</a></p>
+  {% endif %}
+</main>
 {% endblock %}
