@@ -119,9 +119,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # django-csp: enable use of Content-Security-Policy header
     "csp.middleware.CSPMiddleware",
-    # DELETE ME before finishing, no login
-    # "registrar.tests.common.MockUserLogin"
-
 ]
 
 # application object used by Django’s built-in servers (e.g. `runserver`)
