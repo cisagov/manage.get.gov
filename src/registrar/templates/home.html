@@ -17,9 +17,37 @@
 <p>This is the .gov registrar.</p>
 
 {% if user.is_authenticated %}
-<p><a href="/openid/logout/">Click here to log out.</a></p>
+
+{% if domain_applications %}
+<h2>Your domain applications</h2>
+<table class="usa-table usa-table--borderless">
+  <caption class="sr-only">Your domain applications</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for application in domain_applications %}
+      <tr>
+        <th>{{ application.requested_domain.website }}</th>
+        <td>{{ application.status }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="{% url 'application' %}" class="usa-button">Apply</a></p>
+
+<p><a href="{% url 'edit-profile' %}">Edit profile</a></p>
+
+<p><a href="{% url 'admin:index' %}">CISA admin panel</a></p>
+
+<p><a href="{% url 'logout' %}">Click here to log out.</a></p>
 {% else %}
-<p><a href="/openid/login/">Click here to log in.</a></p>
+<p><a href="{% url 'login' %}">Click here to log in.</a></p>
 {% endif %}
 
 {% endblock %}
