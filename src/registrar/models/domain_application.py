@@ -147,12 +147,12 @@ class DomainApplication(TimeStampedModel):
         related_name="current+",
     )
 
-    requested_domain = models.ForeignKey(
-        Website,
+    requested_domain = models.OneToOneField(
+        "Domain",
         null=True,
         blank=True,
         help_text="The requested domain",
-        related_name="requested+",
+        related_name="domain_application",
         on_delete=models.PROTECT,
     )
     alternative_domains = models.ManyToManyField(
