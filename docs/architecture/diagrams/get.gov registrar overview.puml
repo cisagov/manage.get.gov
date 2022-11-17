@@ -6,6 +6,7 @@ title get.gov registrar deployment
 skinparam linetype polyline
 
 Person(team, "get.gov developer", "Code Writer")
+Person_Ext(public, "public", "domain requester")
 
 Deployment_Node(aws, "AWS GovCloud", "Amazon Web Services Region") {
     Deployment_Node(cloudgov, "cloud.gov", "Cloud Foundry PaaS") {
@@ -43,7 +44,7 @@ Rel(cloudgov_dashboard, cloudgov_controller, "inspects and manipulates state", "
 
 ' Deployment
 Boundary(deploymentservices, "Deployment services") {
-    Deployment_Node(github, "CI/CD Pipeline", "open source"){
+    Deployment_Node(github, "GitHub", "open source"){
         System(github_repo, "cisagov/getgov", "Code repository")
         System_Ext(github_actions_deploy, "github actions", "deploy")
         System_Ext(github_actions_test, "github actions", "test, security check")
