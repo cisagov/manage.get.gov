@@ -8,7 +8,6 @@ from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
-from registrar.models import DomainApplication
 
 from registrar.models import DomainApplication, Website
 
