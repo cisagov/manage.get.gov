@@ -23,19 +23,21 @@ class Domain(TimeStampedModel):
         2. To allow a new registrant to draft DNS entries before their
            application is approved
     """
+
     class Meta:
         constraints = [
             # draft domains may share the same name, but
             # once approved, they must be globally unique
             models.UniqueConstraint(
-                fields=['name'],
+                fields=["name"],
                 condition=models.Q(is_active=True),
-                name='unique_domain_name_in_registry'
+                name="unique_domain_name_in_registry",
             ),
         ]
 
     class Status(models.TextChoices):
         """The status codes we can receive from the registry."""
+
         # Requests to delete the object MUST be rejected.
         CLIENT_DELETE_PROHIBITED = "clientDeleteProhibited"
         SERVER_DELETE_PROHIBITED = "serverDeleteProhibited"
@@ -81,7 +83,6 @@ class Domain(TimeStampedModel):
         PENDING_TRANSFER = "pendingTransfer"
         PENDING_UPDATE = "pendingUpdate"
 
-
     # a domain name is alphanumeric or hyphen, up to 63 characters, doesn't
     # begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
     DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
@@ -95,20 +96,21 @@ class Domain(TimeStampedModel):
 
     @classmethod
     def available(cls, domain: str) -> bool:
-        """Check if a domain is available. Not implemented. """
+        """Check if a domain is available. Not implemented."""
         return domain_check(domain)
 
     def transfer(self):
-        """ Going somewhere. Not implemented. """
+        """Going somewhere. Not implemented."""
         pass
 
     def renew(self):
-        """ Time to renew. Not implemented. """
+        """Time to renew. Not implemented."""
         pass
 
     def _get_property(self, property):
         """Get some info about a domain."""
-        if not self.is_active: return None
+        if not self.is_active:
+            return None
         if not hasattr(self, "info"):
             try:
                 # get info from registry
@@ -194,7 +196,7 @@ class Domain(TimeStampedModel):
     def last_transfer_date(self):
         return self._get_property("last_transfer_date")
 
-    name  = models.CharField(
+    name = models.CharField(
         max_length=253,
         blank=False,
         default=None,  # prevent saving without a value

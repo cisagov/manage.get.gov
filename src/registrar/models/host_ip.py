@@ -4,6 +4,7 @@ from django.core.validators import validate_ipv46_address
 from .utility.time_stamped_model import TimeStampedModel
 from .host import Host
 
+
 class HostIP(TimeStampedModel):
     """
     Hosts may have one or more IP addresses.
@@ -13,6 +14,7 @@ class HostIP(TimeStampedModel):
     This model exists ONLY to allow a new registrant to draft DNS entries
     before their application is approved.
     """
+
     address = models.CharField(
         max_length=46,
         null=False,
@@ -27,4 +29,3 @@ class HostIP(TimeStampedModel):
         on_delete=models.PROTECT,
         help_text="Host to which this IP address belongs",
     )
-

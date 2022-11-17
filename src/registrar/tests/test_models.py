@@ -85,7 +85,6 @@ class TestDomain(TestCase):
         domain.save()
         self.assertIn("ok", domain.status)
 
-
     def test_fsm_activate_fail_unique(self):
         # can't activate domain if name is not unique
         d1, _ = Domain.objects.get_or_create(name="igorville.gov")

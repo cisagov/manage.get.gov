@@ -4,12 +4,14 @@ communication with the registry until that integration is implemented.
 """
 from datetime import datetime
 
+
 def domain_check(_):
-    """ Is domain available for registration? """
+    """Is domain available for registration?"""
     return True
 
+
 def domain_info(domain):
-    """ What does the registry know about this domain? """
+    """What does the registry know about this domain?"""
     return {
         "name": domain,
         "roid": "EXAMPLE1-REP",
@@ -36,5 +38,3 @@ def domain_info(domain):
         "expiration_date": datetime.today(),
         "last_transfer_date": datetime.today(),
     }
-
-
