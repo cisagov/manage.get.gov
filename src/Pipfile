@@ -8,6 +8,7 @@ django = "*"
 cfenv = "*"
 pycryptodomex = "*"
 django-allow-cidr = "*"
+django-auditlog = "*"
 django-csp = "*"
 environs = {extras=["django"]}
 gunicorn = "*"

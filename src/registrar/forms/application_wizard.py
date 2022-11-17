@@ -3,11 +3,14 @@
 import logging
 
 from django import forms
+from django.shortcuts import redirect
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 from registrar.models import DomainApplication
+
+from registrar.models import DomainApplication, Website
 
 
 logger = logging.getLogger(__name__)
@@ -320,5 +323,33 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         context["form_titles"] = TITLES
         return context
 
-    def done(self, form_list, **kwargs):
-        logger.info("Application form submitted.")
+    def forms_to_object(self, form_dict: dict) -> DomainApplication:
+        """Unpack the form responses onto the model object properties."""
+        application = DomainApplication.objects.create(creator=self.request.user)
+
+        # organization information
+        organization_data = form_dict["organization"].cleaned_data
+        application.organization_type = organization_data["organization_type"]
+        application.federal_branch = organization_data["federal_type"]
+        application.is_election_office = organization_data["is_election_board"]
+
+        # contact information
+        contact_data = form_dict["contact"].cleaned_data
+        application.organization_name = contact_data["organization_name"]
+        application.street_address = contact_data["street_address"]
+        # TODO: add the rest of these fields when they are created in the forms
+
+        # This isn't really the requested_domain field
+        # but we need something in this field to make the form submittable
+        requested_site, _ = Website.objects.get_or_create(
+            website=contact_data["organization_name"] + ".gov"
+        )
+        application.requested_domain = requested_site
+        return application
+
+    def done(self, form_list, form_dict, **kwargs):
+        application = self.forms_to_object(form_dict)
+        application.submit()  # change the status to submitted
+        application.save()
+        logger.debug("Application object saved:", application.id)
+        return redirect("home")

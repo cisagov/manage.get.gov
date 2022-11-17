@@ -96,3 +96,26 @@ class FormTests(TestWithUser, WebTest):
         result = page.form.submit().follow()
         # Got the next form page
         self.assertIn("contact information", result)
+
+    def test_application_form_submission(self):
+        """Can fill out the entire form and submit.
+
+        As we add additional form pages, we need to include them here to make
+        this test work.
+        """
+        page = self.app.get(reverse("application")).follow()
+        form = page.form
+        form["organization-organization_type"] = "Federal"
+        form["organization-federal_type"] = "Executive"
+        result = page.form.submit().follow()
+        # Got the next form page
+        contact_form = result.form
+        contact_form["contact-organization_name"] = "test"
+        contact_form["contact-street_address"] = "100 Main Street"
+        result = page.form.submit()
+        # final submission results in a redirect
+        self.assertEquals(result.status_code, 302)
+        page = result.follow()
+        self.assertContains(page, "registrar")
+        # TODO: when we have a page that lists applications, visit it and
+        # make sure that the new one exists
