@@ -144,5 +144,5 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         application = self.forms_to_object(form_dict)
         application.submit()  # change the status to submitted
         application.save()
-        logger.debug("Application object saved:", application.id)
+        logger.debug("Application object saved: %s", application.id)
         return redirect("home")
