@@ -329,7 +329,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         # organization type information
         organization_type_data = form_dict["organization_type"].cleaned_data
         application.organization_type = organization_type_data["organization_type"]
-        
+
         # federal branch information
         federal_branch_data = form_dict["organization_federal"].cleaned_data
         application.federal_type = federal_branch_data["federal_type"]

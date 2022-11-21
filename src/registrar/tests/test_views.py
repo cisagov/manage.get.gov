@@ -106,7 +106,7 @@ class FormTests(TestWithUser, WebTest):
         self.assertContains(result, "contact information")
 
     def test_application_form_submission(self):
-        """Can fill out the entire form and submit. 
+        """Can fill out the entire form and submit.
         As we add additional form pages, we need to include them here to make
         this test work.
         """
@@ -143,7 +143,9 @@ class FormTests(TestWithUser, WebTest):
         federal_result = federal_form.submit()
 
         self.assertEquals(federal_result.status_code, 302)
-        self.assertEquals(federal_result["Location"], "/register/organization_election/")
+        self.assertEquals(
+            federal_result["Location"], "/register/organization_election/"
+        )
 
         # ---- ELECTION BOARD BRANCH PAGE  ----
         # Follow the redirect to the next form page
@@ -155,7 +157,9 @@ class FormTests(TestWithUser, WebTest):
         election_result = election_form.submit()
 
         self.assertEquals(election_result.status_code, 302)
-        self.assertEquals(election_result["Location"], "/register/organization_contact/")
+        self.assertEquals(
+            election_result["Location"], "/register/organization_contact/"
+        )
 
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
@@ -170,7 +174,9 @@ class FormTests(TestWithUser, WebTest):
         org_contact_result = org_contact_form.submit()
 
         self.assertEquals(org_contact_result.status_code, 302)
-        self.assertEquals(org_contact_result["Location"], "/register/authorizing_official/")
+        self.assertEquals(
+            org_contact_result["Location"], "/register/authorizing_official/"
+        )
         # ---- AUTHORIZING OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         ao_page = org_contact_result.follow()
@@ -255,7 +261,9 @@ class FormTests(TestWithUser, WebTest):
         other_contacts_result = other_contacts_form.submit()
 
         self.assertEquals(other_contacts_result.status_code, 302)
-        self.assertEquals(other_contacts_result["Location"], "/register/security_email/")
+        self.assertEquals(
+            other_contacts_result["Location"], "/register/security_email/"
+        )
 
         # ---- SECURITY EMAIL PAGE  ----
         # Follow the redirect to the next form page
@@ -304,7 +312,7 @@ class FormTests(TestWithUser, WebTest):
         # final submission results in a redirect to the "finished" URL
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        review_result = review_form.submit() 
+        review_result = review_form.submit()
 
         self.assertEquals(review_result.status_code, 302)
         self.assertEquals(review_result["Location"], "/register/finished/")
