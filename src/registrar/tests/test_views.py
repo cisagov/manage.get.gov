@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 
 from django_webtest import WebTest  # type: ignore
 
+from registrar.models import DomainApplication, Website
+
 
 class TestViews(TestCase):
     def setUp(self):
@@ -50,6 +52,18 @@ class LoggedInTests(TestWithUser):
     def setUp(self):
         super().setUp()
         self.client.force_login(self.user)
+
+    def test_home_lists_domain_applications(self):
+        response = self.client.get("/")
+        self.assertNotContains(response, "igorville.gov")
+        site = Website.objects.create(website="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user, requested_domain=site
+        )
+        response = self.client.get("/")
+        self.assertContains(response, "igorville.gov", count=1)
+        # clean up
+        application.delete()
 
     def test_whoami_page(self):
         """User information appears on the whoami page."""
