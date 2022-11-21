@@ -43,7 +43,9 @@
 
 <p><a href="{% url 'edit-profile' %}">Edit profile</a></p>
 
+{% if user.is_staff %}
 <p><a href="{% url 'admin:index' %}">CISA admin panel</a></p>
+{% endif %}
 
 <p><a href="{% url 'logout' %}">Click here to log out.</a></p>
 {% else %}
