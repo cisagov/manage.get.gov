@@ -1,8 +1,11 @@
+from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
 from django_webtest import WebTest  # type: ignore
+
+from registrar.models import DomainApplication
 
 
 class TestViews(TestCase):
@@ -79,6 +82,11 @@ class FormTests(TestWithUser, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
 
+    def tearDown(self):
+        # delete any applications we made so that users can be deleted\
+        DomainApplication.objects.all().delete()
+        super().tearDown()
+
     def test_application_form_empty_submit(self):
         # 302 redirect to the first form
         page = self.app.get(reverse("application")).follow()
@@ -93,7 +101,7 @@ class FormTests(TestWithUser, WebTest):
         form["organization-organization_type"] = "Federal"
         result = page.form.submit().follow()
         # Got the next form page
-        self.assertIn("contact information", result)
+        self.assertContains(result, "contact information")
 
     def test_application_form_submission(self):
         """Can fill out the entire form and submit.
@@ -102,18 +110,45 @@ class FormTests(TestWithUser, WebTest):
         this test work.
         """
         page = self.app.get(reverse("application")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         form = page.form
         form["organization-organization_type"] = "Federal"
         form["organization-federal_type"] = "Executive"
-        result = page.form.submit().follow()
-        # Got the next form page
-        contact_form = result.form
+        # set the session ID before .submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        result = page.form.submit()
+
+        # the post request should return a redirect to the next form in
+        # the application
+        self.assertEquals(result.status_code, 302)
+        self.assertEquals(result["Location"], "/register/contact/")
+
+        # Follow the redirect to the next form page
+        next_page = result.follow()
+        contact_form = next_page.form
         contact_form["contact-organization_name"] = "test"
         contact_form["contact-street_address"] = "100 Main Street"
-        result = page.form.submit()
-        # final submission results in a redirect
+        # set the session ID before .submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        result = contact_form.submit()
+
+        # final submission results in a redirect to the "finished" URL
         self.assertEquals(result.status_code, 302)
-        page = result.follow()
-        self.assertContains(page, "registrar")
+        self.assertEquals(result["Location"], "/register/finished/")
+
+        # the finished URL (for now) returns a redirect to /
+        # following this redirect is a GET request, so include the cookie
+        # here too.
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        next_result = result.follow()
+        self.assertEquals(next_result.status_code, 302)
+        self.assertEquals(next_result["Location"], "/")
+
+        self.assertContains(next_result.follow(), "Welcome to the .gov registrar")
         # TODO: when we have a page that lists applications, visit it and
         # make sure that the new one exists
