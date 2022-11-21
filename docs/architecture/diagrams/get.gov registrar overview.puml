@@ -1,12 +1,17 @@
-@startuml get.gov registrar deployment
+@startuml registrar application boundary
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
 
 LAYOUT_WITH_LEGEND()
-title get.gov registrar deployment
+title registrar application boundary
 skinparam linetype polyline
 
 Person(team, "get.gov developer", "Code Writer")
-Person_Ext(public, "public", "domain requester")
+Person_Ext(public, "public", "General public seeking information")
+Person_Ext(gov_employee, "gov_employee", "Domain requester")
+
+Boundary(device, "Computing device") {
+    System_Ext(browser, "Web Browser")
+}
 
 Deployment_Node(aws, "AWS GovCloud", "Amazon Web Services Region") {
     Deployment_Node(cloudgov, "cloud.gov", "Cloud Foundry PaaS") {
@@ -34,6 +39,7 @@ Deployment_Node(aws, "AWS GovCloud", "Amazon Web Services Region") {
     }
 }
 
+Rel(public, device, "")
 ' Logs flow
 Rel(staging, cloudgov_logdrain, "logs to", "stdout/stderr")
 Rel(team, cloudgov_logdrain, "reviews logs", "https (443)")
