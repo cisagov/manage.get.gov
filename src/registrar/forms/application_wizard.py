@@ -3,7 +3,7 @@
 import logging
 
 from django import forms
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 

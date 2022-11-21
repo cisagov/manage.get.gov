@@ -146,4 +146,4 @@ class FormTests(TestWithUser, WebTest):
         # here too.
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         next_result = result.follow()
-        self.assertContains(page, "Thank you for your domain request")
+        self.assertContains(next_result, "Thank you for your domain request")
