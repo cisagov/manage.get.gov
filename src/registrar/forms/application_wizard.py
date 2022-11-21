@@ -332,7 +332,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
 
         # federal branch information
         federal_branch_data = form_dict["organization_federal"].cleaned_data
-        application.federal_type = federal_branch_data["federal_type"]
+        application.federal_branch = federal_branch_data["federal_type"]
 
         # election board  information
         election_board_data = form_dict["organization_election"].cleaned_data
