@@ -5,6 +5,9 @@
 {% block form_content %}
 
 <form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
   {% for this_step in wizard.steps.all|slice:":-1" %}
   <div class="review__step margin-top-2">
     <div class="review__step__title display-flex flex-justify"> 
@@ -16,7 +19,7 @@
     </div>
   </div>
   {% endfor %}
-
+  
   {{ block.super }}
 
 </form>

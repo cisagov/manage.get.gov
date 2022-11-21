@@ -326,16 +326,22 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         """Unpack the form responses onto the model object properties."""
         application = DomainApplication.objects.create(creator=self.request.user)
 
-        # organization information
-        organization_data = form_dict["organization"].cleaned_data
-        application.organization_type = organization_data["organization_type"]
-        application.federal_branch = organization_data["federal_type"]
-        application.is_election_office = organization_data["is_election_board"]
+        # organization type information
+        organization_type_data = form_dict["organization_type"].cleaned_data
+        application.organization_type = organization_type_data["organization_type"]
+        
+        # federal branch information
+        federal_branch_data = form_dict["organization_federal"].cleaned_data
+        application.federal_type = federal_branch_data["federal_type"]
+
+        # election board  information
+        election_board_data = form_dict["organization_election"].cleaned_data
+        application.is_election_office = election_board_data["is_election_board"]
 
         # contact information
-        contact_data = form_dict["contact"].cleaned_data
+        contact_data = form_dict["organization_contact"].cleaned_data
         application.organization_name = contact_data["organization_name"]
-        application.street_address = contact_data["street_address"]
+        application.street_address = contact_data["address_line1"]
         # TODO: add the rest of these fields when they are created in the forms
 
         # This isn't really the requested_domain field
@@ -350,5 +356,5 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         application = self.forms_to_object(form_dict)
         application.submit()  # change the status to submitted
         application.save()
-        logger.debug("Application object saved:", application.id)
+        logger.debug("Application object saved: %s", application.id)
         return redirect("home")
