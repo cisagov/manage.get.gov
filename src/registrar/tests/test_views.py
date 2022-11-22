@@ -320,5 +320,5 @@ class FormTests(TestWithUser, WebTest):
         # following this redirect is a GET request, so include the cookie
         # here too.
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        next_result = result.follow()
-        self.assertContains(next_result, "Thank you for your domain request")
+        final_result = review_result.follow()
+        self.assertContains(final_result, "Thank you for your domain request")
