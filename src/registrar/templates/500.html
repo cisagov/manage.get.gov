@@ -4,20 +4,21 @@
 {% block title %}{% translate "Server error" %}{% endblock %}
 
 {% block content %}
-<h1>{% translate "Server Error" %}</h1>
+<main id="main-content" class="grid-container">
+  <h1>{% translate "Server Error" %}</h1>
 
-{% if friendly_message %}
-<p>{{ friendly_message }}</p>
-{% else %}
-<p>{% translate "An internal server error occurred." %}</p>
-{% endif %}
+  {% if friendly_message %}
+  <p>{{ friendly_message }}</p>
+  {% else %}
+  <p>{% translate "An internal server error occurred." %}</p>
+  {% endif %}
 
-{% if log_identifier %}
-<p>Here's a unique identifier for this error.</p>
-<blockquote>{{ log_identifier }}</blockquote>
-<p>{% translate "Please include it if you contact us." %}</p>
-{% endif %}
+  {% if log_identifier %}
+  <p>Here's a unique identifier for this error.</p>
+  <blockquote>{{ log_identifier }}</blockquote>
+  <p>{% translate "Please include it if you contact us." %}</p>
+  {% endif %}
 
-TODO: Content team to create a "how to contact us" footer for the error pages
-
+  TODO: Content team to create a "how to contact us" footer for the error pages
+</main>
 {% endblock %}

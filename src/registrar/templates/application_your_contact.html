@@ -1,0 +1,50 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block form_content %}
+
+<div id="instructions">
+  <p> We’ll use the following information to contact you about your domain request and, once your request is approved, about managing your domain.</p>
+
+  <p>If you’d like us to use a different name, email, or phone number you can make those changes below. Changing your contact information here won’t affect your login.gov account information.</p>
+
+  <p>The contact information you provide here won’t be public and will only be used for the .gov registry.</p>
+<div>
+
+<p>All fields are required unless they are marked optional.</p>
+
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
+  <fieldset class="usa-fieldset">
+    <legend class="usa-sr-only">
+      Your contact information
+    </legend>
+    {{ wizard.form.first_name|add_label_class:"usa-label" }}
+    {{ wizard.form.first_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.middle_name|add_label_class:"usa-label" }}
+    {{ wizard.form.middle_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.last_name|add_label_class:"usa-label" }}
+    {{ wizard.form.last_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    
+    {{ wizard.form.title|add_label_class:"usa-label" }}
+    {{ wizard.form.title|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.email|add_label_class:"usa-label" }}
+    {{ wizard.form.email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+
+    {{ wizard.form.phone|add_label_class:"usa-label" }}
+    {{ wizard.form.phone|add_class:"usa-input usa-input--medium"|attr:"aria-describedby:instructions" }}
+  </fieldset>
+
+
+  {{ block.super }}
+
+</form>
+
+{% endblock %}

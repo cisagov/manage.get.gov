@@ -1,0 +1,44 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+
+{% block form_content %}
+
+
+<h2>What is the name and mailing address of your organization?</h2>
+
+<div id="instructions">
+  <p>Enter the name of the organization your represent. Your organization might be part
+  of a larger entity. If so, enter information about your part of the larger entity.</p>
+
+  <p>Once your domain is approved, the name of your organization will be publicly listed as the domain registrant. </p>
+
+  <p>All fields are required unless they are marked optional.</p>
+</div>
+
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
+  <fieldset class="usa-fieldset">
+    <legend class="usa-sr-only">What is the name and mailing address of your organization?</legend>
+    {{ wizard.form.organization_name|add_label_class:"usa-label" }}
+    {{ wizard.form.organization_name|add_class:"usa-input" }}
+    {{ wizard.form.address_line1|add_label_class:"usa-label" }}
+    {{ wizard.form.address_line1|add_class:"usa-input" }}
+    {{ wizard.form.address_line2|add_label_class:"usa-label" }}
+    {{ wizard.form.address_line2|add_class:"usa-input" }}
+    {{ wizard.form.us_state|add_label_class:"usa-label" }}
+    <div class="usa-combo-box">
+      {{ wizard.form.us_state|add_class:"usa-select" }}
+    </div>
+    {{ wizard.form.zipcode|add_label_class:"usa-label" }}
+    {{ wizard.form.zipcode|add_class:"usa-input usa-input--small" }}
+
+  </fieldset>
+
+  {{ block.super }}
+  
+</form>
+
+{% endblock %}
