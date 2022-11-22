@@ -3,6 +3,20 @@
         "http://app:8080/",
         "http://app:8080/health/",
         "http://app:8080/whoami/",
-        "http://app:8080/register/"
+        "http://app:8080/register/",
+        "http://app:8080/register/organization/",
+        "http://app:8080/register/org_federal/",
+        "http://app:8080/register/org_election/",
+        "http://app:8080/register/org_contact/",
+        "http://app:8080/register/authorizing_official/",
+        "http://app:8080/register/current_sites/",
+        "http://app:8080/register/dotgov_domain/",
+        "http://app:8080/register/purpose/",
+        "http://app:8080/register/your_contact/",
+        "http://app:8080/register/other_contacts/",
+        "http://app:8080/register/security_email/",
+        "http://app:8080/register/anything_else/",
+        "http://app:8080/register/requirements/",
+        "http://app:8080/register/review/"
     ]
 }
