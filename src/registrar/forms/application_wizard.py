@@ -3,7 +3,7 @@
 import logging
 
 from django import forms
-from django.shortcuts import redirect
+from django.shortcuts import render
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 
@@ -357,4 +357,6 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         application.submit()  # change the status to submitted
         application.save()
         logger.debug("Application object saved: %s", application.id)
-        return redirect("home")
+        return render(
+            self.request, "application_done.html", {"application_id": application.id}
+        )

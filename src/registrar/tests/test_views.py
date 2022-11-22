@@ -317,15 +317,8 @@ class FormTests(TestWithUser, WebTest):
         self.assertEquals(review_result.status_code, 302)
         self.assertEquals(review_result["Location"], "/register/finished/")
 
-        # the finished URL (for now) returns a redirect to /
         # following this redirect is a GET request, so include the cookie
         # here too.
-
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        root_page = review_result.follow()
-        self.assertEquals(root_page.status_code, 302)
-        self.assertEquals(root_page["Location"], "/")
-        self.assertContains(root_page.follow(), "Welcome to the .gov registrar")
-
-        # TODO: when we have a page that lists applications, visit it and
-        # make sure that the new one exists
+        final_result = review_result.follow()
+        self.assertContains(final_result, "Thank you for your domain request")

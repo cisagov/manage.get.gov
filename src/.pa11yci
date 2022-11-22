@@ -17,6 +17,7 @@
         "http://app:8080/register/security_email/",
         "http://app:8080/register/anything_else/",
         "http://app:8080/register/requirements/",
-        "http://app:8080/register/review/"
+        "http://app:8080/register/review/",
+        "http://app:8080/register/finished/"
     ]
 }
