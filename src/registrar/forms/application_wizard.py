@@ -1,5 +1,7 @@
 """Forms Wizard for creating a new domain application."""
 
+from __future__ import annotations  # allows forward references in annotations
+
 import logging
 
 from django import forms
@@ -52,19 +54,6 @@ class OrganizationTypeForm(RegistrarForm):
         ],
         widget=forms.RadioSelect,
     )
-    federal_type = forms.ChoiceField(
-        required=False,
-        choices=DomainApplication.BRANCH_CHOICES,
-        widget=forms.RadioSelect,
-    )
-    is_election_board = forms.ChoiceField(
-        required=False,
-        choices=[
-            ("Yes", "Yes"),
-            ("No", "No"),
-        ],
-        widget=forms.RadioSelect(attrs={"class": "usa-radio__input"}),
-    )
 
 
 class OrganizationFederalForm(RegistrarForm):
@@ -82,7 +71,8 @@ class OrganizationElectionForm(RegistrarForm):
                 (True, "Yes"),
                 (False, "No"),
             ],
-        )
+        ),
+        required=False
     )
 
 
@@ -297,6 +287,41 @@ TITLES = {
 }
 
 
+def _get_organization_type(wizard: ApplicationWizard) -> Union[str, None]:
+    """Extract the answer to the organization type question from the wizard."""
+    # using the step data from the storage is a workaround for this
+    # bug in django-formtools version 2.4
+    # https://github.com/jazzband/django-formtools/issues/220
+    type_data = wizard.storage.get_step_data("organization_type")
+    if type_data:
+        return type_data.get("organization_type-organization_type")
+    return None
+
+
+def show_organization_federal(wizard: ApplicationWizard) -> Bool:
+    """Show this step if the answer to the first question was "federal"."""
+    return _get_organization_type(wizard) == "Federal"
+
+
+def show_organization_election(wizard: ApplicationWizard) -> Bool:
+    """Show this step if the answer to the first question implies it.
+
+    This shows for answers that aren't "Federal" or "Interstate".
+    """
+    type_answer = _get_organization_type(wizard)
+    if type_answer and type_answer not in ("Federal", "Interstate"):
+        return True
+    return False
+
+
+# We can use a dictionary with step names and callables that return booleans
+# to show or hide particular steps based on the state of the process.
+WIZARD_CONDITIONS = {
+    "organization_federal": show_organization_federal,
+    "organization_election": show_organization_election,
+}
+
+
 class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
 
     """Multi-page form ("wizard") for new domain applications.
@@ -330,13 +355,17 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         organization_type_data = form_dict["organization_type"].cleaned_data
         application.organization_type = organization_type_data["organization_type"]
 
-        # federal branch information
-        federal_branch_data = form_dict["organization_federal"].cleaned_data
-        application.federal_branch = federal_branch_data["federal_type"]
+        # federal branch information may not exist
+        federal_branch_data = form_dict.get("organization_federal")
+        if federal_branch_data is not None:
+            federal_branch_data = federal_branch_data.cleaned_data
+            application.federal_branch = federal_branch_data["federal_type"]
 
-        # election board  information
-        election_board_data = form_dict["organization_election"].cleaned_data
-        application.is_election_office = election_board_data["is_election_board"]
+        # election board  information may not exist.
+        election_board_data = form_dict.get("organization_election")
+        if election_board_data is not None:
+            election_board_data = election_board_data.cleaned_data
+            application.is_election_office = election_board_data["is_election_board"]
 
         # contact information
         contact_data = form_dict["organization_contact"].cleaned_data

@@ -10,12 +10,14 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar.views import health, index, profile, whoami
-from registrar.forms import ApplicationWizard
+from registrar.forms import ApplicationWizard, WIZARD_CONDITIONS
 from api.views import available
 
 APPLICATION_URL_NAME = "application_step"
 application_wizard = ApplicationWizard.as_view(
-    url_name=APPLICATION_URL_NAME, done_step_name="finished"
+    url_name=APPLICATION_URL_NAME,
+    done_step_name="finished",
+    condition_dict=WIZARD_CONDITIONS,
 )
 
 urlpatterns = [
