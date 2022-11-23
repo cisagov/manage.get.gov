@@ -132,7 +132,7 @@ If you are seeing errors related to openid complaining about issuing a token fro
 ERROR [djangooidc.oidc:243] Issued in the future
 ```
 
-it may help to resync with time.nist.gov: 
+it may help to resync your laptop with time.nist.gov: 
 
 ```
 sudo sntp -sS time.nist.gov
