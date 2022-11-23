@@ -134,7 +134,6 @@ class FormTests(TestWithUser, WebTest):
         self.assertEquals(type_result.status_code, 302)
         self.assertEquals(type_result["Location"], "/register/organization_federal/")
 
-
         # ---- FEDERAL BRANCH PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -147,9 +146,7 @@ class FormTests(TestWithUser, WebTest):
         federal_result = federal_form.submit()
 
         self.assertEquals(federal_result.status_code, 302)
-        self.assertEquals(
-            federal_result["Location"], "/register/organization_contact/"
-        )
+        self.assertEquals(federal_result["Location"], "/register/organization_contact/")
 
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page

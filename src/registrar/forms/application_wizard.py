@@ -4,6 +4,8 @@ from __future__ import annotations  # allows forward references in annotations
 
 import logging
 
+from typing import Union
+
 from django import forms
 from django.shortcuts import render
 
@@ -72,7 +74,7 @@ class OrganizationElectionForm(RegistrarForm):
                 (False, "No"),
             ],
         ),
-        required=False
+        required=False,
     )
 
 
@@ -298,12 +300,12 @@ def _get_organization_type(wizard: ApplicationWizard) -> Union[str, None]:
     return None
 
 
-def show_organization_federal(wizard: ApplicationWizard) -> Bool:
+def show_organization_federal(wizard: ApplicationWizard) -> bool:
     """Show this step if the answer to the first question was "federal"."""
     return _get_organization_type(wizard) == "Federal"
 
 
-def show_organization_election(wizard: ApplicationWizard) -> Bool:
+def show_organization_election(wizard: ApplicationWizard) -> bool:
     """Show this step if the answer to the first question implies it.
 
     This shows for answers that aren't "Federal" or "Interstate".
