@@ -123,3 +123,17 @@ In an effort to keep our domain logic centralized, we are representing the state
 objects in the application using the [django-fsm](https://github.com/viewflow/django-fsm)
 library. See the [ADR number 15](../architecture/decisions/0015-use-django-fs.md) for
 more information on the topic.
+
+## Login Time Bug
+
+If you are seeing errors related to openid complaining about issuing a token from the future like this:
+
+```
+ERROR [djangooidc.oidc:243] Issued in the future
+```
+
+it may help to resync with time.nist.gov: 
+
+```
+sudo sntp -sS time.nist.gov
+```
