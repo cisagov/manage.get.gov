@@ -14,6 +14,7 @@
 {% endblock %}
 
 {% block content %}
+<main id="main-content" class="grid-container">
 <p>This is the .gov registrar.</p>
 
 {% if user.is_authenticated %}
@@ -51,5 +52,5 @@
 {% else %}
 <p><a href="{% url 'login' %}">Click here to log in.</a></p>
 {% endif %}
-
+</main>
 {% endblock %}

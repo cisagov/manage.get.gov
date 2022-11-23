@@ -1,0 +1,19 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block form_content %}
+
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
+  {{ wizard.form.current_site|add_label_class:"usa-label" }}
+  {{ wizard.form.current_site|add_class:"usa-input" }}
+
+  {{ block.super }}
+
+</form>
+
+{% endblock %}
