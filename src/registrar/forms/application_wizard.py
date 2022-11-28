@@ -4,8 +4,6 @@ from __future__ import annotations  # allows forward references in annotations
 
 import logging
 
-from typing import Union
-
 from django import forms
 from django.shortcuts import render
 

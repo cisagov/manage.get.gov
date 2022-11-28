@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.db import models
@@ -9,9 +8,10 @@ from .contact import Contact
 from .user import User
 from .website import Website
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
+
 if TYPE_CHECKING:
-	from ..forms.application_wizard import ApplicationWizard
+    from ..forms.application_wizard import ApplicationWizard
 
 
 class DomainApplication(TimeStampedModel):
@@ -265,4 +265,3 @@ class DomainApplication(TimeStampedModel):
         if type_answer and type_answer not in ("Federal", "Interstate"):
             return True
         return False
-
