@@ -289,38 +289,11 @@ TITLES = {
 }
 
 
-def _get_organization_type(wizard: ApplicationWizard) -> Union[str, None]:
-    """Extract the answer to the organization type question from the wizard."""
-    # using the step data from the storage is a workaround for this
-    # bug in django-formtools version 2.4
-    # https://github.com/jazzband/django-formtools/issues/220
-    type_data = wizard.storage.get_step_data("organization_type")
-    if type_data:
-        return type_data.get("organization_type-organization_type")
-    return None
-
-
-def show_organization_federal(wizard: ApplicationWizard) -> bool:
-    """Show this step if the answer to the first question was "federal"."""
-    return _get_organization_type(wizard) == "Federal"
-
-
-def show_organization_election(wizard: ApplicationWizard) -> bool:
-    """Show this step if the answer to the first question implies it.
-
-    This shows for answers that aren't "Federal" or "Interstate".
-    """
-    type_answer = _get_organization_type(wizard)
-    if type_answer and type_answer not in ("Federal", "Interstate"):
-        return True
-    return False
-
-
 # We can use a dictionary with step names and callables that return booleans
 # to show or hide particular steps based on the state of the process.
 WIZARD_CONDITIONS = {
-    "organization_federal": show_organization_federal,
-    "organization_election": show_organization_election,
+    "organization_federal": DomainApplication.show_organization_federal,
+    "organization_election": DomainApplication.show_organization_election,
 }
 
 
