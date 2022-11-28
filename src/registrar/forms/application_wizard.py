@@ -11,7 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 
-from registrar.models import DomainApplication, Website
+from registrar.models import DomainApplication, Domain
 
 
 logger = logging.getLogger(__name__)
@@ -348,8 +348,8 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
 
         # This isn't really the requested_domain field
         # but we need something in this field to make the form submittable
-        requested_site, _ = Website.objects.get_or_create(
-            website=contact_data["organization_name"] + ".gov"
+        requested_site, _ = Domain.objects.get_or_create(
+            name=contact_data["organization_name"] + ".gov"
         )
         application.requested_domain = requested_site
         return application
