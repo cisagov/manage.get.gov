@@ -1,14 +1,14 @@
 import logging
 import re
 
+from django.apps import apps
+from django.core.exceptions import ValidationError
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
 from epp.mock_epp import domain_info, domain_check
 
 from .utility.time_stamped_model import TimeStampedModel
-from .domain_application import DomainApplication
-from .user import User
 
 logger = logging.getLogger(__name__)
 
@@ -93,11 +93,58 @@ class Domain(TimeStampedModel):
     DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
 
     @classmethod
-    def string_could_be_domain(cls, domain: str) -> bool:
+    def normalize(cls, domain: str, tld=None) -> str:  # noqa: C901
+        """Return `domain` in form `<second level>.<tld>`, if possible.
+
+        This does not guarantee the returned string is a valid domain name."""
+        cleaned = domain.lower()
+        # starts with https or http
+        if cleaned.startswith("https://"):
+            cleaned = cleaned[8:]
+        if cleaned.startswith("http://"):
+            cleaned = cleaned[7:]
+        # has url parts
+        if "/" in cleaned:
+            cleaned = cleaned.split("/")[0]
+        # has query parts
+        if "?" in cleaned:
+            cleaned = cleaned.split("?")[0]
+        # has fragments
+        if "#" in cleaned:
+            cleaned = cleaned.split("#")[0]
+        # replace disallowed chars
+        re.sub(r"^[^A-Za-z0-9.-]+", "", cleaned)
+
+        parts = cleaned.split(".")
+        # has subdomains or invalid repetitions
+        if cleaned.count(".") > 0:
+            # remove invalid repetitions
+            while parts[-1] == parts[-2]:
+                parts.pop()
+            # remove subdomains
+            parts = parts[-2:]
+        hasTLD = len(parts) == 2
+        if hasTLD:
+            # set correct tld
+            if tld is not None:
+                parts[-1] = tld
+        else:
+            # add tld
+            if tld is not None:
+                parts.append(tld)
+            else:
+                raise ValueError("You must specify a tld for %s" % domain)
+
+        cleaned = ".".join(parts)
+
+        return cleaned
+
+    @classmethod
+    def string_could_be_domain(cls, domain: str | None) -> bool:
         """Return True if the string could be a domain name, otherwise False."""
-        if cls.DOMAIN_REGEX.match(domain):
-            return True
-        return False
+        if not isinstance(domain, str):
+            return False
+        return bool(cls.DOMAIN_REGEX.match(domain))
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -137,16 +184,10 @@ class Domain(TimeStampedModel):
             # TODO: return an error if registry cannot be contacted
             return None
 
-    def could_be_domain(self) -> bool:
-        """Could this instance be a domain?"""
-        # short-circuit if self.website is null/None
-        if not self.name:
-            return False
-        return self.string_could_be_domain(str(self.name))
-
     @transition(field="is_active", source="*", target=True)
     def activate(self):
         """This domain should be made live."""
+        DomainApplication = apps.get_model("registrar.DomainApplication")
         if hasattr(self, "domain_application"):
             if self.domain_application.status != DomainApplication.APPROVED:
                 raise ValueError("Cannot activate. Application must be approved.")
@@ -165,6 +206,34 @@ class Domain(TimeStampedModel):
         # within the codebase; discuss these with the project lead
         # if there is a feature request to implement this
         raise Exception("Cannot revoke, contact registry.")
+
+    @property
+    def sld(self):
+        """Get or set the second level domain string."""
+        return self.name.split(".")[0]
+
+    @sld.setter
+    def sld(self, value: str):
+        parts = self.name.split(".")
+        tld = parts[1] if len(parts) > 1 else ""
+        if Domain.string_could_be_domain(f"{value}.{tld}"):
+            self.name = f"{value}.{tld}"
+        else:
+            raise ValidationError("%s is not a valid second level domain" % value)
+
+    @property
+    def tld(self):
+        """Get or set the top level domain string."""
+        parts = self.name.split(".")
+        return parts[1] if len(parts) > 1 else ""
+
+    @tld.setter
+    def tld(self, value: str):
+        sld = self.name.split(".")[0]
+        if Domain.string_could_be_domain(f"{sld}.{value}"):
+            self.name = f"{sld}.{value}"
+        else:
+            raise ValidationError("%s is not a valid top level domain" % value)
 
     def __str__(self) -> str:
         return self.name
@@ -232,6 +301,6 @@ class Domain(TimeStampedModel):
     # TODO: determine the relationship between this field
     # and the domain application's `creator` and `submitter`
     owners = models.ManyToManyField(
-        User,
+        "registrar.User",
         help_text="",
     )

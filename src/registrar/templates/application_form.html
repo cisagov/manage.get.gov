@@ -20,11 +20,11 @@
         <h1> {{form_titles|get_item:wizard.steps.current}} </h1>
         {% block form_content %}
         {% if wizard.steps.next %}
-        <button type="submit" class="usa-button">Next</button>
+        <button type="submit" name="submit_button" value="next" class="usa-button">Next</button>
         {% else %}
         <button type="submit" class="usa-button">Submit your domain request</button>
         {% endif %}
-        <button type="button" class="usa-button usa-button--outline">Save</button>
+        <button type="submit" name="submit_button" value="save" class="usa-button usa-button--outline">Save</button>
       </main>
     </div> 
     {% endblock %}

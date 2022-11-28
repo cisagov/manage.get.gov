@@ -1,7 +1,6 @@
 from django.db import models
 
 from .utility.time_stamped_model import TimeStampedModel
-from .domain import Domain
 
 
 class Host(TimeStampedModel):
@@ -26,7 +25,7 @@ class Host(TimeStampedModel):
     )
 
     domain = models.ForeignKey(
-        Domain,
+        "registrar.Domain",
         on_delete=models.PROTECT,
         related_name="host",  # access this Host via the Domain as `domain.host`
         help_text="Domain to which this host belongs",

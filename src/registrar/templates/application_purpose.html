@@ -12,8 +12,8 @@
     {% csrf_token %}
    
     <div class="usa-character-count">
-      {{ wizard.form.purpose_field|add_label_class:"usa-label usa-sr-only" }}
-      {{ wizard.form.purpose_field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
+      {{ wizard.form.purpose|add_label_class:"usa-label usa-sr-only" }}
+      {{ wizard.form.purpose|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
       <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
     </div>
   </div>

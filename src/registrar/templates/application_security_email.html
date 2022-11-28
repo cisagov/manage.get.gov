@@ -11,8 +11,8 @@
   {{ wizard.management_form }}
   {% csrf_token %}
 
-    {{ wizard.form.email|add_label_class:"usa-label" }}
-    {{ wizard.form.email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ wizard.form.security_email|add_label_class:"usa-label" }}
+    {{ wizard.form.security_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
   {{ block.super }}
 

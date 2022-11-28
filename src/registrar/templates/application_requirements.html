@@ -60,8 +60,8 @@
     {% csrf_token %}
 
     <div class="usa-checkbox"> 
-      {{ wizard.form.agree_check|add_class:"usa-checkbox__input"}}
-      {{ wizard.form.agree_check|add_label_class:"usa-checkbox__label" }}
+      {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"}}
+      {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
     </div>
   </div>
 
