@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 
-from .models import User, UserProfile, DomainApplication, Website
+from . import models
 
 
 class AuditedAdmin(admin.ModelAdmin):
@@ -26,7 +26,7 @@ class UserProfileInline(admin.StackedInline):
 
     """Edit a user's profile on the user page."""
 
-    model = UserProfile
+    model = models.UserProfile
 
 
 class MyUserAdmin(UserAdmin):
@@ -36,6 +36,24 @@ class MyUserAdmin(UserAdmin):
     inlines = [UserProfileInline]
 
 
-admin.site.register(User, MyUserAdmin)
-admin.site.register(DomainApplication, AuditedAdmin)
-admin.site.register(Website, AuditedAdmin)
+class HostIPInline(admin.StackedInline):
+
+    """Edit an ip address on the host page."""
+
+    model = models.HostIP
+
+
+class MyHostAdmin(AuditedAdmin):
+
+    """Custom host admin class to use our inlines."""
+
+    inlines = [HostIPInline]
+
+
+admin.site.register(models.User, MyUserAdmin)
+admin.site.register(models.Contact, AuditedAdmin)
+admin.site.register(models.DomainApplication, AuditedAdmin)
+admin.site.register(models.Domain, AuditedAdmin)
+admin.site.register(models.Host, MyHostAdmin)
+admin.site.register(models.Nameserver, MyHostAdmin)
+admin.site.register(models.Website, AuditedAdmin)

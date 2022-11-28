@@ -224,7 +224,8 @@ class Domain(TimeStampedModel):
             (False, "No"),
         ],
         default=False,
-        protected=True,
+        # TODO: how to edit models in Django admin if protected = True
+        protected=False,
         help_text="Domain is live in the registry",
     )
 

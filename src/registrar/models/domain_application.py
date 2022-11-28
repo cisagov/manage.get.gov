@@ -211,8 +211,8 @@ class DomainApplication(TimeStampedModel):
 
     def __str__(self):
         try:
-            if self.requested_domain and self.requested_domain.website:
-                return self.requested_domain.website
+            if self.requested_domain and self.requested_domain.name:
+                return self.requested_domain.name
             else:
                 return f"{self.status} application created by {self.creator}"
         except Exception:
