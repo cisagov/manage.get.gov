@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
@@ -5,6 +7,11 @@ from .utility.time_stamped_model import TimeStampedModel
 from .contact import Contact
 from .user import User
 from .website import Website
+
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from ..forms.application_wizard import ApplicationWizard
 
 
 class DomainApplication(TimeStampedModel):
@@ -225,3 +232,36 @@ class DomainApplication(TimeStampedModel):
         # if no exception was raised, then we don't need to do anything
         # inside this method, keep the `pass` here to remind us of that
         pass
+
+    # ## Form policies ###
+    #
+    # These methods control what questions need to be answered by applicants
+    # during the application flow. They are policies about the application so
+    # they appear here.
+
+    @staticmethod
+    def _get_organization_type(wizard: ApplicationWizard) -> Union[str, None]:
+        """Extract the answer to the organization type question from the wizard."""
+        # using the step data from the storage is a workaround for this
+        # bug in django-formtools version 2.4
+        # https://github.com/jazzband/django-formtools/issues/220
+        type_data = wizard.storage.get_step_data("organization_type")
+        if type_data:
+            return type_data.get("organization_type-organization_type")
+        return None
+
+    @staticmethod
+    def show_organization_federal(wizard: ApplicationWizard) -> bool:
+        """Show this step if the answer to the first question was "federal"."""
+        return DomainApplication._get_organization_type(wizard) == "Federal"
+
+    @staticmethod
+    def show_organization_election(wizard: ApplicationWizard) -> bool:
+        """Show this step if the answer to the first question implies it.
+
+        This shows for answers that aren't "Federal" or "Interstate".
+        """
+        type_answer = DomainApplication._get_organization_type(wizard)
+        if type_answer and type_answer not in ("Federal", "Interstate"):
+            return True
+        return False
