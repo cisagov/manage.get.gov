@@ -28,5 +28,6 @@ class Host(TimeStampedModel):
     domain = models.ForeignKey(
         Domain,
         on_delete=models.PROTECT,
+        related_name="host",  # access this Host via the Domain as `domain.host`
         help_text="Domain to which this host belongs",
     )

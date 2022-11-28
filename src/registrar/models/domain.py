@@ -36,7 +36,12 @@ class Domain(TimeStampedModel):
         ]
 
     class Status(models.TextChoices):
-        """The status codes we can receive from the registry."""
+        """
+        The status codes we can receive from the registry.
+
+        These are detailed in RFC 5731 in section 2.3.
+        https://www.rfc-editor.org/std/std69.txt
+        """
 
         # Requests to delete the object MUST be rejected.
         CLIENT_DELETE_PROHIBITED = "clientDeleteProhibited"
@@ -96,7 +101,9 @@ class Domain(TimeStampedModel):
 
     @classmethod
     def available(cls, domain: str) -> bool:
-        """Check if a domain is available. Not implemented."""
+        """Check if a domain is available.
+
+        Not implemented. Returns a dummy value for testing."""
         return domain_check(domain)
 
     def transfer(self):
@@ -119,9 +126,15 @@ class Domain(TimeStampedModel):
                 logger.error(e)
                 # TODO: back off error handling
                 return None
-        if hasattr(self, "info") and (property in self.info):
-            return self.info[property]
+        if hasattr(self, "info"):
+            if property in self.info:
+                return self.info[property]
+            else:
+                raise KeyError(
+                    "Requested key %s was not found in registry data." % str(property)
+                )
         else:
+            # TODO: return an error if registry cannot be contacted
             return None
 
     def could_be_domain(self) -> bool:

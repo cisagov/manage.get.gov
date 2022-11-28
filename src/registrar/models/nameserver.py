@@ -11,4 +11,6 @@ class Nameserver(Host):
     before their application is approved.
     """
 
+    # there is nothing here because all of the fields are
+    # defined over there on the Host class
     pass

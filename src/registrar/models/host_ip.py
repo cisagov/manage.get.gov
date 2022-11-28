@@ -27,5 +27,6 @@ class HostIP(TimeStampedModel):
     host = models.ForeignKey(
         Host,
         on_delete=models.PROTECT,
+        related_name="ip",  # access this HostIP via the Host as `host.ip`
         help_text="Host to which this IP address belongs",
     )

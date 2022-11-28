@@ -78,6 +78,21 @@ To test behind logged in pages with external tools, like `pa11y-ci` or `OWASP Za
 
 to MIDDLEWARE in settings.py. **Remove it when you are finished testing.**
 
+### Reducing console noise in tests
+
+Some tests, particularly when using Django's test client, will print errors.
+
+These errors do not indicate test failure, but can make the output hard to read.
+
+To silence them, we have a helper function `less_console_noise`:
+
+```python
+from .common import less_console_noise
+...
+        with less_console_noise():
+            # <test code goes here>
+```
+
 ### Accessibility Scanning
 
 The tool `pa11y-ci` is used to scan pages for compliance with a set of
