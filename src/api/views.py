@@ -11,7 +11,7 @@ import requests
 
 from cachetools.func import ttl_cache
 
-from registrar.models import Website
+from registrar.models import Domain
 
 DOMAIN_FILE_URL = (
     "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
@@ -35,7 +35,7 @@ def _domains():
         # get the domain before the first comma
         domain = line.split(",", 1)[0]
         # sanity-check the string we got from the file here
-        if Website.string_could_be_domain(domain):
+        if Domain.string_could_be_domain(domain):
             # lowercase everything when we put it in domains
             domains.add(domain.lower())
     return domains
@@ -68,8 +68,8 @@ def available(request, domain=""):
     # validate that the given domain could be a domain name and fail early if
     # not.
     if not (
-        Website.string_could_be_domain(domain)
-        or Website.string_could_be_domain(domain + ".gov")
+        Domain.string_could_be_domain(domain)
+        or Domain.string_could_be_domain(domain + ".gov")
     ):
         raise BadRequest("Invalid request.")
     # a domain is available if it is NOT in the list of current domains

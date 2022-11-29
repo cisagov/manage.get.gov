@@ -6,20 +6,51 @@
 <section class="usa-hero">
   <div class="usa-grid">
     <div class="usa-hero-callout usa-section-dark">
-      <h2>
+      <h1>
         <span class="usa-hero-callout-alt">Welcome to the .gov registrar</span>
-      </h2>
+      </h1>
     </div>
 </section>
 {% endblock %}
 
 {% block content %}
+<main id="main-content" class="grid-container">
 <p>This is the .gov registrar.</p>
 
 {% if user.is_authenticated %}
-<p><a href="/openid/logout/">Click here to log out.</a></p>
-{% else %}
-<p><a href="/openid/login/">Click here to log in.</a></p>
+
+{% if domain_applications %}
+<h2>Your domain applications</h2>
+<table class="usa-table usa-table--borderless">
+  <caption class="sr-only">Your domain applications</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for application in domain_applications %}
+      <tr>
+        <th>{{ application.requested_domain.name }}</th>
+        <td>{{ application.status }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 {% endif %}
 
+<p><a href="{% url 'application' %}" class="usa-button">Apply</a></p>
+
+<p><a href="{% url 'edit-profile' %}">Edit profile</a></p>
+
+{% if user.is_staff %}
+<p><a href="{% url 'admin:index' %}">CISA admin panel</a></p>
+{% endif %}
+
+<p><a href="{% url 'logout' %}">Click here to log out.</a></p>
+{% else %}
+<p><a href="{% url 'login' %}">Click here to log in.</a></p>
+{% endif %}
+</main>
 {% endblock %}

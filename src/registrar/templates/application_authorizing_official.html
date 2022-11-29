@@ -1,0 +1,55 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block form_content %}
+
+<h2>Who is the authorizing official for your organization</h2>
+
+<div id="instructions">
+  <p>Your authorizing official is the person within your organization who can authorize your domain request. This is generally the highest ranking or highest elected official in your organization. Read more about <a href="#">who can serve as an authorizing official</a>.
+  </p>
+
+  <div class="ao-example">
+    {% include "includes/ao_example__city.html" %}
+  </div>
+
+  <p>We’ll contact your authorizing official to let them know that you made this request and to double check that they approve it.</p> 
+</div>
+
+<p>All fields are required unless they are marked optional.</p>
+
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
+  <fieldset class="usa-fieldset">
+    <legend class="usa-sr-only">
+      Who is the authorizing official for your organization
+    </legend>
+    {{ wizard.form.first_name|add_label_class:"usa-label" }}
+    {{ wizard.form.first_name|add_class:"usa-input"}}
+
+    {{ wizard.form.middle_name|add_label_class:"usa-label" }}
+    {{ wizard.form.middle_name|add_class:"usa-input"}}
+
+    {{ wizard.form.last_name|add_label_class:"usa-label" }}
+    {{ wizard.form.last_name|add_class:"usa-input"}}
+    
+    {{ wizard.form.title|add_label_class:"usa-label" }}
+    {{ wizard.form.title|add_class:"usa-input"}}
+
+    {{ wizard.form.email|add_label_class:"usa-label" }}
+    {{ wizard.form.email|add_class:"usa-input"}}
+
+    {{ wizard.form.phone|add_label_class:"usa-label" }}
+    {{ wizard.form.phone|add_class:"usa-input usa-input--medium" }}
+  </fieldset>
+
+
+  {{ block.super }}
+
+</form>
+
+{% endblock %}

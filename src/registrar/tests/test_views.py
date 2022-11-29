@@ -5,7 +5,10 @@ from django.contrib.auth import get_user_model
 
 from django_webtest import WebTest  # type: ignore
 
-from registrar.models import DomainApplication
+from registrar.models import DomainApplication, Domain
+from registrar.forms.application_wizard import TITLES
+
+from .common import less_console_noise
 
 
 class TestViews(TestCase):
@@ -54,6 +57,18 @@ class LoggedInTests(TestWithUser):
         super().setUp()
         self.client.force_login(self.user)
 
+    def test_home_lists_domain_applications(self):
+        response = self.client.get("/")
+        self.assertNotContains(response, "igorville.gov")
+        site = Domain.objects.create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user, requested_domain=site
+        )
+        response = self.client.get("/")
+        self.assertContains(response, "igorville.gov", count=1)
+        # clean up
+        application.delete()
+
     def test_whoami_page(self):
         """User information appears on the whoami page."""
         response = self.client.get("/whoami/")
@@ -67,7 +82,9 @@ class LoggedInTests(TestWithUser):
 
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
-        self.assertContains(response, "About your organization")
+        self.assertContains(
+            response, "What kind of government organization do you represent?"
+        )
 
 
 class FormTests(TestWithUser, WebTest):
@@ -92,63 +109,272 @@ class FormTests(TestWithUser, WebTest):
         page = self.app.get(reverse("application")).follow()
         # submitting should get back the same page if the required field is empty
         result = page.form.submit()
-        self.assertIn("About your organization", result)
-
-    def test_application_form_organization(self):
-        # 302 redirect to the first form
-        page = self.app.get(reverse("application")).follow()
-        form = page.form
-        form["organization-organization_type"] = "Federal"
-        result = page.form.submit().follow()
-        # Got the next form page
-        self.assertContains(result, "contact information")
+        self.assertIn("What kind of government organization do you represent?", result)
 
     def test_application_form_submission(self):
         """Can fill out the entire form and submit.
-
         As we add additional form pages, we need to include them here to make
         this test work.
         """
-        page = self.app.get(reverse("application")).follow()
+        type_page = self.app.get(reverse("application")).follow()
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-        form = page.form
-        form["organization-organization_type"] = "Federal"
-        form["organization-federal_type"] = "Executive"
+        # ---- TYPE PAGE  ----
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "Federal"
+
         # set the session ID before .submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = page.form.submit()
+        type_result = type_page.form.submit()
 
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(result.status_code, 302)
-        self.assertEquals(result["Location"], "/register/contact/")
+        self.assertEquals(type_result.status_code, 302)
+        self.assertEquals(type_result["Location"], "/register/organization_federal/")
 
+        # ---- FEDERAL BRANCH PAGE  ----
         # Follow the redirect to the next form page
-        next_page = result.follow()
-        contact_form = next_page.form
-        contact_form["contact-organization_name"] = "test"
-        contact_form["contact-street_address"] = "100 Main Street"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+        federal_form = federal_page.form
+        federal_form["organization_federal-federal_type"] = "Executive"
+
         # set the session ID before .submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = contact_form.submit()
+        federal_result = federal_form.submit()
+
+        self.assertEquals(federal_result.status_code, 302)
+        self.assertEquals(federal_result["Location"], "/register/organization_contact/")
+
+        # ---- ORG CONTACT PAGE  ----
+        # Follow the redirect to the next form page
+        org_contact_page = federal_result.follow()
+        org_contact_form = org_contact_page.form
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-us_state"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_result = org_contact_form.submit()
+
+        self.assertEquals(org_contact_result.status_code, 302)
+        self.assertEquals(
+            org_contact_result["Location"], "/register/authorizing_official/"
+        )
+        # ---- AUTHORIZING OFFICIAL PAGE  ----
+        # Follow the redirect to the next form page
+        ao_page = org_contact_result.follow()
+        ao_form = ao_page.form
+        ao_form["authorizing_official-first_name"] = "Testy"
+        ao_form["authorizing_official-last_name"] = "Tester"
+        ao_form["authorizing_official-title"] = "Chief Tester"
+        ao_form["authorizing_official-email"] = "testy@town.com"
+        ao_form["authorizing_official-phone"] = "(555) 555 5555"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_result = ao_form.submit()
+
+        self.assertEquals(ao_result.status_code, 302)
+        self.assertEquals(ao_result["Location"], "/register/current_sites/")
+
+        # ---- CURRENT SITES PAGE  ----
+        # Follow the redirect to the next form page
+        current_sites_page = ao_result.follow()
+        current_sites_form = current_sites_page.form
+        current_sites_form["current_sites-current_site"] = "www.city.com"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit()
+
+        self.assertEquals(current_sites_result.status_code, 302)
+        self.assertEquals(current_sites_result["Location"], "/register/dotgov_domain/")
+
+        # ---- DOTGOV DOMAIN PAGE  ----
+        # Follow the redirect to the next form page
+        dotgov_page = current_sites_result.follow()
+        dotgov_form = dotgov_page.form
+        dotgov_form["dotgov_domain-dotgov_domain"] = "city"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_result = dotgov_form.submit()
+
+        self.assertEquals(dotgov_result.status_code, 302)
+        self.assertEquals(dotgov_result["Location"], "/register/purpose/")
+
+        # ---- PURPOSE DOMAIN PAGE  ----
+        # Follow the redirect to the next form page
+        purpose_page = dotgov_result.follow()
+        purpose_form = purpose_page.form
+        purpose_form["purpose-purpose_field"] = "Purpose of the site"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        purpose_result = purpose_form.submit()
+
+        self.assertEquals(purpose_result.status_code, 302)
+        self.assertEquals(purpose_result["Location"], "/register/your_contact/")
+
+        # ---- YOUR CONTACT INFO PAGE  ----
+        # Follow the redirect to the next form page
+        your_contact_page = purpose_result.follow()
+        your_contact_form = your_contact_page.form
+
+        your_contact_form["your_contact-first_name"] = "Testy you"
+        your_contact_form["your_contact-last_name"] = "Tester you"
+        your_contact_form["your_contact-title"] = "Admin Tester"
+        your_contact_form["your_contact-email"] = "testy-admin@town.com"
+        your_contact_form["your_contact-phone"] = "(555) 555 5556"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        your_contact_result = your_contact_form.submit()
+
+        self.assertEquals(your_contact_result.status_code, 302)
+        self.assertEquals(your_contact_result["Location"], "/register/other_contacts/")
+
+        # ---- OTHER CONTACTS PAGE  ----
+        # Follow the redirect to the next form page
+        other_contacts_page = your_contact_result.follow()
+        other_contacts_form = other_contacts_page.form
+
+        other_contacts_form["other_contacts-first_name"] = "Testy2"
+        other_contacts_form["other_contacts-last_name"] = "Tester2"
+        other_contacts_form["other_contacts-title"] = "Another Tester"
+        other_contacts_form["other_contacts-email"] = "testy2@town.com"
+        other_contacts_form["other_contacts-phone"] = "(555) 555 5557"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        other_contacts_result = other_contacts_form.submit()
+
+        self.assertEquals(other_contacts_result.status_code, 302)
+        self.assertEquals(
+            other_contacts_result["Location"], "/register/security_email/"
+        )
+
+        # ---- SECURITY EMAIL PAGE  ----
+        # Follow the redirect to the next form page
+        security_email_page = other_contacts_result.follow()
+        security_email_form = security_email_page.form
+
+        security_email_form["security_email-email"] = "security@city.com"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        security_email_result = security_email_form.submit()
+
+        self.assertEquals(security_email_result.status_code, 302)
+        self.assertEquals(security_email_result["Location"], "/register/anything_else/")
+
+        # ---- ANYTHING ELSE PAGE  ----
+        # Follow the redirect to the next form page
+        anything_else_page = security_email_result.follow()
+        anything_else_form = anything_else_page.form
+
+        anything_else_form["anything_else-anything_else"] = "No"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        anything_else_result = anything_else_form.submit()
+
+        self.assertEquals(anything_else_result.status_code, 302)
+        self.assertEquals(anything_else_result["Location"], "/register/requirements/")
+
+        # ---- REQUIREMENTS PAGE  ----
+        # Follow the redirect to the next form page
+        requirements_page = anything_else_result.follow()
+        requirements_form = requirements_page.form
+
+        requirements_form["requirements-agree_check"] = True
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_result = requirements_form.submit()
+
+        self.assertEquals(requirements_result.status_code, 302)
+        self.assertEquals(requirements_result["Location"], "/register/review/")
+
+        # ---- REVIEW AND FINSIHED PAGES  ----
+        # Follow the redirect to the next form page
+        review_page = requirements_result.follow()
+        review_form = review_page.form
 
         # final submission results in a redirect to the "finished" URL
-        self.assertEquals(result.status_code, 302)
-        self.assertEquals(result["Location"], "/register/finished/")
 
-        # the finished URL (for now) returns a redirect to /
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        review_result = review_form.submit()
+
+        self.assertEquals(review_result.status_code, 302)
+        self.assertEquals(review_result["Location"], "/register/finished/")
+
         # following this redirect is a GET request, so include the cookie
         # here too.
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        next_result = result.follow()
-        self.assertEquals(next_result.status_code, 302)
-        self.assertEquals(next_result["Location"], "/")
+        with less_console_noise():
+            final_result = review_result.follow()
+        self.assertContains(final_result, "Thank you for your domain request")
 
-        self.assertContains(next_result.follow(), "Welcome to the .gov registrar")
-        # TODO: when we have a page that lists applications, visit it and
-        # make sure that the new one exists
+    def test_application_form_conditional_federal(self):
+        """Federal branch question is shown for federal organizations."""
+        type_page = self.app.get(reverse("application")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- TYPE PAGE  ----
+
+        # the conditional step titles shouldn't appear initially
+        self.assertNotContains(type_page, TITLES["organization_federal"])
+        self.assertNotContains(type_page, TITLES["organization_election"])
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "Federal"
+
+        # set the session ID before .submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+
+        # the post request should return a redirect to the federal branch
+        # question
+        self.assertEquals(type_result.status_code, 302)
+        self.assertEquals(type_result["Location"], "/register/organization_federal/")
+
+        # and the step label should appear in the sidebar of the resulting page
+        # but the step label for the elections page should not appear
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+        self.assertContains(federal_page, TITLES["organization_federal"])
+        self.assertNotContains(federal_page, TITLES["organization_election"])
+
+    def test_application_form_conditional_elections(self):
+        """Election question is shown for other organizations."""
+        type_page = self.app.get(reverse("application")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- TYPE PAGE  ----
+
+        # the conditional step titles shouldn't appear initially
+        self.assertNotContains(type_page, TITLES["organization_federal"])
+        self.assertNotContains(type_page, TITLES["organization_election"])
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "County"
+
+        # set the session ID before .submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+
+        # the post request should return a redirect to the federal branch
+        # question
+        self.assertEquals(type_result.status_code, 302)
+        self.assertEquals(type_result["Location"], "/register/organization_election/")
+
+        # and the step label should appear in the sidebar of the resulting page
+        # but the step label for the elections page should not appear
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        election_page = type_result.follow()
+        self.assertContains(election_page, TITLES["organization_election"])
+        self.assertNotContains(election_page, TITLES["organization_federal"])

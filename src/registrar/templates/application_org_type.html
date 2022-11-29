@@ -1,0 +1,31 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+{% load dynamic_question_tags %}
+
+{% block form_content %}
+
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+  {{ wizard.management_form }}
+  {% csrf_token %}
+
+  {% radio_buttons_by_value wizard.form.organization_type as choices %}
+
+  <fieldset id="organization_type__fieldset" class="usa-fieldset">
+    <legend class="usa-legend">
+      <h2> What kind of government organization do you represent?</h2>
+    </legend>
+    {{ wizard.form.organization_type.errors }}
+    {% include "includes/radio_button.html" with choice=choices.Federal tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.Interstate tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.State_or_Territory tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.Tribal tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.County tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.City tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.Special_District tile="true" %}
+  </fieldset>
+
+  {{ block.super }}  
+
+</form>
+{% endblock %}
