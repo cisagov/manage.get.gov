@@ -253,7 +253,10 @@ class DomainApplication(TimeStampedModel):
     @staticmethod
     def show_organization_federal(wizard: ApplicationWizard) -> bool:
         """Show this step if the answer to the first question was "federal"."""
-        return DomainApplication._get_organization_type(wizard) == "Federal"
+        return (
+            DomainApplication._get_organization_type(wizard)
+            == DomainApplication.FEDERAL
+        )
 
     @staticmethod
     def show_organization_election(wizard: ApplicationWizard) -> bool:
@@ -262,6 +265,9 @@ class DomainApplication(TimeStampedModel):
         This shows for answers that aren't "Federal" or "Interstate".
         """
         type_answer = DomainApplication._get_organization_type(wizard)
-        if type_answer and type_answer not in ("Federal", "Interstate"):
+        if type_answer and type_answer not in (
+            DomainApplication.FEDERAL,
+            DomainApplication.INTERSTATE,
+        ):
             return True
         return False

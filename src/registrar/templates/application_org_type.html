@@ -16,13 +16,13 @@
       <h2> What kind of government organization do you represent?</h2>
     </legend>
     {{ wizard.form.organization_type.errors }}
-    {% include "includes/radio_button.html" with choice=choices.Federal tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.Interstate tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.State_or_Territory tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.Tribal tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.County tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.City tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.Special_District tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.federal tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.interstate tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.state_or_territory tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.tribal tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.county tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.city tile="true" %}
+    {% include "includes/radio_button.html" with choice=choices.special_district tile="true" %}
   </fieldset>
 
   {{ block.super }}  

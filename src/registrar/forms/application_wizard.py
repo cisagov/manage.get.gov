@@ -28,10 +28,10 @@ class OrganizationTypeForm(RegistrarForm):
     organization_type = forms.ChoiceField(
         required=True,
         choices=[
-            ("Federal", "Federal: a federal agency"),
-            ("Interstate", "Interstate: an organization of two or more states"),
+            (DomainApplication.FEDERAL, "Federal: a federal agency"),
+            (DomainApplication.INTERSTATE, "Interstate: an organization of two or more states"),
             (
-                "State_or_Territory",
+                DomainApplication.STATE_OR_TERRITORY,
                 (
                     "State or Territory: One of the 50 U.S. states, the District of "
                     "Columbia, American Samoa, Guam, Northern Mariana Islands, "
@@ -39,16 +39,16 @@ class OrganizationTypeForm(RegistrarForm):
                 ),
             ),
             (
-                "Tribal",
+                DomainApplication.TRIBAL,
                 (
                     "Tribal: a tribal government recognized by the federal or "
                     "state government"
                 ),
             ),
-            ("County", "County: a county, parish, or borough"),
-            ("City", "City: a city, town, township, village, etc."),
+            (DomainApplication.COUNTY, "County: a county, parish, or borough"),
+            (DomainApplication.CITY, "City: a city, town, township, village, etc."),
             (
-                "Special_District",
+                DomainApplication.SPECIAL_DISTRICT,
                 "Special District: an independent organization within a single state",
             ),
         ],
@@ -314,10 +314,36 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         """
         return [TEMPLATES[self.steps.current]]
 
+    def _is_federal(self) -> bool:
+        """Return whether this application is from a federal agency.
+
+        Returns True if we know that this application is from a federal
+        agency, False if we know that it is not and None if there isn't an
+        answer yet for that question.
+        """
+        organization_type_data = self.get_cleaned_data_for_step("organization_type")
+        if organization_type_data is None:
+            return None  # no answers here yet
+        organization_type = organization_type_data.get("organization_type")
+        print(organization_type)
+        if organization_type is None:
+            # they haven't answered this question
+            print("No organization type: returning None")
+            return None
+        else:
+            # they have answered this question
+            if organization_type == DomainApplication.FEDERAL:
+                print("organization type is federal: returning true")
+                return True
+            print("organization type is not federal: returning false")
+            return False
+
     def get_context_data(self, form, **kwargs):
         """Add title information to the context for all steps."""
         context = super().get_context_data(form=form, **kwargs)
         context["form_titles"] = TITLES
+        if self.steps.current == "organization_contact":
+            context["is_federal"] = self._is_federal()
         return context
 
     def forms_to_object(self, form_dict: dict) -> DomainApplication:

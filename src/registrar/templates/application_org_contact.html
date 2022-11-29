@@ -22,8 +22,12 @@
 
   <fieldset class="usa-fieldset">
     <legend class="usa-sr-only">What is the name and mailing address of your organization?</legend>
-    {{ wizard.form.organization_name|add_label_class:"usa-label" }}
-    {{ wizard.form.organization_name|add_class:"usa-input" }}
+
+    {% if is_federal %}
+        {% include 'includes/organization_federal.html' %}
+    {% else %}
+        {% include 'includes/organization_nonfederal.html' %}
+    {% endif %}
     {{ wizard.form.address_line1|add_label_class:"usa-label" }}
     {{ wizard.form.address_line1|add_class:"usa-input" }}
     {{ wizard.form.address_line2|add_label_class:"usa-label" }}
