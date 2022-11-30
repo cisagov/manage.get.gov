@@ -18,13 +18,13 @@ Deployment_Node(aws, "AWS GovCloud", "Amazon Web Services Region") {
             Deployment_Node(organization, "get.gov organization") {
                 Deployment_Node(unstable, "unstable space") {
                     System_Boundary(dashboard_unstable, "get.gov registrar") {
-                        Container(getgov_app_unstable, "Dashboard Application", "PHP, CodeIgniter", "Delivers static HTML/CSS and forms")
+                        Container(getgov_app_unstable, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
                         ContainerDb(dashboard_db_unstable, "Unstable PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
                     }
                 }
                 Deployment_Node(staging, "staging space") {
                     System_Boundary(dashboard_staging, "get.gov registrar") {
-                        Container(getgov_app_staging, "Dashboard Application", "PHP, CodeIgniter", "Delivers static HTML/CSS and forms")
+                        Container(getgov_app_staging, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
                         ContainerDb(dashboard_db_staging, "Staging PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
                     }
                 }
