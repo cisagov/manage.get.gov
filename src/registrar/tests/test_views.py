@@ -123,7 +123,7 @@ class FormTests(TestWithUser, WebTest):
 
         # ---- TYPE PAGE  ----
         type_form = type_page.form
-        type_form["organization_type-organization_type"] = "Federal"
+        type_form["organization_type-organization_type"] = "federal"
 
         # set the session ID before .submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -325,7 +325,7 @@ class FormTests(TestWithUser, WebTest):
         self.assertNotContains(type_page, TITLES["organization_federal"])
         self.assertNotContains(type_page, TITLES["organization_election"])
         type_form = type_page.form
-        type_form["organization_type-organization_type"] = "Federal"
+        type_form["organization_type-organization_type"] = "federal"
 
         # set the session ID before .submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -343,6 +343,19 @@ class FormTests(TestWithUser, WebTest):
         self.assertContains(federal_page, TITLES["organization_federal"])
         self.assertNotContains(federal_page, TITLES["organization_election"])
 
+        # continuing on in the flow we need to see top-level agency on the
+        # contact page
+        federal_page.form["organization_federal-federal_type"] = "Executive"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_result = federal_page.form.submit()
+        # the post request should return a redirect to the contact
+        # question
+        self.assertEquals(federal_result.status_code, 302)
+        self.assertEquals(federal_result["Location"], "/register/organization_contact/")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_page = federal_result.follow()
+        self.assertContains(contact_page, "Top level federal agency")
+
     def test_application_form_conditional_elections(self):
         """Election question is shown for other organizations."""
         type_page = self.app.get(reverse("application")).follow()
@@ -358,7 +371,7 @@ class FormTests(TestWithUser, WebTest):
         self.assertNotContains(type_page, TITLES["organization_federal"])
         self.assertNotContains(type_page, TITLES["organization_election"])
         type_form = type_page.form
-        type_form["organization_type-organization_type"] = "County"
+        type_form["organization_type-organization_type"] = "county"
 
         # set the session ID before .submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)

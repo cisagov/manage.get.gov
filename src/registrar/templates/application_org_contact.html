@@ -24,18 +24,18 @@
     <legend class="usa-sr-only">What is the name and mailing address of your organization?</legend>
 
     {% if is_federal %}
-        {% include 'includes/organization_federal.html' %}
-    {% else %}
-        {% include 'includes/organization_nonfederal.html' %}
+        {{ wizard.form.federal_agency|add_label_class:"usa-label" }}
+        {{ wizard.form.federal_agency|add_class:"usa-select" }}
     {% endif %}
+
+    {{ wizard.form.organization_name|add_label_class:"usa-label" }}
+    {{ wizard.form.organization_name|add_class:"usa-input" }}
     {{ wizard.form.address_line1|add_label_class:"usa-label" }}
     {{ wizard.form.address_line1|add_class:"usa-input" }}
     {{ wizard.form.address_line2|add_label_class:"usa-label" }}
     {{ wizard.form.address_line2|add_class:"usa-input" }}
     {{ wizard.form.us_state|add_label_class:"usa-label" }}
-    <div class="usa-combo-box">
-      {{ wizard.form.us_state|add_class:"usa-select" }}
-    </div>
+    {{ wizard.form.us_state|add_class:"usa-select" }}
     {{ wizard.form.zipcode|add_label_class:"usa-label" }}
     {{ wizard.form.zipcode|add_class:"usa-input usa-input--small" }}
 

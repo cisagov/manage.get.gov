@@ -29,7 +29,10 @@ class OrganizationTypeForm(RegistrarForm):
         required=True,
         choices=[
             (DomainApplication.FEDERAL, "Federal: a federal agency"),
-            (DomainApplication.INTERSTATE, "Interstate: an organization of two or more states"),
+            (
+                DomainApplication.INTERSTATE,
+                "Interstate: an organization of two or more states",
+            ),
             (
                 DomainApplication.STATE_OR_TERRITORY,
                 (
@@ -77,6 +80,151 @@ class OrganizationElectionForm(RegistrarForm):
 
 
 class OrganizationContactForm(RegistrarForm):
+    # for federal agencies we also want to know the top-level agency.
+    federal_agency = forms.ChoiceField(
+        label="Top level federal agency",
+        # not required because this field won't be filled out unless
+        # it is a federal agency.
+        required=False,
+        choices=[
+            (v, v)
+            for v in [
+                "",
+                "Administrative Conference of the United States",
+                "Advisory Council on Historic Preservation",
+                "American Battle Monuments Commission",
+                "Appalachian Regional Commission",
+                "Appraisal Subcommittee of the Federal Financial Institutions Examination Council",
+                "Armed Forces Retirement Home",
+                "Barry Goldwater Scholarship and Excellence in Education Program",
+                "Central Intelligence Agency",
+                "Christopher Columbus Fellowship Foundation",
+                "Commission for the Preservation of America's Heritage Abroad",
+                "Commission of Fine Arts",
+                "Committee for Purchase From People Who Are Blind or Severely Disabled",
+                "Commodity Futures Trading Commission",
+                "Consumer Financial Protection Bureau",
+                "Consumer Product Safety Commission",
+                "Corporation for National and Community Service",
+                "Council of Inspectors General on Integrity and Efficiency",
+                "DC Court Services and Offender Supervision Agency",
+                "DC Pre-trial Services",
+                "Defense Nuclear Facilities Safety Board",
+                "Delta Regional Authority",
+                "Denali Commission",
+                "Department of Agriculture",
+                "Department of Commerce",
+                "Department of Defense",
+                "Department of Education",
+                "Department of Energy",
+                "Department of Health and Human Services",
+                "Department of Homeland Security",
+                "Department of Housing and Urban Development",
+                "Department of Justice",
+                "Department of Labor",
+                "Department of State",
+                "Department of the Interior",
+                "Department of the Treasury",
+                "Department of Transportation",
+                "Department of Veterans Affairs",
+                "Director of National Intelligence",
+                "Dwight D. Eisenhower Memorial Commission",
+                "Election Assistance Commission",
+                "Environmental Protection Agency",
+                "Equal Employment Opportunity Commission",
+                "Export-Import Bank of the United States",
+                "Farm Credit Administration",
+                "Farm Credit System Insurance Corporation",
+                "Federal Communications Commission",
+                "Federal Deposit Insurance Corporation",
+                "Federal Election Commission",
+                "Federal Financial Institutions Examination Council",
+                "Federal Housing Finance Agency",
+                "Federal Judiciary",
+                "Federal Labor Relations Authority",
+                "Federal Maritime Commission",
+                "Federal Mediation and Conciliation Service",
+                "Federal Mine Safety and Health Review Commission",
+                "Federal Reserve System",
+                "Federal Trade Commission",
+                "General Services Administration",
+                "Gulf Coast Ecosystem Restoration Council",
+                "Harry S Truman Scholarship Foundation",
+                "Institute of Peace",
+                "Inter-American Foundation",
+                "International Boundary and Water Commission: United States and Mexico",
+                "International Boundary Commission:  United States and Canada",
+                "International Joint Commission:  United States and Canada",
+                "James Madison Memorial Fellowship Foundation",
+                "Japan-United States Friendship Commission",
+                "John F. Kennedy Center for the Performing Arts",
+                "Legal Services Corporation",
+                "Legislative Branch",
+                "Marine Mammal Commission",
+                "Medicare Payment Advisory Commission",
+                "Merit Systems Protection Board",
+                "Millennium Challenge Corporation",
+                "National Aeronautics and Space Administration",
+                "National Archives and Records Administration",
+                "National Capital Planning Commission",
+                "National Council on Disability",
+                "National Credit Union Administration",
+                "National Foundation on the Arts and the Humanities",
+                "National Gallery of Art",
+                "National Labor Relations Board",
+                "National Mediation Board",
+                "National Science Foundation",
+                "National Transportation Safety Board",
+                "Northern Border Regional Commission",
+                "Nuclear Regulatory Commission",
+                "Nuclear Safety Oversight Committee",
+                "Nuclear Waste Technical Review Board",
+                "Occupational Safety and Health Review Commission",
+                "Office of Compliance",
+                "Office of Government Ethics",
+                "Office of Navajo and Hopi Indian Relocation",
+                "Office of Personnel Management",
+                "Overseas Private Investment Corporation",
+                "Peace Corps",
+                "Pension Benefit Guaranty Corporation",
+                "Postal Regulatory Commission",
+                "Privacy and Civil Liberties Oversight Board",
+                "Public Defender Service for the District of Columbia",
+                "Railroad Retirement Board",
+                "Securities and Exchange Commission",
+                "Selective Service System",
+                "Small Business Administration",
+                "Smithsonian Institution",
+                "Social Security Administration",
+                "State Justice Institute",
+                "State, Local, and Tribal Government",
+                "Stennis Center for Public Service",
+                "Surface Transportation Board",
+                "Tennessee Valley Authority",
+                "The Executive Office of the President",
+                "U.S. Access Board",
+                "U.S. Agency for Global Media",
+                "U.S. Agency for International Development",
+                "U.S. Chemical Safety Board",
+                "U.S. China Economic and Security Review Commission",
+                "U.S. Commission on Civil Rights",
+                "U.S. Commission on International Religious Freedom",
+                "U.S. Interagency Council on Homelessness",
+                "U.S. International Trade Commission",
+                "U.S. Office of Special Counsel",
+                "U.S. Postal Service",
+                "U.S. Trade and Development Agency",
+                "Udall Foundation",
+                "United States African Development Foundation",
+                "United States Arctic Research Commission",
+                "United States Holocaust Memorial Museum",
+                "Utah Reclamation Mitigation and Conservation Commission",
+                "Vietnam Education Foundation",
+                "Woodrow Wilson International Center for Scholars",
+                "World War I Centennial Commission",
+            ]
+        ],
+    )
     organization_name = forms.CharField(label="Organization Name")
     address_line1 = forms.CharField(label="Address line 1")
     address_line2 = forms.CharField(
@@ -314,7 +462,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         """
         return [TEMPLATES[self.steps.current]]
 
-    def _is_federal(self) -> bool:
+    def _is_federal(self) -> Union[bool, None]:
         """Return whether this application is from a federal agency.
 
         Returns True if we know that this application is from a federal
@@ -325,17 +473,13 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         if organization_type_data is None:
             return None  # no answers here yet
         organization_type = organization_type_data.get("organization_type")
-        print(organization_type)
         if organization_type is None:
             # they haven't answered this question
-            print("No organization type: returning None")
             return None
         else:
             # they have answered this question
             if organization_type == DomainApplication.FEDERAL:
-                print("organization type is federal: returning true")
                 return True
-            print("organization type is not federal: returning false")
             return False
 
     def get_context_data(self, form, **kwargs):
