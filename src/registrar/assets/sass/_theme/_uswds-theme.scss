@@ -13,10 +13,77 @@ in the form $setting: value,
 //    $setting: value
 //  );
 //
+@use "cisa_colors" as *;
+
 @use "uswds-core" with (
   $theme-banner-background-color: "ink",
   $theme-banner-link-color: "primary-light",
   $theme-banner-max-width: "none",
   $theme-show-notifications: false,
-  $theme-hero-image: "../img/registrar/dotgov_banner.png"
-)
+  $theme-hero-image: "../img/registrar/dotgov_banner.png",
+
+  /*----------------------------
+  # Typography Settings
+  -----------------------------
+  ## Type scales
+  ----------------------------*/ 
+  $theme-type-scale-2xl: 12,
+  $theme-type-scale-xl: 10,
+  $theme-type-scale-lg: 8,
+  $theme-type-scale-md: 7,
+  $theme-type-scale-sm: 5,
+  $theme-type-scale-xs: 3,
+  
+  /*---------------------------
+  ## Heading sizing
+  ----------------------------*/ 
+  $theme-h1-font-size: "2xl",
+  $theme-h2-font-size: "xl",
+  $theme-h4-font-size: "md",
+  $theme-h5-font-size: "sm",
+  $theme-h6-font-size: "xs",
+  $theme-body-font-size: "sm",
+
+  /*---------------------------
+  ## Font weights
+  ----------------------------*/ 
+  $theme-font-weight-semibold: 600,
+  
+  /*---------------------------
+  ## Font roles
+  ----------------------------*/ 
+  $theme-font-role-heading: 'sans',
+
+
+  /*----------------------------
+  # Color Settings
+  ------------------------------
+  ## Primary color
+  ----------------------------*/ 
+  $theme-color-primary-darker: $dhs-blue-70,
+  $theme-color-primary-dark: $dhs-blue-60,
+  $theme-color-primary: $dhs-blue,
+  $theme-color-primary-light: $dhs-blue-30,
+  $theme-color-primary-lighter: $dhs-blue-15,
+  $theme-color-primary-lightest: $dhs-blue-10,
+
+  /*---------------------------
+  ## Accent color
+  ----------------------------*/ 
+  $theme-color-accent-cool: $dhs-light-blue-60,
+  $theme-color-accent-cool-dark: $dhs-light-blue-70,
+  $theme-color-accent-cool-light: $dhs-light-blue-40,
+
+  /*---------------------------
+  ## Base color
+  ----------------------------*/ 
+  // $theme-color-base-ink: $dhs-dark-gray-90,
+  // $theme-color-base-darkest: $dhs-gray-80,
+  // $theme-color-base-darker: $dhs-gray-70,
+  // $theme-color-base-dark: $dhs-gray-60,
+  // $theme-color-base: $dhs-dark-gray-60,
+  // $theme-color-base-light: $dhs-gray-40,
+  // $theme-color-base-lighter: $dhs-gray-30,
+  // $theme-color-base-lightest: $dhs-gray-10,
+  // $theme-global-paragraph-styles: true,
+);
