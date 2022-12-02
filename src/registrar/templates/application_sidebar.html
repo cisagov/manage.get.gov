@@ -10,11 +10,14 @@
           {{ form_titles|get_item:this_step }}
         </a>
       {% else %}
-        <li class="usa-sidenav__item step--locked">
-        {{ form_titles|get_item:this_step }}
-        <svg class="usa-icon" aria-labelledby="locked-step" role="img">
-          <title id="locked-step__{{forloop.counter}}">locked until previous steps have been completed </title>
-          <use xlink:href="{%static 'img/sprite.svg'%}#lock"></use>
+        <li class="usa-sidenav__item sidenav__step--locked">
+          <span>
+            <svg class="usa-icon" aria-labelledby="locked-step" role="img">
+              <title id="locked-step__{{forloop.counter}}">locked until previous steps have been completed </title>
+              <use xlink:href="{%static 'img/sprite.svg'%}#lock"></use>
+            </svg>
+              {{ form_titles|get_item:this_step }}
+          </span>
       {% endif %}
       </li>
     {% endfor %}

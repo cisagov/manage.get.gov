@@ -26,3 +26,60 @@ i.e.
 .sr-only {
    @include sr-only;
  }
+
+ h1 {
+  @include typeset('sans', '2xl', 2);
+  margin: units(0) auto units(1);
+ }
+
+ h2 {
+  font-weight: font-weight('semibold');
+  line-height: line-height('heading', 3);
+  margin: units(2) auto ;
+
+  // &:first-of-type {
+  //   margin: 0 auto units(1);   
+  // }
+ }
+.reg-form-step p {
+  @include typeset('sans', 'sm', 5);
+  max-width: measure(5);
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.reg-form-step a {
+  color: color('primary');
+
+  &:visited {
+    color: color('violet-70v'); //USWDS default
+  }
+}
+
+a.bread__back {
+  display:inline-block;
+  margin-bottom: units('205');
+  &:visited {
+    color: color('primary');
+  }
+}
+
+.sidenav__step--locked {
+  color: color('base-darker');
+  span {
+    display: flex;
+    align-items: flex-start;
+    padding: units(1);
+
+    .usa-icon {
+       flex-shrink: 0;
+       margin: units('2px') units(1) 0 0; 
+    }
+  }  
+}
+
+.stepnav {
+  margin-top: units(2);
+}
