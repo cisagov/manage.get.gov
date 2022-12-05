@@ -59,10 +59,16 @@ i.e.
 }
 
 a.bread__back {
-  display:inline-block;
-  margin-bottom: units('205');
+  display:flex;
+  align-items: center;
+  margin-bottom: units(2.5);
   &:visited {
     color: color('primary');
+  }
+
+  @include at-media('desktop') {
+    //align to top of sidebar
+    margin-top: units(-0.5);
   }
 }
 
@@ -75,6 +81,7 @@ a.bread__back {
 
     .usa-icon {
        flex-shrink: 0;
+       //align lock body to x-height
        margin: units('2px') units(1) 0 0; 
     }
   }  
