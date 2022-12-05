@@ -101,6 +101,24 @@ in the form $setting: value,
   // $theme-color-base-lightest: $dhs-gray-10,
   // $theme-global-paragraph-styles: true,
 
+  /*---------------------------
+  ## Error state
+  ----------------------------*/ 
+  $theme-color-error-darker: $dhs-red-70,
+  $theme-color-error-dark: $dhs-red-60,
+  $theme-color-error: $dhs-red,
+  $theme-color-error-light: $dhs-red-30,
+  $theme-color-error-lighter: $dhs-red-15,
+
+  /*---------------------------
+  ## Success state
+  ----------------------------*/ 
+  $theme-color-success-darker: $dhs-green-70,
+  $theme-color-success-dark: $dhs-green-60,
+  $theme-color-success: $dhs-green,
+  $theme-color-success-light: $dhs-green-30,
+  $theme-color-success-lighter: $dhs-green-15,
+
 
   /*---------------------------
   # Input settings 
