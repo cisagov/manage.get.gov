@@ -16,10 +16,25 @@ in the form $setting: value,
 @use "cisa_colors" as *;
 
 @use "uswds-core" with (
+
+  /*----------------------------
+  # USWDS Compile Settings
+  -----------------------------*/
+  $theme-show-notifications: false,
+
+
+  /*----------------------------
+  # Banner Settings
+  -----------------------------*/
   $theme-banner-background-color: "primary-darker",
   $theme-banner-link-color: "primary-lighter",
-  $theme-show-notifications: false,
+
+
+  /*----------------------------
+  # Hero Image
+  -----------------------------*/
   $theme-hero-image: "../img/registrar/dotgov_banner.png",
+
 
   /*----------------------------
   # Typography Settings
@@ -47,7 +62,7 @@ in the form $setting: value,
   ## Font weights
   ----------------------------*/ 
   $theme-font-weight-semibold: 600,
-  
+
   /*---------------------------
   ## Font roles
   ----------------------------*/ 
