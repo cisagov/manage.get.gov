@@ -29,18 +29,23 @@ i.e.
 
  h1 {
   @include typeset('sans', '2xl', 2);
-  margin: units(0) auto units(1);
+  margin: 0 0 units(1);
  }
 
  h2 {
   font-weight: font-weight('semibold');
   line-height: line-height('heading', 3);
-  margin: units(2) auto ;
+  margin: units(4) 0 units(1);
 
-  // &:first-of-type {
-  //   margin: 0 auto units(1);   
-  // }
+  &:first-of-type {
+    margin-top: units(2);
+  }
  }
+
+.no-text-after {
+  margin-bottom: units(.5);
+}
+
 .reg-form-step p {
   @include typeset('sans', 'sm', 5);
   max-width: measure(5);
@@ -89,4 +94,8 @@ a.bread__back {
 
 .stepnav {
   margin-top: units(2);
+}
+
+.review__step__name {
+  font-weight: font-weight('semibold');
 }
