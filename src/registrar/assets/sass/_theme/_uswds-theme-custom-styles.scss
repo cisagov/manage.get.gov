@@ -95,3 +95,8 @@ a.breadcrumb__back {
 .review__step__name {
   font-weight: font-weight('semibold');
 }
+
+footer {
+  //Workaround because USWDS units jump from 10 to 15
+  margin-top: units(10) + units(2);
+}
