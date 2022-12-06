@@ -10,7 +10,7 @@
   {% csrf_token %}
   <fieldset id="election_board__fieldset" class="usa-fieldset">
     <legend>
-      <h2>Is your organization an election office?</h2>
+      <h2 class="margin-bottom-05">Is your organization an election office?</h2>
     </legend>
     {% radio_buttons_by_value wizard.form.is_election_board as choices %}
     {% include "includes/radio_button.html" with choice=choices|get_item:True %}

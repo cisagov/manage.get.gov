@@ -5,8 +5,10 @@ from django.contrib.auth import get_user_model
 
 from django_webtest import WebTest  # type: ignore
 
-from registrar.models import DomainApplication, Website
+from registrar.models import DomainApplication, Domain
 from registrar.forms.application_wizard import TITLES
+
+from .common import less_console_noise
 
 
 class TestViews(TestCase):
@@ -58,7 +60,7 @@ class LoggedInTests(TestWithUser):
     def test_home_lists_domain_applications(self):
         response = self.client.get("/")
         self.assertNotContains(response, "igorville.gov")
-        site = Website.objects.create(website="igorville.gov")
+        site = Domain.objects.create(name="igorville.gov")
         application = DomainApplication.objects.create(
             creator=self.user, requested_domain=site
         )
@@ -307,7 +309,8 @@ class FormTests(TestWithUser, WebTest):
         # following this redirect is a GET request, so include the cookie
         # here too.
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        final_result = review_result.follow()
+        with less_console_noise():
+            final_result = review_result.follow()
         self.assertContains(final_result, "Thank you for your domain request")
 
     def test_application_form_conditional_federal(self):

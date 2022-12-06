@@ -32,7 +32,7 @@
   <tbody>
     {% for application in domain_applications %}
       <tr>
-        <th>{{ application.requested_domain.website }}</th>
+        <th>{{ application.requested_domain.name }}</th>
         <td>{{ application.status }}</td>
       </tr>
     {% endfor %}

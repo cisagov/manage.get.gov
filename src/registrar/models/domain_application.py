@@ -154,12 +154,12 @@ class DomainApplication(TimeStampedModel):
         related_name="current+",
     )
 
-    requested_domain = models.ForeignKey(
-        Website,
+    requested_domain = models.OneToOneField(
+        "Domain",
         null=True,
         blank=True,
         help_text="The requested domain",
-        related_name="requested+",
+        related_name="domain_application",
         on_delete=models.PROTECT,
     )
     alternative_domains = models.ManyToManyField(
@@ -211,8 +211,8 @@ class DomainApplication(TimeStampedModel):
 
     def __str__(self):
         try:
-            if self.requested_domain and self.requested_domain.website:
-                return self.requested_domain.website
+            if self.requested_domain and self.requested_domain.name:
+                return self.requested_domain.name
             else:
                 return f"{self.status} application created by {self.creator}"
         except Exception:

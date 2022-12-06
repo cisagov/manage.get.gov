@@ -48,6 +48,21 @@
   <script src="{% static 'js/uswds.min.js' %}" defer></script>
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
+  {% if IS_DEMO_SITE %}
+    <section
+    class="usa-site-alert usa-site-alert--emergency usa-site-alert--no-icon"
+    aria-label="Site alert"
+    >
+      <div class="usa-alert">
+        <div class="usa-alert__body">
+          <p class="usa-alert__text">
+            <strong>TEST SITE</strong> - Do not use real personal information. Demo purposes only.
+          </p>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">
@@ -104,20 +119,6 @@
       </div>
     </div>
   </section>
-  {% if IS_DEMO_SITE %}
-    <section
-    class="usa-site-alert usa-site-alert--emergency usa-site-alert--no-icon"
-    aria-label="Site alert"
-    >
-      <div class="usa-alert">
-        <div class="usa-alert__body">
-          <p class="usa-alert__text">
-            <strong>TEST SITE</strong> - Do not use real personal information. Demo purposes only.
-          </p>
-        </div>
-      </div>
-    </section>
-  {% endif %}
 
 
   {% block usa_overlay %}<div class="usa-overlay"></div>{% endblock %}
@@ -179,15 +180,7 @@
     {% block content_bottom %}{% endblock %}
   </div>
 
-  <footer id="footer" role="contentinfo">
-    {% block footer_nav %}
-    {% endblock %}
-    {% block footer %}
-    <div>
-      <p class="copyright">&copy; {% now "Y" %} CISA .gov Registrar</p>
-    </div>
-    {% endblock %}
-  </footer>
+  {% include "includes/footer.html" %}
   </div> <!-- /#wrapper -->
 
   {% block init_js %}{% endblock %}{# useful for vars and other initializations #}
