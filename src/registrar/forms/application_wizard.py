@@ -4,6 +4,8 @@ from __future__ import annotations  # allows forward references in annotations
 
 import logging
 
+from typing import Union
+
 from django import forms
 from django.shortcuts import render
 
@@ -94,7 +96,10 @@ class OrganizationContactForm(RegistrarForm):
                 "Advisory Council on Historic Preservation",
                 "American Battle Monuments Commission",
                 "Appalachian Regional Commission",
-                "Appraisal Subcommittee of the Federal Financial Institutions Examination Council",
+                (
+                    "Appraisal Subcommittee of the Federal Financial "
+                    "Institutions Examination Council"
+                ),
                 "Armed Forces Retirement Home",
                 "Barry Goldwater Scholarship and Excellence in Education Program",
                 "Central Intelligence Agency",
