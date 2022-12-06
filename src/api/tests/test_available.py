@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, RequestFactory
 
 from ..views import available, _domains, in_domains
+from .common import less_console_noise
 
 API_BASE_PATH = "/api/v1/available/"
 
@@ -104,10 +105,12 @@ class AvailableAPITest(TestCase):
 
     def test_available_post(self):
         """Cannot post to the /available/ API endpoint."""
-        response = self.client.post(API_BASE_PATH + "nonsense")
+        with less_console_noise():
+            response = self.client.post(API_BASE_PATH + "nonsense")
         self.assertEqual(response.status_code, 405)
 
     def test_available_bad_input(self):
         self.client.force_login(self.user)
-        response = self.client.get(API_BASE_PATH + "blah!;")
+        with less_console_noise():
+            response = self.client.get(API_BASE_PATH + "blah!;")
         self.assertEqual(response.status_code, 400)

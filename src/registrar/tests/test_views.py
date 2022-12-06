@@ -5,7 +5,10 @@ from django.contrib.auth import get_user_model
 
 from django_webtest import WebTest  # type: ignore
 
-from registrar.models import DomainApplication
+from registrar.models import DomainApplication, Domain
+from registrar.forms.application_wizard import TITLES
+
+from .common import less_console_noise
 
 
 class TestViews(TestCase):
@@ -54,6 +57,18 @@ class LoggedInTests(TestWithUser):
         super().setUp()
         self.client.force_login(self.user)
 
+    def test_home_lists_domain_applications(self):
+        response = self.client.get("/")
+        self.assertNotContains(response, "igorville.gov")
+        site = Domain.objects.create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user, requested_domain=site
+        )
+        response = self.client.get("/")
+        self.assertContains(response, "igorville.gov", count=1)
+        # clean up
+        application.delete()
+
     def test_whoami_page(self):
         """User information appears on the whoami page."""
         response = self.client.get("/whoami/")
@@ -96,15 +111,6 @@ class FormTests(TestWithUser, WebTest):
         result = page.form.submit()
         self.assertIn("What kind of government organization do you represent?", result)
 
-    def test_application_form_organization(self):
-        # 302 redirect to the first form
-        page = self.app.get(reverse("application")).follow()
-        form = page.form
-        form["organization_type-organization_type"] = "Federal"
-        result = page.form.submit().follow()
-        # Got the next form page
-        self.assertContains(result, "contact information")
-
     def test_application_form_submission(self):
         """Can fill out the entire form and submit.
         As we add additional form pages, we need to include them here to make
@@ -130,10 +136,9 @@ class FormTests(TestWithUser, WebTest):
         self.assertEquals(type_result.status_code, 302)
         self.assertEquals(type_result["Location"], "/register/organization_federal/")
 
-        # TODO: In the future this should be conditionally dispalyed based on org type
-
         # ---- FEDERAL BRANCH PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         federal_page = type_result.follow()
         federal_form = federal_page.form
         federal_form["organization_federal-federal_type"] = "Executive"
@@ -143,27 +148,11 @@ class FormTests(TestWithUser, WebTest):
         federal_result = federal_form.submit()
 
         self.assertEquals(federal_result.status_code, 302)
-        self.assertEquals(
-            federal_result["Location"], "/register/organization_election/"
-        )
-
-        # ---- ELECTION BOARD BRANCH PAGE  ----
-        # Follow the redirect to the next form page
-        election_page = federal_result.follow()
-        election_form = election_page.form
-        election_form["organization_election-is_election_board"] = True
-
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_result = election_form.submit()
-
-        self.assertEquals(election_result.status_code, 302)
-        self.assertEquals(
-            election_result["Location"], "/register/organization_contact/"
-        )
+        self.assertEquals(federal_result["Location"], "/register/organization_contact/")
 
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
-        org_contact_page = election_result.follow()
+        org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
@@ -320,5 +309,72 @@ class FormTests(TestWithUser, WebTest):
         # following this redirect is a GET request, so include the cookie
         # here too.
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        final_result = review_result.follow()
+        with less_console_noise():
+            final_result = review_result.follow()
         self.assertContains(final_result, "Thank you for your domain request")
+
+    def test_application_form_conditional_federal(self):
+        """Federal branch question is shown for federal organizations."""
+        type_page = self.app.get(reverse("application")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- TYPE PAGE  ----
+
+        # the conditional step titles shouldn't appear initially
+        self.assertNotContains(type_page, TITLES["organization_federal"])
+        self.assertNotContains(type_page, TITLES["organization_election"])
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "Federal"
+
+        # set the session ID before .submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+
+        # the post request should return a redirect to the federal branch
+        # question
+        self.assertEquals(type_result.status_code, 302)
+        self.assertEquals(type_result["Location"], "/register/organization_federal/")
+
+        # and the step label should appear in the sidebar of the resulting page
+        # but the step label for the elections page should not appear
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+        self.assertContains(federal_page, TITLES["organization_federal"])
+        self.assertNotContains(federal_page, TITLES["organization_election"])
+
+    def test_application_form_conditional_elections(self):
+        """Election question is shown for other organizations."""
+        type_page = self.app.get(reverse("application")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- TYPE PAGE  ----
+
+        # the conditional step titles shouldn't appear initially
+        self.assertNotContains(type_page, TITLES["organization_federal"])
+        self.assertNotContains(type_page, TITLES["organization_election"])
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "County"
+
+        # set the session ID before .submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+
+        # the post request should return a redirect to the federal branch
+        # question
+        self.assertEquals(type_result.status_code, 302)
+        self.assertEquals(type_result["Location"], "/register/organization_election/")
+
+        # and the step label should appear in the sidebar of the resulting page
+        # but the step label for the elections page should not appear
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        election_page = type_result.follow()
+        self.assertContains(election_page, TITLES["organization_election"])
+        self.assertNotContains(election_page, TITLES["organization_federal"])

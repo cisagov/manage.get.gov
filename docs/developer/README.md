@@ -78,6 +78,21 @@ To test behind logged in pages with external tools, like `pa11y-ci` or `OWASP Za
 
 to MIDDLEWARE in settings.py. **Remove it when you are finished testing.**
 
+### Reducing console noise in tests
+
+Some tests, particularly when using Django's test client, will print errors.
+
+These errors do not indicate test failure, but can make the output hard to read.
+
+To silence them, we have a helper function `less_console_noise`:
+
+```python
+from .common import less_console_noise
+...
+        with less_console_noise():
+            # <test code goes here>
+```
+
 ### Accessibility Scanning
 
 The tool `pa11y-ci` is used to scan pages for compliance with a set of
@@ -123,3 +138,17 @@ In an effort to keep our domain logic centralized, we are representing the state
 objects in the application using the [django-fsm](https://github.com/viewflow/django-fsm)
 library. See the [ADR number 15](../architecture/decisions/0015-use-django-fs.md) for
 more information on the topic.
+
+## Login Time Bug
+
+If you are seeing errors related to openid complaining about issuing a token from the future like this:
+
+```
+ERROR [djangooidc.oidc:243] Issued in the future
+```
+
+it may help to resync your laptop with time.nist.gov: 
+
+```
+sudo sntp -sS time.nist.gov
+```

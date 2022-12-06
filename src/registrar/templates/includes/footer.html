@@ -1,0 +1,124 @@
+{% load static %}
+
+<footer class="usa-footer">
+    <div class="usa-footer__secondary-section">
+      <div class="grid-container">
+        <div class="grid-row grid-gap">
+          <div
+            class="
+              usa-footer__logo
+              grid-row
+              mobile-lg:grid-col-6 mobile-lg:grid-gap-2
+            "
+          >
+            <div class="mobile-lg:grid-col-auto">
+              <img
+                class="usa-footer__logo-img"
+                src="{% static 'img/dottedgov-round.svg' %}"
+                alt="dot gov registrar logo"
+                width="100px"
+              />
+            </div>
+          </div>
+          <div class="usa-footer__contact-links mobile-lg:grid-col-6">
+            <p class="usa-footer__contact-heading">
+              Contact us
+            </p>
+            <address class="usa-footer__address">
+              <div class="usa-footer__contact-info grid-row grid-gap">
+                <div class="grid-col-auto">
+                  <a href="mailto:registrar@dotgov.gov">registrar@dotgov.gov</a>
+                </div>
+              </div>
+            </address>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <div class="usa-identifier">
+    <section
+      class="usa-identifier__section usa-identifier__section--masthead"
+      aria-label="Agency identifier"
+    >
+      <div class="usa-identifier__container">
+        <div class="usa-identifier__logos">
+          <a href="https://www.cisa.gov" class="usa-identifier__logo"
+            ><img
+              class="usa-identifier__logo-img"
+              src="{% static 'img/CISA_logo.png' %}"
+              alt="CISA logo"
+              role="img"
+              width="200px"
+          /></a>
+        </div>
+        <section
+          class="usa-identifier__identity"
+          aria-label="Agency description"
+        >
+          <p class="usa-identifier__identity-domain">get.gov</p>
+          <p class="usa-identifier__identity-disclaimer">
+            An official website of the <a href="https://www.cisa.gov" class="usa-link usa-link--external">Cybersecurity and Infrastructure Security Agency</a>
+          </p>
+        </section>
+      </div>
+    </section>
+    <nav
+      class="usa-identifier__section usa-identifier__section--required-links"
+      aria-label="Important links"
+    >
+      <div class="usa-identifier__container">
+        <ul class="usa-identifier__required-links-list">
+          <li class="usa-identifier__required-links-item">
+            <a
+              href="https://home.dotgov.gov/about/"
+              class="usa-identifier__required-link usa-link"
+              >About .gov</a
+            >
+          </li>
+          <li class="usa-identifier__required-links-item">
+            <a
+              href="https://github.com/cisagov/getgov"
+              class="usa-identifier__required-link usa-link usa-link--external"
+              >.gov on Github</a
+            >
+          </li>
+          <li class="usa-identifier__required-links-item">
+            <a href="https://home.dotgov.gov/privacy/" class="usa-identifier__required-link usa-link"
+              >Privacy policy</a
+            >
+          </li>
+          <li class="usa-identifier__required-links-item">
+            <a href="https://www.dhs.gov/accessibility" class="usa-identifier__required-link usa-link"
+              >Accessibility</a
+            >
+          </li>
+          <li class="usa-identifier__required-links-item">
+            <a href="TODO" class="usa-identifier__required-link usa-link"
+              >Vulnerability disclosure policy</a
+            >
+          </li>
+          <li class="usa-identifier__required-links-item">
+            <a href="https://www.cisa.gov/cisa-no-fear-act-reporting" class="usa-identifier__required-link usa-link"
+              >No FEAR Act data</a
+            >
+          </li>
+          <li class="usa-identifier__required-links-item">
+            <a href="https://www.dhs.gov/freedom-information-act-foia" class="usa-identifier__required-link usa-link"
+              >FOIA requests</a
+            >
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <section
+      class="usa-identifier__section usa-identifier__section--usagov"
+      aria-label="U.S. government information and services"
+    >
+      <div class="usa-identifier__container">
+        <div class="usa-identifier__usagov-description">
+          Looking for U.S. government information and services?
+        </div>
+        <a href="https://www.usa.gov/" class="usa-link">Visit USA.gov</a>
+      </div>
+    </section>

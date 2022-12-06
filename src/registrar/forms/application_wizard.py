@@ -1,5 +1,7 @@
 """Forms Wizard for creating a new domain application."""
 
+from __future__ import annotations  # allows forward references in annotations
+
 import logging
 
 from django import forms
@@ -9,7 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
 
-from registrar.models import DomainApplication, Website
+from registrar.models import DomainApplication, Domain
 
 
 logger = logging.getLogger(__name__)
@@ -52,19 +54,6 @@ class OrganizationTypeForm(RegistrarForm):
         ],
         widget=forms.RadioSelect,
     )
-    federal_type = forms.ChoiceField(
-        required=False,
-        choices=DomainApplication.BRANCH_CHOICES,
-        widget=forms.RadioSelect,
-    )
-    is_election_board = forms.ChoiceField(
-        required=False,
-        choices=[
-            ("Yes", "Yes"),
-            ("No", "No"),
-        ],
-        widget=forms.RadioSelect(attrs={"class": "usa-radio__input"}),
-    )
 
 
 class OrganizationFederalForm(RegistrarForm):
@@ -82,7 +71,8 @@ class OrganizationElectionForm(RegistrarForm):
                 (True, "Yes"),
                 (False, "No"),
             ],
-        )
+        ),
+        required=False,
     )
 
 
@@ -297,6 +287,14 @@ TITLES = {
 }
 
 
+# We can use a dictionary with step names and callables that return booleans
+# to show or hide particular steps based on the state of the process.
+WIZARD_CONDITIONS = {
+    "organization_federal": DomainApplication.show_organization_federal,
+    "organization_election": DomainApplication.show_organization_election,
+}
+
+
 class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
 
     """Multi-page form ("wizard") for new domain applications.
@@ -330,13 +328,17 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         organization_type_data = form_dict["organization_type"].cleaned_data
         application.organization_type = organization_type_data["organization_type"]
 
-        # federal branch information
-        federal_branch_data = form_dict["organization_federal"].cleaned_data
-        application.federal_branch = federal_branch_data["federal_type"]
+        # federal branch information may not exist
+        federal_branch_data = form_dict.get("organization_federal")
+        if federal_branch_data is not None:
+            federal_branch_data = federal_branch_data.cleaned_data
+            application.federal_branch = federal_branch_data["federal_type"]
 
-        # election board  information
-        election_board_data = form_dict["organization_election"].cleaned_data
-        application.is_election_office = election_board_data["is_election_board"]
+        # election board  information may not exist.
+        election_board_data = form_dict.get("organization_election")
+        if election_board_data is not None:
+            election_board_data = election_board_data.cleaned_data
+            application.is_election_office = election_board_data["is_election_board"]
 
         # contact information
         contact_data = form_dict["organization_contact"].cleaned_data
@@ -346,8 +348,8 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
 
         # This isn't really the requested_domain field
         # but we need something in this field to make the form submittable
-        requested_site, _ = Website.objects.get_or_create(
-            website=contact_data["organization_name"] + ".gov"
+        requested_site, _ = Domain.objects.get_or_create(
+            name=contact_data["organization_name"] + ".gov"
         )
         application.requested_domain = requested_site
         return application

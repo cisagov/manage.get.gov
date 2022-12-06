@@ -180,15 +180,7 @@
     {% block content_bottom %}{% endblock %}
   </div>
 
-  <footer id="footer" role="contentinfo">
-    {% block footer_nav %}
-    {% endblock %}
-    {% block footer %}
-    <div>
-      <p class="copyright">&copy; {% now "Y" %} CISA .gov Registrar</p>
-    </div>
-    {% endblock %}
-  </footer>
+  {% include "includes/footer.html" %}
   </div> <!-- /#wrapper -->
 
   {% block init_js %}{% endblock %}{# useful for vars and other initializations #}
