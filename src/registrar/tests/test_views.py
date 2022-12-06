@@ -388,3 +388,17 @@ class FormTests(TestWithUser, WebTest):
         election_page = type_result.follow()
         self.assertContains(election_page, TITLES["organization_election"])
         self.assertNotContains(election_page, TITLES["organization_federal"])
+
+        # continuing on in the flow we need to NOT see top-level agency on the
+        # contact page
+        election_page.form["organization_election-is_election_board"] = "True"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        election_result = election_page.form.submit()
+        # the post request should return a redirect to the contact
+        # question
+        self.assertEquals(election_result.status_code, 302)
+        self.assertEquals(election_result["Location"], "/register/organization_contact/")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_page = election_result.follow()
+        self.assertNotContains(contact_page, "Top level federal agency")
+
