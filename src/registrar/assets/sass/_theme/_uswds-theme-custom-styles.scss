@@ -42,11 +42,7 @@ i.e.
   }
  }
 
-.no-text-after {
-  margin-bottom: units(.5);
-}
-
-.reg-form-step p {
+.register-form-step p {
   @include typeset('sans', 'sm', 5);
   max-width: measure(5);
 
@@ -55,7 +51,7 @@ i.e.
   }
 }
 
-.reg-form-step a {
+.register-form-step a {
   color: color('primary');
 
   &:visited {
@@ -63,7 +59,7 @@ i.e.
   }
 }
 
-a.bread__back {
+a.breadcrumb__back {
   display:flex;
   align-items: center;
   margin-bottom: units(2.5);
