@@ -32,7 +32,11 @@
   <tbody>
     {% for application in domain_applications %}
       <tr>
-        <th>{{ application.requested_domain.name }}</th>
+        <th>
+          <a href="{% url 'edit-application' application.pk %}">
+            {{ application.requested_domain.name|default:"New domain request" }}
+          </a>
+        </th>
         <td>{{ application.status }}</td>
       </tr>
     {% endfor %}

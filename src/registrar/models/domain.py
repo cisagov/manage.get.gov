@@ -93,10 +93,17 @@ class Domain(TimeStampedModel):
     DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
 
     @classmethod
-    def normalize(cls, domain: str, tld=None) -> str:  # noqa: C901
-        """Return `domain` in form `<second level>.<tld>`, if possible.
+    def normalize(cls, domain: str, tld=None, blank=False) -> str:  # noqa: C901
+        """Return `domain` in form `<second level>.<tld>`.
 
-        This does not guarantee the returned string is a valid domain name."""
+        Raises ValueError if string cannot be normalized.
+
+        This does not guarantee the returned string is a valid domain name.
+
+        Set `blank` to True to allow empty strings.
+        """
+        if blank and len(domain.strip()) == 0:
+            return ""
         cleaned = domain.lower()
         # starts with https or http
         if cleaned.startswith("https://"):

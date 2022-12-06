@@ -602,6 +602,13 @@ class DomainApplicationTests(TestWithUser, WebTest):
         url = reverse("edit-application", kwargs={"id": application.pk})
         response = self.client.get(url)
 
+        # TODO: this is a sketch of each page in the wizard which needs to be tested
+        # Django does not have tools sufficient for real end to end integration testing
+        # (for example, USWDS moves radio buttons off screen and replaces them with
+        # CSS styled "fakes" -- Django cannot determine if those are visually correct)
+        # -- the best that can/should be done here is to ensure the correct values
+        # are being passed to the templating engine
+
         url = reverse("application_step", kwargs={"step": "organization_type"})
         response = self.client.get(url, follow=True)
         self.assertContains(response, "<input>")

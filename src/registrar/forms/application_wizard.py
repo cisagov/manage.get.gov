@@ -52,7 +52,6 @@ class OrganizationTypeForm(RegistrarForm):
 
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
-        required=False,
         choices=DomainApplication.BranchChoices.choices,
         widget=forms.RadioSelect,
     )
@@ -60,7 +59,6 @@ class OrganizationFederalForm(RegistrarForm):
 
 class OrganizationElectionForm(RegistrarForm):
     is_election_board = forms.BooleanField(
-        required=False,
         widget=forms.RadioSelect(
             choices=[
                 (True, "Yes"),
@@ -120,9 +118,10 @@ class CurrentSitesForm(RegistrarForm):
         if not self.is_valid():
             return
         obj.save()
-        normalized = Domain.normalize(self.cleaned_data["current_site"])
-        # TODO: ability to update existing records
-        obj.current_websites.create(website=normalized)
+        normalized = Domain.normalize(self.cleaned_data["current_site"], blank=True)
+        if normalized:
+            # TODO: ability to update existing records
+            obj.current_websites.create(website=normalized)
 
     def from_database(self, obj):
         """Initializes this form's fields with values gotten from `obj`."""
@@ -142,20 +141,26 @@ class DotGovDomainForm(RegistrarForm):
         """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
-        normalized = Domain.normalize(self.cleaned_data["requested_domain"], "gov")
-        requested_domain = getattr(obj, "requested_domain", None)
-        if requested_domain is not None:
-            requested_domain.name = normalized
-            requested_domain.save()
-        else:
-            requested_domain = Domain.objects.create(name=normalized)
-            obj.requested_domain = requested_domain
-            obj.save()
+        normalized = Domain.normalize(
+            self.cleaned_data["requested_domain"], "gov", blank=True
+        )
+        if normalized:
+            requested_domain = getattr(obj, "requested_domain", None)
+            if requested_domain is not None:
+                requested_domain.name = normalized
+                requested_domain.save()
+            else:
+                requested_domain = Domain.objects.create(name=normalized)
+                obj.requested_domain = requested_domain
+                obj.save()
 
         obj.save()
-        normalized = Domain.normalize(self.cleaned_data["alternative_domain"], "gov")
-        # TODO: ability to update existing records
-        obj.alternative_domains.create(website=normalized)
+        normalized = Domain.normalize(
+            self.cleaned_data["alternative_domain"], "gov", blank=True
+        )
+        if normalized:
+            # TODO: ability to update existing records
+            obj.alternative_domains.create(website=normalized)
 
     def from_database(self, obj):
         """Initializes this form's fields with values gotten from `obj`."""
@@ -252,7 +257,9 @@ class SecurityEmailForm(RegistrarForm):
 
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
-        required=False, label="Anything else we should know", widget=forms.Textarea()
+        required=False,
+        label="Anything else we should know",
+        widget=forms.Textarea(),
     )
 
 
