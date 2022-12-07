@@ -145,7 +145,8 @@
         <ul class="usa-nav__primary usa-accordion">
           <li class="usa-nav__primary-item">
             {% if user.is_authenticated %}
-            <a href="/whoami"><span>{{ user.email }}</span></a>
+            <a href="/whoami"><span>{{ user.email }}</span></a> | <a
+                href="/openid/logout"><span>Sign out</span></a>
             {% else %}
             <a href="/openid/login"><span>Sign in</span></a>
             {% endif %}
