@@ -4,7 +4,6 @@ from .utility.time_stamped_model import TimeStampedModel
 from .utility.address_model import AddressModel
 
 from .contact import Contact
-from .user import User
 
 
 class UserProfile(TimeStampedModel, Contact, AddressModel):
@@ -12,7 +11,7 @@ class UserProfile(TimeStampedModel, Contact, AddressModel):
     """User information, unrelated to their login/auth details."""
 
     user = models.OneToOneField(
-        User,
+        "registrar.User",
         null=True,
         blank=True,
         on_delete=models.CASCADE,
