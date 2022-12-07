@@ -13,8 +13,9 @@
       <h2 class="margin-bottom-05">Is your organization an election office?</h2>
     </legend>
     {% radio_buttons_by_value wizard.form.is_election_board as choices %}
-    {% include "includes/radio_button.html" with choice=choices|get_item:True %}
-    {% include "includes/radio_button.html" with choice=choices|get_item:False %}
+    {% for choice in choices.values %}
+      {% include "includes/radio_button.html" with choice=choice tile="true" %}
+    {% endfor %}
   </fieldset>
 
   {{ block.super }}  

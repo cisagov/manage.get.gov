@@ -1,14 +1,11 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING, Union
 
+from django.apps import apps
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
-from .contact import Contact
-from .user import User
-from .website import Website
-
-from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ..forms.application_wizard import ApplicationWizard
@@ -30,35 +27,86 @@ class DomainApplication(TimeStampedModel):
         (APPROVED, APPROVED),
     ]
 
-    FEDERAL = "federal"
-    INTERSTATE = "interstate"
-    STATE_OR_TERRITORY = "state_or_territory"
-    TRIBAL = "tribal"
-    COUNTY = "county"
-    CITY = "city"
-    SPECIAL_DISTRICT = "special_district"
-    ORGANIZATION_CHOICES = [
-        (FEDERAL, "a federal agency"),
-        (INTERSTATE, "an organization of two or more states"),
-        (
-            STATE_OR_TERRITORY,
-            "one of the 50 U.S. states, the District of "
-            "Columbia, American Samoa, Guam, Northern Mariana Islands, "
-            "Puerto Rico, or the U.S. Virgin Islands",
-        ),
-        (
-            TRIBAL,
-            "a tribal government recognized by the federal or " "state government",
-        ),
-        (COUNTY, "a county, parish, or borough"),
-        (CITY, "a city, town, township, village, etc."),
-        (SPECIAL_DISTRICT, "an independent organization within a single state"),
-    ]
+    class StateTerritoryChoices(models.TextChoices):
+        ALABAMA = "AL", "Alabama"
+        ALASKA = "AK", "Alaska"
+        ARIZONA = "AZ", "Arizona"
+        ARKANSAS = "AR", "Arkansas"
+        CALIFORNIA = "CA", "California"
+        COLORADO = "CO", "Colorado"
+        CONNECTICUT = "CT", "Connecticut"
+        DELAWARE = "DE", "Delaware"
+        DISTRICT_OF_COLUMBIA = "DC", "District of Columbia"
+        FLORIDA = "FL", "Florida"
+        GEORGIA = "GA", "Georgia"
+        HAWAII = "HI", "Hawaii"
+        IDAHO = "ID", "Idaho"
+        ILLINOIS = "IL", "Illinois"
+        INDIANA = "IN", "Indiana"
+        IOWA = "IA", "Iowa"
+        KANSAS = "KS", "Kansas"
+        KENTUCKY = "KY", "Kentucky"
+        LOUISIANA = "LA", "Louisiana"
+        MAINE = "ME", "Maine"
+        MARYLAND = "MD", "Maryland"
+        MASSACHUSETTS = "MA", "Massachusetts"
+        MICHIGAN = "MI", "Michigan"
+        MINNESOTA = "MN", "Minnesota"
+        MISSISSIPPI = "MS", "Mississippi"
+        MISSOURI = "MO", "Missouri"
+        MONTANA = "MT", "Montana"
+        NEBRASKA = "NE", "Nebraska"
+        NEVADA = "NV", "Nevada"
+        NEW_HAMPSHIRE = "NH", "New Hampshire"
+        NEW_JERSEY = "NJ", "New Jersey"
+        NEW_MEXICO = "NM", "New Mexico"
+        NEW_YORK = "NY", "New York"
+        NORTH_CAROLINA = "NC", "North Carolina"
+        NORTH_DAKOTA = "ND", "North Dakota"
+        OHIO = "OH", "Ohio"
+        OKLAHOMA = "OK", "Oklahoma"
+        OREGON = "OR", "Oregon"
+        PENNSYLVANIA = "PA", "Pennsylvania"
+        RHODE_ISLAND = "RI", "Rhode Island"
+        SOUTH_CAROLINA = "SC", "South Carolina"
+        SOUTH_DAKOTA = "SD", "South Dakota"
+        TENNESSEE = "TN", "Tennessee"
+        TEXAS = "TX", "Texas"
+        UTAH = "UT", "Utah"
+        VERMONT = "VT", "Vermont"
+        VIRGINIA = "VA", "Virginia"
+        WASHINGTON = "WA", "Washington"
+        WEST_VIRGINIA = "WV", "West Virginia"
+        WISCONSIN = "WI", "Wisconsin"
+        WYOMING = "WY", "Wyoming"
+        AMERICAN_SAMOA = "AS", "American Samoa"
+        GUAM = "GU", "Guam"
+        NORTHERN_MARIANA_ISLANDS = "MP", "Northern Mariana Islands"
+        PUERTO_RICO = "PR", "Puerto Rico"
+        VIRGIN_ISLANDS = "VI", "Virgin Islands"
 
-    EXECUTIVE = "Executive"
-    JUDICIAL = "Judicial"
-    LEGISLATIVE = "Legislative"
-    BRANCH_CHOICES = [(x, x) for x in (EXECUTIVE, JUDICIAL, LEGISLATIVE)]
+    class OrganizationChoices(models.TextChoices):
+        FEDERAL = "federal", "Federal: a federal agency"
+        INTERSTATE = "interstate", "Interstate: an organization of two or more states"
+        STATE_OR_TERRITORY = "state_or_territory", (
+            "State or Territory: One of the 50 U.S. states, the District of "
+            "Columbia, American Samoa, Guam, Northern Mariana Islands, "
+            "Puerto Rico, or the U.S. Virgin Islands"
+        )
+        TRIBAL = "tribal", (
+            "Tribal: a tribal government recognized by the federal or "
+            "state government"
+        )
+        COUNTY = "county", "County: a county, parish, or borough"
+        CITY = "city", "City: a city, town, township, village, etc."
+        SPECIAL_DISTRICT = "special_district", (
+            "Special District: an independent organization within a single state"
+        )
+
+    class BranchChoices(models.TextChoices):
+        EXECUTIVE = "executive", "Executive"
+        JUDICIAL = "judicial", "Judicial"
+        LEGISLATIVE = "legislative", "Legislative"
 
     # #### Internal fields about the application #####
     status = FSMField(
@@ -69,10 +117,12 @@ class DomainApplication(TimeStampedModel):
     # This is the application user who created this application. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name="applications_created"
+        "registrar.User",
+        on_delete=models.PROTECT,
+        related_name="applications_created",
     )
     investigator = models.ForeignKey(
-        User,
+        "registrar.User",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -82,21 +132,21 @@ class DomainApplication(TimeStampedModel):
     # ##### data fields from the initial form #####
     organization_type = models.CharField(
         max_length=255,
-        choices=ORGANIZATION_CHOICES,
+        choices=OrganizationChoices.choices,
         null=True,
         blank=True,
         help_text="Type of Organization",
     )
 
-    federal_branch = models.CharField(
+    federal_type = models.CharField(
         max_length=50,
-        choices=BRANCH_CHOICES,
+        choices=BranchChoices.choices,
         null=True,
         blank=True,
         help_text="Branch of federal government",
     )
 
-    is_election_office = models.BooleanField(
+    is_election_board = models.BooleanField(
         null=True,
         blank=True,
         help_text="Is your ogranization an election office?",
@@ -108,22 +158,16 @@ class DomainApplication(TimeStampedModel):
         help_text="Organization name",
         db_index=True,
     )
-    street_address = models.TextField(
+    address_line1 = models.TextField(
         null=True,
         blank=True,
-        help_text="Street Address",
+        help_text="Address line 1",
     )
-    unit_type = models.CharField(
+    address_line2 = models.CharField(
         max_length=15,
         null=True,
         blank=True,
-        help_text="Unit type",
-    )
-    unit_number = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True,
-        help_text="Unit number",
+        help_text="Address line 2",
     )
     state_territory = models.CharField(
         max_length=2,
@@ -131,7 +175,7 @@ class DomainApplication(TimeStampedModel):
         blank=True,
         help_text="State/Territory",
     )
-    zip_code = models.CharField(
+    zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
@@ -140,7 +184,7 @@ class DomainApplication(TimeStampedModel):
     )
 
     authorizing_official = models.ForeignKey(
-        Contact,
+        "registrar.Contact",
         null=True,
         blank=True,
         related_name="authorizing_official",
@@ -149,7 +193,7 @@ class DomainApplication(TimeStampedModel):
 
     # "+" means no reverse relation to lookup applications from Website
     current_websites = models.ManyToManyField(
-        Website,
+        "registrar.Website",
         blank=True,
         related_name="current+",
     )
@@ -163,7 +207,7 @@ class DomainApplication(TimeStampedModel):
         on_delete=models.PROTECT,
     )
     alternative_domains = models.ManyToManyField(
-        Website,
+        "registrar.Website",
         blank=True,
         related_name="alternatives+",
     )
@@ -171,7 +215,7 @@ class DomainApplication(TimeStampedModel):
     # This is the contact information provided by the applicant. The
     # application user who created it is in the `creator` field.
     submitter = models.ForeignKey(
-        Contact,
+        "registrar.Contact",
         null=True,
         blank=True,
         related_name="submitted_applications",
@@ -185,7 +229,7 @@ class DomainApplication(TimeStampedModel):
     )
 
     other_contacts = models.ManyToManyField(
-        Contact,
+        "registrar.Contact",
         blank=True,
         related_name="contact_applications",
     )
@@ -203,7 +247,7 @@ class DomainApplication(TimeStampedModel):
         help_text="Anything else we should know?",
     )
 
-    acknowledged_policy = models.BooleanField(
+    is_policy_acknowledged = models.BooleanField(
         null=True,
         blank=True,
         help_text="Acknowledged .gov acceptable use policy",
@@ -226,8 +270,15 @@ class DomainApplication(TimeStampedModel):
         # can raise more informative exceptions
 
         # requested_domain could be None here
-        if (not self.requested_domain) or (not self.requested_domain.could_be_domain()):
-            raise ValueError("Requested domain is not a legal domain name.")
+        if not hasattr(self, "requested_domain"):
+            raise ValueError("Requested domain is missing.")
+
+        if self.requested_domain is None:
+            raise ValueError("Requested domain is missing.")
+
+        Domain = apps.get_model("registrar.Domain")
+        if not Domain.string_could_be_domain(self.requested_domain.name):
+            raise ValueError("Requested domain is not a valid domain name.")
 
         # if no exception was raised, then we don't need to do anything
         # inside this method, keep the `pass` here to remind us of that
@@ -253,10 +304,8 @@ class DomainApplication(TimeStampedModel):
     @staticmethod
     def show_organization_federal(wizard: ApplicationWizard) -> bool:
         """Show this step if the answer to the first question was "federal"."""
-        return (
-            DomainApplication._get_organization_type(wizard)
-            == DomainApplication.FEDERAL
-        )
+        user_choice = DomainApplication._get_organization_type(wizard)
+        return user_choice == DomainApplication.OrganizationChoices.FEDERAL
 
     @staticmethod
     def show_organization_election(wizard: ApplicationWizard) -> bool:
@@ -264,10 +313,9 @@ class DomainApplication(TimeStampedModel):
 
         This shows for answers that aren't "Federal" or "Interstate".
         """
-        type_answer = DomainApplication._get_organization_type(wizard)
-        if type_answer and type_answer not in (
-            DomainApplication.FEDERAL,
-            DomainApplication.INTERSTATE,
-        ):
-            return True
-        return False
+        user_choice = DomainApplication._get_organization_type(wizard)
+        excluded = [
+            DomainApplication.OrganizationChoices.FEDERAL,
+            DomainApplication.OrganizationChoices.INTERSTATE,
+        ]
+        return bool(user_choice and user_choice not in excluded)

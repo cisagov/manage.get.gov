@@ -24,6 +24,7 @@ urlpatterns = [
     path("", index.index, name="home"),
     path("whoami/", whoami.whoami, name="whoami"),
     path("admin/", admin.site.urls),
+    path("application/<id>/edit/", application_wizard, name="edit-application"),
     path("health/", health.health),
     path("edit_profile/", profile.edit_profile, name="edit-profile"),
     path("openid/", include("djangooidc.urls")),

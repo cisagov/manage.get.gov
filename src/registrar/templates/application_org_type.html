@@ -16,13 +16,9 @@
       <h2> What kind of government organization do you represent?</h2>
     </legend>
     {{ wizard.form.organization_type.errors }}
-    {% include "includes/radio_button.html" with choice=choices.federal tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.interstate tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.state_or_territory tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.tribal tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.county tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.city tile="true" %}
-    {% include "includes/radio_button.html" with choice=choices.special_district tile="true" %}
+    {% for choice in choices.values %}
+      {% include "includes/radio_button.html" with choice=choice tile="true" %}
+    {% endfor %}
   </fieldset>
 
   {{ block.super }}  

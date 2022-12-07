@@ -2,7 +2,6 @@ from django.db import models
 from django.core.validators import validate_ipv46_address
 
 from .utility.time_stamped_model import TimeStampedModel
-from .host import Host
 
 
 class HostIP(TimeStampedModel):
@@ -25,7 +24,7 @@ class HostIP(TimeStampedModel):
     )
 
     host = models.ForeignKey(
-        Host,
+        "registrar.Host",
         on_delete=models.PROTECT,
         related_name="ip",  # access this HostIP via the Host as `host.ip`
         help_text="Host to which this IP address belongs",

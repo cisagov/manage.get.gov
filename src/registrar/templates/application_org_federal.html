@@ -12,10 +12,10 @@
     <legend>
         <h2 class="margin-bottom-5">Which federal branch is your organization in?</h2>
     </legend>
-    {% radio_buttons_by_value wizard.form.federal_type as federal_choices %}
-    {% include "includes/radio_button.html" with choice=federal_choices.Executive%}
-    {% include "includes/radio_button.html" with choice=federal_choices.Judicial%}
-    {% include "includes/radio_button.html" with choice=federal_choices.Legislative%}
+    {% radio_buttons_by_value wizard.form.federal_type as choices %}
+    {% for choice in choices.values %}
+      {% include "includes/radio_button.html" with choice=choice tile="true" %}
+    {% endfor %}
   </fieldset>
 
   {{ block.super }}  
