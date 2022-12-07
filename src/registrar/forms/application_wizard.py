@@ -555,7 +555,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
             return None
         else:
             # they have answered this question
-            if organization_type == DomainApplication.FEDERAL:
+            if organization_type == DomainApplication.OrganizationChoices.FEDERAL:
                 return True
             return False
 

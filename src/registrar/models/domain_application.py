@@ -138,6 +138,10 @@ class DomainApplication(TimeStampedModel):
         help_text="Type of Organization",
     )
 
+    federal_agency = models.TextField(
+        null=True, blank=False, help_text="Top level federal agency"
+    )
+
     federal_type = models.CharField(
         max_length=50,
         choices=BranchChoices.choices,

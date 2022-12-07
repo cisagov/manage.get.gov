@@ -519,7 +519,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # continuing on in the flow we need to see top-level agency on the
         # contact page
-        federal_page.form["organization_federal-federal_type"] = "Executive"
+        federal_page.form["organization_federal-federal_type"] = "executive"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         federal_result = federal_page.form.submit()
         # the post request should return a redirect to the contact
@@ -576,7 +576,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Top level federal agency")
-
 
     @skip("WIP")
     def test_application_edit_restore(self):
