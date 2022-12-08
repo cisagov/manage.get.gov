@@ -178,6 +178,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
         org_contact_form["organization_contact-organization_name"] = "Testorg"
