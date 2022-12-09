@@ -79,17 +79,19 @@ class OrganizationContactForm(RegistrarForm):
         required=False,
         choices=DomainApplication.AGENCY_CHOICES,
     )
-    organization_name = forms.CharField(label="Organization name")
-    address_line1 = forms.CharField(label="Address line 1")
+    organization_name = forms.CharField(label="Organization Name")
+    address_line1 = forms.CharField(label="Street address")
     address_line2 = forms.CharField(
         required=False,
-        label="Address line 2",
+        label="Street address line 2",
     )
+    city = forms.CharField(label="City")
     state_territory = forms.ChoiceField(
-        label="State/territory",
+        label="State, territory, or military post",
         choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
     )
     zipcode = forms.CharField(label="ZIP code")
+    urbanization = forms.CharField(label="Urbanization (Puerto Rico only)")
 
 
 class AuthorizingOfficialForm(RegistrarForm):

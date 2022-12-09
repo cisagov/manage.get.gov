@@ -28,62 +28,69 @@ class DomainApplication(TimeStampedModel):
     ]
 
     class StateTerritoryChoices(models.TextChoices):
-        ALABAMA = "AL", "Alabama"
-        ALASKA = "AK", "Alaska"
-        ARIZONA = "AZ", "Arizona"
-        ARKANSAS = "AR", "Arkansas"
-        CALIFORNIA = "CA", "California"
-        COLORADO = "CO", "Colorado"
-        CONNECTICUT = "CT", "Connecticut"
-        DELAWARE = "DE", "Delaware"
-        DISTRICT_OF_COLUMBIA = "DC", "District of Columbia"
-        FLORIDA = "FL", "Florida"
-        GEORGIA = "GA", "Georgia"
-        HAWAII = "HI", "Hawaii"
-        IDAHO = "ID", "Idaho"
-        ILLINOIS = "IL", "Illinois"
-        INDIANA = "IN", "Indiana"
-        IOWA = "IA", "Iowa"
-        KANSAS = "KS", "Kansas"
-        KENTUCKY = "KY", "Kentucky"
-        LOUISIANA = "LA", "Louisiana"
-        MAINE = "ME", "Maine"
-        MARYLAND = "MD", "Maryland"
-        MASSACHUSETTS = "MA", "Massachusetts"
-        MICHIGAN = "MI", "Michigan"
-        MINNESOTA = "MN", "Minnesota"
-        MISSISSIPPI = "MS", "Mississippi"
-        MISSOURI = "MO", "Missouri"
-        MONTANA = "MT", "Montana"
-        NEBRASKA = "NE", "Nebraska"
-        NEVADA = "NV", "Nevada"
-        NEW_HAMPSHIRE = "NH", "New Hampshire"
-        NEW_JERSEY = "NJ", "New Jersey"
-        NEW_MEXICO = "NM", "New Mexico"
-        NEW_YORK = "NY", "New York"
-        NORTH_CAROLINA = "NC", "North Carolina"
-        NORTH_DAKOTA = "ND", "North Dakota"
-        OHIO = "OH", "Ohio"
-        OKLAHOMA = "OK", "Oklahoma"
-        OREGON = "OR", "Oregon"
-        PENNSYLVANIA = "PA", "Pennsylvania"
-        RHODE_ISLAND = "RI", "Rhode Island"
-        SOUTH_CAROLINA = "SC", "South Carolina"
-        SOUTH_DAKOTA = "SD", "South Dakota"
-        TENNESSEE = "TN", "Tennessee"
-        TEXAS = "TX", "Texas"
-        UTAH = "UT", "Utah"
-        VERMONT = "VT", "Vermont"
-        VIRGINIA = "VA", "Virginia"
-        WASHINGTON = "WA", "Washington"
-        WEST_VIRGINIA = "WV", "West Virginia"
-        WISCONSIN = "WI", "Wisconsin"
-        WYOMING = "WY", "Wyoming"
-        AMERICAN_SAMOA = "AS", "American Samoa"
-        GUAM = "GU", "Guam"
-        NORTHERN_MARIANA_ISLANDS = "MP", "Northern Mariana Islands"
-        PUERTO_RICO = "PR", "Puerto Rico"
-        VIRGIN_ISLANDS = "VI", "Virgin Islands"
+        ALABAMA = "AL", "Alabama (AL)"
+        ALASKA = "AK", "Alaska (AK)"
+        AMERICAN_SAMOA = "AS", "American Samoa (AS)"
+        ARIZONA = "AZ", "Arizona (AZ)"
+        ARKANSAS = "AR", "Arkansas (AR)"
+        CALIFORNIA = "CA", "California (CA)"
+        COLORADO = "CO", "Colorado (CO)"
+        CONNECTICUT = "CT", "Connecticut (CT)"
+        DELAWARE = "DE", "Delaware (DE)"
+        DISTRICT_OF_COLUMBIA = "DC", "District of Columbia (DC)"
+        FLORIDA = "FL", "Florida (FL)"
+        GEORGIA = "GA", "Georgia (GA)"
+        GUAM = "GU", "Guam (GU)"
+        HAWAII = "HI", "Hawaii (HI)"
+        IDAHO = "ID", "Idaho (ID)"
+        ILLINOIS = "IL", "Illinois (IL)"
+        INDIANA = "IN", "Indiana (IN)"
+        IOWA = "IA", "Iowa (IA)"
+        KANSAS = "KS", "Kansas (KS)"
+        KENTUCKY = "KY", "Kentucky (KY)"
+        LOUISIANA = "LA", "Louisiana (LA)"
+        MAINE = "ME", "Maine (ME)"
+        MARYLAND = "MD", "Maryland (MD)"
+        MASSACHUSETTS = "MA", "Massachusetts (MA)"
+        MICHIGAN = "MI", "Michigan (MI)"
+        MINNESOTA = "MN", "Minnesota (MN)"
+        MISSISSIPPI = "MS", "Mississippi (MS)"
+        MISSOURI = "MO", "Missouri (MO)"
+        MONTANA = "MT", "Montana (MT)"
+        NEBRASKA = "NE", "Nebraska (NE)"
+        NEVADA = "NV", "Nevada (NV)"
+        NEW_HAMPSHIRE = "NH", "New Hampshire (NH)"
+        NEW_JERSEY = "NJ", "New Jersey (NJ)"
+        NEW_MEXICO = "NM", "New Mexico (NM)"
+        NEW_YORK = "NY", "New York (NY)"
+        NORTH_CAROLINA = "NC", "North Carolina (NC)"
+        NORTH_DAKOTA = "ND", "North Dakota (ND)"
+        NORTHERN_MARIANA_ISLANDS = "MP", "Northern Mariana Islands (MP)"
+        OHIO = "OH", "Ohio (OH)"
+        OKLAHOMA = "OK", "Oklahoma (OK)"
+        OREGON = "OR", "Oregon (OR)"
+        PENNSYLVANIA = "PA", "Pennsylvania (PA)"
+        PUERTO_RICO = "PR", "Puerto Rico (PR)"
+        RHODE_ISLAND = "RI", "Rhode Island (RI)"
+        SOUTH_CAROLINA = "SC", "South Carolina (SC)"
+        SOUTH_DAKOTA = "SD", "South Dakota (SD)"
+        TENNESSEE = "TN", "Tennessee (TN)"
+        TEXAS = "TX", "Texas (TX)"
+        UNITED_STATES_MINOR_OUTLYING_ISLANDS = (
+            "UM",
+            "United States Minor Outlying Islands (UM)",
+        )
+        UTAH = "UT", "Utah (UT)"
+        VERMONT = "VT", "Vermont (VT)"
+        VIRGIN_ISLANDS = "VI", "Virgin Islands (VI)"
+        VIRGINIA = "VA", "Virginia (VA)"
+        WASHINGTON = "WA", "Washington (WA)"
+        WEST_VIRGINIA = "WV", "West Virginia (WV)"
+        WISCONSIN = "WI", "Wisconsin (WI)"
+        WYOMING = "WY", "Wyoming (WY)"
+        ARMED_FORCES_AA = "AA", "Armed Forces Americas (AA)"
+        ARMED_FORCES_AE = "AE", "Armed Forces Africa, Canada, Europe, Middle East (AE)"
+        ARMED_FORCES_AP = "AP", "Armed Forces Pacific (AP)"
 
     class OrganizationChoices(models.TextChoices):
         FEDERAL = "federal", "Federal: a federal agency"
@@ -315,6 +322,11 @@ class DomainApplication(TimeStampedModel):
         blank=True,
         help_text="Address line 2",
     )
+    city = models.TextField(
+        null=True,
+        blank=True,
+        help_text="City",
+    )
     state_territory = models.CharField(
         max_length=2,
         null=True,
@@ -327,6 +339,11 @@ class DomainApplication(TimeStampedModel):
         blank=True,
         help_text="ZIP code",
         db_index=True,
+    )
+    urbanization = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Urbanization",
     )
 
     authorizing_official = models.ForeignKey(

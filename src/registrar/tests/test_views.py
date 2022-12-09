@@ -183,8 +183,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_form = org_contact_page.form
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-address_line2"] = "address 2"
+        org_contact_form["organization_contact-city"] = "NYC"
         org_contact_form["organization_contact-state_territory"] = "NY"
         org_contact_form["organization_contact-zipcode"] = "10002"
+        org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -195,8 +198,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(application.organization_name, "Testorg")
         self.assertEquals(application.address_line1, "address 1")
+        self.assertEquals(application.address_line2, "address 2")
+        self.assertEquals(application.city, "NYC")
         self.assertEquals(application.state_territory, "NY")
         self.assertEquals(application.zipcode, "10002")
+        self.assertEquals(application.urbanization, "URB Royal Oaks")
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
