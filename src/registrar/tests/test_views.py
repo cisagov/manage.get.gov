@@ -529,7 +529,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(federal_result["Location"], "/register/organization_contact/")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = federal_result.follow()
-        self.assertContains(contact_page, "Top level federal agency")
+        self.assertContains(contact_page, "Federal agency")
 
     def test_application_form_conditional_elections(self):
         """Election question is shown for other organizations."""
