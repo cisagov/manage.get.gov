@@ -576,7 +576,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = election_result.follow()
-        self.assertNotContains(contact_page, "Top level federal agency")
+        self.assertNotContains(contact_page, "Federal agency")
 
     @skip("WIP")
     def test_application_edit_restore(self):
