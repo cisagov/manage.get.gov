@@ -4,6 +4,8 @@ from __future__ import annotations  # allows forward references in annotations
 
 import logging
 
+from typing import Union
+
 from django import forms
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -69,14 +71,23 @@ class OrganizationElectionForm(RegistrarForm):
 
 
 class OrganizationContactForm(RegistrarForm):
-    organization_name = forms.CharField(label="Organization Name")
+    # for federal agencies we also want to know the top-level agency.
+    federal_agency = forms.ChoiceField(
+        label="Federal agency",
+        # not required because this field won't be filled out unless
+        # it is a federal agency.
+        required=False,
+        choices=DomainApplication.AGENCY_CHOICES,
+    )
+    organization_name = forms.CharField(label="Organization name")
     address_line1 = forms.CharField(label="Address line 1")
     address_line2 = forms.CharField(
         required=False,
         label="Address line 2",
     )
     state_territory = forms.ChoiceField(
-        label="State", choices=DomainApplication.StateTerritoryChoices.choices
+        label="State/territory",
+        choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
     )
     zipcode = forms.CharField(label="ZIP code")
 
@@ -389,10 +400,21 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         """
         return [TEMPLATES[self.steps.current]]
 
+    def _is_federal(self) -> Union[bool, None]:
+        """Return whether this application is from a federal agency.
+
+        Returns True if we know that this application is from a federal
+        agency, False if we know that it is not and None if there isn't an
+        answer yet for that question.
+        """
+        return self.get_application_object().is_federal()
+
     def get_context_data(self, form, **kwargs):
         """Add title information to the context for all steps."""
         context = super().get_context_data(form=form, **kwargs)
         context["form_titles"] = TITLES
+        if self.steps.current == Step.ORGANIZATION_CONTACT:
+            context["is_federal"] = self._is_federal()
         return context
 
     def get_application_object(self) -> DomainApplication:

@@ -178,6 +178,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
         org_contact_form["organization_contact-organization_name"] = "Testorg"
@@ -517,6 +518,19 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(federal_page, TITLES["organization_federal"])
         self.assertNotContains(federal_page, TITLES["organization_election"])
 
+        # continuing on in the flow we need to see top-level agency on the
+        # contact page
+        federal_page.form["organization_federal-federal_type"] = "executive"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_result = federal_page.form.submit()
+        # the post request should return a redirect to the contact
+        # question
+        self.assertEquals(federal_result.status_code, 302)
+        self.assertEquals(federal_result["Location"], "/register/organization_contact/")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_page = federal_result.follow()
+        self.assertContains(contact_page, "Federal agency")
+
     def test_application_form_conditional_elections(self):
         """Election question is shown for other organizations."""
         type_page = self.app.get(reverse("application")).follow()
@@ -548,6 +562,21 @@ class DomainApplicationTests(TestWithUser, WebTest):
         election_page = type_result.follow()
         self.assertContains(election_page, TITLES["organization_election"])
         self.assertNotContains(election_page, TITLES["organization_federal"])
+
+        # continuing on in the flow we need to NOT see top-level agency on the
+        # contact page
+        election_page.form["organization_election-is_election_board"] = "True"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        election_result = election_page.form.submit()
+        # the post request should return a redirect to the contact
+        # question
+        self.assertEquals(election_result.status_code, 302)
+        self.assertEquals(
+            election_result["Location"], "/register/organization_contact/"
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_page = election_result.follow()
+        self.assertNotContains(contact_page, "Federal agency")
 
     @skip("WIP")
     def test_application_edit_restore(self):

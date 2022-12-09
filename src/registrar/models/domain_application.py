@@ -108,6 +108,146 @@ class DomainApplication(TimeStampedModel):
         JUDICIAL = "judicial", "Judicial"
         LEGISLATIVE = "legislative", "Legislative"
 
+    AGENCIES = [
+        "",
+        "Administrative Conference of the United States",
+        "Advisory Council on Historic Preservation",
+        "American Battle Monuments Commission",
+        "Appalachian Regional Commission",
+        (
+            "Appraisal Subcommittee of the Federal Financial "
+            "Institutions Examination Council"
+        ),
+        "Armed Forces Retirement Home",
+        "Barry Goldwater Scholarship and Excellence in Education Program",
+        "Central Intelligence Agency",
+        "Christopher Columbus Fellowship Foundation",
+        "Commission for the Preservation of America's Heritage Abroad",
+        "Commission of Fine Arts",
+        "Committee for Purchase From People Who Are Blind or Severely Disabled",
+        "Commodity Futures Trading Commission",
+        "Consumer Financial Protection Bureau",
+        "Consumer Product Safety Commission",
+        "Corporation for National and Community Service",
+        "Council of Inspectors General on Integrity and Efficiency",
+        "DC Court Services and Offender Supervision Agency",
+        "DC Pre-trial Services",
+        "Defense Nuclear Facilities Safety Board",
+        "Delta Regional Authority",
+        "Denali Commission",
+        "Department of Agriculture",
+        "Department of Commerce",
+        "Department of Defense",
+        "Department of Education",
+        "Department of Energy",
+        "Department of Health and Human Services",
+        "Department of Homeland Security",
+        "Department of Housing and Urban Development",
+        "Department of Justice",
+        "Department of Labor",
+        "Department of State",
+        "Department of the Interior",
+        "Department of the Treasury",
+        "Department of Transportation",
+        "Department of Veterans Affairs",
+        "Director of National Intelligence",
+        "Dwight D. Eisenhower Memorial Commission",
+        "Election Assistance Commission",
+        "Environmental Protection Agency",
+        "Equal Employment Opportunity Commission",
+        "Export-Import Bank of the United States",
+        "Farm Credit Administration",
+        "Farm Credit System Insurance Corporation",
+        "Federal Communications Commission",
+        "Federal Deposit Insurance Corporation",
+        "Federal Election Commission",
+        "Federal Financial Institutions Examination Council",
+        "Federal Housing Finance Agency",
+        "Federal Judiciary",
+        "Federal Labor Relations Authority",
+        "Federal Maritime Commission",
+        "Federal Mediation and Conciliation Service",
+        "Federal Mine Safety and Health Review Commission",
+        "Federal Reserve System",
+        "Federal Trade Commission",
+        "General Services Administration",
+        "Gulf Coast Ecosystem Restoration Council",
+        "Harry S Truman Scholarship Foundation",
+        "Institute of Peace",
+        "Inter-American Foundation",
+        "International Boundary and Water Commission: United States and Mexico",
+        "International Boundary Commission:  United States and Canada",
+        "International Joint Commission:  United States and Canada",
+        "James Madison Memorial Fellowship Foundation",
+        "Japan-United States Friendship Commission",
+        "John F. Kennedy Center for the Performing Arts",
+        "Legal Services Corporation",
+        "Legislative Branch",
+        "Marine Mammal Commission",
+        "Medicare Payment Advisory Commission",
+        "Merit Systems Protection Board",
+        "Millennium Challenge Corporation",
+        "National Aeronautics and Space Administration",
+        "National Archives and Records Administration",
+        "National Capital Planning Commission",
+        "National Council on Disability",
+        "National Credit Union Administration",
+        "National Foundation on the Arts and the Humanities",
+        "National Gallery of Art",
+        "National Labor Relations Board",
+        "National Mediation Board",
+        "National Science Foundation",
+        "National Transportation Safety Board",
+        "Northern Border Regional Commission",
+        "Nuclear Regulatory Commission",
+        "Nuclear Safety Oversight Committee",
+        "Nuclear Waste Technical Review Board",
+        "Occupational Safety and Health Review Commission",
+        "Office of Compliance",
+        "Office of Government Ethics",
+        "Office of Navajo and Hopi Indian Relocation",
+        "Office of Personnel Management",
+        "Overseas Private Investment Corporation",
+        "Peace Corps",
+        "Pension Benefit Guaranty Corporation",
+        "Postal Regulatory Commission",
+        "Privacy and Civil Liberties Oversight Board",
+        "Public Defender Service for the District of Columbia",
+        "Railroad Retirement Board",
+        "Securities and Exchange Commission",
+        "Selective Service System",
+        "Small Business Administration",
+        "Smithsonian Institution",
+        "Social Security Administration",
+        "State Justice Institute",
+        "State, Local, and Tribal Government",
+        "Stennis Center for Public Service",
+        "Surface Transportation Board",
+        "Tennessee Valley Authority",
+        "The Executive Office of the President",
+        "U.S. Access Board",
+        "U.S. Agency for Global Media",
+        "U.S. Agency for International Development",
+        "U.S. Chemical Safety Board",
+        "U.S. China Economic and Security Review Commission",
+        "U.S. Commission on Civil Rights",
+        "U.S. Commission on International Religious Freedom",
+        "U.S. Interagency Council on Homelessness",
+        "U.S. International Trade Commission",
+        "U.S. Office of Special Counsel",
+        "U.S. Postal Service",
+        "U.S. Trade and Development Agency",
+        "Udall Foundation",
+        "United States African Development Foundation",
+        "United States Arctic Research Commission",
+        "United States Holocaust Memorial Museum",
+        "Utah Reclamation Mitigation and Conservation Commission",
+        "Vietnam Education Foundation",
+        "Woodrow Wilson International Center for Scholars",
+        "World War I Centennial Commission",
+    ]
+    AGENCY_CHOICES = [(v, v) for v in AGENCIES]
+
     # #### Internal fields about the application #####
     status = FSMField(
         choices=STATUS_CHOICES,  # possible states as an array of constants
@@ -136,6 +276,12 @@ class DomainApplication(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Type of Organization",
+    )
+
+    federal_agency = models.TextField(
+        null=True,
+        blank=False,
+        help_text="Top level federal agency",
     )
 
     federal_type = models.CharField(
@@ -319,3 +465,15 @@ class DomainApplication(TimeStampedModel):
             DomainApplication.OrganizationChoices.INTERSTATE,
         ]
         return bool(user_choice and user_choice not in excluded)
+
+    def is_federal(self) -> Union[bool, None]:
+        """Is this application for a federal agency?
+
+        organization_type can be both null and blank,
+        """
+        if not self.organization_type:
+            # organization_type is either blank or None, can't answer
+            return None
+        if self.organization_type == DomainApplication.OrganizationChoices.FEDERAL:
+            return True
+        return False

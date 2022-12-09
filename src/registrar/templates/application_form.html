@@ -19,10 +19,6 @@
         {% endif %}
         <h1> {{form_titles|get_item:wizard.steps.current}} </h1>
         {% block form_content %}
-
-        <button type="submit" name="submit_button" value="next" 
-        class="usa-button">Next</button>
-
         <div class="stepnav">
           {% if wizard.steps.next %}
           <button
