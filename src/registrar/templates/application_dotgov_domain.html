@@ -27,23 +27,56 @@
 
   {{ wizard.management_form }}
   {% csrf_token %}
-  {{ wizard.form.requested_domain|add_label_class:"usa-label" }}
-  <div class="display-flex flex-align-center">
-    <span class="padding-top-05 padding-right-2px">www.</span>
-    {{ wizard.form.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
-    <span class="padding-top-05 padding-left-2px">.gov </span>
-  </div>
+
+  {% if wizard.form.requested_domain.errors %}
+    <div class="usa-form-group usa-form-group--error">
+      {{ wizard.form.requested_domain|add_label_class:"usa-label usa-label--error" }}
+      {% for error in wizard.form.requested_domain.errors %}
+        <span class="usa-error-message" id="input-error-message" role="alert">
+          {{ error }}
+        </span>
+      {% endfor %}
+      <div class="display-flex flex-align-center">
+        <span class="padding-top-05 padding-right-2px">www.</span>
+        {{ wizard.form.requested_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions" }}
+        <span class="padding-top-05 padding-left-2px">.gov </span>
+      </div>
+    </div>
+  {% else %}
+    {{ wizard.form.requested_domain|add_label_class:"usa-label" }}
+    <div class="display-flex flex-align-center">
+      <span class="padding-top-05 padding-right-2px">www.</span>
+        {{ wizard.form.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
+      <span class="padding-top-05 padding-left-2px">.gov </span>
+    </div>
+  {% endif %}
   <button type="button" class="usa-button">Check availability </button>
 
   <h2>Alternative domains</h2>
 
   <div>
+  {% if wizard.form.alternative_domain.errors %}
+    <div class="usa-form-group usa-form-group--error">
+      {{ wizard.form.alternative_domain|add_label_class:"usa-label usa-label--error" }}
+      {% for error in wizard.for.alternative_domain.errors %}
+        <span class="usa-error-message" id="input-error-message" role="alert">
+          {{ error }}
+        </span>
+      {% endfor %}
+      <div class="display-flex flex-align-center">
+        <span class="padding-top-05 padding-right-2px">www.</span>
+        {{ wizard.form.alternative_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions" }}
+        <span class="padding-top-05 padding-left-2px">.gov </span>
+      </div>
+    </div>
+  {% else %}
     {{ wizard.form.alternative_domain|add_label_class:"usa-label" }}
     <div class="display-flex flex-align-center">
       <span class="padding-top-05 padding-right-2px">www.</span>
-      {{ wizard.form.alternative_domain|add_class:"usa-input" }}
+        {{ wizard.form.alternative_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
+  {% endif %}
 
     <button type="button" class="usa-button usa-button--unstyled">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
@@ -55,7 +88,7 @@
   <p>If you’re not sure this is the domain you want, that’s okay. You can change it later.</p> 
 
   {{ block.super }}
-  
+
 </form>
 
 {% endblock %}

@@ -10,8 +10,10 @@ from django import forms
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import resolve
+from django.core.validators import RegexValidator
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
+from phonenumber_field.formfields import PhoneNumberField
 
 from registrar.models import Contact, DomainApplication, Domain
 
@@ -119,8 +121,10 @@ class AuthorizingOfficialForm(RegistrarForm):
     )
     last_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
-    email = forms.EmailField(label="Email")
-    phone = forms.CharField(label="Phone")
+    email = forms.EmailField(
+        label="Email", error_messages={"invalid": "Please enter a valid email address."}
+    )
+    phone = PhoneNumberField(label="Phone")
 
 
 class CurrentSitesForm(RegistrarForm):
@@ -145,6 +149,22 @@ class CurrentSitesForm(RegistrarForm):
         label="Enter your organization’s public website, if you have one. For example, "
         "www.city.com.",
     )
+
+    def clean_current_site(self):
+        """This field should be a legal domain name."""
+        inputted_site = self.cleaned_data["current_site"]
+        if not inputted_site:
+            # empty string is fine
+            return inputted_site
+
+        # something has been inputted
+        if Domain.string_could_be_domain(inputted_site):
+            return inputted_site
+        else:
+            # string could not be a domain
+            raise forms.ValidationError(
+                "Please enter a valid domain name", code="invalid"
+            )
 
 
 class DotGovDomainForm(RegistrarForm):
@@ -183,12 +203,40 @@ class DotGovDomainForm(RegistrarForm):
         if alternative_domain is not None:
             self.initial["alternative_domain"] = alternative_domain.sld
 
-    requested_domain = forms.CharField(label="What .gov domain do you want?")
+    requested_domain = forms.CharField(
+        label="What .gov domain do you want?",
+    )
     alternative_domain = forms.CharField(
         required=False,
         label="Are there other domains you’d like if we can’t give you your first "
         "choice? Entering alternative domains is optional.",
     )
+
+    def clean_requested_domain(self):
+        """Requested domains need to be legal top-level domains, not subdomains.
+
+        If they end with `.gov`, then we can reasonably take that off. If they have
+        any other dots in them, raise an error.
+        """
+        requested = self.cleaned_data["requested_domain"]
+        if not requested:
+            # none or empty string
+            raise forms.ValidationError(
+                "Please enter the .gov domain that you are requesting.", code="invalid"
+            )
+        if requested.endswith(".gov"):
+            requested = requested[:-4]
+        if "." in requested:
+            raise forms.ValidationError(
+                "Please enter a top-level domain name without any periods.",
+                code="invalid",
+            )
+        if not Domain.string_could_be_domain(requested + ".gov"):
+            raise forms.ValidationError(
+                "Please enter a valid domain name using only letters, numbers, and hyphens",
+                code="invalid",
+            )
+        return requested
 
 
 class PurposeForm(RegistrarForm):
@@ -222,8 +270,10 @@ class YourContactForm(RegistrarForm):
     )
     last_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
-    email = forms.EmailField(label="Email")
-    phone = forms.CharField(label="Phone")
+    email = forms.EmailField(
+        label="Email", error_messages={"invalid": "Please enter a valid email address."}
+    )
+    phone = PhoneNumberField(label="Phone")
 
 
 class OtherContactsForm(RegistrarForm):
@@ -255,14 +305,17 @@ class OtherContactsForm(RegistrarForm):
     )
     last_name = forms.CharField(label="Last name/family name")
     title = forms.CharField(label="Title or role in your organization")
-    email = forms.EmailField(label="Email")
-    phone = forms.CharField(label="Phone")
+    email = forms.EmailField(
+        label="Email", error_messages={"invalid": "Please enter a valid email address."}
+    )
+    phone = PhoneNumberField(label="Phone")
 
 
 class SecurityEmailForm(RegistrarForm):
     security_email = forms.EmailField(
         required=False,
         label="Security email",
+        error_messages={"invalid": "Please enter a valid email address."},
     )
 
 
@@ -276,8 +329,20 @@ class AnythingElseForm(RegistrarForm):
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
-        label="I read and agree to the .gov domain requirements."
+        label="I read and agree to the .gov domain requirements.",
+        required=False,  # use field validation to enforce this
     )
+
+    def clean_is_policy_acknowledged(self):
+        """This box must be checked to proceed but offer a clear error."""
+        # already converted to a boolean
+        is_acknowledged = self.cleaned_data["is_policy_acknowledged"]
+        if not is_acknowledged:
+            raise forms.ValidationError(
+                "You must read and agree to the .gov domain requirements to proceed.",
+                code="invalid",
+            )
+        return is_acknowledged
 
 
 class ReviewForm(RegistrarForm):

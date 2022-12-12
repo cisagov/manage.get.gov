@@ -59,10 +59,24 @@
     {{ wizard.management_form }}
     {% csrf_token %}
 
-    <div class="usa-checkbox"> 
-      {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"}}
-      {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
-    </div>
+    {% if wizard.form.is_policy_acknowledged.errors %}
+      <div class="usa-form-group usa-form-group--error">
+        {% for error in wizard.form.is_policy_acknowledged.errors %}
+          <span class="usa-error-message margin-bottom-1" id="input-error-message" role="alert">
+            {{ error }}
+          </span>
+        {% endfor %}
+        <div class="usa-checkbox"> 
+          {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"|add_class:"usa-input--error" }}
+          {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label usa-label--error" }}
+        </div>
+      </div>
+    {% else %}
+      <div class="usa-checkbox"> 
+        {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"}}
+        {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
+      </div>
+    {% endif %}
   </div>
 
   {{ block.super }}

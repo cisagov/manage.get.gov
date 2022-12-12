@@ -2,6 +2,7 @@
 {% extends 'application_form.html' %}
 {% load widget_tweaks %}
 {% load static %}
+{% load field_helpers %}
 
 {% block form_content %}
 
@@ -23,23 +24,17 @@
     <legend class="usa-sr-only">
       Your contact information
     </legend>
-    {{ wizard.form.first_name|add_label_class:"usa-label" }}
-    {{ wizard.form.first_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {% input_with_errors wizard.form.first_name %}
 
-    {{ wizard.form.middle_name|add_label_class:"usa-label" }}
-    {{ wizard.form.middle_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {% input_with_errors wizard.form.middle_name %}
 
-    {{ wizard.form.last_name|add_label_class:"usa-label" }}
-    {{ wizard.form.last_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
-    
-    {{ wizard.form.title|add_label_class:"usa-label" }}
-    {{ wizard.form.title|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {% input_with_errors wizard.form.last_name %}
 
-    {{ wizard.form.email|add_label_class:"usa-label" }}
-    {{ wizard.form.email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {% input_with_errors wizard.form.title %}
 
-    {{ wizard.form.phone|add_label_class:"usa-label" }}
-    {{ wizard.form.phone|add_class:"usa-input usa-input--medium"|attr:"aria-describedby:instructions" }}
+    {% input_with_errors wizard.form.email %}
+
+    {% input_with_errors wizard.form.phone add_class="usa-input--medium" %}
   </fieldset>
 
 

@@ -90,6 +90,8 @@ INSTALLED_APPS = [
     "widget_tweaks",
     # library for Finite State Machine statuses
     "django_fsm",
+	# library for phone numbers
+	"phonenumber_field",
     # let's be sure to install our own application!
     "registrar",
     # Our internal API application
@@ -180,6 +182,8 @@ TEMPLATES = [
         },
     },
 ]
+
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # IS_DEMO_SITE controls whether or not we show our big red "TEST SITE" banner
 # underneath the "this is a real government website" banner.
@@ -296,6 +300,9 @@ USE_L10N = True
 # make datetimes timezone-aware by default
 USE_TZ = True
 
+# setting for phonenumber library
+PHONENUMBER_DEFAULT_REGION="US"
+
 # endregion
 # region: Logging-----------------------------------------------------------###
 
@@ -368,7 +375,7 @@ LOGGING = {
         # Django's template processor
         "django.template": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
         },
         # Django's runserver
         "django.server": {
@@ -379,13 +386,13 @@ LOGGING = {
         # Django's runserver requests
         "django.request": {
             "handlers": ["django.server"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         # OpenID Connect logger
         "oic": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
         },
         # Django wrapper for OpenID Connect
         "djangooidc": {

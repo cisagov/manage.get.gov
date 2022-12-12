@@ -1,6 +1,6 @@
 <!-- Test page -->
 {% extends 'application_form.html' %}
-{% load widget_tweaks %}
+{% load widget_tweaks field_helpers %}
 
 {% block form_content %}
 
@@ -28,16 +28,16 @@
         {{ wizard.form.federal_agency|add_class:"usa-select" }}
     {% endif %}
 
-    {{ wizard.form.organization_name|add_label_class:"usa-label" }}
-    {{ wizard.form.organization_name|add_class:"usa-input" }}
-    {{ wizard.form.address_line1|add_label_class:"usa-label" }}
-    {{ wizard.form.address_line1|add_class:"usa-input" }}
-    {{ wizard.form.address_line2|add_label_class:"usa-label" }}
-    {{ wizard.form.address_line2|add_class:"usa-input" }}
+    {% input_with_errors wizard.form.organization_name %}
+
+    {% input_with_errors wizard.form.address_line1 %}
+
+    {% input_with_errors wizard.form.address_line2 %}
+
     {{ wizard.form.state_territory|add_label_class:"usa-label" }}
     {{ wizard.form.state_territory|add_class:"usa-select" }}
-    {{ wizard.form.zipcode|add_label_class:"usa-label" }}
-    {{ wizard.form.zipcode|add_class:"usa-input usa-input--small" }}
+
+    {% input_with_errors wizard.form.zipcode add_class="usa-input--small" %}
 
   </fieldset>
 

@@ -1,0 +1,21 @@
+{% comment %}
+Template include for form fields with classes and their corresponding
+error messages, if necessary.
+{% endcomment %}
+
+{% load widget_tweaks %}
+
+{% if field.errors %}
+  <div class="usa-form-group usa-form-group--error">
+  {{ field|add_label_class:"usa-label usa-label--error" }}
+  {% for error in field.errors %}
+    <span class="usa-error-message" id="input-error-message" role="alert">
+      {{ error }}
+    </span>
+  {% endfor %}
+  {{ field|add_class:input_class|add_class:"usa-input--error"}}
+  </div>
+{% else %}
+  {{ field|add_label_class:"usa-label" }}
+  {{ field|add_class:input_class }}
+{% endif %}
