@@ -1,0 +1,25 @@
+<address>
+    {% if  organization.organization_name  %}
+        {{ organization.organization_name }}
+    {% endif %}
+    {% if  organization.address_line1  %}
+        <br />{{ organization.address_line1 }}
+    {% endif %}
+    {% if  organization.address_line2  %}
+        <br />{{ organization.address_line2 }}
+    {% endif %}
+    {% if  organization.city  %}
+        <br />{{ organization.city }}{% if organization.state_territory %},&nbsp;
+        {% else %}<br />
+        {% endif %}
+    {% endif %}
+    {% if  organization.state_territory  %}
+        {{ organization.state_territory }}
+    {% endif %}
+    {% if  organization.zipcode  %}
+        <br />{{ organization.zipcode }}
+    {% endif %}
+    {% if  organization.urbanization  %}
+        <br />{{ organization.urbanization }}
+    {% endif %}
+</address>

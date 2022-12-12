@@ -417,6 +417,10 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         context["form_titles"] = TITLES
         if self.steps.current == Step.ORGANIZATION_CONTACT:
             context["is_federal"] = self._is_federal()
+        if self.steps.current == Step.REVIEW:
+            context["step_cls"] = Step
+            application = self.get_application_object()
+            context["application"] = application
         return context
 
     def get_application_object(self) -> DomainApplication:
@@ -439,9 +443,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         self.storage.extra_data["application_id"] = application.id
         return application
 
-    def forms_to_database(
-        self, forms: dict = None, form: RegistrarForm = None
-    ) -> DomainApplication:
+    def form_to_database(self, form: RegistrarForm) -> DomainApplication:
         """
         Unpack the form responses onto the model object properties.
 
@@ -449,16 +451,8 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         """
         application = self.get_application_object()
 
-        if forms:
-            itr = forms
-        elif form:
-            itr = {"form": form}
-        else:
-            raise TypeError("forms and form cannot both be None")
-
-        for form in itr.values():
-            if form is not None and hasattr(form, "to_database"):
-                form.to_database(application)
+        if form is not None and hasattr(form, "to_database"):
+            form.to_database(application)
 
         return application
 
@@ -469,7 +463,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         Do not manipulate the form data here.
         """
         # save progress
-        self.forms_to_database(form=form)
+        self.form_to_database(form=form)
         return self.get_form_step_data(form)
 
     def get_form(self, step=None, data=None, files=None):
@@ -509,7 +503,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
 
     def done(self, form_list, form_dict, **kwargs):
         """Called when the data for every form is submitted and validated."""
-        application = self.forms_to_database(forms=form_dict)
+        application = self.get_application_object()
         application.submit()  # change the status to submitted
         application.save()
         logger.debug("Application object saved: %s", application.id)

@@ -287,7 +287,7 @@ class DomainApplication(TimeStampedModel):
 
     federal_agency = models.TextField(
         null=True,
-        blank=False,
+        blank=True,
         help_text="Top level federal agency",
     )
 

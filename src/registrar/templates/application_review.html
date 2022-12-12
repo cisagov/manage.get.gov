@@ -8,14 +8,69 @@
   {{ wizard.management_form }}
   {% csrf_token %}
 
-  {% for this_step in wizard.steps.all|slice:":-1" %}
+  {% for step in wizard.steps.all|slice:":-1" %}
   <div class="review__step margin-top-2">
     <div class="review__step__title display-flex flex-justify"> 
-      <span class="review__step__name">{{ form_titles|get_item:this_step }}</span>
-      <a href="{% url wizard.url_name step=this_step %}">Edit </a>
-    </div>
-    <div class="review__step__value">
-      &lt;Answer value&gt;
+      <div class="review__step__value">
+        <div class="review__step__name">{{ form_titles|get_item:step }}</div>
+        <div>
+          {% if step == step_cls.ORGANIZATION_TYPE %}
+            {{ application.get_organization_type_display }}
+          {% endif %}
+          {% if step == step_cls.ORGANIZATION_FEDERAL %}
+            {{ application.get_federal_type_display }}
+          {% endif %}
+          {% if step == step_cls.ORGANIZATION_ELECTION %}
+            {{ application.is_election_board|yesno:"Yes,No,Maybe" }}
+          {% endif %}
+          {% if step == step_cls.ORGANIZATION_CONTACT %}
+              {% include "includes/organization_address.html" with organization=application %}
+          {% endif %}
+          {% if step == step_cls.AUTHORIZING_OFFICIAL %}
+              {% include "includes/contact.html" with contact=application.authorizing_official %}
+          {% endif %}
+          {% if step == step_cls.CURRENT_SITES %}
+            <ul class="add-list-reset">
+              {% for site in application.current_websites.all %}
+                <li>{{ site.website }}</li>
+              {% empty %}
+                <li>None</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if step == step_cls.DOTGOV_DOMAIN %}
+            <ul class="add-list-reset">
+              <li>{{ application.requested_domain.name }}</li>
+              {% for site in application.alternative_domains.all %}
+                <li>{{ site.website }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if step == step_cls.PURPOSE %}
+            {{ application.purpose }}
+          {% endif %}
+          {% if step == step_cls.YOUR_CONTACT %}
+              {% include "includes/contact.html" with contact=application.submitter %}
+          {% endif %}
+          {% if step == step_cls.OTHER_CONTACTS %}
+            {% for other in application.other_contacts.all %}
+                {% include "includes/contact.html" with contact=other %}
+            {% empty %}
+              None
+            {% endfor %}
+          {% endif %}
+          {% if step == step_cls.SECURITY_EMAIL %}
+            {{ application.security_email }}
+          {% endif %}
+          {% if step == step_cls.ANYTHING_ELSE %}
+            {{ application.anything_else }}
+          {% endif %}
+        </div>
+      </div>
+      <a
+        aria-describedby="review_step_title__{{step}}"
+        href="{% url wizard.url_name step=step %}"
+      >Edit<span class="sr-only"> {{ form_titles|get_item:step }}</span></a>
     </div>
   </div>
   {% endfor %}
