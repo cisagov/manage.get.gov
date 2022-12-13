@@ -91,7 +91,10 @@ class OrganizationContactForm(RegistrarForm):
         choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
     )
     zipcode = forms.CharField(label="ZIP code")
-    urbanization = forms.CharField(label="Urbanization (Puerto Rico only)")
+    urbanization = forms.CharField(
+        required=False,
+        label="Urbanization (Puerto Rico only)",
+    )
 
 
 class AuthorizingOfficialForm(RegistrarForm):

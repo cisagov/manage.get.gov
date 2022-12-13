@@ -9,25 +9,34 @@
   {% csrf_token %}
 
   {% for step in wizard.steps.all|slice:":-1" %}
-  <div class="review__step margin-top-2">
+  <section class="review__step margin-top-205">
+    <hr />
     <div class="review__step__title display-flex flex-justify"> 
       <div class="review__step__value">
         <div class="review__step__name">{{ form_titles|get_item:step }}</div>
         <div>
           {% if step == step_cls.ORGANIZATION_TYPE %}
-            {{ application.get_organization_type_display }}
+            {{ application.get_organization_type_display|default:"Incomplete" }}
           {% endif %}
           {% if step == step_cls.ORGANIZATION_FEDERAL %}
-            {{ application.get_federal_type_display }}
+            {{ application.get_federal_type_display|default:"Incomplete" }}
           {% endif %}
           {% if step == step_cls.ORGANIZATION_ELECTION %}
-            {{ application.is_election_board|yesno:"Yes,No,Maybe" }}
+            {{ application.is_election_board|yesno:"Yes,No,Incomplete" }}
           {% endif %}
           {% if step == step_cls.ORGANIZATION_CONTACT %}
+            {% if organization.organization_name %}
               {% include "includes/organization_address.html" with organization=application %}
+            {% else %}
+              Incomplete
+            {% endif %}
           {% endif %}
           {% if step == step_cls.AUTHORIZING_OFFICIAL %}
+            {% if application.authorizing_official %}
               {% include "includes/contact.html" with contact=application.authorizing_official %}
+            {% else %}
+              Incomplete
+            {% endif %}
           {% endif %}
           {% if step == step_cls.CURRENT_SITES %}
             <ul class="add-list-reset">
@@ -40,17 +49,21 @@
           {% endif %}
           {% if step == step_cls.DOTGOV_DOMAIN %}
             <ul class="add-list-reset">
-              <li>{{ application.requested_domain.name }}</li>
+              <li>{{ application.requested_domain.name|default:"Incomplete" }}</li>
               {% for site in application.alternative_domains.all %}
                 <li>{{ site.website }}</li>
               {% endfor %}
             </ul>
           {% endif %}
           {% if step == step_cls.PURPOSE %}
-            {{ application.purpose }}
+            {{ application.purpose|default:"Incomplete" }}
           {% endif %}
           {% if step == step_cls.YOUR_CONTACT %}
-              {% include "includes/contact.html" with contact=application.submitter %}
+              {% if application.submitter %}
+                {% include "includes/contact.html" with contact=application.submitter %}
+              {% else %}
+                Incomplete
+              {% endif %}
           {% endif %}
           {% if step == step_cls.OTHER_CONTACTS %}
             {% for other in application.other_contacts.all %}
@@ -60,10 +73,13 @@
             {% endfor %}
           {% endif %}
           {% if step == step_cls.SECURITY_EMAIL %}
-            {{ application.security_email }}
+            {{ application.security_email|default:"None" }}
           {% endif %}
           {% if step == step_cls.ANYTHING_ELSE %}
-            {{ application.anything_else }}
+            {{ application.anything_else|default:"No" }}
+          {% endif %}
+          {% if step == step_cls.REQUIREMENTS %}
+            {{ application.is_policy_acknowledged|yesno:"Agree,Do not agree,Do not agree" }}
           {% endif %}
         </div>
       </div>
@@ -72,7 +88,7 @@
         href="{% url wizard.url_name step=step %}"
       >Edit<span class="sr-only"> {{ form_titles|get_item:step }}</span></a>
     </div>
-  </div>
+  </section>
   {% endfor %}
   
   {{ block.super }}
