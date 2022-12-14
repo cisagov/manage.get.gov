@@ -40,9 +40,14 @@ class Contact(models.Model):
         db_index=True,
     )
 
+    def get_formatted_name(self):
+        """Returns the contact's name in Western order."""
+        names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
+        return " ".join(names) if names else "Unknown"
+
     def __str__(self):
         if self.first_name or self.last_name:
-            return f"{self.title or ''} {self.first_name or ''} {self.last_name or ''}"
+            return self.get_formatted_name()
         elif self.email:
             return self.email
         elif self.pk:
