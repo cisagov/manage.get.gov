@@ -49,7 +49,8 @@ class TestFormValidation(TestCase):
         self.assertEqual(
             form.errors["requested_domain"],
             [
-                "Please enter a valid domain name using only letters, numbers, and hyphens"
+                "Please enter a valid domain name using only letters, "
+                "numbers, and hyphens"
             ],
         )
 
@@ -105,14 +106,14 @@ class TestFormValidation(TestCase):
         """Requirements box unchecked is an error."""
         form = RequirementsForm(data={})
         self.assertEqual(
-            form.errors["is_policy_acknowledged"], ["You must read and agree to the .gov domain requirements to proceed."]
+            form.errors["is_policy_acknowledged"],
+            ["You must read and agree to the .gov domain requirements to proceed."],
         )
 
     def test_requirements_form_unchecked(self):
         """Requirements box unchecked is an error."""
         form = RequirementsForm(data={"is_policy_acknowledged": False})
         self.assertEqual(
-            form.errors["is_policy_acknowledged"], ["You must read and agree to the .gov domain requirements to proceed."]
+            form.errors["is_policy_acknowledged"],
+            ["You must read and agree to the .gov domain requirements to proceed."],
         )
-
-

@@ -222,7 +222,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         ao_form["authorizing_official-last_name"] = "Tester ATO"
         ao_form["authorizing_official-title"] = "Chief Tester"
         ao_form["authorizing_official-email"] = "testy@town.com"
-        ao_form["authorizing_official-phone"] = "(555) 555 5555"
+        ao_form["authorizing_official-phone"] = "(201) 555 5555"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -235,7 +235,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(application.authorizing_official.last_name, "Tester ATO")
         self.assertEquals(application.authorizing_official.title, "Chief Tester")
         self.assertEquals(application.authorizing_official.email, "testy@town.com")
-        self.assertEquals(application.authorizing_official.phone, "(555) 555 5555")
+        self.assertEquals(application.authorizing_official.phone, "(201) 555 5555")
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -328,7 +328,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         your_contact_form["your_contact-last_name"] = "Tester you"
         your_contact_form["your_contact-title"] = "Admin Tester"
         your_contact_form["your_contact-email"] = "testy-admin@town.com"
-        your_contact_form["your_contact-phone"] = "(555) 555 5556"
+        your_contact_form["your_contact-phone"] = "(201) 555 5556"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -341,7 +341,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(application.submitter.last_name, "Tester you")
         self.assertEquals(application.submitter.title, "Admin Tester")
         self.assertEquals(application.submitter.email, "testy-admin@town.com")
-        self.assertEquals(application.submitter.phone, "(555) 555 5556")
+        self.assertEquals(application.submitter.phone, "(201) 555 5556")
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -360,7 +360,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_form["other_contacts-last_name"] = "Tester2"
         other_contacts_form["other_contacts-title"] = "Another Tester"
         other_contacts_form["other_contacts-email"] = "testy2@town.com"
-        other_contacts_form["other_contacts-phone"] = "(555) 555 5557"
+        other_contacts_form["other_contacts-phone"] = "(201) 555 5557"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -375,7 +375,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
                 last_name="Tester2",
                 title="Another Tester",
                 email="testy2@town.com",
-                phone="(555) 555 5557",
+                phone="(201) 555 5557",
             ).count(),
             1,
         )
@@ -482,7 +482,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Tester ATO")
         self.assertContains(review_page, "Chief Tester")
         self.assertContains(review_page, "testy@town.com")
-        self.assertContains(review_page, "(555) 555 5555")
+        self.assertContains(review_page, "(201) 555-5555")
         self.assertContains(review_page, "city.com")
         self.assertContains(review_page, "city.gov")
         self.assertContains(review_page, "city1.gov")
@@ -491,12 +491,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Tester you")
         self.assertContains(review_page, "Admin Tester")
         self.assertContains(review_page, "testy-admin@town.com")
-        self.assertContains(review_page, "(555) 555 5556")
+        self.assertContains(review_page, "(201) 555-5556")
         self.assertContains(review_page, "Testy2")
         self.assertContains(review_page, "Tester2")
         self.assertContains(review_page, "Another Tester")
         self.assertContains(review_page, "testy2@town.com")
-        self.assertContains(review_page, "(555) 555 5557")
+        self.assertContains(review_page, "(201) 555-5557")
         self.assertContains(review_page, "security@city.com")
         self.assertContains(review_page, "Nothing else.")
 

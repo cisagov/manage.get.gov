@@ -10,10 +10,9 @@ from django import forms
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import resolve
-from django.core.validators import RegexValidator
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
-from phonenumber_field.formfields import PhoneNumberField
+from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from registrar.models import Contact, DomainApplication, Domain
 
@@ -238,7 +237,8 @@ class DotGovDomainForm(RegistrarForm):
             )
         if not Domain.string_could_be_domain(requested + ".gov"):
             raise forms.ValidationError(
-                "Please enter a valid domain name using only letters, numbers, and hyphens",
+                "Please enter a valid domain name using only letters, "
+                "numbers, and hyphens",
                 code="invalid",
             )
         return requested

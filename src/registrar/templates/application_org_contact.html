@@ -34,10 +34,14 @@
 
     {% input_with_errors wizard.form.address_line2 %}
 
+    {% input_with_errors wizard.form.city %}
+
     {{ wizard.form.state_territory|add_label_class:"usa-label" }}
     {{ wizard.form.state_territory|add_class:"usa-select" }}
 
     {% input_with_errors wizard.form.zipcode add_class="usa-input--small" %}
+
+    {% input_with_errors wizard.form.urbanization %}
 
   </fieldset>
 

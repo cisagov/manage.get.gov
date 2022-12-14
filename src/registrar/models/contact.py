@@ -1,6 +1,6 @@
 from django.db import models
 
-from phonenumber_field.modelfields import PhoneNumberField
+from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
 
 class Contact(models.Model):

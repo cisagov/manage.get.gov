@@ -5,7 +5,7 @@ from django import template
 register = template.Library()
 
 
-@register.inclusion_tag('includes/input_with_errors.html')
+@register.inclusion_tag("includes/input_with_errors.html")
 def input_with_errors(field, add_class=None):
     """Make an input field along with error handling.
 
