@@ -183,8 +183,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_form = org_contact_page.form
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-address_line2"] = "address 2"
+        org_contact_form["organization_contact-city"] = "NYC"
         org_contact_form["organization_contact-state_territory"] = "NY"
         org_contact_form["organization_contact-zipcode"] = "10002"
+        org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -195,8 +198,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(application.organization_name, "Testorg")
         self.assertEquals(application.address_line1, "address 1")
+        self.assertEquals(application.address_line2, "address 2")
+        self.assertEquals(application.city, "NYC")
         self.assertEquals(application.state_territory, "NY")
         self.assertEquals(application.zipcode, "10002")
+        self.assertEquals(application.urbanization, "URB Royal Oaks")
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -212,8 +218,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Follow the redirect to the next form page
         ao_page = org_contact_result.follow()
         ao_form = ao_page.form
-        ao_form["authorizing_official-first_name"] = "Testy"
-        ao_form["authorizing_official-last_name"] = "Tester"
+        ao_form["authorizing_official-first_name"] = "Testy ATO"
+        ao_form["authorizing_official-last_name"] = "Tester ATO"
         ao_form["authorizing_official-title"] = "Chief Tester"
         ao_form["authorizing_official-email"] = "testy@town.com"
         ao_form["authorizing_official-phone"] = "(555) 555 5555"
@@ -225,8 +231,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(result["Location"], "/register/authorizing_official/")
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.authorizing_official.first_name, "Testy")
-        self.assertEquals(application.authorizing_official.last_name, "Tester")
+        self.assertEquals(application.authorizing_official.first_name, "Testy ATO")
+        self.assertEquals(application.authorizing_official.last_name, "Tester ATO")
         self.assertEquals(application.authorizing_official.title, "Chief Tester")
         self.assertEquals(application.authorizing_official.email, "testy@town.com")
         self.assertEquals(application.authorizing_official.phone, "(555) 555 5555")
@@ -294,7 +300,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Follow the redirect to the next form page
         purpose_page = dotgov_result.follow()
         purpose_form = purpose_page.form
-        purpose_form["purpose-purpose"] = "Purpose of the site"
+        purpose_form["purpose-purpose"] = "For all kinds of things."
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -303,7 +309,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(result["Location"], "/register/purpose/")
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.purpose, "Purpose of the site")
+        self.assertEquals(application.purpose, "For all kinds of things.")
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -413,7 +419,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         anything_else_page = security_email_result.follow()
         anything_else_form = anything_else_page.form
 
-        anything_else_form["anything_else-anything_else"] = "No"
+        anything_else_form["anything_else-anything_else"] = "Nothing else."
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -422,7 +428,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(result["Location"], "/register/anything_else/")
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.anything_else, "No")
+        self.assertEquals(application.anything_else, "Nothing else.")
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -458,8 +464,41 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- REVIEW AND FINSIHED PAGES  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         review_page = requirements_result.follow()
         review_form = review_page.form
+
+        # Review page contains all the previously entered data
+        self.assertContains(review_page, "Federal")
+        self.assertContains(review_page, "Executive")
+        self.assertContains(review_page, "Testorg")
+        self.assertContains(review_page, "address 1")
+        self.assertContains(review_page, "address 2")
+        self.assertContains(review_page, "NYC")
+        self.assertContains(review_page, "NY")
+        self.assertContains(review_page, "10002")
+        self.assertContains(review_page, "URB Royal Oaks")
+        self.assertContains(review_page, "Testy ATO")
+        self.assertContains(review_page, "Tester ATO")
+        self.assertContains(review_page, "Chief Tester")
+        self.assertContains(review_page, "testy@town.com")
+        self.assertContains(review_page, "(555) 555 5555")
+        self.assertContains(review_page, "city.com")
+        self.assertContains(review_page, "city.gov")
+        self.assertContains(review_page, "city1.gov")
+        self.assertContains(review_page, "For all kinds of things.")
+        self.assertContains(review_page, "Testy you")
+        self.assertContains(review_page, "Tester you")
+        self.assertContains(review_page, "Admin Tester")
+        self.assertContains(review_page, "testy-admin@town.com")
+        self.assertContains(review_page, "(555) 555 5556")
+        self.assertContains(review_page, "Testy2")
+        self.assertContains(review_page, "Tester2")
+        self.assertContains(review_page, "Another Tester")
+        self.assertContains(review_page, "testy2@town.com")
+        self.assertContains(review_page, "(555) 555 5557")
+        self.assertContains(review_page, "security@city.com")
+        self.assertContains(review_page, "Nothing else.")
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
