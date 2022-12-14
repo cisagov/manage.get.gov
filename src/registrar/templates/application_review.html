@@ -25,7 +25,7 @@
             {{ application.is_election_board|yesno:"Yes,No,Incomplete" }}
           {% endif %}
           {% if step == step_cls.ORGANIZATION_CONTACT %}
-            {% if organization.organization_name %}
+            {% if application.organization_name %}
               {% include "includes/organization_address.html" with organization=application %}
             {% else %}
               Incomplete
