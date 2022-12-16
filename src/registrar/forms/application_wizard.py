@@ -12,7 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import resolve
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
-from formtools.wizard.storage.session import SessionStorage
+from formtools.wizard.storage.session import SessionStorage  # type: ignore
 
 from registrar.models import Contact, DomainApplication, Domain
 
