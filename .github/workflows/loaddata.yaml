@@ -24,8 +24,8 @@ jobs:
       - name: Delete existing data for staging
         uses: 18f/cg-deploy-action@main
         with:
-          cf_username: ${{ secrets.CF_USERNAME }}
-          cf_password: ${{ secrets.CF_PASSWORD }}
+          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
+          cf_password: ${{ secrets.CF_STAGING_USERNAME }}
           cf_org: cisa-getgov-prototyping
           cf_space: staging
           full_command: "cf run-task getgov-staging --wait --command 'python manage.py flush' --name flush"
