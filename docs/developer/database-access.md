@@ -24,7 +24,7 @@ cf run-task getgov-unstable --command 'python manage.py migrate' --name migrate
 Optionally, load data from fixtures as well
 
 ```shell
-cf run-task getgov-unstable --wait --command 'python manage.py loaddata registrar/fixtures/*' --name loaddata
+cf run-task getgov-unstable --wait --command 'python manage.py load' --name loaddata
 ```
 
 For the `staging` environment, developers don't have credentials so we need to
