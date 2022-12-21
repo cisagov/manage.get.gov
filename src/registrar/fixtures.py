@@ -1,4 +1,6 @@
-import logging, string, random
+import logging
+import random
+import string
 from faker import Faker
 
 from registrar.models import (
@@ -22,6 +24,7 @@ class UserFixture:
     in management/commands/load.py, then use `./manage.py load`
     to run this code.
     """
+
     ADMINS = [
         {
             "username": "c4a0e101-73b4-4d7d-9e5e-7f19a726a0fa",
@@ -123,7 +126,7 @@ class DomainApplicationFixture:
 
     @classmethod
     def fake_dot_gov(cls):
-        return "".join(random.choices(string.ascii_lowercase, k=16)) + ".gov"
+        return "".join(random.choices(string.ascii_lowercase, k=16)) + ".gov"  # nosec
 
     @classmethod
     def _set_non_foreign_key_fields(cls, da: DomainApplication, app: dict):
@@ -136,7 +139,7 @@ class DomainApplicationFixture:
         da.federal_type = (
             app["federal_type"]
             if "federal_type" in app
-            else random.choice(["executive", "judicial", "legislative"])
+            else random.choice(["executive", "judicial", "legislative"])  # nosec
         )
         da.address_line1 = (
             app["address_line1"] if "address_line1" in app else fake.street_address()
@@ -166,8 +169,13 @@ class DomainApplicationFixture:
             )
 
         if not da.authorizing_official:
-            if "authorizing_official" in app and app["authorizing_official"] is not None:
-                da.authorizing_official, _ = Contact.objects.get_or_create(**app["authorizing_official"])
+            if (
+                "authorizing_official" in app
+                and app["authorizing_official"] is not None
+            ):
+                da.authorizing_official, _ = Contact.objects.get_or_create(
+                    **app["authorizing_official"]
+                )
             else:
                 da.authorizing_official = Contact.objects.create(**cls.fake_contact())
 
@@ -179,7 +187,9 @@ class DomainApplicationFixture:
 
         if not da.requested_domain:
             if "requested_domain" in app and app["requested_domain"] is not None:
-                da.requested_domain, _ = Domain.objects.get_or_create(name=app["requested_domain"])
+                da.requested_domain, _ = Domain.objects.get_or_create(
+                    name=app["requested_domain"]
+                )
             else:
                 da.requested_domain = Domain.objects.create(name=cls.fake_dot_gov())
 
@@ -188,36 +198,37 @@ class DomainApplicationFixture:
         """Helper method used by `load`."""
         if "other_contacts" in app:
             for contact in app["other_contacts"]:
-                rel, _ = Contact.objects.get_or_create(**contact)
-                da.other_contacts.add(rel)
+                da.other_contacts.add(Contact.objects.get_or_create(**contact)[0])
         else:
-            others = [
+            other_contacts = [
                 Contact.objects.create(**cls.fake_contact())
-                for _ in range(random.randint(0, 3))
+                for _ in range(random.randint(0, 3))  # nosec
             ]
-            da.other_contacts.add(*others)
+            da.other_contacts.add(*other_contacts)
 
         if "current_websites" in app:
             for website in app["current_websites"]:
-                rel, _ = Website.objects.get_or_create(website=website)
-                da.current_websites.add(rel)
+                da.current_websites.add(
+                    Website.objects.get_or_create(website=website)[0]
+                )
         else:
-            others = [
+            current_websites = [
                 Website.objects.create(website=fake.uri())
-                for _ in range(random.randint(0, 3))
+                for _ in range(random.randint(0, 3))  # nosec
             ]
-            da.current_websites.add(*others)
+            da.current_websites.add(*current_websites)
 
         if "alternative_domains" in app:
             for domain in app["alternative_domains"]:
-                rel, _ = Website.objects.get_or_create(website=domain)
-                da.alternative_domains.add(rel)
+                da.alternative_domains.add(
+                    Website.objects.get_or_create(website=domain)[0]
+                )
         else:
-            others = [
+            alternative_domains = [
                 Website.objects.create(website=cls.fake_dot_gov())
-                for _ in range(random.randint(0, 3))
+                for _ in range(random.randint(0, 3))  # nosec
             ]
-            da.alternative_domains.add(*others)
+            da.alternative_domains.add(*alternative_domains)
 
     @classmethod
     def load(cls):
