@@ -96,7 +96,7 @@ class DomainApplication(TimeStampedModel):
         FEDERAL = "federal", "Federal: an agency of the U.S. government's executive, legislative, or judicial branches"
         INTERSTATE = "interstate", "Interstate: an organization of two or more states"
         STATE_OR_TERRITORY = "state_or_territory", (
-            "State or Territory: one of the 50 U.S. states, the District of "
+            "State or territory: one of the 50 U.S. states, the District of "
             "Columbia, American Samoa, Guam, Northern Mariana Islands, "
             "Puerto Rico, or the U.S. Virgin Islands"
         )
@@ -108,6 +108,8 @@ class DomainApplication(TimeStampedModel):
         CITY = "city", "City: a city, town, township, village, etc."
         SPECIAL_DISTRICT = "special_district", (
             "Special district: an independent organization within a single state"
+        SCHOOL_DISTRICT = "school_district", (
+            "School district: a school district that is not part of a local government"
         )
 
     class BranchChoices(models.TextChoices):
