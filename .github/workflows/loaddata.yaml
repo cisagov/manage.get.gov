@@ -6,7 +6,7 @@ name: Reset database
 #     cf run-task getgov-staging --wait \
 #        --command 'python manage.py flush' --name flush
 #     cf run-task getgov-staging --wait \
-#        --command 'python manage.py loaddata registrar/fixtures/*' --name loaddata
+#        --command 'python manage.py load' --name loaddata
 on:
   workflow_dispatch:
     inputs:
@@ -25,7 +25,7 @@ jobs:
         uses: 18f/cg-deploy-action@main
         with:
           cf_username: ${{ secrets.CF_STAGING_USERNAME }}
-          cf_password: ${{ secrets.CF_STAGING_USERNAME }}
+          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
           cf_org: cisa-getgov-prototyping
           cf_space: staging
           full_command: "cf run-task getgov-staging --wait --command 'python manage.py flush' --name flush"
@@ -37,4 +37,4 @@ jobs:
           cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
           cf_org: cisa-getgov-prototyping
           cf_space: staging
-          full_command: "cf run-task getgov-staging --wait --command 'python manage.py loaddata registrar/fixtures/*' --name loaddata"
+          full_command: "cf run-task getgov-staging --wait --command 'python manage.py load' --name loaddata"
