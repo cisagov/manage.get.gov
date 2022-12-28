@@ -6,14 +6,13 @@
 
 <p id="instructions">Is there anything else we should know about your domain request?</p>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
   <div class="usa-form-group">
-    {{ wizard.management_form }}
     {% csrf_token %}
    
     <div class="usa-character-count">
-      {{ wizard.form.anything_else|add_label_class:"usa-label usa-sr-only" }}
-      {{ wizard.form.anything_else|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
+      {{ forms.0.anything_else|add_label_class:"usa-label usa-sr-only" }}
+      {{ forms.0.anything_else|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
       <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
     </div>
   </div>

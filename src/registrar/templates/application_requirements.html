@@ -127,14 +127,13 @@
 
 <h2>Acknowledgement of .gov domain requirements</h2>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
   <div class="usa-form-group">
-    {{ wizard.management_form }}
     {% csrf_token %}
 
     <div class="usa-checkbox"> 
-      {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"}}
-      {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
+      {{ forms.0.is_policy_acknowledged|add_class:"usa-checkbox__input"}}
+      {{ forms.0.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
     </div>
   </div>
 

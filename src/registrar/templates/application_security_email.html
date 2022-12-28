@@ -7,12 +7,11 @@
 
 <p id="instructions"> We strongly recommend that you provide a security email. This email will allow the public to report observed or suspected security issues on your domain. <strong> Security emails are made public.</strong> We recommend using an alias, like security@&lt;domain.gov&gt;.</p>
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
-  {{ wizard.management_form }}
+<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post">
   {% csrf_token %}
 
-    {{ wizard.form.security_email|add_label_class:"usa-label" }}
-    {{ wizard.form.security_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ forms.0.security_email|add_label_class:"usa-label" }}
+    {{ forms.0.security_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
   {{ block.super }}
 

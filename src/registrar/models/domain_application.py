@@ -1,14 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Union
+from typing import Union
 
 from django.apps import apps
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
-
-if TYPE_CHECKING:
-    from ..forms.application_wizard import ApplicationWizard
 
 
 class DomainApplication(TimeStampedModel):
@@ -460,30 +457,17 @@ class DomainApplication(TimeStampedModel):
     # during the application flow. They are policies about the application so
     # they appear here.
 
-    @staticmethod
-    def _get_organization_type(wizard: ApplicationWizard) -> Union[str, None]:
-        """Extract the answer to the organization type question from the wizard."""
-        # using the step data from the storage is a workaround for this
-        # bug in django-formtools version 2.4
-        # https://github.com/jazzband/django-formtools/issues/220
-        type_data = wizard.storage.get_step_data("organization_type")
-        if type_data:
-            return type_data.get("organization_type-organization_type")
-        return None
-
-    @staticmethod
-    def show_organization_federal(wizard: ApplicationWizard) -> bool:
+    def show_organization_federal(self) -> bool:
         """Show this step if the answer to the first question was "federal"."""
-        user_choice = DomainApplication._get_organization_type(wizard)
+        user_choice = self.organization_type
         return user_choice == DomainApplication.OrganizationChoices.FEDERAL
 
-    @staticmethod
-    def show_organization_election(wizard: ApplicationWizard) -> bool:
+    def show_organization_election(self) -> bool:
         """Show this step if the answer to the first question implies it.
 
         This shows for answers that aren't "Federal" or "Interstate".
         """
-        user_choice = DomainApplication._get_organization_type(wizard)
+        user_choice = self.organization_type
         excluded = [
             DomainApplication.OrganizationChoices.FEDERAL,
             DomainApplication.OrganizationChoices.INTERSTATE,
