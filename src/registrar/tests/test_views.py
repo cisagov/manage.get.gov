@@ -85,7 +85,8 @@ class LoggedInTests(TestWithUser):
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
         self.assertContains(
-            response, "What kind of government organization do you represent?"
+            response,
+            "What kind of U.S.-based government organization do you represent?",
         )
 
 
@@ -111,7 +112,9 @@ class DomainApplicationTests(TestWithUser, WebTest):
         page = self.app.get(reverse("application")).follow()
         # submitting should get back the same page if the required field is empty
         result = page.form.submit()
-        self.assertIn("What kind of government organization do you represent?", result)
+        self.assertIn(
+            "What kind of U.S.-based government organization do you represent?", result
+        )
 
     def test_application_form_submission(self):
         """Can fill out the entire form and submit.

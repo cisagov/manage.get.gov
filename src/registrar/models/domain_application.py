@@ -93,21 +93,28 @@ class DomainApplication(TimeStampedModel):
         ARMED_FORCES_AP = "AP", "Armed Forces Pacific (AP)"
 
     class OrganizationChoices(models.TextChoices):
-        FEDERAL = "federal", "Federal: a federal agency"
+        FEDERAL = (
+            "federal",
+            "Federal: an agency of the U.S. government's executive, legislative, "
+            "or judicial branches",
+        )
         INTERSTATE = "interstate", "Interstate: an organization of two or more states"
         STATE_OR_TERRITORY = "state_or_territory", (
-            "State or Territory: One of the 50 U.S. states, the District of "
+            "State or territory: one of the 50 U.S. states, the District of "
             "Columbia, American Samoa, Guam, Northern Mariana Islands, "
             "Puerto Rico, or the U.S. Virgin Islands"
         )
         TRIBAL = "tribal", (
             "Tribal: a tribal government recognized by the federal or "
-            "state government"
+            "a state government"
         )
         COUNTY = "county", "County: a county, parish, or borough"
         CITY = "city", "City: a city, town, township, village, etc."
         SPECIAL_DISTRICT = "special_district", (
-            "Special District: an independent organization within a single state"
+            "Special district: an independent organization within a single state"
+        )
+        SCHOOL_DISTRICT = "school_district", (
+            "School district: a school district that is not part of a local government"
         )
 
     class BranchChoices(models.TextChoices):
@@ -288,7 +295,7 @@ class DomainApplication(TimeStampedModel):
     federal_agency = models.TextField(
         null=True,
         blank=True,
-        help_text="Top level federal agency",
+        help_text="Federal agency",
     )
 
     federal_type = models.CharField(
@@ -296,7 +303,7 @@ class DomainApplication(TimeStampedModel):
         choices=BranchChoices.choices,
         null=True,
         blank=True,
-        help_text="Branch of federal government",
+        help_text="Federal government branch",
     )
 
     is_election_board = models.BooleanField(
@@ -314,13 +321,13 @@ class DomainApplication(TimeStampedModel):
     address_line1 = models.TextField(
         null=True,
         blank=True,
-        help_text="Address line 1",
+        help_text="Street address",
     )
     address_line2 = models.CharField(
         max_length=15,
         null=True,
         blank=True,
-        help_text="Address line 2",
+        help_text="Street address line 2",
     )
     city = models.TextField(
         null=True,
@@ -331,19 +338,19 @@ class DomainApplication(TimeStampedModel):
         max_length=2,
         null=True,
         blank=True,
-        help_text="State/Territory",
+        help_text="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
         null=True,
         blank=True,
-        help_text="ZIP code",
+        help_text="Zip code",
         db_index=True,
     )
     urbanization = models.TextField(
         null=True,
         blank=True,
-        help_text="Urbanization",
+        help_text="Urbanization (Puerto Rico only)",
     )
 
     authorizing_official = models.ForeignKey(
@@ -388,7 +395,7 @@ class DomainApplication(TimeStampedModel):
     purpose = models.TextField(
         null=True,
         blank=True,
-        help_text="Purpose of the domain",
+        help_text="Purpose of your domain",
     )
 
     other_contacts = models.ManyToManyField(
