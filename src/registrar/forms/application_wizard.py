@@ -281,7 +281,10 @@ class AnythingElseForm(RegistrarForm):
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
-        label="I read and agree to the requirements for registering and operating .gov domains."
+        label=(
+            "I read and agree to the requirements for registering "
+            "and operating .gov domains."
+        )
     )
 
 
