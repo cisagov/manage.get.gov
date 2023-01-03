@@ -3,7 +3,7 @@
   <nav aria-label="Form steps,">
     <ul class="usa-sidenav">
     {% for this_step in wizard.steps.all %}
-    {% if forloop.counter <= wizard.steps.step1 %}
+      {% if this_step in visited %}
       <li class="usa-sidenav__item">
         <a href="{% url wizard.url_name step=this_step %}" 
            {% if this_step == wizard.steps.current %}class="usa-current"{% endif%}>

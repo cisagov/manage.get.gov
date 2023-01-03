@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django_webtest import WebTest  # type: ignore
 
 from registrar.models import DomainApplication, Domain, Contact, Website
-from registrar.forms.application_wizard import TITLES
+from registrar.forms.application_wizard import TITLES, Step
 
 from .common import less_console_noise
 
@@ -619,6 +619,34 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Federal agency")
+
+    def test_application_form_section_skipping(self):
+        """Can skip forward and back in sections"""
+        type_page = self.app.get(reverse("application")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "federal"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_page.form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+
+        # Now on federal type page, click back to the organization type
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        new_page = federal_page.click(TITLES[Step.ORGANIZATION_TYPE], index=0)
+
+        # Should be a link to the organization_federal page
+        self.assertGreater(
+            len(new_page.html.find_all("a", href="/register/organization_federal/")),
+            0,
+        )
 
     @skip("WIP")
     def test_application_edit_restore(self):
