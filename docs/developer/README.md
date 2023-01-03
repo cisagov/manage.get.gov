@@ -38,6 +38,12 @@ If you run via `docker-compose up -d`, you can get logs with `docker-compose log
 
 You can change the logging verbosity, if needed. Do a web search for "django log level".
 
+## Mock data
+
+There is a `post_migrate` signal in [signals.py](../../src/registrar/signals.py) that will load the fixtures from [fixtures.py](../../src/registrar/fixtures.py), giving you some test data to play with while developing.
+
+See the [database-access README](./database-access.md) for information on how to pull data to update these fixtures.
+
 ## Running tests
 
 Crash course on Docker's `run` vs `exec`: in order to run the tests inside of a container, a container must be running. If you already have a container running, you can use `exec`. If you do not, you can use `run`, which will attempt to start one.

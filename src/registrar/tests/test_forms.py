@@ -40,7 +40,7 @@ class TestFormValidation(TestCase):
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency.com"})
         self.assertEqual(
             form.errors["requested_domain"],
-            ["Please enter a top-level domain name without any periods."],
+            ["Please enter a domain without any periods."],
         )
 
     def test_requested_domain_invalid_characters(self):

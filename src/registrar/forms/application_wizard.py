@@ -12,6 +12,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import resolve
 
 from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
+from formtools.wizard.storage.session import SessionStorage  # type: ignore
+
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from registrar.models import Contact, DomainApplication, Domain
@@ -232,7 +234,7 @@ class DotGovDomainForm(RegistrarForm):
             requested = requested[:-4]
         if "." in requested:
             raise forms.ValidationError(
-                "Please enter a top-level domain name without any periods.",
+                "Please enter a domain without any periods.",
                 code="invalid",
             )
         if not Domain.string_could_be_domain(requested + ".gov"):
@@ -334,7 +336,10 @@ class AnythingElseForm(RegistrarForm):
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
-        label="I read and agree to the .gov domain requirements.",
+        label=(
+            "I read and agree to the requirements for registering "
+            "and operating .gov domains."
+        ),
         required=False,  # use field validation to enforce this
     )
 
@@ -447,6 +452,19 @@ WIZARD_CONDITIONS = {
 }
 
 
+class TrackingStorage(SessionStorage):
+
+    """Storage subclass that keeps track of what the current_step has been."""
+
+    def _set_current_step(self, step):
+        super()._set_current_step(step)
+
+        step_history = self.extra_data.setdefault("step_history", [])
+        # can't serialize a set, so keep list entries unique
+        if step not in step_history:
+            step_history.append(step)
+
+
 class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
 
     """Multi-page form ("wizard") for new domain applications.
@@ -462,6 +480,7 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
     """
 
     form_list = FORMS
+    storage_name = "registrar.forms.application_wizard.TrackingStorage"
 
     def get_template_names(self):
         """Template for the current step.
@@ -483,6 +502,14 @@ class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
         """Add title information to the context for all steps."""
         context = super().get_context_data(form=form, **kwargs)
         context["form_titles"] = TITLES
+
+        # Add information about which steps should be unlocked
+        # TODO: sometimes the first step doesn't get added to the step history
+        # so add it here
+        context["visited"] = self.storage.extra_data.get("step_history", []) + [
+            self.steps.first
+        ]
+
         if self.steps.current == Step.ORGANIZATION_CONTACT:
             context["is_federal"] = self._is_federal()
         if self.steps.current == Step.REVIEW:
