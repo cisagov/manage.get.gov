@@ -19,7 +19,7 @@
             {{ error }}
           </span>
         {% endfor %}
-        {{ wizard.form.security_email|add_class:"usa-input"|add_class:"usa-input--error"|attr:"aria-describedby:instructions" }}
+        {{ wizard.form.security_email|add_class:"usa-input"|add_class:"usa-input--error"|attr:"aria-describedby:instructions"|attr:"aria-invalid:true" }}
       </div>
     {% else %}
       {{ wizard.form.security_email|add_label_class:"usa-label" }}

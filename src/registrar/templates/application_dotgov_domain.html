@@ -38,7 +38,7 @@
       {% endfor %}
       <div class="display-flex flex-align-center">
         <span class="padding-top-05 padding-right-2px">www.</span>
-        {{ wizard.form.requested_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions" }}
+        {{ wizard.form.requested_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
         <span class="padding-top-05 padding-left-2px">.gov </span>
       </div>
     </div>
@@ -65,7 +65,7 @@
       {% endfor %}
       <div class="display-flex flex-align-center">
         <span class="padding-top-05 padding-right-2px">www.</span>
-        {{ wizard.form.alternative_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions" }}
+        {{ wizard.form.alternative_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
         <span class="padding-top-05 padding-left-2px">.gov </span>
       </div>
     </div>

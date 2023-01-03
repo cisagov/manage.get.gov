@@ -140,7 +140,7 @@
           </span>
         {% endfor %}
         <div class="usa-checkbox"> 
-          {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"|add_class:"usa-input--error" }}
+          {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"|add_class:"usa-input--error"|attr:"aria-invalid:true" }}
           {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label usa-label--error" }}
         </div>
       </div>
