@@ -7,7 +7,7 @@
 
 <p id="instructions"> We strongly recommend that you provide a security email. This email will allow the public to report observed or suspected security issues on your domain. <strong> Security emails are made public.</strong> We recommend using an alias, like security@&lt;domain.gov&gt;.</p>
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post" novalidate>
   {{ wizard.management_form }}
   {% csrf_token %}
 

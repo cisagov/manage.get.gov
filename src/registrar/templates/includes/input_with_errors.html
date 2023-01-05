@@ -13,9 +13,17 @@ error messages, if necessary.
       {{ error }}
     </span>
   {% endfor %}
-  {{ field|add_class:input_class|add_class:"usa-input--error"|attr:"aria-invalid:true" }}
+  {% if required %}
+    {{ field|add_class:input_class|add_class:"usa-input--error"|attr:"aria-invalid:true"|attr:"required" }}
+  {% else %}
+    {{ field|add_class:input_class|add_class:"usa-input--error"|attr:"aria-invalid:true" }}
+  {% endif %}
   </div>
 {% else %}
   {{ field|add_label_class:"usa-label" }}
-  {{ field|add_class:input_class }}
+  {% if required %}
+    {{ field|add_class:input_class|attr:"required" }}
+  {% else %}
+    {{ field|add_class:input_class }}
+  {% endif %}
 {% endif %}

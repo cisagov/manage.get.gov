@@ -5,7 +5,7 @@
 
 {% block form_content %}
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {{ wizard.management_form }}
   {% csrf_token %}
 
@@ -13,15 +13,15 @@
 
   <fieldset id="organization_type__fieldset" class="usa-fieldset">
     <legend class="usa-legend">
-      <h2> What kind of U.S.-based government organization do you represent?</h2>
+      <h2> What kind of U.S.-based government organization do you represent?  </h2>
+      <p>This question is required.</p>
     </legend>
-    {{ wizard.form.organization_type.errors }}
     {% for choice in choices.values %}
       {% include "includes/radio_button.html" with choice=choice tile="true" %}
     {% endfor %}
   </fieldset>
 
-  {{ block.super }}  
+  {{ block.super }}
 
 </form>
 {% endblock %}

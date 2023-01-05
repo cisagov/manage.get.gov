@@ -19,9 +19,9 @@
   <p>We’ll contact your authorizing official to let them know that you made this request and to double check that they approve it.</p> 
 </div>
 
-<p>All fields are required unless they are marked optional.</p>
+{% include "includes/required_fields.html" %}
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post" novalidate>
   {{ wizard.management_form }}
   {% csrf_token %}
 

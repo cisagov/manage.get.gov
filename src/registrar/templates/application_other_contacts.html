@@ -7,9 +7,9 @@
 {% block form_content %}
 
 <p id="instructions">We’d like to contact other employees with administrative or technical responsibilities in your organization. For example, they could be involved in managing your organization or its technical infrastructure. This information will help us assess your eligibility and understand the purpose of the .gov domain. These contacts should be in addition to you and your authorizing official. </p>
-<p>All fields are required unless they are marked optional.</p>
+{% include "includes/required_fields.html" %}
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
+<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post" novalidate>
   {{ wizard.management_form }}
   {% csrf_token %}
 

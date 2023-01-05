@@ -13,10 +13,10 @@
 
   <p>If your domain request is approved, the name of your organization will be publicly listed as the domain registrant. </p>
 
-  <p>All fields are required unless they are marked optional.</p>
+  {% include "includes/required_fields.html" %}
 </div>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {{ wizard.management_form }}
   {% csrf_token %}
 
@@ -24,8 +24,7 @@
     <legend class="usa-sr-only">What is the name and mailing address of your organization?</legend>
 
     {% if is_federal %}
-        {{ wizard.form.federal_agency|add_label_class:"usa-label" }}
-        {{ wizard.form.federal_agency|add_class:"usa-select" }}
+        {% select_with_errors wizard.form.federal_agency required=True %}
     {% endif %}
 
     {% input_with_errors wizard.form.organization_name %}
@@ -36,8 +35,7 @@
 
     {% input_with_errors wizard.form.city %}
 
-    {{ wizard.form.state_territory|add_label_class:"usa-label" }}
-    {{ wizard.form.state_territory|add_class:"usa-select" }}
+    {% select_with_errors wizard.form.state_territory %}
 
     {% input_with_errors wizard.form.zipcode add_class="usa-input--small" %}
 

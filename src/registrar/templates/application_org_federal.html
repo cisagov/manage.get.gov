@@ -5,7 +5,7 @@
 
 {% block form_content %}
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {{ wizard.management_form }}
   {% csrf_token %}
   <fieldset id="federal_type__fieldset" class="usa-fieldset">

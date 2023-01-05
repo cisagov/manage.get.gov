@@ -100,3 +100,9 @@ footer {
   //Workaround because USWDS units jump from 10 to 15
   margin-top: units(10) + units(2);
 }
+
+abbr[title] {
+  // workaround for underlining abbr element
+  border-bottom: none;
+  text-decoration: none;
+}
