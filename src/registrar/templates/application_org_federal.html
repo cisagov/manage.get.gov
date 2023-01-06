@@ -10,7 +10,8 @@
   {% csrf_token %}
   <fieldset id="federal_type__fieldset" class="usa-fieldset">
     <legend>
-        <h2 class="margin-bottom-5">Which federal branch is your organization in?</h2>
+        <h2>Which federal branch is your organization in?</h2>
+        <p class="margin-bottom-5">This question is required.</p>
     </legend>
     {% radio_buttons_by_value wizard.form.federal_type as choices %}
     {% for choice in choices.values %}

@@ -101,9 +101,10 @@ class OrganizationContactForm(RegistrarForm):
     federal_agency = forms.ChoiceField(
         label="Federal agency",
         # not required because this field won't be filled out unless
-        # it is a federal agency.
+        # it is a federal agency. Use clean to check programatically
+        # if it has been filled in when required.
         required=False,
-        choices=DomainApplication.AGENCY_CHOICES,
+        choices=[("", "--Select--")] + DomainApplication.AGENCY_CHOICES,
         label_suffix=REQUIRED_SUFFIX,
     )
     organization_name = forms.CharField(
@@ -137,6 +138,18 @@ class OrganizationContactForm(RegistrarForm):
         required=False,
         label="Urbanization (Puerto Rico only)",
     )
+
+    def clean_federal_agency(self):
+        """Require something to be selected when this is a federal agency."""
+        federal_agency = self.cleaned_data.get("federal_agency", None)
+        # need the wizard object to know if this is federal
+        context = self.get_context()
+        print(context)
+        if wizard._is_federal():
+            if not federal_agency:
+                # no answer was selected
+                raise forms.ValidationError("Please select your federal agency.", code="required")
+        return federal_agency
 
 
 class AuthorizingOfficialForm(RegistrarForm):
