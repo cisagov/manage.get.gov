@@ -16,14 +16,15 @@ from registrar.forms.application_wizard import (
 
 class TestFormValidation(TestCase):
     def test_org_contact_zip_invalid(self):
-        form = OrganizationContactForm (data={"zipcode": "nah"})
+        form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(
-            form.errors["zipcode"], ["Please enter a ZIP code in the form 12345 or 12345-6789"]
+            form.errors["zipcode"],
+            ["Please enter a ZIP code in the form 12345 or 12345-6789"],
         )
 
     def test_org_contact_zip_valid(self):
         for zipcode in ["12345", "12345-6789"]:
-            form = OrganizationContactForm (data={"zipcode": zipcode})
+            form = OrganizationContactForm(data={"zipcode": zipcode})
             self.assertNotIn("zipcode", form.errors)
 
     def test_current_site_invalid(self):

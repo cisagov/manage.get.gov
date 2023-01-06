@@ -23,8 +23,10 @@ from registrar.models import Contact, DomainApplication, Domain
 
 logger = logging.getLogger(__name__)
 
-
-REQUIRED_SUFFIX = mark_safe(
+# nosec because this use of mark_safe does not introduce a cross-site scripting
+# vulnerability because there is no untrusted content inside. It is
+# only being used to pass a specific HTML entity into a template.
+REQUIRED_SUFFIX = mark_safe(  # nosec
     ' <abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
 )
 
@@ -176,7 +178,7 @@ class AuthorizingOfficialForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."}
+        error_messages={"invalid": "Please enter a valid email address."},
     )
     phone = PhoneNumberField(
         label="Phone",
@@ -306,7 +308,9 @@ class PurposeForm(RegistrarForm):
     purpose = forms.CharField(
         label="Purpose",
         widget=forms.Textarea(),
-        error_messages={"required": "You must enter some information about the purpose of your domain"}
+        error_messages={
+            "required": "Please enter some information about the purpose of your domain"
+        },
     )
 
 
@@ -349,7 +353,7 @@ class YourContactForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."}
+        error_messages={"invalid": "Please enter a valid email address."},
     )
     phone = PhoneNumberField(
         label="Phone",
@@ -379,7 +383,6 @@ class OtherContactsForm(RegistrarForm):
         if other_contacts is not None:
             super().from_database(other_contacts)
 
-
     first_name = forms.CharField(
         label="First name/given name",
         label_suffix=REQUIRED_SUFFIX,
@@ -399,7 +402,7 @@ class OtherContactsForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."}
+        error_messages={"invalid": "Please enter a valid email address."},
     )
     phone = PhoneNumberField(
         label="Phone",
