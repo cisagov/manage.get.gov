@@ -16,32 +16,31 @@
   <p>All fields are required unless they are marked optional.</p>
 </div>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
-  {{ wizard.management_form }}
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
     <legend class="usa-sr-only">What is the name and mailing address of your organization?</legend>
 
     {% if is_federal %}
-        {{ wizard.form.federal_agency|add_label_class:"usa-label" }}
-        {{ wizard.form.federal_agency|add_class:"usa-select" }}
+        {{ forms.0.federal_agency|add_label_class:"usa-label" }}
+        {{ forms.0.federal_agency|add_class:"usa-select" }}
     {% endif %}
 
-    {{ wizard.form.organization_name|add_label_class:"usa-label" }}
-    {{ wizard.form.organization_name|add_class:"usa-input" }}
-    {{ wizard.form.address_line1|add_label_class:"usa-label" }}
-    {{ wizard.form.address_line1|add_class:"usa-input" }}
-    {{ wizard.form.address_line2|add_label_class:"usa-label" }}
-    {{ wizard.form.address_line2|add_class:"usa-input" }}
-    {{ wizard.form.city|add_label_class:"usa-label" }}
-    {{ wizard.form.city|add_class:"usa-input" }}
-    {{ wizard.form.state_territory|add_label_class:"usa-label" }}
-    {{ wizard.form.state_territory|add_class:"usa-select" }}
-    {{ wizard.form.zipcode|add_label_class:"usa-label" }}
-    {{ wizard.form.zipcode|add_class:"usa-input usa-input--small" }}
-    {{ wizard.form.urbanization|add_label_class:"usa-label" }}
-    {{ wizard.form.urbanization|add_class:"usa-input usa-input--small" }}
+    {{ forms.0.organization_name|add_label_class:"usa-label" }}
+    {{ forms.0.organization_name|add_class:"usa-input" }}
+    {{ forms.0.address_line1|add_label_class:"usa-label" }}
+    {{ forms.0.address_line1|add_class:"usa-input" }}
+    {{ forms.0.address_line2|add_label_class:"usa-label" }}
+    {{ forms.0.address_line2|add_class:"usa-input" }}
+    {{ forms.0.city|add_label_class:"usa-label" }}
+    {{ forms.0.city|add_class:"usa-input" }}
+    {{ forms.0.state_territory|add_label_class:"usa-label" }}
+    {{ forms.0.state_territory|add_class:"usa-select" }}
+    {{ forms.0.zipcode|add_label_class:"usa-label" }}
+    {{ forms.0.zipcode|add_class:"usa-input usa-input--small" }}
+    {{ forms.0.urbanization|add_label_class:"usa-label" }}
+    {{ forms.0.urbanization|add_class:"usa-input usa-input--small" }}
 
   </fieldset>
 

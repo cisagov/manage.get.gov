@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django_webtest import WebTest  # type: ignore
 
 from registrar.models import DomainApplication, Domain, Contact, Website
-from registrar.forms.application_wizard import TITLES, Step
+from registrar.views.application import ApplicationWizard
 
 from .common import less_console_noise
 
@@ -101,6 +101,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
+        self.TITLES = ApplicationWizard.TITLES
 
     def tearDown(self):
         # delete any applications we made so that users can be deleted
@@ -109,7 +110,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_empty_submit(self):
         # 302 redirect to the first form
-        page = self.app.get(reverse("application")).follow()
+        page = self.app.get(reverse("application:")).follow()
         # submitting should get back the same page if the required field is empty
         result = page.form.submit()
         self.assertIn(
@@ -123,9 +124,9 @@ class DomainApplicationTests(TestWithUser, WebTest):
         """
         num_pages_tested = 0
         SKIPPED_PAGES = 1  # elections
-        num_pages = len(TITLES) - SKIPPED_PAGES
+        num_pages = len(self.TITLES) - SKIPPED_PAGES
 
-        type_page = self.app.get(reverse("application")).follow()
+        type_page = self.app.get(reverse("application:")).follow()
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -511,7 +512,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # final submission results in a redirect to the "finished" URL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        review_result = review_form.submit()
+        with less_console_noise():
+            review_result = review_form.submit()
 
         self.assertEquals(review_result.status_code, 302)
         self.assertEquals(review_result["Location"], "/register/finished/")
@@ -529,7 +531,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_conditional_federal(self):
         """Federal branch question is shown for federal organizations."""
-        type_page = self.app.get(reverse("application")).follow()
+        type_page = self.app.get(reverse("application:")).follow()
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -539,8 +541,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- TYPE PAGE  ----
 
         # the conditional step titles shouldn't appear initially
-        self.assertNotContains(type_page, TITLES["organization_federal"])
-        self.assertNotContains(type_page, TITLES["organization_election"])
+        self.assertNotContains(type_page, self.TITLES["organization_federal"])
+        self.assertNotContains(type_page, self.TITLES["organization_election"])
         type_form = type_page.form
         type_form["organization_type-organization_type"] = "federal"
 
@@ -557,8 +559,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # but the step label for the elections page should not appear
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         federal_page = type_result.follow()
-        self.assertContains(federal_page, TITLES["organization_federal"])
-        self.assertNotContains(federal_page, TITLES["organization_election"])
+        self.assertContains(federal_page, self.TITLES["organization_federal"])
+        self.assertNotContains(federal_page, self.TITLES["organization_election"])
 
         # continuing on in the flow we need to see top-level agency on the
         # contact page
@@ -575,7 +577,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_conditional_elections(self):
         """Election question is shown for other organizations."""
-        type_page = self.app.get(reverse("application")).follow()
+        type_page = self.app.get(reverse("application:")).follow()
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -585,8 +587,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- TYPE PAGE  ----
 
         # the conditional step titles shouldn't appear initially
-        self.assertNotContains(type_page, TITLES["organization_federal"])
-        self.assertNotContains(type_page, TITLES["organization_election"])
+        self.assertNotContains(type_page, self.TITLES["organization_federal"])
+        self.assertNotContains(type_page, self.TITLES["organization_election"])
         type_form = type_page.form
         type_form["organization_type-organization_type"] = "county"
 
@@ -602,8 +604,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # but the step label for the elections page should not appear
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         election_page = type_result.follow()
-        self.assertContains(election_page, TITLES["organization_election"])
-        self.assertNotContains(election_page, TITLES["organization_federal"])
+        self.assertContains(election_page, self.TITLES["organization_election"])
+        self.assertNotContains(election_page, self.TITLES["organization_federal"])
 
         # continuing on in the flow we need to NOT see top-level agency on the
         # contact page
@@ -622,7 +624,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_section_skipping(self):
         """Can skip forward and back in sections"""
-        type_page = self.app.get(reverse("application")).follow()
+        type_page = self.app.get(reverse("application:")).follow()
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -640,7 +642,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # Now on federal type page, click back to the organization type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        new_page = federal_page.click(TITLES[Step.ORGANIZATION_TYPE], index=0)
+        new_page = federal_page.click(str(self.TITLES["organization_type"]), index=0)
 
         # Should be a link to the organization_federal page
         self.assertGreater(
@@ -708,7 +710,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # -- the best that can/should be done here is to ensure the correct values
         # are being passed to the templating engine
 
-        url = reverse("application_step", kwargs={"step": "organization_type"})
+        url = reverse("application:organization_type")
         response = self.client.get(url, follow=True)
         self.assertContains(response, "<input>")
         # choices = response.context['wizard']['form']['organization_type'].subwidgets
@@ -716,62 +718,62 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # checked = radio.data["selected"]
         # self.assertTrue(checked)
 
-        # url = reverse("application_step", kwargs={"step": "organization_federal"})
+        # url = reverse("application:organization_federal")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "organization_contact"})
+        # url = reverse("application:organization_contact")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "authorizing_official"})
+        # url = reverse("application:authorizing_official")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "current_sites"})
+        # url = reverse("application:current_sites")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "dotgov_domain"})
+        # url = reverse("application:dotgov_domain")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "purpose"})
+        # url = reverse("application:purpose")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "your_contact"})
+        # url = reverse("application:your_contact")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "other_contacts"})
+        # url = reverse("application:other_contacts")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "other_contacts"})
+        # url = reverse("application:other_contacts")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "security_email"})
+        # url = reverse("application:security_email")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "anything_else"})
+        # url = reverse("application:anything_else")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
-        # url = reverse("application_step", kwargs={"step": "requirements"})
+        # url = reverse("application:requirements")
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")

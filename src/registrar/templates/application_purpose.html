@@ -6,16 +6,15 @@
 
 <p id="instructions">.Gov domain names are intended for use on the internet. They should be registered with an intent to deploy services, not simply to reserve a name. .Gov domains should not be registered for primarily internal use.</p>
   
-<p id="instructions">Describe the reason for your domain request. Explain how you plan to use this domain. Will you use it for a website and/or email? Are you moving your website from another top-level domain (like .com or .org)? Read about <a href="#">activities that are prohibited on .gov domains.</a></p>
+<p id="instructions">Describe the reason for your domain request. Explain how you plan to use this domain. Will you use it for a website and/or email? Are you moving your website from another top-level domain (like .com or .org)? Read about <a href="{% url 'todo' %}">activities that are prohibited on .gov domains.</a></p>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
   <div class="usa-form-group">
-    {{ wizard.management_form }}
     {% csrf_token %}
    
     <div class="usa-character-count">
-      {{ wizard.form.purpose|add_label_class:"usa-label usa-sr-only" }}
-      {{ wizard.form.purpose|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
+      {{ forms.0.purpose|add_label_class:"usa-label usa-sr-only" }}
+      {{ forms.0.purpose|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
       <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
     </div>
   </div>

@@ -364,11 +364,13 @@ LOGGING = {
         "django": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
         },
         # Django's template processor
         "django.template": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
         },
         # Django's runserver
         "django.server": {
@@ -386,16 +388,19 @@ LOGGING = {
         "oic": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
         },
         # Django wrapper for OpenID Connect
         "djangooidc": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
         },
         # Our app!
         "registrar": {
             "handlers": ["console"],
             "level": "DEBUG",
+            "propagate": False,
         },
     },
     # root logger catches anything, unless

@@ -8,31 +8,30 @@
 <p id="instructions">We’d like to contact other employees with administrative or technical responsibilities in your organization. For example, they could be involved in managing your organization or its technical infrastructure. This information will help us assess your eligibility and understand the purpose of the .gov domain. These contacts should be in addition to you and your authorizing official. </p>
 <p>All fields are required unless they are marked optional.</p>
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
-  {{ wizard.management_form }}
+<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post">
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
     <legend>
       <h2 class="margin-bottom-05"> Contact 2 </h2>
     </legend>
-    {{ wizard.form.first_name|add_label_class:"usa-label" }}
-    {{ wizard.form.first_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ forms.0.first_name|add_label_class:"usa-label" }}
+    {{ forms.0.first_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.middle_name|add_label_class:"usa-label" }}
-    {{ wizard.form.middle_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ forms.0.middle_name|add_label_class:"usa-label" }}
+    {{ forms.0.middle_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.last_name|add_label_class:"usa-label" }}
-    {{ wizard.form.last_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ forms.0.last_name|add_label_class:"usa-label" }}
+    {{ forms.0.last_name|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
     
-    {{ wizard.form.title|add_label_class:"usa-label" }}
-    {{ wizard.form.title|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ forms.0.title|add_label_class:"usa-label" }}
+    {{ forms.0.title|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.email|add_label_class:"usa-label" }}
-    {{ wizard.form.email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {{ forms.0.email|add_label_class:"usa-label" }}
+    {{ forms.0.email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
 
-    {{ wizard.form.phone|add_label_class:"usa-label" }}
-    {{ wizard.form.phone|add_class:"usa-input usa-input--medium"|attr:"aria-describedby:instructions" }}
+    {{ forms.0.phone|add_label_class:"usa-label" }}
+    {{ forms.0.phone|add_class:"usa-input usa-input--medium"|attr:"aria-describedby:instructions" }}
   </fieldset>
 
   <div>

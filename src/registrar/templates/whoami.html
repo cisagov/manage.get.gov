@@ -6,6 +6,6 @@
 <main id="main-content" class="grid-container">
   <p> Hello {{ user.last_name|default:"No last name given" }}, {{ user.first_name|default:"No first name given" }} &lt;{{ user.email }}&gt;!  </p>
 
-  <p><a href="/openid/logout">Click here to log out</a></p>        
+  <p><a href="{% url 'logout' %}">Click here to log out</a></p>        
 </main>
 {% endblock %}

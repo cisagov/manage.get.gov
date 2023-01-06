@@ -5,14 +5,13 @@
 
 {% block form_content %}
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
-  {{ wizard.management_form }}
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
   {% csrf_token %}
   <fieldset id="federal_type__fieldset" class="usa-fieldset">
     <legend>
         <h2 class="margin-bottom-5">Which federal branch is your organization in?</h2>
     </legend>
-    {% radio_buttons_by_value wizard.form.federal_type as choices %}
+    {% radio_buttons_by_value forms.0.federal_type as choices %}
     {% for choice in choices.values %}
       {% include "includes/radio_button.html" with choice=choice tile="true" %}
     {% endfor %}

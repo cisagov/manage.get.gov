@@ -3,7 +3,7 @@
 {% load widget_tweaks static%}
 
 {% block form_content %}
-  <p> Before requesting a .gov domain, <a href="#">please make sure it meets our naming requirements.</a> Your domain name must:
+  <p> Before requesting a .gov domain, <a href="{% url 'todo' %}">please make sure it meets our naming requirements.</a> Your domain name must:
   <ul class="usa-list">
     <li>Be available </li>
     <li>Be unique </li>
@@ -21,16 +21,15 @@
     {% include "includes/domain_example__city.html" %}
   </div>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
   <h2> What .gov domain do you want? </h2>
   <p class="domain_instructions"> After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. If your domain passes these initial checks, we’ll verify that it meets all of our requirements once you complete and submit the rest of this form. </p>
 
-  {{ wizard.management_form }}
   {% csrf_token %}
-  {{ wizard.form.requested_domain|add_label_class:"usa-label" }}
+  {{ forms.0.requested_domain|add_label_class:"usa-label" }}
   <div class="display-flex flex-align-center">
     <span class="padding-top-05 padding-right-2px">www.</span>
-    {{ wizard.form.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
+    {{ forms.0.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
     <span class="padding-top-05 padding-left-2px">.gov </span>
   </div>
   <button type="button" class="usa-button">Check availability </button>
@@ -38,10 +37,10 @@
   <h2>Alternative domains</h2>
 
   <div>
-    {{ wizard.form.alternative_domain|add_label_class:"usa-label" }}
+    {{ forms.0.alternative_domain|add_label_class:"usa-label" }}
     <div class="display-flex flex-align-center">
       <span class="padding-top-05 padding-right-2px">www.</span>
-      {{ wizard.form.alternative_domain|add_class:"usa-input" }}
+      {{ forms.0.alternative_domain|add_class:"usa-input" }}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
 

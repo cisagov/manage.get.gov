@@ -5,17 +5,16 @@
 
 {% block form_content %}
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post">
-  {{ wizard.management_form }}
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
   {% csrf_token %}
 
-  {% radio_buttons_by_value wizard.form.organization_type as choices %}
+  {% radio_buttons_by_value forms.0.organization_type as choices %}
 
   <fieldset id="organization_type__fieldset" class="usa-fieldset">
     <legend class="usa-legend">
       <h2> What kind of U.S.-based government organization do you represent?</h2>
     </legend>
-    {{ wizard.form.organization_type.errors }}
+    {{ forms.0.organization_type.errors }}
     {% for choice in choices.values %}
       {% include "includes/radio_button.html" with choice=choice tile="true" %}
     {% endfor %}
