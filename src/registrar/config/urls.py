@@ -14,34 +14,32 @@ from registrar.views.application import Step
 from registrar.views.utility import always_404
 from api.views import available
 
-application_urls = (
-    [
-        path("", views.ApplicationWizard.as_view(), name=""),
-        # dynamically generate the other paths
-        *[
-            path(f"{step}/", view.as_view(), name=step)
-            for step, view in [
-                # add/remove steps here
-                (Step.ORGANIZATION_TYPE, views.OrganizationType),
-                (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
-                (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
-                (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
-                (Step.AUTHORIZING_OFFICIAL, views.AuthorizingOfficial),
-                (Step.CURRENT_SITES, views.CurrentSites),
-                (Step.DOTGOV_DOMAIN, views.DotgovDomain),
-                (Step.PURPOSE, views.Purpose),
-                (Step.YOUR_CONTACT, views.YourContact),
-                (Step.OTHER_CONTACTS, views.OtherContacts),
-                (Step.SECURITY_EMAIL, views.SecurityEmail),
-                (Step.ANYTHING_ELSE, views.AnythingElse),
-                (Step.REQUIREMENTS, views.Requirements),
-                (Step.REVIEW, views.Review),
-            ]
-        ],
-        path("finished/", views.Finished.as_view(), name="finished"),
-    ],
-    views.ApplicationWizard.URL_NAMESPACE,
-)
+APPLICATION_NAMESPACE = views.ApplicationWizard.URL_NAMESPACE
+application_urls = [
+    path("", views.ApplicationWizard.as_view(), name=""),
+    path("finished/", views.Finished.as_view(), name="finished"),
+]
+
+# dynamically generate the other application_urls
+for step, view in [
+    # add/remove steps here
+    (Step.ORGANIZATION_TYPE, views.OrganizationType),
+    (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
+    (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
+    (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
+    (Step.AUTHORIZING_OFFICIAL, views.AuthorizingOfficial),
+    (Step.CURRENT_SITES, views.CurrentSites),
+    (Step.DOTGOV_DOMAIN, views.DotgovDomain),
+    (Step.PURPOSE, views.Purpose),
+    (Step.YOUR_CONTACT, views.YourContact),
+    (Step.OTHER_CONTACTS, views.OtherContacts),
+    (Step.SECURITY_EMAIL, views.SecurityEmail),
+    (Step.ANYTHING_ELSE, views.AnythingElse),
+    (Step.REQUIREMENTS, views.Requirements),
+    (Step.REVIEW, views.Review),
+]:
+    application_urls.append(path(f"{step}/", view.as_view(), name=step))
+
 
 urlpatterns = [
     path("", views.index, name="home"),
@@ -55,7 +53,7 @@ urlpatterns = [
     path("health/", views.health),
     path("edit_profile/", views.edit_profile, name="edit-profile"),
     path("openid/", include("djangooidc.urls")),
-    path("register/", include(application_urls)),
+    path("register/", include((application_urls, APPLICATION_NAMESPACE))),
     path("api/v1/available/<domain>", available, name="available"),
     path(
         "todo",

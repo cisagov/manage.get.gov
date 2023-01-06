@@ -36,7 +36,7 @@ class RegistrarForm(forms.Form):
 
     @classmethod
     def from_database(cls, obj: DomainApplication | Contact | None):
-        """Initializes this form's fields with values gotten from `obj`."""
+        """Returns a dict of form field values gotten from `obj`."""
         if obj is None:
             return {}
         return {
@@ -99,7 +99,6 @@ class OrganizationContactForm(RegistrarForm):
 
 class AuthorizingOfficialForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         contact = getattr(obj, "authorizing_official", None)
@@ -113,7 +112,6 @@ class AuthorizingOfficialForm(RegistrarForm):
 
     @classmethod
     def from_database(cls, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
         contact = getattr(obj, "authorizing_official", None)
         return super().from_database(contact)
 
@@ -130,7 +128,6 @@ class AuthorizingOfficialForm(RegistrarForm):
 
 class CurrentSitesForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         obj.save()
@@ -141,7 +138,6 @@ class CurrentSitesForm(RegistrarForm):
 
     @classmethod
     def from_database(cls, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
         current_website = obj.current_websites.first()
         if current_website is not None:
             return {"current_site": current_website.website}
@@ -157,7 +153,6 @@ class CurrentSitesForm(RegistrarForm):
 
 class DotGovDomainForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         normalized = Domain.normalize(
@@ -183,7 +178,6 @@ class DotGovDomainForm(RegistrarForm):
 
     @classmethod
     def from_database(cls, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
         values = {}
         requested_domain = getattr(obj, "requested_domain", None)
         if requested_domain is not None:
@@ -209,7 +203,6 @@ class PurposeForm(RegistrarForm):
 
 class YourContactForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         contact = getattr(obj, "submitter", None)
@@ -223,7 +216,6 @@ class YourContactForm(RegistrarForm):
 
     @classmethod
     def from_database(cls, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
         contact = getattr(obj, "submitter", None)
         return super().from_database(contact)
 
@@ -240,7 +232,6 @@ class YourContactForm(RegistrarForm):
 
 class OtherContactsForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         obj.save()
@@ -256,7 +247,6 @@ class OtherContactsForm(RegistrarForm):
 
     @classmethod
     def from_database(cls, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
         other_contacts = obj.other_contacts.first()
         return super().from_database(other_contacts)
 

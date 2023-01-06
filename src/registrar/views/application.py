@@ -16,7 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class Step(StrEnum):
-    """Names for each page of the application wizard."""
+    """
+    Names for each page of the application wizard.
+
+    As with Django's own `TextChoices` class, steps will
+    appear in the order they are defined. (Order matters.)
+    """
 
     ORGANIZATION_TYPE = "organization_type"
     ORGANIZATION_FEDERAL = "organization_federal"
@@ -95,6 +100,10 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         self.steps = StepsHelper(self)
         self._application = None  # for caching
 
+    def has_pk(self):
+        """Does this wizard know about a DomainApplication database record?"""
+        return "application_id" in self.storage
+
     @property
     def prefix(self):
         """Namespace the wizard to avoid clashes in session variable names."""
@@ -134,9 +143,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         # marking session as modified on every access
         # so that updates to nested keys are always saved
         self.request.session.modified = True
-        if self.prefix not in self.request.session:
-            self.request.session[self.prefix] = {}
-        return self.request.session[self.prefix]
+        return self.request.session.setdefault(self.prefix, {})
 
     @storage.setter
     def storage(self, value):
@@ -187,6 +194,12 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             self.storage["application_id"] = kwargs["id"]
 
         # if accessing this class directly, redirect to the first step
+        #     in other words, if `ApplicationWizard` is called as view
+        #     directly by some redirect or url handler, we'll send users
+        #     to the first step in the processes; subclasses will NOT
+        #     be redirected. The purpose of this is to allow code to
+        #     send users "to the application wizard" without needing to
+        #     know which view is first in the list of steps.
         if self.__class__ == ApplicationWizard:
             return self.goto(self.steps.first)
 
@@ -272,10 +285,6 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             return self.goto(next)
         else:
             raise Http404()
-
-    def has_pk(self):
-        """Does this wizard know about a DomainApplication database record?"""
-        return "application_id" in self.storage
 
     def is_valid(self, forms: list = None) -> bool:
         """Returns True if all forms in the wizard are valid."""
@@ -401,6 +410,18 @@ class Review(ApplicationWizard):
     def goto_next_step(self):
         return self.done()
         # TODO: validate before saving, show errors
+        # Extra info:
+        #
+        # Formtools used saved POST data to revalidate each form as
+        # the user had entered it. This implementation (in this file) discards
+        # that data and tries to instantiate the forms from the database
+        # in order to perform validation.
+        #
+        # This must be possible in Django (after all, that is how ModelForms work),
+        # but is presently not working: the form claims it is invalid,
+        # even when careful checking via breakpoint() shows that the form
+        # object contains valid data.
+        #
         # forms = self.get_all_forms()
         # if self.is_valid(forms):
         #     return self.done()
