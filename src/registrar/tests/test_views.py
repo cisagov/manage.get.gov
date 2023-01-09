@@ -51,6 +51,8 @@ class TestWithUser(TestCase):
         )
 
     def tearDown(self):
+        # delete any applications too
+        DomainApplication.objects.all().delete()
         self.user.delete()
 
 
@@ -102,11 +104,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
         self.TITLES = ApplicationWizard.TITLES
-
-    def tearDown(self):
-        # delete any applications we made so that users can be deleted
-        DomainApplication.objects.all().delete()
-        super().tearDown()
 
     def test_application_form_empty_submit(self):
         # 302 redirect to the first form
@@ -185,6 +182,10 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
+        # federal agency so we have to fill in federal_agency
+        org_contact_form[
+            "organization_contact-federal_agency"
+        ] = "General Services Administration"
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -220,6 +221,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- AUTHORIZING OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = org_contact_result.follow()
         ao_form = ao_page.form
         ao_form["authorizing_official-first_name"] = "Testy ATO"
@@ -251,6 +253,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- CURRENT SITES PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         current_sites_page = ao_result.follow()
         current_sites_form = current_sites_page.form
         current_sites_form["current_sites-current_site"] = "www.city.com"
@@ -276,6 +279,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- DOTGOV DOMAIN PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = current_sites_result.follow()
         dotgov_form = dotgov_page.form
         dotgov_form["dotgov_domain-requested_domain"] = "city"
@@ -302,6 +306,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- PURPOSE PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         purpose_page = dotgov_result.follow()
         purpose_form = purpose_page.form
         purpose_form["purpose-purpose"] = "For all kinds of things."
@@ -325,6 +330,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- YOUR CONTACT INFO PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         your_contact_page = purpose_result.follow()
         your_contact_form = your_contact_page.form
 
@@ -357,6 +363,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- OTHER CONTACTS PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         other_contacts_page = your_contact_result.follow()
         other_contacts_form = other_contacts_page.form
 
@@ -396,6 +403,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- SECURITY EMAIL PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         security_email_page = other_contacts_result.follow()
         security_email_form = security_email_page.form
 
@@ -420,6 +428,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- ANYTHING ELSE PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         anything_else_page = security_email_result.follow()
         anything_else_form = anything_else_page.form
 
@@ -444,6 +453,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # ---- REQUIREMENTS PAGE  ----
         # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_page = anything_else_result.follow()
         requirements_form = requirements_page.form
 

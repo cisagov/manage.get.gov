@@ -11,7 +11,7 @@ from registrar.models import Contact, DomainApplication, Domain
 
 logger = logging.getLogger(__name__)
 
-# nosec because this use of mark_safe does not introduce a cross-site scripting
+# no sec because this use of mark_safe does not introduce a cross-site scripting
 # vulnerability because there is no untrusted content inside. It is
 # only being used to pass a specific HTML entity into a template.
 REQUIRED_SUFFIX = mark_safe(  # nosec
@@ -145,12 +145,18 @@ class OrganizationContactForm(RegistrarForm):
         federal_agency = self.cleaned_data.get("federal_agency", None)
         # need the application object to know if this is federal
         if self.application is None:
-            # hmm, no saved application object?
-            raise ValueError("Form has no active application object.")
+            # hmm, no saved application object?, default require the agency
+            if not federal_agency:
+                # no answer was selected
+                raise forms.ValidationError(
+                    "Please select your federal agency.", code="required"
+                )
         if self.application.is_federal:
             if not federal_agency:
                 # no answer was selected
-                raise forms.ValidationError("Please select your federal agency.", code="required")
+                raise forms.ValidationError(
+                    "Please select your federal agency.", code="required"
+                )
         return federal_agency
 
 
