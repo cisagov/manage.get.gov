@@ -18,24 +18,26 @@
         </a>
         {% endif %}
 
-        {% if form.errors %}
-          {% for error in form.non_field_errors %}
-            <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
-              <div class="usa-alert__body">
-                {{ error|escape }}
-              </div>
-            </div>
-          {% endfor %}
-          {% for field in form %}
-            {% for error in field.errors %}
-              <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
+        {% for form in forms %}
+          {% if form.errors %}
+            {% for error in form.non_field_errors %}
+                <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
                 <div class="usa-alert__body">
-                  {{ error|escape }}
+                {{ error|escape }}
                 </div>
-              </div>
+                </div>
             {% endfor %}
-          {% endfor %}
-        {% endif %}
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
+                <div class="usa-alert__body">
+                    {{ error|escape }}
+                </div>
+                </div>
+            {% endfor %}
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
 
         <h1> {{form_titles|get_item:steps.current}} </h1>
         {% block form_content %}

@@ -446,3 +446,14 @@ class RequirementsForm(RegistrarForm):
         ),
         required=False,  # use field validation to enforce this
     )
+
+    def clean_is_policy_acknowledged(self):
+        """This box must be checked to proceed but offer a clear error."""
+        # already converted to a boolean
+        is_acknowledged = self.cleaned_data["is_policy_acknowledged"]
+        if not is_acknowledged:
+            raise forms.ValidationError(
+                "You must read and agree to the .gov domain requirements to proceed.",
+                code="invalid",
+            )
+        return is_acknowledged

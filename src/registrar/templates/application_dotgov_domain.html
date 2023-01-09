@@ -28,23 +28,23 @@
   <p> This question is required. </p>
   {% csrf_token %}
 
-  {% if wizard.form.requested_domain.errors %}
+  {% if forms.0.requested_domain.errors %}
     <div class="usa-form-group usa-form-group--error">
-      {% for error in wizard.form.requested_domain.errors %}
+      {% for error in forms.0.requested_domain.errors %}
         <span class="usa-error-message" id="input-error-message" role="alert">
           {{ error }}
         </span>
       {% endfor %}
       <div class="display-flex flex-align-center">
         <span class="padding-top-05 padding-right-2px">www.</span>
-        {{ wizard.form.requested_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
+        {{ forms.0.requested_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
         <span class="padding-top-05 padding-left-2px">.gov </span>
       </div>
     </div>
   {% else %}
     <div class="display-flex flex-align-center">
       <span class="padding-top-05 padding-right-2px">www.</span>
-        {{ wizard.form.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
+        {{ forms.0.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
   {% endif %}
@@ -53,25 +53,25 @@
   <h2>Alternative domains</h2>
 
   <div>
-  {% if wizard.form.alternative_domain.errors %}
+  {% if forms.0.alternative_domain.errors %}
     <div class="usa-form-group usa-form-group--error">
-      {{ wizard.form.alternative_domain|add_label_class:"usa-label usa-label--error" }}
-      {% for error in wizard.for.alternative_domain.errors %}
+      {{ forms.0.alternative_domain|add_label_class:"usa-label usa-label--error" }}
+      {% for error in forms.0.alternative_domain.errors %}
         <span class="usa-error-message" id="input-error-message" role="alert">
           {{ error }}
         </span>
       {% endfor %}
       <div class="display-flex flex-align-center">
         <span class="padding-top-05 padding-right-2px">www.</span>
-        {{ wizard.form.alternative_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
+        { forms.0.alternative_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
         <span class="padding-top-05 padding-left-2px">.gov </span>
       </div>
     </div>
   {% else %}
-    {{ wizard.form.alternative_domain|add_label_class:"usa-label" }}
+    {{ forms.0.alternative_domain|add_label_class:"usa-label" }}
     <div class="display-flex flex-align-center">
       <span class="padding-top-05 padding-right-2px">www.</span>
-        {{ wizard.form.alternative_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
+        {{ forms.0.alternative_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
   {% endif %}

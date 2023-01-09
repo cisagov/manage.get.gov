@@ -10,19 +10,19 @@
 <form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post" novalidate>
   {% csrf_token %}
 
-    {% if wizard.form.security_email.errors %}
+    {% if forms.0.security_email.errors %}
       <div class="usa-form-group usa-form-group--error">
-        {{ wizard.form.security_email|add_label_class:"usa-label usa-label--error" }}
-        {% for error in wizard.form.security_email.errors %}
+        {{ forms.0.security_email|add_label_class:"usa-label usa-label--error" }}
+        {% for error in forms.0.security_email.errors %}
           <span class="usa-error-message" id="input-error-message" role="alert">
             {{ error }}
           </span>
         {% endfor %}
-        {{ wizard.form.security_email|add_class:"usa-input"|add_class:"usa-input--error"|attr:"aria-describedby:instructions"|attr:"aria-invalid:true" }}
+        {{ forms.0.security_email|add_class:"usa-input"|add_class:"usa-input--error"|attr:"aria-describedby:instructions"|attr:"aria-invalid:true" }}
       </div>
     {% else %}
-      {{ wizard.form.security_email|add_label_class:"usa-label" }}
-      {{ wizard.form.security_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+      {{ forms.0.security_email|add_label_class:"usa-label" }}
+      {{ forms.0.security_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
     {% endif %}
     {{ block.super }}
 
