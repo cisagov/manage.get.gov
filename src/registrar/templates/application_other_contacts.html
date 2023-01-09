@@ -9,25 +9,24 @@
 <p id="instructions">We’d like to contact other employees with administrative or technical responsibilities in your organization. For example, they could be involved in managing your organization or its technical infrastructure. This information will help us assess your eligibility and understand the purpose of the .gov domain. These contacts should be in addition to you and your authorizing official. </p>
 {% include "includes/required_fields.html" %}
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post" novalidate>
-  {{ wizard.management_form }}
+<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post" novalidate>
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
     <legend>
       <h2 class="margin-bottom-05"> Contact 2 </h2>
     </legend>
-    {% input_with_errors wizard.form.first_name %}
+    {% input_with_errors forms.0.first_name %}
 
-    {% input_with_errors wizard.form.middle_name %}
+    {% input_with_errors forms.0.middle_name %}
 
-    {% input_with_errors wizard.form.last_name %}
+    {% input_with_errors forms.0.last_name %}
 
-    {% input_with_errors wizard.form.title %}
+    {% input_with_errors forms.0.title %}
 
-    {% input_with_errors wizard.form.email %}
+    {% input_with_errors forms.0.email %}
 
-    {% input_with_errors wizard.form.phone add_class="usa-input--medium" %}
+    {% input_with_errors forms.0.phone add_class="usa-input--medium" %}
   </fieldset>
 
   <div>

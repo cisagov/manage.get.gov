@@ -1,25 +1,13 @@
-"""Forms Wizard for creating a new domain application."""
-
 from __future__ import annotations  # allows forward references in annotations
-
 import logging
-
-from typing import Union
 
 from django import forms
 from django.core.validators import RegexValidator
-from django.shortcuts import render
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import resolve
 from django.utils.safestring import mark_safe
-
-from formtools.wizard.views import NamedUrlSessionWizardView  # type: ignore
-from formtools.wizard.storage.session import SessionStorage  # type: ignore
 
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from registrar.models import Contact, DomainApplication, Domain
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +20,19 @@ REQUIRED_SUFFIX = mark_safe(  # nosec
 
 
 class RegistrarForm(forms.Form):
-    """Subclass used to remove the default colon suffix from all fields."""
+    """
+    A common set of methods and configuration.
+
+    The registrar's domain application is several pages of "steps".
+    Each step is an HTML form containing one or more Django "forms".
+
+    Subclass this class to create new forms.
+    """
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("label_suffix", "")
+        # save a reference to an application object
+        self.application = kwargs.pop("application", None)
         super(RegistrarForm, self).__init__(*args, **kwargs)
 
     def to_database(self, obj: DomainApplication | Contact):
@@ -50,10 +47,14 @@ class RegistrarForm(forms.Form):
             setattr(obj, name, value)
         obj.save()
 
-    def from_database(self, obj: DomainApplication | Contact):
-        """Initializes this form's fields with values gotten from `obj`."""
-        for name in self.declared_fields.keys():
-            self.initial[name] = getattr(obj, name)  # type: ignore
+    @classmethod
+    def from_database(cls, obj: DomainApplication | Contact | None):
+        """Returns a dict of form field values gotten from `obj`."""
+        if obj is None:
+            return {}
+        return {
+            name: getattr(obj, name) for name in cls.declared_fields.keys()
+        }  # type: ignore
 
 
 class OrganizationTypeForm(RegistrarForm):
@@ -142,10 +143,11 @@ class OrganizationContactForm(RegistrarForm):
     def clean_federal_agency(self):
         """Require something to be selected when this is a federal agency."""
         federal_agency = self.cleaned_data.get("federal_agency", None)
-        # need the wizard object to know if this is federal
-        context = self.get_context()
-        print(context)
-        if wizard._is_federal():
+        # need the application object to know if this is federal
+        if self.application is None:
+            # hmm, no saved application object?
+            raise ValueError("Form has no active application object.")
+        if self.application.is_federal:
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError("Please select your federal agency.", code="required")
@@ -154,7 +156,6 @@ class OrganizationContactForm(RegistrarForm):
 
 class AuthorizingOfficialForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         contact = getattr(obj, "authorizing_official", None)
@@ -166,11 +167,10 @@ class AuthorizingOfficialForm(RegistrarForm):
             obj.authorizing_official = contact
             obj.save()
 
-    def from_database(self, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
+    @classmethod
+    def from_database(cls, obj):
         contact = getattr(obj, "authorizing_official", None)
-        if contact is not None:
-            super().from_database(contact)
+        return super().from_database(contact)
 
     first_name = forms.CharField(
         label="First name/given name",
@@ -201,7 +201,6 @@ class AuthorizingOfficialForm(RegistrarForm):
 
 class CurrentSitesForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         obj.save()
@@ -210,11 +209,13 @@ class CurrentSitesForm(RegistrarForm):
             # TODO: ability to update existing records
             obj.current_websites.create(website=normalized)
 
-    def from_database(self, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
+    @classmethod
+    def from_database(cls, obj):
         current_website = obj.current_websites.first()
         if current_website is not None:
-            self.initial["current_site"] = current_website.website
+            return {"current_site": current_website.website}
+        else:
+            return {}
 
     current_site = forms.CharField(
         required=False,
@@ -246,7 +247,6 @@ class CurrentSitesForm(RegistrarForm):
 
 class DotGovDomainForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         normalized = Domain.normalize(
@@ -270,15 +270,18 @@ class DotGovDomainForm(RegistrarForm):
             # TODO: ability to update existing records
             obj.alternative_domains.create(website=normalized)
 
-    def from_database(self, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
+    @classmethod
+    def from_database(cls, obj):
+        values = {}
         requested_domain = getattr(obj, "requested_domain", None)
         if requested_domain is not None:
-            self.initial["requested_domain"] = requested_domain.sld
+            values["requested_domain"] = requested_domain.sld
 
         alternative_domain = obj.alternative_domains.first()
         if alternative_domain is not None:
-            self.initial["alternative_domain"] = alternative_domain.sld
+            values["alternative_domain"] = alternative_domain.sld
+
+        return values
 
     requested_domain = forms.CharField(
         label="What .gov domain do you want?",
@@ -329,7 +332,6 @@ class PurposeForm(RegistrarForm):
 
 class YourContactForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         contact = getattr(obj, "submitter", None)
@@ -341,11 +343,10 @@ class YourContactForm(RegistrarForm):
             obj.submitter = contact
             obj.save()
 
-    def from_database(self, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
+    @classmethod
+    def from_database(cls, obj):
         contact = getattr(obj, "submitter", None)
-        if contact is not None:
-            super().from_database(contact)
+        return super().from_database(contact)
 
     first_name = forms.CharField(
         label="First name/given name",
@@ -376,7 +377,6 @@ class YourContactForm(RegistrarForm):
 
 class OtherContactsForm(RegistrarForm):
     def to_database(self, obj):
-        """Adds this form's cleaned data to `obj` and saves `obj`."""
         if not self.is_valid():
             return
         obj.save()
@@ -390,11 +390,10 @@ class OtherContactsForm(RegistrarForm):
             super().to_database(contact)
             obj.other_contacts.add(contact)
 
-    def from_database(self, obj):
-        """Initializes this form's fields with values gotten from `obj`."""
+    @classmethod
+    def from_database(cls, obj):
         other_contacts = obj.other_contacts.first()
-        if other_contacts is not None:
-            super().from_database(other_contacts)
+        return super().from_database(other_contacts)
 
     first_name = forms.CharField(
         label="First name/given name",
@@ -447,266 +446,3 @@ class RequirementsForm(RegistrarForm):
         ),
         required=False,  # use field validation to enforce this
     )
-
-    def clean_is_policy_acknowledged(self):
-        """This box must be checked to proceed but offer a clear error."""
-        # already converted to a boolean
-        is_acknowledged = self.cleaned_data["is_policy_acknowledged"]
-        if not is_acknowledged:
-            raise forms.ValidationError(
-                "You must read and agree to the .gov domain requirements to proceed.",
-                code="invalid",
-            )
-        return is_acknowledged
-
-
-class ReviewForm(RegistrarForm):
-    """
-    Empty class for the review page.
-
-    It gets included as part of the form, but does not have any form fields itself.
-    """
-
-    def to_database(self, _):
-        """This form has no data. Do nothing."""
-        pass
-
-    pass
-
-
-class Step:
-    """Names for each page of the application wizard."""
-
-    ORGANIZATION_TYPE = "organization_type"
-    ORGANIZATION_FEDERAL = "organization_federal"
-    ORGANIZATION_ELECTION = "organization_election"
-    ORGANIZATION_CONTACT = "organization_contact"
-    AUTHORIZING_OFFICIAL = "authorizing_official"
-    CURRENT_SITES = "current_sites"
-    DOTGOV_DOMAIN = "dotgov_domain"
-    PURPOSE = "purpose"
-    YOUR_CONTACT = "your_contact"
-    OTHER_CONTACTS = "other_contacts"
-    SECURITY_EMAIL = "security_email"
-    ANYTHING_ELSE = "anything_else"
-    REQUIREMENTS = "requirements"
-    REVIEW = "review"
-
-
-# List of forms in our wizard.
-# Each entry is a tuple of a name and a form subclass
-FORMS = [
-    (Step.ORGANIZATION_TYPE, OrganizationTypeForm),
-    (Step.ORGANIZATION_FEDERAL, OrganizationFederalForm),
-    (Step.ORGANIZATION_ELECTION, OrganizationElectionForm),
-    (Step.ORGANIZATION_CONTACT, OrganizationContactForm),
-    (Step.AUTHORIZING_OFFICIAL, AuthorizingOfficialForm),
-    (Step.CURRENT_SITES, CurrentSitesForm),
-    (Step.DOTGOV_DOMAIN, DotGovDomainForm),
-    (Step.PURPOSE, PurposeForm),
-    (Step.YOUR_CONTACT, YourContactForm),
-    (Step.OTHER_CONTACTS, OtherContactsForm),
-    (Step.SECURITY_EMAIL, SecurityEmailForm),
-    (Step.ANYTHING_ELSE, AnythingElseForm),
-    (Step.REQUIREMENTS, RequirementsForm),
-    (Step.REVIEW, ReviewForm),
-]
-
-# Dict to match up the right template with the right step.
-TEMPLATES = {
-    Step.ORGANIZATION_TYPE: "application_org_type.html",
-    Step.ORGANIZATION_FEDERAL: "application_org_federal.html",
-    Step.ORGANIZATION_ELECTION: "application_org_election.html",
-    Step.ORGANIZATION_CONTACT: "application_org_contact.html",
-    Step.AUTHORIZING_OFFICIAL: "application_authorizing_official.html",
-    Step.CURRENT_SITES: "application_current_sites.html",
-    Step.DOTGOV_DOMAIN: "application_dotgov_domain.html",
-    Step.PURPOSE: "application_purpose.html",
-    Step.YOUR_CONTACT: "application_your_contact.html",
-    Step.OTHER_CONTACTS: "application_other_contacts.html",
-    Step.SECURITY_EMAIL: "application_security_email.html",
-    Step.ANYTHING_ELSE: "application_anything_else.html",
-    Step.REQUIREMENTS: "application_requirements.html",
-    Step.REVIEW: "application_review.html",
-}
-
-# We need to pass our page titles as context to the templates
-TITLES = {
-    Step.ORGANIZATION_TYPE: "Type of organization",
-    Step.ORGANIZATION_FEDERAL: "Type of organization — Federal",
-    Step.ORGANIZATION_ELECTION: "Type of organization — Election board",
-    Step.ORGANIZATION_CONTACT: "Organization name and mailing address",
-    Step.AUTHORIZING_OFFICIAL: "Authorizing official",
-    Step.CURRENT_SITES: "Organization website",
-    Step.DOTGOV_DOMAIN: ".gov domain",
-    Step.PURPOSE: "Purpose of your domain",
-    Step.YOUR_CONTACT: "Your contact information",
-    Step.OTHER_CONTACTS: "Other contacts for your domain",
-    Step.SECURITY_EMAIL: "Security email for public use",
-    Step.ANYTHING_ELSE: "Anything else we should know?",
-    Step.REQUIREMENTS: "Requirements for registration and operation of .gov domains",
-    Step.REVIEW: "Review and submit your domain request",
-}
-
-
-# We can use a dictionary with step names and callables that return booleans
-# to show or hide particular steps based on the state of the process.
-WIZARD_CONDITIONS = {
-    "organization_federal": DomainApplication.show_organization_federal,
-    "organization_election": DomainApplication.show_organization_election,
-}
-
-
-class TrackingStorage(SessionStorage):
-
-    """Storage subclass that keeps track of what the current_step has been."""
-
-    def _set_current_step(self, step):
-        super()._set_current_step(step)
-
-        step_history = self.extra_data.setdefault("step_history", [])
-        # can't serialize a set, so keep list entries unique
-        if step not in step_history:
-            step_history.append(step)
-
-
-class ApplicationWizard(LoginRequiredMixin, NamedUrlSessionWizardView):
-
-    """Multi-page form ("wizard") for new domain applications.
-
-    This sets up a sequence of forms that gather information for new
-    domain applications. Each form in the sequence has its own URL and
-    the progress through the form is stored in the Django session (thus
-    "NamedUrlSessionWizardView").
-
-    Caution: due to the redirect performed by using NamedUrlSessionWizardView,
-    many methods, such as `process_step`, are called TWICE per request. For
-    this reason, methods in this class need to be idempotent.
-    """
-
-    form_list = FORMS
-    storage_name = "registrar.forms.application_wizard.TrackingStorage"
-
-    def get_template_names(self):
-        """Template for the current step.
-
-        The return is a singleton list.
-        """
-        return [TEMPLATES[self.steps.current]]
-
-    def _is_federal(self) -> Union[bool, None]:
-        """Return whether this application is from a federal agency.
-
-        Returns True if we know that this application is from a federal
-        agency, False if we know that it is not and None if there isn't an
-        answer yet for that question.
-        """
-        return self.get_application_object().is_federal()
-
-    def get_context_data(self, form, **kwargs):
-        """Add title information to the context for all steps."""
-        context = super().get_context_data(form=form, **kwargs)
-        context["form_titles"] = TITLES
-
-        # Add information about which steps should be unlocked
-        # TODO: sometimes the first step doesn't get added to the step history
-        # so add it here
-        context["visited"] = self.storage.extra_data.get("step_history", []) + [
-            self.steps.first
-        ]
-
-        if self.steps.current == Step.ORGANIZATION_CONTACT:
-            context["is_federal"] = self._is_federal()
-        if self.steps.current == Step.REVIEW:
-            context["step_cls"] = Step
-            application = self.get_application_object()
-            context["application"] = application
-        return context
-
-    def get_application_object(self) -> DomainApplication:
-        """
-        Attempt to match the current wizard with a DomainApplication.
-
-        Will create an application if none exists.
-        """
-        if "application_id" in self.storage.extra_data:
-            id = self.storage.extra_data["application_id"]
-            try:
-                return DomainApplication.objects.get(
-                    creator=self.request.user,
-                    pk=id,
-                )
-            except DomainApplication.DoesNotExist:
-                logger.debug("Application id %s did not have a DomainApplication" % id)
-
-        application = DomainApplication.objects.create(creator=self.request.user)
-        self.storage.extra_data["application_id"] = application.id
-        return application
-
-    def form_to_database(self, form: RegistrarForm) -> DomainApplication:
-        """
-        Unpack the form responses onto the model object properties.
-
-        Saves the application to the database.
-        """
-        application = self.get_application_object()
-
-        if form is not None and hasattr(form, "to_database"):
-            form.to_database(application)
-
-        return application
-
-    def process_step(self, form):
-        """
-        Hook called on every POST request, if the form is valid.
-
-        Do not manipulate the form data here.
-        """
-        # save progress
-        self.form_to_database(form=form)
-        return self.get_form_step_data(form)
-
-    def get_form(self, step=None, data=None, files=None):
-        """This method constructs the form for a given step."""
-        form = super().get_form(step, data, files)
-
-        # restore from database, but only if a record has already
-        # been associated with this wizard instance
-        if "application_id" in self.storage.extra_data:
-            application = self.get_application_object()
-            form.from_database(application)
-        return form
-
-    def post(self, *args, **kwargs):
-        """This method handles POST requests."""
-        step = self.steps.current
-        # always call super() first, to do important pre-processing
-        rendered = super().post(*args, **kwargs)
-        # if user opted to save their progress,
-        # return them to the page they were already on
-        button = self.request.POST.get("submit_button", None)
-        if button == "save":
-            return self.render_goto_step(step)
-        # otherwise, proceed as normal
-        return rendered
-
-    def get(self, *args, **kwargs):
-        """This method handles GET requests."""
-        current_url = resolve(self.request.path_info).url_name
-        # always call super(), it handles important redirect logic
-        rendered = super().get(*args, **kwargs)
-        # if user visited via an "edit" url, associate the id of the
-        # application they are trying to edit to this wizard instance
-        if current_url == "edit-application" and "id" in kwargs:
-            self.storage.extra_data["application_id"] = kwargs["id"]
-        return rendered
-
-    def done(self, form_list, form_dict, **kwargs):
-        """Called when the data for every form is submitted and validated."""
-        application = self.get_application_object()
-        application.submit()  # change the status to submitted
-        application.save()
-        logger.debug("Application object saved: %s", application.id)
-        return render(
-            self.request, "application_done.html", {"application_id": application.id}
-        )

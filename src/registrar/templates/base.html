@@ -129,7 +129,7 @@
         {% block logo %}
         <div class="usa-logo" id="extended-logo">
           <em class="usa-logo__text">
-            <a href="/" title="Home" aria-label="Home">
+            <a href="{% url 'home' %}" title="Home" aria-label="Home">
               {% block site_name %}Home{% endblock %}
             </a>
           </em>
@@ -145,14 +145,14 @@
         <ul class="usa-nav__primary usa-accordion">
           <li class="usa-nav__primary-item">
             {% if user.is_authenticated %}
-            <a href="/whoami"><span>{{ user.email }}</span></a>
+            <a href="{% url 'whoami' %}"><span>{{ user.email }}</span></a>
           </li>
           <li class="usa-nav__primary-item display-flex flex-align-center">
             <span class="text-base"> | </span>
-            <a href="/openid/logout"><span class="text-primary">Sign out</span></a>
+            <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
           </li>
             {% else %}
-            <a href="/openid/login"><span>Sign in</span></a>
+            <a href="{% url 'login' %}"><span>Sign in</span></a>
             {% endif %}
           </li>
         </ul>

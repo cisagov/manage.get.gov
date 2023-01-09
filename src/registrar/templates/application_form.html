@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
-{% load static widget_tweaks %} 
+{% load static widget_tweaks namespaced_urls %}
 
-{% block title %}Apply for a .gov domain – {{form_titles|get_item:wizard.steps.current}}{% endblock %}
+{% block title %}Apply for a .gov domain – {{form_titles|get_item:steps.current}}{% endblock %}
 {% block content %}
 <div class="grid-container">
   <div class="grid-row grid-gap">
@@ -10,8 +10,8 @@
     </div>
     <div class="grid-col-9">
       <main id="main-content" class="grid-container register-form-step">
-        {% if wizard.steps.prev %}
-        <a href="{% url wizard.url_name step=wizard.steps.prev %}" class="breadcrumb__back">
+        {% if steps.prev %}
+        <a href="{% namespaced_url 'application' steps.prev %}" class="breadcrumb__back">
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
             <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
           </svg><span class="margin-left-05">Previous step </span>
@@ -37,12 +37,11 @@
           {% endfor %}
         {% endif %}
 
-        <h1> {{form_titles|get_item:wizard.steps.current}} </h1>
-
+        <h1> {{form_titles|get_item:steps.current}} </h1>
         {% block form_content %}
 
         <div class="stepnav">
-          {% if wizard.steps.next %}
+          {% if steps.next %}
           <button
             type="submit"
             name="submit_button"

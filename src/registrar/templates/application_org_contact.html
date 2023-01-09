@@ -16,30 +16,29 @@
   {% include "includes/required_fields.html" %}
 </div>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  {{ wizard.management_form }}
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
     <legend class="usa-sr-only">What is the name and mailing address of your organization?</legend>
 
     {% if is_federal %}
-        {% select_with_errors wizard.form.federal_agency required=True %}
+        {% select_with_errors forms.0.federal_agency required=True %}
     {% endif %}
 
-    {% input_with_errors wizard.form.organization_name %}
+    {% input_with_errors forms.0.organization_name %}
 
-    {% input_with_errors wizard.form.address_line1 %}
+    {% input_with_errors forms.0.address_line1 %}
 
-    {% input_with_errors wizard.form.address_line2 %}
+    {% input_with_errors forms.0.address_line2 %}
 
-    {% input_with_errors wizard.form.city %}
+    {% input_with_errors forms.0.city %}
 
-    {% select_with_errors wizard.form.state_territory %}
+    {% select_with_errors forms.0.state_territory %}
 
-    {% input_with_errors wizard.form.zipcode add_class="usa-input--small" %}
+    {% input_with_errors forms.0.zipcode add_class="usa-input--small" %}
 
-    {% input_with_errors wizard.form.urbanization %}
+    {% input_with_errors forms.0.urbanization %}
 
   </fieldset>
 

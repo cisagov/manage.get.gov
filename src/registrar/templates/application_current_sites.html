@@ -5,11 +5,10 @@
 
 {% block form_content %}
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post">
-  {{ wizard.management_form }}
+<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post">
   {% csrf_token %}
 
-  {% input_with_errors wizard.form.current_site %}
+  {% input_with_errors forms.0.form.current_site %}
 
   {{ block.super }}
 

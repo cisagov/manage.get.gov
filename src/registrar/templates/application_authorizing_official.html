@@ -9,7 +9,7 @@
 <h2>Who is the authorizing official for your organization?</h2>
 
 <div id="instructions">
-  <p>Your authorizing official is the person within your organization who can authorize your domain request. This is generally the highest ranking or highest elected official in your organization. Read more about <a href="#">who can serve as an authorizing official</a>.
+  <p>Your authorizing official is the person within your organization who can authorize your domain request. This is generally the highest ranking or highest elected official in your organization. Read more about <a href="{% url 'todo' %}">who can serve as an authorizing official</a>.
   </p>
 
   <div class="ao-example">
@@ -21,8 +21,7 @@
 
 {% include "includes/required_fields.html" %}
 
-<form class="usa-form usa-form--large" id="step__{{wizard.steps.current}}" method="post" novalidate>
-  {{ wizard.management_form }}
+<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post" novalidate>
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
@@ -30,17 +29,17 @@
       Who is the authorizing official for your organization?
     </legend>
 
-    {% input_with_errors wizard.form.first_name %}
+    {% input_with_errors forms.0.first_name %}
 
-    {% input_with_errors wizard.form.middle_name %}
+    {% input_with_errors forms.0.middle_name %}
 
-    {% input_with_errors wizard.form.last_name %}
+    {% input_with_errors forms.0.last_name %}
 
-    {% input_with_errors wizard.form.title %}
+    {% input_with_errors forms.0.title %}
 
-    {% input_with_errors wizard.form.email %}
+    {% input_with_errors forms.0.email %}
 
-    {% input_with_errors wizard.form.phone add_class="usa-input--medium" %}
+    {% input_with_errors forms.0.phone add_class="usa-input--medium" %}
   </fieldset>
 
 

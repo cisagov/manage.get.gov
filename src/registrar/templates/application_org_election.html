@@ -5,15 +5,14 @@
 
 {% block form_content %}
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  {{ wizard.management_form }}
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {% csrf_token %}
   <fieldset id="election_board__fieldset" class="usa-fieldset">
     <legend>
       <h2 class="margin-bottom-05">Is your organization an election office?</h2>
       <p> This question is required.</p>
     </legend>
-    {% radio_buttons_by_value wizard.form.is_election_board as choices %}
+    {% radio_buttons_by_value forms.0.is_election_board as choices %}
     {% for choice in choices.values %}
       {% include "includes/radio_button.html" with choice=choice tile="true" required="true"%}
     {% endfor %}

@@ -10,13 +10,12 @@
 
 <p> This question is required. </p>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   <div class="usa-form-group">
-    {{ wizard.management_form }}
     {% csrf_token %}
 
     <div class="usa-character-count">
-      {% with field=wizard.form.purpose %}
+      {% with field=forms.0.purpose %}
       {% if field.errors %}
         <div class="usa-form-group usa-form-group--error">
           {{ field|add_label_class:"usa-label usa-label--error usa-sr-only" }}

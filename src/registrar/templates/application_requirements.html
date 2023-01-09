@@ -129,27 +129,26 @@
 
 <p>This question is required.</p>
 
-<form id="step__{{wizard.steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   <div class="usa-form-group">
-    {{ wizard.management_form }}
     {% csrf_token %}
 
-    {% if wizard.form.is_policy_acknowledged.errors %}
+    {% if forms.0.is_policy_acknowledged.errors %}
       <div class="usa-form-group usa-form-group--error">
-        {% for error in wizard.form.is_policy_acknowledged.errors %}
+        {% for error in forms.0.is_policy_acknowledged.errors %}
           <span class="usa-error-message margin-bottom-1" id="input-error-message" role="alert">
             {{ error }}
           </span>
         {% endfor %}
         <div class="usa-checkbox"> 
-          {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"|add_class:"usa-input--error"|attr:"aria-invalid:true"|attr:"required" }}
-          {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label usa-label--error" }}
+          {{ forms.0.is_policy_acknowledged|add_class:"usa-checkbox__input"|add_class:"usa-input--error"|attr:"aria-invalid:true"|attr:"required" }}
+          {{ forms.0.is_policy_acknowledged|add_label_class:"usa-checkbox__label usa-label--error" }}
         </div>
       </div>
     {% else %}
       <div class="usa-checkbox"> 
-        {{ wizard.form.is_policy_acknowledged|add_class:"usa-checkbox__input"|attr:"required"}}
-        {{ wizard.form.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
+        {{ forms.0.is_policy_acknowledged|add_class:"usa-checkbox__input"|attr:"required"}}
+        {{ forms.0.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
       </div>
     {% endif %}
   </div>
