@@ -6,6 +6,12 @@ register = template.Library()
 
 
 def _field_context(field, input_class, add_class, required=False):
+    """Helper to construct template context.
+
+    input_class is the CSS class to use on the input element, add_class
+    will be added to that if given, and required will be set if
+    it is provided and not False.
+    """
     if add_class:
         input_class += " " + add_class
     context = {"field": field, "input_class": input_class}
