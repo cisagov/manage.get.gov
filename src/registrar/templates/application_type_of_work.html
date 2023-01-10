@@ -1,0 +1,57 @@
+<!-- Test page -->
+{% extends 'application_form.html' %}
+{% load widget_tweaks %}
+
+{% block form_content %}
+
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
+  <div class="usa-form-group">
+    {% csrf_token %}
+
+    <div class="usa-character-count">
+      {% with field=forms.0.type_of_work %}
+      {% if field.errors %}
+        <div class="usa-form-group usa-form-group--error">
+          {{ field|add_label_class:"usa-label usa-label--error" }}
+          {% for error in field.errors %}
+            <span class="usa-error-message" id="input-error-message" role="alert">
+              {{ error }}
+            </span>
+          {% endfor %}
+          {{ field|add_class:"usa-input--error usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500"|attr:"aria-invalid:true" }}
+        </div>
+      {% else %}
+        {{ field|add_label_class:"usa-label" }}
+        {{ field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
+      {% endif %}
+      {% endwith %}
+      <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
+    </div>
+  </div>
+
+  <div class="usa-form-group">
+    <div class="usa-character-count">
+      {% with field=forms.0.more_organization_information %}
+      {% if field.errors %}
+        <div class="usa-form-group usa-form-group--error">
+          {{ field|add_label_class:"usa-label usa-label--error" }}
+          {% for error in field.errors %}
+            <span class="usa-error-message" id="input-error-message" role="alert">
+              {{ error }}
+            </span>
+          {% endfor %}
+          {{ field|add_class:"usa-input--error usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500"|attr:"aria-invalid:true" }}
+        </div>
+      {% else %}
+        {{ field|add_label_class:"usa-label" }}
+        {{ field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
+      {% endif %}
+      {% endwith %}
+      <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
+    </div>
+  </div>
+  {{ block.super }}
+
+</form>
+
+{% endblock %}

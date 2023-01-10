@@ -151,13 +151,24 @@ class OrganizationContactForm(RegistrarForm):
                 raise forms.ValidationError(
                     "Please select your federal agency.", code="required"
                 )
-        if self.application.is_federal:
+        if self.application.is_federal():
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
                     "Please select your federal agency.", code="required"
                 )
         return federal_agency
+
+
+class TypeOfWorkForm(RegistrarForm):
+    type_of_work = forms.CharField(
+        label="What type of work does your organization do?", widget=forms.Textarea()
+    )
+
+    more_organization_information = forms.CharField(
+        label="Describe how your organization is a government organization that is independent of a state government. Include links to authorizing legislation, applicable bylaws or charter, or other documentation to support your claims.",
+        widget=forms.Textarea(),
+    )
 
 
 class AuthorizingOfficialForm(RegistrarForm):

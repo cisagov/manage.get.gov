@@ -30,6 +30,10 @@
               Incomplete
             {% endif %}
           {% endif %}
+          {% if step == Step.TYPE_OF_WORK %}
+            <p>{{ application.type_of_work|default:"Incomplete" }}</p>
+            <p>{{ application.more_organization_information|default:"Incomplete" }}</p>
+          {% endif %}
           {% if step == Step.AUTHORIZING_OFFICIAL %}
             {% if application.authorizing_official %}
               {% include "includes/contact.html" with contact=application.authorizing_official %}
