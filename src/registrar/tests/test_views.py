@@ -670,7 +670,9 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.form
-        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.INTERSTATE
+        type_form[
+            "organization_type-organization_type"
+        ] = DomainApplication.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
 
@@ -696,7 +698,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(contact_result.status_code, 302)
         self.assertEquals(contact_result["Location"], "/register/type_of_work/")
 
-
     def test_application_type_of_work_special(self):
         """Special districts have to answer an additional question."""
         type_page = self.app.get(reverse("application:")).follow()
@@ -707,14 +708,16 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.form
-        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.SPECIAL_DISTRICT
+        type_form[
+            "organization_type-organization_type"
+        ] = DomainApplication.OrganizationChoices.SPECIAL_DISTRICT
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
         # follow first redirect
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = type_result.follow()
 
-        self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK]) 
+        self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
 
     def test_application_type_of_work_interstate(self):
         """Special districts have to answer an additional question."""
@@ -726,15 +729,16 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.form
-        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.INTERSTATE
+        type_form[
+            "organization_type-organization_type"
+        ] = DomainApplication.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
         # follow first redirect
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = type_result.follow()
 
-        self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK]) 
-
+        self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
 
     @skip("WIP")
     def test_application_edit_restore(self):

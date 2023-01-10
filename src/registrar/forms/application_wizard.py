@@ -166,7 +166,9 @@ class TypeOfWorkForm(RegistrarForm):
     )
 
     more_organization_information = forms.CharField(
-        label="Describe how your organization is a government organization that is independent of a state government. Include links to authorizing legislation, applicable bylaws or charter, or other documentation to support your claims.",
+        label="Describe how your organization is a government organization that is "
+        "independent of a state government. Include links to authorizing legislation, "
+        "applicable bylaws or charter, or other documentation to support your claims.",
         widget=forms.Textarea(),
     )
 
