@@ -1,6 +1,6 @@
 <!-- Test page -->
 {% extends 'application_form.html' %}
-{% load widget_tweaks %}
+{% load widget_tweaks field_helpers %}
 
 {% block form_content %}
 
@@ -13,39 +13,37 @@
 
   <p>If your domain request is approved, the name of your organization will be publicly listed as the domain registrant. </p>
 
-  <p>All fields are required unless they are marked optional.</p>
+  {% include "includes/required_fields.html" %}
 </div>
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
     <legend class="usa-sr-only">What is the name and mailing address of your organization?</legend>
 
     {% if is_federal %}
-        {{ forms.0.federal_agency|add_label_class:"usa-label" }}
-        {{ forms.0.federal_agency|add_class:"usa-select" }}
+        {% select_with_errors forms.0.federal_agency required=True %}
     {% endif %}
 
-    {{ forms.0.organization_name|add_label_class:"usa-label" }}
-    {{ forms.0.organization_name|add_class:"usa-input" }}
-    {{ forms.0.address_line1|add_label_class:"usa-label" }}
-    {{ forms.0.address_line1|add_class:"usa-input" }}
-    {{ forms.0.address_line2|add_label_class:"usa-label" }}
-    {{ forms.0.address_line2|add_class:"usa-input" }}
-    {{ forms.0.city|add_label_class:"usa-label" }}
-    {{ forms.0.city|add_class:"usa-input" }}
-    {{ forms.0.state_territory|add_label_class:"usa-label" }}
-    {{ forms.0.state_territory|add_class:"usa-select" }}
-    {{ forms.0.zipcode|add_label_class:"usa-label" }}
-    {{ forms.0.zipcode|add_class:"usa-input usa-input--small" }}
-    {{ forms.0.urbanization|add_label_class:"usa-label" }}
-    {{ forms.0.urbanization|add_class:"usa-input usa-input--small" }}
+    {% input_with_errors forms.0.organization_name %}
+
+    {% input_with_errors forms.0.address_line1 %}
+
+    {% input_with_errors forms.0.address_line2 %}
+
+    {% input_with_errors forms.0.city %}
+
+    {% select_with_errors forms.0.state_territory %}
+
+    {% input_with_errors forms.0.zipcode add_class="usa-input--small" %}
+
+    {% input_with_errors forms.0.urbanization %}
 
   </fieldset>
 
   {{ block.super }}
-  
+
 </form>
 
 {% endblock %}

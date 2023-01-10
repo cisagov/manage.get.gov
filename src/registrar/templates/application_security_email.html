@@ -7,13 +7,24 @@
 
 <p id="instructions"> We strongly recommend that you provide a security email. This email will allow the public to report observed or suspected security issues on your domain. <strong> Security emails are made public.</strong> We recommend using an alias, like security@&lt;domain.gov&gt;.</p>
 
-<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post">
+<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post" novalidate>
   {% csrf_token %}
 
-    {{ forms.0.security_email|add_label_class:"usa-label" }}
-    {{ forms.0.security_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
-
-  {{ block.super }}
+    {% if forms.0.security_email.errors %}
+      <div class="usa-form-group usa-form-group--error">
+        {{ forms.0.security_email|add_label_class:"usa-label usa-label--error" }}
+        {% for error in forms.0.security_email.errors %}
+          <span class="usa-error-message" id="input-error-message" role="alert">
+            {{ error }}
+          </span>
+        {% endfor %}
+        {{ forms.0.security_email|add_class:"usa-input"|add_class:"usa-input--error"|attr:"aria-describedby:instructions"|attr:"aria-invalid:true" }}
+      </div>
+    {% else %}
+      {{ forms.0.security_email|add_label_class:"usa-label" }}
+      {{ forms.0.security_email|add_class:"usa-input"|attr:"aria-describedby:instructions" }}
+    {% endif %}
+    {{ block.super }}
 
 </form>
 

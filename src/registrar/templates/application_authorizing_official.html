@@ -2,6 +2,7 @@
 {% extends 'application_form.html' %}
 {% load widget_tweaks %}
 {% load static %}
+{% load field_helpers %}
 
 {% block form_content %}
 
@@ -18,32 +19,27 @@
   <p>We’ll contact your authorizing official to let them know that you made this request and to double check that they approve it.</p> 
 </div>
 
-<p>All fields are required unless they are marked optional.</p>
+{% include "includes/required_fields.html" %}
 
-<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post">
+<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post" novalidate>
   {% csrf_token %}
 
   <fieldset class="usa-fieldset">
     <legend class="usa-sr-only">
       Who is the authorizing official for your organization?
     </legend>
-    {{ forms.0.first_name|add_label_class:"usa-label" }}
-    {{ forms.0.first_name|add_class:"usa-input"}}
 
-    {{ forms.0.middle_name|add_label_class:"usa-label" }}
-    {{ forms.0.middle_name|add_class:"usa-input"}}
+    {% input_with_errors forms.0.first_name %}
 
-    {{ forms.0.last_name|add_label_class:"usa-label" }}
-    {{ forms.0.last_name|add_class:"usa-input"}}
-    
-    {{ forms.0.title|add_label_class:"usa-label" }}
-    {{ forms.0.title|add_class:"usa-input"}}
+    {% input_with_errors forms.0.middle_name %}
 
-    {{ forms.0.email|add_label_class:"usa-label" }}
-    {{ forms.0.email|add_class:"usa-input"}}
+    {% input_with_errors forms.0.last_name %}
 
-    {{ forms.0.phone|add_label_class:"usa-label" }}
-    {{ forms.0.phone|add_class:"usa-input usa-input--medium" }}
+    {% input_with_errors forms.0.title %}
+
+    {% input_with_errors forms.0.email %}
+
+    {% input_with_errors forms.0.phone add_class="usa-input--medium" %}
   </fieldset>
 
 

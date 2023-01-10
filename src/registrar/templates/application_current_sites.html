@@ -1,6 +1,6 @@
 <!-- Test page -->
 {% extends 'application_form.html' %}
-{% load widget_tweaks %}
+{% load widget_tweaks field_helpers %}
 {% load static %}
 
 {% block form_content %}
@@ -8,8 +8,7 @@
 <form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post">
   {% csrf_token %}
 
-  {{ forms.0.current_site|add_label_class:"usa-label" }}
-  {{ forms.0.current_site|add_class:"usa-input" }}
+  {% input_with_errors forms.0.current_site %}
 
   {{ block.super }}
 

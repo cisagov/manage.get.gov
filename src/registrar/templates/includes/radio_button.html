@@ -5,7 +5,7 @@
     value="{{ choice.data.value }}"
     class="usa-radio__input {% if tile %}usa-radio__input--tile {%endif%}"
     id="{{ choice.id_for_label }}"
-    {% if choice.data.attrs.required %}required{% endif %}
+    {% if choice.data.attrs.required or required %}required{% endif %}
     {% if choice.data.selected %}checked{% endif %}
     />
     <label class="usa-radio__label" for="{{ choice.id_for_label }}" >

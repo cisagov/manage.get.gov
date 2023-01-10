@@ -230,6 +230,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
+            "application": self.application,  # this is a property, not an object
         }
 
         if step is None:

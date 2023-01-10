@@ -21,28 +21,60 @@
     {% include "includes/domain_example__city.html" %}
   </div>
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   <h2> What .gov domain do you want? </h2>
   <p class="domain_instructions"> After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. If your domain passes these initial checks, we’ll verify that it meets all of our requirements once you complete and submit the rest of this form. </p>
 
+  <p> This question is required. </p>
   {% csrf_token %}
-  {{ forms.0.requested_domain|add_label_class:"usa-label" }}
-  <div class="display-flex flex-align-center">
-    <span class="padding-top-05 padding-right-2px">www.</span>
-    {{ forms.0.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
-    <span class="padding-top-05 padding-left-2px">.gov </span>
-  </div>
+
+  {% if forms.0.requested_domain.errors %}
+    <div class="usa-form-group usa-form-group--error">
+      {% for error in forms.0.requested_domain.errors %}
+        <span class="usa-error-message" id="input-error-message" role="alert">
+          {{ error }}
+        </span>
+      {% endfor %}
+      <div class="display-flex flex-align-center">
+        <span class="padding-top-05 padding-right-2px">www.</span>
+        {{ forms.0.requested_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
+        <span class="padding-top-05 padding-left-2px">.gov </span>
+      </div>
+    </div>
+  {% else %}
+    <div class="display-flex flex-align-center">
+      <span class="padding-top-05 padding-right-2px">www.</span>
+        {{ forms.0.requested_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
+      <span class="padding-top-05 padding-left-2px">.gov </span>
+    </div>
+  {% endif %}
   <button type="button" class="usa-button">Check availability </button>
 
   <h2>Alternative domains</h2>
 
   <div>
+  {% if forms.0.alternative_domain.errors %}
+    <div class="usa-form-group usa-form-group--error">
+      {{ forms.0.alternative_domain|add_label_class:"usa-label usa-label--error" }}
+      {% for error in forms.0.alternative_domain.errors %}
+        <span class="usa-error-message" id="input-error-message" role="alert">
+          {{ error }}
+        </span>
+      {% endfor %}
+      <div class="display-flex flex-align-center">
+        <span class="padding-top-05 padding-right-2px">www.</span>
+        { forms.0.alternative_domain|add_class:"usa-input usa-input--error"|attr:"aria-describedby:domain_instructions"|attr:"aria-invalid:true" }}
+        <span class="padding-top-05 padding-left-2px">.gov </span>
+      </div>
+    </div>
+  {% else %}
     {{ forms.0.alternative_domain|add_label_class:"usa-label" }}
     <div class="display-flex flex-align-center">
       <span class="padding-top-05 padding-right-2px">www.</span>
-      {{ forms.0.alternative_domain|add_class:"usa-input" }}
+        {{ forms.0.alternative_domain|add_class:"usa-input"|attr:"aria-describedby:domain_instructions" }}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
+  {% endif %}
 
     <button type="button" class="usa-button usa-button--unstyled">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
@@ -54,7 +86,7 @@
   <p>If you’re not sure this is the domain you want, that’s okay. You can change it later.</p> 
 
   {{ block.super }}
-  
+
 </form>
 
 {% endblock %}

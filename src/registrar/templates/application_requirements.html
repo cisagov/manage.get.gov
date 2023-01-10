@@ -127,14 +127,30 @@
 
 <h2>Acknowledgement of .gov domain requirements</h2>
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
+<p>This question is required.</p>
+
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   <div class="usa-form-group">
     {% csrf_token %}
 
-    <div class="usa-checkbox"> 
-      {{ forms.0.is_policy_acknowledged|add_class:"usa-checkbox__input"}}
-      {{ forms.0.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
-    </div>
+    {% if forms.0.is_policy_acknowledged.errors %}
+      <div class="usa-form-group usa-form-group--error">
+        {% for error in forms.0.is_policy_acknowledged.errors %}
+          <span class="usa-error-message margin-bottom-1" id="input-error-message" role="alert">
+            {{ error }}
+          </span>
+        {% endfor %}
+        <div class="usa-checkbox"> 
+          {{ forms.0.is_policy_acknowledged|add_class:"usa-checkbox__input"|add_class:"usa-input--error"|attr:"aria-invalid:true"|attr:"required" }}
+          {{ forms.0.is_policy_acknowledged|add_label_class:"usa-checkbox__label usa-label--error" }}
+        </div>
+      </div>
+    {% else %}
+      <div class="usa-checkbox"> 
+        {{ forms.0.is_policy_acknowledged|add_class:"usa-checkbox__input"|attr:"required"}}
+        {{ forms.0.is_policy_acknowledged|add_label_class:"usa-checkbox__label" }}
+      </div>
+    {% endif %}
   </div>
 
   {{ block.super }}

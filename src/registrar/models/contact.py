@@ -1,5 +1,7 @@
 from django.db import models
 
+from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
+
 
 class Contact(models.Model):
 
@@ -33,7 +35,7 @@ class Contact(models.Model):
         help_text="Email",
         db_index=True,
     )
-    phone = models.TextField(
+    phone = PhoneNumberField(
         null=True,
         blank=True,
         help_text="Phone",

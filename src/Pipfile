@@ -21,6 +21,7 @@ django-widget-tweaks = "*"
 cachetools = "*"
 requests = "*"
 django-fsm = "*"
+django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 
 [dev-packages]
 django-debug-toolbar = "*"

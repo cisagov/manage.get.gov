@@ -5,14 +5,15 @@
 
 {% block form_content %}
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post">
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {% csrf_token %}
 
   {% radio_buttons_by_value forms.0.organization_type as choices %}
 
   <fieldset id="organization_type__fieldset" class="usa-fieldset">
     <legend class="usa-legend">
-      <h2> What kind of U.S.-based government organization do you represent?</h2>
+      <h2> What kind of U.S.-based government organization do you represent?  </h2>
+      <p>This question is required.</p>
     </legend>
     {{ forms.0.organization_type.errors }}
     {% for choice in choices.values %}
@@ -20,7 +21,7 @@
     {% endfor %}
   </fieldset>
 
-  {{ block.super }}  
+  {{ block.super }}
 
 </form>
 {% endblock %}
