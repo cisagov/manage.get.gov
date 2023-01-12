@@ -1,6 +1,5 @@
 import logging
 import random
-import string
 from faker import Faker
 
 from registrar.models import (
@@ -81,28 +80,29 @@ class DomainApplicationFixture:
             "status": "started",
             "organization_name": "Example - Finished but not Submitted",
         },
-        {
-            "status": "started",
-            "organization_name": "Example - Just started",
-            "organization_type": "federal",
-            "federal_agency": None,
-            "federal_type": None,
-            "address_line1": None,
-            "address_line2": None,
-            "city": None,
-            "state_territory": None,
-            "zipcode": None,
-            "urbanization": None,
-            "purpose": None,
-            "security_email": None,
-            "anything_else": None,
-            "is_policy_acknowledged": None,
-            "authorizing_official": None,
-            "submitter": None,
-            "other_contacts": [],
-            "current_websites": [],
-            "alternative_domains": [],
-        },
+        # an example of a more manual application
+        # {
+        #     "status": "started",
+        #     "organization_name": "Example - Just started",
+        #     "organization_type": "federal",
+        #     "federal_agency": None,
+        #     "federal_type": None,
+        #     "address_line1": None,
+        #     "address_line2": None,
+        #     "city": None,
+        #     "state_territory": None,
+        #     "zipcode": None,
+        #     "urbanization": None,
+        #     "purpose": None,
+        #     "security_email": None,
+        #     "anything_else": None,
+        #     "is_policy_acknowledged": None,
+        #     "authorizing_official": None,
+        #     "submitter": None,
+        #     "other_contacts": [],
+        #     "current_websites": [],
+        #     "alternative_domains": [],
+        # },
         {
             "status": "submitted",
             "organization_name": "Example - Submitted but pending Investigation",
@@ -121,12 +121,12 @@ class DomainApplicationFixture:
             "last_name": fake.last_name(),
             "title": fake.job(),
             "email": fake.ascii_safe_email(),
-            "phone": fake.phone_number(),
+            "phone": "201-555-5555",
         }
 
     @classmethod
     def fake_dot_gov(cls):
-        return "".join(random.choices(string.ascii_lowercase, k=16)) + ".gov"  # nosec
+        return f"{fake.slug()}.gov"
 
     @classmethod
     def _set_non_foreign_key_fields(cls, da: DomainApplication, app: dict):
@@ -199,7 +199,7 @@ class DomainApplicationFixture:
         if "other_contacts" in app:
             for contact in app["other_contacts"]:
                 da.other_contacts.add(Contact.objects.get_or_create(**contact)[0])
-        else:
+        elif not da.other_contacts.exists():
             other_contacts = [
                 Contact.objects.create(**cls.fake_contact())
                 for _ in range(random.randint(0, 3))  # nosec
@@ -211,7 +211,7 @@ class DomainApplicationFixture:
                 da.current_websites.add(
                     Website.objects.get_or_create(website=website)[0]
                 )
-        else:
+        elif not da.current_websites.exists():
             current_websites = [
                 Website.objects.create(website=fake.uri())
                 for _ in range(random.randint(0, 3))  # nosec
@@ -223,7 +223,7 @@ class DomainApplicationFixture:
                 da.alternative_domains.add(
                     Website.objects.get_or_create(website=domain)[0]
                 )
-        else:
+        elif not da.alternative_domains.exists():
             alternative_domains = [
                 Website.objects.create(website=cls.fake_dot_gov())
                 for _ in range(random.randint(0, 3))  # nosec

@@ -155,8 +155,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
 
     @storage.deleter
     def storage(self):
-        del self.request.session[self.prefix]
-        self.request.session.modified = True
+        if self.prefix in self.request.session:
+            del self.request.session[self.prefix]
+            self.request.session.modified = True
 
     def done(self):
         """Called when the user clicks the submit button, if all forms are valid."""
@@ -193,7 +194,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
 
         # if user visited via an "edit" url, associate the id of the
         # application they are trying to edit to this wizard instance
+        # and remove any prior wizard data from their session
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
+            del self.storage
             self.storage["application_id"] = kwargs["id"]
 
         # if accessing this class directly, redirect to the first step
@@ -380,7 +383,7 @@ class CurrentSites(ApplicationWizard):
 
 class DotgovDomain(ApplicationWizard):
     template_name = "application_dotgov_domain.html"
-    forms = [forms.DotGovDomainForm]
+    forms = [forms.DotGovDomainForm, forms.AlternativeDomainFormSet]
 
 
 class Purpose(ApplicationWizard):
@@ -395,7 +398,7 @@ class YourContact(ApplicationWizard):
 
 class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
-    forms = [forms.OtherContactsForm]
+    forms = [forms.OtherContactsFormSet]
 
 
 class SecurityEmail(ApplicationWizard):

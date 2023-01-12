@@ -1,4 +1,3 @@
-<!-- Test page -->
 {% extends 'application_form.html' %}
 {% load widget_tweaks static%}
 
@@ -75,8 +74,19 @@
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
   {% endif %}
+    {{ forms.1.management_form }}
+    <p class="alt_domain_instructions">Are there other domains you’d like if we can’t give you your first choice? Entering alternative domains is optional.</p>
 
-    <button type="button" class="usa-button usa-button--unstyled">
+  {% for form in forms.1 %}
+    {{ form.alternative_domain|add_label_class:"usa-label" }}
+    <div class="display-flex flex-align-center">
+      <span class="padding-top-05 padding-right-2px">www.</span>
+      {{ form.alternative_domain|add_class:"usa-input"|attr:"aria-describedby:alt_domain_instructions" }}
+      <span class="padding-top-05 padding-left-2px">.gov </span>
+    </div>
+  {% endfor %}
+
+    <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another alternative</span>

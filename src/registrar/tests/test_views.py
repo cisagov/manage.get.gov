@@ -283,7 +283,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         dotgov_page = current_sites_result.follow()
         dotgov_form = dotgov_page.form
         dotgov_form["dotgov_domain-requested_domain"] = "city"
-        dotgov_form["dotgov_domain-alternative_domain"] = "city1"
+        dotgov_form["dotgov_domain-0-alternative_domain"] = "city1"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -367,11 +367,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_page = your_contact_result.follow()
         other_contacts_form = other_contacts_page.form
 
-        other_contacts_form["other_contacts-first_name"] = "Testy2"
-        other_contacts_form["other_contacts-last_name"] = "Tester2"
-        other_contacts_form["other_contacts-title"] = "Another Tester"
-        other_contacts_form["other_contacts-email"] = "testy2@town.com"
-        other_contacts_form["other_contacts-phone"] = "(201) 555 5557"
+        other_contacts_form["other_contacts-0-first_name"] = "Testy2"
+        other_contacts_form["other_contacts-0-last_name"] = "Tester2"
+        other_contacts_form["other_contacts-0-title"] = "Another Tester"
+        other_contacts_form["other_contacts-0-email"] = "testy2@town.com"
+        other_contacts_form["other_contacts-0-phone"] = "(201) 555 5557"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)

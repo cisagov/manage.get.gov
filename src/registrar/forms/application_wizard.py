@@ -1,11 +1,11 @@
 from __future__ import annotations  # allows forward references in annotations
+from itertools import zip_longest
 import logging
+from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
 from django.core.validators import RegexValidator
 from django.utils.safestring import mark_safe
-
-from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from registrar.models import Contact, DomainApplication, Domain
 
@@ -55,6 +55,19 @@ class RegistrarForm(forms.Form):
         return {
             name: getattr(obj, name) for name in cls.declared_fields.keys()
         }  # type: ignore
+
+
+class RegistrarFormSet(forms.BaseFormSet):
+    """
+    As with RegistrarForm, a common set of methods and configuration.
+
+    Subclass this class to create new formsets.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # save a reference to an application object
+        self.application = kwargs.pop("application", None)
+        super(RegistrarFormSet, self).__init__(*args, **kwargs)
 
 
 class OrganizationTypeForm(RegistrarForm):
@@ -335,6 +348,69 @@ class CurrentSitesForm(RegistrarForm):
             )
 
 
+class AlternativeDomainForm(RegistrarForm):
+    alternative_domain = forms.CharField(
+        required=False,
+        label="Alternative domain",
+    )
+
+
+class BaseAlternativeDomainFormSet(RegistrarFormSet):
+    def to_database(self, obj: DomainApplication):
+        if not self.is_valid():
+            return
+
+        obj.save()
+        query = obj.alternative_domains.order_by("created_at").all()  # order matters
+
+        # the use of `zip` pairs the forms in the formset with the
+        # related objects gotten from the database -- there should always be
+        # at least as many forms as database entries: extra forms means new
+        # entries, but fewer forms is _not_ the correct way to delete items
+        # (likely a client-side error or an attempt at data tampering)
+
+        for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
+
+            cleaned = post_data.cleaned_data if post_data is not None else {}
+            domain = cleaned.get("alternative_domain", None)
+
+            # matching database object exists, update it
+            if db_obj is not None and isinstance(domain, str):
+                entry_was_erased = domain.strip() == ""
+                if entry_was_erased:
+                    db_obj.delete()
+                    continue
+                try:
+                    normalized = Domain.normalize(domain, "gov", blank=True)
+                except ValueError as e:
+                    logger.debug(e)
+                    continue
+                db_obj.website = normalized
+                db_obj.save()
+
+            # no matching database object, create it
+            elif db_obj is None and domain is not None:
+                try:
+                    normalized = Domain.normalize(domain, "gov", blank=True)
+                except ValueError as e:
+                    logger.debug(e)
+                    continue
+                obj.alternative_domains.create(website=normalized)
+
+    @classmethod
+    def from_database(cls, obj):
+        query = obj.alternative_domains.order_by("created_at").all()  # order matters
+        return [{"alternative_domain": domain.sld} for domain in query]
+
+
+AlternativeDomainFormSet = forms.formset_factory(
+    AlternativeDomainForm,
+    extra=1,
+    absolute_max=1500,
+    formset=BaseAlternativeDomainFormSet,
+)
+
+
 class DotGovDomainForm(RegistrarForm):
     def to_database(self, obj):
         if not self.is_valid():
@@ -353,12 +429,6 @@ class DotGovDomainForm(RegistrarForm):
                 obj.save()
 
         obj.save()
-        normalized = Domain.normalize(
-            self.cleaned_data["alternative_domain"], "gov", blank=True
-        )
-        if normalized:
-            # TODO: ability to update existing records
-            obj.alternative_domains.create(website=normalized)
 
     @classmethod
     def from_database(cls, obj):
@@ -366,23 +436,9 @@ class DotGovDomainForm(RegistrarForm):
         requested_domain = getattr(obj, "requested_domain", None)
         if requested_domain is not None:
             values["requested_domain"] = requested_domain.sld
-
-        alternative_domain = obj.alternative_domains.first()
-        if alternative_domain is not None:
-            values["alternative_domain"] = alternative_domain.sld
-
         return values
 
-    requested_domain = forms.CharField(
-        label="What .gov domain do you want?",
-    )
-    alternative_domain = forms.CharField(
-        required=False,
-        label=(
-            "Are there other domains you’d like if we can’t give you your first "
-            "choice? Entering alternative domains is optional."
-        ),
-    )
+    requested_domain = forms.CharField(label="What .gov domain do you want?")
 
     def clean_requested_domain(self):
         """Requested domains need to be legal top-level domains, not subdomains.
@@ -490,25 +546,6 @@ class YourContactForm(RegistrarForm):
 
 
 class OtherContactsForm(RegistrarForm):
-    def to_database(self, obj):
-        if not self.is_valid():
-            return
-        obj.save()
-
-        # TODO: ability to handle multiple contacts
-        contact = obj.other_contacts.filter(email=self.cleaned_data["email"]).first()
-        if contact is not None:
-            super().to_database(contact)
-        else:
-            contact = Contact()
-            super().to_database(contact)
-            obj.other_contacts.add(contact)
-
-    @classmethod
-    def from_database(cls, obj):
-        other_contacts = obj.other_contacts.first()
-        return super().from_database(other_contacts)
-
     first_name = forms.CharField(
         label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
@@ -555,6 +592,52 @@ class OtherContactsForm(RegistrarForm):
         required=True,
         error_messages={"required": "Enter a phone number for this contact."},
     )
+
+
+class BaseOtherContactsFormSet(RegistrarFormSet):
+    def to_database(self, obj):
+        if not self.is_valid():
+            return
+        obj.save()
+
+        query = obj.other_contacts.order_by("created_at").all()
+
+        # the use of `zip` pairs the forms in the formset with the
+        # related objects gotten from the database -- there should always be
+        # at least as many forms as database entries: extra forms means new
+        # entries, but fewer forms is _not_ the correct way to delete items
+        # (likely a client-side error or an attempt at data tampering)
+
+        for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
+
+            cleaned = post_data.cleaned_data if post_data is not None else {}
+
+            # matching database object exists, update it
+            if db_obj is not None and cleaned:
+                empty = (isinstance(v, str) and not v.strip() for v in cleaned.values())
+                erased = all(empty)
+                if erased:
+                    db_obj.delete()
+                    continue
+                for key, value in cleaned.items():
+                    setattr(db_obj, key, value)
+                db_obj.save()
+
+            # no matching database object, create it
+            elif db_obj is None and cleaned:
+                obj.other_contacts.create(**cleaned)
+
+    @classmethod
+    def from_database(cls, obj):
+        return obj.other_contacts.order_by("created_at").values()  # order matters
+
+
+OtherContactsFormSet = forms.formset_factory(
+    OtherContactsForm,
+    extra=1,
+    absolute_max=1500,
+    formset=BaseOtherContactsFormSet,
+)
 
 
 class SecurityEmailForm(RegistrarForm):
