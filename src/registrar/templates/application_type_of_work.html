@@ -4,6 +4,8 @@
 
 {% block form_content %}
 
+{% include "includes/required_fields.html" %}
+
 <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   <div class="usa-form-group">
     {% csrf_token %}
