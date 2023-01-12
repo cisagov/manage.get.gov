@@ -350,6 +350,18 @@ class DomainApplication(TimeStampedModel):
         help_text="Urbanization (Puerto Rico only)",
     )
 
+    type_of_work = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Type of work of the organization",
+    )
+
+    more_organization_information = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Further information about the government organization",
+    )
+
     authorizing_official = models.ForeignKey(
         "registrar.Contact",
         null=True,
@@ -473,6 +485,14 @@ class DomainApplication(TimeStampedModel):
             DomainApplication.OrganizationChoices.INTERSTATE,
         ]
         return bool(user_choice and user_choice not in excluded)
+
+    def show_type_of_work(self) -> bool:
+        """Show this step if this is a special district or interstate."""
+        user_choice = self.organization_type
+        return user_choice in [
+            DomainApplication.OrganizationChoices.SPECIAL_DISTRICT,
+            DomainApplication.OrganizationChoices.INTERSTATE,
+        ]
 
     def is_federal(self) -> Union[bool, None]:
         """Is this application for a federal agency?

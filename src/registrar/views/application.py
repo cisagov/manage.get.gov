@@ -27,6 +27,7 @@ class Step(StrEnum):
     ORGANIZATION_FEDERAL = "organization_federal"
     ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
+    TYPE_OF_WORK = "type_of_work"
     AUTHORIZING_OFFICIAL = "authorizing_official"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
@@ -70,6 +71,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.ORGANIZATION_FEDERAL: _("Type of organization — Federal"),
         Step.ORGANIZATION_ELECTION: _("Type of organization — Election board"),
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
+        Step.TYPE_OF_WORK: _("Type of Work"),
         Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
         Step.CURRENT_SITES: _("Organization website"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
@@ -93,6 +95,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.ORGANIZATION_ELECTION: lambda w: w.from_model(
             "show_organization_election", False
         ),
+        Step.TYPE_OF_WORK: lambda w: w.from_model("show_type_of_work", False),
     }
 
     def __init__(self):
@@ -351,6 +354,11 @@ class OrganizationContact(ApplicationWizard):
         context = super().get_context_data()
         context["is_federal"] = self.application.is_federal()
         return context
+
+
+class TypeOfWork(ApplicationWizard):
+    template_name = "application_type_of_work.html"
+    forms = [forms.TypeOfWorkForm]
 
 
 class AuthorizingOfficial(ApplicationWizard):

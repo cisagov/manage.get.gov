@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django_webtest import WebTest  # type: ignore
 
 from registrar.models import DomainApplication, Domain, Contact, Website
-from registrar.views.application import ApplicationWizard
+from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
 
@@ -120,7 +120,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         this test work.
         """
         num_pages_tested = 0
-        SKIPPED_PAGES = 1  # elections
+        SKIPPED_PAGES = 2  # elections, type_of_work
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         type_page = self.app.get(reverse("application:")).follow()
@@ -659,6 +659,86 @@ class DomainApplicationTests(TestWithUser, WebTest):
             len(new_page.html.find_all("a", href="/register/organization_federal/")),
             0,
         )
+
+    def test_application_form_nonfederal(self):
+        """Non-federal organizations don't have to provide their federal agency."""
+        type_page = self.app.get(reverse("application:")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        type_form = type_page.form
+        type_form[
+            "organization_type-organization_type"
+        ] = DomainApplication.OrganizationChoices.INTERSTATE
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_page.form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_page = type_result.follow()
+        org_contact_form = contact_page.form
+
+        self.assertNotIn("federal_agency", org_contact_form.fields)
+
+        # minimal fields that must be filled out
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-city"] = "NYC"
+        org_contact_form["organization_contact-state_territory"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_result = org_contact_form.submit()
+
+        # the post request should return a redirect to the type of work page
+        # if it was successful.
+        self.assertEquals(contact_result.status_code, 302)
+        self.assertEquals(contact_result["Location"], "/register/type_of_work/")
+
+    def test_application_type_of_work_special(self):
+        """Special districts have to answer an additional question."""
+        type_page = self.app.get(reverse("application:")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        type_form = type_page.form
+        type_form[
+            "organization_type-organization_type"
+        ] = DomainApplication.OrganizationChoices.SPECIAL_DISTRICT
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_page.form.submit()
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_page = type_result.follow()
+
+        self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
+
+    def test_application_type_of_work_interstate(self):
+        """Special districts have to answer an additional question."""
+        type_page = self.app.get(reverse("application:")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        type_form = type_page.form
+        type_form[
+            "organization_type-organization_type"
+        ] = DomainApplication.OrganizationChoices.INTERSTATE
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_page.form.submit()
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        contact_page = type_result.follow()
+
+        self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
 
     @skip("WIP")
     def test_application_edit_restore(self):
