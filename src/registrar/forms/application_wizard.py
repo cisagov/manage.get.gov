@@ -374,7 +374,7 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
             cleaned = post_data.cleaned_data if post_data is not None else {}
             domain = cleaned.get("alternative_domain", None)
 
-            # matching database object exists, update it
+            # matching database object exists, update or delete it
             if db_obj is not None and isinstance(domain, str):
                 entry_was_erased = domain.strip() == ""
                 if entry_was_erased:
