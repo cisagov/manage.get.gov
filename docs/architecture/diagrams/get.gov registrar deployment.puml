@@ -16,16 +16,16 @@ Deployment_Node(aws, "AWS GovCloud", "Amazon Web Services Region") {
         System_Ext(cloudgov_logdrain, "logs.fr.cloud.gov", "ELK")
         Boundary(atob, "ATO boundary") {
             Deployment_Node(organization, "get.gov organization") {
-                Deployment_Node(unstable, "unstable space") {
-                    System_Boundary(dashboard_unstable, "get.gov registrar") {
-                        Container(getgov_app_unstable, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
-                        ContainerDb(dashboard_db_unstable, "Unstable PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
+                Deployment_Node(sandbox, "sandbox space") {
+                    System_Boundary(dashboard_sandbox, "get.gov registrar") {
+                        Container(getgov_app_sandbox, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
+                        ContainerDb(dashboard_db_sandbox, "sandbox PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
                     }
                 }
-                Deployment_Node(staging, "staging space") {
-                    System_Boundary(dashboard_staging, "get.gov registrar") {
-                        Container(getgov_app_staging, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
-                        ContainerDb(dashboard_db_staging, "Staging PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
+                Deployment_Node(stable, "stable space") {
+                    System_Boundary(dashboard_stable, "get.gov registrar") {
+                        Container(getgov_app_stable, "Registrar Application", "Python, Django", "Delivers static HTML/CSS and forms")
+                        ContainerDb(dashboard_db_stable, "stable PostgreSQL Database", "AWS RDS", "Stores agency information and reports")
                     }
                 }
             }
@@ -34,7 +34,7 @@ Deployment_Node(aws, "AWS GovCloud", "Amazon Web Services Region") {
 }
 
 ' Logs flow
-Rel(staging, cloudgov_logdrain, "logs to", "stdout/stderr")
+Rel(stable, cloudgov_logdrain, "logs to", "stdout/stderr")
 Rel(team, cloudgov_logdrain, "reviews logs", "https (443)")
 
 Rel(team, cloudgov_uaa, "authenticates with", "https (443)")
@@ -54,12 +54,12 @@ Rel(github_repo, github_actions_deploy, "pushes to main trigger deployment")
 Rel(team, github_repo, "commits code, makes pull-request, approves PRs", "https (443)")
 Rel(github_actions_deploy, cloudgov_controller, "pushes code, invokes tasks", "https (443)")
 Rel(github_actions_deploy, cloudgov_router, "runs smoke tests on URLs", "https (443)")
-Rel(cloudgov_controller, staging, "provisions/operates apps and services", "admin access limited")
-Rel(cloudgov_controller, unstable, "provisions/operates apps and services")
+Rel(cloudgov_controller, stable, "provisions/operates apps and services", "admin access limited")
+Rel(cloudgov_controller, sandbox, "provisions/operates apps and services")
 
-Rel(getgov_app_staging, dashboard_db_staging, "reads agency info, reads/writes reports, ", "postgres (5432)")
-Rel(getgov_app_unstable, dashboard_db_unstable, "reads agency info, reads/writes reports, ", "postgres (5432)")
+Rel(getgov_app_stable, dashboard_db_stable, "reads agency info, reads/writes reports, ", "postgres (5432)")
+Rel(getgov_app_sandbox, dashboard_db_sandbox, "reads agency info, reads/writes reports, ", "postgres (5432)")
 
-Rel(cloudgov_router, getgov_app_staging, "proxies to", "https GET/POST (443)")
+Rel(cloudgov_router, getgov_app_stable, "proxies to", "https GET/POST (443)")
 
 @enduml

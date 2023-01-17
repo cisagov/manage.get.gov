@@ -511,8 +511,7 @@ SECURE_SSL_REDIRECT = True
 # which are possible even under many seemingly-safe
 # web server configurations.
 ALLOWED_HOSTS = [
-    "getgov-unstable.app.cloud.gov",
-    "getgov-staging.app.cloud.gov",
+    "getgov-stable.app.cloud.gov",
     "get.gov",
 ]
 

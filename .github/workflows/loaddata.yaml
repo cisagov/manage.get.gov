@@ -1,11 +1,11 @@
 name: Reset database
 
 # This workflow can be run from the CLI
-#     gh workflow run loaddata.yaml -f environment=staging
+#     gh workflow run loaddata.yaml -f environment=stable
 # OR
-#     cf run-task getgov-staging --wait \
+#     cf run-task getgov-stable --wait \
 #        --command 'python manage.py flush' --name flush
-#     cf run-task getgov-staging --wait \
+#     cf run-task getgov-stable --wait \
 #        --command 'python manage.py load' --name loaddata
 on:
   workflow_dispatch:
@@ -14,27 +14,27 @@ on:
         type: choice
         description: Where should we load data
         options:
-        - staging
+        - stable
 
 jobs:
-  reset-db-staging:
-    if: ${{ github.event.inputs.environment == 'staging' }}
+  reset-db-stable:
+    if: ${{ github.event.inputs.environment == 'stable' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Delete existing data for staging
+      - name: Delete existing data for stable
         uses: 18f/cg-deploy-action@main
         with:
-          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
-          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+          cf_username: ${{ secrets.CF_STABLE_USERNAME }}
+          cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
           cf_org: cisa-getgov-prototyping
-          cf_space: staging
-          full_command: "cf run-task getgov-staging --wait --command 'python manage.py flush --no-input' --name flush"
+          cf_space: stable
+          full_command: "cf run-task getgov-stable --wait --command 'python manage.py flush --no-input' --name flush"
 
-      - name: Load fake data for staging
+      - name: Load fake data for stable
         uses: 18f/cg-deploy-action@main
         with:
-          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
-          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+          cf_username: ${{ secrets.CF_STABLE_USERNAME }}
+          cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
           cf_org: cisa-getgov-prototyping
-          cf_space: staging
-          full_command: "cf run-task getgov-staging --wait --command 'python manage.py load' --name loaddata"
+          cf_space: stable
+          full_command: "cf run-task getgov-stable --wait --command 'python manage.py load' --name loaddata"
