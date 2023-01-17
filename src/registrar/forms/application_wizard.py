@@ -62,7 +62,7 @@ class OrganizationTypeForm(RegistrarForm):
         required=True,
         choices=DomainApplication.OrganizationChoices.choices,
         widget=forms.RadioSelect,
-        error_messages={"required": "This question is required."},
+        error_messages={"required": "Select the type of organization you represent."},
     )
 
 
@@ -70,7 +70,7 @@ class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
         choices=DomainApplication.BranchChoices.choices,
         widget=forms.RadioSelect,
-        error_messages={"required": "This question is required."},
+        error_messages={"required": "Select the part of the federal government your organization is in."},
     )
 
 
@@ -91,7 +91,7 @@ class OrganizationElectionForm(RegistrarForm):
         is_election_board = self.cleaned_data["is_election_board"]
         if is_election_board is None:
             raise forms.ValidationError(
-                "Please select Yes or No.",
+                "Select “Yes” if you represent an election office. Select “No” if you don’t.",
                 code="required",
             )
         return is_election_board
@@ -166,6 +166,7 @@ class TypeOfWorkForm(RegistrarForm):
         label="What type of work does your organization do? ",
         label_suffix=REQUIRED_SUFFIX,
         widget=forms.Textarea(),
+        error_messages={"required": "Enter the type of work your organization does."}
     )
 
     more_organization_information = forms.CharField(
@@ -245,6 +246,7 @@ class CurrentSitesForm(RegistrarForm):
         required=False,
         label="Enter your organization’s public website, if you have one. For example, "
         "www.city.com.",
+        # TODO: How do I do this one?
     )
 
     def clean_current_site(self):
