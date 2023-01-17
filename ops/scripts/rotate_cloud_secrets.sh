@@ -5,7 +5,7 @@ if [ ! $(command -v gh) ] || [ ! $(command -v jq) ] || [ ! $(command -v cf) ]; t
 fi
 
 if [ -z "$1" ]; then
-    echo 'Please specify a space to target (i.e. unstable, staging)' >&2
+    echo 'Please specify a space to target (i.e. lmm, stable)' >&2
     exit 1
 fi
 

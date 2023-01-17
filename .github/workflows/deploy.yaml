@@ -1,33 +1,22 @@
 name: Build and deploy
 
-# This workflow runs on pushes to main (typically,
-# a merged pull request) and on pushes of tagged commits.
+# This workflow runs on pushes of tagged commits.
 
-# Pushes to main will deploy to Staging
-# This will also deploy nightly
+# "Releases" of tagged commits will deploy `main` to Stable.
 
 on:
-  schedule:
-    # 3am UTC
-    - cron: '0 3 * * *'
-
   push:
     paths-ignore:
       - 'docs/**'
       
-    branches:
-      - main
-
     tags:
       - v*
 
-  workflow_dispatch:
-
 jobs:
-  deploy-staging:
-    # if this job runs on a branch, we deduce that code
-    # has been pushed to main and should be deployed to staging
-    if: ${{ github.ref_type == 'branch' }}
+  deploy-stable:
+    # if this job runs on a tag, we deduce that code
+    # has been tagged for release and should be deployed to stable
+    if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -46,8 +35,8 @@ jobs:
         env:
           DEPLOY_NOW: thanks
         with:
-          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
-          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+          cf_username: ${{ secrets.CF_STABLE_USERNAME }}
+          cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
           cf_org: cisa-getgov-prototyping
-          cf_space: staging
-          push_arguments: "-f ops/manifests/manifest-staging.yaml"
+          cf_space: stable
+          push_arguments: "-f ops/manifests/manifest-stable.yaml"

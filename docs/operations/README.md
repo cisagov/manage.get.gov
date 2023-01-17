@@ -36,23 +36,13 @@ Binding the database in `manifest-<ENVIRONMENT>.json` automatically inserts the 
 
 # Deploy
 
-We have two environments: `unstable` and `staging`. Developers can deploy locally to unstable whenever they want. However, only our CD service can deploy to `staging`, and it does so on every commit to `main`. This is to ensure that we have a "golden" environment to point to, and can still test things out in an unstable space. You should make sure all of the USWDS assets are compiled and collected before deploying to unstable. To deploy locally to `unstable`:
+We have two types of environments: developer "sandboxes" and `stable`. Developers can deploy locally to their sandbox whenever they want. However, only our CD service can deploy to `stable`, and it does so when we make tagged releases of `main`. This is to ensure that we have a "golden" environment to point to, and can still test things out in a sandbox space. You should make sure all of the USWDS assets are compiled and collected before deploying to your sandbox. To deploy locally to `sandbox`:
 
-```bash
-# Compile and collect the assets
-docker-compose run node npx gulp compile
-docker-compose run node npx gulp copyAssets
-docker-compose run app ./manage.py collectstatic
+For ease of use, you can run the `deploy.sh <sandbox name>` script in the `/src` directory to build the assets and deploy to your sandbox. Similarly, you could run `build.sh <sandbox name>` script to just compile and collect the assets without deploying.
 
-# Deploy to unstable
-cf target -o cisa-getgov-prototyping -s unstable
-cf push getgov-unstable -f ops/manifests/manifest-unstable.yaml
-cf run-task getgov-unstable --command 'python manage.py migrate' --name migrate
-```
-Alternatively, you could run the `deploy.sh` script in the `/src` directory to build the assets and deploy to `unstable`. Similarly, you could run `build.sh` script to just compile and collect the assets without deploying.
-
+Your sandbox space should've been setup as part of the onboarding process. If this was not the case, please have an admin follow the instructions [here](../../.github/ISSUE_TEMPLATE/developer-onboarding.md#setting-up-developer-sandbox).
 
 ## Serving static assets
 We are using [WhiteNoise](http://whitenoise.evans.io/en/stable/index.html) plugin to serve our static assets on cloud.gov. This plugin is added to the `MIDDLEWARE` list in our apps `settings.py`.
 
-Note that it’s a good idea to run `collectstatic` locally or in the docker container before pushing files up to `unstable`. This is because `collectstatic` relies on timestamps when deciding to whether to overwrite the existing assets in `/public`. Due the way files are uploaded, the compiled css in the `/assets/css` folder on `unstable` will have a slightly earlier timestamp than the files in `/public/css`, and consequently running `collectstatic` on`unstable` will not update `public/css` as you may expect. For convenience, both the `deploy.sh` and `build.sh` scripts will take care of that. 
+Note that it’s a good idea to run `collectstatic` locally or in the docker container before pushing files up to your sandbox. This is because `collectstatic` relies on timestamps when deciding to whether to overwrite the existing assets in `/public`. Due the way files are uploaded, the compiled css in the `/assets/css` folder on your sandbox will have a slightly earlier timestamp than the files in `/public/css`, and consequently running `collectstatic` on your sandbox will not update `public/css` as you may expect. For convenience, both the `deploy.sh` and `build.sh` scripts will take care of that. 

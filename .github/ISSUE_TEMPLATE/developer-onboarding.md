@@ -28,18 +28,15 @@ There are several tools we use locally that you will need to have.
 ```bash
 cf login -a api.fr.cloud.gov  --sso
 ```
-- [ ] Have an admin add you to cloud.gov org and relevant spaces as a SpaceDeveloper
+- [ ] Have an admin add you to cloud.gov org and set up your [sandbox developer space](#setting-up-developer-sandbox). Ensure you can deploy to your sandbox space.
 - [ ] Have an admin add you to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/).
 
  **Note:** As mentioned in the [Login documentation](https://developers.login.gov/testing/), the sandbox Login account is different account from your regular, production Login account. If you have not created a Login account for the sandbox before, you will need to create a new account first.
 - [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
 
 ### Steps for the onboarder
-- [ ] Add the onboardee to cloud.gov org (cisa-getgov-prototyping) and relevant spaces (unstable) as a SpaceDeveloper
-
- ```bash
-cf set-space-role <cloud.account@email.gov> cisa-getgov-prototyping unstable SpaceDeveloper
-```
+- [ ] Add the onboardee to cloud.gov org (cisa-getgov-prototyping) 
+- [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 
 
@@ -81,3 +78,9 @@ You may need to add these two lines to your shell's rc file (e.g. `.bashrc` or `
 GPG_TTY=$(tty)
 export GPG_TTY
 ```
+
+## Setting up developer sandbox
+
+We have two types of environments: stable, and sandbox. Stable gets deployed via tagged release every sprint, and developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer. 
+
+TKTK: Actual steps for setting up a new developer sandbox automation.

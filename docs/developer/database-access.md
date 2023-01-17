@@ -5,46 +5,46 @@ You can connect to a Cloud.gov database using the
 After installing it, use the command
 
 ```shell
-cf connect-to-service getgov-unstable getgov-unstable-databse
+cf connect-to-service getgov-SANDBOXNAME getgov-SANDBOXNAME-databse
 ```
 
-to get a `psql` shell on the `unstable` environment's database.
+to get a `psql` shell on the sandbox environment's database.
 
 ## Running Migrations
 
 When new code changes the database schema, we need to apply Django's migrations.
 We can run these using CloudFoundry's tasks to run the `manage.py migrate`
-command in the correct environment. For the `unstable` environment, developers
+command in the correct environment. For any developer environment, developers
 can manually run the task with
 
 ```shell
-cf run-task getgov-unstable --command 'python manage.py migrate' --name migrate
+cf run-task getgov-SANDBOXNAME --command 'python manage.py migrate' --name migrate
 ```
 
 Optionally, load data from fixtures as well
 
 ```shell
-cf run-task getgov-unstable --wait --command 'python manage.py load' --name loaddata
+cf run-task getgov-SANDBOXNAME --wait --command 'python manage.py load' --name loaddata
 ```
 
-For the `staging` environment, developers don't have credentials so we need to
+For the `stable` environment, developers don't have credentials so we need to
 run that command using Github Actions. Go to
 <https://github.com/cisagov/getgov/actions/workflows/migrate.yaml> and select
-the "Run workflow" button, making sure that `staging` is selected.
+the "Run workflow" button, making sure that `stable` is selected.
 
 ## Getting data for fixtures
 
 To run the `dumpdata` command, you'll need to ssh to a running container. `cf run-task` is useless for this, as you will not be able to see the output.
 
 ```shell
-cf ssh getgov-unstable
+cf ssh getgov-SANDBOXNAME
 /tmp/lifecycle/shell  # this configures your environment
 ./manage.py dumpdata
 ```
 
 ## Dropping and re-creating the database
 
-For `unstable`, it might be necessary to start the database over from scratch.
+For your sandbox environment, it might be necessary to start the database over from scratch.
 The easiest way to do that is `DROP DATABASE ...` followed by `CREATE DATABASE
 ...`. In the `psql` shell, first run the `\l` command to see all of the
 databases that are present:
