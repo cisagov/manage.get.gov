@@ -75,34 +75,34 @@ class DomainApplicationFixture:
 
     # any fields not specified here will be filled in with fake data or defaults
     # NOTE BENE: each fixture must have `organization_name` for uniqueness!
+    # Here is a more complete example as a template:
+    # {
+    #     "status": "started",
+    #     "organization_name": "Example - Just started",
+    #     "organization_type": "federal",
+    #     "federal_agency": None,
+    #     "federal_type": None,
+    #     "address_line1": None,
+    #     "address_line2": None,
+    #     "city": None,
+    #     "state_territory": None,
+    #     "zipcode": None,
+    #     "urbanization": None,
+    #     "purpose": None,
+    #     "security_email": None,
+    #     "anything_else": None,
+    #     "is_policy_acknowledged": None,
+    #     "authorizing_official": None,
+    #     "submitter": None,
+    #     "other_contacts": [],
+    #     "current_websites": [],
+    #     "alternative_domains": [],
+    # },
     DA = [
         {
             "status": "started",
             "organization_name": "Example - Finished but not Submitted",
         },
-        # an example of a more manual application
-        # {
-        #     "status": "started",
-        #     "organization_name": "Example - Just started",
-        #     "organization_type": "federal",
-        #     "federal_agency": None,
-        #     "federal_type": None,
-        #     "address_line1": None,
-        #     "address_line2": None,
-        #     "city": None,
-        #     "state_territory": None,
-        #     "zipcode": None,
-        #     "urbanization": None,
-        #     "purpose": None,
-        #     "security_email": None,
-        #     "anything_else": None,
-        #     "is_policy_acknowledged": None,
-        #     "authorizing_official": None,
-        #     "submitter": None,
-        #     "other_contacts": [],
-        #     "current_websites": [],
-        #     "alternative_domains": [],
-        # },
         {
             "status": "submitted",
             "organization_name": "Example - Submitted but pending Investigation",

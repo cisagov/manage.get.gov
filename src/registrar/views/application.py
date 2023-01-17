@@ -378,7 +378,7 @@ class AuthorizingOfficial(ApplicationWizard):
 
 class CurrentSites(ApplicationWizard):
     template_name = "application_current_sites.html"
-    forms = [forms.CurrentSitesForm]
+    forms = [forms.CurrentSitesFormSet]
 
 
 class DotgovDomain(ApplicationWizard):

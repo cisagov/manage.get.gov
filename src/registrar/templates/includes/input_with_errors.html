@@ -21,9 +21,17 @@ error messages, if necessary.
   </div>
 {% else %}
   {{ field|add_label_class:"usa-label" }}
+  {% if www_gov %}
+  <div class="display-flex flex-align-center">
+    <span class="padding-top-05 padding-right-2px">www.</span>
+  {% endif %}
   {% if required %}
     {{ field|add_class:input_class|attr:"required" }}
   {% else %}
     {{ field|add_class:input_class }}
+  {% endif %}
+  {% if www_gov %}
+    <span class="padding-top-05 padding-left-2px">.gov </span>
+  </div>
   {% endif %}
 {% endif %}

@@ -1,4 +1,3 @@
-<!-- Test page -->
 {% extends 'application_form.html' %}
 {% load widget_tweaks %}
 
@@ -20,11 +19,11 @@
               {{ error }}
             </span>
           {% endfor %}
-          {{ field|add_class:"usa-input--error usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500"|attr:"aria-invalid:true" }}
+          {{ field|add_class:"usa-input--error usa-textarea usa-character-count__field"|attr:"maxlength=500"|attr:"aria-invalid:true" }}
         </div>
       {% else %}
         {{ field|add_label_class:"usa-label" }}
-        {{ field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
+        {{ field|add_class:"usa-textarea usa-character-count__field"|attr:"maxlength=500" }}
       {% endif %}
       {% endwith %}
       <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
@@ -42,11 +41,11 @@
               {{ error }}
             </span>
           {% endfor %}
-          {{ field|add_class:"usa-input--error usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500"|attr:"aria-invalid:true" }}
+          {{ field|add_class:"usa-input--error usa-textarea usa-character-count__field"|attr:"maxlength=500"|attr:"aria-invalid:true" }}
         </div>
       {% else %}
         {{ field|add_label_class:"usa-label" }}
-        {{ field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
+        {{ field|add_class:"usa-textarea usa-character-count__field"|attr:"maxlength=500" }}
       {% endif %}
       {% endwith %}
       <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>

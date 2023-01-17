@@ -6,7 +6,9 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
+from api.views import in_domains
 from epp.mock_epp import domain_info, domain_check
+from registrar.utility import errors
 
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -93,65 +95,34 @@ class Domain(TimeStampedModel):
     DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
 
     @classmethod
-    def normalize(cls, domain: str, tld=None, blank=False) -> str:  # noqa: C901
-        """Return `domain` in form `<second level>.<tld>`.
-
-        Raises ValueError if string cannot be normalized.
-
-        This does not guarantee the returned string is a valid domain name.
-
-        Set `blank` to True to allow empty strings.
-        """
-        if blank and len(domain.strip()) == 0:
-            return ""
-        cleaned = domain.lower()
-        # starts with https or http
-        if cleaned.startswith("https://"):
-            cleaned = cleaned[8:]
-        if cleaned.startswith("http://"):
-            cleaned = cleaned[7:]
-        # has url parts
-        if "/" in cleaned:
-            cleaned = cleaned.split("/")[0]
-        # has query parts
-        if "?" in cleaned:
-            cleaned = cleaned.split("?")[0]
-        # has fragments
-        if "#" in cleaned:
-            cleaned = cleaned.split("#")[0]
-        # replace disallowed chars
-        re.sub(r"^[^A-Za-z0-9.-]+", "", cleaned)
-
-        parts = cleaned.split(".")
-        # has subdomains or invalid repetitions
-        if cleaned.count(".") > 0:
-            # remove invalid repetitions
-            while parts[-1] == parts[-2]:
-                parts.pop()
-            # remove subdomains
-            parts = parts[-2:]
-        hasTLD = len(parts) == 2
-        if hasTLD:
-            # set correct tld
-            if tld is not None:
-                parts[-1] = tld
-        else:
-            # add tld
-            if tld is not None:
-                parts.append(tld)
-            else:
-                raise ValueError("You must specify a tld for %s" % domain)
-
-        cleaned = ".".join(parts)
-
-        return cleaned
-
-    @classmethod
     def string_could_be_domain(cls, domain: str | None) -> bool:
         """Return True if the string could be a domain name, otherwise False."""
         if not isinstance(domain, str):
             return False
         return bool(cls.DOMAIN_REGEX.match(domain))
+
+    @classmethod
+    def validate(cls, domain: str | None, blank_ok=False) -> str:
+        """Attempt to determine if a domain name could be requested."""
+        if domain is None:
+            raise errors.BlankValueError()
+        if not isinstance(domain, str):
+            raise ValueError("Domain name must be a string")
+        domain = domain.lower().strip()
+        if domain == "":
+            if blank_ok:
+                return domain
+            else:
+                raise errors.BlankValueError()
+        if domain.endswith(".gov"):
+            domain = domain[:-4]
+        if "." in domain:
+            raise errors.ExtraDotsError()
+        if not Domain.string_could_be_domain(domain + ".gov"):
+            raise ValueError()
+        if in_domains(domain):
+            raise errors.DomainUnavailableError()
+        return domain
 
     @classmethod
     def available(cls, domain: str) -> bool:

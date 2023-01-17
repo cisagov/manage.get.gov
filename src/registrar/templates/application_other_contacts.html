@@ -8,7 +8,7 @@
 <p id="instructions">We’d like to contact other employees with administrative or technical responsibilities in your organization. For example, they could be involved in managing your organization or its technical infrastructure. This information will help us assess your eligibility and understand the purpose of the .gov domain. These contacts should be in addition to you and your authorizing official. </p>
 {% include "includes/required_fields.html" %}
 
-<form class="usa-form usa-form--large" id="step__{{steps.current}}" method="post" novalidate>
+<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {% csrf_token %}
   {{ forms.0.management_form }}
   {# forms.0 is a formset and this iterates over its forms #}
@@ -28,7 +28,7 @@
 
   <div>
     <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another contact</span>
     </button>

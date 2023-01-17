@@ -1,6 +1,6 @@
 """Internal API views"""
 
-
+from django.apps import apps
 from django.core.exceptions import BadRequest
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
@@ -11,7 +11,6 @@ import requests
 
 from cachetools.func import ttl_cache
 
-from registrar.models import Domain
 
 DOMAIN_FILE_URL = (
     "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
@@ -27,6 +26,7 @@ def _domains():
     Fetch a file from DOMAIN_FILE_URL, parse the CSV for the domain,
     lowercase everything and return the list.
     """
+    Domain = apps.get_model("registrar.Domain")
     # 5 second timeout
     file_contents = requests.get(DOMAIN_FILE_URL, timeout=5).text
     domains = set()
@@ -65,6 +65,7 @@ def available(request, domain=""):
     Response is a JSON dictionary with the key "available" and value true or
     false.
     """
+    Domain = apps.get_model("registrar.Domain")
     # validate that the given domain could be a domain name and fail early if
     # not.
     if not (
