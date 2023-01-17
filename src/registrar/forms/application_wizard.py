@@ -470,14 +470,14 @@ class SecurityEmailForm(RegistrarForm):
     security_email = forms.EmailField(
         required=False,
         label="Security email",
-        error_messages={"invalid": "Please enter a valid email address."},
+        error_messages={"invalid": "Enter an email address in the required format, like name@example.com."},
     )
 
 
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
         required=False,
-        label="Anything else we should know",
+        label="Anything else we should know?",
         widget=forms.Textarea(),
     )
 
@@ -497,7 +497,7 @@ class RequirementsForm(RegistrarForm):
         is_acknowledged = self.cleaned_data["is_policy_acknowledged"]
         if not is_acknowledged:
             raise forms.ValidationError(
-                "You must read and agree to the .gov domain requirements to proceed.",
+                "Check the box if you read and agree to the requirements for registering and operating .gov domains.",
                 code="invalid",
             )
         return is_acknowledged
