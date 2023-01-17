@@ -109,29 +109,40 @@ class OrganizationContactForm(RegistrarForm):
         label_suffix=REQUIRED_SUFFIX,
     )
     organization_name = forms.CharField(
-        label="Organization Name", label_suffix=REQUIRED_SUFFIX
+        label="Organization name", label_suffix=REQUIRED_SUFFIX
+        required=True,
+        error_messages={"required": "Enter the name of your organization."},
     )
     address_line1 = forms.CharField(
         label="Street address",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the street address of your organization."},
     )
     address_line2 = forms.CharField(
         required=False,
         label="Street address line 2",
     )
-    city = forms.CharField(label="City", label_suffix=REQUIRED_SUFFIX)
+    city = forms.CharField(
+        label="City", 
+        label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the city where your organization is located."},
+    )
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Select the state, territory, or military post where your organization is located."},
     )
     zipcode = forms.CharField(
-        label="ZIP code",
+        label="Zip code",
         label_suffix=REQUIRED_SUFFIX,
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Please enter a ZIP code in the form 12345 or 12345-6789",
+                message="Enter a zip code in the form of 12345 or 12345-6789.",
             )
         ],
     )
@@ -149,13 +160,13 @@ class OrganizationContactForm(RegistrarForm):
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
-                    "Please select your federal agency.", code="required"
+                    "Select the federal agency your organization is in.", code="required"
                 )
         if self.application.is_federal():
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
-                    "Please select your federal agency.", code="required"
+                    "Select the federal agency your organization is in.", code="required"
                 )
         return federal_agency
 
@@ -176,6 +187,7 @@ class TypeOfWorkForm(RegistrarForm):
         "applicable bylaws or charter, or other documentation to support your claims. ",
         label_suffix=REQUIRED_SUFFIX,
         widget=forms.Textarea(),
+        error_messages={"required": "Describe how your organization is independent of a state government."}
     )
 
 
@@ -198,29 +210,37 @@ class AuthorizingOfficialForm(RegistrarForm):
         return super().from_database(contact)
 
     first_name = forms.CharField(
-        label="First name/given name",
+        label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the first name / given name of your authorizing official."},
     )
     middle_name = forms.CharField(
         required=False,
         label="Middle name",
     )
     last_name = forms.CharField(
-        label="Last name/family name",
+        label="Last name / family name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the last name / family name of your authorizing official."},
     )
     title = forms.CharField(
         label="Title or role in your organization",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the title or role your authorizing official has in your organization (e.g., Chief Information Officer)."},
     )
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."},
+        error_messages={"invalid": "Enter an email address in the required format, like name@example.com."},
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter a phone number in the required format, like (222) 222-2222."},
     )
 
 
@@ -244,9 +264,7 @@ class CurrentSitesForm(RegistrarForm):
 
     current_site = forms.CharField(
         required=False,
-        label="Enter your organization’s public website, if you have one. For example, "
-        "www.city.com.",
-        # TODO: How do I do this one?
+        label="Enter your organization’s website in the required format, like www.city.com.",
     )
 
     def clean_current_site(self):
