@@ -285,7 +285,7 @@ class CurrentSitesForm(RegistrarForm):
         else:
             # string could not be a domain
             raise forms.ValidationError(
-                "Please enter a valid domain name", code="invalid"
+                "Enter your organization’s website in the required format, like www.city.com.", code="invalid"
             )
 
 
@@ -346,19 +346,19 @@ class DotGovDomainForm(RegistrarForm):
         if not requested:
             # none or empty string
             raise forms.ValidationError(
-                "Please enter the .gov domain that you are requesting.", code="invalid"
+                "Enter the .gov domain you want. Don’t include “www” or “.gov.” For example, if you wanted www.city.gov, you would enter “city” (without the quotes) in this field.", code="invalid"
             )
         if requested.endswith(".gov"):
             requested = requested[:-4]
         if "." in requested:
             raise forms.ValidationError(
-                "Please enter a domain without any periods.",
+                "Enter the .gov domain you want without any periods.",
                 code="invalid",
             )
         if not Domain.string_could_be_domain(requested + ".gov"):
             raise forms.ValidationError(
                 "Please enter a valid domain name using only letters, "
-                "numbers, and hyphens",
+                "numbers, and hyphens.",
                 code="invalid",
             )
         return requested
@@ -369,7 +369,7 @@ class PurposeForm(RegistrarForm):
         label="Purpose",
         widget=forms.Textarea(),
         error_messages={
-            "required": "Please enter some information about the purpose of your domain"
+            "required": "Describe how you'll use the .gov domain you’re requesting."
         },
     )
 
