@@ -393,29 +393,38 @@ class YourContactForm(RegistrarForm):
         return super().from_database(contact)
 
     first_name = forms.CharField(
-        label="First name/given name",
+        label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter your first name / given name."},
     )
     middle_name = forms.CharField(
         required=False,
         label="Middle name",
     )
     last_name = forms.CharField(
-        label="Last name/family name",
+        label="Last name / family name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter your last name / family name."},
     )
     title = forms.CharField(
         label="Title or role in your organization",
+        required=True,
         label_suffix=REQUIRED_SUFFIX,
+        error_messages={"required": "Enter your title or role in your organization (e.g., Chief Information Officer)."},
     )
     email = forms.EmailField(
         label="Email",
+        required=True,
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."},
+        error_messages={"invalid": "Enter your email address in the required format, like name@example.com."},
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter a phone number in the required format, like (222) 222-2222."},
     )
 
 
@@ -440,7 +449,7 @@ class OtherContactsForm(RegistrarForm):
         return super().from_database(other_contacts)
 
     first_name = forms.CharField(
-        label="First name/given name",
+        label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
     )
     middle_name = forms.CharField(
@@ -458,11 +467,13 @@ class OtherContactsForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."},
+        error_messages={"invalid": "Enter an email address in the required format, like name@example.com."},
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter a phone number in the required format, like (222) 222-2222."},
     )
 
 
