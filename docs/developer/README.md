@@ -18,6 +18,10 @@ If you're new to Django, see [Getting Started with Django](https://www.djangopro
 
 Visit the running application at [http://localhost:8080](http://localhost:8080).
 
+## Branch Conventions
+
+We use the branch convention of `initials/branch-topic` (ex: `lmm/fix-footer`). This allows for automated deployment to a developer sandbox namespaced to the initials.
+
 ## Setting Vars
 
 Non-secret environment variables for local development are set in [src/docker-compose.yml](../../src/docker-compose.yml).
