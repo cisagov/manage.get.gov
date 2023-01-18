@@ -512,6 +512,7 @@ SECURE_SSL_REDIRECT = True
 # web server configurations.
 ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
+    "getgov-lmm.app.cloud.gov",
     "get.gov",
 ]
 
