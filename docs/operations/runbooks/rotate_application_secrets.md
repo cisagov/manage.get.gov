@@ -55,3 +55,5 @@ Encode it using:
 ```bash
 base64 private.pem
 ```
+
+You also need to upload the `public.crt` key if recently created to the login.gov identity sandbox: https://dashboard.int.identitysandbox.gov/
