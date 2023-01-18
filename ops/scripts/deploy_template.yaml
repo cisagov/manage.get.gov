@@ -34,4 +34,3 @@ jobs:
           cf_org: cisa-getgov-prototyping
           cf_space: environment
           push_arguments: "-f ops/manifests/manifest-environment.yaml"
-          
