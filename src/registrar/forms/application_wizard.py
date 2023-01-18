@@ -346,7 +346,7 @@ class DotGovDomainForm(RegistrarForm):
         if not requested:
             # none or empty string
             raise forms.ValidationError(
-                "Enter the .gov domain you want. Don’t include “www” or “.gov.” For example, if you wanted www.city.gov, you would enter “city” (without the quotes) in this field.", code="invalid"
+                "Enter the .gov domain you want. Don’t include “www” or “.gov.” For example, if you want www.city.gov, you would enter “city” (without the quotes).", code="invalid"
             )
         if requested.endswith(".gov"):
             requested = requested[:-4]
@@ -357,8 +357,8 @@ class DotGovDomainForm(RegistrarForm):
             )
         if not Domain.string_could_be_domain(requested + ".gov"):
             raise forms.ValidationError(
-                "Enter a domain name using only letters, "
-                "numbers, or hyphens.",
+                "Enter a domain using only letters, "
+                "numbers, or hyphens (though we don't recommend using hyphens).",
                 code="invalid",
             )
         return requested
@@ -424,7 +424,7 @@ class YourContactForm(RegistrarForm):
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
         required=True,
-        error_messages={"required": "Enter a phone number in the required format, like (222) 222-2222."},
+        error_messages={"required": "Enter your phone number in the required format, like (222) 222-2222."},
     )
 
 
@@ -473,20 +473,20 @@ class OtherContactsForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Enter the email address in the required format, like name@example.com, for this contact."},
+        error_messages={"invalid": "Enter an email address in the required format, like name@example.com."},
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
         required=True,
-        error_messages={"required": "Enter the phone number in the required format, like (222) 222-2222, for this contact"},
+        error_messages={"required": "Enter a phone number in the required format, like (222) 222-2222."},
     )
 
 
 class SecurityEmailForm(RegistrarForm):
     security_email = forms.EmailField(
         required=False,
-        label="Security email",
+        label="Security email for public use",
         error_messages={"invalid": "Enter an email address in the required format, like name@example.com."},
     )
 
