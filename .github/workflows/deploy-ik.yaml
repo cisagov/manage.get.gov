@@ -1,0 +1,36 @@
+# This workflow runs on pushes when a pull request is opened under certain branch conventions.
+
+name: Build and deploy dev sandbox
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+
+    branches:
+      - 'ik/**'     
+
+jobs:
+  deploy-ik:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Compile USWDS assets
+        working-directory: ./src
+        run: |
+          docker compose run node npm install && 
+          docker compose run node npx gulp copyAssets &&
+          docker compose run node npx gulp compile 
+      - name: Collect static assets 
+        working-directory: ./src
+        run: docker compose run app python manage.py collectstatic
+      - name: Deploy to cloud.gov sandbox
+        uses: 18f/cg-deploy-action@main
+        env:
+          DEPLOY_NOW: thanks
+        with:
+          cf_username: ${{ secrets.CF_IK_USERNAME }}
+          cf_password: ${{ secrets.CF_IK_PASSWORD }}
+          cf_org: cisa-getgov-prototyping
+          cf_space: ik
+          push_arguments: "-f ops/manifests/manifest-ik.yaml"
