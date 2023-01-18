@@ -3,12 +3,12 @@
 name: Build and deploy dev sandbox
 
 on:
-  pull-request:
+  pull_request:
     paths-ignore:
       - 'docs/**'
 
     branches:
-      - 'lmm/**'     
+      - 'lmm/**'   
 
 jobs:
   deploy-lmm:
