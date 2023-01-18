@@ -357,8 +357,8 @@ class DotGovDomainForm(RegistrarForm):
             )
         if not Domain.string_could_be_domain(requested + ".gov"):
             raise forms.ValidationError(
-                "Please enter a valid domain name using only letters, "
-                "numbers, and hyphens.",
+                "Enter a domain name using only letters, "
+                "numbers, or hyphens.",
                 code="invalid",
             )
         return requested
@@ -451,29 +451,35 @@ class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
         label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the first name / given name of this contact."},
     )
     middle_name = forms.CharField(
         required=False,
         label="Middle name",
     )
     last_name = forms.CharField(
-        label="Last name/family name",
+        label="Last name / family name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the last name / family name of this contact."},
     )
     title = forms.CharField(
         label="Title or role in your organization",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the title or role in your organization of this contact (e.g., Chief Information Officer)."},
     )
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Enter an email address in the required format, like name@example.com."},
+        error_messages={"invalid": "Enter the email address in the required format, like name@example.com, for this contact."},
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
         required=True,
-        error_messages={"required": "Enter a phone number in the required format, like (222) 222-2222."},
+        error_messages={"required": "Enter the phone number in the required format, like (222) 222-2222, for this contact"},
     )
 
 
