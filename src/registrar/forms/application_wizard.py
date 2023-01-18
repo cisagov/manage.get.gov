@@ -109,7 +109,7 @@ class OrganizationContactForm(RegistrarForm):
         label_suffix=REQUIRED_SUFFIX,
     )
     organization_name = forms.CharField(
-        label="Organization name", label_suffix=REQUIRED_SUFFIX
+        label="Organization name", label_suffix=REQUIRED_SUFFIX,
         required=True,
         error_messages={"required": "Enter the name of your organization."},
     )
