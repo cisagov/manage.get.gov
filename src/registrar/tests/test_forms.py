@@ -19,7 +19,7 @@ class TestFormValidation(TestCase):
         form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(
             form.errors["zipcode"],
-            ["Please enter a ZIP code in the form 12345 or 12345-6789"],
+            ["Enter a zip code in the form of 12345 or 12345-6789."],
         )
 
     def test_org_contact_zip_valid(self):
@@ -30,7 +30,11 @@ class TestFormValidation(TestCase):
     def test_current_site_invalid(self):
         form = CurrentSitesForm(data={"current_site": "nah"})
         self.assertEqual(
-            form.errors["current_site"], ["Please enter a valid domain name"]
+            form.errors["current_site"],
+            [
+                "Enter your organization’s website in the required format, like"
+                " www.city.com."
+            ],
         )
 
     def test_current_site_valid(self):
@@ -59,7 +63,7 @@ class TestFormValidation(TestCase):
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency.com"})
         self.assertEqual(
             form.errors["requested_domain"],
-            ["Please enter a domain without any periods."],
+            ["Enter the .gov domain you want without any periods."],
         )
 
     def test_requested_domain_invalid_characters(self):
@@ -68,15 +72,18 @@ class TestFormValidation(TestCase):
         self.assertEqual(
             form.errors["requested_domain"],
             [
-                "Please enter a valid domain name using only letters, "
-                "numbers, and hyphens"
+                "Enter a domain using only letters, numbers, or hyphens (though we"
+                " don't recommend using hyphens)."
             ],
         )
 
     def test_authorizing_official_email_invalid(self):
         """must be a valid email address."""
         form = AuthorizingOfficialForm(data={"email": "boss@boss"})
-        self.assertEqual(form.errors["email"], ["Please enter a valid email address."])
+        self.assertEqual(
+            form.errors["email"],
+            ["Enter an email address in the required format, like name@example.com."],
+        )
 
     def test_authorizing_official_phone_invalid(self):
         """Must be a valid phone number."""
@@ -88,7 +95,10 @@ class TestFormValidation(TestCase):
     def test_your_contact_email_invalid(self):
         """must be a valid email address."""
         form = YourContactForm(data={"email": "boss@boss"})
-        self.assertEqual(form.errors["email"], ["Please enter a valid email address."])
+        self.assertEqual(
+            form.errors["email"],
+            ["Enter your email address in the required format, like name@example.com."],
+        )
 
     def test_your_contact_phone_invalid(self):
         """Must be a valid phone number."""
@@ -100,7 +110,10 @@ class TestFormValidation(TestCase):
     def test_other_contact_email_invalid(self):
         """must be a valid email address."""
         form = OtherContactsForm(data={"email": "boss@boss"})
-        self.assertEqual(form.errors["email"], ["Please enter a valid email address."])
+        self.assertEqual(
+            form.errors["email"],
+            ["Enter an email address in the required format, like name@example.com."],
+        )
 
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
@@ -118,7 +131,8 @@ class TestFormValidation(TestCase):
         """Can leave the security_email field blank."""
         form = SecurityEmailForm(data={"security_email": "boss@boss"})
         self.assertEqual(
-            form.errors["security_email"], ["Please enter a valid email address."]
+            form.errors["security_email"],
+            ["Enter an email address in the required format, like name@example.com."],
         )
 
     def test_requirements_form_blank(self):
@@ -126,7 +140,10 @@ class TestFormValidation(TestCase):
         form = RequirementsForm(data={})
         self.assertEqual(
             form.errors["is_policy_acknowledged"],
-            ["You must read and agree to the .gov domain requirements to proceed."],
+            [
+                "Check the box if you read and agree to the requirements for"
+                " registering and operating .gov domains."
+            ],
         )
 
     def test_requirements_form_unchecked(self):
@@ -134,5 +151,8 @@ class TestFormValidation(TestCase):
         form = RequirementsForm(data={"is_policy_acknowledged": False})
         self.assertEqual(
             form.errors["is_policy_acknowledged"],
-            ["You must read and agree to the .gov domain requirements to proceed."],
+            [
+                "Check the box if you read and agree to the requirements for"
+                " registering and operating .gov domains."
+            ],
         )
