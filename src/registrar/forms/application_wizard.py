@@ -281,7 +281,7 @@ class AuthorizingOfficialForm(RegistrarForm):
         required=True,
         error_messages={
             "required": (
-                "Enter a phone number in the required format, like (222) 222-2222."
+                "Enter the phone number for your authorizing official."
             )
         },
     )
@@ -489,7 +489,7 @@ class YourContactForm(RegistrarForm):
         required=True,
         error_messages={
             "required": (
-                "Enter your phone number in the required format, like (222) 222-2222."
+                "Enter your phone number."
             )
         },
     )
@@ -561,7 +561,7 @@ class OtherContactsForm(RegistrarForm):
         required=True,
         error_messages={
             "required": (
-                "Enter a phone number in the required format, like (222) 222-2222."
+                "Enter a phone number for this contact."
             )
         },
     )
