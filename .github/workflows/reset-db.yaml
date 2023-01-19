@@ -4,6 +4,7 @@
 #     cf run-task getgov-ENVIRONMENT --command 'python manage.py flush' --name flush
 #     cf run-task getgov-ENVIRONMENT --command 'python manage.py load' --name loaddata
 
+name: Reset database
 run-name: Reset database for ${{ github.event.inputs.environment }}
 
 on:

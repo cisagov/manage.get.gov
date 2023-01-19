@@ -1,6 +1,7 @@
 # This workflow runs on pushes when a pull request is opened under certain branch conventions.
 
-run-name: Build and deploy developer sandbox for ${{ github.ref_name }}
+name: Build and deploy developer sandbox
+run-name: Build and deploy developer sandbox for branch ${{ github.ref_name }}
 
 on:
   pull_request:
