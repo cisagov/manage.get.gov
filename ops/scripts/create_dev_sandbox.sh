@@ -47,14 +47,6 @@ sed -i '' '/getgov-stable.app.cloud.gov/ {a\
     '\"getgov-$1.app.cloud.gov\"',
 }' src/registrar/config/settings.py
 
-echo "Adding new environment to Github Actions..."
-sed -i '' '/          - stable/ {a\
-          - '"$1"'
-}' .github/workflows/reset-db.yaml
-sed -i '' '/          - stable/ {a\
-          - '"$1"'
-}' .github/workflows/migrate.yaml
-
 echo "Creating new cloud.gov space for $1..."
 cf create-space $1
 cf target -o "cisa-getgov-prototyping" -s $1
@@ -112,10 +104,18 @@ echo "Alright, your app is up and running at https://getgov-$1.app.cloud.gov!"
 echo
 echo "Moving on to setup Github automation..."
 
-echo "Creating Github Action for application..."
-cp ./ops/scripts/deploy_template.yaml .github/workflows/deploy-$1.yaml
-sed -i '' "s/ENVIRONMENT/$upcase_name/" .github/workflows/deploy-$1.yaml
-sed -i '' "s/environment/$1/" .github/workflows/deploy-$1.yaml
+echo "Adding new environment to Github Actions..."
+sed -i '' '/          - stable/ {a\
+          - '"$1"'
+}' .github/workflows/reset-db.yaml
+
+sed -i '' '/          - stable/ {a\
+          - '"$1"'
+}' .github/workflows/migrate.yaml
+
+sed -i '' '/    branches:/ {a\
+      - '"'$1/**'"'
+}' .github/workflows/deploy-sandbox.yaml
 
 echo "Creating space deployer for Github deploys..."
 cf create-service cloud-gov-service-account space-deployer github-cd-account
