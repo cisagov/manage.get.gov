@@ -1,31 +1,36 @@
-name: Run migrations
-
-# This workflow can be run from the CLI
-#     gh workflow run migrate.yaml -f environment=sandbox
+# This workflow can be run from the CLI for any environment
+#     gh workflow run migrate.yaml -f environment=ENVIRONMENT
 # OR
-#     cf run-task getgov-stable --wait \
-#        --command 'python manage.py migrate' --name migrate
+#     cf run-task getgov-ENVIRONMENT --command 'python manage.py migrate' --name migrate
+
+name: Run migrations
 
 on:
   workflow_dispatch:
     inputs:
       environment:
         type: choice
-        description: Where should we run migrations
+        description: Which environment should we flush and re-load data for?
         options:
-        - stable
+          - stable
+          - lmm
+          - ik
+          - sspj
+          - nmb
+          - mr
 
 jobs:
-  migrate-stable:
-    if: ${{ github.event.inputs.environment == 'stable' }}
+  migrate:
     runs-on: ubuntu-latest
+    env:
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
-      - name: Run Django migrations for stable
+      - name: Run Django migrations for ${{ github.event.inputs.environment }}
         uses: 18f/cg-deploy-action@main
         with:
-          cf_username: ${{ secrets.CF_STABLE_USERNAME }}
-          cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-getgov-prototyping
-          cf_space: stable
-          full_command: "cf run-task getgov-stable --wait --command 'python manage.py migrate' --name migrate"
-
+          cf_space: ${{ github.event.inputs.environment }}
+          full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --wait --command 'python manage.py migrate' --name migrate"

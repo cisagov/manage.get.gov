@@ -1,8 +1,7 @@
-name: Build and deploy
-
 # This workflow runs on pushes of tagged commits.
-
 # "Releases" of tagged commits will deploy `main` to Stable.
+
+name: Build and deploy stable
 
 on:
   push:
@@ -14,8 +13,6 @@ on:
 
 jobs:
   deploy-stable:
-    # if this job runs on a tag, we deduce that code
-    # has been tagged for release and should be deployed to stable
     if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     steps:

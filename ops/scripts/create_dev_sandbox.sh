@@ -47,6 +47,14 @@ sed -i '' '/getgov-stable.app.cloud.gov/ {a\
     '\"getgov-$1.app.cloud.gov\"',
 }' src/registrar/config/settings.py
 
+echo "Adding new environment to Github Actions..."
+sed -i '' '/          - stable/ {a\
+          - '"$1"'
+}' .github/workflows/reset-db.yaml
+sed -i '' '/          - stable/ {a\
+          - '"$1"'
+}' .github/workflows/migrate.yaml
+
 echo "Creating new cloud.gov space for $1..."
 cf create-space $1
 cf target -o "cisa-getgov-prototyping" -s $1
@@ -130,7 +138,7 @@ read -p "All done! Should we open a PR with these changes? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    git add ops/manifests/manifest-$1.yaml .github/workflows/deploy-$1.yaml src/registrar/config/settings.py 
+    git add ops/manifests/manifest-$1.yaml .github/workflows/ src/registrar/config/settings.py 
     git commit -m "Add new developer sandbox '"$1"' infrastructure"
     gh pr create
 fi

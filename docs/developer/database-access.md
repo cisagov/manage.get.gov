@@ -5,7 +5,7 @@ You can connect to a Cloud.gov database using the
 After installing it, use the command
 
 ```shell
-cf connect-to-service getgov-SANDBOXNAME getgov-SANDBOXNAME-databse
+cf connect-to-service getgov-ENVIRONMENT getgov-ENVIRONMENT-databse
 ```
 
 to get a `psql` shell on the sandbox environment's database.
@@ -18,13 +18,13 @@ command in the correct environment. For any developer environment, developers
 can manually run the task with
 
 ```shell
-cf run-task getgov-SANDBOXNAME --command 'python manage.py migrate' --name migrate
+cf run-task getgov-ENVIRONMENT --command 'python manage.py migrate' --name migrate
 ```
 
 Optionally, load data from fixtures as well
 
 ```shell
-cf run-task getgov-SANDBOXNAME --wait --command 'python manage.py load' --name loaddata
+cf run-task getgov-ENVIRONMENT --wait --command 'python manage.py load' --name loaddata
 ```
 
 For the `stable` environment, developers don't have credentials so we need to
@@ -37,7 +37,7 @@ the "Run workflow" button, making sure that `stable` is selected.
 To run the `dumpdata` command, you'll need to ssh to a running container. `cf run-task` is useless for this, as you will not be able to see the output.
 
 ```shell
-cf ssh getgov-SANDBOXNAME
+cf ssh getgov-ENVIRONMENT
 /tmp/lifecycle/shell  # this configures your environment
 ./manage.py dumpdata
 ```

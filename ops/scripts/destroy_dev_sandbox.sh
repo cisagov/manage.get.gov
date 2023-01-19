@@ -47,6 +47,8 @@ echo "Removing files used for $1..."
 rm .github/workflows/deploy-$1.yaml
 rm ops/manifests/manifest-$1.yaml
 sed -i '' "/getgov-$1.app.cloud.gov/d" src/registrar/config/settings.py
+sed -i '' "/- $1/d" .github/workflows/reset-db.yaml
+sed -i '' "/- $1/d" .github/workflows/migrate.yaml
 
 echo "Cleaning up services, applications, and the Cloud.gov space for $1..."
 cf delete getgov-$1
