@@ -3,7 +3,7 @@
 # OR
 #     cf run-task getgov-ENVIRONMENT --command 'python manage.py migrate' --name migrate
 
-name: Run migrations
+run-name: Run migrations for ${{ github.event.inputs.environment }}
 
 on:
   workflow_dispatch:
