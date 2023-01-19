@@ -1,0 +1,50 @@
+# This workflow runs on pushes when a pull request is opened under certain branch conventions.
+
+name: Build and deploy dev sandbox
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+
+    branches:
+      - 'ik/**'     
+      - 'sspj/**'     
+      - 'lmm/**'     
+      - 'nmb/**'     
+      - 'mr/**'     
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Split branch name
+        env:
+          BRANCH: ${{ github.ref_name }}
+        id: split
+        run: echo "::set-output name=fragment::${BRANCH##*/}"
+      - name: Set secrets
+        id: secret
+        run: |
+          echo "::set-output name=cf_username::CF_${{ steps.split.outputs.fragment }}_USERNAME"
+          echo "::set-output name=cf_password::CF_${{ steps.split.outputs.fragment }}_PASSWORD"
+      - name: Compile USWDS assets
+        working-directory: ./src
+        run: |
+          docker compose run node npm install && 
+          docker compose run node npx gulp copyAssets &&
+          docker compose run node npx gulp compile 
+      - name: Collect static assets 
+        working-directory: ./src
+        run: docker compose run app python manage.py collectstatic
+      - name: Deploy to cloud.gov sandbox
+        uses: 18f/cg-deploy-action@main
+        env:
+          DEPLOY_NOW: thanks
+        with:
+          cf_username: ${{ secrets[steps.secret.outputs.cf_username] }}
+          cf_password: ${{ secrets[steps.secret.outputs.cf_password] }}
+          cf_org: cisa-getgov-prototyping
+          cf_space: ${{ steps.split.outputs.fragment }}
+          push_arguments: "-f ops/manifests/manifest-${{ steps.split.outputs.fragment }}.yaml"
