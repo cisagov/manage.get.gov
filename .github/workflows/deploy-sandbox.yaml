@@ -8,28 +8,30 @@ on:
     paths-ignore:
       - 'docs/**'
 
-    branches:
-      - 'ik/**'     
-      - 'sspj/**'     
-      - 'lmm/**'     
-      - 'nmb/**'     
-      - 'mr/**'     
-
 jobs:
+  variables: 
+    outputs:
+      environment: ${{ steps.var.outputs.environment}}
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Setting global variables
+        uses: actions/github-script@v6
+        id: var
+        with:
+          script: |
+            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
   deploy:
+    if: | 
+      ${{startsWith(github.head_ref, 'ik/')
+        || startsWith(github.head_ref, 'sspj/')
+        || startsWith(github.head_ref, 'mr/')
+        || startsWith(github.head_ref, 'nmb/')
+        || startsWith(github.head_ref, 'lmm/')
+      }}
     runs-on: ubuntu-latest
+    needs: [variables]
     steps:
       - uses: actions/checkout@v3
-      - name: Split branch name
-        env:
-          BRANCH: ${{ github.ref_name }}
-        id: split
-        run: echo "::set-output name=fragment::${BRANCH##*/}"
-      - name: Set secrets
-        id: secret
-        run: |
-          echo "::set-output name=cf_username::CF_${{ steps.split.outputs.fragment }}_USERNAME"
-          echo "::set-output name=cf_password::CF_${{ steps.split.outputs.fragment }}_PASSWORD"
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
@@ -43,9 +45,12 @@ jobs:
         uses: 18f/cg-deploy-action@main
         env:
           DEPLOY_NOW: thanks
+          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
+          CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
+          CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
         with:
-          cf_username: ${{ secrets[steps.secret.outputs.cf_username] }}
-          cf_password: ${{ secrets[steps.secret.outputs.cf_password] }}
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-getgov-prototyping
-          cf_space: ${{ steps.split.outputs.fragment }}
-          push_arguments: "-f ops/manifests/manifest-${{ steps.split.outputs.fragment }}.yaml"
+          cf_space: ${{ env.ENVIRONMENT }}
+          push_arguments: "-f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml"

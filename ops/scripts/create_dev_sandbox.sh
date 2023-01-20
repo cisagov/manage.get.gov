@@ -113,8 +113,8 @@ sed -i '' '/          - stable/ {a\
           - '"$1"'
 }' .github/workflows/migrate.yaml
 
-sed -i '' '/    branches:/ {a\
-      - '"'$1/**'"'
+sed -i '' '/${{startsWith(github.head_ref, / {a\
+        || startsWith(github.head_ref, '"'$1'"')
 }' .github/workflows/deploy-sandbox.yaml
 
 echo "Creating space deployer for Github deploys..."
