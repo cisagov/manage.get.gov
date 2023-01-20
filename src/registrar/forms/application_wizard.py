@@ -280,9 +280,7 @@ class AuthorizingOfficialForm(RegistrarForm):
         label_suffix=REQUIRED_SUFFIX,
         required=True,
         error_messages={
-            "required": (
-                "Enter the phone number for your authorizing official."
-            )
+            "required": "Enter the phone number for your authorizing official."
         },
     )
 
@@ -487,11 +485,7 @@ class YourContactForm(RegistrarForm):
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
         required=True,
-        error_messages={
-            "required": (
-                "Enter your phone number."
-            )
-        },
+        error_messages={"required": "Enter your phone number."},
     )
 
 
@@ -559,11 +553,7 @@ class OtherContactsForm(RegistrarForm):
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
         required=True,
-        error_messages={
-            "required": (
-                "Enter a phone number for this contact."
-            )
-        },
+        error_messages={"required": "Enter a phone number for this contact."},
     )
 
 
