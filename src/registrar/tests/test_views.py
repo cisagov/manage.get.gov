@@ -792,8 +792,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        first_page = ao_page.click(str(self.TITLES["organization_type"]), index=0)
-        type_form = type_page.form
+        ao_page.click(str(self.TITLES["organization_type"]), index=0)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["organization_type-organization_type"] = "city"
         type_result = type_form.submit()
