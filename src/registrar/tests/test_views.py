@@ -120,7 +120,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         this test work.
         """
         num_pages_tested = 0
-        SKIPPED_PAGES = 2  # elections, type_of_work
+        SKIPPED_PAGES = 3  # elections, type_of_work, tribal_government
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         type_page = self.app.get(reverse("application:")).follow()
@@ -739,6 +739,23 @@ class DomainApplicationTests(TestWithUser, WebTest):
         contact_page = type_result.follow()
 
         self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
+
+    def test_application_tribal_government(self):
+        """Tribal organizations have to answer an additional question."""
+        type_form = type_page.form
+        type_form[
+            "organization_type-organization_type"
+        ] = DomainApplication.OrganizationChoices.TRIBAL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_page.form.submit()
+        # the tribal government page comes immediately afterwards
+        self.assertIn("/tribal_government", type_result.headers["Location"])
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        tribal_government_page = type_result.follow()
+
+        # and the step is on the sidebar list.
+        self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
 
     def test_application_ao_dynamic_text(self):
         type_page = self.app.get(reverse("application:")).follow()

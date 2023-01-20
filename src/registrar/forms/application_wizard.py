@@ -66,6 +66,30 @@ class OrganizationTypeForm(RegistrarForm):
     )
 
 
+class TribalGovernmentForm(RegistrarForm):
+    federally_recognized_tribe = forms.BooleanField(
+        label="Our organization is a federally-recognized tribe. ",
+        required=False,
+    )
+
+    state_recognized_tribe = forms.BooleanField(
+        label="Our organization is a state-recognized tribe ",
+        required=False,
+    )
+
+    tribe_name = forms.CharField(
+        label="Enter the tribe that you represent",
+        label_suffix=REQUIRED_SUFFIX,
+        error_messages={"required": "Enter the tribe you represent."},
+    )
+
+    def clean(self):
+        """Needs to be either state or federally recognized."""
+        if not (self.cleaned_data["federally_recognized_tribe"] or
+                self.cleaned_data["state_recognized_tribe"]):
+            raise forms.ValidationError("Only tribes recognized by the U.S. federal government or by a U.S. state government are eligible for .gov domains.", code="invalid")
+
+
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
         choices=DomainApplication.BranchChoices.choices,

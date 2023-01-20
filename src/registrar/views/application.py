@@ -24,6 +24,7 @@ class Step(StrEnum):
     """
 
     ORGANIZATION_TYPE = "organization_type"
+    TRIBAL_GOVERNMENT = "tribal_government"
     ORGANIZATION_FEDERAL = "organization_federal"
     ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
@@ -68,6 +69,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
     # We need to pass our human-readable step titles as context to the templates.
     TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
+        Step.TRIBAL_GOVERNMENT: _("Tribal government"),
         Step.ORGANIZATION_FEDERAL: _("Type of organization — Federal"),
         Step.ORGANIZATION_ELECTION: _("Type of organization — Election board"),
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
@@ -91,6 +93,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
     WIZARD_CONDITIONS = {
         Step.ORGANIZATION_FEDERAL: lambda w: w.from_model(
             "show_organization_federal", False
+        ),
+        Step.TRIBAL_GOVERNMENT: lambda w: w.from_model(
+            "show_tribal_government", False
         ),
         Step.ORGANIZATION_ELECTION: lambda w: w.from_model(
             "show_organization_election", False
@@ -334,6 +339,11 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
 class OrganizationType(ApplicationWizard):
     template_name = "application_org_type.html"
     forms = [forms.OrganizationTypeForm]
+
+
+class TribalGovernment(ApplicationWizard):
+    template_name = "application_tribal_government.html"
+    forms = [forms.TribalGovernmentForm]
 
 
 class OrganizationFederal(ApplicationWizard):
