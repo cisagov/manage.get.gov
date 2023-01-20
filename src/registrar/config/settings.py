@@ -512,9 +512,13 @@ SECURE_SSL_REDIRECT = True
 # web server configurations.
 ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
+    "getgov-mr.app.cloud.gov",
+    "getgov-sspj.app.cloud.gov",
+    "getgov-nmb.app.cloud.gov",
+    "getgov-ik.app.cloud.gov",
+    "getgov-lmm.app.cloud.gov",
     "get.gov",
 ]
-
 
 # Extend ALLOWED_HOSTS.
 # IP addresses can also be hosts, which are used by internal

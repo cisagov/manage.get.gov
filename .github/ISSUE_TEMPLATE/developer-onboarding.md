@@ -83,4 +83,4 @@ export GPG_TTY
 
 We have two types of environments: stable, and sandbox. Stable gets deployed via tagged release every sprint, and developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer. 
 
-TKTK: Actual steps for setting up a new developer sandbox automation.
+All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](../../ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](../../ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox. 
