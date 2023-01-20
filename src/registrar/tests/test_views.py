@@ -739,7 +739,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         contact_page = type_result.follow()
 
         self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
-    
+
     def test_application_ao_dynamic_text(self):
         type_page = self.app.get(reverse("application:")).follow()
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -788,9 +788,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- AO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = org_contact_result.follow()
-        ao_form = ao_page.form
         self.assertContains(ao_page, "Domain requests from executive branch agencies")
-        
+
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         first_page = ao_page.click(str(self.TITLES["organization_type"]), index=0)
@@ -805,7 +804,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = election_page.click(str(self.TITLES["authorizing_official"]), index=0)
         self.assertContains(ao_page, "Domain requests from <strong>cities</strong>")
-
 
     @skip("WIP")
     def test_application_edit_restore(self):
