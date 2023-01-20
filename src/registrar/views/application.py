@@ -367,8 +367,9 @@ class AuthorizingOfficial(ApplicationWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["Step"] = Step.__members__
-        context["application"] = self.application
+        context["is_federal"] = self.application.is_federal()
+        context["organization_type"] = self.application.organization_type
+        context["federal_type"] = self.application.federal_type
         return context
 
 
