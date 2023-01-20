@@ -13,7 +13,29 @@
   </p>
 
   <div class="ao_example">
-    {% include "includes/ao_example__school-district.html" %}
+    {% if application.organization_type == 'federal' %}
+      {% if application.federal_type == 'executive' %}
+        {% include "includes/ao_example__exec.html" %}
+      {% elif application.federal_type == 'judicial' %}
+        {% include "includes/ao_example__judicial.html" %}
+      {% elif application.federal_type == 'legislative' %}
+        {% include "includes/ao_example__legislative.html" %}
+      {% endif %}
+    {% elif application.organization_type == 'city' %}
+        {% include "includes/ao_example__city.html" %}
+    {% elif application.organization_type == 'county' %}
+        {% include "includes/ao_example__county.html" %}
+    {% elif application.organization_type == 'interstate' %}
+        {% include "includes/ao_example__interstate.html" %}
+    {% elif application.organization_type == 'school_district' %}
+        {% include "includes/ao_example__school-district.html" %}
+    {% elif application.organization_type == 'special_district' %}
+        {% include "includes/ao_example__special-district.html" %}
+    {% elif application.organization_type == 'state_or_territory' %}
+        {% include "includes/ao_example__state-territory.html" %}
+    {% elif application.organization_type == 'tribal' %}
+      {% include "includes/ao_example__tribal.html" %}
+    {% endif %}
   </div>
 
   <p>We’ll contact your authorizing official to let them know that you made this request and to double check that they approve it.</p> 
