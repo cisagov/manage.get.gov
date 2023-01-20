@@ -11,7 +11,7 @@ on:
     inputs:
       environment:
         type: choice
-        description: Which environment should we flush and re-load data for?
+        description: Which environment should we run migrations for?
         options:
           - stable
           - lmm

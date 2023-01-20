@@ -1,5 +1,5 @@
 # This workflow runs on pushes of tagged commits.
-# "Releases" of tagged commits will deploy `main` to Stable.
+# "Releases" of tagged commits will deploy selected branch to stable.
 
 name: Build and deploy stable for tagged release
 
