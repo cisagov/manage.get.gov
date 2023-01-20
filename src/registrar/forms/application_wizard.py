@@ -62,7 +62,7 @@ class OrganizationTypeForm(RegistrarForm):
         required=True,
         choices=DomainApplication.OrganizationChoices.choices,
         widget=forms.RadioSelect,
-        error_messages={"required": "This question is required."},
+        error_messages={"required": "Select the type of organization you represent."},
     )
 
 
@@ -70,7 +70,11 @@ class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
         choices=DomainApplication.BranchChoices.choices,
         widget=forms.RadioSelect,
-        error_messages={"required": "This question is required."},
+        error_messages={
+            "required": (
+                "Select the part of the federal government your organization is in."
+            )
+        },
     )
 
 
@@ -91,7 +95,8 @@ class OrganizationElectionForm(RegistrarForm):
         is_election_board = self.cleaned_data["is_election_board"]
         if is_election_board is None:
             raise forms.ValidationError(
-                "Please select Yes or No.",
+                "Select “Yes” if you represent an election office. Select “No” if you"
+                " don’t.",
                 code="required",
             )
         return is_election_board
@@ -109,29 +114,48 @@ class OrganizationContactForm(RegistrarForm):
         label_suffix=REQUIRED_SUFFIX,
     )
     organization_name = forms.CharField(
-        label="Organization Name", label_suffix=REQUIRED_SUFFIX
+        label="Organization name",
+        label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the name of your organization."},
     )
     address_line1 = forms.CharField(
         label="Street address",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter the street address of your organization."},
     )
     address_line2 = forms.CharField(
         required=False,
         label="Street address line 2",
     )
-    city = forms.CharField(label="City", label_suffix=REQUIRED_SUFFIX)
+    city = forms.CharField(
+        label="City",
+        label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": "Enter the city where your organization is located."
+        },
+    )
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": (
+                "Select the state, territory, or military post where your organization"
+                " is located."
+            )
+        },
     )
     zipcode = forms.CharField(
-        label="ZIP code",
+        label="Zip code",
         label_suffix=REQUIRED_SUFFIX,
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Please enter a ZIP code in the form 12345 or 12345-6789",
+                message="Enter a zip code in the form of 12345 or 12345-6789.",
             )
         ],
     )
@@ -149,13 +173,15 @@ class OrganizationContactForm(RegistrarForm):
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
-                    "Please select your federal agency.", code="required"
+                    "Select the federal agency your organization is in.",
+                    code="required",
                 )
         if self.application.is_federal():
             if not federal_agency:
                 # no answer was selected
                 raise forms.ValidationError(
-                    "Please select your federal agency.", code="required"
+                    "Select the federal agency your organization is in.",
+                    code="required",
                 )
         return federal_agency
 
@@ -166,15 +192,24 @@ class TypeOfWorkForm(RegistrarForm):
         label="What type of work does your organization do? ",
         label_suffix=REQUIRED_SUFFIX,
         widget=forms.Textarea(),
+        error_messages={"required": "Enter the type of work your organization does."},
     )
 
     more_organization_information = forms.CharField(
         # label has to end in a space to get the label_suffix to show
-        label="Describe how your organization is a government organization that is "
-        "independent of a state government. Include links to authorizing legislation, "
-        "applicable bylaws or charter, or other documentation to support your claims. ",
+        label=(
+            "Describe how your organization is a government organization that is"
+            " independent of a state government. Include links to authorizing"
+            " legislation, applicable bylaws or charter, or other documentation to"
+            " support your claims. "
+        ),
         label_suffix=REQUIRED_SUFFIX,
         widget=forms.Textarea(),
+        error_messages={
+            "required": (
+                "Describe how your organization is independent of a state government."
+            )
+        },
     )
 
 
@@ -197,29 +232,56 @@ class AuthorizingOfficialForm(RegistrarForm):
         return super().from_database(contact)
 
     first_name = forms.CharField(
-        label="First name/given name",
+        label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": (
+                "Enter the first name / given name of your authorizing official."
+            )
+        },
     )
     middle_name = forms.CharField(
         required=False,
         label="Middle name",
     )
     last_name = forms.CharField(
-        label="Last name/family name",
+        label="Last name / family name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": (
+                "Enter the last name / family name of your authorizing official."
+            )
+        },
     )
     title = forms.CharField(
         label="Title or role in your organization",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": (
+                "Enter the title or role your authorizing official has in your"
+                " organization (e.g., Chief Information Officer)."
+            )
+        },
     )
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."},
+        error_messages={
+            "invalid": (
+                "Enter an email address in the required format, like name@example.com."
+            )
+        },
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": "Enter the phone number for your authorizing official."
+        },
     )
 
 
@@ -243,8 +305,10 @@ class CurrentSitesForm(RegistrarForm):
 
     current_site = forms.CharField(
         required=False,
-        label="Enter your organization’s public website, if you have one. For example, "
-        "www.city.com.",
+        label=(
+            "Enter your organization’s website in the required format, like"
+            " www.city.com."
+        ),
     )
 
     def clean_current_site(self):
@@ -265,7 +329,9 @@ class CurrentSitesForm(RegistrarForm):
         else:
             # string could not be a domain
             raise forms.ValidationError(
-                "Please enter a valid domain name", code="invalid"
+                "Enter your organization’s website in the required format, like"
+                " www.city.com.",
+                code="invalid",
             )
 
 
@@ -312,8 +378,10 @@ class DotGovDomainForm(RegistrarForm):
     )
     alternative_domain = forms.CharField(
         required=False,
-        label="Are there other domains you’d like if we can’t give you your first "
-        "choice? Entering alternative domains is optional.",
+        label=(
+            "Are there other domains you’d like if we can’t give you your first "
+            "choice? Entering alternative domains is optional."
+        ),
     )
 
     def clean_requested_domain(self):
@@ -326,19 +394,22 @@ class DotGovDomainForm(RegistrarForm):
         if not requested:
             # none or empty string
             raise forms.ValidationError(
-                "Please enter the .gov domain that you are requesting.", code="invalid"
+                "Enter the .gov domain you want. Don’t include “www” or “.gov.” For"
+                " example, if you want www.city.gov, you would enter “city” (without"
+                " the quotes).",
+                code="invalid",
             )
         if requested.endswith(".gov"):
             requested = requested[:-4]
         if "." in requested:
             raise forms.ValidationError(
-                "Please enter a domain without any periods.",
+                "Enter the .gov domain you want without any periods.",
                 code="invalid",
             )
         if not Domain.string_could_be_domain(requested + ".gov"):
             raise forms.ValidationError(
-                "Please enter a valid domain name using only letters, "
-                "numbers, and hyphens",
+                "Enter a domain using only letters, "
+                "numbers, or hyphens (though we don't recommend using hyphens).",
                 code="invalid",
             )
         return requested
@@ -349,7 +420,7 @@ class PurposeForm(RegistrarForm):
         label="Purpose",
         widget=forms.Textarea(),
         error_messages={
-            "required": "Please enter some information about the purpose of your domain"
+            "required": "Describe how you'll use the .gov domain you’re requesting."
         },
     )
 
@@ -373,29 +444,48 @@ class YourContactForm(RegistrarForm):
         return super().from_database(contact)
 
     first_name = forms.CharField(
-        label="First name/given name",
+        label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter your first name / given name."},
     )
     middle_name = forms.CharField(
         required=False,
         label="Middle name",
     )
     last_name = forms.CharField(
-        label="Last name/family name",
+        label="Last name / family name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter your last name / family name."},
     )
     title = forms.CharField(
         label="Title or role in your organization",
+        required=True,
         label_suffix=REQUIRED_SUFFIX,
+        error_messages={
+            "required": (
+                "Enter your title or role in your organization (e.g., Chief Information"
+                " Officer)."
+            )
+        },
     )
     email = forms.EmailField(
         label="Email",
+        required=True,
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."},
+        error_messages={
+            "invalid": (
+                "Enter your email address in the required format, like"
+                " name@example.com."
+            )
+        },
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter your phone number."},
     )
 
 
@@ -420,44 +510,69 @@ class OtherContactsForm(RegistrarForm):
         return super().from_database(other_contacts)
 
     first_name = forms.CharField(
-        label="First name/given name",
+        label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": "Enter the first name / given name of this contact."
+        },
     )
     middle_name = forms.CharField(
         required=False,
         label="Middle name",
     )
     last_name = forms.CharField(
-        label="Last name/family name",
+        label="Last name / family name",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": "Enter the last name / family name of this contact."
+        },
     )
     title = forms.CharField(
         label="Title or role in your organization",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={
+            "required": (
+                "Enter the title or role in your organization of this contact (e.g.,"
+                " Chief Information Officer)."
+            )
+        },
     )
     email = forms.EmailField(
         label="Email",
         label_suffix=REQUIRED_SUFFIX,
-        error_messages={"invalid": "Please enter a valid email address."},
+        error_messages={
+            "invalid": (
+                "Enter an email address in the required format, like name@example.com."
+            )
+        },
     )
     phone = PhoneNumberField(
         label="Phone",
         label_suffix=REQUIRED_SUFFIX,
+        required=True,
+        error_messages={"required": "Enter a phone number for this contact."},
     )
 
 
 class SecurityEmailForm(RegistrarForm):
     security_email = forms.EmailField(
         required=False,
-        label="Security email",
-        error_messages={"invalid": "Please enter a valid email address."},
+        label="Security email for public use",
+        error_messages={
+            "invalid": (
+                "Enter an email address in the required format, like name@example.com."
+            )
+        },
     )
 
 
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
         required=False,
-        label="Anything else we should know",
+        label="Anything else we should know?",
         widget=forms.Textarea(),
     )
 
@@ -477,7 +592,8 @@ class RequirementsForm(RegistrarForm):
         is_acknowledged = self.cleaned_data["is_policy_acknowledged"]
         if not is_acknowledged:
             raise forms.ValidationError(
-                "You must read and agree to the .gov domain requirements to proceed.",
+                "Check the box if you read and agree to the requirements for"
+                " registering and operating .gov domains.",
                 code="invalid",
             )
         return is_acknowledged
