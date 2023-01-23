@@ -881,7 +881,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- DOTGOV DOMAIN PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = current_sites_result.follow()
-        dotgov_form = dotgov_page.form
 
         self.assertContains(dotgov_page, "medicare.gov")
 
@@ -899,7 +898,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         dotgov_page = election_page.click(str(self.TITLES["dotgov_domain"]), index=0)
         self.assertContains(dotgov_page, "BlufftonIndiana.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
-
 
     @skip("WIP")
     def test_application_edit_restore(self):
