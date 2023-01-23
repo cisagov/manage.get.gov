@@ -802,7 +802,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Go back to AO page and test the dynamic text changed
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = election_page.click(str(self.TITLES["authorizing_official"]), index=0)
-        self.assertContains(ao_page, "Domain requests from <strong>cities</strong>")
+        self.assertContains(ao_page, "Domain requests from cities")
 
     @skip("WIP")
     def test_application_edit_restore(self):
