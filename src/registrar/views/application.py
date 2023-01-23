@@ -365,6 +365,13 @@ class AuthorizingOfficial(ApplicationWizard):
     template_name = "application_authorizing_official.html"
     forms = [forms.AuthorizingOfficialForm]
 
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["is_federal"] = self.application.is_federal()
+        context["organization_type"] = self.application.organization_type
+        context["federal_type"] = self.application.federal_type
+        return context
+
 
 class CurrentSites(ApplicationWizard):
     template_name = "application_current_sites.html"

@@ -740,6 +740,70 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
 
+    def test_application_ao_dynamic_text(self):
+        type_page = self.app.get(reverse("application:")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- TYPE PAGE  ----
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "federal"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_page.form.submit()
+
+        # ---- FEDERAL BRANCH PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+        federal_form = federal_page.form
+        federal_form["organization_federal-federal_type"] = "executive"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_result = federal_form.submit()
+
+        # ---- ORG CONTACT PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_page = federal_result.follow()
+        org_contact_form = org_contact_page.form
+        # federal agency so we have to fill in federal_agency
+        org_contact_form[
+            "organization_contact-federal_agency"
+        ] = "General Services Administration"
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-address_line2"] = "address 2"
+        org_contact_form["organization_contact-city"] = "NYC"
+        org_contact_form["organization_contact-state_territory"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
+        org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_result = org_contact_form.submit()
+
+        # ---- AO CONTACT PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_page = org_contact_result.follow()
+        self.assertContains(ao_page, "Domain requests from executive branch agencies")
+
+        # Go back to organization type page and change type
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_page.click(str(self.TITLES["organization_type"]), index=0)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_form["organization_type-organization_type"] = "city"
+        type_result = type_form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        election_page = type_result.follow()
+
+        # Go back to AO page and test the dynamic text changed
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_page = election_page.click(str(self.TITLES["authorizing_official"]), index=0)
+        self.assertContains(ao_page, "Domain requests from cities")
+
     @skip("WIP")
     def test_application_edit_restore(self):
         """
