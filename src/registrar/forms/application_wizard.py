@@ -83,11 +83,26 @@ class TribalGovernmentForm(RegistrarForm):
         error_messages={"required": "Enter the tribe you represent."},
     )
 
-    def clean(self):
-        """Needs to be either state or federally recognized."""
-        if not (self.cleaned_data["federally_recognized_tribe"] or
-                self.cleaned_data["state_recognized_tribe"]):
-            raise forms.ValidationError("Only tribes recognized by the U.S. federal government or by a U.S. state government are eligible for .gov domains.", code="invalid")
+
+class TribalExplanationForm(RegistrarForm):
+
+    # this overloads `more_organization_information` by using the existing field
+    # on the domain application object on a second form.
+    more_organization_information = forms.CharField(
+        # label has to end in a space to get the label_suffix to show
+        label=(
+            "Only tribes recognized by the U.S. federal government or by a"
+            " U.S. state government are eligible for .gov domains. Please tell"
+            " us more about your tribe and why you want a .gov domain. "
+        ),
+        label_suffix=REQUIRED_SUFFIX,
+        widget=forms.Textarea(),
+        error_messages={
+            "required": (
+                "Please tell us more about your tribe and why you want a .gov domain."
+            )
+        },
+    )
 
 
 class OrganizationFederalForm(RegistrarForm):
