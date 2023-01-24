@@ -743,6 +743,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_ao_dynamic_text(self):
         type_page = self.app.get(reverse("application:")).follow()
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         # ---- TYPE PAGE  ----
         type_form = type_page.form
         type_form["organization_type-organization_type"] = "federal"
