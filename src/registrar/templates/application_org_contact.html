@@ -1,4 +1,3 @@
-<!-- Test page -->
 {% extends 'application_form.html' %}
 {% load widget_tweaks field_helpers %}
 
@@ -15,6 +14,7 @@
 
   {% include "includes/required_fields.html" %}
 </div>
+
 
 <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
   {% csrf_token %}

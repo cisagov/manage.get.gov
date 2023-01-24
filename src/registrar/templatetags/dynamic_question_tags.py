@@ -1,7 +1,13 @@
 from django import template
+from django.forms import BaseFormSet
 from django.utils.html import format_html
 
 register = template.Library()
+
+
+@register.filter
+def isformset(value):
+    return isinstance(value, BaseFormSet)
 
 
 @register.simple_tag

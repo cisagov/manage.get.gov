@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static widget_tweaks namespaced_urls %}
+{% load static widget_tweaks dynamic_question_tags namespaced_urls %}
 
 {% block title %}Apply for a .gov domain – {{form_titles|get_item:steps.current}}{% endblock %}
 {% block content %}
@@ -12,30 +12,26 @@
       <main id="main-content" class="grid-container register-form-step">
         {% if steps.prev %}
         <a href="{% namespaced_url 'application' steps.prev %}" class="breadcrumb__back">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
-          </svg><span class="margin-left-05">Previous step </span>
+          </svg><span class="margin-left-05">Previous step</span>
         </a>
         {% endif %}
 
-        {% for form in forms %}
-          {% if form.errors %}
-            {% for error in form.non_field_errors %}
-                <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
-                <div class="usa-alert__body">
-                {{ error|escape }}
-                </div>
-                </div>
+        {% comment %}
+           to make sense of this loop, consider that 
+           a context variable of `forms` contains all
+           the forms for this page; each of these
+           may be itself a formset and contain additional
+           forms, hence `forms.forms`
+        {% endcomment %}
+        {% for outer in forms %}
+          {% if outer|isformset %}
+            {% for inner in outer.forms %}
+              {% include "includes/form_errors.html" with form=inner %}
             {% endfor %}
-            {% for field in form %}
-                {% for error in field.errors %}
-                <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
-                <div class="usa-alert__body">
-                    {{ error|escape }}
-                </div>
-                </div>
-            {% endfor %}
-            {% endfor %}
+          {% else %}
+            {% include "includes/form_errors.html" with form=outer %}
           {% endif %}
         {% endfor %}
 
