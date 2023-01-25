@@ -872,7 +872,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         current_sites_page = ao_result.follow()
         current_sites_form = current_sites_page.form
-        current_sites_form["current_sites-current_site"] = "www.city.com"
+        current_sites_form["current_sites-0-website"] = "www.city.com"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -902,6 +902,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
     def test_application_formsets(self):
         """Users are able to add more than one of some fields."""
         current_sites_page = self.app.get(reverse("application:current_sites"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         # fill in the form field
         current_sites_form = current_sites_page.form
         self.assertIn("current_sites-0-website", current_sites_form.fields)
