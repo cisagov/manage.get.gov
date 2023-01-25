@@ -872,15 +872,104 @@ class DomainApplicationTests(TestWithUser, WebTest):
         ao_page = election_page.click(str(self.TITLES["authorizing_official"]), index=0)
         self.assertContains(ao_page, "Domain requests from cities")
 
-    def test_application_formsets(self):
-        """Users are able to add more than one of some fields."""
-        current_sites_page = self.app.get(reverse("application:current_sites"))
+    def test_application_dotgov_domain_dynamic_text(self):
+        type_page = self.app.get(reverse("application:")).follow()
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        # ---- TYPE PAGE  ----
+        type_form = type_page.form
+        type_form["organization_type-organization_type"] = "federal"
 
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_page.form.submit()
+
+        # ---- FEDERAL BRANCH PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+        federal_form = federal_page.form
+        federal_form["organization_federal-federal_type"] = "executive"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_result = federal_form.submit()
+
+        # ---- ORG CONTACT PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_page = federal_result.follow()
+        org_contact_form = org_contact_page.form
+        # federal agency so we have to fill in federal_agency
+        org_contact_form[
+            "organization_contact-federal_agency"
+        ] = "General Services Administration"
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-address_line2"] = "address 2"
+        org_contact_form["organization_contact-city"] = "NYC"
+        org_contact_form["organization_contact-state_territory"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
+        org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_result = org_contact_form.submit()
+
+        # ---- AO CONTACT PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_page = org_contact_result.follow()
+
+        # ---- AUTHORIZING OFFICIAL PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_page = org_contact_result.follow()
+        ao_form = ao_page.form
+        ao_form["authorizing_official-first_name"] = "Testy ATO"
+        ao_form["authorizing_official-last_name"] = "Tester ATO"
+        ao_form["authorizing_official-title"] = "Chief Tester"
+        ao_form["authorizing_official-email"] = "testy@town.com"
+        ao_form["authorizing_official-phone"] = "(201) 555 5555"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_result = ao_form.submit()
+
+        # ---- CURRENT SITES PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_page = ao_result.follow()
+        current_sites_form = current_sites_page.form
+        current_sites_form["current_sites-0-website"] = "www.city.com"
+
+        # test saving the page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit()
+
+        # ---- DOTGOV DOMAIN PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_page = current_sites_result.follow()
+
+        self.assertContains(dotgov_page, "medicare.gov")
+
+        # Go back to organization type page and change type
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_page.click(str(self.TITLES["organization_type"]), index=0)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_form["organization_type-organization_type"] = "city"
+        type_result = type_form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        election_page = type_result.follow()
+
+        # Go back to dotgov domain page to test the dynamic text changed
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_page = election_page.click(str(self.TITLES["dotgov_domain"]), index=0)
+        self.assertContains(dotgov_page, "BlufftonIndiana.gov")
+        self.assertNotContains(dotgov_page, "medicare.gov")
+
+    def test_application_formsets(self):
+        """Users are able to add more than one of some fields."""
+        current_sites_page = self.app.get(reverse("application:current_sites"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         # fill in the form field
         current_sites_form = current_sites_page.form
         self.assertIn("current_sites-0-website", current_sites_form.fields)

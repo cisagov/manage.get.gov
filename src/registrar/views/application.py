@@ -275,6 +275,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             "steps": self.steps,
             # Add information about which steps should be unlocked
             "visited": self.storage.get("step_history", []),
+            "is_federal": self.application.is_federal(),
         }
 
     def get_step_list(self) -> list:
@@ -387,11 +388,6 @@ class OrganizationContact(ApplicationWizard):
     template_name = "application_org_contact.html"
     forms = [forms.OrganizationContactForm]
 
-    def get_context_data(self):
-        context = super().get_context_data()
-        context["is_federal"] = self.application.is_federal()
-        return context
-
 
 class TypeOfWork(ApplicationWizard):
     template_name = "application_type_of_work.html"
@@ -404,7 +400,6 @@ class AuthorizingOfficial(ApplicationWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["is_federal"] = self.application.is_federal()
         context["organization_type"] = self.application.organization_type
         context["federal_type"] = self.application.federal_type
         return context
@@ -418,6 +413,12 @@ class CurrentSites(ApplicationWizard):
 class DotgovDomain(ApplicationWizard):
     template_name = "application_dotgov_domain.html"
     forms = [forms.DotGovDomainForm, forms.AlternativeDomainFormSet]
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["organization_type"] = self.application.organization_type
+        context["federal_type"] = self.application.federal_type
+        return context
 
 
 class Purpose(ApplicationWizard):
