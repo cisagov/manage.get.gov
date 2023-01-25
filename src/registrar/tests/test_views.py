@@ -120,7 +120,9 @@ class DomainApplicationTests(TestWithUser, WebTest):
         this test work.
         """
         num_pages_tested = 0
-        SKIPPED_PAGES = 4  # elections, type_of_work, tribal_government, tribal_explanation
+        SKIPPED_PAGES = (
+            4  # elections, type_of_work, tribal_government, tribal_explanation
+        )
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         type_page = self.app.get(reverse("application:")).follow()
@@ -791,17 +793,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
         tribal_government_result = tribal_government_page.form.submit()
 
         # should be a redirect to tribal_more_information
-        self.assertIn("/tribal_more_information", tribal_government_result.headers["Location"])
+        self.assertIn(
+            "/tribal_more_information", tribal_government_result.headers["Location"]
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         tribal_more_information_page = tribal_government_result.follow()
 
         # put an explanation and submit
-        tribal_more_information_page.form["tribal_more_information-more_organization_information"] = "Some explanation"
+        tribal_more_information_page.form[
+            "tribal_more_information-more_organization_information"
+        ] = "Some explanation"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         result = tribal_more_information_page.form.submit()
         # result should be a success
         self.assertEqual(result.status_code, 200)
-
 
     def test_application_ao_dynamic_text(self):
         type_page = self.app.get(reverse("application:")).follow()

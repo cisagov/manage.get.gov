@@ -498,11 +498,17 @@ class DomainApplication(TimeStampedModel):
     def show_tribal_explanation(self) -> bool:
         """Show this step if the tribe is not federally or state recognized."""
         user_choice = self.organization_type
-        if (user_choice == DomainApplication.OrganizationChoices.TRIBAL):
+        if user_choice == DomainApplication.OrganizationChoices.TRIBAL:
             # did answer tribal, check the recognition answers
-            if self.federally_recognized_tribe is not None and self.state_recognized_tribe is not None:
+            if (
+                self.federally_recognized_tribe is not None
+                and self.state_recognized_tribe is not None
+            ):
                 # have answered these questions
-                if not self.federally_recognized_tribe and not self.state_recognized_tribe:
+                if (
+                    not self.federally_recognized_tribe
+                    and not self.state_recognized_tribe
+                ):
                     return True
         return False
 

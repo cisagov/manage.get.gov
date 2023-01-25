@@ -96,9 +96,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.ORGANIZATION_FEDERAL: lambda w: w.from_model(
             "show_organization_federal", False
         ),
-        Step.TRIBAL_GOVERNMENT: lambda w: w.from_model(
-            "show_tribal_government", False
-        ),
+        Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
         Step.TRIBAL_EXPLANATION: lambda w: w.from_model(
             "show_tribal_explanation", False
         ),
