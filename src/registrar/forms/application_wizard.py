@@ -1,13 +1,15 @@
 from __future__ import annotations  # allows forward references in annotations
+from itertools import zip_longest
 import logging
+from typing import Callable
+from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
 from django.core.validators import RegexValidator
 from django.utils.safestring import mark_safe
 
-from phonenumber_field.formfields import PhoneNumberField  # type: ignore
-
 from registrar.models import Contact, DomainApplication, Domain
+from registrar.utility import errors
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,96 @@ class RegistrarForm(forms.Form):
         return {
             name: getattr(obj, name) for name in cls.declared_fields.keys()
         }  # type: ignore
+
+
+class RegistrarFormSet(forms.BaseFormSet):
+    """
+    As with RegistrarForm, a common set of methods and configuration.
+
+    Subclass this class to create new formsets.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # save a reference to an application object
+        self.application = kwargs.pop("application", None)
+        super(RegistrarFormSet, self).__init__(*args, **kwargs)
+
+    def should_delete(self, cleaned):
+        """Should this entry be deleted from the database?"""
+        raise NotImplementedError
+
+    def pre_update(self, db_obj, cleaned):
+        """Code to run before an item in the formset is saved."""
+        for key, value in cleaned.items():
+            setattr(db_obj, key, value)
+
+    def pre_create(self, db_obj, cleaned):
+        """Code to run before an item in the formset is created in the database."""
+        return cleaned
+
+    def to_database(self, obj: DomainApplication):
+        """
+        Adds this form's cleaned data to `obj` and saves `obj`.
+
+        Does nothing if form is not valid.
+
+        Hint: Subclass should call `self._to_database(...)`.
+        """
+        raise NotImplementedError
+
+    def _to_database(
+        self,
+        obj: DomainApplication,
+        join: str,
+        should_delete: Callable,
+        pre_update: Callable,
+        pre_create: Callable,
+    ):
+        """
+        Performs the actual work of saving.
+
+        Has hooks such as `should_delete` and `pre_update` by which the
+        subclass can control behavior. Add more hooks whenever needed.
+        """
+        if not self.is_valid():
+            return
+        obj.save()
+
+        query = getattr(obj, join).order_by("created_at").all()  # order matters
+
+        # the use of `zip` pairs the forms in the formset with the
+        # related objects gotten from the database -- there should always be
+        # at least as many forms as database entries: extra forms means new
+        # entries, but fewer forms is _not_ the correct way to delete items
+        # (likely a client-side error or an attempt at data tampering)
+
+        for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
+
+            cleaned = post_data.cleaned_data if post_data is not None else {}
+
+            # matching database object exists, update it
+            if db_obj is not None and cleaned:
+                if should_delete(cleaned):
+                    db_obj.delete()
+                    continue
+                else:
+                    pre_update(db_obj, cleaned)
+                    db_obj.save()
+
+            # no matching database object, create it
+            elif db_obj is None and cleaned:
+                kwargs = pre_create(db_obj, cleaned)
+                getattr(obj, join).create(**kwargs)
+
+    @classmethod
+    def on_fetch(cls, query):
+        """Code to run when fetching formset's objects from the database."""
+        return query.values()
+
+    @classmethod
+    def from_database(cls, obj: DomainApplication, join: str, on_fetch: Callable):
+        """Returns a dict of form field values gotten from `obj`."""
+        return on_fetch(getattr(obj, join).order_by("created_at"))  # order matters
 
 
 class OrganizationTypeForm(RegistrarForm):
@@ -325,79 +417,124 @@ class AuthorizingOfficialForm(RegistrarForm):
 
 
 class CurrentSitesForm(RegistrarForm):
-    def to_database(self, obj):
-        if not self.is_valid():
-            return
-        obj.save()
-        normalized = Domain.normalize(self.cleaned_data["current_site"], blank=True)
-        if normalized:
-            # TODO: ability to update existing records
-            obj.current_websites.create(website=normalized)
+    website = forms.URLField(
+        required=False,
+        label="Public website",
+    )
+
+
+class BaseCurrentSitesFormSet(RegistrarFormSet):
+    JOIN = "current_websites"
+
+    def should_delete(self, cleaned):
+        website = cleaned.get("website", "")
+        return website.strip() == ""
+
+    def to_database(self, obj: DomainApplication):
+        self._to_database(
+            obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create
+        )
 
     @classmethod
     def from_database(cls, obj):
-        current_website = obj.current_websites.first()
-        if current_website is not None:
-            return {"current_site": current_website.website}
+        return super().from_database(obj, cls.JOIN, cls.on_fetch)
+
+
+CurrentSitesFormSet = forms.formset_factory(
+    CurrentSitesForm,
+    extra=1,
+    absolute_max=1500,  # django default; use `max_num` to limit entries
+    formset=BaseCurrentSitesFormSet,
+)
+
+
+class AlternativeDomainForm(RegistrarForm):
+    alternative_domain = forms.CharField(
+        required=False,
+        label="Alternative domain",
+    )
+
+    def clean_alternative_domain(self):
+        """Validation code for domain names."""
+        try:
+            requested = self.cleaned_data.get("alternative_domain", None)
+            validated = Domain.validate(requested, blank_ok=True)
+        except errors.ExtraDotsError:
+            raise forms.ValidationError(
+                "Please enter a domain without any periods.",
+                code="invalid",
+            )
+        except errors.DomainUnavailableError:
+            raise forms.ValidationError(
+                "ERROR MESSAGE GOES HERE",
+                code="invalid",
+            )
+        except ValueError:
+            raise forms.ValidationError(
+                "Please enter a valid domain name using only letters, "
+                "numbers, and hyphens",
+                code="invalid",
+            )
+        return validated
+
+
+class BaseAlternativeDomainFormSet(RegistrarFormSet):
+    JOIN = "alternative_domains"
+
+    def should_delete(self, cleaned):
+        domain = cleaned.get("alternative_domain", "")
+        return domain.strip() == ""
+
+    def pre_update(self, db_obj, cleaned):
+        domain = cleaned.get("alternative_domain", None)
+        if domain is not None:
+            db_obj.website = f"{domain}.gov"
+
+    def pre_create(self, db_obj, cleaned):
+        domain = cleaned.get("alternative_domain", None)
+        if domain is not None:
+            return {"website": f"{domain}.gov"}
         else:
             return {}
 
-    current_site = forms.CharField(
-        required=False,
-        label=(
-            "Enter your organization’s website in the required format, like"
-            " www.city.com."
-        ),
-    )
+    def to_database(self, obj: DomainApplication):
+        self._to_database(
+            obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create
+        )
 
-    def clean_current_site(self):
-        """This field should be a legal domain name."""
-        inputted_site = self.cleaned_data["current_site"]
-        if not inputted_site:
-            # empty string is fine
-            return inputted_site
+    @classmethod
+    def on_fetch(cls, query):
+        return [{"alternative_domain": domain.sld} for domain in query]
 
-        # something has been inputted
+    @classmethod
+    def from_database(cls, obj):
+        return super().from_database(obj, cls.JOIN, cls.on_fetch)
 
-        if inputted_site.startswith("http://") or inputted_site.startswith("https://"):
-            # strip of the protocol that the pasted from their web browser
-            inputted_site = inputted_site.split("//", 1)[1]
 
-        if Domain.string_could_be_domain(inputted_site):
-            return inputted_site
-        else:
-            # string could not be a domain
-            raise forms.ValidationError(
-                "Enter your organization’s website in the required format, like"
-                " www.city.com.",
-                code="invalid",
-            )
+AlternativeDomainFormSet = forms.formset_factory(
+    AlternativeDomainForm,
+    extra=1,
+    absolute_max=1500,  # django default; use `max_num` to limit entries
+    formset=BaseAlternativeDomainFormSet,
+)
 
 
 class DotGovDomainForm(RegistrarForm):
     def to_database(self, obj):
         if not self.is_valid():
             return
-        normalized = Domain.normalize(
-            self.cleaned_data["requested_domain"], "gov", blank=True
-        )
-        if normalized:
+        domain = self.cleaned_data.get("requested_domain", None)
+        if domain:
             requested_domain = getattr(obj, "requested_domain", None)
             if requested_domain is not None:
-                requested_domain.name = normalized
+                requested_domain.name = f"{domain}.gov"
                 requested_domain.save()
             else:
-                requested_domain = Domain.objects.create(name=normalized)
+                requested_domain = Domain.objects.create(name=f"{domain}.gov")
                 obj.requested_domain = requested_domain
                 obj.save()
 
         obj.save()
-        normalized = Domain.normalize(
-            self.cleaned_data["alternative_domain"], "gov", blank=True
-        )
-        if normalized:
-            # TODO: ability to update existing records
-            obj.alternative_domains.create(website=normalized)
 
     @classmethod
     def from_database(cls, obj):
@@ -405,32 +542,14 @@ class DotGovDomainForm(RegistrarForm):
         requested_domain = getattr(obj, "requested_domain", None)
         if requested_domain is not None:
             values["requested_domain"] = requested_domain.sld
-
-        alternative_domain = obj.alternative_domains.first()
-        if alternative_domain is not None:
-            values["alternative_domain"] = alternative_domain.sld
-
         return values
 
-    requested_domain = forms.CharField(
-        label="What .gov domain do you want?",
-    )
-    alternative_domain = forms.CharField(
-        required=False,
-        label=(
-            "Are there other domains you’d like if we can’t give you your first "
-            "choice? Entering alternative domains is optional."
-        ),
-    )
-
     def clean_requested_domain(self):
-        """Requested domains need to be legal top-level domains, not subdomains.
-
-        If they end with `.gov`, then we can reasonably take that off. If they have
-        any other dots in them, raise an error.
-        """
-        requested = self.cleaned_data["requested_domain"]
-        if not requested:
+        """Validation code for domain names."""
+        try:
+            requested = self.cleaned_data.get("requested_domain", None)
+            validated = Domain.validate(requested)
+        except errors.BlankValueError:
             # none or empty string
             raise forms.ValidationError(
                 "Enter the .gov domain you want. Don’t include “www” or “.gov.” For"
@@ -438,20 +557,25 @@ class DotGovDomainForm(RegistrarForm):
                 " the quotes).",
                 code="invalid",
             )
-        if requested.endswith(".gov"):
-            requested = requested[:-4]
-        if "." in requested:
+        except errors.ExtraDotsError:
             raise forms.ValidationError(
                 "Enter the .gov domain you want without any periods.",
                 code="invalid",
             )
-        if not Domain.string_could_be_domain(requested + ".gov"):
+        except errors.DomainUnavailableError:
+            raise forms.ValidationError(
+                "ERROR MESSAGE GOES HERE",
+                code="invalid",
+            )
+        except ValueError:
             raise forms.ValidationError(
                 "Enter a domain using only letters, "
                 "numbers, or hyphens (though we don't recommend using hyphens).",
                 code="invalid",
             )
-        return requested
+        return validated
+
+    requested_domain = forms.CharField(label="What .gov domain do you want?")
 
 
 class PurposeForm(RegistrarForm):
@@ -529,25 +653,6 @@ class YourContactForm(RegistrarForm):
 
 
 class OtherContactsForm(RegistrarForm):
-    def to_database(self, obj):
-        if not self.is_valid():
-            return
-        obj.save()
-
-        # TODO: ability to handle multiple contacts
-        contact = obj.other_contacts.filter(email=self.cleaned_data["email"]).first()
-        if contact is not None:
-            super().to_database(contact)
-        else:
-            contact = Contact()
-            super().to_database(contact)
-            obj.other_contacts.add(contact)
-
-    @classmethod
-    def from_database(cls, obj):
-        other_contacts = obj.other_contacts.first()
-        return super().from_database(other_contacts)
-
     first_name = forms.CharField(
         label="First name / given name",
         label_suffix=REQUIRED_SUFFIX,
@@ -594,6 +699,31 @@ class OtherContactsForm(RegistrarForm):
         required=True,
         error_messages={"required": "Enter a phone number for this contact."},
     )
+
+
+class BaseOtherContactsFormSet(RegistrarFormSet):
+    JOIN = "other_contacts"
+
+    def should_delete(self, cleaned):
+        empty = (isinstance(v, str) and not v.strip() for v in cleaned.values())
+        return all(empty)
+
+    def to_database(self, obj: DomainApplication):
+        self._to_database(
+            obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create
+        )
+
+    @classmethod
+    def from_database(cls, obj):
+        return super().from_database(obj, cls.JOIN, cls.on_fetch)
+
+
+OtherContactsFormSet = forms.formset_factory(
+    OtherContactsForm,
+    extra=1,
+    absolute_max=1500,  # django default; use `max_num` to limit entries
+    formset=BaseOtherContactsFormSet,
+)
 
 
 class SecurityEmailForm(RegistrarForm):

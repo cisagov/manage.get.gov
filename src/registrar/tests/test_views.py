@@ -256,7 +256,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         current_sites_page = ao_result.follow()
         current_sites_form = current_sites_page.form
-        current_sites_form["current_sites-current_site"] = "www.city.com"
+        current_sites_form["current_sites-0-website"] = "www.city.com"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -266,7 +266,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(
-            application.current_websites.filter(website="city.com").count(), 1
+            application.current_websites.filter(website="http://www.city.com").count(),
+            1,
         )
 
         # test next button
@@ -283,7 +284,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         dotgov_page = current_sites_result.follow()
         dotgov_form = dotgov_page.form
         dotgov_form["dotgov_domain-requested_domain"] = "city"
-        dotgov_form["dotgov_domain-alternative_domain"] = "city1"
+        dotgov_form["dotgov_domain-0-alternative_domain"] = "city1"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -367,11 +368,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_page = your_contact_result.follow()
         other_contacts_form = other_contacts_page.form
 
-        other_contacts_form["other_contacts-first_name"] = "Testy2"
-        other_contacts_form["other_contacts-last_name"] = "Tester2"
-        other_contacts_form["other_contacts-title"] = "Another Tester"
-        other_contacts_form["other_contacts-email"] = "testy2@town.com"
-        other_contacts_form["other_contacts-phone"] = "(201) 555 5557"
+        other_contacts_form["other_contacts-0-first_name"] = "Testy2"
+        other_contacts_form["other_contacts-0-last_name"] = "Tester2"
+        other_contacts_form["other_contacts-0-title"] = "Another Tester"
+        other_contacts_form["other_contacts-0-email"] = "testy2@town.com"
+        other_contacts_form["other_contacts-0-phone"] = "(201) 555 5557"
 
         # test saving the page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -865,6 +866,38 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = election_page.click(str(self.TITLES["authorizing_official"]), index=0)
         self.assertContains(ao_page, "Domain requests from cities")
+
+    def test_application_formsets(self):
+        """Users are able to add more than one of some fields."""
+        current_sites_page = self.app.get(reverse("application:current_sites"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # fill in the form field
+        current_sites_form = current_sites_page.form
+        self.assertIn("current_sites-0-website", current_sites_form.fields)
+        self.assertNotIn("current_sites-1-website", current_sites_form.fields)
+        current_sites_form["current_sites-0-website"] = "https://example.com"
+
+        # click "Add another"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit("submit_button", value="save")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_form = current_sites_result.follow().form
+
+        # verify that there are two form fields
+        value = current_sites_form["current_sites-0-website"].value
+        self.assertEqual(value, "https://example.com")
+        self.assertIn("current_sites-1-website", current_sites_form.fields)
+        # and it is correctly referenced in the ManyToOne relationship
+        application = DomainApplication.objects.get()  # there's only one
+        self.assertEquals(
+            application.current_websites.filter(website="https://example.com").count(),
+            1,
+        )
 
     @skip("WIP")
     def test_application_edit_restore(self):
