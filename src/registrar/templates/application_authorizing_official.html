@@ -12,29 +12,7 @@
   </p>
 
   <div class="ao_example">
-    {% if is_federal %}
-      {% if federal_type == 'executive' %}
-        {% include "includes/ao_example__exec.html" %}
-      {% elif federal_type == 'judicial' %}
-        {% include "includes/ao_example__judicial.html" %}
-      {% elif federal_type == 'legislative' %}
-        {% include "includes/ao_example__legislative.html" %}
-      {% endif %}
-    {% elif organization_type == 'city' %}
-        {% include "includes/ao_example__city.html" %}
-    {% elif organization_type == 'county' %}
-        {% include "includes/ao_example__county.html" %}
-    {% elif organization_type == 'interstate' %}
-        {% include "includes/ao_example__interstate.html" %}
-    {% elif organization_type == 'school_district' %}
-        {% include "includes/ao_example__school-district.html" %}
-    {% elif organization_type == 'special_district' %}
-        {% include "includes/ao_example__special-district.html" %}
-    {% elif organization_type == 'state_or_territory' %}
-        {% include "includes/ao_example__state-territory.html" %}
-    {% elif organization_type == 'tribal' %}
-      {% include "includes/ao_example__tribal.html" %}
-    {% endif %}
+    {% include "includes/ao_example.html" %}
   </div>
 
   <p>We’ll contact your authorizing official to let them know that you made this request and to double check that they approve it.</p> 
