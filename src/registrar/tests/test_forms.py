@@ -27,24 +27,18 @@ class TestFormValidation(TestCase):
             form = OrganizationContactForm(data={"zipcode": zipcode})
             self.assertNotIn("zipcode", form.errors)
 
-    def test_current_site_invalid(self):
-        form = CurrentSitesForm(data={"current_site": "nah"})
-        self.assertEqual(
-            form.errors["current_site"],
-            [
-                "Enter your organization’s website in the required format, like"
-                " www.city.com."
-            ],
-        )
+    def test_website_invalid(self):
+        form = CurrentSitesForm(data={"website": "nah"})
+        self.assertEqual(form.errors["website"], ["Enter a valid URL."])
 
-    def test_current_site_valid(self):
-        form = CurrentSitesForm(data={"current_site": "hyphens-rule.gov.uk"})
+    def test_website_valid(self):
+        form = CurrentSitesForm(data={"website": "hyphens-rule.gov.uk"})
         self.assertEqual(len(form.errors), 0)
 
-    def test_current_site_scheme_valid(self):
-        form = CurrentSitesForm(data={"current_site": "http://hyphens-rule.gov.uk"})
+    def test_website_scheme_valid(self):
+        form = CurrentSitesForm(data={"website": "http://hyphens-rule.gov.uk"})
         self.assertEqual(len(form.errors), 0)
-        form = CurrentSitesForm(data={"current_site": "https://hyphens-rule.gov.uk"})
+        form = CurrentSitesForm(data={"website": "https://hyphens-rule.gov.uk"})
         self.assertEqual(len(form.errors), 0)
 
     def test_requested_domain_valid(self):

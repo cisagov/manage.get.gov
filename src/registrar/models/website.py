@@ -2,8 +2,10 @@ from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from .utility.time_stamped_model import TimeStampedModel
 
-class Website(models.Model):
+
+class Website(TimeStampedModel):
 
     """Keep domain names in their own table so that applications can refer to
     many of them."""

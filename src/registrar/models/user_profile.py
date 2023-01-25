@@ -6,7 +6,7 @@ from .utility.address_model import AddressModel
 from .contact import Contact
 
 
-class UserProfile(TimeStampedModel, Contact, AddressModel):
+class UserProfile(Contact, TimeStampedModel, AddressModel):
 
     """User information, unrelated to their login/auth details."""
 
