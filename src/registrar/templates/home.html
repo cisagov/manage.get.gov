@@ -1,59 +1,77 @@
 {% extends 'base.html' %}
 
 {% block title %} Hello {% endblock %}
-{% block hero %}
-<section class="usa-hero">
-  <div class="usa-grid">
-    <div class="usa-hero-callout usa-section-dark">
-      <h1>
-        <span class="usa-hero-callout-alt">Welcome to the .gov registrar</span>
-      </h1>
-    </div>
-</section>
-{% endblock %}
 
 {% block content %}
 <main id="main-content" class="grid-container">
-<p>This is the .gov registrar.</p>
 
 {% if user.is_authenticated %}
+{# complete logged in page together here #}
 
-{% if domain_applications %}
-<h2>Your domain applications</h2>
-<table class="usa-table usa-table--borderless">
+<h1>Manage your domains</h2>
+
+<p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
+
+<section class="dashboard">
+	<h2>Registered domains</h2>
+	{% if domains %}
+		{% for domain in domains %}
+		{{ domain }}
+		{% endfor %}
+	{% else %}
+		You don't have any registered domains yet
+	{% endif %}
+</section>
+
+<section class="dashboard">
+  <h2>Active domain requests</h2>
+  {% if domain_applications %}
+  <table class="usa-table usa-table--borderless">
   <caption class="sr-only">Your domain applications</caption>
   <thead>
     <tr>
-      <th>Name</th>
-      <th>Status</th>
+    <th>Name</th>
+    <th>Status</th>
     </tr>
   </thead>
   <tbody>
     {% for application in domain_applications %}
-      <tr>
-        <th>
-          <a href="{% url 'edit-application' application.pk %}">
-            {{ application.requested_domain.name|default:"New domain request" }}
-          </a>
-        </th>
-        <td>{{ application.status }}</td>
-      </tr>
+    <tr>
+      <th>
+      <a href="{% url 'edit-application' application.pk %}">
+        {{ application.requested_domain.name|default:"New domain request" }}
+      </a>
+      </th>
+      <td>{{ application.status }}</td>
+    </tr>
     {% endfor %}
   </tbody>
-</table>
+  </table>
+ {% else %}
+   <p>You don't have any active domain requests right now</p> 
+ {% endif %}
+
+<p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
+</section>
+
+<section class="dashboard">
+  <h2>Archived domains</h2>
+  {% if archived_domains %}
+    {% for domain in archived_domains %}
+      {{ domain }}
+    {% endfor %}
+ {% else %}
+   <p>You don't have any archived domains</p> 
+ {% endif %}
+</section>
+{% else %} {# not user.is_authenticated #}
+{# complete logged out page here #}
+
+<p><a class="usa-button" href="{% url 'login' %}">
+Sign in
+</a></p>
+
 {% endif %}
 
-<p><a href="{% url 'application:' %}" class="usa-button">Apply</a></p>
-
-<p><a href="{% url 'edit-profile' %}">Edit profile</a></p>
-
-{% if user.is_staff %}
-<p><a href="{% url 'admin:index' %}">CISA admin panel</a></p>
-{% endif %}
-
-<p><a href="{% url 'logout' %}">Click here to log out.</a></p>
-{% else %}
-<p><a href="{% url 'login' %}">Click here to log in.</a></p>
-{% endif %}
 </main>
 {% endblock %}

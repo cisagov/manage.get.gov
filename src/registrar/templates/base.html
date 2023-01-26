@@ -128,11 +128,11 @@
       <div class="usa-navbar">
         {% block logo %}
         <div class="usa-logo" id="extended-logo">
-          <em class="usa-logo__text">
-            <a href="{% url 'home' %}" title="Home" aria-label="Home">
-              {% block site_name %}Home{% endblock %}
-            </a>
-          </em>
+           <img
+                src="{% static 'img/dottedgov-round.svg' %}"
+                alt="Home"
+                width="48px"
+              />
         </div>
         {% endblock %}
         <button type="button" class="usa-menu-btn">Menu</button>

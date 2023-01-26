@@ -26,8 +26,15 @@ in the form $setting: value,
   /*----------------------------
   # Banner Settings
   -----------------------------*/
-  $theme-banner-background-color: "primary-darker",
-  $theme-banner-link-color: "primary-lighter",
+  $theme-banner-background-color: "primary-dark",
+  $theme-banner-link-color: default,
+
+  /*
+  # Footer Settings
+  */
+  $theme-identifier-background-color: 'primary-darker',
+  $theme-identifier-identity-domain-color: 'base-lighter',
+  $theme-identifier-secondary-link-color: 'base-lighter',
 
 
   /*----------------------------
