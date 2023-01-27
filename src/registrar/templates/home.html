@@ -64,6 +64,14 @@
    <p>You don't have any archived domains</p> 
  {% endif %}
 </section>
+
+<h2 class="padding-top-3"> Export domains</h2>
+<p>If you would like to analyze your list of domains further, you can download the list of domains and their statuses as csv file</p>
+<a href="{% url 'todo' %}" class="usa-button usa-button--outline">
+  Export domains as csv
+</a>
+
+
 {% else %} {# not user.is_authenticated #}
 {# complete logged out page here #}
 
