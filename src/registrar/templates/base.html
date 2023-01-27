@@ -128,11 +128,13 @@
       <div class="usa-navbar">
         {% block logo %}
         <div class="usa-logo" id="extended-logo">
+           <a href="{% url 'home' %}">
            <img
                 src="{% static 'img/dottedgov-round.svg' %}"
                 alt="Home"
                 width="48px"
               />
+           </a>
         </div>
         {% endblock %}
         <button type="button" class="usa-menu-btn">Menu</button>
@@ -162,7 +164,7 @@
     </div>
   </header>
   {% endblock banner %}
-  <div id="wrapper">
+  <div id="wrapper" {% if dashboard_view %}class="dashboard"{% endif %}>
     {% block messages %}
     {% if messages %}
     <ul class="messages">
