@@ -501,9 +501,10 @@ class DomainApplication(TimeStampedModel):
         if user_choice == DomainApplication.OrganizationChoices.TRIBAL:
             # did answer tribal, check the recognition answers
             return (
-                self.federally_recognized_tribe == False
-                and self.state_recognized_tribe == False
+                self.federally_recognized_tribe is False
+                and self.state_recognized_tribe is False
             )
+        return False
 
     def show_organization_election(self) -> bool:
         """Show this step if the answer to the first question implies it.
