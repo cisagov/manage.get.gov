@@ -19,7 +19,8 @@ i.e.
 @include u-padding-right('05');
 ----------------------------------------
 */
-// USWDS tokens are a bit too coarse in their letter-spacing steps
+
+// Finer grained letterspacing adjustments
 $letter-space--xs: .0125em; 
 
 @use "uswds-core" as *;
@@ -37,6 +38,7 @@ $letter-space--xs: .0125em;
  h1 {
   @include typeset('sans', '2xl', 2);
   margin: 0 0 units(2);
+  color: color('primary-darker');
  }
 
  h2 {
@@ -56,13 +58,15 @@ $letter-space--xs: .0125em;
   margin-bottom: 0;
 }
 
-.register-form-step p {
+.register-form-step p,
+.dashboard p {
   @include typeset('sans', 'sm', 5);
   max-width: measure(5);
 
-  &:last-of-type {
-    margin-bottom: 0;
-  }
+  //TODO: Revisit
+  // &:last-of-type {
+  //   margin-bottom: 0;
+  // }
 }
 
 .register-form-step a {
@@ -120,6 +124,20 @@ a.breadcrumb__back {
   background-color: color('primary-lightest');
 }
 
+//TODO: Move into dashboard; Change color for table heads on mobile
+//check if better to use usa-table--sortable and usa-table--stacked as targets
+.usa-table--stacked tr th {
+  border-top: 1px solid pink;
+}
+.usa-table--stacked tr:first-child th:first-child {
+  border-top: none;
+}
+
+.usa-table--stacked tr {
+  border-bottom: none;
+  border-top: 2px solid color('base-light');
+  margin-top: units(2);
+}
 section.dashboard {
   background-color: color('white');
   border: 1px solid color('base-lighter');
@@ -136,29 +154,7 @@ section.dashboard {
   }
 
   .usa-table {
-    td, th {
-      border: 0; //reset border
-      border-bottom: 1px solid color('base-light');
-    }
-
-    thead th {
-      color: color('primary-darker');
-      border-bottom: 2px solid color('base-light');
-    }
-    
-    tbody tr:last-of-type {
-      td, th {
-        border-bottom: 0;
-      }
-    }
-  
-    td {
-      padding: units(2);
-    }
-
-    th:first-of-type {
-      padding-left: 0;
-    }
+    width: 100%;
 
     a, a:visited {
       color: color('primary');
@@ -166,13 +162,47 @@ section.dashboard {
 
     a {
       display: flex;
-      align-item: flex-start;
-      
+      align-items: flex-start;
+
       .usa-icon {
         // align icon with x height
         margin-top: units(0.5);
         margin-right: units(0.5);
       }
+    }
+
+    td, th {
+      padding: units(2px) 0;
+      border: none;
+    }
+  }
+  
+  @include at-media(tablet) {
+    .usa-table {
+      td, th {
+        // border: none; //reset border
+        border-bottom: 1px solid color('base-light');
+      }
+
+      thead th {
+        color: color('primary-darker');
+        border-bottom: 2px solid color('base-light');
+      }
+
+      tbody tr:last-of-type {
+        td, th {
+          border-bottom: 0;
+        }
+      }
+
+      td {
+        padding: units(2);
+      }
+
+      th:first-of-type {
+        padding-left: 0;
+      }
+
     }
   }
 }

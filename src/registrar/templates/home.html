@@ -9,7 +9,7 @@
 {% if user.is_authenticated %}
 {# complete logged in page together here #}
 
-<div class="tablet:grid-offset-1">
+<div class="tablet:grid-offset-2">
   <h1>Manage your domains</h2>
 
   <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
@@ -23,7 +23,7 @@
         {{ domain }}
         {% endfor %}
       {% else %}
-        You don't have any registered domains yet
+        <p>You don't have any registered domains yet</p>
       {% endif %}
     </section>
   </div>
@@ -32,7 +32,7 @@
     <section class="dashboard">
       <h2>Active domain requests</h2>
       {% if domain_applications %}
-      <table class="usa-table usa-table--borderless">
+      <table class="usa-table usa-table--borderless usa-table--stacked">
         <caption class="sr-only">Your domain applications</caption>
         <thead>
           <tr>
@@ -45,11 +45,11 @@
         <tbody>
           {% for application in domain_applications %}
           <tr>
-            <th th scope="row" role="rowheader">
+            <th th scope="row" role="rowheader" data-label="Domain name">
               {{ application.requested_domain.name|default:"New domain request" }}
             </th>
-            <td data-sort-value="{{ application.created_at|date:"U" }}">{{ application.created_at|date }}</td>
-            <td>{{ application.status|title }}</td>
+            <td data-sort-value="{{ application.created_at|date:"U" }}" data-label="Date created">{{ application.created_at|date }}</td>
+            <td data-label="Status">{{ application.status|title }}</td>
             <td>
               <a href="{% url 'edit-application' application.pk %}">
                 {% if application.status == "started" %}
