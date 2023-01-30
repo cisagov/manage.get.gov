@@ -114,6 +114,12 @@ a.breadcrumb__back {
   font-weight: font-weight('semibold');
 }
 
+/** ---- DASHBOARD ---- */
+
+#wrapper.dashboard {
+  background-color: color('primary-lightest');
+}
+
 section.dashboard {
   background-color: color('white');
   border: 1px solid color('base-lighter');
@@ -122,17 +128,55 @@ section.dashboard {
   margin-top: units(5);
 
   h2 {
-    padding-bottom: units(3);
+    margin-bottom: units(3);
   }
 
   p {
     margin-bottom: 0;
   }
+
+  .usa-table {
+    td, th {
+      border: 0; //reset border
+      border-bottom: 1px solid color('base-light');
+    }
+
+    thead th {
+      color: color('primary-darker');
+      border-bottom: 2px solid color('base-light');
+    }
+    
+    tbody tr:last-of-type {
+      td, th {
+        border-bottom: 0;
+      }
+    }
+  
+    td {
+      padding: units(2);
+    }
+
+    th:first-of-type {
+      padding-left: 0;
+    }
+
+    a, a:visited {
+      color: color('primary');
+    }
+
+    a {
+      display: flex;
+      align-item: flex-start;
+      
+      .usa-icon {
+        // align icon with x height
+        margin-top: units(0.5);
+        margin-right: units(0.5);
+      }
+    }
+  }
 }
 
-#wrapper.dashboard {
-  background-color: color('primary-lightest');
-}
 
 main {
   //Workaround because USWDS units jump from 10 to 15
