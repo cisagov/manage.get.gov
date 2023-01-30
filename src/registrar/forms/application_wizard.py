@@ -121,7 +121,6 @@ class RegistrarFormSet(forms.BaseFormSet):
         # (likely a client-side error or an attempt at data tampering)
 
         for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
-
             cleaned = post_data.cleaned_data if post_data is not None else {}
 
             # matching database object exists, update it
@@ -177,9 +176,17 @@ class TribalGovernmentForm(RegistrarForm):
 
     def clean(self):
         """Needs to be either state or federally recognized."""
-        if not (self.cleaned_data["federally_recognized_tribe"] or
-                self.cleaned_data["state_recognized_tribe"]):
-            raise forms.ValidationError("Only tribes recognized by the U.S. federal government or by a U.S. state government are eligible for .gov domains.", code="invalid")
+        if not (
+            self.cleaned_data["federally_recognized_tribe"]
+            or self.cleaned_data["state_recognized_tribe"]
+        ):
+            raise forms.ValidationError(
+                "Only tribes recognized by the U.S. federal government or by a U.S."
+                " state government are eligible for .gov domains. Please email"
+                " registrar@dotgov.gov to tell us more about your tribe and why you"
+                " want a .gov domain.",
+                code="invalid",
+            )
 
 
 class OrganizationFederalForm(RegistrarForm):
