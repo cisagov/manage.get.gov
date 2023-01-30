@@ -289,6 +289,22 @@ class DomainApplication(TimeStampedModel):
         help_text="Type of Organization",
     )
 
+    federally_recognized_tribe = models.BooleanField(
+        null=True,
+        help_text="Is the tribe federally recognized",
+    )
+
+    state_recognized_tribe = models.BooleanField(
+        null=True,
+        help_text="Is the tribe recognized by a state",
+    )
+
+    tribe_name = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Name of tribe",
+    )
+
     federal_agency = models.TextField(
         null=True,
         blank=True,
@@ -473,6 +489,11 @@ class DomainApplication(TimeStampedModel):
         """Show this step if the answer to the first question was "federal"."""
         user_choice = self.organization_type
         return user_choice == DomainApplication.OrganizationChoices.FEDERAL
+
+    def show_tribal_government(self) -> bool:
+        """Show this step if the answer to the first question was "tribal"."""
+        user_choice = self.organization_type
+        return user_choice == DomainApplication.OrganizationChoices.TRIBAL
 
     def show_organization_election(self) -> bool:
         """Show this step if the answer to the first question implies it.

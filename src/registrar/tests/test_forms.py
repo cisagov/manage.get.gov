@@ -11,6 +11,7 @@ from registrar.forms.application_wizard import (
     OtherContactsForm,
     SecurityEmailForm,
     RequirementsForm,
+    TribalGovernmentForm,
 )
 
 
@@ -149,4 +150,16 @@ class TestFormValidation(TestCase):
                 "Check the box if you read and agree to the requirements for"
                 " registering and operating .gov domains."
             ],
+        )
+
+    def test_tribal_government_unrecognized(self):
+        """Not state or federally recognized is an error."""
+        form = TribalGovernmentForm(
+            data={"state_recognized": False, "federally_recognized": False}
+        )
+        self.assertTrue(
+            any(
+                "Please email registrar@dotgov.gov" in error
+                for error in form.non_field_errors()
+            )
         )
