@@ -25,7 +25,6 @@ for step, view in [
     # add/remove steps here
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
     (Step.TRIBAL_GOVERNMENT, views.TribalGovernment),
-    (Step.TRIBAL_EXPLANATION, views.TribalExplanation),
     (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
     (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
     (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
