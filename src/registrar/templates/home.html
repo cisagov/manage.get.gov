@@ -14,89 +14,82 @@
 
   <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
 
-
-  <div class="tablet:grid-col-11 desktop:grid-col-10">
-    <section class="dashboard">
-      <h2>Registered domains</h2>
-      {% if domains %}
-        {% for domain in domains %}
-        {{ domain }}
-        {% endfor %}
-      {% else %}
-        <p>You don't have any registered domains yet</p>
-      {% endif %}
-    </section>
-  </div>
-
-  <div class="tablet:grid-col-11 desktop:grid-col-10">
-    <section class="dashboard">
-      <h2>Active domain requests</h2>
-      {% if domain_applications %}
-      <table class="usa-table usa-table--borderless usa-table--stacked">
-        <caption class="sr-only">Your domain applications</caption>
-        <thead>
-          <tr>
-            <th data-sortable scope="col" role="columnheader">Domain name</th>
-            <th data-sortable scope="col" role="columnheader">Date created</th>
-            <th data-sortable scope="col" role="columnheader">Status</th>
-            <th role="columnheader"><span class="usa-sr-only">Action</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for application in domain_applications %}
-          <tr>
-            <th th scope="row" role="rowheader" data-label="Domain name">
-              {{ application.requested_domain.name|default:"New domain request" }}
-            </th>
-            <td data-sort-value="{{ application.created_at|date:"U" }}" data-label="Date created">{{ application.created_at|date }}</td>
-            <td data-label="Status">{{ application.status|title }}</td>
-            <td>
-              <a href="{% url 'edit-application' application.pk %}">
-                {% if application.status == "started" %}
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                  <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
-                </svg>
-                Edit <span class="usa-sr-only">{{application.requested_domain.name}} </span>
-
-                {% else %}
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                  <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
-                </svg>
-                Manage <span class="usa-sr-only">{{application.requested_domain.name}} </span>
-                {% endif %}
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <p>You don't have any active domain requests right now</p> 
-      {% endif %}
-      <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
-    </section>
-  </div>
-
-  <div class="tablet:grid-col-11 desktop:grid-col-10">
-    <section class="dashboard">
-      <h2>Archived domains</h2>
-      {% if archived_domains %}
-      {% for domain in archived_domains %}
+  <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
+    <h2>Registered domains</h2>
+    {% if domains %}
+      {% for domain in domains %}
       {{ domain }}
       {% endfor %}
-      {% else %}
-      <p>You don't have any archived domains</p> 
-      {% endif %}
-    </section>
-  </div>
+    {% else %}
+      <p>You don't have any registered domains yet</p>
+    {% endif %}
+  </section>
 
-  <div class="tablet:grid-col-11 desktop:grid-col-10">
+  <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
+    <h2>Active domain requests</h2>
+    {% if domain_applications %}
+    <table class="usa-table usa-table--borderless usa-table--stacked">
+      <caption class="sr-only">Your domain applications</caption>
+      <thead>
+        <tr>
+          <th data-sortable scope="col" role="columnheader">Domain name</th>
+          <th data-sortable scope="col" role="columnheader">Date created</th>
+          <th data-sortable scope="col" role="columnheader">Status</th>
+          <th role="columnheader"><span class="usa-sr-only">Action</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for application in domain_applications %}
+        <tr>
+          <th th scope="row" role="rowheader" data-label="Domain name">
+            {{ application.requested_domain.name|default:"New domain request" }}
+          </th>
+          <td data-sort-value="{{ application.created_at|date:"U" }}" data-label="Date created">{{ application.created_at|date }}</td>
+          <td data-label="Status">{{ application.status|title }}</td>
+          <td>
+            <a href="{% url 'edit-application' application.pk %}">
+              {% if application.status == "started" %}
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
+              </svg>
+              Edit <span class="usa-sr-only">{{application.requested_domain.name}} </span>
+
+              {% else %}
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
+              </svg>
+              Manage <span class="usa-sr-only">{{application.requested_domain.name}} </span>
+              {% endif %}
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>You don't have any active domain requests right now</p> 
+    {% endif %}
+    <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
+  </section>
+
+  <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
+    <h2>Archived domains</h2>
+    {% if archived_domains %}
+    {% for domain in archived_domains %}
+    {{ domain }}
+    {% endfor %}
+    {% else %}
+    <p>You don't have any archived domains</p> 
+    {% endif %}
+  </section>
+
+  <section class="tablet:grid-col-11 desktop:grid-col-10">
     <h2 class="padding-top-1 mobile-lg:padding-top-3"> Export domains</h2>
     <p>If you would like to analyze your list of domains further, you can download the list of domains and their statuses as csv file</p>
     <a href="{% url 'todo' %}" class="usa-button usa-button--outline">
       Export domains as csv
     </a>
-  </div>
+  </section>
 
 </div>
 
