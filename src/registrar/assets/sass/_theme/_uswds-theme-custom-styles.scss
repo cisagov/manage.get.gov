@@ -118,12 +118,12 @@ a.breadcrumb__back {
   font-weight: font-weight('semibold');
 }
 
+
 /** ---- DASHBOARD ---- */
 
 #wrapper.dashboard {
   background-color: color('primary-lightest');
 }
-
 
 section.dashboard {
   background-color: color('white');
@@ -157,7 +157,6 @@ section.dashboard {
         margin-right: units(0.5);
       }
     }
-
   }
 
   // Table on small mobile
@@ -201,7 +200,6 @@ section.dashboard {
 
     .usa-table {
       td, th {
-        // border: none; //reset border
         border-bottom: 1px solid color('base-light');
       }
 
