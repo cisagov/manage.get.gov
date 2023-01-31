@@ -69,7 +69,8 @@ class LoggedInTests(TestWithUser):
             creator=self.user, requested_domain=site
         )
         response = self.client.get("/")
-        self.assertContains(response, "igorville.gov", count=1)
+        # count = 2 because it is also in screenreader content
+        self.assertContains(response, "igorville.gov", count=2)
         # clean up
         application.delete()
 
