@@ -94,6 +94,8 @@ in the form $setting: value,
   $theme-color-accent-cool: $dhs-light-blue-60,
   $theme-color-accent-cool-dark: $dhs-light-blue-70,
   $theme-color-accent-cool-light: $dhs-light-blue-40,
+  $theme-color-accent-cool-lighter: $dhs-light-blue-30,
+  $theme-color-accent-cool-lightest: $dhs-light-blue-15,
 
   /*---------------------------
   ## Error state
@@ -119,4 +121,14 @@ in the form $setting: value,
   ----------------------------*/ 
   $theme-input-line-height: 5,
 
+
+  /*---------------------------
+  # Component settings 
+  ----------------------------- 
+  ## Sorted Table
+  ----------------------------*/ 
+  $theme-table-sorted-header-background-color: "accent-cool-lighter",
+  $theme-table-sorted-background-color: "accent-cool-lightest",
+  $theme-table-sorted-icon-color: "primary-darker",
+  $theme-table-unsorted-icon-color: "primary",
 );
