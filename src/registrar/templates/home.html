@@ -9,13 +9,13 @@
 {% if user.is_authenticated %}
 {# complete logged in page together here #}
 
-<div class="tablet:grid-offset-2">
+<div class="tablet:grid-offset-1 desktop:grid-offset-2">
   <h1>Manage your domains</h2>
 
   <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
 
 
-  <div class="tablet:grid-col-10">
+  <div class="tablet:grid-col-11 desktop:grid-col-10">
     <section class="dashboard">
       <h2>Registered domains</h2>
       {% if domains %}
@@ -28,7 +28,7 @@
     </section>
   </div>
 
-  <div class="tablet:grid-col-10">
+  <div class="tablet:grid-col-11 desktop:grid-col-10">
     <section class="dashboard">
       <h2>Active domain requests</h2>
       {% if domain_applications %}
@@ -77,7 +77,7 @@
     </section>
   </div>
 
-  <div class="tablet:grid-col-10">
+  <div class="tablet:grid-col-11 desktop:grid-col-10">
     <section class="dashboard">
       <h2>Archived domains</h2>
       {% if archived_domains %}
@@ -90,8 +90,8 @@
     </section>
   </div>
 
-  <div class="tablet:grid-col-10">
-    <h2 class="padding-top-3"> Export domains</h2>
+  <div class="tablet:grid-col-11 desktop:grid-col-10">
+    <h2 class="padding-top-1 mobile-lg:padding-top-3"> Export domains</h2>
     <p>If you would like to analyze your list of domains further, you can download the list of domains and their statuses as csv file</p>
     <a href="{% url 'todo' %}" class="usa-button usa-button--outline">
       Export domains as csv

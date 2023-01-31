@@ -124,29 +124,16 @@ a.breadcrumb__back {
   background-color: color('primary-lightest');
 }
 
-//TODO: Move into dashboard; Change color for table heads on mobile
-//check if better to use usa-table--sortable and usa-table--stacked as targets
-.usa-table--stacked tr th {
-  border-top: 1px solid pink;
-}
-.usa-table--stacked tr:first-child th:first-child {
-  border-top: none;
-}
 
-.usa-table--stacked tr {
-  border-bottom: none;
-  border-top: 2px solid color('base-light');
-  margin-top: units(2);
-}
 section.dashboard {
   background-color: color('white');
   border: 1px solid color('base-lighter');
   border-radius: 4px;
   padding: 0 units(2) units(3);
-  margin-top: units(5);
+  margin-top: units(3);
 
   h2 {
-    margin-bottom: units(3);
+    margin-bottom: units(2);
   }
 
   p {
@@ -156,14 +143,14 @@ section.dashboard {
   .usa-table {
     width: 100%;
 
-    a, a:visited {
-      color: color('primary');
-    }
-
     a {
       display: flex;
       align-items: flex-start;
+      color: color('primary');
 
+      &:visited {
+        color: color('primary');
+      }
       .usa-icon {
         // align icon with x height
         margin-top: units(0.5);
@@ -171,13 +158,47 @@ section.dashboard {
       }
     }
 
+  }
+
+  // Table on small mobile
+  .usa-table--stacked {
     td, th {
-      padding: units(2px) 0;
+      padding: units(1) units(2) units(2px) 0;
       border: none;
+    }
+
+    tr:first-child th:first-child {
+      border-top: none;
+    }
+
+    tr {
+      border-bottom: none;
+      border-top: 2px solid color('base-light');
+      margin-top: units(2);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    td[data-label]:before, 
+    th[data-label]:before {
+      color: color('primary-darker');
+      padding-bottom: units(2px);
     }
   }
   
-  @include at-media(tablet) {
+  @include at-media(mobile-lg) {
+    margin-top: units(5);
+
+    h2 {
+      margin-bottom: units(3);
+    }
+
+    .usa-table tr {
+      border: none;
+    }
+
     .usa-table {
       td, th {
         // border: none; //reset border
@@ -195,7 +216,7 @@ section.dashboard {
         }
       }
 
-      td {
+      td, th {
         padding: units(2);
       }
 
@@ -203,6 +224,9 @@ section.dashboard {
         padding-left: 0;
       }
 
+      thead tr:first-child th:first-child {
+        border-top: none;
+      }
     }
   }
 }
