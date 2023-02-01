@@ -70,10 +70,10 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
     TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
         Step.TRIBAL_GOVERNMENT: _("Tribal government"),
-        Step.ORGANIZATION_FEDERAL: _("Type of organization — Federal"),
-        Step.ORGANIZATION_ELECTION: _("Type of organization — Election board"),
+        Step.ORGANIZATION_FEDERAL: _("Type of organization: Federal"),
+        Step.ORGANIZATION_ELECTION: _("Type of organization: Election office"),
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
-        Step.TYPE_OF_WORK: _("Type of Work"),
+        Step.TYPE_OF_WORK: _("Type of work"),
         Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
         Step.CURRENT_SITES: _("Organization website"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
