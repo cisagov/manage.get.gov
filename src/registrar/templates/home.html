@@ -52,7 +52,7 @@
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
-              Edit <span class="usa-sr-only">{{application.requested_domain.name}} </span>
+              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }} </span>
 
               {% else %}
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
