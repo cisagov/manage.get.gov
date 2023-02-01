@@ -3,7 +3,7 @@
 {% block title %}Thank you for your domain request{% endblock %}
 
 {% block content %}
-<h1>Thank you!</h1>
+<h1>Thank you</h1>
 
 <p>
 Thank you for your domain request. We'll email a copy of your request to you,
@@ -14,9 +14,11 @@ your authorizing official, and any contacts you added.</p>
 <ul>
 
     <li> We'll review your request. This could take up to two weeks. During
-        this review we'll verify that your organization is eligible for a .gov domain, that
-        your authorizing official approves your request, and that your domain
-        meets our naming requirements.
+        this review we'll verify that your <ul>
+    <li>Organization is eligible for a .gov domain</li>
+    <li>Authorizing official approves your request</li> 
+    <li>Domain meets our naming requirements</li>
+        </ul>
     </li>
 
     <li> You can <a href="{% url 'todo' %}"><del>check the
@@ -26,15 +28,5 @@ your authorizing official, and any contacts you added.</p>
     <li> We'll email you with any questions or when we complete our
         review.</li>
 </ul>
-
-<h2>Option to enter domain name server information</h2>
-
-<p>Before your domain can be used we'll need information about your
-domain name servers. If you have this information you can enter it now.
-If you don't have it, that's okay. You can enter it later on the
-<a href="{% url 'todo' %}"><del>manage your domains page</del></a>.
-</p>
-
-<p><a href="{% url 'todo' %}" class="usa-button">Enter DNS name servers</a></p>
 
 {% endblock %}
