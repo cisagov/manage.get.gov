@@ -68,6 +68,13 @@ $letter-space--xs: .0125em;
   }
 }
 
+/* Make "placeholder" links visually obvious */
+a[href$="todo"]::after {
+  background-color: yellow;
+  content: " [link TBD]";
+  font-style: italic;
+}
+
 a.breadcrumb__back {
   display:flex;
   align-items: center;
