@@ -19,7 +19,8 @@ i.e.
 @include u-padding-right('05');
 ----------------------------------------
 */
-// USWDS tokens are a bit too coarse in their letter-spacing steps
+
+// Finer grained letterspacing adjustments
 $letter-space--xs: .0125em; 
 
 @use "uswds-core" as *;
@@ -29,9 +30,15 @@ $letter-space--xs: .0125em;
    @include sr-only;
  }
 
+ * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
  h1 {
   @include typeset('sans', '2xl', 2);
-  margin: 0 0 units(1);
+  margin: 0 0 units(2);
+  color: color('primary-darker');
  }
 
  h2 {
@@ -43,7 +50,7 @@ $letter-space--xs: .0125em;
     margin-top: units(2);
   }
  }
- 
+
 .register-form-step h3 {
   color: color('primary-dark');
   letter-spacing: $letter-space--xs;
@@ -51,13 +58,15 @@ $letter-space--xs: .0125em;
   margin-bottom: 0;
 }
 
-.register-form-step p {
+.register-form-step p,
+.dashboard p {
   @include typeset('sans', 'sm', 5);
   max-width: measure(5);
 
-  &:last-of-type {
-    margin-bottom: 0;
-  }
+  //TODO: Revisit
+  // &:last-of-type {
+  //   margin-bottom: 0;
+  // }
 }
 
 .register-form-step a {
@@ -92,9 +101,9 @@ a.breadcrumb__back {
     .usa-icon {
        flex-shrink: 0;
        //align lock body to x-height
-       margin: units('2px') units(1) 0 0; 
+       margin: units('2px') units(1) 0 0;
     }
-  }  
+  }
 }
 
 .stepnav {
@@ -109,10 +118,132 @@ a.breadcrumb__back {
   font-weight: font-weight('semibold');
 }
 
-footer {
-  //Workaround because USWDS units jump from 10 to 15
-  margin-top: units(10) + units(2);
+
+/** ---- DASHBOARD ---- */
+
+#wrapper.dashboard {
+  background-color: color('primary-lightest');
 }
+
+section.dashboard {
+  background-color: color('white');
+  border: 1px solid color('base-lighter');
+  border-radius: 4px;
+  padding: 0 units(2) units(3);
+  margin-top: units(3);
+
+  h2 {
+    margin-bottom: units(2);
+  }
+
+  p {
+    margin-bottom: 0;
+  }
+
+  .usa-table {
+    width: 100%;
+
+    a {
+      display: flex;
+      align-items: flex-start;
+      color: color('primary');
+
+      &:visited {
+        color: color('primary');
+      }
+      .usa-icon {
+        // align icon with x height
+        margin-top: units(0.5);
+        margin-right: units(0.5);
+      }
+    }
+  }
+
+  // Table on small mobile
+  .usa-table--stacked {
+    td, th {
+      padding: units(1) units(2) units(2px) 0;
+      border: none;
+    }
+
+    tr:first-child th:first-child {
+      border-top: none;
+    }
+
+    tr {
+      border-bottom: none;
+      border-top: 2px solid color('base-light');
+      margin-top: units(2);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    td[data-label]:before, 
+    th[data-label]:before {
+      color: color('primary-darker');
+      padding-bottom: units(2px);
+    }
+  }
+  
+  @include at-media(mobile-lg) {
+    margin-top: units(5);
+
+    h2 {
+      margin-bottom: units(3);
+    }
+
+    .usa-table tr {
+      border: none;
+    }
+
+    .usa-table {
+      td, th {
+        border-bottom: 1px solid color('base-light');
+      }
+
+      thead th {
+        color: color('primary-darker');
+        border-bottom: 2px solid color('base-light');
+      }
+
+      tbody tr:last-of-type {
+        td, th {
+          border-bottom: 0;
+        }
+      }
+
+      td, th {
+        padding: units(2);
+      }
+
+      th:first-of-type {
+        padding-left: 0;
+      }
+
+      thead tr:first-child th:first-child {
+        border-top: none;
+      }
+    }
+  }
+}
+
+
+main {
+  //Workaround because USWDS units jump from 10 to 15
+  padding-bottom: units(10) + units(2);
+  padding-top: units(5);
+}
+
+footer {
+  border-top: 1px solid color('primary-darker');
+}
+
+.usa-footer__secondary-section {
+  background-color: color('primary-lightest');
+}
+
 
 abbr[title] {
   // workaround for underlining abbr element

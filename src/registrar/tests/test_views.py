@@ -25,7 +25,7 @@ class TestViews(TestCase):
         """Home page should be available without a login."""
         response = self.client.get("/")
         self.assertContains(response, "registrar", status_code=200)
-        self.assertContains(response, "log in")
+        self.assertContains(response, "Sign in")
 
     def test_whoami_page_no_user(self):
         """Whoami page not accessible without a logged-in user."""
@@ -69,7 +69,8 @@ class LoggedInTests(TestWithUser):
             creator=self.user, requested_domain=site
         )
         response = self.client.get("/")
-        self.assertContains(response, "igorville.gov", count=1)
+        # count = 2 because it is also in screenreader content
+        self.assertContains(response, "igorville.gov", count=2)
         # clean up
         application.delete()
 
