@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block wrapper %}
+
+  <div id="wrapper" class="dashboard">
+    {% block messages %}
+    {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+      <li{% if message.tags %} class="{{ message.tags }}" {% endif %}>
+        {{ message }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endblock %}
+
+    {% block section_nav %}{% endblock %}
+
+      {% block hero %}{% endblock %}
+      {% block content %}{% endblock %}
+
+    <div role="complementary">{% block complementary %}{% endblock %}</div>
+
+    {% block content_bottom %}{% endblock %}
+  </div>
+
+
+{% endblock wrapper %}

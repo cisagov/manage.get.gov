@@ -164,7 +164,9 @@
     </div>
   </header>
   {% endblock banner %}
-  <div id="wrapper" {% if dashboard_view %}class="dashboard"{% endif %}>
+
+  {% block wrapper %}
+  <div id="wrapper">
     {% block messages %}
     {% if messages %}
     <ul class="messages">
@@ -186,6 +188,7 @@
 
     {% block content_bottom %}{% endblock %}
   </div>
+  {% endblock wrapper%}
 
   {% include "includes/footer.html" %}
   </div> <!-- /#wrapper -->
