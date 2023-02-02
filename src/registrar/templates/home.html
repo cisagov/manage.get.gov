@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'dashboard_base.html' %}
 
 {% load static %}
 
@@ -7,7 +7,7 @@
 {% block content %}
 <main id="main-content" class="grid-container">
 {% if user.is_authenticated %}
-{# complete logged in page together here #}
+{# the entire logged in page goes here #}
 
 <div class="tablet:grid-offset-1 desktop:grid-offset-2">
   <h1>Manage your domains</h2>
@@ -16,13 +16,7 @@
 
   <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
     <h2>Registered domains</h2>
-    {% if domains %}
-      {% for domain in domains %}
-      {{ domain }}
-      {% endfor %}
-    {% else %}
-      <p>You don't have any registered domains yet</p>
-    {% endif %}
+    <p>You don't have any registered domains yet</p>
   </section>
 
   <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
@@ -35,7 +29,7 @@
           <th data-sortable scope="col" role="columnheader">Domain name</th>
           <th data-sortable scope="col" role="columnheader">Date created</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
-          <th role="columnheader"><span class="usa-sr-only">Action</span></th>
+          <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
         </tr>
       </thead>
       <tbody>
@@ -49,13 +43,13 @@
           <td>
             <a href="{% url 'edit-application' application.pk %}">
               {% if application.status == "started" %}
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
-              Edit <span class="usa-sr-only">{{application.requested_domain.name}} </span>
+              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }} </span>
 
               {% else %}
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
               Manage <span class="usa-sr-only">{{application.requested_domain.name}} </span>
@@ -66,6 +60,10 @@
         {% endfor %}
       </tbody>
     </table>
+    <div
+      class="usa-sr-only usa-table__announcement-region"
+      aria-live="polite"
+    ></div>
     {% else %}
     <p>You don't have any active domain requests right now</p> 
     {% endif %}
@@ -74,13 +72,7 @@
 
   <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
     <h2>Archived domains</h2>
-    {% if archived_domains %}
-    {% for domain in archived_domains %}
-    {{ domain }}
-    {% endfor %}
-    {% else %}
     <p>You don't have any archived domains</p> 
-    {% endif %}
   </section>
 
   <section class="tablet:grid-col-11 desktop:grid-col-10">
@@ -94,7 +86,7 @@
 </div>
 
 {% else %} {# not user.is_authenticated #}
-{# complete logged out page here #}
+{# the entire logged out page goes here #}
 
 <p><a class="usa-button" href="{% url 'login' %}">
 Sign in
