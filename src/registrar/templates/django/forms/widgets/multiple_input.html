@@ -1,0 +1,20 @@
+<div class="{{ uswds_input_class }}">
+  {% for group, options, index in widget.optgroups %}
+    {% if group %}<div><label>{{ group }}</label>{% endif %}
+    {% for option in options %}
+      <input
+        type="{{ option.type }}"
+        name="{{ option.name }}"
+        {# hint: spacing in the class string matters #}
+        class="{{ uswds_input_class }}__input {% if classes %} {{ classes }}{% endif %}"
+        {% if option.value != None %}value="{{ option.value|stringformat:'s' }}"{% endif %}
+        {% include "django/forms/widgets/attrs.html" with widget=option %}
+      />
+      <label
+        class="{{ uswds_input_class }}__label{% if label_classes %} {{ label_classes }}{% endif %}"
+        for="{{ option.attrs.id }}"
+      >{{ option.label }}</label>
+    {% endfor %}
+    {% if group %}</div>{% endif %}
+  {% endfor %}
+</div>

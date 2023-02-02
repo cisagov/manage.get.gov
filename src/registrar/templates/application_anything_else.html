@@ -1,23 +1,14 @@
 {% extends 'application_form.html' %}
-{% load widget_tweaks %}
+{% load field_helpers %}
 
-{% block form_content %}
+{% block form_instructions %}
+  <p>Is there anything else we should know about your domain request?</p>
+{% endblock %}
 
-<p id="instructions">Is there anything else we should know about your domain request?</p>
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  <div class="usa-form-group">
-    {% csrf_token %}
-   
-    <div class="usa-character-count">
-      {{ forms.0.anything_else|add_label_class:"usa-label usa-sr-only" }}
-      {{ forms.0.anything_else|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
-      <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
-    </div>
-  </div>
-
-  {{ block.super }}
-
-</form>
-
+{% block form_fields %}
+  {% csrf_token %}
+  {% with add_label_class="usa-sr-only" attr_maxlength=500 %}
+    {% input_with_errors forms.0.anything_else %}
+  {% endwith %}
 {% endblock %}

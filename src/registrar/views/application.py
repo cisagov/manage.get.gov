@@ -218,9 +218,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
 
         return render(request, self.template_name, context)
 
-    def get_all_forms(self) -> list:
+    def get_all_forms(self, **kwargs) -> list:
         """Calls `get_forms` for all steps and returns a flat list."""
-        nested = (self.get_forms(step=step, use_db=True) for step in self.steps)
+        nested = (self.get_forms(step=step, **kwargs) for step in self.steps)
         flattened = [form for lst in nested for form in lst]
         return flattened
 
@@ -252,14 +252,12 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
 
         for form in forms:
             data = form.from_database(self.application) if self.has_pk() else None
-            kwargs["initial"] = data
             if use_post:
-                kwargs["data"] = self.request.POST
+                instantiated.append(form(self.request.POST, **kwargs))
             elif use_db:
-                kwargs["data"] = data
+                instantiated.append(form(data, **kwargs))
             else:
-                kwargs["data"] = None
-            instantiated.append(form(**kwargs))
+                instantiated.append(form(initial=data, **kwargs))
 
         return instantiated
 
@@ -297,9 +295,8 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         else:
             raise Http404()
 
-    def is_valid(self, forms: list = None) -> bool:
+    def is_valid(self, forms: list) -> bool:
         """Returns True if all forms in the wizard are valid."""
-        forms = forms if forms is not None else self.get_all_forms()
         are_valid = (form.is_valid() for form in forms)
         return all(are_valid)
 
@@ -308,6 +305,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         # if accessing this class directly, redirect to the first step
         if self.__class__ == ApplicationWizard:
             return self.goto(self.steps.first)
+
+        # which button did the user press?
+        button: str = request.POST.get("submit_button", "")
 
         forms = self.get_forms(use_post=True)
         if self.is_valid(forms):
@@ -321,7 +321,6 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
 
         # if user opted to save their progress,
         # return them to the page they were already on
-        button = request.POST.get("submit_button", None)
         if button == "save":
             return self.goto(self.steps.current)
         # otherwise, proceed as normal

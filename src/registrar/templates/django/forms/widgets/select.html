@@ -1,0 +1,14 @@
+<select
+    name="{{ widget.name }}"
+    {# hint: spacing in the class string matters #}
+    class="usa-select{% if classes %} {{ classes }}{% endif %}"
+    {% include "django/forms/widgets/attrs.html" %}
+>
+  {% for group, options, index in widget.optgroups %}
+    {% if group %}<optgroup label="{{ group }}">{% endif %}
+    {% for option in options %}
+      {% include option.template_name with widget=option %}
+    {% endfor %}
+    {% if group %}</optgroup>{% endif %}
+  {% endfor %}
+</select>

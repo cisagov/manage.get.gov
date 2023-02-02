@@ -18,6 +18,7 @@
         </a>
         {% endif %}
 
+{% block form_errors %}
         {% comment %}
            to make sense of this loop, consider that 
            a context variable of `forms` contains all
@@ -34,35 +35,51 @@
             {% include "includes/form_errors.html" with form=outer %}
           {% endif %}
         {% endfor %}
+{% endblock %}
 
         <h1> {{form_titles|get_item:steps.current}} </h1>
-        {% block form_content %}
 
-        <div class="stepnav">
-          {% if steps.next %}
-          <button
-            type="submit"
-            name="submit_button"
-            value="next"
-            class="usa-button"
-          >Save and continue</button>
-          {% else %}
-          <button
-            type="submit"
-            class="usa-button"
-          >Submit your domain request</button>
-          {% endif %}
-          <button 
-            type="submit"
-            name="submit_button"
-            value="save"
-            class="usa-button usa-button--outline"
-          >Save progress</button>
-        </div>
+{% block form_instructions %}
+{% endblock %}
+
+{% block form_required_fields_help_text %}
+  {% include "includes/required_fields.html" %}
+{% endblock %}
+
+        <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
+
+{% block form_fields %}{% endblock %}
+
+{% block form_buttons %}
+          <div class="stepnav">
+            {% if steps.next %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="next"
+              class="usa-button"
+            >Save and continue</button>
+            {% else %}
+            <button
+              type="submit"
+              class="usa-button"
+            >Submit your domain request</button>
+            {% endif %}
+            <button 
+              type="submit"
+              name="submit_button"
+              value="save"
+              class="usa-button usa-button--outline"
+            >Save progress</button>
+          </div>
+{% endblock %}
+
+        </form>
+
+{% block after_form_content %}{% endblock %}
 
       </main>
     </div> 
-    {% endblock %}
   </div>
 </div>
 {% endblock %}

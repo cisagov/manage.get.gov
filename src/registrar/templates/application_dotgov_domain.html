@@ -1,58 +1,83 @@
 {% extends 'application_form.html' %}
-{% load widget_tweaks field_helpers static %}
+{% load static %}
+{% load field_helpers %}
 
-{% block form_content %}
-<div id="preamble">
-  <p>Before requesting a .gov domain, <a href="{% url 'todo' %}">please make sure it meets our naming requirements.</a> Your domain name must:
-  <ul class="usa-list">
-    <li>Be available </li>
-    <li>Be unique </li>
-    <li>Relate to your organization’s name, location, and/or services </li>
-    <li>Be clear to the general public. Your domain name must not be easily confused with other organizations.</li>
-  </ul>
+{% block form_instructions %}
+  <p>Before requesting a .gov domain, <a href="{% url 'todo' %}">please make sure it
+  meets our naming requirements.</a> Your domain name must:
+    <ul class="usa-list">
+      <li>Be available </li>
+      <li>Be unique </li>
+      <li>Relate to your organization’s name, location, and/or services </li>
+      <li>Be clear to the general public. Your domain name must not be easily confused
+      with other organizations.</li>
+    </ul>
   </p>
 
-  <p>Note that <strong>only federal agencies can request generic terms</strong> like vote.gov.</p>
+  <p>Note that <strong>only federal agencies can request generic terms</strong> like
+  vote.gov.</p>
 
-  <p>We’ll try to give you the domain you want. We first need to make sure your request meets our requirements. We’ll work with you to find the best domain for your organization.</p>
+  <p>We’ll try to give you the domain you want. We first need to make sure your request
+  meets our requirements. We’ll work with you to find the best domain for your
+  organization.</p>
 
   <p>Here are a few domain examples for your type of organization.</p>
   <div class="domain-example">
     {% include "includes/domain_example.html" %}
   </div>
-</div>
+{% endblock %}
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  <h2>What .gov domain do you want?</h2>
-  {# TODO: aria-describedby to associate these instructions with the input! #}
-  <p id="domain_instructions">After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. If your domain passes these initial checks, we’ll verify that it meets all of our requirements once you complete and submit the rest of this form.</p>
 
+{% block form_fields %}
   {% csrf_token %}
-  {% input_with_errors forms.0.requested_domain www_gov=True %}
-  <button type="button" class="usa-button">Check availability</button>
 
-  <h2>Alternative domains</h2>
+  {{ forms.0.management_form }}
 
-  <div>
-    {{ forms.1.management_form }}
-    {# TODO: aria-describedby to associate these instructions with the input! #}
-    <p id="alt_domain_instructions">Are there other domains you’d like if we can’t give you your first choice? Entering alternative domains is optional.</p>
+  <fieldset class="usa-fieldset">
+    <legend>
+      <h2>What .gov domain do you want?</h2>
+    </legend>
 
-    {% for form in forms.1 %}
-      {% input_with_errors form.alternative_domain www_gov=True %}
-    {% endfor %}
+    <p id="domain_instructions">After you enter your domain, we’ll make sure it’s
+    available and that it meets some of our naming requirements. If your domain passes
+    these initial checks, we’ll verify that it meets all of our requirements once you
+    complete and submit the rest of this form.</p>
+
+    {% with attr_aria_describedby="domain_instructions domain_instructions2" %}
+      {% with www_gov=True attr_validate="domain" %}
+        {% input_with_errors forms.0.requested_domain %}
+      {% endwith %}
+    {% endwith %}
+    <button type="button" class="usa-button">Check availability</button>
+
+  </fieldset>
+
+  {{ forms.1.management_form }}
+
+  <fieldset class="usa-fieldset">
+    <legend>
+      <h2>Alternative domains</h2>
+    </legend>
+
+    <p id="alt_domain_instructions">Are there other domains you’d like if we can’t give
+    you your first choice? Entering alternative domains is optional.</p>
+
+    {% with attr_aria_describedby="alt_domain_instructions" %}
+      {% with www_gov=True attr_validate="domain" %}
+        {% for form in forms.1 %}
+          {% input_with_errors form.alternative_domain %}
+        {% endfor %}
+      {% endwith %}
+    {% endwith %}
 
     <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another alternative</span>
     </button>
-  </div>
 
-  <p>If you’re not sure this is the domain you want, that’s okay. You can change it later.</p> 
+  </fieldset>
 
-  {{ block.super }}
-
-</form>
-
+  <p id="domain_instructions2">If you’re not sure this is the domain you want, that’s
+  okay. You can change it later.</p>
 {% endblock %}
