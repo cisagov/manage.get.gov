@@ -47,6 +47,7 @@
 {% endblock %}
 
         <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
+          {% csrf_token %}
 
 {% block form_fields %}{% endblock %}
 

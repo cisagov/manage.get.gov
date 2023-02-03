@@ -7,6 +7,8 @@ from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from django import forms
 from django.core.validators import RegexValidator
 
+from api.views import DOMAIN_API_MESSAGES
+
 from registrar.models import Contact, DomainApplication, Domain
 from registrar.utility import errors
 
@@ -414,36 +416,25 @@ CurrentSitesFormSet = forms.formset_factory(
     formset=BaseCurrentSitesFormSet,
 )
 
-
 class AlternativeDomainForm(RegistrarForm):
-    alternative_domain = forms.CharField(
-        required=False,
-        label="Alternative domain",
-    )
-
     def clean_alternative_domain(self):
         """Validation code for domain names."""
         try:
             requested = self.cleaned_data.get("alternative_domain", None)
             validated = Domain.validate(requested, blank_ok=True)
         except errors.ExtraDotsError:
-            raise forms.ValidationError(
-                "Please enter a domain without any periods.",
-                code="invalid",
-            )
+            raise forms.ValidationError(code="extra_dots")
         except errors.DomainUnavailableError:
-            raise forms.ValidationError(
-                "ERROR MESSAGE GOES HERE",
-                code="invalid",
-            )
+            raise forms.ValidationError(code="unavailable")
         except ValueError:
-            raise forms.ValidationError(
-                "Please enter a valid domain name using only letters, "
-                "numbers, and hyphens",
-                code="invalid",
-            )
+            raise forms.ValidationError(code="invalid")
         return validated
 
+    alternative_domain = forms.CharField(
+        required=False,
+        label="Alternative domain",
+        error_messages=DOMAIN_API_MESSAGES
+    )
 
 class BaseAlternativeDomainFormSet(RegistrarFormSet):
     JOIN = "alternative_domains"
@@ -517,32 +508,19 @@ class DotGovDomainForm(RegistrarForm):
             requested = self.cleaned_data.get("requested_domain", None)
             validated = Domain.validate(requested)
         except errors.BlankValueError:
-            # none or empty string
-            raise forms.ValidationError(
-                "Enter the .gov domain you want. Don’t include “www” or “.gov.” For"
-                " example, if you want www.city.gov, you would enter “city” (without"
-                " the quotes).",
-                code="invalid",
-            )
+            raise forms.ValidationError(code="required")
         except errors.ExtraDotsError:
-            raise forms.ValidationError(
-                "Enter the .gov domain you want without any periods.",
-                code="invalid",
-            )
+            raise forms.ValidationError(code="extra_dots")
         except errors.DomainUnavailableError:
-            raise forms.ValidationError(
-                "ERROR MESSAGE GOES HERE",
-                code="invalid",
-            )
+            raise forms.ValidationError(code="unavailable")
         except ValueError:
-            raise forms.ValidationError(
-                "Enter a domain using only letters, "
-                "numbers, or hyphens (though we don't recommend using hyphens).",
-                code="invalid",
-            )
+            raise forms.ValidationError(code="invalid")
         return validated
 
-    requested_domain = forms.CharField(label="What .gov domain do you want?")
+    requested_domain = forms.CharField(
+        label="What .gov domain do you want?",
+        error_messages=DOMAIN_API_MESSAGES
+    )
 
 
 class PurposeForm(RegistrarForm):

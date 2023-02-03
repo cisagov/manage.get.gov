@@ -9,6 +9,11 @@
 
 var DEFAULT_ERROR = "Please check this field for errors.";
 
+var INFORMATIVE = "info";
+var WARNING = "warning";
+var ERROR = "error";
+var SUCCESS = "success";
+
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Helper functions.
 
@@ -89,44 +94,114 @@ function toggleInputValidity(el, valid, msg=DEFAULT_ERROR) {
     el.classList.remove('usa-input--success');
     el.setAttribute("aria-invalid", "true");
     el.setCustomValidity(msg);
-    // this is here for testing: in actual use, we might not want to
-    // visually display these errors until the user tries to submit
     el.classList.add('usa-input--error');
   }
 }
 
-function _checkDomainAvailability(e) {
+/** Display (or hide) a message beneath an element. */
+function inlineToast(el, id, style, msg) {
+  if (!el.id && !id) {
+    console.error("Elements must have an `id` to show an inline toast.");
+    return;
+  }
+  let toast = document.getElementById((el.id || id) + "--toast");
+  if (style) {
+    if (!toast) {
+      // create and insert the message div
+      toast = document.createElement("div");
+      const toastBody = document.createElement("div");
+      const p = document.createElement("p");
+      toast.setAttribute("id", (el.id || id) + "--toast");
+      toast.className = `usa-alert usa-alert--${style} usa-alert--slim`;
+      toastBody.classList.add("usa-alert__body");
+      p.classList.add("usa-alert__text");
+      p.innerText = msg;
+      toastBody.appendChild(p);
+      toast.appendChild(toastBody);
+      el.parentNode.insertBefore(toast, el.nextSibling);
+    } else {
+      // update and show the existing message div
+      toast.className = `usa-alert usa-alert--${style} usa-alert--slim`;
+      toast.querySelector("div p").innerText = msg;
+      makeVisible(toast);
+    }
+  } else {
+    if (toast) makeHidden(toast);
+  }
+}
+
+function _checkDomainAvailability(el) {
   const callback = (response) => {
-    toggleInputValidity(e.target, (response && response.available));
-    if (e.target.validity.valid) {
-      e.target.classList.add('usa-input--success');
-      // do other stuff, like display a toast?
+    toggleInputValidity(el, (response && response.available), msg=response.message);
+    announce(el.id, response.message);
+    if (el.validity.valid) {
+      el.classList.add('usa-input--success');
+      // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
+      inlineToast(el.parentElement, el.id, SUCCESS, response.message);
+    } else {
+      inlineToast(el.parentElement, el.id, ERROR, response.message);
     }
   }
-  fetchJSON(`available/${e.target.value}`, callback);
+  fetchJSON(`available/${el.value}`, callback);
 }
 
 /** Call the API to see if the domain is good. */
 const checkDomainAvailability = debounce(_checkDomainAvailability);
 
-// <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
-// Event handlers.
+/** Hides the toast message and clears the aira live region. */
+function clearDomainAvailability(el) {
+  el.classList.remove('usa-input--success');
+  announce(el.id, "");
+  // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
+  inlineToast(el.parentElement, el.id);
+}
 
-
-/** On input change, handles running any associated validators. */
-function handleInputValidation(e) {
-  const attribute = e.target.getAttribute("validate") || "";
+/** Runs all the validators associated with this element. */
+function runValidators(el) {
+  const attribute = el.getAttribute("validate") || "";
   if (!attribute.length) return;
   const validators = attribute.split(" ");
   let isInvalid = false;
   for (const validator of validators) {
     switch (validator) {
       case "domain":
-        checkDomainAvailability(e);
+        checkDomainAvailability(el);
         break;
     }
   }
-  toggleInputValidity(e.target, !isInvalid);
+  toggleInputValidity(el, !isInvalid);
+}
+
+/** Clears all the validators associated with this element. */
+function clearValidators(el) {
+  const attribute = el.getAttribute("validate") || "";
+  if (!attribute.length) return;
+  const validators = attribute.split(" ");
+  for (const validator of validators) {
+    switch (validator) {
+      case "domain":
+        clearDomainAvailability(el);
+        break;
+    }
+  }
+  toggleInputValidity(el, true);
+}
+
+// <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
+// Event handlers.
+
+/** On input change, handles running any associated validators. */
+function handleInputValidation(e) {
+  clearValidators(e.target);
+  if (e.target.hasAttribute("auto-validate")) runValidators(e.target);
+}
+
+/** On button click, handles running any associated validators. */
+function handleValidationClick(e) {
+  const attribute = e.target.getAttribute("validate-for") || "";
+  if (!attribute.length) return;
+  const input = document.getElementById(attribute);
+  runValidators(input);
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
@@ -135,14 +210,22 @@ function handleInputValidation(e) {
 /**
  * An IIFE that will attach validators to inputs.
  *
- * It looks for elements with `validate="<type> <type>"` and adds
- * change handlers for each known type.
+ * It looks for elements with `validate="<type> <type>"` and adds change handlers.
+ * 
+ * These handlers know about two other attributes:
+ *  - `validate-for="<id>"` creates a button which will run the validator(s) on <id>
+ *  - `auto-validate` will run validator(s) when the user stops typing (otherwise,
+ *     they will only run when a user clicks the button with `validate-for`)
  */
  (function validatorsInit() {
   "use strict";
   const needsValidation = document.querySelectorAll('[validate]');
   for(const input of needsValidation) {
     input.addEventListener('input', handleInputValidation);
+  }
+  const activatesValidation = document.querySelectorAll('[validate-for]');
+  for(const button of activatesValidation) {
+    button.addEventListener('click', handleValidationClick);
   }
 })();
 

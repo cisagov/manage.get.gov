@@ -1,6 +1,5 @@
 {% extends 'application_form.html' %}
-{% load static %}
-{% load field_helpers %}
+{% load static field_helpers %}
 
 {% block form_instructions %}
   <p>Before requesting a .gov domain, <a href="{% url 'todo' %}">please make sure it
@@ -29,7 +28,6 @@
 
 
 {% block form_fields %}
-  {% csrf_token %}
 
   {{ forms.0.management_form }}
 
@@ -44,12 +42,16 @@
     complete and submit the rest of this form.</p>
 
     {% with attr_aria_describedby="domain_instructions domain_instructions2" %}
+      {# attr_validate / validate="domain" invokes code in get-gov.js #}
       {% with www_gov=True attr_validate="domain" %}
         {% input_with_errors forms.0.requested_domain %}
       {% endwith %}
     {% endwith %}
-    <button type="button" class="usa-button">Check availability</button>
-
+    <button
+      type="button"
+      class="usa-button"
+      validate-for="{{ forms.0.requested_domain.auto_id }}"
+    >Check availability</button>
   </fieldset>
 
   {{ forms.1.management_form }}
@@ -63,7 +65,9 @@
     you your first choice? Entering alternative domains is optional.</p>
 
     {% with attr_aria_describedby="alt_domain_instructions" %}
-      {% with www_gov=True attr_validate="domain" %}
+      {# attr_validate / validate="domain" invokes code in get-gov.js #}
+      {# attr_auto_validate likewise triggers behavior in get-gov.js #}
+      {% with www_gov=True attr_validate="domain" attr_auto_validate=True %}
         {% for form in forms.1 %}
           {% input_with_errors form.alternative_domain %}
         {% endfor %}
