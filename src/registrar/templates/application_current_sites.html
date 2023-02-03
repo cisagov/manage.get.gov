@@ -10,7 +10,7 @@
     {{ forms.0.management_form }}
     {# TODO: aria-describedby to associate these instructions with the input! #}
     <p id="website_instructions">
-      Enter your organization’s public website, if you have one. For example, www.city.com.
+      Enter your organization’s current public website, if you have one. For example, www.city.com.
     </p>
     {% for form in forms.0 %}
       {% input_with_errors form.website %}
