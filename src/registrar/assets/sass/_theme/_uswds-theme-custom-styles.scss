@@ -19,8 +19,9 @@ i.e.
 @include u-padding-right('05');
 ----------------------------------------
 */
-// USWDS tokens are a bit too coarse in their letter-spacing steps
-$letter-space--xs: .0125em; 
+
+// Finer grained letterspacing adjustments
+$letter-space--xs: .0125em;
 
 @use "uswds-core" as *;
 
@@ -29,35 +30,72 @@ $letter-space--xs: .0125em;
    @include sr-only;
  }
 
+ * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.usa-logo {
+  margin-top: units(2);
+}
+
+.usa-logo__text {
+  @include typeset('sans', 'xl', 2);
+  color: color('primary-darker');
+}
+
+.usa-nav__primary {
+  margin-top: units(1);
+}
+
  h1 {
   @include typeset('sans', '2xl', 2);
-  margin: 0 0 units(1);
+  margin: 0 0 units(2);
+  color: color('primary-darker');
  }
 
  h2 {
   font-weight: font-weight('semibold');
   line-height: line-height('heading', 3);
   margin: units(4) 0 units(1);
-
-  &:first-of-type {
-    margin-top: units(2);
-  }
  }
- 
+
+.register-form-step > h1 {
+  //align to top of sidebar on first page of the form
+  margin-top: units(-1);
+}
+
+ //Tighter spacing when H2 is immediatly after H1
+.register-form-step .usa-fieldset:first-of-type h2:first-of-type,
+.register-form-step h1 + h2 {
+  margin-top: units(1);
+}
+
 .register-form-step h3 {
   color: color('primary-dark');
   letter-spacing: $letter-space--xs;
   margin-top: units(3);
   margin-bottom: 0;
+
+  + p {
+    margin-top: units(0.5);
+  }
 }
 
-.register-form-step p {
+.register-form-step h4 {
+  margin-bottom: 0;
+
+  + p {
+    margin-top: units(0.5);
+  }
+}
+
+.register-form-step p,
+.register-form-step .usa-list li,
+.dashboard p
+{
   @include typeset('sans', 'sm', 5);
   max-width: measure(5);
-
-  &:last-of-type {
-    margin-bottom: 0;
-  }
 }
 
 .register-form-step a {
@@ -66,6 +104,10 @@ $letter-space--xs: .0125em;
   &:visited {
     color: color('violet-70v'); //USWDS default
   }
+}
+
+.register-form-step .usa-label:first-of-type {
+  margin-top: units(1);
 }
 
 /* Make "placeholder" links visually obvious */
@@ -99,9 +141,9 @@ a.breadcrumb__back {
     .usa-icon {
        flex-shrink: 0;
        //align lock body to x-height
-       margin: units('2px') units(1) 0 0; 
+       margin: units('2px') units(1) 0 0;
     }
-  }  
+  }
 }
 
 .stepnav {
@@ -112,14 +154,168 @@ a.breadcrumb__back {
   margin-top: units(1);
 }
 
-.review__step__name {
-  font-weight: font-weight('semibold');
+.domain_example {
+  p {
+    margin-bottom: 0;
+  }
+
+  .usa-list {
+    margin-top: units(0.5);
+  }
 }
 
-footer {
-  //Workaround because USWDS units jump from 10 to 15
-  margin-top: units(10) + units(2);
+.review__step {
+  margin-top: units(3);
+
+  &:first-of-type {
+    margin-top: units(4);
+  }
 }
+
+.review__step hr {
+  border: none; //reset
+  border-top: 1px solid color('primary-dark');
+  margin-top: 0;
+  margin-bottom: units(0.5);
+}
+
+.review__step__title a:visited {
+  color: color('primary');
+}
+
+.review__step__name {
+  color: color('primary-dark');
+  font-weight: font-weight('semibold');
+  margin-bottom: units(0.5);
+}
+
+
+/** ---- DASHBOARD ---- */
+
+#wrapper.dashboard {
+  background-color: color('primary-lightest');
+  padding-top: units(5);
+}
+
+section.dashboard {
+  background-color: color('white');
+  border: 1px solid color('base-lighter');
+  border-radius: 4px;
+  padding: 0 units(2) units(3);
+  margin-top: units(3);
+
+  h2 {
+    margin-bottom: units(2);
+  }
+
+  p {
+    margin-bottom: 0;
+  }
+
+  .usa-table {
+    width: 100%;
+
+    a {
+      display: flex;
+      align-items: flex-start;
+      color: color('primary');
+
+      &:visited {
+        color: color('primary');
+      }
+      .usa-icon {
+        // align icon with x height
+        margin-top: units(0.5);
+        margin-right: units(0.5);
+      }
+    }
+  }
+
+  // Table on small mobile
+  .usa-table--stacked {
+    td, th {
+      padding: units(1) units(2) units(2px) 0;
+      border: none;
+    }
+
+    tr:first-child th:first-child {
+      border-top: none;
+    }
+
+    tr {
+      border-bottom: none;
+      border-top: 2px solid color('base-light');
+      margin-top: units(2);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    td[data-label]:before,
+    th[data-label]:before {
+      color: color('primary-darker');
+      padding-bottom: units(2px);
+    }
+  }
+
+  @include at-media(mobile-lg) {
+    margin-top: units(5);
+
+    h2 {
+      margin-bottom: units(3);
+    }
+
+    .usa-table tr {
+      border: none;
+    }
+
+    .usa-table {
+      td, th {
+        border-bottom: 1px solid color('base-light');
+      }
+
+      thead th {
+        color: color('primary-darker');
+        border-bottom: 2px solid color('base-light');
+      }
+
+      tbody tr:last-of-type {
+        td, th {
+          border-bottom: 0;
+        }
+      }
+
+      td, th {
+        padding: units(2);
+      }
+
+      th:first-of-type {
+        padding-left: 0;
+      }
+
+      thead tr:first-child th:first-child {
+        border-top: none;
+      }
+    }
+  }
+}
+
+
+#wrapper {
+  padding-top: units(3);
+  padding-bottom: units(6) * 2 ; //Workaround because USWDS units jump from 10 to 15
+}
+
+
+footer {
+  border-top: 1px solid color('primary-darker');
+}
+
+.usa-footer__secondary-section {
+  background-color: color('primary-lightest');
+}
+
 
 abbr[title] {
   // workaround for underlining abbr element

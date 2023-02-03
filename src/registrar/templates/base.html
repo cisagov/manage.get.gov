@@ -128,11 +128,9 @@
       <div class="usa-navbar">
         {% block logo %}
         <div class="usa-logo" id="extended-logo">
-          <em class="usa-logo__text">
-            <a href="{% url 'home' %}" title="Home" aria-label="Home">
-              {% block site_name %}Home{% endblock %}
-            </a>
-          </em>
+           <a href="{% url 'home' %}">
+           <strong class="usa-logo__text" >.gov </strong>
+           </a>
         </div>
         {% endblock %}
         <button type="button" class="usa-menu-btn">Menu</button>
@@ -162,6 +160,8 @@
     </div>
   </header>
   {% endblock banner %}
+
+  {% block wrapper %}
   <div id="wrapper">
     {% block messages %}
     {% if messages %}
@@ -184,6 +184,7 @@
 
     {% block content_bottom %}{% endblock %}
   </div>
+  {% endblock wrapper%}
 
   {% include "includes/footer.html" %}
   </div> <!-- /#wrapper -->
