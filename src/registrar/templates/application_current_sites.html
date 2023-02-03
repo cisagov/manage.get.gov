@@ -1,6 +1,5 @@
 {% extends 'application_form.html' %}
-{% load static %}
-{% load field_helpers %}
+{% load static field_helpers %}
 
 {% block form_instructions %}
   <p>Enter your organization’s public website, if you have one. For example,
@@ -9,7 +8,6 @@
 
 
 {% block form_fields %}
-  {% csrf_token %}
   {{ forms.0.management_form }}
 
   {% for form in forms.0 %}

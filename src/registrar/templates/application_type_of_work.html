@@ -3,7 +3,6 @@
 
 
 {% block form_fields %}
-  {% csrf_token %}
   {% with attr_maxlength=500 %}
     {% input_with_errors forms.0.type_of_work %}
     {% input_with_errors forms.0.more_organization_information %}

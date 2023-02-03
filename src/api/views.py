@@ -17,13 +17,13 @@ DOMAIN_FILE_URL = (
 
 DOMAIN_API_MESSAGES = {
     "required": "Enter the .gov domain you want. Don’t include “www” or “.gov.”"
-        " For example, if you want www.city.gov, you would enter “city”"
-        " (without the quotes).",
+    " For example, if you want www.city.gov, you would enter “city”"
+    " (without the quotes).",
     "extra_dots": "Enter the .gov domain you want without any periods.",
     "unavailable": "That domain isn’t available. Try entering another one."
-        " Contact us if you need help coming up with a domain.",
+    " Contact us if you need help coming up with a domain.",
     "invalid": "Enter a domain using only letters,"
-        " numbers, or hyphens (though we don't recommend using hyphens).",
+    " numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
 }
 
@@ -83,18 +83,15 @@ def available(request, domain=""):
         Domain.string_could_be_domain(domain)
         or Domain.string_could_be_domain(domain + ".gov")
     ):
-        return JsonResponse({
-            "available": False,
-            "message": DOMAIN_API_MESSAGES["invalid"]
-        })
+        return JsonResponse(
+            {"available": False, "message": DOMAIN_API_MESSAGES["invalid"]}
+        )
     # a domain is available if it is NOT in the list of current domains
     if in_domains(domain):
-        return JsonResponse({
-            "available": False,
-            "message": DOMAIN_API_MESSAGES["unavailable"]
-        })
+        return JsonResponse(
+            {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
+        )
     else:
-        return JsonResponse({
-            "available": True,
-            "message": DOMAIN_API_MESSAGES["success"]
-        })
+        return JsonResponse(
+            {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
+        )

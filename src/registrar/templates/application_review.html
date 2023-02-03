@@ -2,8 +2,6 @@
 {% load static url_helpers %}
 
 {% block form_fields %}
-  {% csrf_token %}
-
   {% for step in steps.all|slice:":-1" %}
   <section class="review__step margin-top-205">
     <hr />

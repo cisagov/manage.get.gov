@@ -2,7 +2,6 @@
 
 import json
 
-from django.core.exceptions import BadRequest
 from django.contrib.auth import get_user_model
 from django.test import TestCase, RequestFactory
 
@@ -85,8 +84,8 @@ class AvailableViewTest(TestCase):
         bad_string = "blah!;"
         request = self.factory.get(API_BASE_PATH + bad_string)
         request.user = self.user
-        with self.assertRaisesMessage(BadRequest, "Invalid"):
-            available(request, domain=bad_string)
+        response = available(request, domain=bad_string)
+        self.assertFalse(json.loads(response.content)["available"])
 
 
 class AvailableAPITest(TestCase):
@@ -108,9 +107,3 @@ class AvailableAPITest(TestCase):
         with less_console_noise():
             response = self.client.post(API_BASE_PATH + "nonsense")
         self.assertEqual(response.status_code, 405)
-
-    def test_available_bad_input(self):
-        self.client.force_login(self.user)
-        with less_console_noise():
-            response = self.client.get(API_BASE_PATH + "blah!;")
-        self.assertEqual(response.status_code, 400)

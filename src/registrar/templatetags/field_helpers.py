@@ -35,6 +35,11 @@ def input_with_errors(context, field=None):  # noqa: C901
             {% endwith %}
         {% endfor }
 
+    There are a few edge cases to keep in mind:
+        - a "maxlength" attribute will cause the input to use USWDS Character counter
+        - the field's `use_fieldset` controls whether the output is label/field or
+            fieldset/legend/field
+        - checkbox label styling is different (this is handled, don't worry about it)
     """
     context = context.flatten()
     context["field"] = field
@@ -54,6 +59,12 @@ def input_with_errors(context, field=None):  # noqa: C901
         classes.append(attrs.pop("class"))
 
     # parse context for field attributes and classes
+    # ---
+    # here we loop through all items in the context dictionary
+    # (this is the context which was being used to render the
+    #  outer template in which this {% input_with_errors %} appeared!)
+    # and look for "magic" keys -- these are used to modify the
+    # appearance and behavior of the final HTML
     for key, value in context.items():
         if key.startswith("attr_"):
             attr_name = re.sub("_", "-", key[5:])

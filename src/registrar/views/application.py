@@ -219,7 +219,11 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         return render(request, self.template_name, context)
 
     def get_all_forms(self, **kwargs) -> list:
-        """Calls `get_forms` for all steps and returns a flat list."""
+        """
+        Calls `get_forms` for all steps and returns a flat list.
+
+        All arguments (**kwargs) are passed directly to `get_forms`.
+        """
         nested = (self.get_forms(step=step, **kwargs) for step in self.steps)
         flattened = [form for lst in nested for form in lst]
         return flattened
