@@ -23,6 +23,7 @@ jobs:
   deploy:
     if: | 
       ${{startsWith(github.head_ref, 'ik/')
+        || startsWith(github.head_ref, 'jon')
         || startsWith(github.head_ref, 'sspj/')
         || startsWith(github.head_ref, 'mr/')
         || startsWith(github.head_ref, 'nmb/')
