@@ -1,27 +1,15 @@
-<!-- Test page -->
 {% extends 'application_form.html' %}
+{% load field_helpers %}
 
-{% block form_content %}
-{% load widget_tweaks dynamic_question_tags field_helpers %}
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-    {% input_with_errors forms.0.tribe_name %}
-
-    <p>Please check all that apply.</p>
-    <div class="usa-form-group">
-    {% csrf_token %}
-
-      <div class="usa-checkbox">
-        {{ forms.0.federally_recognized_tribe|add_class:"usa-checkbox__input"|attr:"required"}}
-        {{ forms.0.federally_recognized_tribe|add_label_class:"usa-checkbox__label" }}
-      </div>
-      <div class="usa-checkbox">
-        {{ forms.0.state_recognized_tribe|add_class:"usa-checkbox__input"|attr:"required"}}
-        {{ forms.0.state_recognized_tribe|add_label_class:"usa-checkbox__label" }}
-      </div>
-  </div>
-
-  {{ block.super }}
-
-</form>
+{% block form_fields %}
+  {% input_with_errors forms.0.tribe_name %}
+  <fieldset class="usa-fieldset">
+    <legend class="usa-legend">
+      <p>Please check all that apply.
+      <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
+    </legend>
+    {% input_with_errors forms.0.federally_recognized_tribe %}
+    {% input_with_errors forms.0.state_recognized_tribe %}
+  </fieldset>
 {% endblock %}

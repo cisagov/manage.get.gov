@@ -71,7 +71,7 @@ class StepsHelper:
     @property
     def current(self):
         """
-        Returns the current step. If no current step is stored in the
+        Returns the current step (a string). If no current step is stored in the
         storage backend, the first step will be returned.
         """
         step = getattr(self._wizard.storage, "current_step", None)

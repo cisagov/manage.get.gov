@@ -1,41 +1,20 @@
 {% extends 'application_form.html' %}
-{% load widget_tweaks %}
+{% load field_helpers %}
 
-{% block form_content %}
+{% block form_instructions %}
+  <p>.Gov domain names are intended for use on the internet. They should be registered
+  with an intent to deploy services, not simply to reserve a name. .Gov domains should
+  not be registered for primarily internal use.</p>
 
-<div id="instructions">
-  <p>.Gov domain names are intended for use on the internet. They should be registered with an intent to deploy services, not simply to reserve a name. .Gov domains should not be registered for primarily internal use.</p>
-  <p>Describe the reason for your domain request. Explain how you plan to use this domain. Will you use it for a website and/or email? Are you moving your website from another top-level domain (like .com or .org)? Read about <a href="#">activities that are prohibited on .gov domains.</a></p>
-  <p> This question is required.</p>
-</div>
+  <p>Describe the reason for your domain request. Explain how you plan to use this
+  domain. Will you use it for a website and/or email? Are you moving your website from
+  another top-level domain (like .com or .org)? Read about <a href="{% url 'todo' %}">activities that
+  are prohibited on .gov domains.</a></p>
+{% endblock %}
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  <div class="usa-form-group">
-    {% csrf_token %}
 
-    <div class="usa-character-count">
-      {% with field=forms.0.purpose %}
-      {% if field.errors %}
-        <div class="usa-form-group usa-form-group--error">
-          {{ field|add_label_class:"usa-label usa-label--error usa-sr-only" }}
-          {% for error in field.errors %}
-            <span class="usa-error-message" id="input-error-message" role="alert">
-              {{ error }}
-            </span>
-          {% endfor %}
-          {{ field|add_class:"usa-input--error usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500"|attr:"aria-invalid:true" }}
-        </div>
-      {% else %}
-        {{ field|add_label_class:"usa-label usa-sr-only" }}
-        {{ field|add_class:"usa-textarea usa-character-count__field"|attr:"aria-describedby:instructions"|attr:"maxlength=500" }}
-      {% endif %}
-      {% endwith %}
-      <span class="usa-character-count__message" id="with-hint-textarea-info with-hint-textarea-hint"> You can enter up to 500 characters </span>
-    </div>
-  </div>
-
-  {{ block.super }}
-
-</form>
-
+{% block form_fields %}
+    {% with attr_maxlength=500 %}
+      {% input_with_errors forms.0.purpose %}
+    {% endwith %}
 {% endblock %}

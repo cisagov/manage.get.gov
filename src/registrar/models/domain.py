@@ -92,7 +92,7 @@ class Domain(TimeStampedModel):
 
     # a domain name is alphanumeric or hyphen, up to 63 characters, doesn't
     # begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
-    DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}")
+    DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}$")
 
     @classmethod
     def string_could_be_domain(cls, domain: str | None) -> bool:

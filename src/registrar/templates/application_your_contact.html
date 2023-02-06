@@ -1,27 +1,25 @@
 {% extends 'application_form.html' %}
-{% load widget_tweaks %}
-{% load static %}
 {% load field_helpers %}
 
-{% block form_content %}
+{% block form_instructions %}
+  <p> We’ll use the following information to contact you about your domain request and,
+  once your request is approved, about managing your domain.</p>
 
-<div id="instructions">
-  <p> We’ll use the following information to contact you about your domain request and, once your request is approved, about managing your domain.</p>
+  <p>If you’d like us to use a different name, email, or phone number you can make those
+  changes below. Changing your contact information here won’t affect your login.gov
+  account information.</p>
 
-  <p>If you’d like us to use a different name, email, or phone number you can make those changes below. Changing your contact information here won’t affect your login.gov account information.</p>
+  <p>The contact information you provide here won’t be public and will only be used for
+  the .gov registry.</p>
+{% endblock %}
 
-  <p>The contact information you provide here won’t be public and will only be used for the .gov registry.</p>
-<div>
 
-{% include "includes/required_fields.html" %}
-
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  {% csrf_token %}
-
+{% block form_fields %}
   <fieldset class="usa-fieldset">
     <legend class="usa-sr-only">
       Your contact information
     </legend>
+
     {% input_with_errors forms.0.first_name %}
 
     {% input_with_errors forms.0.middle_name %}
@@ -32,12 +30,9 @@
 
     {% input_with_errors forms.0.email %}
 
-    {% input_with_errors forms.0.phone add_class="usa-input--medium" %}
+    {% with add_class="usa-input--medium" %}
+      {% input_with_errors forms.0.phone %}
+    {% endwith %}
+
   </fieldset>
-
-
-  {{ block.super }}
-
-</form>
-
 {% endblock %}

@@ -6,16 +6,13 @@
  * Initialization (run-on-load) stuff goes at the bottom.
  */
 
-/** Strings announced to assistive technology users. */
-var ARIA = {
-  QUESTION_REMOVED: "Previous follow-up question removed",
-  QUESTION_ADDED: "New follow-up question required"
-}
 
 var DEFAULT_ERROR = "Please check this field for errors.";
 
-var REQUIRED = "required";
-var INPUT = "input";
+var INFORMATIVE = "info";
+var WARNING = "warning";
+var ERROR = "error";
+var SUCCESS = "success";
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Helper functions.
@@ -38,102 +35,22 @@ function makeVisible(el) {
   el.style.visibility = "visible";
 }
 
-/** Executes `func` once per selected child of a given element. */
-function forEachChild(el, selector, func) {
-  const children = el.querySelectorAll(selector);
-  for (const child of children) {
-    func(child)
-  }
-}
-
-/** Removes `required` attribute from input. */
-const removeRequired = input => input.removeAttribute(REQUIRED);
-
-/** Adds `required` attribute to input. */
-const setRequired = input => input.setAttribute(REQUIRED, "");
-
-/** Removes `checked` attribute from input. */
-const removeChecked = input => input.checked = false;
-
-/** Adds `checked` attribute to input. */
-const setChecked = input => input.checked = true;
-
 /** Creates and returns a live region element. */
 function createLiveRegion(id) {
   const liveRegion = document.createElement("div");
   liveRegion.setAttribute("role", "region");
   liveRegion.setAttribute("aria-live", "polite");
   liveRegion.setAttribute("id", id + "-live-region");
-  liveRegion.classList.add("sr-only");
+  liveRegion.classList.add("usa-sr-only");
   document.body.appendChild(liveRegion);
   return liveRegion;
 }
 
-/** Currently selected radio buttons. */
-var selected = {};
-
-/** Mapping of radio buttons to the toggleables they control. */
-var radioToggles = {};
-
-
-/**
- * Tracks state of selected radio button.
- *
- * This is required due to JavaScript not having a native
- * event trigger for "deselect" on radio buttons. Tracking
- * which button has been deselected (and hiding the associated
- * toggleable) is a manual task.
- * */
-function rememberSelected(radioButton) {
-  selected[radioButton.name] = radioButton;
-}
-
 /** Announces changes to assistive technology users. */
 function announce(id, text) {
-  const liveRegion = document.getElementById(id + "-live-region");
+  let liveRegion = document.getElementById(id + "-live-region");
+  if (!liveRegion) liveRegion = createLiveRegion(id);
   liveRegion.innerHTML = text;
-}
-
-/** 
- * Used by an event handler to hide HTML.
- *
- * Hides any previously visible HTML associated with
- * previously selected radio buttons.
- */
-function hideToggleable(e) {
-  // has any button in this radio button group been selected?
-  const selectionExists = e.target.name in selected;
-  if (selectionExists) {
-    // does the selection have any hidden content associated with it?
-    const hasToggleable = selected[e.target.name].id in radioToggles;
-    if (hasToggleable) {
-      const prevRadio = selected[e.target.name];
-      const prevToggleable = radioToggles[prevRadio.id];
-
-      // is this event handler for a different button?
-      const selectionHasChanged = (e.target != prevRadio);
-      // is the previous button's content still visible?
-      const prevSelectionVisible = (prevToggleable.style.visibility !== "hidden");
-      if (selectionHasChanged && prevSelectionVisible) {
-        makeHidden(prevToggleable);
-        forEachChild(prevToggleable, INPUT, removeChecked);
-        forEachChild(prevToggleable, INPUT, removeRequired);
-        announce(prevToggleable.id, ARIA.QUESTION_REMOVED);
-      }
-    }
-  }
-}
-
-function revealToggleable(e) {
-  // if the currently selected radio button has a toggle
-  // make it visible
-  if (e.target.id in radioToggles) {
-    const toggleable = radioToggles[e.target.id];
-    rememberSelected(e.target);
-    if (e.target.required) forEachChild(toggleable, INPUT, setRequired);
-    makeVisible(toggleable);
-    announce(toggleable.id, ARIA.QUESTION_ADDED);
-  }
 }
 
 /**
@@ -177,51 +94,114 @@ function toggleInputValidity(el, valid, msg=DEFAULT_ERROR) {
     el.classList.remove('usa-input--success');
     el.setAttribute("aria-invalid", "true");
     el.setCustomValidity(msg);
-    // this is here for testing: in actual use, we might not want to
-    // visually display these errors until the user tries to submit
     el.classList.add('usa-input--error');
   }
 }
 
-function _checkDomainAvailability(e) {
+/** Display (or hide) a message beneath an element. */
+function inlineToast(el, id, style, msg) {
+  if (!el.id && !id) {
+    console.error("Elements must have an `id` to show an inline toast.");
+    return;
+  }
+  let toast = document.getElementById((el.id || id) + "--toast");
+  if (style) {
+    if (!toast) {
+      // create and insert the message div
+      toast = document.createElement("div");
+      const toastBody = document.createElement("div");
+      const p = document.createElement("p");
+      toast.setAttribute("id", (el.id || id) + "--toast");
+      toast.className = `usa-alert usa-alert--${style} usa-alert--slim`;
+      toastBody.classList.add("usa-alert__body");
+      p.classList.add("usa-alert__text");
+      p.innerText = msg;
+      toastBody.appendChild(p);
+      toast.appendChild(toastBody);
+      el.parentNode.insertBefore(toast, el.nextSibling);
+    } else {
+      // update and show the existing message div
+      toast.className = `usa-alert usa-alert--${style} usa-alert--slim`;
+      toast.querySelector("div p").innerText = msg;
+      makeVisible(toast);
+    }
+  } else {
+    if (toast) makeHidden(toast);
+  }
+}
+
+function _checkDomainAvailability(el) {
   const callback = (response) => {
-    toggleInputValidity(e.target, (response && response.available));
-    if (e.target.validity.valid) {
-      e.target.classList.add('usa-input--success');
-      // do other stuff, like display a toast?
+    toggleInputValidity(el, (response && response.available), msg=response.message);
+    announce(el.id, response.message);
+    if (el.validity.valid) {
+      el.classList.add('usa-input--success');
+      // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
+      inlineToast(el.parentElement, el.id, SUCCESS, response.message);
+    } else {
+      inlineToast(el.parentElement, el.id, ERROR, response.message);
     }
   }
-  fetchJSON(`available/${e.target.value}`, callback);
+  fetchJSON(`available/${el.value}`, callback);
 }
 
 /** Call the API to see if the domain is good. */
 const checkDomainAvailability = debounce(_checkDomainAvailability);
 
-// <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
-// Event handlers.
-
-/** On radio button selection change, handles associated toggleables. */
-function handleToggle(e) {
-  // hide any previously visible HTML associated with previously selected radio buttons
-  hideToggleable(e);
-  // display any HTML associated with the newly selected radio button
-  revealToggleable(e);
+/** Hides the toast message and clears the aira live region. */
+function clearDomainAvailability(el) {
+  el.classList.remove('usa-input--success');
+  announce(el.id, "");
+  // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
+  inlineToast(el.parentElement, el.id);
 }
 
-/** On input change, handles running any associated validators. */
-function handleInputValidation(e) {
-  const attribute = e.target.getAttribute("validate") || "";
+/** Runs all the validators associated with this element. */
+function runValidators(el) {
+  const attribute = el.getAttribute("validate") || "";
   if (!attribute.length) return;
   const validators = attribute.split(" ");
   let isInvalid = false;
   for (const validator of validators) {
     switch (validator) {
       case "domain":
-        checkDomainAvailability(e);
+        checkDomainAvailability(el);
         break;
     }
   }
-  toggleInputValidity(e.target, !isInvalid);
+  toggleInputValidity(el, !isInvalid);
+}
+
+/** Clears all the validators associated with this element. */
+function clearValidators(el) {
+  const attribute = el.getAttribute("validate") || "";
+  if (!attribute.length) return;
+  const validators = attribute.split(" ");
+  for (const validator of validators) {
+    switch (validator) {
+      case "domain":
+        clearDomainAvailability(el);
+        break;
+    }
+  }
+  toggleInputValidity(el, true);
+}
+
+// <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
+// Event handlers.
+
+/** On input change, handles running any associated validators. */
+function handleInputValidation(e) {
+  clearValidators(e.target);
+  if (e.target.hasAttribute("auto-validate")) runValidators(e.target);
+}
+
+/** On button click, handles running any associated validators. */
+function handleValidationClick(e) {
+  const attribute = e.target.getAttribute("validate-for") || "";
+  if (!attribute.length) return;
+  const input = document.getElementById(attribute);
+  runValidators(input);
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
@@ -230,8 +210,12 @@ function handleInputValidation(e) {
 /**
  * An IIFE that will attach validators to inputs.
  *
- * It looks for elements with `validate="<type> <type>"` and adds
- * change handlers for each known type.
+ * It looks for elements with `validate="<type> <type>"` and adds change handlers.
+ * 
+ * These handlers know about two other attributes:
+ *  - `validate-for="<id>"` creates a button which will run the validator(s) on <id>
+ *  - `auto-validate` will run validator(s) when the user stops typing (otherwise,
+ *     they will only run when a user clicks the button with `validate-for`)
  */
  (function validatorsInit() {
   "use strict";
@@ -239,58 +223,11 @@ function handleInputValidation(e) {
   for(const input of needsValidation) {
     input.addEventListener('input', handleInputValidation);
   }
-})();
-
-/**
- * An IIFE that will hide any elements with `hide-on-load` attribute.
- *
- * Why not start with `hidden`? Because this is for use with form questions:
- * if Javascript fails, users will still need access to those questions.
- */
- (function hiddenInit() {
-  "use strict";
-  const hiddens = document.querySelectorAll('[hide-on-load]');
-  for(const hidden of hiddens) {
-    makeHidden(hidden);
-    forEachChild(hidden, INPUT, removeRequired);
+  const activatesValidation = document.querySelectorAll('[validate-for]');
+  for(const button of activatesValidation) {
+    button.addEventListener('click', handleValidationClick);
   }
 })();
 
-/**
- * An IIFE that adds onChange listeners to radio buttons.
- * 
- * An element with `toggle-by="<id>,<id>"` will be hidden/shown
- * by a radio button with `id="<id>"`.
- * 
- * It also inserts the ARIA live region to be used when
- * announcing show/hide to screen reader users.
- */
-(function toggleInit() {
-  "use strict";
 
-  // get elements to show/hide
-  const toggleables = document.querySelectorAll('[toggle-by]');
 
-  for(const toggleable of toggleables) {
-    // get the (comma-seperated) list of radio button ids
-    // which trigger this toggleable to become visible
-    const attribute = toggleable.getAttribute("toggle-by") || "";
-    if (!attribute.length) continue;
-    const radioIDs = attribute.split(",");
-
-    createLiveRegion(toggleable.id)
-
-    for (const id of radioIDs) {
-      radioToggles[id] = toggleable;
-      // if it is already selected, track that
-      const radioButton = document.getElementById(id);
-      if (radioButton.checked) rememberSelected(radioButton);
-    }
-  }
-
-  // all radio buttons must react to selection changes
-  const radioButtons = document.querySelectorAll('input[type="radio"]');
-  for (const radioButton of Array.from(radioButtons)) {
-    radioButton.addEventListener('change', handleToggle);
-  }
-})();

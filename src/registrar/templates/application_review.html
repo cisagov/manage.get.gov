@@ -1,11 +1,7 @@
 {% extends 'application_form.html' %}
-{% load static widget_tweaks namespaced_urls %}
+{% load static url_helpers %}
 
-{% block form_content %}
-
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  {% csrf_token %}
-
+{% block form_fields %}
   {% for step in steps.all|slice:":-1" %}
   <section class="review__step">
     <hr />
@@ -97,9 +93,4 @@
     </div>
   </section>
   {% endfor %}
-  
-  {{ block.super }}
-
-</form>
-
 {% endblock %}

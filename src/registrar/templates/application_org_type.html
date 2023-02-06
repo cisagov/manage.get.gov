@@ -1,26 +1,15 @@
 {% extends 'application_form.html' %}
-{% load widget_tweaks %}
-{% load dynamic_question_tags %}
+{% load field_helpers %}
 
-{% block form_content %}
+{% block form_instructions %}
+  <h2 class="margin-bottom-05">
+    What kind of U.S.-based government organization do you represent?
+  </h2>
+{% endblock %}
 
-<form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
-  {% csrf_token %}
 
-  {% radio_buttons_by_value forms.0.organization_type as choices %}
-
-  <fieldset id="organization_type__fieldset" class="usa-fieldset">
-    <legend class="usa-legend">
-      <h2> What kind of U.S.-based government organization do you represent?  </h2>
-      <p>This question is required.</p>
-    </legend>
-    {{ forms.0.organization_type.errors }}
-    {% for choice in choices.values %}
-      {% include "includes/radio_button.html" with choice=choice tile="true" %}
-    {% endfor %}
-  </fieldset>
-
-  {{ block.super }}
-
-</form>
+{% block form_fields %}
+  {% with add_class="usa-radio__input--tile" %}
+    {% input_with_errors forms.0.organization_type %}
+  {% endwith %}
 {% endblock %}

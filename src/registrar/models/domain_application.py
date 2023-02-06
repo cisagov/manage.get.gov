@@ -120,7 +120,6 @@ class DomainApplication(TimeStampedModel):
         LEGISLATIVE = "legislative", "Legislative"
 
     AGENCIES = [
-        "",
         "Administrative Conference of the United States",
         "Advisory Council on Historic Preservation",
         "American Battle Monuments Commission",

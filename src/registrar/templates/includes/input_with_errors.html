@@ -5,33 +5,70 @@ error messages, if necessary.
 
 {% load widget_tweaks %}
 
-{% if field.errors %}
-  <div class="usa-form-group usa-form-group--error">
-  {{ field|add_label_class:"usa-label usa-label--error" }}
-  {% for error in field.errors %}
-    <span class="usa-error-message" id="input-error-message" role="alert">
-      {{ error }}
-    </span>
-  {% endfor %}
-  {% if required %}
-    {{ field|add_class:input_class|add_class:"usa-input--error"|attr:"aria-invalid:true"|attr:"required" }}
-  {% else %}
-    {{ field|add_class:input_class|add_class:"usa-input--error"|attr:"aria-invalid:true" }}
-  {% endif %}
-  </div>
+{% if widget.attrs.maxlength %}
+<div class="usa-character-count">
+{% endif %}
+
+{% if field.use_fieldset %}
+  <fieldset
+    id="{{ widget.attrs.id }}__fieldset"
+    class="usa-fieldset usa-form-group{% if group_classes %} {{ group_classes }}{% endif %}"
+  >
+{% elif field.widget_type == 'checkbox' %}
+  <div
+    class="usa-checkbox{% if group_classes %} {{ group_classes }}{% endif %}"
+  >
 {% else %}
-  {{ field|add_label_class:"usa-label" }}
-  {% if www_gov %}
-  <div class="display-flex flex-align-center">
-    <span class="padding-top-05 padding-right-2px">www.</span>
+  <div
+    class="usa-form-group{% if group_classes %} {{ group_classes }}{% endif %}"
+  >
+{% endif %}
+
+  {% if not field.widget_type == "checkbox" %}
+    {% include "django/forms/label.html" %}
   {% endif %}
-  {% if required %}
-    {{ field|add_class:input_class|attr:"required" }}
-  {% else %}
-    {{ field|add_class:input_class }}
+
+  {% if field.errors %}
+    <div id="{{ widget.attrs.id }}__error-message">
+    {% for error in field.errors %}
+      <span class="usa-error-message" role="alert">
+        {{ error }}
+      </span>
+    {% endfor %}
+    </div>
   {% endif %}
+
   {% if www_gov %}
-    <span class="padding-top-05 padding-left-2px">.gov </span>
+    <div class="display-flex flex-align-center">
+      <span class="padding-top-05 padding-right-2px">www.</span>
+  {% endif %}
+
+  {# this is the input field, itself #}
+  {% include widget.template_name %}
+
+  {% if www_gov %}
+      <span class="padding-top-05 padding-left-2px">.gov </span>
+    </div>
+  {% endif %}
+
+  {% if field.widget_type == "checkbox" %}
+    {% include "django/forms/label.html" %}
+  {% endif %}
+
+{% if field.use_fieldset %}
+  </fieldset>
+{% else %}
   </div>
-  {% endif %}
+{% endif %}
+
+{% if widget.attrs.maxlength %}
+  <span
+    id="{{ widget.attrs.id }}__message"
+    class="usa-character-count__message"
+    aria-live="polite"
+  >
+    You can enter up to {{ widget.attrs.maxlength }} characters
+  </span>
+
+</div>
 {% endif %}

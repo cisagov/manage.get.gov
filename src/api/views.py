@@ -1,7 +1,5 @@
 """Internal API views"""
-
 from django.apps import apps
-from django.core.exceptions import BadRequest
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 
@@ -15,6 +13,19 @@ from cachetools.func import ttl_cache
 DOMAIN_FILE_URL = (
     "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
 )
+
+
+DOMAIN_API_MESSAGES = {
+    "required": "Enter the .gov domain you want. Don’t include “www” or “.gov.”"
+    " For example, if you want www.city.gov, you would enter “city”"
+    " (without the quotes).",
+    "extra_dots": "Enter the .gov domain you want without any periods.",
+    "unavailable": "That domain isn’t available. Try entering another one."
+    " Contact us if you need help coming up with a domain.",
+    "invalid": "Enter a domain using only letters,"
+    " numbers, or hyphens (though we don't recommend using hyphens).",
+    "success": "That domain is available!",
+}
 
 
 # this file doesn't change that often, nor is it that big, so cache the result
@@ -72,6 +83,15 @@ def available(request, domain=""):
         Domain.string_could_be_domain(domain)
         or Domain.string_could_be_domain(domain + ".gov")
     ):
-        raise BadRequest("Invalid request.")
+        return JsonResponse(
+            {"available": False, "message": DOMAIN_API_MESSAGES["invalid"]}
+        )
     # a domain is available if it is NOT in the list of current domains
-    return JsonResponse({"available": not in_domains(domain)})
+    if in_domains(domain):
+        return JsonResponse(
+            {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
+        )
+    else:
+        return JsonResponse(
+            {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
+        )
