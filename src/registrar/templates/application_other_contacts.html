@@ -7,6 +7,10 @@
   managing your organization or its technical infrastructure. This information will
   help us assess your eligibility and understand the purpose of the .gov domain. These
   contacts should be in addition to you and your authorizing official.</p>
+
+  <p>Please list other administrative or technical contacts. They should be employees of
+  your organization. We’ll email these contacts to let them know that you made this
+  request.</p>
 {% endblock %}
 
 
@@ -16,7 +20,7 @@
   {% for form in forms.0.forms %}
     <fieldset class="usa-fieldset">
       <legend>
-        <h2>Contact {{ forloop.counter }}</h2>
+        <h2>Administrative or technical contact {{ forloop.counter }}</h2>
       </legend>
 
       {% input_with_errors form.first_name %}
@@ -41,4 +45,8 @@
       <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
     </svg><span class="margin-left-05">Add another contact</span>
   </button>
+
+  <h2>No contacts</h2>
+
+  {% input_with_errors forms.1.no_other_contacts_rationale %}
 {% endblock %}
