@@ -660,6 +660,18 @@ OtherContactsFormSet = forms.formset_factory(
 )
 
 
+class NoOtherContactsForm(RegistrarForm):
+    no_other_contacts_rationale = forms.CharField(
+        required=False,
+        # label has to end in a space to get the label_suffix to show
+        label=(
+            "If you can’t provide other contacts for your organization,"
+            " please explain why."
+        ),
+        widget=forms.Textarea(),
+    )
+
+
 class SecurityEmailForm(RegistrarForm):
     security_email = forms.EmailField(
         required=False,
