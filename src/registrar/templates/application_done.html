@@ -6,36 +6,30 @@
 {% block content %}
 <main id="main-content" class="grid-container register-form-step">
   <span class="display-flex flex-align-center" > 
-  <img 
-    class= "maxw-7 margin-top-neg-2 margin-right-105" 
-    src="{%static 'img/registrar/dotgov_confirmation.svg' %}" 
-    alt="Check mark confirming submission"
-    width="56"
-  />
-  <h1>Thank you</h1>
-</span>
-  <p>
-  Thank you for your domain request. We'll email a copy of your request to you,
+    <img 
+        class= "maxw-7 margin-top-neg-2 margin-right-105" 
+        src="{%static 'img/registrar/dotgov_confirmation.svg' %}" 
+        alt="Check mark confirming submission"
+        width="56"
+        />
+    <h1>Thank you</h1>
+  </span>
+  <p> Thank you for your domain request. We'll email a copy of your request to you,
   your authorizing official, and any contacts you added.</p>
 
-  <h2 class="">Next steps in this process</h2>
+  <h2>Next steps in this process</h2>
 
+  <p> We'll review your request. This could take up to two weeks. During
+  this review we'll verify that your</p> 
   <ul class="usa-list">
-
-    <li> We'll review your request. This could take up to two weeks. During
-      this review we'll verify that your 
-        <li>Organization is eligible for a .gov domain</li>
-        <li>Authorizing official approves your request</li> 
-        <li>Domain meets our naming requirements</li>
-      </ul>
-    </li>
-
-    <li> You can <a href="{% url 'todo' %}"><del>check the
-          status</del></a> of your request at any time.
-    </li>
-
-    <li> We'll email you with any questions or when we complete our
-      review.</li>
+    <li>Organization is eligible for a .gov domain</li>
+    <li>Authorizing official approves your request</li> 
+    <li>Domain meets our naming requirements</li>
   </ul>
+
+  <p> You can <a href="{% url 'todo' %}"><del>check the status</del></a>
+      of your request at any time. We'll email you with any questions or when we 
+      complete our review.</p>
+
 </main>
 {% endblock %}
