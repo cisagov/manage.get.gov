@@ -113,6 +113,9 @@ class DomainApplication(TimeStampedModel):
         SCHOOL_DISTRICT = "school_district", (
             "School district: a school district that is not part of a local government"
         )
+        OTHER = "other", (
+            "Other: a U.S.-based government agency that does not fit in one of the other categories"
+        )
 
     class BranchChoices(models.TextChoices):
         EXECUTIVE = "executive", "Executive"
@@ -513,6 +516,7 @@ class DomainApplication(TimeStampedModel):
         return user_choice in [
             DomainApplication.OrganizationChoices.SPECIAL_DISTRICT,
             DomainApplication.OrganizationChoices.INTERSTATE,
+            DomainApplication.OrganizationChoices.OTHER,
         ]
 
     def is_federal(self) -> Union[bool, None]:
