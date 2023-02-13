@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 @receiver(post_save, sender=User)
 def handle_profile(sender, instance, **kwargs):
-
     """Method for when a User is saved.
 
     If the user is being created, then create a matching UserProfile. Otherwise

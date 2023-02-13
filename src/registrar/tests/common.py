@@ -78,7 +78,6 @@ class MockUserLogin:
 
 
 class MockSESClient(Mock):
-
     EMAILS_SENT: List[Dict] = []
 
     def send_email(self, *args, **kwargs):

@@ -7,7 +7,6 @@ from registrar.forms import EditProfileForm
 
 @login_required
 def edit_profile(request):
-
     """View for a profile editing page."""
 
     if request.method == "POST":

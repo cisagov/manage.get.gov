@@ -481,7 +481,7 @@ class DomainApplication(TimeStampedModel):
         send_templated_email(
             "emails/submission_confirmation.txt",
             self.submitter.email,
-            context={"id": self.id, "domain_name": self.requested_domain.name}
+            context={"id": self.id, "domain_name": self.requested_domain.name},
         )
 
     @transition(field="status", source=STARTED, target=SUBMITTED)

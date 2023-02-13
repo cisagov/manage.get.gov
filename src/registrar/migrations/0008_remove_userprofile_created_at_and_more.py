@@ -5,7 +5,6 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registrar", "0007_domainapplication_more_organization_information_and_more"),
     ]

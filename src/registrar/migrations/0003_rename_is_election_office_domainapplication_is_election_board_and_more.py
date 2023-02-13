@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registrar", "0002_domain_host_nameserver_hostip_and_more"),
     ]
