@@ -6,7 +6,8 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 
 from django_webtest import WebTest  # type: ignore
-import boto3_mocking
+import boto3_mocking  # type: ignore
+
 
 from registrar.models import DomainApplication, Domain, Contact, Website
 from registrar.views.application import ApplicationWizard, Step
