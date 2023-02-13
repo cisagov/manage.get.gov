@@ -26,7 +26,9 @@ def send_templated_email(template_name: str, to_address: str, context={}):
         FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
         Destination={"ToAddresses": [to_address]},
         Content={
-            "Subject": {"Data": "Thank you for applying for a .gov domain"},
-            "Body": {"Text": {"Data": email_body}},
+            "Simple": {
+                "Subject": {"Data": "Thank you for applying for a .gov domain"},
+                "Body": {"Text": {"Data": email_body}},
+            },
         },
     )
