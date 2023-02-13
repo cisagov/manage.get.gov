@@ -18,8 +18,10 @@ def send_templated_email(template_name: str, to_address: str, context={}):
 
     ses_client = boto3.client(
         "sesv2",
+        region_name=settings.AWS_REGION,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+
     )
     ses_client.send_email(
         FromEmailAddress=settings.DEFAULT_FROM_EMAIL,

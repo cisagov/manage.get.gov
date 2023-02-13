@@ -216,6 +216,7 @@ AUTH_USER_MODEL = "registrar.User"
 # Configuration for accessing AWS SES
 AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID", None)
 AWS_SECRET_ACCESS_KEY = env.str("AWS_SECRET_ACCESS_KEY", None)
+AWS_REGION="us-gov-west-1"
 
 # email address to use for various automated correspondence
 # TODO: pick something sensible here

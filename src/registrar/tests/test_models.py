@@ -78,32 +78,12 @@ class TestDomainApplication(TestCase):
         """Create an application and submit it and see if email was sent."""
         user, _ = User.objects.get_or_create()
         contact = Contact.objects.create(email="test@test.gov")
-        com_website, _ = Website.objects.get_or_create(website="igorville.com")
-        gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        domain.save()
         application = DomainApplication.objects.create(
             creator=user,
-            investigator=user,
-            organization_type=DomainApplication.OrganizationChoices.FEDERAL,
-            federal_type=DomainApplication.BranchChoices.EXECUTIVE,
-            is_election_board=False,
-            organization_name="Test",
-            address_line1="100 Main St.",
-            address_line2="APT 1A",
-            state_territory="CA",
-            zipcode="12345-6789",
-            authorizing_official=contact,
             requested_domain=domain,
             submitter=contact,
-            purpose="Igorville rules!",
-            security_email="security@igorville.gov",
-            anything_else="All of Igorville loves the dotgov program.",
-            is_policy_acknowledged=True,
         )
-        application.current_websites.add(com_website)
-        application.alternative_domains.add(gov_website)
-        application.other_contacts.add(contact)
         application.save()
         application.submit()
 
