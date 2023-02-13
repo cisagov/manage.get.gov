@@ -2,6 +2,8 @@ import os
 import logging
 
 from contextlib import contextmanager
+from unittest.mock import Mock
+from typing import List, Dict
 
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
@@ -73,3 +75,11 @@ class MockUserLogin:
 
         response = self.get_response(request)
         return response
+
+
+class MockSESClient(Mock):
+
+    EMAILS_SENT: List[Dict] = []
+
+    def send_email(self, *args, **kwargs):
+        self.EMAILS_SENT.append({"args": args, "kwargs": kwargs})

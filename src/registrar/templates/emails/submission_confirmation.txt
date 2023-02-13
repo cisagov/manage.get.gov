@@ -1,0 +1,4 @@
+Thank you for submitting an application for the domain name "{{ domain_name }}".
+
+If you need to make changes to your application, visit
+<http://registrar.get.gov/application/{{ id }/edit}>.

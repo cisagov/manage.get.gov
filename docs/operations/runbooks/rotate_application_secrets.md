@@ -15,6 +15,8 @@ Where `credentials-<ENVIRONMENT>.json` looks like:
 {
   "DJANGO_SECRET_KEY": "EXAMPLE",
   "DJANGO_SECRET_LOGIN_KEY": "EXAMPLE",
+  "AWS_ACCESS_KEY_ID": "EXAMPLE",
+  "AWS_SECRET_ACCESS_KEY": "EXAMPLE",
   ...
 }
 ```
@@ -57,3 +59,9 @@ base64 private.pem
 ```
 
 You also need to upload the `public.crt` key if recently created to the login.gov identity sandbox: https://dashboard.int.identitysandbox.gov/
+
+## AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+
+To access the AWS Simple Email Service, we need credentials from the CISA AWS
+account for an IAM user who has limited access to only SES. Those credentials
+need to be specified in the environment.
