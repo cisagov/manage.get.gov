@@ -8,7 +8,7 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
-from ..utility.email import send_templated_email
+from ..utility.email import send_templated_email, EmailSendingError
 
 
 logger = logging.getLogger(__name__)
@@ -478,11 +478,14 @@ class DomainApplication(TimeStampedModel):
         if self.submitter is None or self.submitter.email is None:
             logger.warn("Cannot send confirmation email, no submitter email address.")
             return
-        send_templated_email(
-            "emails/submission_confirmation.txt",
-            self.submitter.email,
-            context={"id": self.id, "domain_name": self.requested_domain.name},
-        )
+        try:
+            send_templated_email(
+                "emails/submission_confirmation.txt",
+                self.submitter.email,
+                context={"id": self.id, "domain_name": self.requested_domain.name},
+            )
+        except EmailSendingError:
+            logger.warning("Failed to send confirmation email", exc_info=True)
 
     @transition(field="status", source=STARTED, target=SUBMITTED)
     def submit(self):

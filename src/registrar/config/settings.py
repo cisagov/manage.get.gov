@@ -49,6 +49,9 @@ env_base_url = env.str("DJANGO_BASE_URL")
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
 
+secret_aws_ses_key_id = secret("AWS_ACCESS_KEY_ID", None)
+secret_aws_ses_key = secret("AWS_SECRET_ACCESS_KEY", None)
+
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -214,8 +217,8 @@ AUTH_USER_MODEL = "registrar.User"
 # region: Email-------------------------------------------------------------###
 
 # Configuration for accessing AWS SES
-AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID", None)
-AWS_SECRET_ACCESS_KEY = env.str("AWS_SECRET_ACCESS_KEY", None)
+AWS_ACCESS_KEY_ID = secret_aws_ses_key_id
+AWS_SECRET_ACCESS_KEY = secret_aws_ses_key
 AWS_REGION = "us-gov-west-1"
 
 # email address to use for various automated correspondence
