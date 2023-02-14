@@ -29,6 +29,7 @@ def send_templated_email(template_name: str, to_address: str, context={}):
             region_name=settings.AWS_REGION,
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            config=settings.BOTO_CONFIG,
         )
     except Exception as exc:
         raise EmailSendingError("Could not access the SES client.") from exc

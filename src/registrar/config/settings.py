@@ -20,6 +20,9 @@ import environs
 from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
 from pathlib import Path
+from typing import Final
+
+from botocore.config import Config
 
 # # #                          ###
 #      Setup code goes here      #
@@ -221,9 +224,10 @@ AWS_ACCESS_KEY_ID = secret_aws_ses_key_id
 AWS_SECRET_ACCESS_KEY = secret_aws_ses_key
 AWS_REGION = "us-gov-west-1"
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html#standard-retry-mode
-AWS_RETRY_MODE = "standard"
+AWS_RETRY_MODE: Final = "standard"
 # base 2 exponential backoff with max of 20 seconds:
 AWS_MAX_ATTEMPTS = 3
+BOTO_CONFIG = Config(retries={"mode": AWS_RETRY_MODE, "max_attempts": AWS_MAX_ATTEMPTS})
 
 # email address to use for various automated correspondence
 # TODO: pick something sensible here
