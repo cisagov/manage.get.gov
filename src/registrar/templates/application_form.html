@@ -18,6 +18,16 @@
         </a>
         {% endif %}
 
+{% block form_save_progress %}
+    {% if form.save %}
+          {% include "includes/save_progress.html" %}
+    {% endif %}
+{% endblock %}
+
+{% block form_test %}
+          {% include "includes/save_progress.html" %}
+{% endblock %}
+
 {% block form_errors %}
         {% comment %}
            to make sense of this loop, consider that 
