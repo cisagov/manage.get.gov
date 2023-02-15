@@ -1,7 +1,7 @@
 import logging
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
@@ -304,7 +304,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         are_valid = (form.is_valid() for form in forms)
         return all(are_valid)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
         # if accessing this class directly, redirect to the first step
         if self.__class__ == ApplicationWizard:

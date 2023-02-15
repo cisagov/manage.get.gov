@@ -1,11 +1,17 @@
 from __future__ import annotations
 from typing import Union
 
+import logging
+
 from django.apps import apps
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
+from ..utility.email import send_templated_email, EmailSendingError
+
+
+logger = logging.getLogger(__name__)
 
 
 class DomainApplication(TimeStampedModel):
@@ -462,6 +468,25 @@ class DomainApplication(TimeStampedModel):
         except Exception:
             return ""
 
+    def _send_confirmation_email(self):
+        """Send a confirmation email that this application was submitted.
+
+        The email goes to the email address that the submitter gave as their
+        contact information. If there is not submitter information, then do
+        nothing.
+        """
+        if self.submitter is None or self.submitter.email is None:
+            logger.warn("Cannot send confirmation email, no submitter email address.")
+            return
+        try:
+            send_templated_email(
+                "emails/submission_confirmation.txt",
+                self.submitter.email,
+                context={"id": self.id, "domain_name": self.requested_domain.name},
+            )
+        except EmailSendingError:
+            logger.warning("Failed to send confirmation email", exc_info=True)
+
     @transition(field="status", source=STARTED, target=SUBMITTED)
     def submit(self):
         """Submit an application that is started."""
@@ -480,9 +505,9 @@ class DomainApplication(TimeStampedModel):
         if not Domain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
 
-        # if no exception was raised, then we don't need to do anything
-        # inside this method, keep the `pass` here to remind us of that
-        pass
+        # When an application is submitted, we need to send a confirmation email
+        # This is a side-effect of the state transition
+        self._send_confirmation_email()
 
     # ## Form policies ###
     #

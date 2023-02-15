@@ -8,7 +8,6 @@ import django_fsm  # type: ignore
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registrar", "0001_initial"),
     ]

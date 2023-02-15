@@ -5,7 +5,6 @@ import phonenumber_field.modelfields  # type: ignore
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registrar", "0005_domainapplication_city_and_more"),
     ]

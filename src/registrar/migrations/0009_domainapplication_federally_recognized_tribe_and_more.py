@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registrar", "0008_remove_userprofile_created_at_and_more"),
     ]

@@ -22,6 +22,7 @@ cachetools = "*"
 requests = "*"
 django-fsm = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
+boto3 = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
@@ -34,3 +35,5 @@ types-requests = "*"
 django-stubs = "*"
 django-webtest = "*"
 types-cachetools = "*"
+boto3-mocking = "*"
+boto3-stubs = "*"

@@ -30,6 +30,9 @@ services:
       # --- These keys are obtained from `.env` file ---
       # Set a private JWT signing key for Login.gov
       - DJANGO_SECRET_LOGIN_KEY
+      # AWS credentials
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
     stdin_open: true
     tty: true
     ports:

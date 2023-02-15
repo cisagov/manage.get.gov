@@ -4,7 +4,15 @@ from django.db.utils import IntegrityError
 from registrar.models import Contact, DomainApplication, User, Website, Domain
 from unittest import skip
 
+import boto3_mocking  # type: ignore
+from .common import MockSESClient, less_console_noise
 
+boto3_mocking.clients.register_handler("sesv2", MockSESClient)
+
+
+# The DomainApplication submit method has a side effect of sending an email
+# with AWS SES, so mock that out in all of these test cases
+@boto3_mocking.patching
 class TestDomainApplication(TestCase):
     def test_empty_create_fails(self):
         """Can't create a completely empty domain application."""
@@ -61,8 +69,35 @@ class TestDomainApplication(TestCase):
         application = DomainApplication.objects.create(
             creator=user, requested_domain=site
         )
-        application.submit()
+        # no submitter email so this emits a log warning
+        with less_console_noise():
+            application.submit()
         self.assertEqual(application.status, application.SUBMITTED)
+
+    def test_submit_sends_email(self):
+        """Create an application and submit it and see if email was sent."""
+        user, _ = User.objects.get_or_create()
+        contact = Contact.objects.create(email="test@test.gov")
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=user,
+            requested_domain=domain,
+            submitter=contact,
+        )
+        application.save()
+        application.submit()
+
+        # check to see if an email was sent
+        self.assertGreater(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "test@test.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
 
 
 class TestDomain(TestCase):

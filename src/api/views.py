@@ -70,7 +70,6 @@ def in_domains(domain):
 @require_http_methods(["GET"])
 @login_required
 def available(request, domain=""):
-
     """Is a given domain available or not.
 
     Response is a JSON dictionary with the key "available" and value true or
