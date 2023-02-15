@@ -6,6 +6,7 @@ from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
+from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
@@ -326,6 +327,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         # if user opted to save their progress,
         # return them to the page they were already on
         if button == "save":
+            messages.success(request, 'Your progress has been saved!')
             return self.goto(self.steps.current)
         # otherwise, proceed as normal
         return self.goto_next_step()
