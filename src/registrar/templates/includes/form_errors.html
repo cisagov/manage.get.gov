@@ -1,5 +1,9 @@
+{% comment %} 
+Commenting the code below to turn off the error because 
+we are showing the caution dialog instead. But saving in 
+case we want to revert this. 
 {% if form.errors %}
-  {% for error in form.non_field_errors %}
+{% for error in form.non_field_errors %}
     <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
     <div class="usa-alert__body">
     {{ error|escape }}
@@ -16,3 +20,4 @@
     {% endfor %}
   {% endfor %}
 {% endif %}
+{% endcomment %}

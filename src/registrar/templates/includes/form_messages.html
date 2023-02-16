@@ -1,14 +1,15 @@
 {% comment %}
-there are a message code thats already in the base.html. need to follow up 
-with other engineers about this.
+This should be removed.
 {% endcomment %}
 
 {% if messages %}
 {% for message in messages %}
+
    <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2">
     <div class="usa-alert__body">
        {{ message }}
     </div>
     </div>
+
 {% endfor %}
 {% endif %}
