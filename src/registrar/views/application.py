@@ -7,6 +7,7 @@ from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
+from django.utils.safestring import mark_safe
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
@@ -320,6 +321,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             self.save(forms)
         else:
             # unless there are errors
+            messages.warning(request,mark_safe("<b>We could not save all the fields. </b><br/> The highlight fields below <b>could not be saved</b> because they have missing or invalid data. All other information on this page has been saved"))
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
