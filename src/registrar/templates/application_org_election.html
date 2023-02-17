@@ -5,11 +5,16 @@
   <h2 class="margin-bottom-05">
     Is your organization an election office?
   </h2>
+
+  <p class="text-semibold">This question is required.</p>
 {% endblock %}
 
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear on this page #}
+{% endblock %}
 
 {% block form_fields %}
-  {% with add_class="usa-radio__input--tile" %}
+  {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
     {% input_with_errors forms.0.is_election_board %}
   {% endwith %}
 {% endblock %}

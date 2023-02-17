@@ -21,6 +21,7 @@ def input_with_errors(context, field=None):  # noqa: C901
         add_error_class: like `add_class` but only if field.errors is not empty
         add_required_class: like `add_class` but only if field is required
         add_label_class: append to input element's label's `class` attribute
+        add_legend_class: append to input element's legend's `class` attribute
         add_group_class: append to input element's surrounding tag's `class` attribute
         attr_* - adds or replaces any single html attribute for the input
         add_error_attr_* - like `attr_*` but only if field.errors is not empty
@@ -50,6 +51,7 @@ def input_with_errors(context, field=None):  # noqa: C901
     # these will be converted to CSS strings
     classes = []
     label_classes = []
+    legend_classes = []
     group_classes = []
 
     # this will be converted to an attribute string
@@ -82,6 +84,8 @@ def input_with_errors(context, field=None):  # noqa: C901
 
         elif key == "add_label_class":
             label_classes.append(value)
+        elif key == "add_legend_class":
+            legend_classes.append(value)
 
         elif key == "add_group_class":
             group_classes.append(value)
@@ -128,6 +132,9 @@ def input_with_errors(context, field=None):  # noqa: C901
 
     if label_classes:
         context["label_classes"] = " ".join(label_classes)
+
+    if legend_classes:
+        context["legend_classes"] = " ".join(legend_classes)
 
     if group_classes:
         context["group_classes"] = " ".join(group_classes)
