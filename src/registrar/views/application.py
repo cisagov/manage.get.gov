@@ -321,13 +321,18 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             self.save(forms)
         else:
             # unless there are errors
-            # no sec because this use of mark_safe does not introduce a cross-site 
+            # no sec because this use of mark_safe does not introduce a cross-site
             # scripting vulnerability because there is no untrusted content inside.
             # It is only being used to pass a specific HTML entity into a template.
-            messages.warning(request, mark_safe(  # nosec
-                "<b>We could not save all the fields. </b> <br/> The highlight fields " +
-                "below <b>could not be saved</b> because they have missing or invalid " +
-                "data. All other information on this page has been saved."))
+            messages.warning(
+                request,
+                mark_safe(  # nosec
+                    "<b>We could not save all the fields.</b><br/> The highlight "
+                    + "fields below <b>could not be saved</b> because they have "
+                    + "missingor invalid data. All other information on this page "
+                    + "has been saved."
+                ),
+            )
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
@@ -335,7 +340,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         # if user opted to save their progress,
         # return them to the page they were already on
         if button == "save":
-            messages.success(request, 'Your progress has been saved!')
+            messages.success(request, "Your progress has been saved!")
             return self.goto(self.steps.current)
         # otherwise, proceed as normal
         return self.goto_next_step()
