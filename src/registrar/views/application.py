@@ -327,9 +327,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             messages.warning(
                 request,
                 mark_safe(  # nosec
-                    "<b>We could not save all the fields.</b><br/> The highlight "
+                    "<b>We could not save all the fields.</b><br/> The highlighted "
                     + "fields below <b>could not be saved</b> because they have "
-                    + "missingor invalid data. All other information on this page "
+                    + "missing or invalid data. All other information on this page "
                     + "has been saved."
                 ),
             )
