@@ -159,17 +159,17 @@ class OrganizationTypeForm(RegistrarForm):
 
 class TribalGovernmentForm(RegistrarForm):
     federally_recognized_tribe = forms.BooleanField(
-        label="Our organization is a federally-recognized tribe. ",
+        label="Federally-recognized tribe ",
         required=False,
     )
 
     state_recognized_tribe = forms.BooleanField(
-        label="Our organization is a state-recognized tribe ",
+        label="State-recognized tribe ",
         required=False,
     )
 
     tribe_name = forms.CharField(
-        label="Enter the tribe that you represent",
+        label="What is the name of the tribe you represent?",
         error_messages={"required": "Enter the tribe you represent."},
     )
 
