@@ -105,7 +105,7 @@ $letter-space--xs: .0125em;
     color: color('violet-70v'); //USWDS default
   }
 }
-
+.register-form-step .usa-form-group:first-of-type, 
 .register-form-step .usa-label:first-of-type {
   margin-top: units(1);
 }
