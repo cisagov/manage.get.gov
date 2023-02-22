@@ -662,7 +662,7 @@ OtherContactsFormSet = forms.formset_factory(
 
 class NoOtherContactsForm(RegistrarForm):
     no_other_contacts_rationale = forms.CharField(
-        required=False,
+        required=True,
         # label has to end in a space to get the label_suffix to show
         label=(
             "If you can’t provide other contacts for your organization,"

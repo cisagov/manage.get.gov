@@ -35,6 +35,7 @@ class Step(StrEnum):
     PURPOSE = "purpose"
     YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
+    NO_OTHER_CONTACTS = "no_other_contacts"
     SECURITY_EMAIL = "security_email"
     ANYTHING_ELSE = "anything_else"
     REQUIREMENTS = "requirements"
@@ -80,6 +81,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other contacts for your organization"),
+        Step.NO_OTHER_CONTACTS: _("No other contacts?"),
         Step.SECURITY_EMAIL: _("Security email for public use"),
         Step.ANYTHING_ELSE: _("Anything else we should know?"),
         Step.REQUIREMENTS: _(
@@ -99,6 +101,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             "show_organization_election", False
         ),
         Step.TYPE_OF_WORK: lambda w: w.from_model("show_type_of_work", False),
+        Step.NO_OTHER_CONTACTS: lambda w: w.from_model(
+            "show_no_other_contacts_rationale", False
+        ),
     }
 
     def __init__(self):
@@ -410,7 +415,12 @@ class YourContact(ApplicationWizard):
 
 class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
-    forms = [forms.OtherContactsFormSet, forms.NoOtherContactsForm]
+    forms = [forms.OtherContactsFormSet]
+
+
+class NoOtherContacts(ApplicationWizard):
+    template_name = "application_no_other_contacts.html"
+    forms = [forms.NoOtherContactsForm]
 
 
 class SecurityEmail(ApplicationWizard):
