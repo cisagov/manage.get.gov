@@ -80,8 +80,8 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
-        Step.OTHER_CONTACTS: _("Other contacts for your organization"),
-        Step.NO_OTHER_CONTACTS: _("No other contacts?"),
+        Step.OTHER_CONTACTS: _("Other employees from your organization"),
+        Step.NO_OTHER_CONTACTS: _("No other employees from your organization?"),
         Step.SECURITY_EMAIL: _("Security email for public use"),
         Step.ANYTHING_ELSE: _("Anything else we should know?"),
         Step.REQUIREMENTS: _(
