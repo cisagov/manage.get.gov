@@ -180,10 +180,10 @@ class TribalGovernmentForm(RegistrarForm):
             or self.cleaned_data["state_recognized_tribe"]
         ):
             raise forms.ValidationError(
-                "Only tribes recognized by the U.S. federal government or by a U.S."
-                " state government are eligible for .gov domains. Please email"
-                " registrar@dotgov.gov to tell us more about your tribe and why you"
-                " want a .gov domain.",
+                "Only tribes recognized by the U.S. federal government
+                " or by a U.S. state government are eligible for .gov
+                " domains. Please <a href="{% url 'todo' %}">tell us more about your tribe and why
+                " you want a .gov domain</a>.",
                 code="invalid",
             )
 
