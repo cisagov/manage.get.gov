@@ -137,7 +137,7 @@ class TestFormValidation(TestCase):
             form.errors["is_policy_acknowledged"],
             [
                 "Check the box if you read and agree to the requirements for"
-                " registering and operating .gov domains."
+                " operating .gov domains."
             ],
         )
 
@@ -148,7 +148,7 @@ class TestFormValidation(TestCase):
             form.errors["is_policy_acknowledged"],
             [
                 "Check the box if you read and agree to the requirements for"
-                " registering and operating .gov domains."
+                " operating .gov domains."
             ],
         )
 
@@ -159,7 +159,7 @@ class TestFormValidation(TestCase):
         )
         self.assertTrue(
             any(
-                "Please email registrar@dotgov.gov" in error
+                "tell us more about your tribe" in error
                 for error in form.non_field_errors()
             )
         )

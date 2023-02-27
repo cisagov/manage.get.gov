@@ -84,9 +84,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
         Step.SECURITY_EMAIL: _("Security email for public use"),
         Step.ANYTHING_ELSE: _("Anything else we should know?"),
-        Step.REQUIREMENTS: _(
-            "Requirements for operating .gov domains"
-        ),
+        Step.REQUIREMENTS: _("Requirements for operating .gov domains"),
         Step.REVIEW: _("Review and submit your domain request"),
     }
 
