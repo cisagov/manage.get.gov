@@ -28,8 +28,10 @@ class RegistrarForm(forms.Form):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("label_suffix", "")
         # save a reference to an application object
+        archived = kwargs.pop('archived', None)
         self.application = kwargs.pop("application", None)
         super(RegistrarForm, self).__init__(*args, **kwargs)
+        self.fields['archived'] = forms.BooleanField(initial=archived, required=False)
 
     def to_database(self, obj: DomainApplication | Contact):
         """
@@ -669,18 +671,6 @@ class NoOtherContactsForm(RegistrarForm):
             " please explain why."
         ),
         widget=forms.Textarea(),
-    )
-
-
-class SecurityEmailForm(RegistrarForm):
-    security_email = forms.EmailField(
-        required=False,
-        label="Security email for public use",
-        error_messages={
-            "invalid": (
-                "Enter an email address in the required format, like name@example.com."
-            )
-        },
     )
 
 
