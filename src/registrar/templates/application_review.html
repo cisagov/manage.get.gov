@@ -75,9 +75,6 @@
               None
             {% endfor %}
           {% endif %}
-          {% if step == Step.SECURITY_EMAIL %}
-            {{ application.security_email|default:"None" }}
-          {% endif %}
           {% if step == Step.ANYTHING_ELSE %}
             {{ application.anything_else|default:"No" }}
           {% endif %}

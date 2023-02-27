@@ -440,13 +440,6 @@ class DomainApplication(TimeStampedModel):
         help_text="Reason for listing no additional contacts",
     )
 
-    security_email = models.CharField(
-        max_length=320,
-        null=True,
-        blank=True,
-        help_text="Security email for public use",
-    )
-
     anything_else = models.TextField(
         null=True,
         blank=True,
