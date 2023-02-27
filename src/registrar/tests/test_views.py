@@ -124,7 +124,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         this test work.
         """
         num_pages_tested = 0
-        SKIPPED_PAGES = 3  # elections, type_of_work, tribal_government
+        # elections, type_of_work, tribal_government, no_other_contacts
+        SKIPPED_PAGES = 4
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         type_page = self.app.get(reverse("application:")).follow()
@@ -695,6 +696,24 @@ class DomainApplicationTests(TestWithUser, WebTest):
         contact_page = type_result.follow()
 
         self.assertContains(contact_page, self.TITLES[Step.TYPE_OF_WORK])
+
+    def test_application_no_other_contacts(self):
+        """Applicants with no other contacts have to give a reason."""
+        contacts_page = self.app.get(reverse("application:other_contacts"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        result = contacts_page.form.submit()
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        no_contacts_page = result.follow()
+        expected_url_slug = str(Step.NO_OTHER_CONTACTS)
+        actual_url_slug = no_contacts_page.request.path.split("/")[-2]
+        self.assertEqual(expected_url_slug, actual_url_slug)
 
     def test_application_type_of_work_interstate(self):
         """Special districts have to answer an additional question."""
