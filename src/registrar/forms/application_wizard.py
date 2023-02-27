@@ -28,10 +28,8 @@ class RegistrarForm(forms.Form):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("label_suffix", "")
         # save a reference to an application object
-        archived = kwargs.pop('archived', None)
         self.application = kwargs.pop("application", None)
         super(RegistrarForm, self).__init__(*args, **kwargs)
-        self.fields['archived'] = forms.BooleanField(initial=archived, required=False)
 
     def to_database(self, obj: DomainApplication | Contact):
         """
