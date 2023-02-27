@@ -2,7 +2,7 @@
 {% load static field_helpers %}
 
 {% block form_instructions %}
-  <p>We’d like to contact other employees with administrative or technical responsibilities in your organization. For example, they could be involved in managing your organization or its technical infrastructure. This information will help us assess your eligibility and understand the purpose of the .gov domain. These contacts should be in addition to you and your authorizing official. They should be employees of your organization.</p>
+  <p>We’d like to contact other employees in your organization about your domain request. For example, they could be involved in managing your organization or its technical infrastructure. <strong>This information will help us assess your eligibility for a .gov domain.</strong> These contacts should be in addition to you and your authorizing official. They should be employees of your organization.</p>
 
   <p>We’ll email these contacts to let them know that you made this request.</p>
 {% endblock %}
@@ -14,7 +14,7 @@
   {% for form in forms.0.forms %}
     <fieldset class="usa-fieldset">
       <legend>
-        <h2>Administrative or technical contact {{ forloop.counter }}</h2>
+        <h2>Organization contact {{ forloop.counter }}</h2>
       </legend>
 
       {% input_with_errors form.first_name %}

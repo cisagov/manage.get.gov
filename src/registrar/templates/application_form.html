@@ -18,6 +18,10 @@
         </a>
         {% endif %}
 
+{% block form_messages %}
+          {% include "includes/form_messages.html" %}
+{% endblock %}
+
 {% block form_errors %}
         {% comment %}
            to make sense of this loop, consider that 
