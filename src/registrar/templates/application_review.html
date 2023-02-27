@@ -36,7 +36,9 @@
           {% endif %}
           {% if step == Step.AUTHORIZING_OFFICIAL %}
             {% if application.authorizing_official %}
-              {% include "includes/contact.html" with contact=application.authorizing_official %}
+              <div class="margin-bottom-105">
+                {% include "includes/contact.html" with contact=application.authorizing_official %}
+              </div>
             {% else %}
               Incomplete
             {% endif %}
@@ -51,8 +53,10 @@
             </ul>
           {% endif %}
           {% if step == Step.DOTGOV_DOMAIN %}
-            <ul class="add-list-reset">
+            <ul class="add-list-reset margin-bottom-105">
               <li>{{ application.requested_domain.name|default:"Incomplete" }}</li>
+            </ul>
+            <ul class="add-list-reset">
               {% for site in application.alternative_domains.all %}
                 <li>{{ site.website }}</li>
               {% endfor %}
@@ -63,17 +67,24 @@
           {% endif %}
           {% if step == Step.YOUR_CONTACT %}
               {% if application.submitter %}
-                {% include "includes/contact.html" with contact=application.submitter %}
+                <div class="margin-bottom-105">
+                  {% include "includes/contact.html" with contact=application.submitter %}
+                </div>
               {% else %}
                 Incomplete
               {% endif %}
           {% endif %}
           {% if step == Step.OTHER_CONTACTS %}
             {% for other in application.other_contacts.all %}
+              <div class="margin-bottom-105">
                 {% include "includes/contact.html" with contact=other %}
+              </div>
             {% empty %}
               None
             {% endfor %}
+          {% endif %}
+          {% if step == Step.NO_OTHER_CONTACTS %}
+            {{ application.no_other_contacts_rationale|default:"Incomplete" }}
           {% endif %}
           {% if step == Step.SECURITY_EMAIL %}
             {{ application.security_email|default:"None" }}
@@ -82,7 +93,7 @@
             {{ application.anything_else|default:"No" }}
           {% endif %}
           {% if step == Step.REQUIREMENTS %}
-            {{ application.is_policy_acknowledged|yesno:"Agree,Do not agree,Do not agree" }}
+            {{ application.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." }}
           {% endif %}
         </div>
       </div>
