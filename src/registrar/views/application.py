@@ -426,7 +426,6 @@ class OtherContacts(ApplicationWizard):
     forms = [forms.OtherContactsFormSet, forms.NoOtherContactsForm]
 
 
-
 class AnythingElse(ApplicationWizard):
     template_name = "application_anything_else.html"
     forms = [forms.AnythingElseForm]

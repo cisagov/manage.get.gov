@@ -401,9 +401,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_result = other_contacts_form.submit()
 
         self.assertEquals(other_contacts_result.status_code, 302)
-        self.assertEquals(
-            other_contacts_result["Location"], "/register/anything_else/"
-        )
+        self.assertEquals(other_contacts_result["Location"], "/register/anything_else/")
         num_pages_tested += 1
 
         # ---- ANYTHING ELSE PAGE  ----
