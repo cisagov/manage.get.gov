@@ -2,85 +2,91 @@
   {% if federal_type == 'executive' %}
     <p><strong>Examples:</strong></p>
     <ul class="usa-list">
-      <li> medicare.gov </li>
-      <li> fema.gov </li>
+      <li>fema.gov</li>
+      <li>medicare.gov</li>
+      <li>usda.gov</li>
     </ul>
 
   {% elif federal_type == 'judicial' %}
     <p><strong>Examples:</strong></p>
     <ul class="usa-list">
-      <li> usprobation.gov </li>
-      <li> ustaxcourt.gov </li>
+      <li>uscourts.gov</li>
+      <li>ustaxcourt.gov</li>
+      <li>ussc.gov</li>
     </ul>
 
   {% elif federal_type == 'legislative' %}
     <p><strong>Examples:</strong></p>
     <ul class="usa-list">
-      <li> capitol.gov </li>
-      <li> gpo.gov </li>
+      <li>gao.gov</li>
+      <li>gpo.gov</li>
+      <li>loc.gov</li>
     </ul>
 {% endif %}
 
 {% elif organization_type == 'interstate' %}
   <p><strong>Examples:</strong></p>
   <ul class="usa-list">
-    <li> GulfCoastWaterAuthority.gov </li>
-    <li> wmataOIG.gov </li>
+    <li>EMScompact.gov</li>
+    <li>wmataOIG.gov</li>
+    <li>trpa.gov</li>
   </ul>
 
 {% elif organization_type == 'state_or_territory' %}
   <p>State .gov domains must include the two-letter state abbreviation or clearly spell out the state name.</p> 
   <p><strong>Examples:</strong></p>
   <ul class="usa-list">
-    <li> UtahGovernor.gov </li>
-    <li> ColoradoDOT.gov </li>
-    <li> NJRecycling.gov </li>
-    <li> AmericanSamoa.gov </li>
-    <li> Guam.gov </li>
+    <li>AmericanSamoa.gov</li>
+    <li>Colorado.gov</li>
+    <li>Georgia.gov</li>
+    <li>AmericanSamoa.gov </li>
+    <li>Guam.gov</li>
   </ul>
 
 {% elif organization_type == 'tribal' %}
   <p>Tribal domains may include the suffix -nsn, for native sovereign nation.</p>
   <p><strong>Examples:</strong></p>
   <ul class="usa-list">
-    <li> tbyi.gov </li>
-    <li> pitu.gov </li>
-    <li> TulalipTribalCourt-nsn.gov </li>
+    <li>tbyi.gov</li>
+    <li>pitu.gov</li>
+    <li>TulalipTribalCourt-nsn.gov</li>
   </ul>
 
 {% elif organization_type == 'county' %}
-  <p>Most county .gov domains must include the two-letter state abbreviation or the full state name. County names that aren’t shared by any other city, county, parish, town, borough, village or equivalent in the U.S., at the time a domain is granted, can be requested without referring to the state. Counties can include “county” in their domain to distinguish it from other places with similar names. We use the Census Bureau’s National Places Gazetteer Files to determine if county names are unique.</p>
+  <p>Most county .gov domains must include the two-letter state abbreviation or the full state name. County names that aren’t shared by any other city, county, parish, town, borough, village or equivalent in the U.S., at the time a domain is granted, can be requested without referring to the state. Counties can include “county” in their domain to distinguish it from other places with similar names. We use the <a href="https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html">Census Bureau’s National Places Gazetteer Files</a> to determine if county names are unique.</p>
   <p><strong>Examples:</strong></p>
   <ul class="usa-list">
-    <li> AdamsCountyMS.gov </li>
-    <li> LivingstonParishLA.gov </li>
-    <li> Erie.gov </li>
+    <li>AdamsCountyMS.gov</li>
+    <li>Erie.gov</li>
+    <li>LivingstonParishLA.gov</li>
+    <li>MitchellCountyNC.gov</li>
   </ul>
 
 {% elif organization_type == 'city' %}
-  <p> Most city domains must include the two-letter state abbreviation or clearly spell out the state name. Using phrases like “City of” or “Town of” is optional.</p>
+  <p>Most city domains must include the two-letter state abbreviation or clearly spell out the state name unless city or county exceptions apply. Using phrases like “City of” or “Town of” is optional.</p>
   <p><strong>Examples:</strong></p>
     <ul class="usa-list">
-      <li>www.BlufftonIndiana.gov</li>
-      <li>www.CityofEudoraKS.gov</li>
-      <li>www.WallawallaWA.gov</li>
+      <li>CityofEudoraKS.gov</li>
+      <li>Pocatello.gov</li>
+      <li>WallaWallaWA.gov</li>
     </ul>
-  <p> Some cities don’t have to refer to their state.
+  <p>Some cities don’t have to refer to their state.
     <ul class="usa-list">
-      <li> City names that are not shared by any other U.S. city, town, or village can be requested without referring to the state. We use the Census Bureau’s National Places Gazetteer Files to determine if names are unique. </li>
+      <li>City names that are not shared by any other U.S. city, town, or village can be requested without referring to the state. We use the <a href="https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html">Census Bureau’s National Places Gazetteer Files</a> to determine if names are unique.</li>
       <li>Certain cities are so well-known that they may not require a state reference to communicate location. We use the list of U.S. “dateline cities” in the Associated Press Stylebook to make this determination.</li>
       <li>The 50 largest cities, as measured by population according to the Census Bureau, can have .gov domain names that don’t refer to their state.</li>
     </ul>
   </p>
 
 {% elif organization_type == 'special_district' %}
-  <p>Domain names must represent your organization or institutional name, not solely the services you provide. It also needs to include your two-letter state abbreviation or clearly spell out the state name.</p>
+  <p>Domain names must represent your organization or institutional name, not solely the services you provide. It also needs to include your two-letter state abbreviation or clearly spell out the state name unless <a href="{% url 'todo' %}">city or county exceptions apply</a>.</p>
   <p><strong>Examples:</strong></p>
   <ul class="usa-list">
-    <li> GlacierViewFire.gov </li>
-    <li> LorainCountyRecorder.gov </li>
-    <li> CentreCountyVotes.gov </li>
-    <li> WalnutValleyWater.gov </li>
+    <li>ElectionsShelbyTN.gov</li>
+    <li>GlacierViewFire.gov</li>
+    <li>HVcoVote.gov</li>
+    <li>TechshareTX.gov</li>
+    <li>UtahTrust.gov</li>
   </ul>
 
 {% elif organization_type == 'school_district' %}
