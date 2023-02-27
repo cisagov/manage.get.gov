@@ -313,6 +313,15 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "security_email",
+                    models.CharField(
+                        blank=True,
+                        help_text="Security email for public use",
+                        max_length=320,
+                        null=True,
+                    ),
+                ),
+                (
                     "anything_else",
                     models.TextField(
                         blank=True, help_text="Anything else we should know?", null=True
