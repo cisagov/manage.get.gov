@@ -665,7 +665,8 @@ class NoOtherContactsForm(RegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=(
-            "Please explain why there are no other employees from your organization that we can contact."
+            "Please explain why there are no other employees from your organization"
+            " that we can contact."
         ),
         widget=forms.Textarea(),
     )
