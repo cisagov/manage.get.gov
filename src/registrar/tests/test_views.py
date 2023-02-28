@@ -512,7 +512,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         with less_console_noise():
             final_result = review_result.follow()
-        self.assertContains(final_result, "Thank you for your domain request")
+        self.assertContains(final_result, "Thanks for your domain request!")
 
         # check that any new pages are added to this test
         self.assertEqual(num_pages, num_pages_tested)
