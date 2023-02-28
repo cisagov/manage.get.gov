@@ -942,7 +942,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Go back to dotgov domain page to test the dynamic text changed
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = election_page.click(str(self.TITLES["dotgov_domain"]), index=0)
-        self.assertContains(dotgov_page, "BlufftonIndiana.gov")
+        self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
 
     def test_application_formsets(self):
