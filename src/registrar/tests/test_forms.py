@@ -84,7 +84,8 @@ class TestFormValidation(TestCase):
         """Must be a valid phone number."""
         form = AuthorizingOfficialForm(data={"phone": "boss@boss"})
         self.assertTrue(
-            form.errors["phone"][0].startswith("Enter the phone number for your authorizing official.")
+            form.errors["phone"][0].startswith("Enter the phone number" 
+            " for your authorizing official.")
         )
 
     def test_your_contact_email_invalid(self):
