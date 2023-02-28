@@ -36,7 +36,6 @@ for step, view in [
     (Step.YOUR_CONTACT, views.YourContact),
     (Step.OTHER_CONTACTS, views.OtherContacts),
     (Step.NO_OTHER_CONTACTS, views.NoOtherContacts),
-    (Step.SECURITY_EMAIL, views.SecurityEmail),
     (Step.ANYTHING_ELSE, views.AnythingElse),
     (Step.REQUIREMENTS, views.Requirements),
     (Step.REVIEW, views.Review),

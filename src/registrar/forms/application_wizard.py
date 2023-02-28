@@ -6,6 +6,8 @@ from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
 from django.core.validators import RegexValidator
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 from api.views import DOMAIN_API_MESSAGES
 
@@ -179,11 +181,19 @@ class TribalGovernmentForm(RegistrarForm):
             self.cleaned_data["federally_recognized_tribe"]
             or self.cleaned_data["state_recognized_tribe"]
         ):
+            todo_url = reverse("todo")
             raise forms.ValidationError(
-                "Only tribes recognized by the U.S. federal government or by a U.S."
-                " state government are eligible for .gov domains. Please email"
-                " registrar@dotgov.gov to tell us more about your tribe and why you"
-                " want a .gov domain.",
+                # no sec because we are using it to include an internal URL
+                # into a link. There should be no user-facing input in the
+                # HTML indicated here.
+                mark_safe(  # nosec
+                    "Only tribes recognized by the U.S. federal government "
+                    "or by a U.S. state government are eligible for .gov "
+                    'domains. Please <a href="{}">tell us more '
+                    "about your tribe and why you want a .gov domain</a>.".format(
+                        todo_url
+                    )
+                ),
                 code="invalid",
             )
 
@@ -672,18 +682,6 @@ class NoOtherContactsForm(RegistrarForm):
     )
 
 
-class SecurityEmailForm(RegistrarForm):
-    security_email = forms.EmailField(
-        required=False,
-        label="Security email for public use",
-        error_messages={
-            "invalid": (
-                "Enter an email address in the required format, like name@example.com."
-            )
-        },
-    )
-
-
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
         required=False,
@@ -694,14 +692,11 @@ class AnythingElseForm(RegistrarForm):
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
-        label=(
-            "I read and agree to the requirements for registering "
-            "and operating .gov domains."
-        ),
+        label=("I read and agree to the requirements for operating .gov domains."),
         error_messages={
             "required": (
                 "Check the box if you read and agree to the requirements for"
-                " registering and operating .gov domains."
+                " operating .gov domains."
             )
         },
     )

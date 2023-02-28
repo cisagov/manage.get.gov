@@ -14,7 +14,6 @@
         "http://app:8080/register/purpose/",
         "http://app:8080/register/your_contact/",
         "http://app:8080/register/other_contacts/",
-        "http://app:8080/register/security_email/",
         "http://app:8080/register/anything_else/",
         "http://app:8080/register/requirements/",
         "http://app:8080/register/review/",

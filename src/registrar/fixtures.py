@@ -89,7 +89,6 @@ class DomainApplicationFixture:
     #     "zipcode": None,
     #     "urbanization": None,
     #     "purpose": None,
-    #     "security_email": None,
     #     "anything_else": None,
     #     "is_policy_acknowledged": None,
     #     "authorizing_official": None,
@@ -152,7 +151,6 @@ class DomainApplicationFixture:
         da.zipcode = app["zipcode"] if "zipcode" in app else fake.postalcode()
         da.urbanization = app["urbanization"] if "urbanization" in app else None
         da.purpose = app["purpose"] if "purpose" in app else fake.paragraph()
-        da.security_email = app["security_email"] if "security_email" in app else None
         da.anything_else = app["anything_else"] if "anything_else" in app else None
         da.is_policy_acknowledged = (
             app["is_policy_acknowledged"] if "is_policy_acknowledged" in app else True

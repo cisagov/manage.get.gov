@@ -9,7 +9,6 @@ from registrar.forms.application_wizard import (
     OrganizationContactForm,
     YourContactForm,
     OtherContactsForm,
-    SecurityEmailForm,
     RequirementsForm,
     TribalGovernmentForm,
 )
@@ -117,19 +116,6 @@ class TestFormValidation(TestCase):
             form.errors["phone"][0].startswith("Enter a valid phone number")
         )
 
-    def test_security_email_form_blank(self):
-        """Can leave the security_email field blank."""
-        form = SecurityEmailForm(data={})
-        self.assertEqual(len(form.errors), 0)
-
-    def test_security_email_form_invalid(self):
-        """Can leave the security_email field blank."""
-        form = SecurityEmailForm(data={"security_email": "boss@boss"})
-        self.assertEqual(
-            form.errors["security_email"],
-            ["Enter an email address in the required format, like name@example.com."],
-        )
-
     def test_requirements_form_blank(self):
         """Requirements box unchecked is an error."""
         form = RequirementsForm(data={})
@@ -137,7 +123,7 @@ class TestFormValidation(TestCase):
             form.errors["is_policy_acknowledged"],
             [
                 "Check the box if you read and agree to the requirements for"
-                " registering and operating .gov domains."
+                " operating .gov domains."
             ],
         )
 
@@ -148,7 +134,7 @@ class TestFormValidation(TestCase):
             form.errors["is_policy_acknowledged"],
             [
                 "Check the box if you read and agree to the requirements for"
-                " registering and operating .gov domains."
+                " operating .gov domains."
             ],
         )
 
@@ -159,7 +145,7 @@ class TestFormValidation(TestCase):
         )
         self.assertTrue(
             any(
-                "Please email registrar@dotgov.gov" in error
+                "tell us more about your tribe" in error
                 for error in form.non_field_errors()
             )
         )

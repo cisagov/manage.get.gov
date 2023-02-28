@@ -38,7 +38,6 @@ class Step(StrEnum):
     YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
     NO_OTHER_CONTACTS = "no_other_contacts"
-    SECURITY_EMAIL = "security_email"
     ANYTHING_ELSE = "anything_else"
     REQUIREMENTS = "requirements"
     REVIEW = "review"
@@ -78,17 +77,14 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
         Step.TYPE_OF_WORK: _("Type of work"),
         Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
-        Step.CURRENT_SITES: _("Organization website"),
+        Step.CURRENT_SITES: _("Current website for your organization"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
         Step.NO_OTHER_CONTACTS: _("No other employees from your organization?"),
-        Step.SECURITY_EMAIL: _("Security email for public use"),
         Step.ANYTHING_ELSE: _("Anything else we should know?"),
-        Step.REQUIREMENTS: _(
-            "Requirements for registration and operation of .gov domains"
-        ),
+        Step.REQUIREMENTS: _("Requirements for operating .gov domains"),
         Step.REVIEW: _("Review and submit your domain request"),
     }
 
@@ -436,11 +432,6 @@ class OtherContacts(ApplicationWizard):
 class NoOtherContacts(ApplicationWizard):
     template_name = "application_no_other_contacts.html"
     forms = [forms.NoOtherContactsForm]
-
-
-class SecurityEmail(ApplicationWizard):
-    template_name = "application_security_email.html"
-    forms = [forms.SecurityEmailForm]
 
 
 class AnythingElse(ApplicationWizard):

@@ -3,14 +3,14 @@
 
 {% block form_instructions %}
   <h2 class="margin-bottom-05">
-    Is your organization an election office?
+    Is your organization an election office?  <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
   </h2>
 
-  <p class="text-semibold">This question is required.</p>
+  <p>Answer “yes” if the primary purpose of your organization is to manage elections.</p>
 {% endblock %}
 
 {% block form_required_fields_help_text %}
-{# commented out so it does not appear on this page #}
+  <p class="text-semibold"><abbr class="usa-hint usa-hint--required" title="required">*</abbr> This question is required.</p>
 {% endblock %}
 
 {% block form_fields %}

@@ -1,23 +1,14 @@
 {% comment %}
-Commenting the code below to turn off the error because 
-we are showing the caution dialog instead. But saving in 
-case we want to revert this. 
+This only shows non-field errors at the top of form pages.
+The individual field errors are not shown at the top of the
+page, they are shown on each individual field.
+{% endcomment %}
 {% if form.errors %}
-{% for error in form.non_field_errors %}
+  {% for error in form.non_field_errors %}
     <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
     <div class="usa-alert__body">
     {{ error|escape }}
     </div>
     </div>
   {% endfor %}
-  {% for field in form %}
-    {% for error in field.errors %}
-      <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
-        <div class="usa-alert__body">
-          {{ error|escape }}
-        </div>
-      </div>
-    {% endfor %}
-  {% endfor %}
 {% endif %}
-{% endcomment %}
