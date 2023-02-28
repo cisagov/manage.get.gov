@@ -672,18 +672,6 @@ class NoOtherContactsForm(RegistrarForm):
     )
 
 
-class SecurityEmailForm(RegistrarForm):
-    security_email = forms.EmailField(
-        required=False,
-        label="Security email for public use",
-        error_messages={
-            "invalid": (
-                "Enter an email address in the required format, like name@example.com."
-            )
-        },
-    )
-
-
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
         required=False,

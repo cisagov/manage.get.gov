@@ -402,40 +402,13 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_result = other_contacts_form.submit()
 
         self.assertEquals(other_contacts_result.status_code, 302)
-        self.assertEquals(
-            other_contacts_result["Location"], "/register/security_email/"
-        )
-        num_pages_tested += 1
-
-        # ---- SECURITY EMAIL PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        security_email_page = other_contacts_result.follow()
-        security_email_form = security_email_page.form
-
-        security_email_form["security_email-security_email"] = "security@city.com"
-
-        # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = security_email_page.form.submit("submit_button", value="save")
-        # should remain on the same page
-        self.assertEquals(result["Location"], "/register/security_email/")
-        # should see results in db
-        application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.security_email, "security@city.com")
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        security_email_result = security_email_form.submit()
-
-        self.assertEquals(security_email_result.status_code, 302)
-        self.assertEquals(security_email_result["Location"], "/register/anything_else/")
+        self.assertEquals(other_contacts_result["Location"], "/register/anything_else/")
         num_pages_tested += 1
 
         # ---- ANYTHING ELSE PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        anything_else_page = security_email_result.follow()
+        anything_else_page = other_contacts_result.follow()
         anything_else_form = anything_else_page.form
 
         anything_else_form["anything_else-anything_else"] = "Nothing else."
@@ -517,7 +490,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Another Tester")
         self.assertContains(review_page, "testy2@town.com")
         self.assertContains(review_page, "(201) 555-5557")
-        self.assertContains(review_page, "security@city.com")
         self.assertContains(review_page, "Nothing else.")
 
         # test saving the page
@@ -1005,7 +977,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
-            security_email="security@city.com",
             anything_else="No",
             is_policy_acknowledged=True,
             organization_name="Testorg",

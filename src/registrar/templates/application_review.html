@@ -86,9 +86,6 @@
           {% if step == Step.NO_OTHER_CONTACTS %}
             {{ application.no_other_contacts_rationale|default:"Incomplete" }}
           {% endif %}
-          {% if step == Step.SECURITY_EMAIL %}
-            {{ application.security_email|default:"None" }}
-          {% endif %}
           {% if step == Step.ANYTHING_ELSE %}
             {{ application.anything_else|default:"No" }}
           {% endif %}

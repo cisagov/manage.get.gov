@@ -9,7 +9,6 @@ from registrar.forms.application_wizard import (
     OrganizationContactForm,
     YourContactForm,
     OtherContactsForm,
-    SecurityEmailForm,
     RequirementsForm,
     TribalGovernmentForm,
 )
@@ -115,19 +114,6 @@ class TestFormValidation(TestCase):
         form = OtherContactsForm(data={"phone": "boss@boss"})
         self.assertTrue(
             form.errors["phone"][0].startswith("Enter a valid phone number")
-        )
-
-    def test_security_email_form_blank(self):
-        """Can leave the security_email field blank."""
-        form = SecurityEmailForm(data={})
-        self.assertEqual(len(form.errors), 0)
-
-    def test_security_email_form_invalid(self):
-        """Can leave the security_email field blank."""
-        form = SecurityEmailForm(data={"security_email": "boss@boss"})
-        self.assertEqual(
-            form.errors["security_email"],
-            ["Enter an email address in the required format, like name@example.com."],
         )
 
     def test_requirements_form_blank(self):

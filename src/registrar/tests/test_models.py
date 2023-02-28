@@ -47,7 +47,6 @@ class TestDomainApplication(TestCase):
             requested_domain=domain,
             submitter=contact,
             purpose="Igorville rules!",
-            security_email="security@igorville.gov",
             anything_else="All of Igorville loves the dotgov program.",
             is_policy_acknowledged=True,
         )
