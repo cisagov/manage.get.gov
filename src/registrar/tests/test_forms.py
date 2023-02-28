@@ -146,7 +146,7 @@ class TestFormValidation(TestCase):
         )
         self.assertTrue(
             any(
-                "Please email registrar@dotgov.gov" in error
+                "tell us more about your tribe" in error
                 for error in form.non_field_errors()
             )
         )
