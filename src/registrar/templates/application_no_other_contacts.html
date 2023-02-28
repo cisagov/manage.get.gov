@@ -1,0 +1,6 @@
+{% extends 'application_form.html' %}
+{% load static field_helpers %}
+
+{% block form_fields %}
+  {% input_with_errors forms.0.no_other_contacts_rationale %}
+{% endblock %}

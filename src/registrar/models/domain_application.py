@@ -545,6 +545,10 @@ class DomainApplication(TimeStampedModel):
             DomainApplication.OrganizationChoices.INTERSTATE,
         ]
 
+    def show_no_other_contacts_rationale(self) -> bool:
+        """Show this step if the other contacts are blank."""
+        return not self.other_contacts.exists()
+
     def is_federal(self) -> Union[bool, None]:
         """Is this application for a federal agency?
 

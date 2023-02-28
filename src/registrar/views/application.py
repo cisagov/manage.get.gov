@@ -6,6 +6,8 @@ from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
+from django.contrib import messages
+from django.utils.safestring import mark_safe
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
@@ -35,6 +37,7 @@ class Step(StrEnum):
     PURPOSE = "purpose"
     YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
+    NO_OTHER_CONTACTS = "no_other_contacts"
     SECURITY_EMAIL = "security_email"
     ANYTHING_ELSE = "anything_else"
     REQUIREMENTS = "requirements"
@@ -79,7 +82,8 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
-        Step.OTHER_CONTACTS: _("Other contacts for your organization"),
+        Step.OTHER_CONTACTS: _("Other employees from your organization"),
+        Step.NO_OTHER_CONTACTS: _("No other employees from your organization?"),
         Step.SECURITY_EMAIL: _("Security email for public use"),
         Step.ANYTHING_ELSE: _("Anything else we should know?"),
         Step.REQUIREMENTS: _(
@@ -99,6 +103,9 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             "show_organization_election", False
         ),
         Step.TYPE_OF_WORK: lambda w: w.from_model("show_type_of_work", False),
+        Step.NO_OTHER_CONTACTS: lambda w: w.from_model(
+            "show_no_other_contacts_rationale", False
+        ),
     }
 
     def __init__(self):
@@ -319,6 +326,18 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             self.save(forms)
         else:
             # unless there are errors
+            # no sec because this use of mark_safe does not introduce a cross-site
+            # scripting vulnerability because there is no untrusted content inside.
+            # It is only being used to pass a specific HTML entity into a template.
+            messages.warning(
+                request,
+                mark_safe(  # nosec
+                    "<b>We could not save all the fields.</b><br/> The highlighted "
+                    + "fields below <b>could not be saved</b> because they have "
+                    + "missing or invalid data. All other information on this page "
+                    + "has been saved."
+                ),
+            )
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
@@ -326,6 +345,7 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
         # if user opted to save their progress,
         # return them to the page they were already on
         if button == "save":
+            messages.success(request, "Your progress has been saved!")
             return self.goto(self.steps.current)
         # otherwise, proceed as normal
         return self.goto_next_step()
@@ -410,7 +430,12 @@ class YourContact(ApplicationWizard):
 
 class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
-    forms = [forms.OtherContactsFormSet, forms.NoOtherContactsForm]
+    forms = [forms.OtherContactsFormSet]
+
+
+class NoOtherContacts(ApplicationWizard):
+    template_name = "application_no_other_contacts.html"
+    forms = [forms.NoOtherContactsForm]
 
 
 class SecurityEmail(ApplicationWizard):
