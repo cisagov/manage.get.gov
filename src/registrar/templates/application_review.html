@@ -1,6 +1,10 @@
 {% extends 'application_form.html' %}
 {% load static url_helpers %}
 
+{% block form_required_fields_help_text %}
+{# there are no required fields on this page so don't show this #}
+{% endblock %}
+
 {% block form_fields %}
   {% for step in steps.all|slice:":-1" %}
   <section class="review__step">

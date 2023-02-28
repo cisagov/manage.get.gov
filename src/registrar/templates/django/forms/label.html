@@ -1,5 +1,5 @@
 <{{ label_tag }}
-  class="{% if label_classes %} {{ label_classes }}{% endif %}"
+  class="{% if label_classes %} {{ label_classes }}{% endif %}{% if label_tag == 'legend' %} {{ legend_classes }}{% endif %}"
   {% if not field.use_fieldset %}for="{{ widget.attrs.id }}"{% endif %}
 >
 {{ field.label }}

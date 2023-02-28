@@ -27,13 +27,18 @@
 {% endblock %}
 
 
+{% block form_required_fields_help_text %}
+{# empty this block so it doesn't show on this page #}
+{% endblock %}
+
+
 {% block form_fields %}
 
   {{ forms.0.management_form }}
 
   <fieldset class="usa-fieldset">
     <legend>
-      <h2>What .gov domain do you want?</h2>
+      <h2>What .gov domain do you want? <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h2>
     </legend>
 
     <p id="domain_instructions">After you enter your domain, we’ll make sure it’s
@@ -41,9 +46,11 @@
     these initial checks, we’ll verify that it meets all of our requirements once you
     complete and submit the rest of this form.</p>
 
+    <p class="text-semibold"><abbr class="usa-hint usa-hint--required" title="required">*</abbr> This question is required.</p>
+
     {% with attr_aria_describedby="domain_instructions domain_instructions2" %}
       {# attr_validate / validate="domain" invokes code in get-gov.js #}
-      {% with www_gov=True attr_validate="domain" %}
+      {% with www_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
         {% input_with_errors forms.0.requested_domain %}
       {% endwith %}
     {% endwith %}

@@ -9,11 +9,17 @@ domain name or for mainly internal use.</p>
 Who is your intended audience? Will you use it for a website and/or email? Are you moving 
 your website from another top-level domain (like .com or .org)? 
 Read about <a href="{% url 'todo' %}">activities that are prohibited on .gov domains.</a></p>
+
+{% endblock %}
+
+{% block form_required_fields_help_text %}
+  <p class="text-semibold"><abbr class="usa-hint usa-hint--required" title="required">*</abbr> This question is required.</p>
 {% endblock %}
 
 
+
 {% block form_fields %}
-    {% with attr_maxlength=500 %}
+    {% with attr_maxlength=500 add_label_class="usa-sr-only" %}
       {% input_with_errors forms.0.purpose %}
     {% endwith %}
 {% endblock %}
