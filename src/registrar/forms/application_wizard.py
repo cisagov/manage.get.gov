@@ -666,7 +666,7 @@ class NoOtherContactsForm(RegistrarForm):
         # label has to end in a space to get the label_suffix to show
         label=(
             "Please explain why there are no other employees from your organization"
-            " that we can contact."
+            " we can contact to help us assess your eligibility for a .gov domain."
         ),
         widget=forms.Textarea(),
     )
@@ -683,13 +683,13 @@ class AnythingElseForm(RegistrarForm):
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
         label=(
-            "I read and agree to the requirements for registering "
-            "and operating .gov domains."
+            "I read and agree to the requirements for operating"
+            " .gov domains."
         ),
         error_messages={
             "required": (
                 "Check the box if you read and agree to the requirements for"
-                " registering and operating .gov domains."
+                " operating .gov domains."
             )
         },
     )
