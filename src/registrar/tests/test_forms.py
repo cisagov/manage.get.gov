@@ -29,8 +29,13 @@ class TestFormValidation(TestCase):
 
     def test_website_invalid(self):
         form = CurrentSitesForm(data={"website": "nah"})
-        self.assertEqual(form.errors["website"], ["Enter your organization’s"
-        " website in the required format, like www.city.com."])
+        self.assertEqual(
+            form.errors["website"],
+            [
+                "Enter your organization's"
+                " website in the required format, like www.city.com."
+            ],
+        )
 
     def test_website_valid(self):
         form = CurrentSitesForm(data={"website": "hyphens-rule.gov.uk"})
@@ -84,8 +89,7 @@ class TestFormValidation(TestCase):
         """Must be a valid phone number."""
         form = AuthorizingOfficialForm(data={"phone": "boss@boss"})
         self.assertTrue(
-            form.errors["phone"][0].startswith("Enter the phone number" 
-            " for your authorizing official.")
+            form.errors["phone"][0].startswith("Enter a valid phone number ")
         )
 
     def test_your_contact_email_invalid(self):
@@ -100,7 +104,7 @@ class TestFormValidation(TestCase):
         """Must be a valid phone number."""
         form = YourContactForm(data={"phone": "boss@boss"})
         self.assertTrue(
-            form.errors["phone"][0].startswith("Enter your phone number.")
+            form.errors["phone"][0].startswith("Enter a valid phone number ")
         )
 
     def test_other_contact_email_invalid(self):
@@ -115,7 +119,7 @@ class TestFormValidation(TestCase):
         """Must be a valid phone number."""
         form = OtherContactsForm(data={"phone": "boss@boss"})
         self.assertTrue(
-            form.errors["phone"][0].startswith("Enter a phone number for this contact.")
+            form.errors["phone"][0].startswith("Enter a valid phone number ")
         )
 
     def test_requirements_form_blank(self):

@@ -226,8 +226,10 @@ class OrganizationElectionForm(RegistrarForm):
         is_election_board = self.cleaned_data["is_election_board"]
         if is_election_board is None:
             raise forms.ValidationError(
-                "Select “Yes” if you represent an election office. Select “No” if you"
-                " don’t.",
+                (
+                    "Select “Yes” if you represent an election office. Select “No” if"
+                    " you don’t."
+                ),
                 code="required",
             )
         return is_election_board
@@ -399,6 +401,12 @@ class CurrentSitesForm(RegistrarForm):
     website = forms.URLField(
         required=False,
         label="Public website",
+        error_messages={
+            "invalid": (
+                "Enter your organization's website in the required format, like"
+                " www.city.com."
+            )
+        },
     )
 
 
@@ -692,10 +700,7 @@ class AnythingElseForm(RegistrarForm):
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
-        label=(
-            "I read and agree to the requirements for operating"
-            " .gov domains."
-        ),
+        label="I read and agree to the requirements for operating .gov domains.",
         error_messages={
             "required": (
                 "Check the box if you read and agree to the requirements for"
