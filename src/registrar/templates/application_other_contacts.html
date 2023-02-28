@@ -7,6 +7,11 @@
   <p>We’ll email these contacts to let them know that you made this request.</p>
 {% endblock %}
 
+{% block form_required_fields_help_text %}
+{# there are no required fields on this page so don't show this #}
+{% endblock %}
+
+
 
 {% block form_fields %}
   {{ forms.0.management_form }}

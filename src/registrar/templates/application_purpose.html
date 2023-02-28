@@ -11,11 +11,10 @@
   another top-level domain (like .com or .org)? Read about <a href="{% url 'todo' %}">activities that
   are prohibited on .gov domains.</a></p>
 
-  <p class="text-semibold">This question is required.</p>
 {% endblock %}
 
 {% block form_required_fields_help_text %}
-{# commented out so it does not appear on this page #}
+  <p class="text-semibold"><abbr class="usa-hint usa-hint--required" title="required">*</abbr> This question is required.</p>
 {% endblock %}
 
 
