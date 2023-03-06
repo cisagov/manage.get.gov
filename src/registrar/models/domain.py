@@ -276,9 +276,8 @@ class Domain(TimeStampedModel):
         help_text="Domain is live in the registry",
     )
 
-    # TODO: determine the relationship between this field
-    # and the domain application's `creator` and `submitter`
-    owners = models.ManyToManyField(
-        "registrar.User",
-        help_text="",
-    )
+    # ForeignKey on UserDomainRole creates a "permissions" member for
+    # all of the user-roles that are in place for this domain
+
+    # ManyToManyField on User creates a "users" member for all of the
+    # users who have some role on this domain
