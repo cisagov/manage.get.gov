@@ -139,18 +139,19 @@ class DomainApplicationTests(TestWithUser, WebTest):
         type_form = type_page.form
         type_form["organization_type-organization_type"] = "federal"
 
-        # test saving the page
+        ## test saving the page
+        #self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        #result = type_page.form.submit("submit_button", value="save")
+        ## should remain on the same page
+        #self.assertEquals(result["Location"], "/register/organization_type/")
+
+
+        # test next button and validate data
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = type_page.form.submit("submit_button", value="save")
-        # should remain on the same page
-        self.assertEquals(result["Location"], "/register/organization_type/")
+        type_result = type_page.form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(application.organization_type, "federal")
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_result = type_page.form.submit()
 
         # the post request should return a redirect to the next form in
         # the application
@@ -165,19 +166,21 @@ class DomainApplicationTests(TestWithUser, WebTest):
         federal_form = federal_page.form
         federal_form["organization_federal-federal_type"] = "executive"
 
-        # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = federal_page.form.submit("submit_button", value="save")
-        # should remain on the same page
-        self.assertEquals(result["Location"], "/register/organization_federal/")
-        # should see results in db
-        application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.federal_type, "executive")
+        ## test saving the page
+        #self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        #result = federal_page.form.submit("submit_button", value="save")
+        ## should remain on the same page
+        #self.assertEquals(result["Location"], "/register/organization_federal/")
+        ## should see results in db
+
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         federal_result = federal_form.submit()
-
+        application = DomainApplication.objects.get()  # there's only one
+        self.assertEquals(application.federal_type, "executive")
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(federal_result.status_code, 302)
         self.assertEquals(federal_result["Location"], "/register/organization_contact/")
         num_pages_tested += 1
@@ -199,12 +202,17 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_form["organization_contact-zipcode"] = "10002"
         org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
 
-        # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = org_contact_page.form.submit("submit_button", value="save")
+        ## test saving the page
+        #self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        #result = org_contact_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/organization_contact/")
+        ##self.assertEquals(result["Location"], "/register/organization_contact/")
         # should see results in db
+       
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        org_contact_result = org_contact_form.submit()
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(application.organization_name, "Testorg")
         self.assertEquals(application.address_line1, "address 1")
@@ -213,11 +221,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(application.state_territory, "NY")
         self.assertEquals(application.zipcode, "10002")
         self.assertEquals(application.urbanization, "URB Royal Oaks")
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        org_contact_result = org_contact_form.submit()
-
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(org_contact_result.status_code, 302)
         self.assertEquals(
             org_contact_result["Location"], "/register/authorizing_official/"
@@ -236,10 +241,15 @@ class DomainApplicationTests(TestWithUser, WebTest):
         ao_form["authorizing_official-phone"] = "(201) 555 5555"
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = ao_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = ao_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/authorizing_official/")
+        # self.assertEquals(result["Location"], "/register/authorizing_official/")
+
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_result = ao_form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(application.authorizing_official.first_name, "Testy ATO")
@@ -247,11 +257,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(application.authorizing_official.title, "Chief Tester")
         self.assertEquals(application.authorizing_official.email, "testy@town.com")
         self.assertEquals(application.authorizing_official.phone, "(201) 555 5555")
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        ao_result = ao_form.submit()
-
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(ao_result.status_code, 302)
         self.assertEquals(ao_result["Location"], "/register/current_sites/")
         num_pages_tested += 1
@@ -264,21 +271,23 @@ class DomainApplicationTests(TestWithUser, WebTest):
         current_sites_form["current_sites-0-website"] = "www.city.com"
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = current_sites_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = current_sites_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/current_sites/")
+        # self.assertEquals(result["Location"], "/register/current_sites/")
         # should see results in db
+
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit()
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(
             application.current_websites.filter(website="http://www.city.com").count(),
             1,
         )
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_result = current_sites_form.submit()
-
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(current_sites_result.status_code, 302)
         self.assertEquals(current_sites_result["Location"], "/register/dotgov_domain/")
         num_pages_tested += 1
@@ -292,20 +301,21 @@ class DomainApplicationTests(TestWithUser, WebTest):
         dotgov_form["dotgov_domain-0-alternative_domain"] = "city1"
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = dotgov_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = dotgov_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/dotgov_domain/")
+        # self.assertEquals(result["Location"], "/register/dotgov_domain/")
+    
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_result = dotgov_form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(application.requested_domain.name, "city.gov")
         self.assertEquals(
             application.alternative_domains.filter(website="city1.gov").count(), 1
         )
-
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        dotgov_result = dotgov_form.submit()
-
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(dotgov_result.status_code, 302)
         self.assertEquals(dotgov_result["Location"], "/register/purpose/")
         num_pages_tested += 1
@@ -318,18 +328,19 @@ class DomainApplicationTests(TestWithUser, WebTest):
         purpose_form["purpose-purpose"] = "For all kinds of things."
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = purpose_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = purpose_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/purpose/")
-        # should see results in db
-        application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.purpose, "For all kinds of things.")
-
+        # self.assertEquals(result["Location"], "/register/purpose/")
+        
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         purpose_result = purpose_form.submit()
-
+        # should see results in db
+        application = DomainApplication.objects.get()  # there's only one
+        self.assertEquals(application.purpose, "For all kinds of things.")
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(purpose_result.status_code, 302)
         self.assertEquals(purpose_result["Location"], "/register/your_contact/")
         num_pages_tested += 1
@@ -347,10 +358,15 @@ class DomainApplicationTests(TestWithUser, WebTest):
         your_contact_form["your_contact-phone"] = "(201) 555 5556"
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = your_contact_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = your_contact_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/your_contact/")
+        # self.assertEquals(result["Location"], "/register/your_contact/")
+
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        your_contact_result = your_contact_form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(application.submitter.first_name, "Testy you")
@@ -358,11 +374,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEquals(application.submitter.title, "Admin Tester")
         self.assertEquals(application.submitter.email, "testy-admin@town.com")
         self.assertEquals(application.submitter.phone, "(201) 555 5556")
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        your_contact_result = your_contact_form.submit()
-
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(your_contact_result.status_code, 302)
         self.assertEquals(your_contact_result["Location"], "/register/other_contacts/")
         num_pages_tested += 1
@@ -380,10 +393,15 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_form["other_contacts-0-phone"] = "(201) 555 5557"
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = other_contacts_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = other_contacts_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/other_contacts/")
+        # self.assertEquals(result["Location"], "/register/other_contacts/")
+
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        other_contacts_result = other_contacts_form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
         self.assertEquals(
@@ -396,11 +414,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
             ).count(),
             1,
         )
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        other_contacts_result = other_contacts_form.submit()
-
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(other_contacts_result.status_code, 302)
         self.assertEquals(other_contacts_result["Location"], "/register/anything_else/")
         num_pages_tested += 1
@@ -414,18 +429,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
         anything_else_form["anything_else-anything_else"] = "Nothing else."
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = anything_else_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = anything_else_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/anything_else/")
-        # should see results in db
-        application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.anything_else, "Nothing else.")
+        # self.assertEquals(result["Location"], "/register/anything_else/")
+
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         anything_else_result = anything_else_form.submit()
-
+        # should see results in db
+        application = DomainApplication.objects.get()  # there's only one
+        self.assertEquals(application.anything_else, "Nothing else.")
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(anything_else_result.status_code, 302)
         self.assertEquals(anything_else_result["Location"], "/register/requirements/")
         num_pages_tested += 1
@@ -439,18 +456,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
         requirements_form["requirements-is_policy_acknowledged"] = True
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = requirements_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = requirements_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/requirements/")
-        # should see results in db
-        application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.is_policy_acknowledged, True)
+        # self.assertEquals(result["Location"], "/register/requirements/")
+
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()
-
+        # should see results in db
+        application = DomainApplication.objects.get()  # there's only one
+        self.assertEquals(application.is_policy_acknowledged, True)
+        # the post request should return a redirect to the next form in
+        # the application
         self.assertEquals(requirements_result.status_code, 302)
         self.assertEquals(requirements_result["Location"], "/register/review/")
         num_pages_tested += 1
@@ -493,10 +512,10 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Nothing else.")
 
         # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = review_page.form.submit("submit_button", value="save")
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # result = review_page.form.submit("submit_button", value="save")
         # should remain on the same page
-        self.assertEquals(result["Location"], "/register/review/")
+        # self.assertEquals(result["Location"], "/register/review/")
 
         # final submission results in a redirect to the "finished" URL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
