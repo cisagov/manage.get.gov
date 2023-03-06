@@ -139,7 +139,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         type_form = type_page.form
         type_form["organization_type-organization_type"] = "federal"
 
-
         # test next button and validate data
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
@@ -187,7 +186,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_form["organization_contact-state_territory"] = "NY"
         org_contact_form["organization_contact-zipcode"] = "10002"
         org_contact_form["organization_contact-urbanization"] = "URB Royal Oaks"
-       
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -219,7 +217,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         ao_form["authorizing_official-title"] = "Chief Tester"
         ao_form["authorizing_official-email"] = "testy@town.com"
         ao_form["authorizing_official-phone"] = "(201) 555 5555"
-
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -267,7 +264,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         dotgov_form["dotgov_domain-requested_domain"] = "city"
         dotgov_form["dotgov_domain-0-alternative_domain"] = "city1"
 
-    
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_result = dotgov_form.submit()
         # validate that data from this step are being saved
@@ -288,7 +284,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         purpose_page = dotgov_result.follow()
         purpose_form = purpose_page.form
         purpose_form["purpose-purpose"] = "For all kinds of things."
-        
+
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         purpose_result = purpose_form.submit()
@@ -312,7 +308,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         your_contact_form["your_contact-title"] = "Admin Tester"
         your_contact_form["your_contact-email"] = "testy-admin@town.com"
         your_contact_form["your_contact-phone"] = "(201) 555 5556"
-
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -341,7 +336,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_form["other_contacts-0-title"] = "Another Tester"
         other_contacts_form["other_contacts-0-email"] = "testy2@town.com"
         other_contacts_form["other_contacts-0-phone"] = "(201) 555 5557"
-
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
