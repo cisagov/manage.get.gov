@@ -4,7 +4,7 @@ Date: 2022-09-26
 
 ## Status
 
-Proposed
+Superseded by [20. User models revisited, plus WHOIS](./0020-user-models-revisited-plus-whois.md)
 
 ## Context
 
