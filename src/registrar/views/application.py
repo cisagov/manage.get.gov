@@ -7,7 +7,6 @@ from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
-from django.utils.safestring import mark_safe
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
@@ -321,19 +320,6 @@ class ApplicationWizard(LoginRequiredMixin, TemplateView):
             # always save progress
             self.save(forms)
         else:
-            # unless there are errors
-            # no sec because this use of mark_safe does not introduce a cross-site
-            # scripting vulnerability because there is no untrusted content inside.
-            # It is only being used to pass a specific HTML entity into a template.
-            messages.warning(
-                request,
-                mark_safe(  # nosec
-                    "<b>We could not save all the fields.</b><br/> The highlighted "
-                    + "fields below <b>could not be saved</b> because they have "
-                    + "missing or invalid data. All other information on this page "
-                    + "has been saved."
-                ),
-            )
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
