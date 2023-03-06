@@ -7,7 +7,6 @@ from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
-from django.utils.safestring import mark_safe
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
