@@ -28,18 +28,14 @@ class OpenIdConnectBackend(ModelBackend):
 
         UserModel = get_user_model()
         username = self.clean_username(kwargs["sub"])
-        if "upn" in kwargs.keys():
-            username = kwargs["upn"]
 
         # Some OP may actually choose to withhold some information, so we must
         # test if it is present
         openid_data = {"last_login": timezone.now()}
-        openid_data["first_name"] = kwargs.get("first_name", "")
         openid_data["first_name"] = kwargs.get("given_name", "")
-        openid_data["first_name"] = kwargs.get("christian_name", "")
         openid_data["last_name"] = kwargs.get("family_name", "")
-        openid_data["last_name"] = kwargs.get("last_name", "")
         openid_data["email"] = kwargs.get("email", "")
+        openid_data["phone"] = kwargs.get("phone", "")
 
         # Note that this could be accomplished in one try-except clause, but
         # instead we use get_or_create when creating unknown users since it has
@@ -47,6 +43,7 @@ class OpenIdConnectBackend(ModelBackend):
         if getattr(settings, "OIDC_CREATE_UNKNOWN_USER", True):
             args = {
                 UserModel.USERNAME_FIELD: username,
+                # defaults _will_ be updated, these are not fallbacks
                 "defaults": openid_data,
             }
             user, created = UserModel.objects.update_or_create(**args)
@@ -56,10 +53,7 @@ class OpenIdConnectBackend(ModelBackend):
             try:
                 user = UserModel.objects.get_by_natural_key(username)
             except UserModel.DoesNotExist:
-                try:
-                    user = UserModel.objects.get(email=kwargs["email"])
-                except UserModel.DoesNotExist:
-                    return None
+                return None
         return user
 
     def clean_username(self, username):
