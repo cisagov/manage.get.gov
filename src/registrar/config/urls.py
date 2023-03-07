@@ -53,7 +53,6 @@ urlpatterns = [
         name=views.ApplicationWizard.EDIT_URL_NAME,
     ),
     path("health/", views.health),
-    path("edit_profile/", views.edit_profile, name="edit-profile"),
     path("openid/", include("djangooidc.urls")),
     path("register/", include((application_urls, APPLICATION_NAMESPACE))),
     path("api/v1/available/<domain>", available, name="available"),

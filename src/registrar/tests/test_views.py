@@ -83,10 +83,6 @@ class LoggedInTests(TestWithUser):
         self.assertContains(response, self.user.last_name)
         self.assertContains(response, self.user.email)
 
-    def test_edit_profile(self):
-        response = self.client.get("/edit_profile/")
-        self.assertContains(response, "Display Name")
-
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
         self.assertContains(

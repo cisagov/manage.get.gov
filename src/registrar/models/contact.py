@@ -9,6 +9,13 @@ class Contact(TimeStampedModel):
 
     """Contact information follows a similar pattern for each contact."""
 
+    user = models.OneToOneField(
+        "registrar.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
     first_name = models.TextField(
         null=True,
         blank=True,

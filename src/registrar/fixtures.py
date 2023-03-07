@@ -4,7 +4,6 @@ from faker import Faker
 
 from registrar.models import (
     User,
-    UserProfile,
     DomainApplication,
     Domain,
     Contact,
@@ -57,8 +56,6 @@ class UserFixture:
                 user.is_active = True
                 user.save()
                 logger.debug("User object created for %s" % admin["first_name"])
-                UserProfile.objects.get_or_create(user=user)
-                logger.debug("Profile object created for %s" % admin["first_name"])
             except Exception as e:
                 logger.warning(e)
         logger.debug("All users loaded.")
