@@ -6,11 +6,14 @@
     {% for this_step in steps.all %}
       {% if this_step in visited %}
       <li class="usa-sidenav__item">
-        {% if not this_step == steps.current %}
-        Check
-        {% endif %}
         <a href="{% namespaced_url 'application' this_step %}" 
            {% if this_step == steps.current %}class="usa-current"{% endif%}>
+           {% if not this_step == steps.current %}
+           <svg class="usa-icon text-green" aria-hidden="true" focsuable="false" role="img" width="24" height="24">
+             <title id="locked-step__{{forloop.counter}}">Checked mark</title>
+             <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
+           </svg>
+           {% endif %}
           {{ form_titles|get_item:this_step }}
         </a>
       {% else %}
