@@ -8,12 +8,13 @@ class PublicContact(TimeStampedModel):
 
     class ContactTypeChoices(models.TextChoices):
         """These are the types of contacts accepted by the registry."""
+
         REGISTRANT = "registrant", "Registrant"
         ADMINISTRATIVE = "administrative", "Administrative"
         TECHNICAL = "technical", "Technical"
         SECURITY = "security", "Security"
 
-    contact_type = models.CharField(choices=ContactTypeChoices)
+    contact_type = models.CharField(max_length=14, choices=ContactTypeChoices.choices)
 
     # contact's full name
     name = models.TextField(null=False)
