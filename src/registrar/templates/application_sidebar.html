@@ -6,6 +6,9 @@
     {% for this_step in steps.all %}
       {% if this_step in visited %}
       <li class="usa-sidenav__item">
+        {% if not this_step == steps.current %}
+        Check
+        {% endif %}
         <a href="{% namespaced_url 'application' this_step %}" 
            {% if this_step == steps.current %}class="usa-current"{% endif%}>
           {{ form_titles|get_item:this_step }}
