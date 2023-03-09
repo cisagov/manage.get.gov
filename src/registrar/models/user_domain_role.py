@@ -2,6 +2,7 @@ from django.db import models
 
 from .utility.time_stamped_model import TimeStampedModel
 
+
 class UserDomainRole(TimeStampedModel):
 
     """This is a linking table that connects a user with a role on a domain."""
@@ -19,7 +20,7 @@ class UserDomainRole(TimeStampedModel):
     user = models.ForeignKey(
         "registrar.User",
         null=False,
-        on_delete=models.CASCADE,  # when a user is deleted, their permissions will be too
+        on_delete=models.CASCADE,  # when a user is deleted, permissions are too
         related_name="permissions",
     )
 
@@ -27,7 +28,7 @@ class UserDomainRole(TimeStampedModel):
         "registrar.Domain",
         null=False,
         on_delete=models.CASCADE,  # when a domain is deleted, permissions are too
-        related_name="permissions"
+        related_name="permissions",
     )
 
     role = models.TextField(
@@ -44,6 +45,6 @@ class UserDomainRole(TimeStampedModel):
             # a user can have only one role on a given domain, that is, there can
             # be only a single row with a certain (user, domain) pair.
             models.UniqueConstraint(
-                fields=['user', 'domain'], name='unique_user_domain_role'
+                fields=["user", "domain"], name="unique_user_domain_role"
             )
         ]

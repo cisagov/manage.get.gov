@@ -29,7 +29,7 @@ class DomainPermission(PermissionsLoginMixin):
 
         # user needs to have a role on the domain
         try:
-            role = UserDomainRole.objects.get(
+            UserDomainRole.objects.get(
                 user=self.request.user, domain__id=self.kwargs["pk"]
             )
         except UserDomainRole.DoesNotExist:

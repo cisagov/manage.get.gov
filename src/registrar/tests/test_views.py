@@ -1116,7 +1116,6 @@ class TestDomainPermissions(TestWithUser):
 
 
 class TestDomainDetail(TestDomainPermissions, WebTest):
-
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
