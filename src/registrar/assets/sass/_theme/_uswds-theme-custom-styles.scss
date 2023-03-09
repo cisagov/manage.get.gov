@@ -131,9 +131,13 @@ a.breadcrumb__back {
   }
 }
 
-span {
-  a.link_usa-checked {
-    padding: 0 !important;
+.usa-sidenav {
+  .usa-sidenav__item {
+    span {
+      a.link_usa-checked {
+        padding: 0;
+      }
+    }    
   }
 }
 
