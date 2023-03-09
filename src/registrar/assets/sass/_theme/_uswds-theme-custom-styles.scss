@@ -131,6 +131,12 @@ a.breadcrumb__back {
   }
 }
 
+span {
+  a.link_usa-checked {
+    padding: 0 !important;
+  }
+}
+
 .sidenav__step--locked {
   color: color('base-darker');
   span {
@@ -145,6 +151,7 @@ a.breadcrumb__back {
     }
   }
 }
+
 
 .stepnav {
   margin-top: units(2);
