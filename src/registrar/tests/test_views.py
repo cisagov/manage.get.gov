@@ -9,7 +9,7 @@ from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
 
-from registrar.models import DomainApplication, Domain, Contact, Website
+from registrar.models import DomainApplication, Domain, Contact, Website, UserDomainRole
 from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
@@ -75,6 +75,19 @@ class LoggedInTests(TestWithUser):
         self.assertContains(response, "igorville.gov", count=2)
         # clean up
         application.delete()
+
+    def test_home_lists_domains(self):
+        response = self.client.get("/")
+        self.assertNotContains(response, "igorville.gov")
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain, role=UserDomainRole.Roles.ADMIN
+        )
+        response = self.client.get("/")
+        # count = 2 because it is also in screenreader content
+        self.assertContains(response, "igorville.gov", count=2)
+        # clean up
+        role.delete()
 
     def test_whoami_page(self):
         """User information appears on the whoami page."""
@@ -1070,3 +1083,47 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
+
+
+class TestDomainPermissions(TestWithUser):
+    def setUp(self):
+        super().setUp()
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+        )
+
+    def tearDown(self):
+        try:
+            self.domain.delete()
+            self.role.delete()
+        except ValueError:  # pass if already deleted
+            pass
+        super().tearDown()
+
+    def test_not_logged_in(self):
+        """Not logged in gets a redirect to Login."""
+        response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_no_domain_role(self):
+        """Logged in but no role gets 403 Forbidden."""
+        self.client.force_login(self.user)
+        self.role.delete()  # user no longer has a role on this domain
+        with less_console_noise():
+            response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+        self.assertEqual(response.status_code, 403)
+
+
+class TestDomainDetail(TestDomainPermissions, WebTest):
+
+    def setUp(self):
+        super().setUp()
+        self.app.set_user(self.user.username)
+
+    def test_domain_detail_link_works(self):
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "igorville.gov")
+        # click the "Edit" link
+        detail_page = home_page.click("Edit")
+        self.assertContains(detail_page, "igorville.gov")
