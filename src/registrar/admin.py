@@ -22,18 +22,18 @@ class AuditedAdmin(admin.ModelAdmin):
         )
 
 
-class UserProfileInline(admin.StackedInline):
+class UserContactInline(admin.StackedInline):
 
     """Edit a user's profile on the user page."""
 
-    model = models.UserProfile
+    model = models.Contact
 
 
 class MyUserAdmin(UserAdmin):
 
     """Custom user admin class to use our inlines."""
 
-    inlines = [UserProfileInline]
+    inlines = [UserContactInline]
 
 
 class HostIPInline(admin.StackedInline):

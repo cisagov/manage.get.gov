@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
+
 
 class User(AbstractUser):
     """
@@ -12,6 +14,13 @@ class User(AbstractUser):
         "registrar.Domain",
         through="registrar.UserDomainRole",
         related_name="users",
+    )
+
+    phone = PhoneNumberField(
+        null=True,
+        blank=True,
+        help_text="Phone",
+        db_index=True,
     )
 
     def __str__(self):

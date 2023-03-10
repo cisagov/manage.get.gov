@@ -645,7 +645,6 @@ if DEBUG:
     NPLUSONE_RAISE = False
     NPLUSONE_WHITELIST = [
         {"model": "admin.LogEntry", "field": "user"},
-        {"model": "registrar.UserProfile"},
     ]
 
     # insert the amazing django-debug-toolbar
