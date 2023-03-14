@@ -131,6 +131,16 @@ a.breadcrumb__back {
   }
 }
 
+.usa-sidenav {
+  .usa-sidenav__item {
+    span {
+      a.link_usa-checked {
+        padding: 0;
+      }
+    }    
+  }
+}
+
 .sidenav__step--locked {
   color: color('base-darker');
   span {
@@ -145,6 +155,7 @@ a.breadcrumb__back {
     }
   }
 }
+
 
 .stepnav {
   margin-top: units(2);
