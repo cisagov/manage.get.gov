@@ -261,7 +261,7 @@ class Migration(migrations.Migration):
                     "is_election_office",
                     models.BooleanField(
                         blank=True,
-                        help_text="Is your ogranization an election office?",
+                        help_text="Is your organization an election office?",
                         null=True,
                     ),
                 ),
