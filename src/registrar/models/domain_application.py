@@ -327,7 +327,7 @@ class DomainApplication(TimeStampedModel):
     is_election_board = models.BooleanField(
         null=True,
         blank=True,
-        help_text="Is your ogranization an election office?",
+        help_text="Is your organization an election office?",
     )
 
     organization_name = models.TextField(
