@@ -10,9 +10,9 @@ Purpose: Clarify our focus for developing a new .gov TLD system and align it to 
 CISA intends to create a modern, user-centered, responsive web application to enable .gov registrants to manage their domain’s registration lifecycle, DNS settings, and useful supporting services. The registrar should be the central .gov hub for CISA, supporting registrant management, and tracking technical performance indicators for the TLD. For CISA and registrants, the registrar should help generate insights into the security of an organization’s internet-accessible systems.
 
 ## Problem statements
-U.S.-based government organizations and publicly controlled entities lack a clear, usable, and efficient way to apply for, register, and manage .gov domains and related infrastructure to build public trust of their website and communications.
+U.S.-based government organizations and publicly controlled entities lack a clear, usable, and efficient way to apply for, register, and manage .gov domains and related infrastructure to build public trust in their online services and communications.
 
-CISA lacks a scalable, efficient, and secure method of managing the .gov TLD program that helps government agencies build public trust of their website and communications.
+CISA lacks a scalable, efficient, and secure method of managing the .gov TLD program that helps government agencies to build public trust in their online services and communications.
 
 ## Objective and key results for .gov
 
