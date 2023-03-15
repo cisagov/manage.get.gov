@@ -403,7 +403,7 @@ class CurrentSitesForm(RegistrarForm):
         label="Public website",
         error_messages={
             "invalid": (
-                "Enter your organization's website in the required format, like"
+                "Enter your organization's current website in the required format, like"
                 " www.city.com."
             )
         },
