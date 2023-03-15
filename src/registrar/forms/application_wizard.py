@@ -190,12 +190,10 @@ class TribalGovernmentForm(RegistrarForm):
                     "You can’t complete this application yet. "
                     "Only tribes recognized by the U.S. federal government "
                     "or by a U.S. state government are eligible for .gov "
-                    "domains. Please use our <a href="{}">contact form</a> to "
+                    'domains. Please use our <a href="{}">contact form</a> to '
                     "tell us more about your tribe and why you want a .gov "
                     "domain. We’ll review your information and get back "
-                    "to you." format(
-                        todo_url
-                    )
+                    "to you.".format(todo_url)
                 ),
                 code="invalid",
             )

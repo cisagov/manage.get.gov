@@ -32,8 +32,8 @@ class TestFormValidation(TestCase):
         self.assertEqual(
             form.errors["website"],
             [
-                "Enter your organization's"
-                " website in the required format, like www.city.com."
+                "Enter your organization's current website in the required format, like"
+                " www.city.com."
             ],
         )
 
