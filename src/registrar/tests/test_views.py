@@ -78,8 +78,8 @@ class LoggedInTests(TestWithUser):
 
     def test_home_lists_domains(self):
         response = self.client.get("/")
-        self.assertNotContains(response, "igorville.gov")
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.assertNotContains(response, "igorville.gov")
         role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain, role=UserDomainRole.Roles.ADMIN
         )

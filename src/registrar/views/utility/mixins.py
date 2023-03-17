@@ -28,12 +28,9 @@ class DomainPermission(PermissionsLoginMixin):
             return False
 
         # user needs to have a role on the domain
-        try:
-            UserDomainRole.objects.get(
-                user=self.request.user, domain__id=self.kwargs["pk"]
-            )
-        except UserDomainRole.DoesNotExist:
-            # can't find the role
+        if not UserDomainRole.objects.filter(
+            user=self.request.user, domain__id=self.kwargs["pk"]
+        ).exists():
             return False
 
         # if we need to check more about the nature of role, do it here.
