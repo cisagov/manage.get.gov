@@ -187,12 +187,13 @@ class TribalGovernmentForm(RegistrarForm):
                 # into a link. There should be no user-facing input in the
                 # HTML indicated here.
                 mark_safe(  # nosec
+                    "You can’t complete this application yet. "
                     "Only tribes recognized by the U.S. federal government "
                     "or by a U.S. state government are eligible for .gov "
-                    'domains. Please <a href="{}">tell us more '
-                    "about your tribe and why you want a .gov domain</a>.".format(
-                        todo_url
-                    )
+                    'domains. Please use our <a href="{}">contact form</a> to '
+                    "tell us more about your tribe and why you want a .gov "
+                    "domain. We’ll review your information and get back "
+                    "to you.".format(todo_url)
                 ),
                 code="invalid",
             )
@@ -403,7 +404,7 @@ class CurrentSitesForm(RegistrarForm):
         label="Public website",
         error_messages={
             "invalid": (
-                "Enter your organization's website in the required format, like"
+                "Enter your organization's current website in the required format, like"
                 " www.city.com."
             )
         },

@@ -48,7 +48,7 @@ class Command(BaseCommand):
             errors = []
             for linter in self.linters.values():
                 self.stdout.write(f"[manage.py lint] {linter['purpose']}. . .")
-                result = run(linter["args"])
+                result = run(linter["args"])  # nosec
                 if result.returncode:
                     self.stderr.write(
                         self.style.NOTICE(
