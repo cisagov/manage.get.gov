@@ -61,6 +61,7 @@ urlpatterns = [
         lambda r: always_404(r, "We forgot to include this link, sorry."),
         name="todo",
     ),
+    path("domain/<int:pk>", views.DomainView.as_view(), name="domain"),
 ]
 
 

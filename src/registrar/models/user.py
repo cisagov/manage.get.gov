@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -8,6 +9,12 @@ class User(AbstractUser):
     A custom user model that performs identically to the default user model
     but can be customized later.
     """
+
+    domains = models.ManyToManyField(
+        "registrar.Domain",
+        through="registrar.UserDomainRole",
+        related_name="users",
+    )
 
     phone = PhoneNumberField(
         null=True,

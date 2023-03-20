@@ -1,7 +1,14 @@
 from django.test import TestCase
 from django.db.utils import IntegrityError
 
-from registrar.models import Contact, DomainApplication, User, Website, Domain
+from registrar.models import (
+    Contact,
+    DomainApplication,
+    User,
+    Website,
+    Domain,
+    UserDomainRole,
+)
 from unittest import skip
 
 import boto3_mocking  # type: ignore
@@ -137,6 +144,24 @@ class TestDomain(TestCase):
         d1.save()
         with self.assertRaises(ValueError):
             d1.activate()
+
+
+class TestPermissions(TestCase):
+
+    """Test the User-Domain-Role connection."""
+
+    def test_approval_creates_role(self):
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        user, _ = User.objects.get_or_create()
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=domain
+        )
+        # skip using the submit method
+        application.status = DomainApplication.SUBMITTED
+        application.approve()
+
+        # should be a role for this user
+        self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
 
 
 @skip("Not implemented yet.")

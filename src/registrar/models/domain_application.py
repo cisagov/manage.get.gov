@@ -502,6 +502,25 @@ class DomainApplication(TimeStampedModel):
         # This is a side-effect of the state transition
         self._send_confirmation_email()
 
+    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=APPROVED)
+    def approve(self):
+        """Approve an application that has been submitted.
+
+        This has substantial side-effects because it creates another database
+        object for the approved Domain and makes the user who created the
+        application into an admin on that domain.
+        """
+
+        # create the domain if it doesn't exist
+        Domain = apps.get_model("registrar.Domain")
+        created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
+
+        # create the permission for the user
+        UserDomainRole = apps.get_model("registrar.UserDomainRole")
+        UserDomainRole.objects.get_or_create(
+            user=self.creator, domain=created_domain, role=UserDomainRole.Roles.ADMIN
+        )
+
     # ## Form policies ###
     #
     # These methods control what questions need to be answered by applicants
