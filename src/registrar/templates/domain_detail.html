@@ -1,5 +1,6 @@
 {% extends "domain_base.html" %}
 
 {% block domain_content %}
- <p>Active: {% if domain.is_active %}Yes{% else %}No{% endif %}</p>
+  {{ block.super }}
+  <p>Active: {% if domain.is_active %}Yes{% else %}No{% endif %}</p>
 {% endblock %}  {# domain_content #}

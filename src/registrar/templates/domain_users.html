@@ -1,10 +1,33 @@
 {% extends "domain_base.html" %}
 
+{% block title %}User management{% endblock %}
+
 {% block domain_content %}
-<h2>Users</h2>
-  <ul>
-  {% for user in domain.users.all %}
-	<li>{{ user }} &lt;{{ user.email }}&gt;</li>
-  {% endfor %}
-  </ul>
+  <h1>User management</h1>
+
+  {% if domain.permissions %}
+  <table class="dotgov-table usa-table usa-table--borderless usa-table--stacked">
+      <caption class="sr-only">Domain users</caption>
+      <thead>
+        <tr>
+          <th data-sortable scope="col" role="columnheader">Email</th>
+          <th data-sortable scope="col" role="columnheader">Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for permission in domain.permissions.all %}
+        <tr>
+          <th scope="row" role="rowheader" data-sort-value="{{ user.email }}" data-label="Domain name">
+            {{ permission.user.email }}
+          </th>
+          <td data-label="Role">{{ permission.role|title }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div
+      class="usa-sr-only usa-table__announcement-region"
+      aria-live="polite"
+    ></div>
+  {% endif %}
 {% endblock %}  {# domain_content #}
