@@ -254,6 +254,7 @@ class DomainApplicationFixture:
                 except Exception as e:
                     logger.warning(e)
 
+
 class DomainFixture(DomainApplicationFixture):
 
     """Create one domain and permissions on it for each user."""
@@ -268,7 +269,9 @@ class DomainFixture(DomainApplicationFixture):
 
         for user in users:
             # approve one of each users investigating status domains
-            application = DomainApplication.objects.filter(creator=user, status=DomainApplication.INVESTIGATING).last()
+            application = DomainApplication.objects.filter(
+                creator=user, status=DomainApplication.INVESTIGATING
+            ).last()
             logger.debug(f"Approving {application} for {user}")
             application.approve()
             application.save()

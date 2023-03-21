@@ -1,4 +1,5 @@
 {% extends "domain_base.html" %}
+{% load static %}
 
 {% block title %}User management{% endblock %}
 
@@ -30,4 +31,11 @@
       aria-live="polite"
     ></div>
   {% endif %}
+
+  <a class="usa-button usa-button--unstyled" href="{% url 'domain-users-add' pk=domain.id %}">
+    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+      <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+    </svg><span class="margin-left-05">Add another user</span>
+  </a>
+
 {% endblock %}  {# domain_content #}
