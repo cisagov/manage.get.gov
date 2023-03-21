@@ -1,0 +1,10 @@
+{% extends "domain_base.html" %}
+
+{% block domain_content %}
+<h2>Users</h2>
+  <ul>
+  {% for user in domain.users.all %}
+	<li>{{ user }} &lt;{{ user.email }}&gt;</li>
+  {% endfor %}
+  </ul>
+{% endblock %}  {# domain_content #}

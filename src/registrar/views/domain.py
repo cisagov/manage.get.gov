@@ -11,3 +11,9 @@ class DomainView(DomainPermission, DetailView):
     model = Domain
     template_name = "domain_detail.html"
     context_object_name = "domain"
+
+
+class DomainUsersView(DomainPermission, DetailView):
+    model = Domain
+    template_name = "domain_users.html"
+    context_object_name = "domain"

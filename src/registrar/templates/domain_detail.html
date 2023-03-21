@@ -1,21 +1,5 @@
-{% extends "dashboard_base.html" %}
+{% extends "domain_base.html" %}
 
-
-{% block title %}Domain {{ domain.name }}{% endblock %}
-
-{% block content %}
-<main id="main-content" class="grid-container">
-<div class="tablet:grid-offset-1 desktop:grid-offset-2">
-  <h1>{{ domain.name }}</h1>
-
-  <p>Active: {% if domain.is_active %}Yes{% else %}No{% endif %}</p>
-
-  <h2>Users</h2>
-  <ul>
-  {% for user in domain.users.all %}
-  <li>{{ user }} &lt;{{ user.email }}&gt;</li>
-  {% endfor %}
-  </ul>
-</div>
-</main>
-{% endblock %}  {# content #}
+{% block domain_content %}
+ <p>Active: {% if domain.is_active %}Yes{% else %}No{% endif %}</p>
+{% endblock %}  {# domain_content #}
