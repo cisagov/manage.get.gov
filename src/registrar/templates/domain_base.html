@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Domain {{ domain.name }}{% endblock %}
 
@@ -23,6 +24,13 @@
       {% endif %}
 
       {% block domain_content %}
+	  <p><a href="{% url 'home' %}">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+        </svg>
+        Back to manage your domains
+      </a></p>
+
       <h1>Domain {{ domain.name }}</h1>
 
       {% endblock %}  {# domain_content #}
