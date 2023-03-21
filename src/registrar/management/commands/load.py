@@ -3,7 +3,7 @@ import logging
 from django.core.management.base import BaseCommand
 from auditlog.context import disable_auditlog  # type: ignore
 
-from registrar.fixtures import UserFixture, DomainApplicationFixture
+from registrar.fixtures import UserFixture, DomainApplicationFixture, DomainFixture
 
 logger = logging.getLogger(__name__)
 
@@ -15,4 +15,5 @@ class Command(BaseCommand):
         with disable_auditlog():
             UserFixture.load()
             DomainApplicationFixture.load()
+            DomainFixture.load()
             logger.info("All fixtures loaded.")
