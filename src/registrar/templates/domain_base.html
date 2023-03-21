@@ -12,12 +12,22 @@
     <div class="grid-col-9">
       <main id="main-content" class="grid-container">
 
-	  {% block domain_content %}
-	  <h1>Domain {{ domain.name }}</h1>
+      {% if messages %}
+      {% for message in messages %}
+      <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2">
+          <div class="usa-alert__body">
+          {{ message }}
+          </div>
+      </div>
+      {% endfor %}
+      {% endif %}
 
-	  {% endblock %}  {# domain_content #}
+      {% block domain_content %}
+      <h1>Domain {{ domain.name }}</h1>
 
-	  </main>
+      {% endblock %}  {# domain_content #}
+
+      </main>
     </div>
   </div>
 </div>

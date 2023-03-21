@@ -1,6 +1,7 @@
 """View for a single Domain."""
 
 from django import forms
+from django.contrib import messages
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -71,4 +72,5 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
             # User already has the desired role! Do nothing??
             pass
 
+        messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
