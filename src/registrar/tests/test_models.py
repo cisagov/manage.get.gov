@@ -7,6 +7,7 @@ from registrar.models import (
     User,
     Website,
     Domain,
+    DomainInvitation,
     UserDomainRole,
 )
 from unittest import skip
@@ -162,6 +163,33 @@ class TestPermissions(TestCase):
 
         # should be a role for this user
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
+
+
+class TestInvitations(TestCase):
+
+    """Test the retrieval of invitations."""
+
+    def setUp(self):
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.email = "mayor@igorville.gov"
+        self.invitation, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=self.domain)
+        self.user, _ = User.objects.get_or_create(email=self.email)
+
+    def test_retrieval_creates_role(self):
+        self.invitation.retrieve()
+        self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
+
+    def test_retrieve_missing_user_error(self):
+        # get rid of matching users
+        User.objects.filter(email=self.email).delete()
+        with self.assertRaises(RuntimeError):
+            self.invitation.retrieve()
+
+    def test_retrieve_existing_role_error(self):
+        # make the overlapping role
+        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain)
+        with self.assertRaises(RuntimeError):
+            self.invitation.retrieve()
 
 
 @skip("Not implemented yet.")
