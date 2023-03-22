@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.views.generic import DetailView
 from django.views.generic.edit import FormMixin
 
-from registrar.models import Domain, User, UserDomainRole
+from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
 from .utility import DomainPermission
 
@@ -31,15 +31,6 @@ class DomainAddUserForm(DomainPermission, forms.Form):
 
     email = forms.EmailField(label="Email")
 
-    def clean_email(self):
-        requested_email = self.cleaned_data["email"]
-        try:
-            User.objects.get(email=requested_email)
-        except User.DoesNotExist:
-            # TODO: send an invitation email to a non-existent user
-            raise forms.ValidationError("That user does not exist in this system.")
-        return requested_email
-
 
 class DomainAddUserView(DomainPermission, FormMixin, DetailView):
     template_name = "domain_add_user.html"
@@ -53,16 +44,30 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
+            # there is a valid email address in the form
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
+
+    def _make_invitation(self, email_address):
+        """Make a Domain invitation for this email and redirect with a message."""
+        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
+        if not created:
+            # that invitation already existed
+            messages.warning(self.request, f"{email_address} has already been invited to this domain.")
+        else:
+            messages.success(self.request, f"Invited {email_address} to this domain.")
+        return redirect(self.get_success_url())
 
     def form_valid(self, form):
         """Add the specified user on this domain."""
         requested_email = form.cleaned_data["email"]
         # look up a user with that email
-        # they should exist because we checked in clean_email
-        requested_user = User.objects.get(email=requested_email)
+        try:
+            requested_user = User.objects.get(email=requested_email)
+        except User.DoesNotExist:
+            # no matching user, go make an invitation
+            return self._make_invitation(requested_email)
 
         try:
             UserDomainRole.objects.create(

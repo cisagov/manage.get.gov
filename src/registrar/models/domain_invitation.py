@@ -22,6 +22,7 @@ class DomainInvitation(TimeStampedModel):
         "registrar.Domain",
         on_delete=models.CASCADE,  # delete domain, then get rid of invitations
         null=False,
+        related_name="invitations",
     )
 
     status = FSMField(

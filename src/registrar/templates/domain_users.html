@@ -25,7 +25,7 @@
       <tbody>
         {% for permission in domain.permissions.all %}
         <tr>
-          <th scope="row" role="rowheader" data-sort-value="{{ user.email }}" data-label="Domain name">
+          <th scope="row" role="rowheader" data-sort-value="{{ user.email }}" data-label="Email">
             {{ permission.user.email }}
           </th>
           <td data-label="Role">{{ permission.role|title }}</td>
@@ -44,5 +44,30 @@
       <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
     </svg><span class="margin-left-05">Add another user</span>
   </a>
+
+  {% if domain.invitations.all %}
+  <h2>Invitations</h2>
+  <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table--stacked dotgov-table">
+      <caption class="sr-only">Domain invitations</caption>
+      <thead>
+        <tr>
+          <th data-sortable scope="col" role="columnheader">Email</th>
+          <th data-sortable scope="col" role="columnheader">Date created</th>
+          <th data-sortable scope="col" role="columnheader">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invitation in domain.invitations.all %}
+        <tr>
+          <th scope="row" role="rowheader" data-sort-value="{{ user.email }}" data-label="Email">
+            {{ invitation.email }}
+          </th>
+          <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
+          <td data-label="Status">{{ invitation.status|title }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
 
 {% endblock %}  {# domain_content #}
