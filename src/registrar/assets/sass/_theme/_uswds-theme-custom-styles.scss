@@ -222,30 +222,42 @@ section.dashboard {
   p {
     margin-bottom: 0;
   }
+
+  @include at-media(mobile-lg) {
+    margin-top: units(5);
+
+    h2 {
+      margin-bottom: units(3);
+    }
+  }
 }
 
+
 .dotgov-table {
-  .usa-table {
-    width: 100%;
+  width: 100%;
 
-    a {
-      display: flex;
-      align-items: flex-start;
+  a {
+    display: flex;
+    align-items: flex-start;
+    color: color('primary');
+
+    &:visited {
       color: color('primary');
+    }
 
-      &:visited {
-        color: color('primary');
-      }
-      .usa-icon {
-        // align icon with x height
-        margin-top: units(0.5);
-        margin-right: units(0.5);
-      }
+    .usa-icon {
+      // align icon with x height
+      margin-top: units(0.5);
+      margin-right: units(0.5);
     }
   }
 
-  // Table on small mobile
-  .usa-table--stacked {
+  th[data-sortable]:not([aria-sort]) .usa-table__header__button {
+    right: auto;
+  }
+}
+
+.dotgov-table--stacked {
     td, th {
       padding: units(1) units(2) units(2px) 0;
       border: none;
@@ -270,46 +282,45 @@ section.dashboard {
       color: color('primary-darker');
       padding-bottom: units(2px);
     }
-  }
+}
 
-  @include at-media(mobile-lg) {
-    margin-top: units(5);
+@include at-media(mobile-lg) {
 
-    h2 {
-      margin-bottom: units(3);
-    }
-
-    .usa-table tr {
+  .dotgov-table {
+    tr {
       border: none;
     }
 
-    .usa-table {
+    td, th {
+      border-bottom: 1px solid color('base-light');
+    }
+
+    thead th {
+      color: color('primary-darker');
+      border-bottom: 2px solid color('base-light');
+    }
+
+    tbody tr:last-of-type {
       td, th {
-        border-bottom: 1px solid color('base-light');
+        border-bottom: 0;
       }
+    }
+    
+    tbody th {
+      word-break: break-word;
+    }
 
-      thead th {
-        color: color('primary-darker');
-        border-bottom: 2px solid color('base-light');
-      }
+    td, th,
+    .usa-tabel th{
+      padding: units(2) units(2) units(2) 0;
+    }
 
-      tbody tr:last-of-type {
-        td, th {
-          border-bottom: 0;
-        }
-      }
+    th:first-of-type {
+      padding-left: 0;
+    }
 
-      td, th {
-        padding: units(2);
-      }
-
-      th:first-of-type {
-        padding-left: 0;
-      }
-
-      thead tr:first-child th:first-child {
-        border-top: none;
-      }
+    thead tr:first-child th:first-child {
+      border-top: none;
     }
   }
 }
