@@ -1,0 +1,31 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers %}
+
+{% block title %}Add another user{% endblock %}
+
+{% block domain_content %}
+  <p><a href="{% url "domain-users" pk=domain.id %}">
+       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+      </svg>
+      Back to user management
+    </a>
+  </p>
+  <h1>Add another user</h1>
+
+  <p>You can add another user to help manage your domain. They will need to sign
+  into the .gov registrar with their Login.gov account.
+  </p>
+
+  <form class="usa-form usa-form--large" method="post" novalidate>
+    {% csrf_token %}
+
+    {% input_with_errors form.email %}
+
+    <button
+      type="submit"
+      class="usa-button"
+    >Add user</button>
+  </form>
+
+{% endblock %}  {# domain_content #}

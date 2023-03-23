@@ -1,14 +1,6 @@
-{% extends "dashboard_base.html" %}
+{% extends "domain_base.html" %}
 
-
-{% block title %}Domain {{ domain.name }}{% endblock %}
-
-{% block content %}
-<main id="main-content" class="grid-container">
-<div class="tablet:grid-offset-1 desktop:grid-offset-2">
-  <h1>{{ domain.name }}</h1>
-
+{% block domain_content %}
+  {{ block.super }}
   <p>Active: {% if domain.is_active %}Yes{% else %}No{% endif %}</p>
-</div>
-</main>
-{% endblock %}  {# content #}
+{% endblock %}  {# domain_content #}

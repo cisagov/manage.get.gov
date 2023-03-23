@@ -107,6 +107,10 @@ class DomainApplicationFixture:
             "status": "investigating",
             "organization_name": "Example - In Investigation",
         },
+        {
+            "status": "investigating",
+            "organization_name": "Example - Approved",
+        },
     ]
 
     @classmethod
@@ -249,3 +253,25 @@ class DomainApplicationFixture:
                     cls._set_many_to_many_relations(da, app)
                 except Exception as e:
                     logger.warning(e)
+
+
+class DomainFixture(DomainApplicationFixture):
+
+    """Create one domain and permissions on it for each user."""
+
+    @classmethod
+    def load(cls):
+        try:
+            users = list(User.objects.all())  # force evaluation to catch db errors
+        except Exception as e:
+            logger.warning(e)
+            return
+
+        for user in users:
+            # approve one of each users investigating status domains
+            application = DomainApplication.objects.filter(
+                creator=user, status=DomainApplication.INVESTIGATING
+            ).last()
+            logger.debug(f"Approving {application} for {user}")
+            application.approve()
+            application.save()

@@ -17,7 +17,7 @@
   <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
     <h2>Registered domains</h2>
     {% if domains %}
-    <table class="usa-table usa-table--borderless usa-table--stacked">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your domain applications</caption>
       <thead>
         <tr>
@@ -56,7 +56,7 @@
   <section class="dashboard tablet:grid-col-11 desktop:grid-col-10">
     <h2>Active domain requests</h2>
     {% if domain_applications %}
-    <table class="usa-table usa-table--borderless usa-table--stacked">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your domain applications</caption>
       <thead>
         <tr>
@@ -111,7 +111,7 @@
 
   <section class="tablet:grid-col-11 desktop:grid-col-10">
     <h2 class="padding-top-1 mobile-lg:padding-top-3"> Export domains</h2>
-    <p>If you would like to analyze your list of domains further, you can download the list of domains and their statuses as csv file</p>
+    <p>Download a list of your domains and their statuses as a csv file.</p>
     <a href="{% url 'todo' %}" class="usa-button usa-button--outline">
       Export domains as csv
     </a>

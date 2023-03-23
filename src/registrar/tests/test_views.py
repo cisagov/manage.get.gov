@@ -1018,7 +1018,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # self.assertNotContains(page, "VALUE")
 
 
-class TestDomainPermissions(TestWithUser):
+class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
@@ -1034,24 +1034,50 @@ class TestDomainPermissions(TestWithUser):
             pass
         super().tearDown()
 
+
+class TestDomainPermissions(TestWithDomainPermissions):
     def test_not_logged_in(self):
         """Not logged in gets a redirect to Login."""
         response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+        self.assertEqual(response.status_code, 302)
+
+        response = self.client.get(
+            reverse("domain-users", kwargs={"pk": self.domain.id})
+        )
+        self.assertEqual(response.status_code, 302)
+
+        response = self.client.get(
+            reverse("domain-users-add", kwargs={"pk": self.domain.id})
+        )
         self.assertEqual(response.status_code, 302)
 
     def test_no_domain_role(self):
         """Logged in but no role gets 403 Forbidden."""
         self.client.force_login(self.user)
         self.role.delete()  # user no longer has a role on this domain
+
         with less_console_noise():
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
         self.assertEqual(response.status_code, 403)
 
+        with less_console_noise():
+            response = self.client.get(
+                reverse("domain-users", kwargs={"pk": self.domain.id})
+            )
+        self.assertEqual(response.status_code, 403)
 
-class TestDomainDetail(TestDomainPermissions, WebTest):
+        with less_console_noise():
+            response = self.client.get(
+                reverse("domain-users-add", kwargs={"pk": self.domain.id})
+            )
+        self.assertEqual(response.status_code, 403)
+
+
+class TestDomainDetail(TestWithDomainPermissions, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
+        self.client.force_login(self.user)
 
     def test_domain_detail_link_works(self):
         home_page = self.app.get("/")
@@ -1059,3 +1085,48 @@ class TestDomainDetail(TestDomainPermissions, WebTest):
         # click the "Edit" link
         detail_page = home_page.click("Edit")
         self.assertContains(detail_page, "igorville.gov")
+
+    def test_domain_user_management(self):
+        response = self.client.get(
+            reverse("domain-users", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(response, "User management")
+
+    def test_domain_user_management_add_link(self):
+        """Button to get to user add page works."""
+        management_page = self.app.get(
+            reverse("domain-users", kwargs={"pk": self.domain.id})
+        )
+        add_page = management_page.click("Add another user")
+        self.assertContains(add_page, "Add another user")
+
+    def test_domain_user_add(self):
+        response = self.client.get(
+            reverse("domain-users-add", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(response, "Add another user")
+
+    def test_domain_user_add_form(self):
+        """Adding a user works."""
+        other_user, _ = get_user_model().objects.get_or_create(
+            email="mayor@igorville.gov"
+        )
+        add_page = self.app.get(
+            reverse("domain-users-add", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "mayor@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "mayor@igorville.gov")

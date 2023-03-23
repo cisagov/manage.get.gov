@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Domain {{ domain.name }}{% endblock %}
+
+{% block content %}
+<div class="grid-container">
+  <div class="grid-row grid-gap">
+    <div class="grid-col-3">
+      {% include 'domain_sidebar.html' %}
+    </div>
+
+    <div class="grid-col-9">
+      <main id="main-content" class="grid-container">
+
+      {% if messages %}
+      {% for message in messages %}
+      <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2">
+          <div class="usa-alert__body">
+          {{ message }}
+          </div>
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      {% block domain_content %}
+	  <p><a href="{% url 'home' %}">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+        </svg>
+        Back to manage your domains
+      </a></p>
+
+      <h1>Domain {{ domain.name }}</h1>
+
+      {% endblock %}  {# domain_content #}
+
+      </main>
+    </div>
+  </div>
+</div>
+{% endblock %}  {# content #}

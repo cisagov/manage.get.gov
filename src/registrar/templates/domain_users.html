@@ -1,0 +1,48 @@
+{% extends "domain_base.html" %}
+{% load static %}
+
+{% block title %}User management{% endblock %}
+
+{% block domain_content %}
+  <p><a href="{% url 'home' %}">
+    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+    <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+    </svg>
+    Back to manage your domains
+  </a></p>
+
+  <h1>User management</h1>
+
+  {% if domain.permissions %}
+  <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table--stacked dotgov-table">
+      <caption class="sr-only">Domain users</caption>
+      <thead>
+        <tr>
+          <th data-sortable scope="col" role="columnheader">Email</th>
+          <th data-sortable scope="col" role="columnheader">Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for permission in domain.permissions.all %}
+        <tr>
+          <th scope="row" role="rowheader" data-sort-value="{{ user.email }}" data-label="Domain name">
+            {{ permission.user.email }}
+          </th>
+          <td data-label="Role">{{ permission.role|title }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div
+      class="usa-sr-only usa-table__announcement-region"
+      aria-live="polite"
+    ></div>
+  {% endif %}
+
+  <a class="usa-button usa-button--unstyled" href="{% url 'domain-users-add' pk=domain.id %}">
+    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+      <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+    </svg><span class="margin-left-05">Add another user</span>
+  </a>
+
+{% endblock %}  {# domain_content #}
