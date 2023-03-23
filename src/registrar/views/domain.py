@@ -14,12 +14,18 @@ from .utility import DomainPermission
 
 
 class DomainView(DomainPermission, DetailView):
+
+    """Domain detail overview page."""
+
     model = Domain
     template_name = "domain_detail.html"
     context_object_name = "domain"
 
 
 class DomainUsersView(DomainPermission, DetailView):
+
+    """User management page in the domain details."""
+
     model = Domain
     template_name = "domain_users.html"
     context_object_name = "domain"
@@ -33,6 +39,13 @@ class DomainAddUserForm(DomainPermission, forms.Form):
 
 
 class DomainAddUserView(DomainPermission, FormMixin, DetailView):
+
+    """Inside of a domain's user management, a form for adding users.
+
+    Multiple inheritance is used here for permissions, form handling, and
+    details of the individual domain.
+    """
+
     template_name = "domain_add_user.html"
     model = Domain
     form_class = DomainAddUserForm
