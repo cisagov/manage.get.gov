@@ -5,6 +5,13 @@
 
 {% block content %}
 <div class="grid-container">
+  <div class="grid-row"> 
+    <p class="font-body-sm margin-top-0 margin-bottom-2 
+              text-primary-darker text-semibold"
+    >
+      {{ domain.name }}
+    </p>
+  </div>
   <div class="grid-row grid-gap">
     <div class="grid-col-3">
       {% include 'domain_sidebar.html' %}
@@ -22,16 +29,18 @@
       </div>
       {% endfor %}
       {% endif %}
-
-      {% block domain_content %}
-	  <p><a href="{% url 'home' %}">
+	  <a href="{% url 'home' %}" class="breadcrumb__back">
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
         <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
         </svg>
-        Back to manage your domains
-      </a></p>
+        <p class="margin-left-05 margin-top-0 margin-bottom-0">
+        Back to manage your domains 
+        </p>
+      </a>
 
-      <h1>Domain {{ domain.name }}</h1>
+      {% block domain_content %}
+
+      <h1 class="break-word">{{ domain.name }}</h1>
 
       {% endblock %}  {# domain_content #}
 
