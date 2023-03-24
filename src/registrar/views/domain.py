@@ -1,15 +1,16 @@
 """View for a single Domain."""
 
-from django import forms
 from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import DetailView
-from django.views.generic.edit import FormMixin
+from django.views.generic.edit import DeleteView, FormMixin
 
 from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
+from ..forms import DomainAddUserForm
 from .utility import DomainPermission
 
 
@@ -29,13 +30,6 @@ class DomainUsersView(DomainPermission, DetailView):
     model = Domain
     template_name = "domain_users.html"
     context_object_name = "domain"
-
-
-class DomainAddUserForm(DomainPermission, forms.Form):
-
-    """Form for adding a user to a domain."""
-
-    email = forms.EmailField(label="Email")
 
 
 class DomainAddUserView(DomainPermission, FormMixin, DetailView):
@@ -64,10 +58,15 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
 
     def _make_invitation(self, email_address):
         """Make a Domain invitation for this email and redirect with a message."""
-        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
+        invitation, created = DomainInvitation.objects.get_or_create(
+            email=email_address, domain=self.object
+        )
         if not created:
             # that invitation already existed
-            messages.warning(self.request, f"{email_address} has already been invited to this domain.")
+            messages.warning(
+                self.request,
+                f"{email_address} has already been invited to this domain.",
+            )
         else:
             messages.success(self.request, f"Invited {email_address} to this domain.")
         return redirect(self.get_success_url())
@@ -92,3 +91,14 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
 
         messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
+
+
+class DomainInvitationDeleteView(SuccessMessageMixin, DeleteView):
+    model = DomainInvitation
+    object: DomainInvitation  # workaround for type mismatch in DeleteView
+
+    def get_success_url(self):
+        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+
+    def get_success_message(self, cleaned_data):
+        return f"Successfully canceled invitation for {self.object.email}."

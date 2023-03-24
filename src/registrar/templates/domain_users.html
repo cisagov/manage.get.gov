@@ -54,6 +54,7 @@
           <th data-sortable scope="col" role="columnheader">Email</th>
           <th data-sortable scope="col" role="columnheader">Date created</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
+          <th scope="col" role="columnheader"><span class="sr-only">Action</span></th>
         </tr>
       </thead>
       <tbody>
@@ -64,6 +65,10 @@
           </th>
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
           <td data-label="Status">{{ invitation.status|title }}</td>
+          <td><form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
+            {% csrf_token %}<input type="submit" class="usa-button--unstyled" value="Cancel">
+            </form>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

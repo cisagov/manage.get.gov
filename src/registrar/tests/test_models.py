@@ -172,7 +172,9 @@ class TestInvitations(TestCase):
     def setUp(self):
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.email = "mayor@igorville.gov"
-        self.invitation, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=self.domain)
+        self.invitation, _ = DomainInvitation.objects.get_or_create(
+            email=self.email, domain=self.domain
+        )
         self.user, _ = User.objects.get_or_create(email=self.email)
 
     def test_retrieval_creates_role(self):

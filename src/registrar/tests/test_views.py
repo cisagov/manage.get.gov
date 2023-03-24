@@ -9,7 +9,15 @@ from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
 
-from registrar.models import DomainApplication, Domain, Contact, Website, UserDomainRole
+from registrar.models import (
+    DomainApplication,
+    Domain,
+    DomainInvitation,
+    Contact,
+    Website,
+    UserDomainRole,
+    User,
+)
 from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
@@ -1130,3 +1138,31 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
+
+    def test_domain_invitation_created(self):
+        """Add user on a nonexistent email creates an invitation."""
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        add_page = self.app.get(
+            reverse("domain-users-add", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = EMAIL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result = add_page.form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+
+        self.assertContains(success_page, EMAIL)
+        self.assertContains(success_page, "Cancel")  # link to cancel invitation
+        self.assertTrue(DomainInvitation.objects.filter(email=EMAIL).exists())
+
+    def test_domain_invitation_cancel(self):
+        """Posting to the delete view deletes an invitation."""
+        EMAIL = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=EMAIL)
+        self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        with self.assertRaises(DomainInvitation.DoesNotExist):
+            DomainInvitation.objects.get(id=invitation.id)

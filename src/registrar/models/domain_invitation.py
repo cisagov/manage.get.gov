@@ -3,7 +3,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models, IntegrityError
 
-from django_fsm import FSMField, transition
+from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
 from .user_domain_role import UserDomainRole
