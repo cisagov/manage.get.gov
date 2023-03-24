@@ -20,15 +20,6 @@
     <div class="grid-col-9">
       <main id="main-content" class="grid-container">
 
-      {% if messages %}
-      {% for message in messages %}
-      <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2">
-          <div class="usa-alert__body">
-          {{ message }}
-          </div>
-      </div>
-      {% endfor %}
-      {% endif %}
 	  <a href="{% url 'home' %}" class="breadcrumb__back">
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
         <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
@@ -37,6 +28,17 @@
         Back to manage your domains 
         </p>
       </a>
+
+      {# messages block is under the back breadcrumb link #}
+      {% if messages %}
+      {% for message in messages %}
+      <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+          <div class="usa-alert__body">
+          {{ message }}
+          </div>
+      </div>
+      {% endfor %}
+      {% endif %}
 
       {% block domain_content %}
 
