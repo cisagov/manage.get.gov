@@ -11,6 +11,7 @@ from django.views.generic.edit import DeleteView, FormMixin
 from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
 from ..forms import DomainAddUserForm
+from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
 
 
@@ -56,6 +57,12 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
         else:
             return self.form_invalid(form)
 
+    def _domain_abs_url(self):
+        """Get an absolute URL for this domain."""
+        return self.request.build_absolute_uri(
+            reverse("domain", kwargs={"pk": self.object.id})
+        )
+
     def _make_invitation(self, email_address):
         """Make a Domain invitation for this email and redirect with a message."""
         invitation, created = DomainInvitation.objects.get_or_create(
@@ -68,7 +75,19 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
                 f"{email_address} has already been invited to this domain.",
             )
         else:
-            messages.success(self.request, f"Invited {email_address} to this domain.")
+            # created a new invitation in the database, so send an email
+            try:
+                send_templated_email(
+                    "emails/domain_invitation.txt",
+                    to_address=email_address,
+                    context={"domain_url": self._domain_abs_url()},
+                )
+            except EmailSendingError:
+                messages.warning(self.request, "Could not send email invitation.")
+            else:
+                messages.success(
+                    self.request, f"Invited {email_address} to this domain."
+                )
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
