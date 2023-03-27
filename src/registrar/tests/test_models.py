@@ -31,7 +31,7 @@ class TestDomainApplication(TestCase):
         """Can create with just a creator."""
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user)
-        self.assertEquals(application.status, DomainApplication.STARTED)
+        self.assertEqual(application.status, DomainApplication.STARTED)
 
     def test_full_create(self):
         """Can create with all fields."""
@@ -116,13 +116,13 @@ class TestDomain(TestCase):
     def test_minimal_create(self):
         """Can create with just a name."""
         domain = Domain.objects.create(name="igorville.gov")
-        self.assertEquals(domain.is_active, False)
+        self.assertEqual(domain.is_active, False)
 
     def test_get_status(self):
         """Returns proper status based on `is_active`."""
         domain = Domain.objects.create(name="igorville.gov")
         domain.save()
-        self.assertEquals(None, domain.status)
+        self.assertEqual(None, domain.status)
         domain.activate()
         domain.save()
         self.assertIn("ok", domain.status)

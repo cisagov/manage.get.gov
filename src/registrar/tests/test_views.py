@@ -161,11 +161,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         type_result = type_page.form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.organization_type, "federal")
+        self.assertEqual(application.organization_type, "federal")
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(type_result.status_code, 302)
-        self.assertEquals(type_result["Location"], "/register/organization_federal/")
+        self.assertEqual(type_result.status_code, 302)
+        self.assertEqual(type_result["Location"], "/register/organization_federal/")
         num_pages_tested += 1
 
         # ---- FEDERAL BRANCH PAGE  ----
@@ -180,11 +180,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         federal_result = federal_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.federal_type, "executive")
+        self.assertEqual(application.federal_type, "executive")
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(federal_result.status_code, 302)
-        self.assertEquals(federal_result["Location"], "/register/organization_contact/")
+        self.assertEqual(federal_result.status_code, 302)
+        self.assertEqual(federal_result["Location"], "/register/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
@@ -209,17 +209,17 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_result = org_contact_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.organization_name, "Testorg")
-        self.assertEquals(application.address_line1, "address 1")
-        self.assertEquals(application.address_line2, "address 2")
-        self.assertEquals(application.city, "NYC")
-        self.assertEquals(application.state_territory, "NY")
-        self.assertEquals(application.zipcode, "10002")
-        self.assertEquals(application.urbanization, "URB Royal Oaks")
+        self.assertEqual(application.organization_name, "Testorg")
+        self.assertEqual(application.address_line1, "address 1")
+        self.assertEqual(application.address_line2, "address 2")
+        self.assertEqual(application.city, "NYC")
+        self.assertEqual(application.state_territory, "NY")
+        self.assertEqual(application.zipcode, "10002")
+        self.assertEqual(application.urbanization, "URB Royal Oaks")
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(org_contact_result.status_code, 302)
-        self.assertEquals(
+        self.assertEqual(org_contact_result.status_code, 302)
+        self.assertEqual(
             org_contact_result["Location"], "/register/authorizing_official/"
         )
         num_pages_tested += 1
@@ -240,15 +240,15 @@ class DomainApplicationTests(TestWithUser, WebTest):
         ao_result = ao_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.authorizing_official.first_name, "Testy ATO")
-        self.assertEquals(application.authorizing_official.last_name, "Tester ATO")
-        self.assertEquals(application.authorizing_official.title, "Chief Tester")
-        self.assertEquals(application.authorizing_official.email, "testy@town.com")
-        self.assertEquals(application.authorizing_official.phone, "(201) 555 5555")
+        self.assertEqual(application.authorizing_official.first_name, "Testy ATO")
+        self.assertEqual(application.authorizing_official.last_name, "Tester ATO")
+        self.assertEqual(application.authorizing_official.title, "Chief Tester")
+        self.assertEqual(application.authorizing_official.email, "testy@town.com")
+        self.assertEqual(application.authorizing_official.phone, "(201) 555 5555")
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(ao_result.status_code, 302)
-        self.assertEquals(ao_result["Location"], "/register/current_sites/")
+        self.assertEqual(ao_result.status_code, 302)
+        self.assertEqual(ao_result["Location"], "/register/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
@@ -263,14 +263,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
         current_sites_result = current_sites_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(
+        self.assertEqual(
             application.current_websites.filter(website="http://www.city.com").count(),
             1,
         )
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(current_sites_result.status_code, 302)
-        self.assertEquals(current_sites_result["Location"], "/register/dotgov_domain/")
+        self.assertEqual(current_sites_result.status_code, 302)
+        self.assertEqual(current_sites_result["Location"], "/register/dotgov_domain/")
         num_pages_tested += 1
 
         # ---- DOTGOV DOMAIN PAGE  ----
@@ -285,14 +285,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
         dotgov_result = dotgov_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.requested_domain.name, "city.gov")
-        self.assertEquals(
+        self.assertEqual(application.requested_domain.name, "city.gov")
+        self.assertEqual(
             application.alternative_domains.filter(website="city1.gov").count(), 1
         )
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(dotgov_result.status_code, 302)
-        self.assertEquals(dotgov_result["Location"], "/register/purpose/")
+        self.assertEqual(dotgov_result.status_code, 302)
+        self.assertEqual(dotgov_result["Location"], "/register/purpose/")
         num_pages_tested += 1
 
         # ---- PURPOSE PAGE  ----
@@ -307,11 +307,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         purpose_result = purpose_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.purpose, "For all kinds of things.")
+        self.assertEqual(application.purpose, "For all kinds of things.")
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(purpose_result.status_code, 302)
-        self.assertEquals(purpose_result["Location"], "/register/your_contact/")
+        self.assertEqual(purpose_result.status_code, 302)
+        self.assertEqual(purpose_result["Location"], "/register/your_contact/")
         num_pages_tested += 1
 
         # ---- YOUR CONTACT INFO PAGE  ----
@@ -331,15 +331,15 @@ class DomainApplicationTests(TestWithUser, WebTest):
         your_contact_result = your_contact_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.submitter.first_name, "Testy you")
-        self.assertEquals(application.submitter.last_name, "Tester you")
-        self.assertEquals(application.submitter.title, "Admin Tester")
-        self.assertEquals(application.submitter.email, "testy-admin@town.com")
-        self.assertEquals(application.submitter.phone, "(201) 555 5556")
+        self.assertEqual(application.submitter.first_name, "Testy you")
+        self.assertEqual(application.submitter.last_name, "Tester you")
+        self.assertEqual(application.submitter.title, "Admin Tester")
+        self.assertEqual(application.submitter.email, "testy-admin@town.com")
+        self.assertEqual(application.submitter.phone, "(201) 555 5556")
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(your_contact_result.status_code, 302)
-        self.assertEquals(your_contact_result["Location"], "/register/other_contacts/")
+        self.assertEqual(your_contact_result.status_code, 302)
+        self.assertEqual(your_contact_result["Location"], "/register/other_contacts/")
         num_pages_tested += 1
 
         # ---- OTHER CONTACTS PAGE  ----
@@ -359,7 +359,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_result = other_contacts_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(
+        self.assertEqual(
             application.other_contacts.filter(
                 first_name="Testy2",
                 last_name="Tester2",
@@ -371,8 +371,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         )
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(other_contacts_result.status_code, 302)
-        self.assertEquals(other_contacts_result["Location"], "/register/anything_else/")
+        self.assertEqual(other_contacts_result.status_code, 302)
+        self.assertEqual(other_contacts_result["Location"], "/register/anything_else/")
         num_pages_tested += 1
 
         # ---- ANYTHING ELSE PAGE  ----
@@ -388,11 +388,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         anything_else_result = anything_else_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.anything_else, "Nothing else.")
+        self.assertEqual(application.anything_else, "Nothing else.")
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(anything_else_result.status_code, 302)
-        self.assertEquals(anything_else_result["Location"], "/register/requirements/")
+        self.assertEqual(anything_else_result.status_code, 302)
+        self.assertEqual(anything_else_result["Location"], "/register/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
@@ -408,11 +408,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         requirements_result = requirements_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(application.is_policy_acknowledged, True)
+        self.assertEqual(application.is_policy_acknowledged, True)
         # the post request should return a redirect to the next form in
         # the application
-        self.assertEquals(requirements_result.status_code, 302)
-        self.assertEquals(requirements_result["Location"], "/register/review/")
+        self.assertEqual(requirements_result.status_code, 302)
+        self.assertEqual(requirements_result["Location"], "/register/review/")
         num_pages_tested += 1
 
         # ---- REVIEW AND FINSIHED PAGES  ----
@@ -457,8 +457,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         with less_console_noise():
             review_result = review_form.submit()
 
-        self.assertEquals(review_result.status_code, 302)
-        self.assertEquals(review_result["Location"], "/register/finished/")
+        self.assertEqual(review_result.status_code, 302)
+        self.assertEqual(review_result["Location"], "/register/finished/")
         num_pages_tested += 1
 
         # following this redirect is a GET request, so include the cookie
@@ -494,8 +494,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # the post request should return a redirect to the federal branch
         # question
-        self.assertEquals(type_result.status_code, 302)
-        self.assertEquals(type_result["Location"], "/register/organization_federal/")
+        self.assertEqual(type_result.status_code, 302)
+        self.assertEqual(type_result["Location"], "/register/organization_federal/")
 
         # and the step label should appear in the sidebar of the resulting page
         # but the step label for the elections page should not appear
@@ -511,8 +511,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         federal_result = federal_page.form.submit()
         # the post request should return a redirect to the contact
         # question
-        self.assertEquals(federal_result.status_code, 302)
-        self.assertEquals(federal_result["Location"], "/register/organization_contact/")
+        self.assertEqual(federal_result.status_code, 302)
+        self.assertEqual(federal_result["Location"], "/register/organization_contact/")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = federal_result.follow()
         self.assertContains(contact_page, "Federal agency")
@@ -539,8 +539,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         type_result = type_form.submit()
 
         # the post request should return a redirect to the elections question
-        self.assertEquals(type_result.status_code, 302)
-        self.assertEquals(type_result["Location"], "/register/organization_election/")
+        self.assertEqual(type_result.status_code, 302)
+        self.assertEqual(type_result["Location"], "/register/organization_election/")
 
         # and the step label should appear in the sidebar of the resulting page
         # but the step label for the elections page should not appear
@@ -556,8 +556,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         election_result = election_page.form.submit()
         # the post request should return a redirect to the contact
         # question
-        self.assertEquals(election_result.status_code, 302)
-        self.assertEquals(
+        self.assertEqual(election_result.status_code, 302)
+        self.assertEqual(
             election_result["Location"], "/register/organization_contact/"
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -627,8 +627,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # the post request should return a redirect to the type of work page
         # if it was successful.
-        self.assertEquals(contact_result.status_code, 302)
-        self.assertEquals(contact_result["Location"], "/register/type_of_work/")
+        self.assertEqual(contact_result.status_code, 302)
+        self.assertEqual(contact_result["Location"], "/register/type_of_work/")
 
     def test_application_type_of_work_special(self):
         """Special districts have to answer an additional question."""
@@ -893,7 +893,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertIn("current_sites-1-website", current_sites_form.fields)
         # and it is correctly referenced in the ManyToOne relationship
         application = DomainApplication.objects.get()  # there's only one
-        self.assertEquals(
+        self.assertEqual(
             application.current_websites.filter(website="https://example.com").count(),
             1,
         )

@@ -52,6 +52,8 @@ def less_console_noise():
         # restore the streams
         for handler in handlers.values():
             handler.setStream(restore[handler.name])
+        # close the file we opened
+        devnull.close()
 
 
 class MockUserLogin:
