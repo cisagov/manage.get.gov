@@ -1196,3 +1196,28 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_flow(self):
+        """Send an invitation to a new user, log in and load the dashboard."""
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        add_page = self.app.get(
+            reverse("domain-users-add", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = EMAIL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        add_page.form.submit()
+
+        # user was invited, create them
+        new_user = User.objects.create(username=EMAIL, email=EMAIL)
+        # log them in to `self.app`
+        self.app.set_user(new_user.username)
+        # and manually call the first login callback
+        new_user.first_login()
+
+        # Now load the home page and make sure our domain appears there
+        home_page = self.app.get(reverse("home"))
+        self.assertContains(home_page, self.domain.name)

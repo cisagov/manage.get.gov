@@ -193,6 +193,11 @@ class TestInvitations(TestCase):
         with self.assertRaises(RuntimeError):
             self.invitation.retrieve()
 
+    def test_retrieve_on_first_login(self):
+        """A new user's first_login callback retrieves their invitations."""
+        self.user.first_login()
+        self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
+
 
 @skip("Not implemented yet.")
 class TestDomainApplicationLifeCycle(TestCase):
