@@ -549,9 +549,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # the post request should return a redirect to the contact
         # question
         self.assertEqual(election_result.status_code, 302)
-        self.assertEqual(
-            election_result["Location"], "/register/organization_contact/"
-        )
+        self.assertEqual(election_result["Location"], "/register/organization_contact/")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Federal agency")
