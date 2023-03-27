@@ -464,12 +464,13 @@ class Review(ApplicationWizard):
         #     # TODO: errors to let users know why this isn't working
         #     return self.goto(self.steps.current)
 
-class ApplicationStatus(DetailView):
+class ApplicationStatus(ApplicationWizard):
     template_name = "application_status.html"
     forms = []  # type: ignore
 
     def get_context_data(self):
         context = super().get_context_data()
+        context["Step"] = Step.__members__
         context["application"] = self.application
         return context
 
