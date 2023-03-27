@@ -8,7 +8,7 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from Cryptodome.PublicKey.RSA import importKey
 from jwkest.jwk import RSAKey  # type: ignore
-from oic import oic, rndstr
+from oic import oic, rndstr, utils
 from oic.oauth2 import ErrorResponse
 from oic.oic import AuthorizationRequest, AuthorizationResponse, RegistrationResponse
 from oic.oic.message import AccessTokenResponse
@@ -56,7 +56,7 @@ class Client(oic.Client):
                 client_id=None,
                 client_authn_method=CLIENT_AUTHN_METHOD,
                 keyjar=keyjar,
-                verify_ssl=verify_ssl,
+                settings=utils.settings.OicClientSettings(verify_ssl=verify_ssl),
                 config=None,
             )
             # must be set after client is initialized
