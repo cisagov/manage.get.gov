@@ -2,8 +2,16 @@
 
 {% block title %}Apply for a .gov domain – Status{% endblock %}
 {% load static url_helpers %}
-{% content %}
 
+{% block content %}
+<p>Domain request for domain name</p>
+
+<p>text</p>
+
+<p>withdraw</p>
+
+<p>Summary of request</p> 
+{% endblock %}
 {% block form_fields %}
   {% for step in steps.all|slice:":-1" %}
   <section class="review__step">
@@ -100,5 +108,4 @@
     </div>
   </section>
   {% endfor %}
-{% endblock %}
 {% endblock %}
