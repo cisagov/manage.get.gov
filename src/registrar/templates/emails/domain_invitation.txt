@@ -1,5 +1,5 @@
-You have been invited to manage a domain on get.gov, the registrar for
-.gov domain names.
+You have been invited to manage the domain {{ domain.name }} on get.gov, 
+the registrar for .gov domain names.
 
 To accept your invitation, go to <{{ domain_url }}>.
 

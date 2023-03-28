@@ -44,3 +44,4 @@ class User(AbstractUser):
             email=self.email, status=DomainInvitation.SENT
         ):
             invitation.retrieve()
+            invitation.save()
