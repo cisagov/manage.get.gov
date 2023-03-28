@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 
 from registrar.models import DomainApplication
 
+
 @login_required
 def index(request):
     """This page is available to anyone without logging in."""
