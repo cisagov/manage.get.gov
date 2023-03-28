@@ -79,8 +79,12 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
             try:
                 send_templated_email(
                     "emails/domain_invitation.txt",
+                    "emails/domain_invitation.subject.txt",
                     to_address=email_address,
-                    context={"domain_url": self._domain_abs_url()},
+                    context={
+                        "domain_url": self._domain_abs_url(),
+                        "domain": self.object,
+                    },
                 )
             except EmailSendingError:
                 messages.warning(self.request, "Could not send email invitation.")
