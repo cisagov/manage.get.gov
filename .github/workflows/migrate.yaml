@@ -35,4 +35,4 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-getgov-prototyping
           cf_space: ${{ github.event.inputs.environment }}
-          full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --wait --command 'python manage.py migrate' --name migrate"
+          full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"

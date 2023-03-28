@@ -7,7 +7,7 @@ from registrar.models import DomainApplication
 
 @login_required
 def index(request):
-    """This page is available to anyone without logging in."""
+    """This page is available only to those that are logged in."""
     context = {}
     if request.user.is_authenticated:
         applications = DomainApplication.objects.filter(creator=request.user)

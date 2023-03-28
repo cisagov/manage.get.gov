@@ -36,7 +36,7 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-getgov-prototyping
           cf_space: ${{ github.event.inputs.environment }}
-          full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --wait --command 'python manage.py flush --no-input' --name flush"
+          full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
 
       - name: Load fake data for ${{ github.event.inputs.environment }}
         uses: 18f/cg-deploy-action@main
@@ -45,4 +45,4 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-getgov-prototyping
           cf_space: ${{ github.event.inputs.environment }}
-          full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --wait --command 'python manage.py load' --name loaddata"
+          full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py load' --name loaddata"
