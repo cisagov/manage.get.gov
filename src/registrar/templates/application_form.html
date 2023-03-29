@@ -41,7 +41,9 @@
         {% endfor %}
 {% endblock %}
 
+{% block form_page_title %}
         <h1> {{form_titles|get_item:steps.current}} </h1>
+{% endblock %}
 
 {% block form_instructions %}
 {% endblock %}
