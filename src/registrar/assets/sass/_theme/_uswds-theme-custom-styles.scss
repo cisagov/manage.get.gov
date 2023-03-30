@@ -36,7 +36,9 @@ $letter-space--xs: .0125em;
 }
 
 .usa-logo {
-  margin-top: units(2);
+  @include at-media(desktop) {
+    margin-top: units(2);
+  }
 }
 
 .usa-logo__text {
@@ -125,7 +127,7 @@ a.breadcrumb__back {
     color: color('primary');
   }
 
-  @include at-media('desktop') {
+  @include at-media('tablet') {
     //align to top of sidebar
     margin-top: units(-0.5);
   }
