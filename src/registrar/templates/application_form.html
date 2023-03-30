@@ -5,10 +5,10 @@
 {% block content %}
 <div class="grid-container">
   <div class="grid-row grid-gap">
-    <div class="grid-col-3">
+    <div class="tablet:grid-col-3">
       {% include 'application_sidebar.html' %}
     </div>
-    <div class="grid-col-9">
+    <div class="tablet:grid-col-9">
       <main id="main-content" class="grid-container register-form-step">
         {% if steps.prev %}
         <a href="{% namespaced_url 'application' steps.prev %}" class="breadcrumb__back">
