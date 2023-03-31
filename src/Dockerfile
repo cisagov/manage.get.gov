@@ -8,4 +8,4 @@ COPY Pipfile Pipfile
 COPY Pipfile.lock Pipfile.lock
 
 RUN pip install pipenv
-RUN pipenv install --system --dev
+RUN pipenv sync --system --dev
