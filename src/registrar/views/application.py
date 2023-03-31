@@ -6,6 +6,7 @@ from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
+from django.views import generic
 from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
@@ -462,19 +463,6 @@ class Review(ApplicationWizard):
         #     # TODO: errors to let users know why this isn't working
         #     return self.goto(self.steps.current)
 
-class ApplicationStatus(ApplicationWizard):
-    template_name = "application_status.html"
-    forms = []  # type: ignore
-
-    def get_context_data(self):
-        context = super().get_context_data()
-        context["Step"] = Step.__members__
-        context["application"] = self.application
-        return context
-
-    def goto_next_step(self):
-        return self.done()
-
 class Finished(ApplicationWizard):
     template_name = "application_done.html"
     forms = []  # type: ignore
@@ -485,3 +473,13 @@ class Finished(ApplicationWizard):
         # clean up this wizard session, because we are done with it
         del self.storage
         return render(self.request, self.template_name, context)
+
+class ApplicationStatus(generic.DetailView):
+    model = DomainApplication
+    template_name="application_status.html"
+    forms = []
+
+    def get_context_data(self, **kwargs):
+        context = super(ApplicationStatus, self).get_context_data(**kwargs)
+       #pdb.set_trace() (Jon note: if you want to do that, make sure to add import)
+        return context

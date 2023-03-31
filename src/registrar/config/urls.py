@@ -53,7 +53,7 @@ urlpatterns = [
         name=views.ApplicationWizard.EDIT_URL_NAME,
     ),
     path(
-        "application/<id>",
+        "application/<int:pk>",
         views.ApplicationStatus.as_view(),
         name="application-status"
     ),

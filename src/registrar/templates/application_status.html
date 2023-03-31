@@ -11,9 +11,50 @@
 <p>withdraw</p>
 
 <p>Summary of request</p> 
+
+<p>{{ domainapplication.get_organization_type_display }}</p>
+{% if domainapplication.tribe_name %}<p>{{ domainapplication.tribe_name }}</p>{% endif %}
+{% if domainapplication.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
+{% if domainapplication.state_recognized_tribe %}<p>State-recognized tribe</p>{% endif %}
+{% if domainapplication.get_federal_type_display %}<p>{{ domainapplication.get_federal_type_display }}</p>{% endif %}
+{% if domainapplication.is_election_board %}<p>{{ domainapplication.is_election_board}}</p>{% endif %}
+{% if domainapplication.organization_name %}<p>{% include "includes/organization_address.html" with organization=domainapplication %}</p>{% endif %}
+{% if domainapplication.type_of_work %}<p>{{domainapplication.type_of_work}}</p>{% endif %}
+{% if domainapplication.more_organization_information %}<p>{{domainapplication.more_organization_information}}</p>{% endif %}
+{% if domainapplication.authorizing_official %}<p>{% include "includes/contact.html" with contact=domainapplication.authorizing_official %}</p>{% endif %}
+<ul class="add-list-reset">
+  {% for site in domainapplication.current_websites.all %}
+    <li>{{ site.website }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}</ul>
+{% if domainapplication.requested_domain.name %}<p> <ul class="add-list-reset margin-bottom-105">
+  <li>{{ domainapplication.requested_domain.name|default:"Incomplete" }}</li>
+</ul>
+<ul class="add-list-reset">
+  {% for site in domainapplication.alternative_domains.all %}
+    <li>{{ site.website }}</li>
+  {% endfor %}
+</ul></p>{% endif %}
+{% if domainapplication.purpose %}<p>{{ domainapplication.purpose }}</p>{% endif %}
+{% if domainapplication.submitter %}
+                <div class="margin-bottom-105">
+                  {% include "includes/contact.html" with contact=domainapplication.submitter %}
+                </div>{% endif %}
+{% for other in domainapplication.other_contacts.all %}
+                <div class="margin-bottom-105">
+                  {% include "includes/contact.html" with contact=other %}
+                </div>
+              {% empty %}
+                None
+              {% endfor %}
+{{ domainapplication.anything_else|default:"No" }}
+{{ domainapplication.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." }}
+
 {% endblock %}
-{% block form_fields %}
-  {% for step in steps.all|slice:":-1" %}
+
+{% block application-status %}
+  {% for step in Step.keys|slice:":-1" %}
   <section class="review__step">
     <hr />
     <div class="review__step__title display-flex flex-justify"> 
@@ -21,34 +62,34 @@
         <div class="review__step__name">{{ form_titles|get_item:step }}</div>
         <div>
           {% if step == Step.ORGANIZATION_TYPE %}
-            {{ application.get_organization_type_display|default:"Incomplete" }}
+            {{ domainapplication.get_organization_type_display|default:"Incomplete" }}
           {% endif %}
           {% if step == Step.TRIBAL_GOVERNMENT %}
-            {{ application.tribe_name|default:"Incomplete" }}
-            {% if application.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
-            {% if application.state_recognized_tribe %}<p>State-recognized tribe</p>{% endif %}
+            {{ domainapplication.tribe_name|default:"Incomplete" }}
+            {% if domainapplication.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
+            {% if domainapplication.state_recognized_tribe %}<p>State-recognized tribe</p>{% endif %}
           {% endif %}
           {% if step == Step.ORGANIZATION_FEDERAL %}
-            {{ application.get_federal_type_display|default:"Incomplete" }}
+            {{ domainapplication.get_federal_type_display|default:"Incomplete" }}
           {% endif %}
           {% if step == Step.ORGANIZATION_ELECTION %}
-            {{ application.is_election_board|yesno:"Yes,No,Incomplete" }}
+            {{ domainapplication.is_election_board|yesno:"Yes,No,Incomplete" }}
           {% endif %}
           {% if step == Step.ORGANIZATION_CONTACT %}
-            {% if application.organization_name %}
+            {% if domainapplication.organization_name %}
               {% include "includes/organization_address.html" with organization=application %}
             {% else %}
               Incomplete
             {% endif %}
           {% endif %}
           {% if step == Step.TYPE_OF_WORK %}
-            <p>{{ application.type_of_work|default:"Incomplete" }}</p>
-            <p>{{ application.more_organization_information|default:"Incomplete" }}</p>
+            <p>{{ domainapplication.type_of_work|default:"Incomplete" }}</p>
+            <p>{{ domainapplication.more_organization_information|default:"Incomplete" }}</p>
           {% endif %}
           {% if step == Step.AUTHORIZING_OFFICIAL %}
-            {% if application.authorizing_official %}
+            {% if domainapplication.authorizing_official %}
               <div class="margin-bottom-105">
-                {% include "includes/contact.html" with contact=application.authorizing_official %}
+                {% include "includes/contact.html" with contact=domainapplication.authorizing_official %}
               </div>
             {% else %}
               Incomplete
@@ -56,37 +97,37 @@
           {% endif %}
           {% if step == Step.CURRENT_SITES %}
             <ul class="add-list-reset">
-              {% for site in application.current_websites.all %}
+              {% for site in domainapplication.current_websites.all %}
                 <li>{{ site.website }}</li>
               {% empty %}
                 <li>None</li>
               {% endfor %}
             </ul>
           {% endif %}
-          {% if step == Step.DOTGOV_DOMAIN %}
+          {% if step == domainapplication.DOTGOV_DOMAIN %}
             <ul class="add-list-reset margin-bottom-105">
-              <li>{{ application.requested_domain.name|default:"Incomplete" }}</li>
+              <li>{{ domainapplication.requested_domain.name|default:"Incomplete" }}</li>
             </ul>
             <ul class="add-list-reset">
-              {% for site in application.alternative_domains.all %}
+              {% for site in domainapplication.alternative_domains.all %}
                 <li>{{ site.website }}</li>
               {% endfor %}
             </ul>
           {% endif %}
           {% if step == Step.PURPOSE %}
-            {{ application.purpose|default:"Incomplete" }}
+            {{ domainapplication.purpose|default:"Incomplete" }}
           {% endif %}
           {% if step == Step.YOUR_CONTACT %}
-              {% if application.submitter %}
+              {% if domainapplication.submitter %}
                 <div class="margin-bottom-105">
-                  {% include "includes/contact.html" with contact=application.submitter %}
+                  {% include "includes/contact.html" with contact=domainapplication.submitter %}
                 </div>
               {% else %}
                 Incomplete
               {% endif %}
           {% endif %}
           {% if step == Step.OTHER_CONTACTS %}
-            {% for other in application.other_contacts.all %}
+            {% for other in domainapplication.other_contacts.all %}
               <div class="margin-bottom-105">
                 {% include "includes/contact.html" with contact=other %}
               </div>
@@ -95,13 +136,13 @@
             {% endfor %}
           {% endif %}
           {% if step == Step.NO_OTHER_CONTACTS %}
-            {{ application.no_other_contacts_rationale|default:"Incomplete" }}
+            {{ domainapplication.no_other_contacts_rationale|default:"Incomplete" }}
           {% endif %}
           {% if step == Step.ANYTHING_ELSE %}
-            {{ application.anything_else|default:"No" }}
+            {{ domainapplication.anything_else|default:"No" }}
           {% endif %}
           {% if step == Step.REQUIREMENTS %}
-            {{ application.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." }}
+            {{ domainapplication.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." }}
           {% endif %}
         </div>
       </div>
