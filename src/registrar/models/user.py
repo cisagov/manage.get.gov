@@ -41,7 +41,7 @@ class User(AbstractUser):
         invitations that match their email address.
         """
         for invitation in DomainInvitation.objects.filter(
-            email=self.email, status=DomainInvitation.SENT
+            email=self.email, status=DomainInvitation.INVITED
         ):
             invitation.retrieve()
             invitation.save()

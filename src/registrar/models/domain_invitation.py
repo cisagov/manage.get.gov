@@ -10,7 +10,7 @@ from .user_domain_role import UserDomainRole
 
 
 class DomainInvitation(TimeStampedModel):
-    SENT = "sent"
+    INVITED = "invited"
     RETRIEVED = "retrieved"
 
     email = models.EmailField(
@@ -27,17 +27,17 @@ class DomainInvitation(TimeStampedModel):
 
     status = FSMField(
         choices=[
-            (SENT, SENT),
+            (INVITED, INVITED),
             (RETRIEVED, RETRIEVED),
         ],
-        default=SENT,
+        default=INVITED,
         protected=True,  # can't alter state except through transition methods!
     )
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"
 
-    @transition(field="status", source=SENT, target=RETRIEVED)
+    @transition(field="status", source=INVITED, target=RETRIEVED)
     def retrieve(self):
         """When an invitation is retrieved, create the corresponding permission."""
 
