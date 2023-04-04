@@ -9,6 +9,24 @@
 
 <p>Domain request for {{ domainapplication.requested_domain.name }}</p>
 
+<div
+  class="usa-summary-box"
+  role="region"
+  aria-labelledby="summary-box-key-information"
+  summary-box-background-color="gray-90"
+>
+<div class="usa-summary-box__body">
+  <h3 class="usa-summary-box__heading" id="summary-box-key-information">
+    Status:
+  </h3>
+  {% if domainapplication.status == 'approved' %} Approved 
+  {% elif domainapplication.status == 'investigating' %} In Review 
+  {% elif domainapplication.status == 'submitted' %} Submitted
+  {% else %}ERROR Please contact technical support/dev
+  {% endif %}
+  </div></div>
+
+
 <p>{% include "includes/domain_application.html" %}</p>
 
 <p>withdraw</p>
