@@ -4,9 +4,12 @@
 {% load static url_helpers %}
 
 {% block content %}
+<div class="grid-container">
+ 
+
 <p>Domain request for domain name</p>
 
-<p>text</p>
+<p>{% include "includes/domain_application.html" %}</p>
 
 <p>withdraw</p>
 
@@ -51,6 +54,8 @@
 {{ domainapplication.anything_else|default:"No" }}
 {{ domainapplication.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." }}
 
+
+</div>
 {% endblock %}
 
 {% block application-status %}
