@@ -93,8 +93,12 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
                 )
             except EmailSendingError:
                 messages.warning(self.request, "Could not send email invitation.")
-                logger.warn("Could not sent email invitation to %s for domain %s",
-                            email_address, self.object, exc_info=True)
+                logger.warn(
+                    "Could not sent email invitation to %s for domain %s",
+                    email_address,
+                    self.object,
+                    exc_info=True,
+                )
             else:
                 messages.success(
                     self.request, f"Invited {email_address} to this domain."
