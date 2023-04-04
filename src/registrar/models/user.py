@@ -55,4 +55,6 @@ class User(AbstractUser):
                 # retrieving should not fail because of a missing user, but
                 # if it does fail, log the error so a new user can continue
                 # logging in
-                logger.warn("Failed to retrieve invitation %s", invitation,  exc_info=True)
+                logger.warn(
+                    "Failed to retrieve invitation %s", invitation, exc_info=True
+                )

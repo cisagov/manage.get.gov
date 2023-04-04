@@ -3,7 +3,7 @@
 import logging
 
 from django.contrib.auth import get_user_model
-from django.db import models, IntegrityError
+from django.db import models
 
 from django_fsm import FSMField, transition  # type: ignore
 
@@ -63,12 +63,16 @@ class DomainInvitation(TimeStampedModel):
 
         # and create a role for that user on this domain
         try:
-            role = UserDomainRole.objects.get(
+            UserDomainRole.objects.get(
                 user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
             )
         except UserDomainRole.DoesNotExist:
-            UserDomainRole.objects.create(user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN)
+            UserDomainRole.objects.create(
+                user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+            )
         else:
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
-            logger.warn("Invitation %s was retrieved for a role that already exists.", self)
+            logger.warn(
+                "Invitation %s was retrieved for a role that already exists.", self
+            )

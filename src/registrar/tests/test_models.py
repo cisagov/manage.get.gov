@@ -192,7 +192,9 @@ class TestInvitations(TestCase):
 
     def test_retrieve_existing_role_no_error(self):
         # make the overlapping role
-        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN)
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+        )
         # this is not an error but does produce a console warning
         with less_console_noise():
             self.invitation.retrieve()
