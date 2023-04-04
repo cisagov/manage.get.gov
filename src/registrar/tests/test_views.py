@@ -1,4 +1,5 @@
 from unittest import skip
+from unittest.mock import MagicMock, ANY
 
 from django.conf import settings
 from django.test import Client, TestCase
@@ -9,7 +10,15 @@ from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
 
-from registrar.models import DomainApplication, Domain, Contact, Website, UserDomainRole
+from registrar.models import (
+    DomainApplication,
+    Domain,
+    DomainInvitation,
+    Contact,
+    Website,
+    UserDomainRole,
+    User,
+)
 from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
@@ -1128,3 +1137,87 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
+
+    @boto3_mocking.patching
+    def test_domain_invitation_created(self):
+        """Add user on a nonexistent email creates an invitation.
+
+        Adding a non-existent user sends an email as a side-effect, so mock
+        out the boto3 SES email sending here.
+        """
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        add_page = self.app.get(
+            reverse("domain-users-add", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = EMAIL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result = add_page.form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+
+        self.assertContains(success_page, EMAIL)
+        self.assertContains(success_page, "Cancel")  # link to cancel invitation
+        self.assertTrue(DomainInvitation.objects.filter(email=EMAIL).exists())
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_sent(self):
+        """Inviting a non-existent user sends them an email."""
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            add_page = self.app.get(
+                reverse("domain-users-add", kwargs={"pk": self.domain.id})
+            )
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = EMAIL
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
+        # check the mock instance to see if `send_email` was called right
+        mock_client_instance.send_email.assert_called_once_with(
+            FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
+            Destination={"ToAddresses": [EMAIL]},
+            Content=ANY,
+        )
+
+    def test_domain_invitation_cancel(self):
+        """Posting to the delete view deletes an invitation."""
+        EMAIL = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(
+            domain=self.domain, email=EMAIL
+        )
+        self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        with self.assertRaises(DomainInvitation.DoesNotExist):
+            DomainInvitation.objects.get(id=invitation.id)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_flow(self):
+        """Send an invitation to a new user, log in and load the dashboard."""
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        add_page = self.app.get(
+            reverse("domain-users-add", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = EMAIL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        add_page.form.submit()
+
+        # user was invited, create them
+        new_user = User.objects.create(username=EMAIL, email=EMAIL)
+        # log them in to `self.app`
+        self.app.set_user(new_user.username)
+        # and manually call the first login callback
+        new_user.first_login()
+
+        # Now load the home page and make sure our domain appears there
+        home_page = self.app.get(reverse("home"))
+        self.assertContains(home_page, self.domain.name)
