@@ -1,5 +1,7 @@
 """View for a single Domain."""
 
+import logging
+
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
@@ -13,6 +15,9 @@ from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 from ..forms import DomainAddUserForm
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
+
+
+logger = logging.getLogger(__name__)
 
 
 class DomainView(DomainPermission, DetailView):
@@ -79,7 +84,7 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
             try:
                 send_templated_email(
                     "emails/domain_invitation.txt",
-                    "emails/domain_invitation.subject.txt",
+                    "emails/domain_invitation_subject.txt",
                     to_address=email_address,
                     context={
                         "domain_url": self._domain_abs_url(),
@@ -88,6 +93,8 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
                 )
             except EmailSendingError:
                 messages.warning(self.request, "Could not send email invitation.")
+                logger.warn("Could not sent email invitation to %s for domain %s",
+                            email_address, self.object, exc_info=True)
             else:
                 messages.success(
                     self.request, f"Invited {email_address} to this domain."

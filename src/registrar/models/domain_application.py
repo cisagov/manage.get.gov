@@ -476,7 +476,7 @@ class DomainApplication(TimeStampedModel):
         try:
             send_templated_email(
                 "emails/submission_confirmation.txt",
-                "emails/submission_confirmation.subject.txt",
+                "emails/submission_confirmation_subject.txt",
                 self.submitter.email,
                 context={"id": self.id, "domain_name": self.requested_domain.name},
             )
