@@ -1,9 +1,14 @@
+import logging
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .domain_invitation import DomainInvitation
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
+
+
+logger = logging.getLogger(__name__)
 
 
 class User(AbstractUser):
@@ -43,5 +48,11 @@ class User(AbstractUser):
         for invitation in DomainInvitation.objects.filter(
             email=self.email, status=DomainInvitation.INVITED
         ):
-            invitation.retrieve()
-            invitation.save()
+            try:
+                invitation.retrieve()
+                invitation.save()
+            except RuntimeError:
+                # retrieving should not fail because of a missing user, but
+                # if it does fail, log the error so a new user can continue
+                # logging in
+                logger.warn("Failed to retrieve invitation %s", invitation,  exc_info=True)

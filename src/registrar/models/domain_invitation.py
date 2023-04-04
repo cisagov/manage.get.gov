@@ -1,5 +1,7 @@
 """People are invited by email to administer domains."""
 
+import logging
+
 from django.contrib.auth import get_user_model
 from django.db import models, IntegrityError
 
@@ -7,6 +9,9 @@ from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
 from .user_domain_role import UserDomainRole
+
+
+logger = logging.getLogger(__name__)
 
 
 class DomainInvitation(TimeStampedModel):
@@ -39,7 +44,11 @@ class DomainInvitation(TimeStampedModel):
 
     @transition(field="status", source=INVITED, target=RETRIEVED)
     def retrieve(self):
-        """When an invitation is retrieved, create the corresponding permission."""
+        """When an invitation is retrieved, create the corresponding permission.
+
+        Raises:
+            RuntimeError if no matching user can be found.
+        """
 
         # get a user with this email address
         User = get_user_model()
@@ -54,12 +63,12 @@ class DomainInvitation(TimeStampedModel):
 
         # and create a role for that user on this domain
         try:
-            UserDomainRole.objects.create(
+            role = UserDomainRole.objects.get(
                 user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
             )
-        except IntegrityError:
-            # should not happen because this user shouldn't retrieve this invitation
-            # more than once.
-            raise RuntimeError(
-                "Invitation would create a role that already exists for this user."
-            )
+        except UserDomainRole.DoesNotExist:
+            UserDomainRole.objects.create(user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN)
+        else:
+            # something strange happened and this role already existed when
+            # the invitation was retrieved. Log that this occurred.
+            logger.warn("Invitation %s was retrieved for a role that already exists.", self)

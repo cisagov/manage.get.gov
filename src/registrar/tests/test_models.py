@@ -177,6 +177,9 @@ class TestInvitations(TestCase):
         )
         self.user, _ = User.objects.get_or_create(email=self.email)
 
+        # clean out the roles each time
+        UserDomainRole.objects.all().delete()
+
     def test_retrieval_creates_role(self):
         self.invitation.retrieve()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
@@ -187,11 +190,13 @@ class TestInvitations(TestCase):
         with self.assertRaises(RuntimeError):
             self.invitation.retrieve()
 
-    def test_retrieve_existing_role_error(self):
+    def test_retrieve_existing_role_no_error(self):
         # make the overlapping role
-        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain)
-        with self.assertRaises(RuntimeError):
+        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN)
+        # this is not an error but does produce a console warning
+        with less_console_noise():
             self.invitation.retrieve()
+        self.assertEqual(self.invitation.status, DomainInvitation.RETRIEVED)
 
     def test_retrieve_on_first_login(self):
         """A new user's first_login callback retrieves their invitations."""
