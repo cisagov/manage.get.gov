@@ -179,10 +179,6 @@ a.breadcrumb__back {
 
 .review__step {
   margin-top: units(3);
-
-  &:first-of-type {
-    margin-top: units(4);
-  }
 }
 
 .review__step hr {
@@ -204,6 +200,18 @@ a.breadcrumb__back {
 
 .usa-form .usa-button {
   margin-top: units(3);
+} 
+
+.dotgov-button--green {
+  background-color: color('success-dark');
+
+  &:hover {
+    background-color: color('success-darker');
+  }
+
+  &:active {
+    background-color: color('green-80v');
+  }
 }
 
 /** ---- DASHBOARD ---- */
