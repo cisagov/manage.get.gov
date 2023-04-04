@@ -62,15 +62,10 @@ class DomainInvitation(TimeStampedModel):
             )
 
         # and create a role for that user on this domain
-        try:
-            UserDomainRole.objects.get(
-                user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
-            )
-        except UserDomainRole.DoesNotExist:
-            UserDomainRole.objects.create(
-                user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
-            )
-        else:
+        _, created = UserDomainRole.objects.get_or_create(
+            user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+        )
+        if not created:
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
             logger.warn(
