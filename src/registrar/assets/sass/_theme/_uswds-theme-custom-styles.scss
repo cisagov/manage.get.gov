@@ -247,6 +247,32 @@ section.dashboard {
   }
 }
 
+.dotgov-table--stacked {
+  td, th {
+    padding: units(1) units(2) units(2px) 0;
+    border: none;
+  }
+
+  tr:first-child th:first-child {
+    border-top: none;
+  }
+
+  tr {
+    border-bottom: none;
+    border-top: 2px solid color('base-light');
+    margin-top: units(2);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  td[data-label]:before,
+  th[data-label]:before {
+    color: color('primary-darker');
+    padding-bottom: units(2px);
+  }
+}
 
 .dotgov-table {
   width: 100%;
@@ -274,38 +300,10 @@ section.dashboard {
   tbody th {
     word-break: break-word;
   }
-}
 
-.dotgov-table--stacked {
-    td, th {
-      padding: units(1) units(2) units(2px) 0;
-      border: none;
-    }
 
-    tr:first-child th:first-child {
-      border-top: none;
-    }
+  @include at-media(mobile-lg) {
 
-    tr {
-      border-bottom: none;
-      border-top: 2px solid color('base-light');
-      margin-top: units(2);
-
-      &:first-child {
-        margin-top: 0;
-      }
-    }
-
-    td[data-label]:before,
-    th[data-label]:before {
-      color: color('primary-darker');
-      padding-bottom: units(2px);
-    }
-}
-
-@include at-media(mobile-lg) {
-
-  .dotgov-table {
     margin-top: units(1);
 
     tr {
@@ -326,7 +324,7 @@ section.dashboard {
         border-bottom: 0;
       }
     }
-    
+
     td, th,
     .usa-tabel th{
       padding: units(2) units(2) units(2) 0;
