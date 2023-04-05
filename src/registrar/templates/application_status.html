@@ -24,7 +24,7 @@
   {% else %}ERROR Please contact technical support/dev
   {% endif %}
   </div></div><br>
-  <p> <b class="review__step__name">Last updated:</b> {{domainapplication.updated_at}}<br>
+  <p> <b class="review__step__name">Last updated:</b> {{domainapplication.updated_at|date:"F j, Y"}}<br>
  <b class="review__step__name">Request #:</b> {{domainapplication.id}}</p>
 
 <p>{% include "includes/domain_application.html" %}</p><br>
