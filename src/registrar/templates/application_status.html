@@ -10,14 +10,17 @@
 <p><h1>Domain request for {{ domainapplication.requested_domain.name }}</h1></p>
 
 <div
-  class="usa-summary-box"
+  class="usa-summary-box dotgov-status-box margin-top-3" 
   role="region"
   aria-labelledby="summary-box-key-information"
 >
-<div class="usa-summary-box__body" style="display:inline-table;">
-  <h3 class="usa-summary-box__heading" id="summary-box-key-information">
+<div class="usa-summary-box__body">
+  <p class="usa-summary-box__heading font-sans-md margin-bottom-0" 
+        id="summary-box-key-information"
+    > 
+    <span class="text-bold text-primary-darker">
     Status:
-  </h3>
+  </span>
   {% if domainapplication.status == 'approved' %} Approved 
   {% elif domainapplication.status == 'investigating' %} In Review 
   {% elif domainapplication.status == 'submitted' %} Received
@@ -27,7 +30,7 @@
   <p> <b class="review__step__name">Last updated:</b> {{domainapplication.updated_at|date:"F j, Y"}}<br>
  <b class="review__step__name">Request #:</b> {{domainapplication.id}}</p>
 
-<p>{% include "includes/domain_application.html" %}</p><br>
+<p>{% include "includes/domain_application.html" %}</p>
 
 <p><button type="" class="usa-button usa-button--outline withdraw_outline">Withdraw Request</button></p>
 

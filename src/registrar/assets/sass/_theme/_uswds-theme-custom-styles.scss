@@ -334,6 +334,11 @@ section.dashboard {
    word-break: break-word;
 }
 
+.dotgov-status-box {
+  background-color: color('primary-lightest'); 
+  border-color: color('accent-cool-lighter');
+}
+
 #wrapper {
   padding-top: units(3);
   padding-bottom: units(6) * 2 ; //Workaround because USWDS units jump from 10 to 15
