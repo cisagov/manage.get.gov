@@ -7,7 +7,7 @@
   <h1>User management</h1>
 
   {% if domain.permissions %}
-  <section class="dashboard">
+  <section class="section--outlined">
   <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table--stacked dotgov-table">
     <h2 class> Active users </h2>
     <caption class="sr-only">Domain users</caption>
@@ -42,7 +42,7 @@
   </section>
 
   {% if domain.invitations.exists %}
-  <section class="dashboard">
+  <section class="section--outlined">
   <h2>Invitations</h2>
   <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table--stacked dotgov-table">
       <caption class="sr-only">Domain invitations</caption>
