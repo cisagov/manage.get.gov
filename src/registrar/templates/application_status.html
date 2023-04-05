@@ -7,7 +7,7 @@
 <div class="grid-container">
  
 
-<p>Domain request for {{ domainapplication.requested_domain.name }}</p>
+<p><h1>Domain request for {{ domainapplication.requested_domain.name }}</h1></p>
 
 <div
   class="usa-summary-box"
@@ -24,14 +24,13 @@
   {% elif domainapplication.status == 'submitted' %} Received
   {% else %}ERROR Please contact technical support/dev
   {% endif %}
-  </div></div>
-
+  </div></div><br>
 
 <p>{% include "includes/domain_application.html" %}</p>
 
 <p><button type="" class="usa-button usa-button--outline withdraw_outline">Withdraw Request</button></p>
 
-<p>Summary of request</p> 
+<p><h2>Summary of your domain request</h2></p> 
 
 <p>{{ domainapplication.get_organization_type_display }}</p>
 {% if domainapplication.tribe_name %}<p>{{ domainapplication.tribe_name }}</p>{% endif %}
@@ -70,106 +69,10 @@
                 None
               {% endfor %}
 {{ domainapplication.anything_else|default:"No" }}
-{{ domainapplication.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." }}
+
 
 
 </div>
-{% endblock %}
 
-{% block application-status %}
-  {% for step in Step.keys|slice:":-1" %}
-  <section class="review__step">
-    <hr />
-    <div class="review__step__title display-flex flex-justify"> 
-      <div class="review__step__value">
-        <div class="review__step__name">{{ form_titles|get_item:step }}</div>
-        <div>
-          {% if step == Step.ORGANIZATION_TYPE %}
-            {{ domainapplication.get_organization_type_display|default:"Incomplete" }}
-          {% endif %}
-          {% if step == Step.TRIBAL_GOVERNMENT %}
-            {{ domainapplication.tribe_name|default:"Incomplete" }}
-            {% if domainapplication.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
-            {% if domainapplication.state_recognized_tribe %}<p>State-recognized tribe</p>{% endif %}
-          {% endif %}
-          {% if step == Step.ORGANIZATION_FEDERAL %}
-            {{ domainapplication.get_federal_type_display|default:"Incomplete" }}
-          {% endif %}
-          {% if step == Step.ORGANIZATION_ELECTION %}
-            {{ domainapplication.is_election_board|yesno:"Yes,No,Incomplete" }}
-          {% endif %}
-          {% if step == Step.ORGANIZATION_CONTACT %}
-            {% if domainapplication.organization_name %}
-              {% include "includes/organization_address.html" with organization=application %}
-            {% else %}
-              Incomplete
-            {% endif %}
-          {% endif %}
-          {% if step == Step.TYPE_OF_WORK %}
-            <p>{{ domainapplication.type_of_work|default:"Incomplete" }}</p>
-            <p>{{ domainapplication.more_organization_information|default:"Incomplete" }}</p>
-          {% endif %}
-          {% if step == Step.AUTHORIZING_OFFICIAL %}
-            {% if domainapplication.authorizing_official %}
-              <div class="margin-bottom-105">
-                {% include "includes/contact.html" with contact=domainapplication.authorizing_official %}
-              </div>
-            {% else %}
-              Incomplete
-            {% endif %}
-          {% endif %}
-          {% if step == Step.CURRENT_SITES %}
-            <ul class="add-list-reset">
-              {% for site in domainapplication.current_websites.all %}
-                <li>{{ site.website }}</li>
-              {% empty %}
-                <li>None</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-          {% if step == domainapplication.DOTGOV_DOMAIN %}
-            <ul class="add-list-reset margin-bottom-105">
-              <li>{{ domainapplication.requested_domain.name|default:"Incomplete" }}</li>
-            </ul>
-            <ul class="add-list-reset">
-              {% for site in domainapplication.alternative_domains.all %}
-                <li>{{ site.website }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-          {% if step == Step.PURPOSE %}
-            {{ domainapplication.purpose|default:"Incomplete" }}
-          {% endif %}
-          {% if step == Step.YOUR_CONTACT %}
-              {% if domainapplication.submitter %}
-                <div class="margin-bottom-105">
-                  {% include "includes/contact.html" with contact=domainapplication.submitter %}
-                </div>
-              {% else %}
-                Incomplete
-              {% endif %}
-          {% endif %}
-          {% if step == Step.OTHER_CONTACTS %}
-            {% for other in domainapplication.other_contacts.all %}
-              <div class="margin-bottom-105">
-                {% include "includes/contact.html" with contact=other %}
-              </div>
-            {% empty %}
-              None
-            {% endfor %}
-          {% endif %}
-          {% if step == Step.NO_OTHER_CONTACTS %}
-            {{ domainapplication.no_other_contacts_rationale|default:"Incomplete" }}
-          {% endif %}
-          {% if step == Step.ANYTHING_ELSE %}
-            {{ domainapplication.anything_else|default:"No" }}
-          {% endif %}
-          {% if step == Step.REQUIREMENTS %}
-            {{ domainapplication.is_policy_acknowledged|yesno:"I agree.,I do not agree.,I do not agree." }}
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </section>
-  {% endfor %}
+
 {% endblock %}
