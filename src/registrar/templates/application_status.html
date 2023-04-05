@@ -32,7 +32,7 @@
 
 <p><h2>Summary of your domain request</h2></p> 
 
-<p>{{ domainapplication.get_organization_type_display }}</p>
+<p><hr><div class="review__step__name">Type of organization</div> {{ domainapplication.get_organization_type_display }}</p>
 {% if domainapplication.tribe_name %}<p>{{ domainapplication.tribe_name }}</p>{% endif %}
 {% if domainapplication.federally_recognized_tribe %}<p>Federally-recognized tribe</p>{% endif %}
 {% if domainapplication.state_recognized_tribe %}<p>State-recognized tribe</p>{% endif %}
@@ -41,14 +41,14 @@
 {% if domainapplication.organization_name %}<p>{% include "includes/organization_address.html" with organization=domainapplication %}</p>{% endif %}
 {% if domainapplication.type_of_work %}<p>{{domainapplication.type_of_work}}</p>{% endif %}
 {% if domainapplication.more_organization_information %}<p>{{domainapplication.more_organization_information}}</p>{% endif %}
-{% if domainapplication.authorizing_official %}<p>{% include "includes/contact.html" with contact=domainapplication.authorizing_official %}</p>{% endif %}
-<ul class="add-list-reset">
+{% if domainapplication.authorizing_official %}<p><hr><div class="review__step__name">Authorizing Official</div> {% include "includes/contact.html" with contact=domainapplication.authorizing_official %}</p>{% endif %}
+<p><hr><div class="review__step__name">Organization website</div><ul class="add-list-reset">
   {% for site in domainapplication.current_websites.all %}
     <li>{{ site.website }}</li>
   {% empty %}
     <li>None</li>
-  {% endfor %}</ul>
-{% if domainapplication.requested_domain.name %}<p> <ul class="add-list-reset margin-bottom-105">
+  {% endfor %}</ul></p>
+{% if domainapplication.requested_domain.name %}<p><hr><div class="review__step__name"> .gov domain </div> <ul class="add-list-reset margin-bottom-105">
   <li>{{ domainapplication.requested_domain.name|default:"Incomplete" }}</li>
 </ul>
 <ul class="add-list-reset">
@@ -56,8 +56,8 @@
     <li>{{ site.website }}</li>
   {% endfor %}
 </ul></p>{% endif %}
-{% if domainapplication.purpose %}<p>{{ domainapplication.purpose }}</p>{% endif %}
-{% if domainapplication.submitter %}
+{% if domainapplication.purpose %}<p><hr><div class="review__step__name">Purpose of your domain </div> {{ domainapplication.purpose }}</p>{% endif %}
+{% if domainapplication.submitter %}<p><hr><div class="review__step__name">Your contact information</div>
                 <div class="margin-bottom-105">
                   {% include "includes/contact.html" with contact=domainapplication.submitter %}
                 </div>{% endif %}
@@ -67,7 +67,8 @@
                 </div>
               {% empty %}
                 None
-              {% endfor %}
+              {% endfor %}</p>
+              <p><hr><div class="review__step__name">Anything else we should know?</div></p>
 {{ domainapplication.anything_else|default:"No" }}
 
 
