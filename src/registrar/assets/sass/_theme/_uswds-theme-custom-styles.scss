@@ -50,6 +50,13 @@ $letter-space--xs: .0125em;
   margin-top: units(1);
 }
 
+p,
+.usa-list li
+{
+  @include typeset('sans', 'sm', 5);
+  max-width: measure(5);
+}
+
  h1 {
   @include typeset('sans', '2xl', 2);
   margin: 0 0 units(2);
@@ -92,13 +99,6 @@ $letter-space--xs: .0125em;
   }
 }
 
-.register-form-step p,
-.register-form-step .usa-list li,
-.dashboard p
-{
-  @include typeset('sans', 'sm', 5);
-  max-width: measure(5);
-}
 
 .register-form-step a {
   color: color('primary');
