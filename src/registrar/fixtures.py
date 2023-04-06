@@ -143,7 +143,8 @@ class DomainApplicationFixture:
         da.federal_agency = (
             app["federal_agency"]
             if "federal_agency" in app
-            else random.choice(DomainApplication.AGENCIES)
+            # Random choice of agency for selects, used as placeholders for testing.
+            else random.choice(DomainApplication.AGENCIES)  # nosec
         )
 
         da.federal_type = (
