@@ -202,6 +202,14 @@ a.breadcrumb__back {
   margin-top: units(3);
 } 
 
+.usa-button--unstyled .usa-icon {
+  vertical-align: bottom;
+}
+
+a.usa-button--unstyled:visited {
+  color: color('primary');
+}
+
 .dotgov-button--green {
   background-color: color('success-dark');
 
