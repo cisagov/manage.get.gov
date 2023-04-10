@@ -463,6 +463,7 @@ class Review(ApplicationWizard):
         #     # TODO: errors to let users know why this isn't working
         #     return self.goto(self.steps.current)
 
+
 class Finished(ApplicationWizard):
     template_name = "application_done.html"
     forms = []  # type: ignore
@@ -474,12 +475,12 @@ class Finished(ApplicationWizard):
         del self.storage
         return render(self.request, self.template_name, context)
 
+
 class ApplicationStatus(generic.DetailView):
     model = DomainApplication
-    template_name="application_status.html"
+    template_name = "application_status.html"
     forms = []
 
     def get_context_data(self, **kwargs):
         context = super(ApplicationStatus, self).get_context_data(**kwargs)
-       #pdb.set_trace() (Jon note: if you want to do that, make sure to add import)
         return context

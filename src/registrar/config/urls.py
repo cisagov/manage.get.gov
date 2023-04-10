@@ -55,7 +55,7 @@ urlpatterns = [
     path(
         "application/<int:pk>",
         views.ApplicationStatus.as_view(),
-        name="application-status"
+        name="application-status",
     ),
     path("health/", views.health),
     path("openid/", include("djangooidc.urls")),
