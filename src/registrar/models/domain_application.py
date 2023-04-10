@@ -469,11 +469,14 @@ class DomainApplication(TimeStampedModel):
         nothing.
         """
         if self.submitter is None or self.submitter.email is None:
-            logger.warn("Cannot send confirmation email, no submitter email address.")
+            logger.warning(
+                "Cannot send confirmation email, no submitter email address."
+            )
             return
         try:
             send_templated_email(
                 "emails/submission_confirmation.txt",
+                "emails/submission_confirmation_subject.txt",
                 self.submitter.email,
                 context={"id": self.id, "domain_name": self.requested_domain.name},
             )

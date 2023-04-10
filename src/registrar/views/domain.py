@@ -1,16 +1,23 @@
 """View for a single Domain."""
 
-from django import forms
+import logging
+
 from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import DetailView
-from django.views.generic.edit import FormMixin
+from django.views.generic.edit import DeleteView, FormMixin
 
-from registrar.models import Domain, User, UserDomainRole
+from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
+from ..forms import DomainAddUserForm
+from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
+
+
+logger = logging.getLogger(__name__)
 
 
 class DomainView(DomainPermission, DetailView):
@@ -29,22 +36,6 @@ class DomainUsersView(DomainPermission, DetailView):
     model = Domain
     template_name = "domain_users.html"
     context_object_name = "domain"
-
-
-class DomainAddUserForm(DomainPermission, forms.Form):
-
-    """Form for adding a user to a domain."""
-
-    email = forms.EmailField(label="Email")
-
-    def clean_email(self):
-        requested_email = self.cleaned_data["email"]
-        try:
-            User.objects.get(email=requested_email)
-        except User.DoesNotExist:
-            # TODO: send an invitation email to a non-existent user
-            raise forms.ValidationError("That user does not exist in this system.")
-        return requested_email
 
 
 class DomainAddUserView(DomainPermission, FormMixin, DetailView):
@@ -66,16 +57,63 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
+            # there is a valid email address in the form
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
+
+    def _domain_abs_url(self):
+        """Get an absolute URL for this domain."""
+        return self.request.build_absolute_uri(
+            reverse("domain", kwargs={"pk": self.object.id})
+        )
+
+    def _make_invitation(self, email_address):
+        """Make a Domain invitation for this email and redirect with a message."""
+        invitation, created = DomainInvitation.objects.get_or_create(
+            email=email_address, domain=self.object
+        )
+        if not created:
+            # that invitation already existed
+            messages.warning(
+                self.request,
+                f"{email_address} has already been invited to this domain.",
+            )
+        else:
+            # created a new invitation in the database, so send an email
+            try:
+                send_templated_email(
+                    "emails/domain_invitation.txt",
+                    "emails/domain_invitation_subject.txt",
+                    to_address=email_address,
+                    context={
+                        "domain_url": self._domain_abs_url(),
+                        "domain": self.object,
+                    },
+                )
+            except EmailSendingError:
+                messages.warning(self.request, "Could not send email invitation.")
+                logger.warn(
+                    "Could not sent email invitation to %s for domain %s",
+                    email_address,
+                    self.object,
+                    exc_info=True,
+                )
+            else:
+                messages.success(
+                    self.request, f"Invited {email_address} to this domain."
+                )
+        return redirect(self.get_success_url())
 
     def form_valid(self, form):
         """Add the specified user on this domain."""
         requested_email = form.cleaned_data["email"]
         # look up a user with that email
-        # they should exist because we checked in clean_email
-        requested_user = User.objects.get(email=requested_email)
+        try:
+            requested_user = User.objects.get(email=requested_email)
+        except User.DoesNotExist:
+            # no matching user, go make an invitation
+            return self._make_invitation(requested_email)
 
         try:
             UserDomainRole.objects.create(
@@ -87,3 +125,14 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
 
         messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
+
+
+class DomainInvitationDeleteView(SuccessMessageMixin, DeleteView):
+    model = DomainInvitation
+    object: DomainInvitation  # workaround for type mismatch in DeleteView
+
+    def get_success_url(self):
+        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+
+    def get_success_message(self, cleaned_data):
+        return f"Successfully canceled invitation for {self.object.email}."

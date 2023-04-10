@@ -5,6 +5,18 @@
 {# there are no required fields on this page so don't show this #}
 {% endblock %}
 
+{% block form_page_title %}
+  <span class="display-flex flex-align-start maxw-mobile-lg"> 
+    <img 
+        class= "margin-right-105" 
+        src="{%static 'img/registrar/dotgov_review_magnify.svg' %}" 
+        alt=""
+        width="72"
+        />
+    <h1> Review and submit your domain request </h1>
+  </span>
+{% endblock %}
+
 {% block form_fields %}
   {% for step in steps.all|slice:":-1" %}
   <section class="review__step">

@@ -189,6 +189,9 @@ TEMPLATES = [
     },
 ]
 
+# Stop using table-based default form renderer which is deprecated
+FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
 # IS_DEMO_SITE controls whether or not we show our big red "TEST SITE" banner

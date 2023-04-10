@@ -7,6 +7,7 @@ from registrar.models import (
     User,
     Website,
     Domain,
+    DomainInvitation,
     UserDomainRole,
 )
 from unittest import skip
@@ -30,7 +31,7 @@ class TestDomainApplication(TestCase):
         """Can create with just a creator."""
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user)
-        self.assertEquals(application.status, DomainApplication.STARTED)
+        self.assertEqual(application.status, DomainApplication.STARTED)
 
     def test_full_create(self):
         """Can create with all fields."""
@@ -115,13 +116,13 @@ class TestDomain(TestCase):
     def test_minimal_create(self):
         """Can create with just a name."""
         domain = Domain.objects.create(name="igorville.gov")
-        self.assertEquals(domain.is_active, False)
+        self.assertEqual(domain.is_active, False)
 
     def test_get_status(self):
         """Returns proper status based on `is_active`."""
         domain = Domain.objects.create(name="igorville.gov")
         domain.save()
-        self.assertEquals(None, domain.status)
+        self.assertEqual(None, domain.status)
         domain.activate()
         domain.save()
         self.assertIn("ok", domain.status)
@@ -162,6 +163,47 @@ class TestPermissions(TestCase):
 
         # should be a role for this user
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
+
+
+class TestInvitations(TestCase):
+
+    """Test the retrieval of invitations."""
+
+    def setUp(self):
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.email = "mayor@igorville.gov"
+        self.invitation, _ = DomainInvitation.objects.get_or_create(
+            email=self.email, domain=self.domain
+        )
+        self.user, _ = User.objects.get_or_create(email=self.email)
+
+        # clean out the roles each time
+        UserDomainRole.objects.all().delete()
+
+    def test_retrieval_creates_role(self):
+        self.invitation.retrieve()
+        self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
+
+    def test_retrieve_missing_user_error(self):
+        # get rid of matching users
+        User.objects.filter(email=self.email).delete()
+        with self.assertRaises(RuntimeError):
+            self.invitation.retrieve()
+
+    def test_retrieve_existing_role_no_error(self):
+        # make the overlapping role
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+        )
+        # this is not an error but does produce a console warning
+        with less_console_noise():
+            self.invitation.retrieve()
+        self.assertEqual(self.invitation.status, DomainInvitation.RETRIEVED)
+
+    def test_retrieve_on_first_login(self):
+        """A new user's first_login callback retrieves their invitations."""
+        self.user.first_login()
+        self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
 
 
 @skip("Not implemented yet.")

@@ -49,6 +49,8 @@ class OpenIdConnectBackend(ModelBackend):
             user, created = UserModel.objects.update_or_create(**args)
             if created:
                 user = self.configure_user(user, **kwargs)
+                # run a newly created user's callback for a first-time login
+                user.first_login()
         else:
             try:
                 user = UserModel.objects.get_by_natural_key(username)

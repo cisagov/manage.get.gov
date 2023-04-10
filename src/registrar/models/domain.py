@@ -281,3 +281,6 @@ class Domain(TimeStampedModel):
 
     # ManyToManyField on User creates a "users" member for all of the
     # users who have some role on this domain
+
+    # ForeignKey on DomainInvitation creates an "invitations" member for
+    # all of the invitations that have been sent for this domain

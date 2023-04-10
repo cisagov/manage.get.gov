@@ -1,7 +1,14 @@
+import logging
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from .domain_invitation import DomainInvitation
+
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
+
+
+logger = logging.getLogger(__name__)
 
 
 class User(AbstractUser):
@@ -31,3 +38,23 @@ class User(AbstractUser):
             return self.email
         else:
             return self.username
+
+    def first_login(self):
+        """Callback when the user is authenticated for the very first time.
+
+        When a user first arrives on the site, we need to retrieve any domain
+        invitations that match their email address.
+        """
+        for invitation in DomainInvitation.objects.filter(
+            email=self.email, status=DomainInvitation.INVITED
+        ):
+            try:
+                invitation.retrieve()
+                invitation.save()
+            except RuntimeError:
+                # retrieving should not fail because of a missing user, but
+                # if it does fail, log the error so a new user can continue
+                # logging in
+                logger.warn(
+                    "Failed to retrieve invitation %s", invitation, exc_info=True
+                )
