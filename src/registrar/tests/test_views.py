@@ -1145,7 +1145,6 @@ class TestApplicationStatus(TestWithUser, WebTest):
         has_anything_else=True,
     ):
         """A completed domain application."""
-        user = get_user_model().objects.create(username="username")
         ao, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
@@ -1183,7 +1182,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
             authorizing_official=ao,
             requested_domain=domain,
             submitter=you,
-            creator=user,
+            creator=self.user,
         )
         if has_type_of_work:
             domain_application_kwargs["type_of_work"] = "e-Government"
@@ -1210,8 +1209,8 @@ class TestApplicationStatus(TestWithUser, WebTest):
         """Checking application status page"""
         application = self._completed_application()
         application.save()
+
         home_page = self.app.get("/")
-        print(home_page)
         self.assertContains(home_page, "citystatus.gov")
         # click the "Manage" link
         detail_page = home_page.click("Manage")
