@@ -167,3 +167,7 @@ node_modules
 
 # Compliance/trestle related
 docs/compliance/.trestle/cache
+
+# OWAP related
+zap.yaml
+zap_report.html
