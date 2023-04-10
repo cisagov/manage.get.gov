@@ -5,6 +5,7 @@ from .domain_application import DomainApplication
 from .domain import Domain
 from .host_ip import HostIP
 from .host import Host
+from .domain_invitation import DomainInvitation
 from .nameserver import Nameserver
 from .user_domain_role import UserDomainRole
 from .public_contact import PublicContact
@@ -15,6 +16,7 @@ __all__ = [
     "Contact",
     "DomainApplication",
     "Domain",
+    "DomainInvitation",
     "HostIP",
     "Host",
     "Nameserver",
@@ -27,6 +29,7 @@ __all__ = [
 auditlog.register(Contact)
 auditlog.register(DomainApplication)
 auditlog.register(Domain)
+auditlog.register(DomainInvitation)
 auditlog.register(HostIP)
 auditlog.register(Host)
 auditlog.register(Nameserver)

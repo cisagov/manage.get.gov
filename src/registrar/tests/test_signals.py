@@ -19,7 +19,7 @@ class TestUserPostSave(TestCase):
 
     def test_user_created_without_matching_contact(self):
         """Expect 1 Contact containing data copied from User."""
-        self.assertEquals(len(Contact.objects.all()), 0)
+        self.assertEqual(len(Contact.objects.all()), 0)
         user = get_user_model().objects.create(
             username=self.username,
             first_name=self.first_name,
@@ -28,14 +28,14 @@ class TestUserPostSave(TestCase):
             phone=self.phone,
         )
         actual = Contact.objects.get(user=user)
-        self.assertEquals(actual.first_name, self.first_name)
-        self.assertEquals(actual.last_name, self.last_name)
-        self.assertEquals(actual.email, self.email)
-        self.assertEquals(actual.phone, self.phone)
+        self.assertEqual(actual.first_name, self.first_name)
+        self.assertEqual(actual.last_name, self.last_name)
+        self.assertEqual(actual.email, self.email)
+        self.assertEqual(actual.phone, self.phone)
 
     def test_user_created_with_matching_contact(self):
         """Expect 1 Contact associated, but with no data copied from User."""
-        self.assertEquals(len(Contact.objects.all()), 0)
+        self.assertEqual(len(Contact.objects.all()), 0)
         Contact.objects.create(
             first_name=self.preferred_first_name,
             last_name=self.preferred_last_name,
@@ -49,21 +49,21 @@ class TestUserPostSave(TestCase):
             email=self.email,
         )
         actual = Contact.objects.get(user=user)
-        self.assertEquals(actual.first_name, self.preferred_first_name)
-        self.assertEquals(actual.last_name, self.preferred_last_name)
-        self.assertEquals(actual.email, self.email)
-        self.assertEquals(actual.phone, self.preferred_phone)
+        self.assertEqual(actual.first_name, self.preferred_first_name)
+        self.assertEqual(actual.last_name, self.preferred_last_name)
+        self.assertEqual(actual.email, self.email)
+        self.assertEqual(actual.phone, self.preferred_phone)
 
     def test_user_updated_without_matching_contact(self):
         """Expect 1 Contact containing data copied from User."""
         # create the user
-        self.assertEquals(len(Contact.objects.all()), 0)
+        self.assertEqual(len(Contact.objects.all()), 0)
         user = get_user_model().objects.create(
             username=self.username, first_name="", last_name="", email="", phone=""
         )
         # delete the contact
         Contact.objects.all().delete()
-        self.assertEquals(len(Contact.objects.all()), 0)
+        self.assertEqual(len(Contact.objects.all()), 0)
         # modify the user
         user.username = self.username
         user.first_name = self.first_name
@@ -73,15 +73,15 @@ class TestUserPostSave(TestCase):
         user.save()
         # test
         actual = Contact.objects.get(user=user)
-        self.assertEquals(actual.first_name, self.first_name)
-        self.assertEquals(actual.last_name, self.last_name)
-        self.assertEquals(actual.email, self.email)
-        self.assertEquals(actual.phone, self.phone)
+        self.assertEqual(actual.first_name, self.first_name)
+        self.assertEqual(actual.last_name, self.last_name)
+        self.assertEqual(actual.email, self.email)
+        self.assertEqual(actual.phone, self.phone)
 
     def test_user_updated_with_matching_contact(self):
         """Expect 1 Contact associated, but with no data copied from User."""
         # create the user
-        self.assertEquals(len(Contact.objects.all()), 0)
+        self.assertEqual(len(Contact.objects.all()), 0)
         user = get_user_model().objects.create(
             username=self.username,
             first_name=self.first_name,
@@ -97,7 +97,7 @@ class TestUserPostSave(TestCase):
         user.save()
         # test
         actual = Contact.objects.get(user=user)
-        self.assertEquals(actual.first_name, self.first_name)
-        self.assertEquals(actual.last_name, self.last_name)
-        self.assertEquals(actual.email, self.email)
-        self.assertEquals(actual.phone, self.phone)
+        self.assertEqual(actual.first_name, self.first_name)
+        self.assertEqual(actual.last_name, self.last_name)
+        self.assertEqual(actual.email, self.email)
+        self.assertEqual(actual.phone, self.phone)

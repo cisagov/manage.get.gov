@@ -51,7 +51,9 @@ class MyHostAdmin(AuditedAdmin):
 
 
 admin.site.register(models.User, MyUserAdmin)
+admin.site.register(models.UserDomainRole, AuditedAdmin)
 admin.site.register(models.Contact, AuditedAdmin)
+admin.site.register(models.DomainInvitation, AuditedAdmin)
 admin.site.register(models.DomainApplication, AuditedAdmin)
 admin.site.register(models.Domain, AuditedAdmin)
 admin.site.register(models.Host, MyHostAdmin)
