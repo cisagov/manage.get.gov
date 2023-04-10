@@ -14,7 +14,7 @@ Currently web infrastructure for the dotgov program is split between a [home sit
 
 Keep the Cloud.gov Pages site for program content (About, Guides, News, Docs, etc.) and as the front page for program services. Use the Django application we are building to solely host the registrar behind login.gov. Move the Cloud.gov Pages site to get.gov, and host the Django site at the subdomain registrar.get.gov. Both will use USWDS with the same settings. 
 
-This allows us to manage content separately from our applicaiton code. This both lets us write content in a markdown format rather than HTML in our application and update content without rebuilding the application. 
+This allows us to manage content separately from our application code. This both lets us write content in a markdown format rather than HTML in our application and update content without rebuilding the application. 
 
 ## Consequences
 
