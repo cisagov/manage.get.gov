@@ -53,7 +53,7 @@ Authorizing official:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=application.authorizing_official %}{% endspaceless %}
 {% if application.current_websites.exists %}{# if block makes a newline #}
 Current website for your organization: {% for site in application.current_websites.all %}
-{{ site.website }}
+{% spaceless %}{{ site.website }}{% endspaceless %}
 {% endfor %}{% endif %}
 .gov domain:
 {{ application.requested_domain.name }}
