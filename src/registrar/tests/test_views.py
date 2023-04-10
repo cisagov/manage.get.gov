@@ -1222,6 +1222,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         home_page = self.app.get(reverse("home"))
         self.assertContains(home_page, self.domain.name)
 
+
 class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
@@ -1279,14 +1280,14 @@ class TestApplicationStatus(TestWithUser, WebTest):
             domain_application_kwargs["type_of_work"] = "e-Government"
         if has_anything_else:
             domain_application_kwargs["anything_else"] = "There is more"
-      
+
         application, _ = DomainApplication.objects.get_or_create(
             **domain_application_kwargs
         )
 
         application.status = DomainApplication.SUBMITTED
         application.save()
-        
+
         if has_other_contacts:
             application.other_contacts.add(other)
         if has_current_website:
