@@ -1131,9 +1131,10 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
-class TestApplicationStatus(TestCase):
+class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
+        self.app.set_user(self.user.username)
 
     def _completed_application(
         self,
@@ -1195,7 +1196,7 @@ class TestApplicationStatus(TestCase):
 
         application.status = DomainApplication.SUBMITTED
         application.save()
-
+        
         if has_other_contacts:
             application.other_contacts.add(other)
         if has_current_website:
@@ -1207,7 +1208,10 @@ class TestApplicationStatus(TestCase):
 
     def test_application_status(self):
         """Checking application status page"""
+        application = self._completed_application()
+        application.save()
         home_page = self.app.get("/")
+        print(home_page)
         self.assertContains(home_page, "citystatus.gov")
         # click the "Manage" link
         detail_page = home_page.click("Manage")
