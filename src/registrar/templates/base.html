@@ -16,9 +16,21 @@
   {% endblock %}
   {% block extra_meta %}{% endblock extra_meta %}
 
-  {# TO-DO: set defaults for these #}
-  <link rel="shortcut icon" href="{% static 'img/favicon.png' %}">
-  <link rel="apple-touch-icon" href="{% static 'img/touch-icon.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" 
+        href="{% static 'img/registrar/favicons/favicon-32.png' %}"
+  >
+  <link rel="icon" type="image/png" sizes="192x192" 
+        href="{% static 'img/registrar/favicons/favicon-192.png' %}"
+  >
+  <link rel="icon" type="image/svg+xml" 
+        href="{% static 'img/registrar/favicons/favicon.svg' %}"
+  >
+  <link rel="shortcut icon" type="image/x-icon"
+        href="{% static 'img/registrar/favicons/favicon.ico' %}"
+  >
+  <link rel="apple-touch-icon" size="180x180" 
+        href="{% static 'img/registrar/favicons/favicon-180.png' %}"
+  >
 
   {% block css %}
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
@@ -128,9 +140,9 @@
       <div class="usa-navbar">
         {% block logo %}
         <div class="usa-logo" id="extended-logo">
-           <a href="{% url 'home' %}">
-           <strong class="usa-logo__text" >.gov </strong>
-           </a>
+          <strong class="usa-logo__text" >
+            <a href="{% url 'home' %}"> .gov </a>
+          </strong>
         </div>
         {% endblock %}
         <button type="button" class="usa-menu-btn">Menu</button>

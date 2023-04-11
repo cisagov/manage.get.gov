@@ -36,7 +36,9 @@ $letter-space--xs: .0125em;
 }
 
 .usa-logo {
-  margin-top: units(2);
+  @include at-media(desktop) {
+    margin-top: units(2);
+  }
 }
 
 .usa-logo__text {
@@ -46,6 +48,13 @@ $letter-space--xs: .0125em;
 
 .usa-nav__primary {
   margin-top: units(1);
+}
+
+p,
+.usa-list li
+{
+  @include typeset('sans', 'sm', 5);
+  max-width: measure(5);
 }
 
  h1 {
@@ -90,13 +99,6 @@ $letter-space--xs: .0125em;
   }
 }
 
-.register-form-step p,
-.register-form-step .usa-list li,
-.dashboard p
-{
-  @include typeset('sans', 'sm', 5);
-  max-width: measure(5);
-}
 
 .register-form-step a {
   color: color('primary');
@@ -125,7 +127,7 @@ a.breadcrumb__back {
     color: color('primary');
   }
 
-  @include at-media('desktop') {
+  @include at-media('tablet') {
     //align to top of sidebar
     margin-top: units(-0.5);
   }
@@ -196,6 +198,18 @@ a.breadcrumb__back {
   margin-bottom: units(0.5);
 }
 
+.usa-form .usa-button {
+  margin-top: units(3);
+} 
+
+.usa-button--unstyled .usa-icon {
+  vertical-align: bottom;
+}
+
+a.usa-button--unstyled:visited {
+  color: color('primary');
+}
+
 .dotgov-button--green {
   background-color: color('success-dark');
 
@@ -215,7 +229,7 @@ a.breadcrumb__back {
   padding-top: units(5);
 }
 
-section.dashboard {
+.section--outlined {
   background-color: color('white');
   border: 1px solid color('base-lighter');
   border-radius: 4px;
@@ -223,6 +237,8 @@ section.dashboard {
   margin-top: units(3);
 
   h2 {
+    color: color('primary-dark');
+    margin-top: units(2);
     margin-bottom: units(2);
   }
 
@@ -234,11 +250,37 @@ section.dashboard {
     margin-top: units(5);
 
     h2 {
-      margin-bottom: units(3);
+      margin-bottom: 0;
     }
   }
 }
 
+.dotgov-table--stacked {
+  td, th {
+    padding: units(1) units(2) units(2px) 0;
+    border: none;
+  }
+
+  tr:first-child th:first-child {
+    border-top: none;
+  }
+
+  tr {
+    border-bottom: none;
+    border-top: 2px solid color('base-light');
+    margin-top: units(2);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  td[data-label]:before,
+  th[data-label]:before {
+    color: color('primary-darker');
+    padding-bottom: units(2px);
+  }
+}
 
 .dotgov-table {
   width: 100%;
@@ -262,38 +304,16 @@ section.dashboard {
   th[data-sortable]:not([aria-sort]) .usa-table__header__button {
     right: auto;
   }
-}
 
-.dotgov-table--stacked {
-    td, th {
-      padding: units(1) units(2) units(2px) 0;
-      border: none;
-    }
+  tbody th {
+    word-break: break-word;
+  }
 
-    tr:first-child th:first-child {
-      border-top: none;
-    }
 
-    tr {
-      border-bottom: none;
-      border-top: 2px solid color('base-light');
-      margin-top: units(2);
+  @include at-media(mobile-lg) {
 
-      &:first-child {
-        margin-top: 0;
-      }
-    }
+    margin-top: units(1);
 
-    td[data-label]:before,
-    th[data-label]:before {
-      color: color('primary-darker');
-      padding-bottom: units(2px);
-    }
-}
-
-@include at-media(mobile-lg) {
-
-  .dotgov-table {
     tr {
       border: none;
     }
@@ -311,10 +331,6 @@ section.dashboard {
       td, th {
         border-bottom: 0;
       }
-    }
-    
-    tbody th {
-      word-break: break-word;
     }
 
     td, th,

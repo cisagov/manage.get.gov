@@ -1090,7 +1090,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")
         # click the "Edit" link
-        detail_page = home_page.click("Edit")
+        detail_page = home_page.click("Manage")
         self.assertContains(detail_page, "igorville.gov")
 
     def test_domain_user_management(self):
