@@ -33,7 +33,7 @@ jobs:
         run: docker compose run app python manage.py test
 
   pa11y-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
 
