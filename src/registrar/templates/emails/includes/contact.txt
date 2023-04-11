@@ -1,0 +1,4 @@
+{{ contact.get_formatted_name }}
+{% if  contact.title  %}{{ contact.title }}{% endif %}
+{% if  contact.email  %}{{ contact.email }}{% endif %}
+{% if  contact.phone  %}{{ contact.phone.as_national }}{% endif %}

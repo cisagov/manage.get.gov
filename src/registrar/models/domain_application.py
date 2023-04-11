@@ -478,7 +478,7 @@ class DomainApplication(TimeStampedModel):
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
                 self.submitter.email,
-                context={"id": self.id, "domain_name": self.requested_domain.name},
+                context={"application": self},
             )
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
