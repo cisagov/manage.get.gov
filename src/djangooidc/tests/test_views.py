@@ -88,17 +88,14 @@ class ViewsTest(TestCase):
         mock_client.registration_response = {
             "post_logout_redirect_uris": ["http://example.com/back"]
         }
-        mock_client.provider_info = {
-            "end_session_endpoint": "http://example.com/log_me_out"
-        }
+        mock_client.provider_info = {"end_session_endpoint": "http://get.gov"}
         mock_client.client_id = "TEST"
         # test
         with less_console_noise():
             response = self.client.get(reverse("logout"))
         # assert
         expected = (
-            "http://example.com/log_me_out?client_id=TEST&state"
-            "=TEST&post_logout_redirect_uri=http%3A%2F%2Fexample.com%2Fback"
+            "get.gov"
         )
         actual = response.url
         self.assertEqual(response.status_code, 302)

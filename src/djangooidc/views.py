@@ -109,12 +109,10 @@ def logout(request, next_page=None):
         # Don't wait for the callback as it may never come.
         auth_logout(request)
         logger.info("Successfully logged out user %s" % username)
-        next_page = getattr(settings, "LOGOUT_REDIRECT_URL", None)
-        if next_page:
-            request.session["next"] = next_page
+        return HttpResponseRedirect(redirect_to="https://get.gov")
 
 
 def logout_callback(request):
     """Simple redirection view: after logout, redirect to `next`."""
-    next = request.session.get("next", "/")
+    next = request.session.get("next", "https://get.gov")
     return redirect(next)
