@@ -43,7 +43,7 @@ jobs:
         run: |
           perl -pi \
           -e 's/"csp.middleware.CSPMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
-          src/registrar/config/settings.py
+          registrar/config/settings.py
 
       - name: Accessibility Scan
         working-directory: ./src
