@@ -94,7 +94,7 @@ class ViewsTest(TestCase):
         with less_console_noise():
             response = self.client.get(reverse("logout"))
         # assert
-        expected = "https://get.gov"
+        expected = "http://get.gov?client_id=TEST&state=TEST&post_logout_redirect_uri=http%3A%2F%2Fexample.com%2Fback"  # noqa
         actual = response.url
         self.assertEqual(response.status_code, 302)
         self.assertEqual(actual, expected)
