@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Domain request status- {{ domainapplication.requested_domain.name }}{% endblock %}
+{% load static url_helpers %}
+
+{% block content %}
+<div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
+ 
+
+<p><h1>Domain request for {{ domainapplication.requested_domain.name }}</h1></p>
+
+<div
+  class="usa-summary-box dotgov-status-box margin-top-3" 
+  role="region"
+  aria-labelledby="summary-box-key-information"
+>
+<div class="usa-summary-box__body">
+  <p class="usa-summary-box__heading font-sans-md margin-bottom-0" 
+        id="summary-box-key-information"
+    > 
+    <span class="text-bold text-primary-darker">
+    Status:
+  </span>
+  {% if domainapplication.status == 'approved' %} Approved 
+  {% elif domainapplication.status == 'investigating' %} In Review 
+  {% elif domainapplication.status == 'submitted' %} Received
+  {% else %}ERROR Please contact technical support/dev
+  {% endif %}
+  </div></div><br>
+  <p> <b class="review__step__name">Last updated:</b> {{domainapplication.updated_at|date:"F j, Y"}}<br>
+ <b class="review__step__name">Request #:</b> {{domainapplication.id}}</p>
+
+<p>{% include "includes/domain_application.html" %}</p>
+
+<p><button type="" class="usa-button usa-button--outline withdraw_outline">Withdraw Request</button></p>
+
+<p><h2>Summary of your domain request</h2></p> 
+
+<section class="review__step">
+<p>
+  <hr><div class="review__step__name">Type of organization</div> 
+    {{ domainapplication.get_organization_type_display }}
+  </p>
+
+  {% if domainapplication.tribe_name %}
+    <p>{{ domainapplication.tribe_name }}</p>
+    {% endif %}
+  {% if domainapplication.federally_recognized_tribe %}
+    <p>Federally-recognized tribe</p>
+    {% endif %}
+  {% if domainapplication.state_recognized_tribe %}
+    <p>State-recognized tribe</p>
+    {% endif %}
+  {% if domainapplication.get_federal_type_display %}
+    <p><hr><div class="review__step__name">Federal government branch</div>
+      {{ domainapplication.get_federal_type_display }}</p>
+    {% endif %}
+  {% if domainapplication.is_election_board %}
+    <p><hr><div class="review__step__name">Election Office</div>{{ domainapplication.is_election_board}}</p>
+    {% endif %}
+  {% if domainapplication.organization_name %}
+    <p><hr><div class="review__step__name">Organization address</div> 
+      {% include "includes/organization_address.html" with organization=domainapplication %}</p>
+      {% endif %}
+  {% if domainapplication.type_of_work %}
+    <p>{{domainapplication.type_of_work}}</p>
+    {% endif %}
+  {% if domainapplication.more_organization_information %}
+    <p>{{domainapplication.more_organization_information}}</p>
+    {% endif %}
+  {% if domainapplication.authorizing_official %}
+    <p><hr><div class="review__step__name">Authorizing Official</div> 
+    {% include "includes/contact.html" with contact=domainapplication.authorizing_official %}</p>
+    {% endif %}
+  <p><hr><div class="review__step__name">Organization website</div><ul class="add-list-reset">
+    {% for site in domainapplication.current_websites.all %}
+     <li>{{ site.website }}</li>
+    {% empty %}
+     <li>None</li>
+    {% endfor %}</ul></p>
+  {% if domainapplication.requested_domain.name %}
+  <p><hr><div class="review__step__name"> .gov domain </div> <ul class="add-list-reset margin-bottom-105">
+    <li>{{ domainapplication.requested_domain.name|default:"Incomplete" }}</li>
+    </ul>
+  <ul class="add-list-reset">
+    {% for site in domainapplication.alternative_domains.all %}
+     <li>{{ site.website }}</li>
+   {% endfor %}
+  </ul></p>
+  {% endif %}
+  {% if domainapplication.purpose %}
+    <p><hr><div class="review__step__name">Purpose of your domain </div> 
+      {{ domainapplication.purpose }}</p>
+      {% endif %}
+  {% if domainapplication.submitter %}
+    <p><hr><div class="review__step__name">Your contact information</div>
+        <div class="margin-bottom-105">
+        {% include "includes/contact.html" with contact=domainapplication.submitter %}
+        </div>
+    {% endif %}
+  {% for other in domainapplication.other_contacts.all %}
+                <div class="margin-bottom-105">
+                  {% include "includes/contact.html" with contact=other %}
+                </div>
+              {% empty %}
+                None
+              {% endfor %}</p>
+  <p><hr><div class="review__step__name">Anything else we should know?</div></p>
+  {{ domainapplication.anything_else|default:"No" }}
+</div>
+</section>
+
+
+{% endblock %}

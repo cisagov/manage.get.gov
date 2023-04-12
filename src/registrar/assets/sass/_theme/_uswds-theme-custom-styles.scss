@@ -133,6 +133,11 @@ a.breadcrumb__back {
   }
 }
 
+.withdraw_outline {
+  box-shadow: inset 0 0 0 2px color('error');
+  color: color('error');
+}
+
 .usa-sidenav {
   .usa-sidenav__item {
     span {
@@ -350,6 +355,11 @@ a.usa-button--unstyled:visited {
 
 .break-word {
    word-break: break-word;
+}
+
+.dotgov-status-box {
+  background-color: color('primary-lightest'); 
+  border-color: color('accent-cool-lighter');
 }
 
 #wrapper {

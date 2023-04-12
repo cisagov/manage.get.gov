@@ -6,6 +6,7 @@ from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
+from django.views import generic
 from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
@@ -473,3 +474,12 @@ class Finished(ApplicationWizard):
         # clean up this wizard session, because we are done with it
         del self.storage
         return render(self.request, self.template_name, context)
+
+
+class ApplicationStatus(generic.DetailView):
+    model = DomainApplication
+    template_name = "application_status.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(ApplicationStatus, self).get_context_data(**kwargs)
+        return context

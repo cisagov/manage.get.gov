@@ -1221,3 +1221,93 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
         self.assertContains(home_page, self.domain.name)
+
+
+class TestApplicationStatus(TestWithUser, WebTest):
+    def setUp(self):
+        super().setUp()
+        self.app.set_user(self.user.username)
+
+    def _completed_application(
+        self,
+        has_other_contacts=True,
+        has_current_website=True,
+        has_alternative_gov_domain=True,
+        has_type_of_work=True,
+        has_anything_else=True,
+    ):
+        """A completed domain application."""
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(555) 555 5555",
+        )
+        domain, _ = Domain.objects.get_or_create(name="citystatus.gov")
+        alt, _ = Website.objects.get_or_create(website="city1.gov")
+        current, _ = Website.objects.get_or_create(website="city.com")
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(555) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(555) 555 5557",
+        )
+        domain_application_kwargs = dict(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            address_line2="address 2",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            requested_domain=domain,
+            submitter=you,
+            creator=self.user,
+        )
+        if has_type_of_work:
+            domain_application_kwargs["type_of_work"] = "e-Government"
+        if has_anything_else:
+            domain_application_kwargs["anything_else"] = "There is more"
+
+        application, _ = DomainApplication.objects.get_or_create(
+            **domain_application_kwargs
+        )
+
+        application.status = DomainApplication.SUBMITTED
+        application.save()
+
+        if has_other_contacts:
+            application.other_contacts.add(other)
+        if has_current_website:
+            application.current_websites.add(current)
+        if has_alternative_gov_domain:
+            application.alternative_domains.add(alt)
+
+        return application
+
+    def test_application_status(self):
+        """Checking application status page"""
+        application = self._completed_application()
+        application.save()
+
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "citystatus.gov")
+        # click the "Manage" link
+        detail_page = home_page.click("Manage")
+        self.assertContains(detail_page, "citystatus.gov")
+        self.assertContains(detail_page, "Chief Tester")
+        self.assertContains(detail_page, "testy@town.com")
+        self.assertContains(detail_page, "Admin Tester")
+        self.assertContains(detail_page, "Status:")

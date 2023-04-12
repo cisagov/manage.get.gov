@@ -88,14 +88,15 @@
           <td data-sort-value="{{ application.created_at|date:"U" }}" data-label="Date created">{{ application.created_at|date }}</td>
           <td data-label="Status">{{ application.status|title }}</td>
           <td>
-            <a href="{% url 'edit-application' application.pk %}">
-              {% if application.status == "started" %}
+             {% if application.status == "started" %}
+              <a href="{% url 'edit-application' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
               Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }} </span>
 
               {% else %}
+              <a href="{% url 'application-status' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
