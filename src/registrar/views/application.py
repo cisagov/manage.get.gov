@@ -479,7 +479,6 @@ class Finished(ApplicationWizard):
 class ApplicationStatus(generic.DetailView):
     model = DomainApplication
     template_name = "application_status.html"
-    forms = []  # type: ignore
 
     def get_context_data(self, **kwargs):
         context = super(ApplicationStatus, self).get_context_data(**kwargs)
