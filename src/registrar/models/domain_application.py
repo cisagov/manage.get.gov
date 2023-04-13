@@ -485,7 +485,7 @@ class DomainApplication(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
-    @transition(field="status", source=STARTED, target=SUBMITTED)
+    @transition(field="status", source=[STARTED, WITHDRAWN], target=SUBMITTED)
     def submit(self):
         """Submit an application that is started."""
 
