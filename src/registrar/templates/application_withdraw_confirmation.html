@@ -11,8 +11,8 @@
 
 If you withdraw your request we won't review it. Once you withdraw your request you'll be able to edit it or completely remove it. 
 
-<p><button type="" class="usa-button usa-button--outline withdraw_outline">Withdraw request</button> 
-  <a href="{% url 'application-status' domainapplication.id %}"> Cancel </a></p>
+<p><a href="{% url 'application-withdrawn' domainapplication.id %}" class="usa-button withdraw">Withdraw request</button>  
+  <a href="{% url 'application-status' domainapplication.id %}">Cancel</a></p>
 
 </div>
 

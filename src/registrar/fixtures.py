@@ -117,7 +117,7 @@ class DomainApplicationFixture:
             "organization_name": "Example - Approved",
         },
         {
-            "status": "withdrawn"
+            "status": "withdrawn",
             "organization_name": "Example - Withdrawn",
         }
     ]
