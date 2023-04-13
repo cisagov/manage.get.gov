@@ -23,11 +23,13 @@ class DomainApplication(TimeStampedModel):
     SUBMITTED = "submitted"
     INVESTIGATING = "investigating"
     APPROVED = "approved"
+    WITHDRAWN = "Withdrawn"
     STATUS_CHOICES = [
         (STARTED, STARTED),
         (SUBMITTED, SUBMITTED),
         (INVESTIGATING, INVESTIGATING),
         (APPROVED, APPROVED),
+        (WITHDRAWN, WITHDRAWN)
     ]
 
     class StateTerritoryChoices(models.TextChoices):
@@ -505,7 +507,7 @@ class DomainApplication(TimeStampedModel):
         # This is a side-effect of the state transition
         self._send_confirmation_email()
 
-    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=APPROVED)
+    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=[APPROVED])
     def approve(self):
         """Approve an application that has been submitted.
 
