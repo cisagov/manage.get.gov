@@ -484,7 +484,7 @@ class ApplicationStatus(generic.DetailView):
         context = super(ApplicationStatus, self).get_context_data(**kwargs)
         return context
 
-class ApplicationWithdraw(generic.DetailView)
+class ApplicationWithdraw(generic.DetailView):
     model = DomainApplication
     template_name = "application_withdraw_confirmation.html"
 
