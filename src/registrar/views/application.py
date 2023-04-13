@@ -1,7 +1,7 @@
 import logging
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
@@ -491,3 +491,9 @@ class ApplicationWithdraw(generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super(ApplicationWithdraw, self).get_context_data(**kwargs)
         return context
+    
+    def updatestatus(request, pk):
+        application = DomainApplication.objects.get(id=pk)
+        application.status = "withdrawn"
+        application.save()
+        return HttpResponseRedirect(reverse('home'))
