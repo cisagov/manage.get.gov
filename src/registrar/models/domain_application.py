@@ -23,7 +23,7 @@ class DomainApplication(TimeStampedModel):
     SUBMITTED = "submitted"
     INVESTIGATING = "investigating"
     APPROVED = "approved"
-    WITHDRAWN = "Withdrawn"
+    WITHDRAWN = "withdrawn"
     STATUS_CHOICES = [
         (STARTED, STARTED),
         (SUBMITTED, SUBMITTED),

@@ -483,3 +483,11 @@ class ApplicationStatus(generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super(ApplicationStatus, self).get_context_data(**kwargs)
         return context
+
+class ApplicationWithdraw(generic.DetailView)
+    model = DomainApplication
+    template_name = "application_withdraw_confirmation.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(ApplicationWithdraw, self).get_context_data(**kwargs)
+        return context
