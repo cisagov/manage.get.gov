@@ -484,6 +484,7 @@ class ApplicationStatus(generic.DetailView):
         context = super(ApplicationStatus, self).get_context_data(**kwargs)
         return context
 
+
 class ApplicationWithdraw(generic.DetailView):
     model = DomainApplication
     template_name = "application_withdraw_confirmation.html"
@@ -491,9 +492,9 @@ class ApplicationWithdraw(generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super(ApplicationWithdraw, self).get_context_data(**kwargs)
         return context
-    
+
     def updatestatus(request, pk):
         application = DomainApplication.objects.get(id=pk)
         application.status = "withdrawn"
         application.save()
-        return HttpResponseRedirect(reverse('home'))
+        return HttpResponseRedirect(reverse("home"))

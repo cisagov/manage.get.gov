@@ -29,7 +29,7 @@ class DomainApplication(TimeStampedModel):
         (SUBMITTED, SUBMITTED),
         (INVESTIGATING, INVESTIGATING),
         (APPROVED, APPROVED),
-        (WITHDRAWN, WITHDRAWN)
+        (WITHDRAWN, WITHDRAWN),
     ]
 
     class StateTerritoryChoices(models.TextChoices):

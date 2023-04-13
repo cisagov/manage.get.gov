@@ -66,7 +66,6 @@ urlpatterns = [
         "application/<int:pk>/withdrawconfirmed",
         views.ApplicationWithdraw.updatestatus,
         name="application-withdrawn",
-    
     ),
     path("health/", views.health),
     path("openid/", include("djangooidc.urls")),

@@ -119,7 +119,7 @@ class DomainApplicationFixture:
         {
             "status": "withdrawn",
             "organization_name": "Example - Withdrawn",
-        }
+        },
     ]
 
     @classmethod
