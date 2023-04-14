@@ -507,7 +507,7 @@ class DomainApplication(TimeStampedModel):
         # This is a side-effect of the state transition
         self._send_confirmation_email()
 
-    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=[APPROVED])
+    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=APPROVED)
     def approve(self):
         """Approve an application that has been submitted.
 
