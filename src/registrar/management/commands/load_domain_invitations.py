@@ -48,7 +48,6 @@ class Command(BaseCommand):
         # create the domain invitations for their email address
         logger.info("Reading contacts data file %s", contacts_filename)
         to_create = []
-        existing = 0
         skipped = 0
         with open(contacts_filename, "r") as contacts_file:
             for row in csv.reader(contacts_file, delimiter=sep):
@@ -61,11 +60,13 @@ class Command(BaseCommand):
                 for domain_name in contact_domains[userid]:
                     email_address = row[6]
                     domain = Domain.objects.get(name=domain_name)
-                    to_create.append(DomainInvitation(
-                        email=email_address.lower(),
-                        domain=domain,
-                        status=DomainInvitation.INVITED,
-                    ))
+                    to_create.append(
+                        DomainInvitation(
+                            email=email_address.lower(),
+                            domain=domain,
+                            status=DomainInvitation.INVITED,
+                        )
+                    )
         logger.info("Creating %d invitations", len(to_create))
         DomainInvitation.objects.bulk_create(to_create)
         logger.info(
