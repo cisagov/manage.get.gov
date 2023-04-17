@@ -1311,3 +1311,24 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.assertContains(detail_page, "testy@town.com")
         self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
+
+    def test_application_withdraw(self):
+        """Checking application status page"""
+        application = self._completed_application()
+        application.save()
+
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "citystatus.gov")
+        # click the "Manage" link
+        detail_page = home_page.click("Manage")
+        self.assertContains(detail_page, "citystatus.gov")
+        self.assertContains(detail_page, "Chief Tester")
+        self.assertContains(detail_page, "testy@town.com")
+        self.assertContains(detail_page, "Admin Tester")
+        self.assertContains(detail_page, "Status:")
+        # click the "Withdraw request" button
+        withdraw_page = detail_page.click("Withdraw Request")
+        self.assertContains(withdraw_page, "Withdraw request for")
+        home_page = withdraw_page.click("Withdraw request")
+        # confirm that the status has been updated to withdrawn
+        self.assertContains(home_page, "Withdrawn")
