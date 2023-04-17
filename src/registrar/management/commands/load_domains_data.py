@@ -54,8 +54,7 @@ class Command(BaseCommand):
         # accumulate model objects so we can `bulk_create` them all at once.
         domains = []
         for row in reader:
-            name = row["Name"]
-            logger.info("Processing domain %s", name)
+            name = row["Name"].lower()  # we typically use lowercase domains
 
             # Ensure that there is a `Domain` object for each domain name in
             # this file and that it is active. There is a uniqueness

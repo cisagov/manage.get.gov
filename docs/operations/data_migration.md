@@ -63,3 +63,17 @@ an invitation in the system for each email address listed in the
 Verisign system, and they use the same email address with Login.gov, then they
 will end up with access to the same domains in the new registrar that they
 were associated with in the Verisign system.
+
+A management command that does this needs to process two data files, one for
+the contact information and one for the domain/contact association, so we
+can't use stdin the way that we did before. Instead, we can use the fact that
+Docker Compose mounts the `src/` directory inside of the container at `/app`.
+Then, data files that are inside of the `src/` directory can be accessed
+inside the Docker container.
+
+An example script using this technique is in
+`src/registrar/management/commands/load_domain_invitations.py`.
+
+```shell
+docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_contacts.daily.dotgov.GOV.txt /app/escrow_contacts.daily.dotgov.GOV.txt
+```
