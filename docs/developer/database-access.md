@@ -24,7 +24,7 @@ cf run-task getgov-ENVIRONMENT --command 'python manage.py migrate' --name migra
 Optionally, load data from fixtures as well
 
 ```shell
-cf run-task getgov-ENVIRONMENT --wait --command 'python manage.py load' --name loaddata
+cf run-task getgov-ENVIRONMENT --command 'python manage.py load' --name loaddata
 ```
 
 For the `stable` environment, developers don't have credentials so we need to
