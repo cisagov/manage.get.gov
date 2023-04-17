@@ -14,6 +14,8 @@ from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 
+from .utility import DomainPermission
+
 logger = logging.getLogger(__name__)
 
 
@@ -486,10 +488,14 @@ class ApplicationStatus(generic.DetailView):
         return context
 
 
-class ApplicationWithdraw(generic.DetailView, LoginRequiredMixin):
+class ApplicationWithdraw(generic.DetailView, DomainPermission):
     model = DomainApplication
     template_name = "application_withdraw_confirmation.html"
-    # The page above will display asking user to confirm if they want to withdraw;
+    """ The page above will display asking user to confirm if they want to withdraw;
+
+    Note it uses "DomainPermission" from Domain to ensure that the person who
+    applied only have access to withdraw the request
+    """
 
     def updatestatus(request, pk):
         """If user click on withdraw confirm button, it will be updated to withdraw
