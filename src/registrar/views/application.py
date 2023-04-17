@@ -488,11 +488,10 @@ class ApplicationStatus(generic.DetailView):
 class ApplicationWithdraw(generic.DetailView):
     model = DomainApplication
     template_name = "application_withdraw_confirmation.html"
+    # The page above will display asking user to confirm if they want to withdraw;
 
-    def get_context_data(self, **kwargs):
-        context = super(ApplicationWithdraw, self).get_context_data(**kwargs)
-        return context
-
+    # if user click on withdraw confirm button, it will be updated to withdraw
+    # and send back to homepage
     def updatestatus(request, pk):
         application = DomainApplication.objects.get(id=pk)
         application.status = "withdrawn"
