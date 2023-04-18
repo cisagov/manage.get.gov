@@ -3,6 +3,7 @@
 {% block title %}Withdraw request for {{ domainapplication.requested_domain.name }}{% endblock %}
 {% load static url_helpers %}
 
+<div class="grid-container">
 {% block content %}
 <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
  
@@ -11,10 +12,11 @@
 
 If you withdraw your request we won't review it. Once you withdraw your request you'll be able to edit it or completely remove it. 
 
-<p><a href="{% url 'application-withdrawn' domainapplication.id %}" class="usa-button withdraw">Withdraw request</button>  
+<p><a href="{% url 'application-withdrawn' domainapplication.id %}" class="usa-button withdraw">Withdraw request</a>  
   <a href="{% url 'application-status' domainapplication.id %}">Cancel</a></p>
 
 </div>
 
 
 {% endblock %}
+</div>
