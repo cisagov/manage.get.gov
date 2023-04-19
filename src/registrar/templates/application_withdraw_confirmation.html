@@ -8,9 +8,9 @@
 <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
  
 
-<p><h1>Withdraw request for {{ domainapplication.requested_domain.name }}?</h1></p>
+<h1>Withdraw request for {{ domainapplication.requested_domain.name }}?</h1>
 
-If you withdraw your request we won't review it. Once you withdraw your request you'll be able to edit it or completely remove it. 
+<p>If you withdraw your request we won't review it. Once you withdraw your request you'll be able to edit it or completely remove it. </p>
 
 <p><a href="{% url 'application-withdrawn' domainapplication.id %}" class="usa-button withdraw">Withdraw request</a>  
   <a href="{% url 'application-status' domainapplication.id %}">Cancel</a></p>
