@@ -488,7 +488,7 @@ class ApplicationStatus(generic.DetailView):
         return context
 
 
-class ApplicationWithdraw(generic.DetailView, DomainPermission):
+class ApplicationWithdraw(generic.DetailView, DomainPermission, LoginRequiredMixin):
     model = DomainApplication
     template_name = "application_withdraw_confirmation.html"
     """ The page above will display asking user to confirm if they want to withdraw;
