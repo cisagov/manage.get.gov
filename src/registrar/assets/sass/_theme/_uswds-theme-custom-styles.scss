@@ -182,10 +182,12 @@ a.breadcrumb__back {
   }
 }
 
+.summary-item,
 .review__step {
   margin-top: units(3);
 }
 
+.summary-item hr,
 .review__step hr {
   border: none; //reset
   border-top: 1px solid color('primary-dark');
