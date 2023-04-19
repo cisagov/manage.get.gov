@@ -57,6 +57,16 @@ urlpatterns = [
         views.ApplicationStatus.as_view(),
         name="application-status",
     ),
+    path(
+        "application/<int:pk>/withdraw",
+        views.ApplicationWithdraw.as_view(),
+        name="application-withdraw-confirmation",
+    ),
+    path(
+        "application/<int:pk>/withdrawconfirmed",
+        views.ApplicationWithdraw.updatestatus,
+        name="application-withdrawn",
+    ),
     path("health/", views.health),
     path("openid/", include("djangooidc.urls")),
     path("register/", include((application_urls, APPLICATION_NAMESPACE))),
