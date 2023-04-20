@@ -51,23 +51,23 @@ $letter-space--xs: .0125em;
 }
 
 p,
-.usa-list li
-{
-  @include typeset('sans', 'sm', 5);
+address, 
+.usa-list li { 
+  @include typeset('sans', 'sm', 5); 
   max-width: measure(5);
 }
 
- h1 {
+h1 {
   @include typeset('sans', '2xl', 2);
   margin: 0 0 units(2);
   color: color('primary-darker');
- }
+}
 
- h2 {
+h2 {
   font-weight: font-weight('semibold');
   line-height: line-height('heading', 3);
   margin: units(4) 0 units(1);
- }
+}
 
 .register-form-step > h1 {
   //align to top of sidebar on first page of the form
