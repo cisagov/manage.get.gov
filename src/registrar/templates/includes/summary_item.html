@@ -15,7 +15,11 @@
       {% else %}
         <ul class="usa-list usa-list--unstyled margin-top-0">
           {% for item in value %}
-          <li><p>Conatct {{forloop.counter}}</p>{% include "includes/contact.html" with contact=item %}</li>
+          <li>
+            <p class="text-semibold margin-top-1 margin-bottom-0">
+              Conatct {{forloop.counter}}
+            </p>
+            {% include "includes/contact.html" with contact=item %}</li>
           {% empty %}
            <li>None</li>
           {% endfor %}</ul></p>
