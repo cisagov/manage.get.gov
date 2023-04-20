@@ -8,7 +8,7 @@
 <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
  
 
-<p><h1>Domain request for {{ domainapplication.requested_domain.name }}</h1></p>
+<h1>Domain request for {{ domainapplication.requested_domain.name }}</h1>
 
 <div
   class="usa-summary-box dotgov-status-box margin-top-3" 
@@ -34,8 +34,9 @@
 <p>{% include "includes/domain_application.html" %}</p>
 
 <p><button type="" class="usa-button usa-button--outline withdraw_outline">Withdraw Request</button></p>
+</div> 
 
-<p><h2>Summary of your domain request</h2></p> 
+<h2>Summary of your domain request</h2> 
 
 {% include "includes/summary_item.html" with title='Type of organization' value=domainapplication.get_organization_type_display %}
 
