@@ -66,11 +66,7 @@
 {% endif %}
 
 {% if domainapplication.more_organization_information %}
-  {% include "includes/summary_item.html" with title='Further information about the government organization' value=domainapplication.type_of_work %}
-{% endif %}
-
-{% if domainapplication.more_organization_information %}
-  {% include "includes/summary_item.html" with title='Further information about the government organization' value=domainapplication.type_of_work %}
+  {% include "includes/summary_item.html" with title='Further information about the government organization' value=domainapplication.more_organization_information %}
 {% endif %}
 
 {% if domainapplication.authorizing_official %}
