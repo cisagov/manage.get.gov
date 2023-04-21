@@ -33,6 +33,16 @@ services:
       # AWS credentials
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
+      # Set a username for accessing the registry
+      - REGISTRY_CL_ID
+      # Set a password for accessing the registry
+      - REGISTRY_PASSWORD
+      # Set a private certifcate for accessing the registry
+      - REGISTRY_CERT
+      # Set a private certifcate's key for accessing the registry
+      - REGISTRY_KEY
+      # Set a URI for accessing the registry
+      - REGISTRY_HOSTNAME
     stdin_open: true
     tty: true
     ports:

@@ -55,11 +55,18 @@ secret_key = secret("DJANGO_SECRET_KEY")
 secret_aws_ses_key_id = secret("AWS_ACCESS_KEY_ID", None)
 secret_aws_ses_key = secret("AWS_SECRET_ACCESS_KEY", None)
 
+secret_registry_cl_id = secret("REGISTRY_CL_ID")
+secret_registry_password = secret("REGISTRY_PASSWORD")
+secret_registry_cert = b64decode(secret("REGISTRY_CERT", ""))
+secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
+secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
+secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
 # region: Basic Django Config-----------------------------------------------###
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
-BASE_DIR = path.resolve().parent.parent
+# (settings.py is in `src/registrar/config/`: BASE_DIR is `src/`)
+BASE_DIR = path.resolve().parent.parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_debug
@@ -156,16 +163,17 @@ WSGI_APPLICATION = "registrar.config.wsgi.application"
 # will place static files for deployment.
 # Do not use this directory for permanent storage -
 # it is for Django!
-STATIC_ROOT = BASE_DIR / "public"
+STATIC_ROOT = BASE_DIR / "registrar" / "public"
 
 STATICFILES_DIRS = [
-    BASE_DIR / "assets",
+    BASE_DIR / "registrar" / "assets",
+    BASE_DIR / "epplibwrapper" / "assets",
 ]
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "registrar" / "templates"],
         # look for templates inside installed apps
         #     required by django-debug-toolbar
         "APP_DIRS": True,
@@ -495,6 +503,17 @@ ROOT_URLCONF = "registrar.config.urls"
 # URL to use when referring to static files located in STATIC_ROOT
 # Must be relative and end with "/"
 STATIC_URL = "public/"
+
+# endregion
+# region: Registry----------------------------------------------------------###
+
+# SECURITY WARNING: keep all registry variables in production secret!
+SECRET_REGISTRY_CL_ID = secret_registry_cl_id
+SECRET_REGISTRY_PASSWORD = secret_registry_password
+SECRET_REGISTRY_CERT = secret_registry_cert
+SECRET_REGISTRY_KEY = secret_registry_key
+SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
+SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
