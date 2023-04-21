@@ -43,9 +43,15 @@ jobs:
         run: |
           perl -pi \
           -e 's/"csp.middleware.CSPMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
-          src/registrar/config/settings.py
+          registrar/config/settings.py
 
-      - name: Accessibility Scan
+      - name: Start container
         working-directory: ./src
         # leverage the docker compose setup that we already have for local development
-        run: docker compose run pa11y npm run pa11y-ci
+        run: docker compose up -d 
+
+      - name: run pa11y
+        working-directory: ./src
+        run: |
+          npm i -g pa11y-ci
+          pa11y-ci 

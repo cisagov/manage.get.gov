@@ -1,22 +1,28 @@
 {
+    "defaults": {
+        "concurrency": 1,
+        "timeout": 10000,
+        "hideElements": "a[href='/whoami/']"
+
+    },
     "urls": [
-        "http://app:8080/",
-        "http://app:8080/health/",
-        "http://app:8080/whoami/",
-        "http://app:8080/register/",
-        "http://app:8080/register/organization/",
-        "http://app:8080/register/org_federal/",
-        "http://app:8080/register/org_election/",
-        "http://app:8080/register/org_contact/",
-        "http://app:8080/register/authorizing_official/",
-        "http://app:8080/register/current_sites/",
-        "http://app:8080/register/dotgov_domain/",
-        "http://app:8080/register/purpose/",
-        "http://app:8080/register/your_contact/",
-        "http://app:8080/register/other_contacts/",
-        "http://app:8080/register/anything_else/",
-        "http://app:8080/register/requirements/",
-        "http://app:8080/register/review/",
-        "http://app:8080/register/finished/"
+        "http://localhost:8080/",
+        "http://localhost:8080/health/",
+        "http://localhost:8080/whoami/",
+        "http://localhost:8080/register/",
+        "http://localhost:8080/register/organization/",
+        "http://localhost:8080/register/org_federal/",
+        "http://localhost:8080/register/org_election/",
+        "http://localhost:8080/register/org_contact/",
+        "http://localhost:8080/register/authorizing_official/",
+        "http://localhost:8080/register/current_sites/",
+        "http://localhost:8080/register/dotgov_domain/",
+        "http://localhost:8080/register/purpose/",
+        "http://localhost:8080/register/your_contact/",
+        "http://localhost:8080/register/other_contacts/",
+        "http://localhost:8080/register/anything_else/",
+        "http://localhost:8080/register/requirements/",
+        "http://localhost:8080/register/review/",
+        "http://localhost:8080/register/finished/"
     ]
 }

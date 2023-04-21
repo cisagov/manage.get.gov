@@ -1,7 +1,7 @@
 import logging
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
@@ -13,6 +13,8 @@ from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
+
+from .utility import DomainPermission
 
 logger = logging.getLogger(__name__)
 
@@ -481,5 +483,24 @@ class ApplicationStatus(generic.DetailView):
     template_name = "application_status.html"
 
     def get_context_data(self, **kwargs):
+        """Get context details to process information from application"""
         context = super(ApplicationStatus, self).get_context_data(**kwargs)
         return context
+
+
+class ApplicationWithdraw(LoginRequiredMixin, generic.DetailView, DomainPermission):
+    model = DomainApplication
+    template_name = "application_withdraw_confirmation.html"
+    """ The page above will display asking user to confirm if they want to withdraw;
+
+    Note it uses "DomainPermission" from Domain to ensure that the person who
+    applied only have access to withdraw the request
+    """
+
+    def updatestatus(request, pk):
+        """If user click on withdraw confirm button, it will be updated to withdraw
+        and send back to homepage"""
+        application = DomainApplication.objects.get(id=pk)
+        application.status = "withdrawn"
+        application.save()
+        return HttpResponseRedirect(reverse("home"))

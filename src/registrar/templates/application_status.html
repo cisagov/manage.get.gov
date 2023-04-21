@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Domain request status- {{ domainapplication.requested_domain.name }}{% endblock %}
+{% block title %}Domain request status- {{ domainapplication.requested_domain.name }} | {% endblock %}
 {% load static url_helpers %}
 
 {% block content %}
@@ -31,8 +31,8 @@
     <p> <b class="review__step__name">Last updated:</b> {{domainapplication.updated_at|date:"F j, Y"}}<br>
     <b class="review__step__name">Request #:</b> {{domainapplication.id}}</p>
     <p>{% include "includes/domain_application.html" %}</p>
-    <p><button type="" class="usa-button usa-button--outline withdraw_outline">
-      Withdraw Request</button>
+    <p><a class="usa-button usa-button--outline withdraw_outline">
+      Withdraw Request</a>
     </p>
   </div>
 
@@ -42,14 +42,16 @@
     {% include "includes/summary_item.html" with title='Type of organization' value=domainapplication.get_organization_type_display %}
 
     {% if domainapplication.tribe_name %}
-      {% include "includes/summary_item.html" with title='Tribal government' value=domainapplication.tribe_name%}
+      {% include "includes/summary_item.html" with title='Tribal government' value=domainapplication.tribe_name %}
+
       {% if domainapplication.federally_recognized_tribe %}
-      <p>Federally-recognized tribe</p>
+        <p>Federally-recognized tribe</p>
       {% endif %}
       
       {% if domainapplication.state_recognized_tribe %}
-      <p>State-recognized tribe</p>
+        <p>State-recognized tribe</p>
       {% endif %}
+
     {% endif %}
 
     {% if domainapplication.get_federal_type_display %}
@@ -89,7 +91,6 @@
     {% endif %}
 
     {% include "includes/summary_item.html" with title='Other employees from your organization' value=domainapplication.other_contacts.all contact='true' list='true' %}
-
     {% include "includes/summary_item.html" with title='Anything else we should know' value=domainapplication.anything_else|default:"No" %}
 
   </div>
