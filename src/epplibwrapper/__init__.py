@@ -40,7 +40,10 @@ except NameError:
     pass
 
 # Attn: these imports should NOT be at the top of the file
-from .client import CLIENT, commands
+try:
+    from .client import CLIENT, commands
+except ImportError:
+    pass
 
 __all__ = [
     "CLIENT",
