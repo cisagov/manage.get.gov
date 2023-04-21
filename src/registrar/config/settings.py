@@ -167,7 +167,6 @@ STATIC_ROOT = BASE_DIR / "registrar" / "public"
 
 STATICFILES_DIRS = [
     BASE_DIR / "registrar" / "assets",
-    BASE_DIR / "epplibwrapper" / "assets",
 ]
 
 TEMPLATES = [
