@@ -1,0 +1,23 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers%}
+
+{% block title %}Domain name servers | {{ domain.name }} | {% endblock %}
+
+{% block domain_content %}
+  <h1>Domain name servers</h1>
+
+  <form class="usa-form usa-form--large" method="post" novalidate>
+    {% csrf_token %}
+	{{ formset.management_form }}
+
+    {% for form in formset %}
+      {% input_with_errors form.server %}
+    {% endfor %}
+
+      <button
+          type="submit"
+          class="usa-button"
+      >Save</button>
+    </form>
+
+{% endblock %}  {# domain_content #}

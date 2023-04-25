@@ -1058,6 +1058,11 @@ class TestDomainPermissions(TestWithDomainPermissions):
         )
         self.assertEqual(response.status_code, 302)
 
+        response = self.client.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        self.assertEqual(response.status_code, 302)
+
     def test_no_domain_role(self):
         """Logged in but no role gets 403 Forbidden."""
         self.client.force_login(self.user)
@@ -1076,6 +1081,12 @@ class TestDomainPermissions(TestWithDomainPermissions):
         with less_console_noise():
             response = self.client.get(
                 reverse("domain-users-add", kwargs={"pk": self.domain.id})
+            )
+        self.assertEqual(response.status_code, 403)
+
+        with less_console_noise():
+            response = self.client.get(
+                reverse("domain-nameservers", kwargs={"pk": self.domain.id})
             )
         self.assertEqual(response.status_code, 403)
 
@@ -1221,6 +1232,13 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
         self.assertContains(home_page, self.domain.name)
+
+    def test_domain_nameservers(self):
+        """Can load domain's namerservers page."""
+        page = self.client.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Domain name servers")
 
 
 class TestApplicationStatus(TestWithUser, WebTest):

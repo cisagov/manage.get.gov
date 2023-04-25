@@ -1,6 +1,8 @@
 import logging
 import re
 
+from typing import List
+
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -215,6 +217,24 @@ class Domain(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.name
+
+    def nameservers(self):
+        """A list of the nameservers for this domain.
+
+        TODO: call EPP to get this info instead of returning fake data.
+        """
+        return [
+            # reserved example IPs
+            "192.0.2.1",
+            "198.51.100.2",
+            "203.0.113.3",
+        ]
+
+    def set_nameservers(self, new_nameservers: List[str]):
+        """Set the nameservers for this domain."""
+        # TODO: call EPP to set these values in the registry instead of doing
+        # nothing.
+        pass
 
     @property
     def roid(self):

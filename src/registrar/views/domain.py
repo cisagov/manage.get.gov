@@ -5,6 +5,7 @@ import logging
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
+from django.forms import formset_factory
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import DetailView
@@ -12,12 +13,14 @@ from django.views.generic.edit import DeleteView, FormMixin
 
 from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
-from ..forms import DomainAddUserForm
+from ..forms import DomainAddUserForm, DomainNameserverForm
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
 
 
 logger = logging.getLogger(__name__)
+
+NameserverFormset = formset_factory(DomainNameserverForm)
 
 
 class DomainView(DomainPermission, DetailView):
@@ -27,6 +30,75 @@ class DomainView(DomainPermission, DetailView):
     model = Domain
     template_name = "domain_detail.html"
     context_object_name = "domain"
+
+
+class DomainNameserversView(DomainPermission, FormMixin, DetailView):
+
+    """Domain nameserver editing view."""
+
+    model = Domain
+    template_name = "domain_nameservers.html"
+    context_object_name = "domain"
+    form_class = NameserverFormset
+
+    def get_initial(self):
+        """The initial value for the form (which is a formset here)."""
+        domain = self.get_object()
+        return [{"server": server} for server in domain.nameservers()]
+
+    def get_success_url(self):
+        """Redirect to the overview page for the domain."""
+        return reverse("domain-nameservers", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        """Adjust context from FormMixin for formsets."""
+        context = super().get_context_data(**kwargs)
+        # use "formset" instead of "form" for the key
+        context["formset"] = context.pop("form")
+        return context
+
+    def get_form(self, **kwargs):
+        """Override the labels and required fields every time we get a formset."""
+        formset = super().get_form(**kwargs)
+        for i, form in enumerate(formset):
+            form.fields["server"].label += f" {i+1}"
+            if i < 2:
+                form.fields["server"].required = True
+            else:
+                form.fields["server"].required = False
+        return formset
+
+    def post(self, request, *args, **kwargs):
+        """Formset submission posts to this view."""
+        self.object = self.get_object()
+        formset = self.get_form()
+        print([form.fields["server"].required for form in formset])
+        if formset.is_valid():
+            return self.form_valid(formset)
+        else:
+            return self.form_invalid(formset)
+
+    def form_valid(self, formset):
+        """The formset is valid, perform something with it."""
+
+        # Set the nameservers from the formset
+        nameservers = []
+        for form in formset:
+            print(form.cleaned_data)
+            try:
+                nameservers.append(form.cleaned_data["server"])
+            except KeyError:
+                # no server information in this field, skip it
+                pass
+        print("Valid form, got nameservers:", nameservers)
+        domain = self.get_object()
+        domain.set_nameservers(nameservers)
+
+        messages.success(
+            self.request, "The name servers for this domain have been updated"
+        )
+        # superclass has the redirect
+        return super().form_valid(formset)
 
 
 class DomainUsersView(DomainPermission, DetailView):
