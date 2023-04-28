@@ -35,6 +35,16 @@ $letter-space--xs: .0125em;
   -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#wrapper {
+  flex-grow: 1;
+}
+
 .usa-logo {
   @include at-media(desktop) {
     margin-top: units(2);
