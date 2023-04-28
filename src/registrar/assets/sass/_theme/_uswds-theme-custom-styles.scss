@@ -401,6 +401,9 @@ footer {
   background-color: color('primary-lightest');
 }
 
+.usa-footer__secondary-section a {
+  color: color('primary');
+}
 
 abbr[title] {
   // workaround for underlining abbr element
