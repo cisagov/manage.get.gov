@@ -88,8 +88,7 @@ openssl req -new -x509 -days 365 \
 
 ```
 
-(Hint:
-`docker run --platform=linux/amd64 -it --rm -v $(pwd):/apps -w /apps alpine/openssl`.)
+(If you can't use openssl on your computer directly, you can access it using Docker as `docker run --platform=linux/amd64 -it --rm -v $(pwd):/apps -w /apps alpine/openssl`.)
 
 Encode them using:
 

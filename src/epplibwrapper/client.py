@@ -1,3 +1,5 @@
+"""Provide a wrapper around epplib to handle authentication and errors."""
+
 import logging
 from time import sleep
 
@@ -21,12 +23,12 @@ try:
     # Write cert and key to disk
     CERT = Cert()
     KEY = Key()
-except Exception as err:
+except Exception:
     CERT = None  # type: ignore
     KEY = None  # type: ignore
-    logger.warning(err)
     logger.warning(
-        "Problem with client certificate. Registrar cannot contact registry."
+        "Problem with client certificate. Registrar cannot contact registry.",
+        exc_info=True,
     )
 
 
@@ -68,31 +70,31 @@ class EPPLibWrapper:
             with self._connect as wire:
                 response = wire.send(command)
         except (ValueError, ParsingError) as err:
-            logger.debug(err)
             logger.warning(
                 "%s failed to execute due to some syntax error."
-                % command.__class__.__name__
+                % command.__class__.__name__,
+                exc_info=True,
             )
             raise RegistryError() from err
         except TransportError as err:
-            logger.debug(err)
             logger.warning(
                 "%s failed to execute due to a connection error."
-                % command.__class__.__name__
+                % command.__class__.__name__,
+                exc_info=True,
             )
             raise RegistryError() from err
         except LoginError as err:
-            logger.debug(err)
             logger.warning(
                 "%s failed to execute due to a registry login error."
-                % command.__class__.__name__
+                % command.__class__.__name__,
+                exc_info=True,
             )
             raise RegistryError() from err
         except Exception as err:
-            logger.debug(err)
             logger.warning(
                 "%s failed to execute due to an unknown error."
-                % command.__class__.__name__
+                % command.__class__.__name__,
+                exc_info=True,
             )
             raise RegistryError() from err
         else:
@@ -119,7 +121,8 @@ try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
     logger.debug("registry client initialized")
-except Exception as err:
+except Exception:
     CLIENT = None  # type: ignore
-    logger.warning(err)
-    logger.warning("Unable to configure epplib. Registrar cannot contact registry.")
+    logger.warning(
+        "Unable to configure epplib. Registrar cannot contact registry.", exc_info=True
+    )

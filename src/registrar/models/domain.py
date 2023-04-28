@@ -7,8 +7,6 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
 from api.views import in_domains
-
-# from epplibwrapper import CLIENT as registry, commands
 from registrar.utility import errors
 
 from .utility.time_stamped_model import TimeStampedModel

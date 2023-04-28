@@ -4,6 +4,7 @@ from types import SimpleNamespace
 try:
     from epplib import constants
 except ImportError:
+    # allow epplibwrapper to load without epplib, for testing and development
     pass
 
 logger = logging.getLogger(__name__)
