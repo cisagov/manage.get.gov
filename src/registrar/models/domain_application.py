@@ -293,7 +293,7 @@ class DomainApplication(TimeStampedModel):
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text="Type of Organization",
+        help_text="Type of organization",
     )
 
     federally_recognized_tribe = models.BooleanField(
@@ -382,7 +382,7 @@ class DomainApplication(TimeStampedModel):
     more_organization_information = models.TextField(
         null=True,
         blank=True,
-        help_text="Further information about the government organization",
+        help_text="More information about your organization",
     )
 
     authorizing_official = models.ForeignKey(
