@@ -65,3 +65,40 @@ You also need to upload the `public.crt` key if recently created to the login.go
 To access the AWS Simple Email Service, we need credentials from the CISA AWS
 account for an IAM user who has limited access to only SES. Those credentials
 need to be specified in the environment.
+
+## REGISTRY_CL_ID and REGISTRY_PASSWORD
+
+These are the login credentials for accessing the registry.
+
+## REGISTRY_CERT and REGISTRY_KEY and REGISTRY_KEY_PASSPHRASE
+
+These are the client certificate and its private key used to identify the registrar to the registry during the establishment of a TCP connection.
+
+The private key is protected by a passphrase for safer transport and storage.
+
+These were generated with:
+
+```bash
+openssl genpkey -out client.key \
+  -algorithm EC -pkeyopt ec_paramgen_curve:P-256 \
+  -aes-256-cbc
+openssl req -new -x509 -days 365 \
+  -key client.key -out client.crt \
+  -subj "/C=US/ST=DC/L=Washington/O=GSA/OU=18F/CN=GOV Prototype Registrar"
+
+```
+
+(If you can't use openssl on your computer directly, you can access it using Docker as `docker run --platform=linux/amd64 -it --rm -v $(pwd):/apps -w /apps alpine/openssl`.)
+
+Encode them using:
+
+```bash
+base64 client.key
+base64 client.crt
+```
+
+You'll need to give the new certificate to the registry vendor _before_ rotating it in production.
+
+## REGISTRY_HOSTNAME
+
+This is the hostname at which the registry can be found.
