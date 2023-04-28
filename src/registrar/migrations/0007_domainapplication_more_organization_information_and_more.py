@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             name="more_organization_information",
             field=models.TextField(
                 blank=True,
-                help_text="Further information about the government organization",
+                help_text="More information about your organization",
                 null=True,
             ),
         ),
