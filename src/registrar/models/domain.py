@@ -224,10 +224,10 @@ class Domain(TimeStampedModel):
         TODO: call EPP to get this info instead of returning fake data.
         """
         return [
-            # reserved example IPs
-            "192.0.2.1",
-            "198.51.100.2",
-            "203.0.113.3",
+            # reserved example domain
+            "ns1.example.com",
+            "ns2.example.com",
+            "ns3.example.com",
         ]
 
     def set_nameservers(self, new_nameservers: List[str]):

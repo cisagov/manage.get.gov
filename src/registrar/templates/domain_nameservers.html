@@ -6,12 +6,25 @@
 {% block domain_content %}
   <h1>Domain name servers</h1>
 
+  <p>Before your domain can be used we'll need information about your domain
+  name servers.</p>
+
+  <p><a href="{% url "todo" %}">Get help with domain servers.</a></p>
+
+  {% include "includes/required_fields.html" %}
+
   <form class="usa-form usa-form--large" method="post" novalidate>
     {% csrf_token %}
 	{{ formset.management_form }}
 
     {% for form in formset %}
-      {% input_with_errors form.server %}
+      {% if forloop.counter <= 2 %}
+        {% with attr_required=True %}
+          {% input_with_errors form.server %}
+        {% endwith %}
+      {% else %}
+        {% input_with_errors form.server %}
+      {% endif %}
     {% endfor %}
 
       <button
