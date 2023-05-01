@@ -123,8 +123,10 @@ h2 {
 }
 
 /* Make "placeholder" links visually obvious */
+a[href^="https://federalist-"]::after, 
 a[href$="todo"]::after {
   background-color: yellow;
+  color: color(blue-80v);
   content: " [link TBD]";
   font-style: italic;
 }
