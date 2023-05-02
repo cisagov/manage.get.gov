@@ -18,3 +18,8 @@ class DomainInformation(DomainApplication):
         help_text="Security email for public use",
     )
  
+    other_contacts_info = models.ManyToManyField(
+        "registrar.ContactInformation",
+        blank=True,
+        related_name="contact_information",
+    )
