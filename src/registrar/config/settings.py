@@ -555,7 +555,6 @@ ALLOWED_HOSTS = [
     "getgov-sspj.app.cloud.gov",
     "getgov-nmb.app.cloud.gov",
     "getgov-ik.app.cloud.gov",
-    "getgov-lmm.app.cloud.gov",
     "get.gov",
 ]
 
