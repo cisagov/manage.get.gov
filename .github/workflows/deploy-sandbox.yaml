@@ -1,13 +1,10 @@
 # This workflow runs on pushes when a pull request is opened under certain branch conventions.
 
 name: Build and deploy developer sandbox
-run-name: Build and deploy developer sandbox for branch ${{ github.ref_name }}
+run-name: Build and deploy developer sandbox for branch ${{ github.head_ref }}
 
 on:
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-  push:
     branches:
       - 'ik/**'
       - 'rjm/**'
