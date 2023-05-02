@@ -8,14 +8,14 @@ on:
     paths-ignore:
       - 'docs/**'
   push:
-      branches:
-        - 'ik/**
-        - 'rjm/**'
-        - 'jon/**'
-        - 'sspj/**'
-        - 'mr/**'
-        - 'nmb/**'
-        - 'lmm/**'
+    branches:
+      - 'ik/**
+      - 'rjm/**'
+      - 'jon/**'
+      - 'sspj/**'
+      - 'mr/**'
+      - 'nmb/**'
+      - 'lmm/**'
 
 jobs:
   variables: 
