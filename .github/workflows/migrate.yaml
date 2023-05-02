@@ -14,6 +14,8 @@ on:
         description: Which environment should we run migrations for?
         options:
           - stable
+          - ab
+          - bl
           - rjm
           - jon
           - ik
