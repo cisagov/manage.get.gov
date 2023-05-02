@@ -5,20 +5,19 @@ run-name: Build and deploy developer sandbox for branch ${{ github.ref_name }}
 
 on:
   pull_request:
+    branches:
+      - 'ik/**
+      - 'rjm/**'
+      - 'jon/**'
+      - 'sspj/**'
+      - 'mr/**'
+      - 'nmb/**'
+      - 'lmm/**'
     paths-ignore:
       - 'docs/**'
 
 jobs:
   variables: 
-    if: | 
-      ${{startsWith(github.head_ref, 'ik/')
-        || startsWith(github.head_ref, 'rjm/')
-        || startsWith(github.head_ref, 'jon/')
-        || startsWith(github.head_ref, 'sspj/')
-        || startsWith(github.head_ref, 'mr/')
-        || startsWith(github.head_ref, 'nmb/')
-        || startsWith(github.head_ref, 'lmm/')
-      }}
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
