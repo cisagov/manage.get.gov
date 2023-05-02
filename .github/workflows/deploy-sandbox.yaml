@@ -12,7 +12,6 @@ on:
       - 'sspj/**'
       - 'mr/**'
       - 'nmb/**'
-      - 'lmm/**'
 
 jobs:
   variables: 
