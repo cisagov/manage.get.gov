@@ -5,16 +5,17 @@ run-name: Build and deploy developer sandbox for branch ${{ github.ref_name }}
 
 on:
   pull_request:
-    branches:
-      - 'ik/**
-      - 'rjm/**'
-      - 'jon/**'
-      - 'sspj/**'
-      - 'mr/**'
-      - 'nmb/**'
-      - 'lmm/**'
     paths-ignore:
       - 'docs/**'
+  push:
+      branches:
+        - 'ik/**
+        - 'rjm/**'
+        - 'jon/**'
+        - 'sspj/**'
+        - 'mr/**'
+        - 'nmb/**'
+        - 'lmm/**'
 
 jobs:
   variables: 
