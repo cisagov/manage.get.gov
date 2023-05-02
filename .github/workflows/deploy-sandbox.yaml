@@ -9,7 +9,7 @@ on:
       - 'docs/**'
   push:
     branches:
-      - 'ik/**
+      - 'ik/**'
       - 'rjm/**'
       - 'jon/**'
       - 'sspj/**'
