@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Union
-from domain_application import DomainApplication
+from .domain_application import DomainApplication
 
 import logging
 
