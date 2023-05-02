@@ -11,7 +11,7 @@ from django.db import models
 logger = logging.getLogger(__name__)
 
 class DomainInformation(DomainApplication):
-    security_email = models.CharField(
+    security_email = models.EmailField(
         max_length=320,
         null=True,
         blank=True,
