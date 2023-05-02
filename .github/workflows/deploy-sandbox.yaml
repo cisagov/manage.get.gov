@@ -1,12 +1,18 @@
 # This workflow runs on pushes when a pull request is opened under certain branch conventions.
 
 name: Build and deploy developer sandbox
-run-name: Build and deploy developer sandbox for branch ${{ github.ref_name }}
+run-name: Build and deploy developer sandbox for branch ${{ github.head_ref }}
 
 on:
   pull_request:
-    paths-ignore:
-      - 'docs/**'
+    branches:
+      - 'ik/**'
+      - 'rjm/**'
+      - 'jon/**'
+      - 'sspj/**'
+      - 'mr/**'
+      - 'nmb/**'
+      - 'lmm/**'
 
 jobs:
   variables: 
@@ -21,14 +27,6 @@ jobs:
           script: |
             core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
   deploy:
-    if: | 
-      ${{startsWith(github.head_ref, 'ik/')
-        || startsWith(github.head_ref, 'jon')
-        || startsWith(github.head_ref, 'sspj/')
-        || startsWith(github.head_ref, 'mr/')
-        || startsWith(github.head_ref, 'nmb/')
-        || startsWith(github.head_ref, 'lmm/')
-      }}
     runs-on: ubuntu-latest
     needs: [variables]
     steps:
