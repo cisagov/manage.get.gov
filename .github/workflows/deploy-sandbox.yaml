@@ -10,7 +10,7 @@ on:
 
 jobs:
   variables: 
-      if: | 
+    if: | 
       ${{startsWith(github.head_ref, 'ik/')
         || startsWith(github.head_ref, 'rjm/')
         || startsWith(github.head_ref, 'jon/')
