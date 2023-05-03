@@ -49,7 +49,7 @@ cf login -a api.fr.cloud.gov  --sso
 
 ## Setting up commit signing
 
-Follow the instructions [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) to generate a new GPG key and add it to your GPG keys on Github.
+Follow the instructions [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) to generate a new GPG key (default configurations are okay) and add it to your GPG keys on Github.
 
 Configure your key locally:
 
