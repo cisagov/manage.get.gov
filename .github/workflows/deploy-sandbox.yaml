@@ -1,22 +1,15 @@
 # This workflow runs on pushes when a pull request is opened under certain branch conventions.
 
 name: Build and deploy developer sandbox
-run-name: Build and deploy developer sandbox for branch ${{ github.head_ref }}
+run-name: Build and deploy developer sandbox for branch ${{ github.ref }}
 
 on:
-  pull_request:
-    branches:
-      - 'ik/**'
-      - 'rjm/**'
-      - 'jon/**'
-      - 'sspj/**'
-      - 'mr/**'
-      - 'nmb/**'
-      - 'ab/**'
-      - 'bl/**'
+  push:
 
 jobs:
   variables: 
+    if:
+      startsWith(github.ref, 'refs/heads/ik/')
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
@@ -26,7 +19,7 @@ jobs:
         id: var
         with:
           script: |
-            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
+            core.setOutput('environment', '${{ github.ref }}'.split("/")[2]);
   deploy:
     runs-on: ubuntu-latest
     needs: [variables]
