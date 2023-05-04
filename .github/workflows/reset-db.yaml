@@ -15,8 +15,10 @@ on:
         description: Which environment should we flush and re-load data for?
         options:
           - stable
+          - ab
+          - bl
+          - rjm
           - jon
-          - lmm
           - ik
           - sspj
           - nmb
