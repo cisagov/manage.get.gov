@@ -4,6 +4,11 @@
 {% block title %}Domain name servers | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
+  {# this is right after the messages block in the parent template #}
+  {% for form in formset %}
+    {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
+
   <h1>Domain name servers</h1>
 
   <p>Before your domain can be used we'll need information about your domain
@@ -19,7 +24,7 @@
 
     {% for form in formset %}
     <div class="server-form">
-    {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".nameserver.com" %}
+    {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
       {% if forloop.counter <= 2 %}
         {% with attr_required=True %}
           {% input_with_errors form.server %}
@@ -31,7 +36,7 @@
     </div>
     {% endfor %}
 
-    <button type="submit" name="submit_button" value="add_another" class="usa-button usa-button--unstyled display-block" id="add-form">
+    <button type="submit" name="submit_button" class="usa-button usa-button--unstyled display-block" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another name server</span>

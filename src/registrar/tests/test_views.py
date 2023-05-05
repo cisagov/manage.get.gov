@@ -1234,14 +1234,14 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.assertContains(home_page, self.domain.name)
 
     def test_domain_nameservers(self):
-        """Can load domain's namerservers page."""
+        """Can load domain's nameservers page."""
         page = self.client.get(
             reverse("domain-nameservers", kwargs={"pk": self.domain.id})
         )
         self.assertContains(page, "Domain name servers")
 
     def test_domain_nameservers_form(self):
-        """Can change domain's namerservers.
+        """Can change domain's nameservers.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1261,6 +1261,26 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
         self.assertContains(page, "The name servers for this domain have been updated")
+
+    def test_domain_nameservers_form_invalid(self):
+        """Can change domain's nameservers.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameservers_page = self.app.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        nameservers_page.form["form-0-server"] = ""
+        with less_console_noise():  # swallow logged warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(result, "This field is required", count=2, status_code=200)
 
 
 class TestApplicationStatus(TestWithUser, WebTest):

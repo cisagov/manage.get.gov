@@ -218,7 +218,7 @@ class Domain(TimeStampedModel):
     def __str__(self) -> str:
         return self.name
 
-    def nameservers(self):
+    def nameservers(self) -> List[str]:
         """A list of the nameservers for this domain.
 
         TODO: call EPP to get this info instead of returning fake data.

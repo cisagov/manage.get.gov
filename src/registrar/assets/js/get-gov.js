@@ -230,6 +230,12 @@ function handleValidationClick(e) {
 })();
 
 
+/**
+ * An IIFE that attaches a click handler for our dynamic nameservers form
+ *
+ * Only does something on a single page, but it should be fast enough to run
+ * it everywhere.
+ */
 (function prepareForms() {
   let serverForm = document.querySelectorAll(".server-form")
   let container = document.querySelector("#form-container")
@@ -257,4 +263,3 @@ function handleValidationClick(e) {
       totalForms.setAttribute('value', `${formNum+1}`)
   }
 })();
-
