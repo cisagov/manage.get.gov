@@ -1240,6 +1240,28 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         )
         self.assertContains(page, "Domain name servers")
 
+    def test_domain_nameservers_form(self):
+        """Can change domain's namerservers.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameservers_page = self.app.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post, response should be a redirect
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = result.follow()
+        self.assertContains(page, "The name servers for this domain have been updated")
+
 
 class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):

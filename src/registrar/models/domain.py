@@ -234,7 +234,7 @@ class Domain(TimeStampedModel):
         """Set the nameservers for this domain."""
         # TODO: call EPP to set these values in the registry instead of doing
         # nothing.
-        pass
+        logger.warn("TODO: Fake setting nameservers to %s", new_nameservers)
 
     @property
     def roid(self):

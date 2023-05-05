@@ -13,11 +13,12 @@
 
   {% include "includes/required_fields.html" %}
 
-  <form class="usa-form usa-form--large" method="post" novalidate>
+  <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
     {% csrf_token %}
-	{{ formset.management_form }}
+    {{ formset.management_form }}
 
     {% for form in formset %}
+    <div class="server-form">
     {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".nameserver.com" %}
       {% if forloop.counter <= 2 %}
         {% with attr_required=True %}
@@ -27,9 +28,10 @@
         {% input_with_errors form.server %}
       {% endif %}
     {% endwith %}
+    </div>
     {% endfor %}
 
-    <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled display-block">
+    <button type="submit" name="submit_button" value="add_another" class="usa-button usa-button--unstyled display-block" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another name server</span>

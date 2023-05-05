@@ -5,7 +5,6 @@ import logging
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
-from django.forms import formset_factory
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import DetailView
@@ -13,14 +12,12 @@ from django.views.generic.edit import DeleteView, FormMixin
 
 from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
-from ..forms import DomainAddUserForm, DomainNameserverForm
+from ..forms import DomainAddUserForm, DomainNameserverForm, NameserverFormset
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
 
 
 logger = logging.getLogger(__name__)
-
-NameserverFormset = formset_factory(DomainNameserverForm)
 
 
 class DomainView(DomainPermission, DetailView):
@@ -72,7 +69,7 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         """Formset submission posts to this view."""
         self.object = self.get_object()
         formset = self.get_form()
-        print([form.fields["server"].required for form in formset])
+
         if formset.is_valid():
             return self.form_valid(formset)
         else:
@@ -84,13 +81,11 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         # Set the nameservers from the formset
         nameservers = []
         for form in formset:
-            print(form.cleaned_data)
             try:
                 nameservers.append(form.cleaned_data["server"])
             except KeyError:
                 # no server information in this field, skip it
                 pass
-        print("Valid form, got nameservers:", nameservers)
         domain = self.get_object()
         domain.set_nameservers(nameservers)
 

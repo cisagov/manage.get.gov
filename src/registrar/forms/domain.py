@@ -1,7 +1,7 @@
 """Forms for domain management."""
 
 from django import forms
-
+from django.forms import formset_factory
 
 class DomainAddUserForm(forms.Form):
 
@@ -15,3 +15,8 @@ class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
 
     server = forms.CharField(label="Name server")
+
+NameserverFormset = formset_factory(
+    DomainNameserverForm,
+    extra=1,
+)

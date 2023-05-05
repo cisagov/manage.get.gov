@@ -1,2 +1,2 @@
 from .application_wizard import *
-from .domain import DomainAddUserForm, DomainNameserverForm
+from .domain import DomainAddUserForm, DomainNameserverForm, NameserverFormset
