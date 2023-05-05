@@ -12,7 +12,7 @@ from django.views.generic.edit import DeleteView, FormMixin
 
 from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
-from ..forms import DomainAddUserForm, DomainNameserverForm, NameserverFormset
+from ..forms import DomainAddUserForm, NameserverFormset
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
 

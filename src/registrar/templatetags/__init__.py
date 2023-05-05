@@ -7,6 +7,7 @@ from django.template.defaulttags import register
 def get_item(dictionary, key):
     return dictionary.get(key)
 
+
 @register.filter
 def concat(arg1, arg2):
     """concatenate arg1 & arg2"""
