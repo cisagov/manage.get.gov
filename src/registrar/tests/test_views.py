@@ -1387,7 +1387,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
         # click the "Withdraw request" button
-        withdraw_page = detail_page.click("Withdraw Request")
+        withdraw_page = detail_page.click("Withdraw request")
         self.assertContains(withdraw_page, "Withdraw request for")
         home_page = withdraw_page.click("Withdraw request")
         # confirm that it has redirected, and the status has been updated to withdrawn

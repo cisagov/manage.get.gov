@@ -32,7 +32,7 @@
     <b class="review__step__name">Request #:</b> {{domainapplication.id}}</p>
     <p>{% include "includes/domain_application.html" %}</p>
     <p><a href="{% url 'application-withdraw-confirmation' domainapplication.id %}" class="usa-button usa-button--outline withdraw_outline">
-      Withdraw Request</a>
+      Withdraw request</a>
     </p>
   </div>
 
@@ -63,7 +63,7 @@
     {% endif %}
 
     {% if domainapplication.organization_name %}
-      {% include "includes/summary_item.html" with title='Organization address' value=domainapplication  address='true' %}
+      {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domainapplication  address='true' %}
     {% endif %}
 
     {% if domainapplication.type_of_work %}
@@ -71,7 +71,7 @@
     {% endif %}
 
     {% if domainapplication.more_organization_information %}
-      {% include "includes/summary_item.html" with title='Further information about the government organization' value=domainapplication.more_organization_information %}
+      {% include "includes/summary_item.html" with title='More information about your organization' value=domainapplication.more_organization_information %}
     {% endif %}
 
     {% if domainapplication.authorizing_official %}
