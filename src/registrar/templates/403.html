@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% translate "Unauthorized" %}{% endblock %}
+
+{% block content %}
+<main id="main-content" class="grid-container">
+  <div class="grid-row grow-gap"> 
+    <div class="tablet:grid-col-6 usa-prose margin-bottom-3">
+      <h1>
+        {% translate "You do not have the right permissions to view this page." %}
+      </h1>
+      <h2>
+        {% translate "Status 403" %}
+      </h2>
+
+
+      {% if friendly_message %}
+        <p>{{ friendly_message }}</p>
+      {% else %}
+        <p>{% translate "Forbidden." %}</p>
+      {% endif %}
+      <p>
+        You must be an authorized user and need to be signed in to view this page. 
+        Would you like to <a href="{% url 'login' %}"> try loggining in again?</a>
+      </p>
+      <p>
+        If you would like help with this error <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/contact/"> contact us </a>
+      </p>
+
+      {% if log_identifier %}
+        <p>Here's a unique identifier for this error.</p>
+        <p class="text-semibold">{{ log_identifier }}</p>
+        <p>{% translate "Please include it if you contact us." %}</p>
+      {% endif %}
+    </div>
+    <div class="tablet:grid-col-4">
+      <img 
+         src="{% static 'img/registrar/dotgov_401_illo.svg' %}"
+         alt=""
+      />
+    </div>
+  </div>
+</main>
+{% endblock %}
