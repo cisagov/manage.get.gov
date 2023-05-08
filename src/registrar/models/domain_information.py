@@ -11,17 +11,18 @@ from django.db import models
 
 logger = logging.getLogger(__name__)
 
+
 class DomainInformation(TimeStampedModel):
 
     """A registrant's domain information for that domain, exported from DomainApplication."""
 
-    StateTerritoryChoices=DomainApplication.StateTerritoryChoices
+    StateTerritoryChoices = DomainApplication.StateTerritoryChoices
 
-    OrganizationChoices=DomainApplication.OrganizationChoices
+    OrganizationChoices = DomainApplication.OrganizationChoices
 
-    BranchChoices=DomainApplication.BranchChoices
+    BranchChoices = DomainApplication.BranchChoices
 
-    AGENCY_CHOICES=DomainApplication.AGENCY_CHOICES
+    AGENCY_CHOICES = DomainApplication.AGENCY_CHOICES
 
     # This is the application user who created this application. The contact
     # information that they gave is in the `submitter` field
@@ -41,11 +42,11 @@ class DomainInformation(TimeStampedModel):
     domain_application = models.OneToOneField(
         "registrar.DomainApplication",
         on_delete=models.PROTECT,
-        blank=True, 
+        blank=True,
         null=True,
         related_name="domainapplication_info",
         help_text="Associated domain application",
-        unique=True
+        unique=True,
     )
 
     # ##### data fields from the initial form #####
@@ -157,10 +158,10 @@ class DomainInformation(TimeStampedModel):
     domain = models.OneToOneField(
         "registrar.Domain",
         on_delete=models.PROTECT,
-        blank=True, 
+        blank=True,
         null=True,
-        related_name="domain_info", #Access this information via Domain as "domain.info"
-        help_text="Domain to which this information belongs"
+        related_name="domain_info",  # Access this information via Domain as "domain.info"
+        help_text="Domain to which this information belongs",
     )
     alternative_domains = models.ManyToManyField(
         "registrar.Website",
@@ -239,19 +240,17 @@ class DomainInformation(TimeStampedModel):
         # use the requested_domain to create information for this domain
         da_dict["domain"] = da_dict.pop("requested_domain")
         other_contacts = da_dict.pop("other_contacts")
-        alternative_domains = da_dict.pop("alternative_domains") #just in case
+        alternative_domains = da_dict.pop("alternative_domains")  # just in case
         domain_info = cls(**da_dict)
         domain_info.domain_application = domain_application
-        #Save so the object now have PK (needed to process the manytomany below before first)
+        # Save so the object now have PK (needed to process the manytomany below before first)
         domain_info.save()
 
-        #Process the remaining "many to many" stuff
+        # Process the remaining "many to many" stuff
         domain_info.other_contacts.add(*other_contacts)
         domain_info.alternative_domains.add(*alternative_domains)
         domain_info.save()
         return domain_info
 
-
     class Meta:
         verbose_name_plural = "Domain Information"
- 

@@ -13,6 +13,7 @@ from itertools import chain
 
 logger = logging.getLogger(__name__)
 
+
 class DomainApplication(TimeStampedModel):
 
     """A registrant's application for a new domain."""
@@ -519,8 +520,6 @@ class DomainApplication(TimeStampedModel):
         Domain = apps.get_model("registrar.Domain")
         created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
 
-        
-        
         # copy the information from domainapplication into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
         domain_info = self.to_dict()
@@ -588,7 +587,7 @@ class DomainApplication(TimeStampedModel):
         return False
 
     def to_dict(instance):
-        """This is to process to_dict for Domain Information, making it friendly to "copy" it """
+        """This is to process to_dict for Domain Information, making it friendly to "copy" it"""
         opts = instance._meta
         data = {}
         for field in chain(opts.concrete_fields, opts.private_fields):
@@ -606,4 +605,3 @@ class DomainApplication(TimeStampedModel):
         for field in opts.many_to_many:
             data[field.name] = field.value_from_object(instance)
         return data
-
