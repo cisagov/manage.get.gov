@@ -516,6 +516,10 @@ class DomainApplication(TimeStampedModel):
         application into an admin on that domain.
         """
 
+        # create the domain if it doesn't exist
+        Domain = apps.get_model("registrar.Domain")
+        created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
+
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
