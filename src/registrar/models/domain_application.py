@@ -9,10 +9,9 @@ from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
-
+from itertools import chain
 
 logger = logging.getLogger(__name__)
-
 
 class DomainApplication(TimeStampedModel):
 
@@ -520,6 +519,16 @@ class DomainApplication(TimeStampedModel):
         Domain = apps.get_model("registrar.Domain")
         created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
 
+        
+        
+        # copy the information from domainapplication into domaininformation
+        DomainInformation = apps.get_model("registrar.DomainInformation")
+        domain_info = self.to_dict()
+        # remove PK from domainapplication as it use different PK
+        # for domain/domaininformation
+
+        domain_info, _ = DomainInformation.create_from_da_dict(domain_info)
+
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
@@ -577,3 +586,24 @@ class DomainApplication(TimeStampedModel):
         if self.organization_type == DomainApplication.OrganizationChoices.FEDERAL:
             return True
         return False
+
+    def to_dict(instance):
+        """This is to process to_dict for Domain Information, making it friendly to "copy" it """
+        opts = instance._meta
+        data = {}
+        for field in chain(opts.concrete_fields, opts.private_fields):
+            # import pdb; pdb.set_trace()
+            if field.get_internal_type() in ("ForeignKey", "OneToOneField"):
+                # get the related instance of the FK value
+                print(f"{field.name}: ID: {field.value_from_object(instance)}")
+                fk_id = field.value_from_object(instance)
+                if fk_id:
+                    data[field.name] = field.related_model.objects.get(id=fk_id)
+                else:
+                    data[field.name] = None
+            else:
+                data[field.name] = field.value_from_object(instance)
+        for field in opts.many_to_many:
+            data[field.name] = field.value_from_object(instance)
+        return data
+
