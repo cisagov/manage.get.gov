@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class DomainInformation(TimeStampedModel):
 
-    """A registrant's application for a new domain."""
+    """A registrant's domain information for that domain, exported from DomainApplication."""
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -264,6 +264,16 @@ class DomainInformation(TimeStampedModel):
         related_name="information_investigating",
     )
 
+    domain_application = models.OneToOneField(
+        "registrar.DomainApplication",
+        on_delete=models.PROTECT,
+        blank=True, 
+        null=True,
+        related_name="domainapplication_info",
+        help_text="Associated domain application",
+        unique=True
+    )
+
     # ##### data fields from the initial form #####
     organization_type = models.CharField(
         max_length=255,
@@ -370,7 +380,7 @@ class DomainInformation(TimeStampedModel):
         on_delete=models.PROTECT,
     )
 
-    domain = models.ForeignKey(
+    domain = models.OneToOneField(
         "registrar.Domain",
         on_delete=models.PROTECT,
         blank=True, 
@@ -440,10 +450,15 @@ class DomainInformation(TimeStampedModel):
             return ""
 
     @classmethod
-    def create_from_da_dict(cls, da_dict):
+    def create_from_da(cls, domain_application):
         """Takes in a DomainApplication dict and converts it into DomainInformation"""
-        # we don't want to pass the id to avoid conflicts
-        da_dict.pop("id")
+        da_dict = domain_application.to_dict()
+        # remove the id so one can be assinged on creation
+        da_id = da_dict.pop("id")
+        # check if we have a record that corresponds with the domain application, if so short circuit the create
+        domain_info = cls.objects.filter(domain_application__id=da_id).first()
+        if domain_info:
+            return domain_info
         # the following information below is not needed in the domain information:
         da_dict.pop("status")
         da_dict.pop("current_websites")
@@ -452,7 +467,7 @@ class DomainInformation(TimeStampedModel):
         other_contacts = da_dict.pop("other_contacts")
         alternative_domains = da_dict.pop("alternative_domains") #just in case
         domain_info = cls(**da_dict)
-
+        domain_info.domain_application = domain_application
         #Save so the object now have PK (needed to process the manytomany below before first)
         domain_info.save()
 

@@ -527,7 +527,7 @@ class DomainApplication(TimeStampedModel):
         # remove PK from domainapplication as it use different PK
         # for domain/domaininformation
 
-        domain_info, _ = DomainInformation.create_from_da_dict(domain_info)
+        domain_info = DomainInformation.create_from_da(self)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
@@ -595,7 +595,7 @@ class DomainApplication(TimeStampedModel):
             # import pdb; pdb.set_trace()
             if field.get_internal_type() in ("ForeignKey", "OneToOneField"):
                 # get the related instance of the FK value
-                print(f"{field.name}: ID: {field.value_from_object(instance)}")
+                # print(f"{field.name}: ID: {field.value_from_object(instance)}")
                 fk_id = field.value_from_object(instance)
                 if fk_id:
                     data[field.name] = field.related_model.objects.get(id=fk_id)
