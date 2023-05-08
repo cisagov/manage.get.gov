@@ -1,11 +1,9 @@
 from __future__ import annotations
-from typing import Union
 from .domain_application import DomainApplication
 from .utility.time_stamped_model import TimeStampedModel
 
 import logging
 
-from django.apps import apps
 from django.db import models
 
 
@@ -14,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 class DomainInformation(TimeStampedModel):
 
-    """A registrant's domain information for that domain, exported from DomainApplication."""
+    """A registrant's domain information for that domain, exported from 
+    DomainApplication."""
 
     StateTerritoryChoices = DomainApplication.StateTerritoryChoices
 
@@ -160,7 +159,8 @@ class DomainInformation(TimeStampedModel):
         on_delete=models.PROTECT,
         blank=True,
         null=True,
-        related_name="domain_info",  # Access this information via Domain as "domain.info"
+        # Access this information via Domain as "domain.info"
+        related_name="domain_info",  
         help_text="Domain to which this information belongs",
     )
     alternative_domains = models.ManyToManyField(
@@ -230,7 +230,8 @@ class DomainInformation(TimeStampedModel):
         da_dict = domain_application.to_dict()
         # remove the id so one can be assinged on creation
         da_id = da_dict.pop("id")
-        # check if we have a record that corresponds with the domain application, if so short circuit the create
+        # check if we have a record that corresponds with the domain 
+        # application, if so short circuit the create
         domain_info = cls.objects.filter(domain_application__id=da_id).first()
         if domain_info:
             return domain_info
@@ -243,7 +244,8 @@ class DomainInformation(TimeStampedModel):
         alternative_domains = da_dict.pop("alternative_domains")  # just in case
         domain_info = cls(**da_dict)
         domain_info.domain_application = domain_application
-        # Save so the object now have PK (needed to process the manytomany below before first)
+        # Save so the object now have PK 
+        # (needed to process the manytomany below before, first)
         domain_info.save()
 
         # Process the remaining "many to many" stuff

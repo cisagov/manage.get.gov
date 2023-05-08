@@ -516,18 +516,6 @@ class DomainApplication(TimeStampedModel):
         application into an admin on that domain.
         """
 
-        # create the domain if it doesn't exist
-        Domain = apps.get_model("registrar.Domain")
-        created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
-
-        # copy the information from domainapplication into domaininformation
-        DomainInformation = apps.get_model("registrar.DomainInformation")
-        domain_info = self.to_dict()
-        # remove PK from domainapplication as it use different PK
-        # for domain/domaininformation
-
-        domain_info = DomainInformation.create_from_da(self)
-
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
@@ -587,7 +575,8 @@ class DomainApplication(TimeStampedModel):
         return False
 
     def to_dict(instance):
-        """This is to process to_dict for Domain Information, making it friendly to "copy" it"""
+        """This is to process to_dict for Domain Information, making it friendly
+        to "copy" it"""
         opts = instance._meta
         data = {}
         for field in chain(opts.concrete_fields, opts.private_fields):
