@@ -1,15 +1,31 @@
-
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{% translate "Page not found" %}{% endblock %}
 
 {% block content %}
 <main id="main-content" class="grid-container">
+  <div class="grid-row grid-gap">
+    <div class="tablet:grid-col-6 usa-prose margin-bottom-3">
+      <h1>
+        {% translate "We couldn’t find that page" %}
+      </h1>
+      <h2>
+        {% translate "Status 404" %}
+      </h2>
 
-<h1>{% translate "Page not found" %}</h1>
+      <p> Try going to the <a href="/">homepage</a>. If you can’t find what you’re looking for, <a href= "https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/contact/">contact us.</a>
+      </p>
+    </div>
 
-  <p>{% translate "The requested page could not be found." %}</p>
+    <div class="tablet:grid-col-4">
+      <img 
+         src="{% static 'img/registrar/dotgov_404_illo.svg' %}"
+         alt=""
+      />
+    </div>
+  </div>
+
 
 </main>
 {% endblock %}
