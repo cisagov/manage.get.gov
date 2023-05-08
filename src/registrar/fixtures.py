@@ -44,10 +44,15 @@ class UserFixture:
             "first_name": "Neil",
             "last_name": "Martinsen-Burrell",
         },
-                {
+        {
             "username": "7185e6cd-d3c8-4adc-90a3-ceddba71d24f",
             "first_name": "Jon",
             "last_name": "Roberts",
+        },
+        {
+            "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
+            "first_name": "Rachid",
+            "last_name": "Mrad",
         },
     ]
 

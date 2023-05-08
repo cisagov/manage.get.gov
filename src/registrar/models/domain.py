@@ -7,7 +7,6 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 
 from api.views import in_domains
-from epp.mock_epp import domain_info, domain_check
 from registrar.utility import errors
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -129,7 +128,7 @@ class Domain(TimeStampedModel):
         """Check if a domain is available.
 
         Not implemented. Returns a dummy value for testing."""
-        return domain_check(domain)
+        return False  # domain_check(domain)
 
     def transfer(self):
         """Going somewhere. Not implemented."""
@@ -146,7 +145,7 @@ class Domain(TimeStampedModel):
         if not hasattr(self, "info"):
             try:
                 # get info from registry
-                self.info = domain_info(self.name)
+                self.info = {}  # domain_info(self.name)
             except Exception as e:
                 logger.error(e)
                 # TODO: back off error handling
