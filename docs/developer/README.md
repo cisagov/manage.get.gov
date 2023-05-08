@@ -36,7 +36,7 @@ You'll need to create the `.env` file yourself. Get the secrets from Cloud.gov b
 
 ## Adding user to /admin
 
-To be able to view and use /admin locally:
+The endpoint /admin can be used to view and manage site content, including but not limited to user information and the list of current applications in the database. To be able to view and use /admin locally:
 
 1. Login via login.gov
 2. Go to the home page and make sure you can see the part where you can submit an application
@@ -53,6 +53,8 @@ To be able to view and use /admin locally:
         ...
  ]
 ```
+
+5. In the browser, navigate to /admins. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
 
 ## Viewing Logs
 
