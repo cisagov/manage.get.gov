@@ -580,14 +580,15 @@ class DomainApplication(TimeStampedModel):
 
     def to_dict(instance):
         """This is to process to_dict for Domain Information, making it friendly
-        to "copy" it"""
+        to "copy" it
+        
+        More information can be found at this- (This dev used #5)
+        https://stackoverflow.com/questions/21925671/convert-django-model-object-to-dict-with-all-of-the-fields-intact/29088221#29088221"""
         opts = instance._meta
         data = {}
         for field in chain(opts.concrete_fields, opts.private_fields):
-            # import pdb; pdb.set_trace()
             if field.get_internal_type() in ("ForeignKey", "OneToOneField"):
                 # get the related instance of the FK value
-                # print(f"{field.name}: ID: {field.value_from_object(instance)}")
                 fk_id = field.value_from_object(instance)
                 if fk_id:
                     data[field.name] = field.related_model.objects.get(id=fk_id)
