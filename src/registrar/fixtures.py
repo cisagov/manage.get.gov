@@ -49,6 +49,11 @@ class UserFixture:
             "first_name": "Rachid",
             "last_name": "Mrad",
         },
+        {
+            "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
+            "first_name": "Alysia",
+            "last_name": "Broddrick",
+        },
     ]
 
     @classmethod
