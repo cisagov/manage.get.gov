@@ -719,7 +719,7 @@ class AnythingElseForm(RegistrarForm):
                 1000,
                 message="Response must be less than 1000 characters",
             )
-        ]
+        ],
     )
 
 
