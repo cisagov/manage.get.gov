@@ -13,7 +13,11 @@ logger = logging.getLogger(__name__)
 class DomainInformation(TimeStampedModel):
 
     """A registrant's domain information for that domain, exported from
-    DomainApplication."""
+    DomainApplication. We use these field from DomainApplication with few exceptation
+    which are 'removed' via pop at the bottom of this file. Most of design for domain
+    management's user information are based on application, but we cannot change
+    the application once approved, so copying them that way we can make changes
+    after its approved. Most fields here are copied from Application."""
 
     StateTerritoryChoices = DomainApplication.StateTerritoryChoices
 
@@ -152,7 +156,7 @@ class DomainInformation(TimeStampedModel):
         on_delete=models.PROTECT,
         blank=True,
         null=True,
-        # Access this information via Domain as "domain.info"
+        # Access this information via Domain as "domain.domain_info"
         related_name="domain_info",
         help_text="Domain to which this information belongs",
     )
@@ -208,7 +212,7 @@ class DomainInformation(TimeStampedModel):
             if self.domain and self.domain.name:
                 return self.domain.name
             else:
-                return f"application created by {self.creator}"
+                return f"domain info set up and created by {self.creator}"
         except Exception:
             return ""
 
