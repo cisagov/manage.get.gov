@@ -208,12 +208,6 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "alternative_domains",
-                    models.ManyToManyField(
-                        blank=True, related_name="alternatives+", to="registrar.website"
-                    ),
-                ),
-                (
                     "authorizing_official",
                     models.ForeignKey(
                         blank=True,
@@ -251,16 +245,6 @@ class Migration(migrations.Migration):
                         on_delete=django.db.models.deletion.PROTECT,
                         related_name="domainapplication_info",
                         to="registrar.domainapplication",
-                    ),
-                ),
-                (
-                    "investigator",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="information_investigating",
-                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
                 (

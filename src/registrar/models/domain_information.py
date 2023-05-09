@@ -30,13 +30,6 @@ class DomainInformation(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="information_created",
     )
-    investigator = models.ForeignKey(
-        "registrar.User",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="information_investigating",
-    )
 
     domain_application = models.OneToOneField(
         "registrar.DomainApplication",
@@ -163,11 +156,6 @@ class DomainInformation(TimeStampedModel):
         related_name="domain_info",
         help_text="Domain to which this information belongs",
     )
-    alternative_domains = models.ManyToManyField(
-        "registrar.Website",
-        blank=True,
-        related_name="alternatives+",
-    )
 
     # This is the contact information provided by the applicant. The
     # application user who created it is in the `creator` field.
@@ -238,10 +226,11 @@ class DomainInformation(TimeStampedModel):
         # the following information below is not needed in the domain information:
         da_dict.pop("status")
         da_dict.pop("current_websites")
+        da_dict.pop("investigator")
+        da_dict.pop("alternative_domains")
         # use the requested_domain to create information for this domain
         da_dict["domain"] = da_dict.pop("requested_domain")
         other_contacts = da_dict.pop("other_contacts")
-        alternative_domains = da_dict.pop("alternative_domains")  # just in case
         domain_info = cls(**da_dict)
         domain_info.domain_application = domain_application
         # Save so the object now have PK
@@ -250,7 +239,6 @@ class DomainInformation(TimeStampedModel):
 
         # Process the remaining "many to many" stuff
         domain_info.other_contacts.add(*other_contacts)
-        domain_info.alternative_domains.add(*alternative_domains)
         domain_info.save()
         return domain_info
 

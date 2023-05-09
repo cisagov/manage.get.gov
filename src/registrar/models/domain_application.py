@@ -582,7 +582,7 @@ class DomainApplication(TimeStampedModel):
         """This is to process to_dict for Domain Information, making it friendly
         to "copy" it
         
-        More information can be found at this- (This dev used #5)
+        More information can be found at this- (This used #5)
         https://stackoverflow.com/questions/21925671/convert-django-model-object-to-dict-with-all-of-the-fields-intact/29088221#29088221"""
         opts = instance._meta
         data = {}
