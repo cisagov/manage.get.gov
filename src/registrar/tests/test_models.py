@@ -191,6 +191,7 @@ class TestPermissions(TestCase):
         # should be a role for this user
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
 
+
 class TestDomainInfo(TestCase):
 
     """Test creation of Domain Information when approved."""
@@ -207,6 +208,7 @@ class TestDomainInfo(TestCase):
 
         # should be an information present for this domain
         self.assertTrue(DomainInformation.objects.get(domain=domain))
+
 
 class TestInvitations(TestCase):
 
