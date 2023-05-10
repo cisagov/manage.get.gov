@@ -520,6 +520,10 @@ class DomainApplication(TimeStampedModel):
         Domain = apps.get_model("registrar.Domain")
         created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
 
+        # copy the information from domainapplication into domaininformation
+        DomainInformation = apps.get_model("registrar.DomainInformation")
+        DomainInformation.create_from_da(self)
+
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
@@ -581,9 +585,10 @@ class DomainApplication(TimeStampedModel):
     def to_dict(self):
         """This is to process to_dict for Domain Information, making it friendly
         to "copy" it
-        
+
         More information can be found at this- (This used #5)
-        https://stackoverflow.com/questions/21925671/convert-django-model-object-to-dict-with-all-of-the-fields-intact/29088221#29088221"""
+        https://stackoverflow.com/questions/21925671/convert-django-model-object-to-dict-with-all-of-the-fields-intact/29088221#29088221
+        """  # noqa 590
         opts = self._meta
         data = {}
         for field in chain(opts.concrete_fields, opts.private_fields):
