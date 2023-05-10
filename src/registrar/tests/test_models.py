@@ -88,6 +88,8 @@ class TestDomainApplication(TestCase):
         )
         information.other_contacts.add(contact)
         information.save()
+        self.assertEqual(information.domain.id, domain.id)
+        self.assertEqual(information.id, domain.domain_info.id)
 
     def test_status_fsm_submit_fail(self):
         user, _ = User.objects.get_or_create()
