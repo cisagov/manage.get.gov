@@ -191,6 +191,22 @@ class TestPermissions(TestCase):
         # should be a role for this user
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
 
+class TestDomainInfo(TestCase):
+
+    """Test creation of Domain Information when approved."""
+
+    def test_approval_creates_info(self):
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        user, _ = User.objects.get_or_create()
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=domain
+        )
+        # skip using the submit method
+        application.status = DomainApplication.SUBMITTED
+        application.approve()
+
+        # should be an information present for this domain
+        self.assertTrue(DomainInformation.objects.get(domain=domain))
 
 class TestInvitations(TestCase):
 
