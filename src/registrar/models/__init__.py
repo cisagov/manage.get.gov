@@ -2,6 +2,7 @@ from auditlog.registry import auditlog  # type: ignore
 
 from .contact import Contact
 from .domain_application import DomainApplication
+from .domain_information import DomainInformation
 from .domain import Domain
 from .host_ip import HostIP
 from .host import Host
@@ -15,6 +16,7 @@ from .website import Website
 __all__ = [
     "Contact",
     "DomainApplication",
+    "DomainInformation",
     "Domain",
     "DomainInvitation",
     "HostIP",

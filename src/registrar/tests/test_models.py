@@ -4,6 +4,7 @@ from django.db.utils import IntegrityError
 from registrar.models import (
     Contact,
     DomainApplication,
+    DomainInformation,
     User,
     Website,
     Domain,
@@ -62,6 +63,33 @@ class TestDomainApplication(TestCase):
         application.alternative_domains.add(gov_website)
         application.other_contacts.add(contact)
         application.save()
+
+    def test_domain_info(self):
+        """Can create domain info with all fields."""
+        user, _ = User.objects.get_or_create()
+        contact = Contact.objects.create()
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        information = DomainInformation.objects.create(
+            creator=user,
+            organization_type=DomainInformation.OrganizationChoices.FEDERAL,
+            federal_type=DomainInformation.BranchChoices.EXECUTIVE,
+            is_election_board=False,
+            organization_name="Test",
+            address_line1="100 Main St.",
+            address_line2="APT 1A",
+            state_territory="CA",
+            zipcode="12345-6789",
+            authorizing_official=contact,
+            submitter=contact,
+            purpose="Igorville rules!",
+            anything_else="All of Igorville loves the dotgov program.",
+            is_policy_acknowledged=True,
+            domain=domain,
+        )
+        information.other_contacts.add(contact)
+        information.save()
+        self.assertEqual(information.domain.id, domain.id)
+        self.assertEqual(information.id, domain.domain_info.id)
 
     def test_status_fsm_submit_fail(self):
         user, _ = User.objects.get_or_create()
@@ -164,6 +192,24 @@ class TestPermissions(TestCase):
 
         # should be a role for this user
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
+
+
+class TestDomainInfo(TestCase):
+
+    """Test creation of Domain Information when approved."""
+
+    def test_approval_creates_info(self):
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        user, _ = User.objects.get_or_create()
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=domain
+        )
+        # skip using the submit method
+        application.status = DomainApplication.SUBMITTED
+        application.approve()
+
+        # should be an information present for this domain
+        self.assertTrue(DomainInformation.objects.get(domain=domain))
 
 
 class TestInvitations(TestCase):
