@@ -22,6 +22,18 @@ Visit the running application at [http://localhost:8080](http://localhost:8080).
 
 We use the branch convention of `initials/branch-topic` (ex: `lmm/fix-footer`). This allows for automated deployment to a developer sandbox namespaced to the initials.
 
+## Merging and PRs
+
+To bring your feature branch up-to-date wih main:
+
+```
+git checkout main
+git pull
+git checkout <feature-branch>
+git merge orgin/main
+git push
+```
+
 ## Setting Vars
 
 Non-secret environment variables for local development are set in [src/docker-compose.yml](../../src/docker-compose.yml).
