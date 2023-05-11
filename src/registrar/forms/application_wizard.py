@@ -318,7 +318,7 @@ class TypeOfWorkForm(RegistrarForm):
         validators=[
             MaxLengthValidator(
                 1000,
-                message="Response must be less than 1000 characters",
+                message="Response must be less than 1000 characters.",
             )
         ],
         error_messages={"required": "Enter the type of work your organization does."},
@@ -336,7 +336,7 @@ class TypeOfWorkForm(RegistrarForm):
         validators=[
             MaxLengthValidator(
                 1000,
-                message="Response must be less than 1000 characters",
+                message="Response must be less than 1000 characters.",
             )
         ],
         error_messages={
@@ -569,7 +569,7 @@ class PurposeForm(RegistrarForm):
         validators=[
             MaxLengthValidator(
                 1000,
-                message="Response must be less than 1000 characters",
+                message="Response must be less than 1000 characters.",
             )
         ],
         error_messages={
@@ -717,7 +717,7 @@ class AnythingElseForm(RegistrarForm):
         validators=[
             MaxLengthValidator(
                 1000,
-                message="Response must be less than 1000 characters",
+                message="Response must be less than 1000 characters.",
             )
         ],
     )
