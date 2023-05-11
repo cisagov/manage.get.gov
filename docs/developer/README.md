@@ -24,6 +24,7 @@ We use the branch convention of `initials/branch-topic` (ex: `lmm/fix-footer`). 
 
 ## Merging and PRs
 
+History preservation and merge contexts are more important to us than a clean and linear history, so we will merge instead of rebasing. 
 To bring your feature branch up-to-date wih main:
 
 ```
@@ -33,6 +34,11 @@ git checkout <feature-branch>
 git merge orgin/main
 git push
 ```
+
+Resources:
+- [https://frontend.turing.edu/lessons/module-3/merge-vs-rebase.html](https://frontend.turing.edu/lessons/module-3/merge-vs-rebase.html)
+- [https://www.atlassian.com/git/tutorials/merging-vs-rebasing](https://www.atlassian.com/git/tutorials/merging-vs-rebasing)
+- [https://www.simplilearn.com/git-rebase-vs-merge-article](https://www.simplilearn.com/git-rebase-vs-merge-article)
 
 ## Setting Vars
 
