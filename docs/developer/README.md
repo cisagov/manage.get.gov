@@ -46,6 +46,28 @@ DJANGO_SECRET_LOGIN_KEY="<...>"
 
 You'll need to create the `.env` file yourself. Get the secrets from Cloud.gov by running `cf env getgov-YOURSANDBOX`. More information is available in [rotate_application_secrets.md](../operations/runbooks/rotate_application_secrets.md).
 
+## Adding user to /admin
+
+The endpoint /admin can be used to view and manage site content, including but not limited to user information and the list of current applications in the database. To be able to view and use /admin locally:
+
+1. Login via login.gov
+2. Go to the home page and make sure you can see the part where you can submit an application
+3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4
+4. in src/registrar/fixtures.py add to the ADMINS list in that file by adding your UUID as your username along with your first and last name. See below:
+
+```
+ ADMINS = [
+        {
+            "username": "<UUID here>",
+            "first_name": "",
+            "last_name": "",
+        },
+        ...
+ ]
+```
+
+5. In the browser, navigate to /admins. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
+
 ## Viewing Logs
 
 If you run via `docker-compose up`, you'll see the logs in your terminal.
