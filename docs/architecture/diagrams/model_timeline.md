@@ -23,6 +23,7 @@ the `django-model2puml` plugin.
 
 <details>
 <summary>PlantUML source code</summary>
+
 ```plantuml
 @startuml
 
@@ -138,4 +139,5 @@ user3 -right[#green]-> DomainInvitation : **/domain/<id>/users/add**
 
 @enduml
 ```
+
 </details>

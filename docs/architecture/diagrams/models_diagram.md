@@ -12,6 +12,7 @@ $ docker compose app ./manage.py generate_puml --include registrar
 
 <details>
 <summary>PlantUML source code</summary>
+
 ```plantuml
 @startuml 
 class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
@@ -264,4 +265,5 @@ class "registrar.Website <Registrar>" as registrar.Website #d6f4e9 {
 
 @enduml
 ```
+
 </details>
