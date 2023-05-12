@@ -1,40 +1,51 @@
 import logging
-import re
 
-from django.apps import apps
-from django.core.exceptions import ValidationError
+from string import digits
+
 from django.db import models
-from django_fsm import FSMField, transition  # type: ignore
 
-from api.views import in_domains
-from registrar.utility import errors
+from epplibwrapper import (
+    CLIENT as registry,
+    commands,
+    common as epp,
+    RegistryError,
+    ErrorCode,
+)
 
+from .utility.domain_field import DomainField
+from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
+
+from .public_contact import PublicContact
 
 logger = logging.getLogger(__name__)
 
 
-class Domain(TimeStampedModel):
+class Domain(TimeStampedModel, DomainHelper):
     """
     Manage the lifecycle of domain names.
 
     The registry is the source of truth for this data and this model exists:
         1. To tie ownership information in the registrar to
-           DNS entries in the registry; and
-        2. To allow a new registrant to draft DNS entries before their
-           application is approved
+           DNS entries in the registry
+
+    ~~~ HOW TO USE THIS CLASS ~~~
+
+    A) You can create a Domain object with just a name. `Domain(name="something.gov")`.
+    B) Saving the Domain object will not contact the registry, as it may be useful
+       to have Domain objects in an `UNKNOWN` pre-created state.
+    C) Domain properties are lazily loaded. Accessing `my_domain.expiration_date` will
+       contact the registry, if a cached copy does not exist.
+    D) Domain creation is lazy. If `my_domain.expiration_date` finds that `my_domain`
+       does not exist in the registry, it will ask the registry to create it.
+    F) Created is _not_ the same as active aka live on the internet.
+    G) Activation is controlled by the registry. It will happen automatically when the
+       domain meets the required checks.
     """
 
-    class Meta:
-        constraints = [
-            # draft domains may share the same name, but
-            # once approved, they must be globally unique
-            models.UniqueConstraint(
-                fields=["name"],
-                condition=models.Q(is_active=True),
-                name="unique_domain_name_in_registry",
-            ),
-        ]
+    def __init__(self, *args, **kwargs):
+        self._cache = {}
+        super(Domain, self).__init__(*args, **kwargs)
 
     class Status(models.TextChoices):
         """
@@ -89,190 +100,226 @@ class Domain(TimeStampedModel):
         PENDING_TRANSFER = "pendingTransfer"
         PENDING_UPDATE = "pendingUpdate"
 
-    # a domain name is alphanumeric or hyphen, up to 63 characters, doesn't
-    # begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
-    DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}$")
+    class State(models.TextChoices):
+        """These capture (some of) the states a domain object can be in."""
 
-    @classmethod
-    def string_could_be_domain(cls, domain: str | None) -> bool:
-        """Return True if the string could be a domain name, otherwise False."""
-        if not isinstance(domain, str):
-            return False
-        return bool(cls.DOMAIN_REGEX.match(domain))
+        # the normal state of a domain object -- may or may not be active!
+        CREATED = "created"
 
-    @classmethod
-    def validate(cls, domain: str | None, blank_ok=False) -> str:
-        """Attempt to determine if a domain name could be requested."""
-        if domain is None:
-            raise errors.BlankValueError()
-        if not isinstance(domain, str):
-            raise ValueError("Domain name must be a string")
-        domain = domain.lower().strip()
-        if domain == "":
-            if blank_ok:
-                return domain
-            else:
-                raise errors.BlankValueError()
-        if domain.endswith(".gov"):
-            domain = domain[:-4]
-        if "." in domain:
-            raise errors.ExtraDotsError()
-        if not Domain.string_could_be_domain(domain + ".gov"):
-            raise ValueError()
-        if in_domains(domain):
-            raise errors.DomainUnavailableError()
-        return domain
+        # previously existed but has been deleted from the registry
+        DELETED = "deleted"
+
+        # the state is indeterminate
+        UNKNOWN = "unknown"
+
+    class Cache(property):
+        """
+        Python descriptor to turn class methods into properties.
+
+        The purpose of subclassing `property` rather than using it directly
+        as a decorator (`@property`) is to insert generic code to run
+        before or after _all_ properties are accessed, modified, or deleted.
+
+        As an example:
+
+                domain = Domain(name="example.gov")
+                domain.save()
+                                      <--- insert code here
+                date = domain.creation_date
+                                      <--- or here
+                (...other stuff...)
+        """
+
+        def __get__(self, obj, objtype=None):
+            """Called during get. Example: `r = domain.registrant`."""
+            return super().__get__(obj, objtype)
+
+        def __set__(self, obj, value):
+            """Called during set. Example: `domain.registrant = 'abc123'`."""
+            super().__set__(obj, value)
+            # always invalidate cache after sending updates to the registry
+            obj._invalidate_cache()
+
+        def __delete__(self, obj):
+            """Called during delete. Example: `del domain.registrant`."""
+            super().__delete__(obj)
 
     @classmethod
     def available(cls, domain: str) -> bool:
-        """Check if a domain is available.
+        """Check if a domain is available."""
+        if not cls.string_could_be_domain(domain):
+            raise ValueError("Not a valid domain: %s" % str(domain))
+        req = commands.CheckDomain([domain])
+        return registry.send(req, cleaned=True).res_data[0].avail
 
-        Not implemented. Returns a dummy value for testing."""
-        return False  # domain_check(domain)
+    @classmethod
+    def registered(cls, domain: str) -> bool:
+        """Check if a domain is _not_ available."""
+        return not cls.available(domain)
+
+    @Cache
+    def auth_info(self) -> str:
+        return self._get_property("auth_info")
+
+    @Cache
+    def contacts(self):
+        return self._get_property("contacts")
+
+    @contacts.setter  # type: ignore
+    def contacts(self):
+        # TODO: logic to check the proposed update for validity and send to registry
+        raise NotImplementedError()
+
+    @Cache
+    def creation_date(self):
+        return self._get_property("cr_date")
+
+    @Cache
+    def expiration_date(self):
+        return self._get_property("ex_date")
+
+    @expiration_date.setter  # type: ignore
+    def expiration_date(self):
+        # TODO: logic to check the proposed update for validity and send to registry
+        raise NotImplementedError()
+
+    @Cache
+    def nameservers(self):
+        return self._get_property("hosts")
+
+    @nameservers.setter  # type: ignore
+    def nameservers(self, hosts: list[tuple[str]]):
+        """
+        A complete list of nameservers to associate with this domain.
+
+        Hosts are expected to be provided as a list of tuples, e.g.
+
+            [("ns1.example.com",), ("ns1.example.gov", "0.0.0.0")]
+
+        Subordinate hosts (something.your-domain.gov) MUST have IP addresses,
+        while non-subordinate hosts MUST NOT.
+        """
+        # check if number of nameservers is correct
+        if len(hosts) < 2:
+            raise ValueError("Too few. At least 2 nameservers must be added.")
+        if len(hosts) > 13:
+            raise ValueError("Too many. No more than 13 nameservers can be added.")
+
+        # check user input for errors or bad entries
+        self._validate_host_tuples(hosts)
+
+        add = []
+        remove = []
+        update = []
+
+        # TODO: this is a partially complete implementation: needs checked for errors
+        # and refactored for performance
+        #
+        # # determine which hostnames are being added, removed, or updated
+        # hostnames = set([ h[0].lower() for h in hosts ])
+        # nameservers = [ ns["name"] for ns in self.nameservers ]
+        #
+        # remove = [
+        #     { "name": ns["name"], "addrs": ns["addrs"] }
+        #     for ns in self.nameservers if ns["name"] not in hostnames
+        # ]
+        # add = [
+        #     {
+        #         "name": host[0].lower(),
+        #         "addrs": [
+        #               epp.Ip(addr=a, ip=("v6" if ":" in a else "v4"))
+        #               for a in host[1:]
+        #         ]
+        #     }
+        #     for host in hosts if host[0].lower() not in nameservers
+        # ]
+        # update = [
+        #     host for host in hosts if host[0].lower() not in
+        #         [ host["name"] for host in add ]
+        # ]
+
+        # update hostnames slated for update
+        for host in update:
+            self.update_or_create_host(host)
+
+        # add new hostnames
+        for host in add:
+            self.update_or_create_host(host)
+
+        # perform update to the domain
+        # TODO: build up the update command and send it
+
+        # clean up removed hostnames
+        for host in remove:
+            self.delete_host(host)
+
+    @Cache
+    def registrant(self):
+        return self._get_property("registrant")
+
+    @registrant.setter  # type: ignore
+    def registrant(self):
+        # TODO: logic to check the proposed update for validity and send to registry
+        raise NotImplementedError()
+
+    @Cache
+    def statuses(self):
+        """A domain's status indicates various properties. See Domain.Status."""
+        return [s.state for s in self._get_property("statuses")]
+
+    @statuses.setter  # type: ignore
+    def statuses(self):
+        # TODO: there are a long list of rules in the RFC about which statuses
+        # can be combined; check that here and raise errors for invalid combinations
+        raise NotImplementedError()
+
+    @Cache
+    def last_transferred_date(self):
+        return self._get_property("tr_date")
+
+    @Cache
+    def last_updated_date(self):
+        return self._get_property("up_date")
+
+    def is_active(self):
+        """Is the domain live on the inter webs?"""
+        # TODO: implement a check -- should be performant so it can be called for
+        # any number of domains on a status page
+        # this is NOT as simple as checking if Domain.Status.OK is in self.statuses
+        return False
 
     def transfer(self):
         """Going somewhere. Not implemented."""
-        pass
+        raise NotImplementedError()
 
     def renew(self):
         """Time to renew. Not implemented."""
-        pass
+        raise NotImplementedError()
 
-    def _get_property(self, property):
-        """Get some info about a domain."""
-        if not self.is_active:
-            return None
-        if not hasattr(self, "info"):
-            try:
-                # get info from registry
-                self.info = {}  # domain_info(self.name)
-            except Exception as e:
-                logger.error(e)
-                # TODO: back off error handling
-                return None
-        if hasattr(self, "info"):
-            if property in self.info:
-                return self.info[property]
-            else:
-                raise KeyError(
-                    "Requested key %s was not found in registry data." % str(property)
-                )
-        else:
-            # TODO: return an error if registry cannot be contacted
-            return None
+    def place_client_hold(self):
+        """This domain should not be active."""
+        raise NotImplementedError()
 
-    @transition(field="is_active", source="*", target=True)
-    def activate(self):
-        """This domain should be made live."""
-        DomainApplication = apps.get_model("registrar.DomainApplication")
-        if hasattr(self, "domain_application"):
-            if self.domain_application.status != DomainApplication.APPROVED:
-                raise ValueError("Cannot activate. Application must be approved.")
-        if Domain.objects.filter(name=self.name, is_active=True).exists():
-            raise ValueError("Cannot activate. Domain name is already in use.")
-        # TODO: depending on the details of our registry integration
-        # we will either contact the registry and deploy the domain
-        # in this function OR we will verify that it has already been
-        # activated and reject this state transition if it has not
-        pass
-
-    @transition(field="is_active", source="*", target=False)
-    def deactivate(self):
-        """This domain should not be live."""
-        # there are security concerns to having this function exist
-        # within the codebase; discuss these with the project lead
-        # if there is a feature request to implement this
-        raise Exception("Cannot revoke, contact registry.")
-
-    @property
-    def sld(self):
-        """Get or set the second level domain string."""
-        return self.name.split(".")[0]
-
-    @sld.setter
-    def sld(self, value: str):
-        parts = self.name.split(".")
-        tld = parts[1] if len(parts) > 1 else ""
-        if Domain.string_could_be_domain(f"{value}.{tld}"):
-            self.name = f"{value}.{tld}"
-        else:
-            raise ValidationError("%s is not a valid second level domain" % value)
-
-    @property
-    def tld(self):
-        """Get or set the top level domain string."""
-        parts = self.name.split(".")
-        return parts[1] if len(parts) > 1 else ""
-
-    @tld.setter
-    def tld(self, value: str):
-        sld = self.name.split(".")[0]
-        if Domain.string_could_be_domain(f"{sld}.{value}"):
-            self.name = f"{sld}.{value}"
-        else:
-            raise ValidationError("%s is not a valid top level domain" % value)
+    def remove_client_hold(self):
+        """This domain is okay to be active."""
+        raise NotImplementedError()
 
     def __str__(self) -> str:
         return self.name
 
-    @property
-    def roid(self):
-        return self._get_property("roid")
-
-    @property
-    def status(self):
-        return self._get_property("status")
-
-    @property
-    def registrant(self):
-        return self._get_property("registrant")
-
-    @property
-    def sponsor(self):
-        return self._get_property("sponsor")
-
-    @property
-    def creator(self):
-        return self._get_property("creator")
-
-    @property
-    def creation_date(self):
-        return self._get_property("creation_date")
-
-    @property
-    def updator(self):
-        return self._get_property("updator")
-
-    @property
-    def last_update_date(self):
-        return self._get_property("last_update_date")
-
-    @property
-    def expiration_date(self):
-        return self._get_property("expiration_date")
-
-    @property
-    def last_transfer_date(self):
-        return self._get_property("last_transfer_date")
-
-    name = models.CharField(
+    name = DomainField(
         max_length=253,
         blank=False,
         default=None,  # prevent saving without a value
+        unique=True,
         help_text="Fully qualified domain name",
     )
 
-    # we use `is_active` rather than `domain_application.status`
-    # because domains may exist without associated applications
-    is_active = FSMField(
-        choices=[
-            (True, "Yes"),
-            (False, "No"),
-        ],
-        default=False,
-        # TODO: how to edit models in Django admin if protected = True
-        protected=False,
-        help_text="Domain is live in the registry",
+    state = models.CharField(
+        max_length=21,
+        choices=State.choices,
+        default=State.UNKNOWN,
+        help_text="Very basic info about the lifecycle of this domain object",
     )
 
     # ForeignKey on UserDomainRole creates a "permissions" member for
@@ -283,3 +330,225 @@ class Domain(TimeStampedModel):
 
     # ForeignKey on DomainInvitation creates an "invitations" member for
     # all of the invitations that have been sent for this domain
+
+    def _validate_host_tuples(self, hosts: list[tuple[str]]):
+        """
+        Helper function. Validate hostnames and IP addresses.
+
+        Raises:
+            ValueError if hostname or IP address appears invalid or mismatched.
+        """
+        for host in hosts:
+            hostname = host[0].lower()
+            addresses: tuple[str] = host[1:]  # type: ignore
+            if not bool(Domain.HOST_REGEX.match(hostname)):
+                raise ValueError("Invalid hostname: %s." % hostname)
+            if len(hostname) > Domain.MAX_LENGTH:
+                raise ValueError("Too long hostname: %s" % hostname)
+
+            is_subordinate = hostname.split(".", 1)[-1] == self.name
+            if is_subordinate and len(addresses) == 0:
+                raise ValueError("Must supply IP addresses for %s" % hostname)
+            if not is_subordinate and len(addresses) > 0:
+                raise ValueError("Must not supply IP addresses for %s" % hostname)
+
+            for address in addresses:
+                allow = set(":." + digits)
+                if any(c not in allow for c in address):
+                    raise ValueError("Invalid IP address: %s." % address)
+
+    def _get_or_create_domain(self):
+        """Try to fetch info about this domain. Create it if it does not exist."""
+        already_tried_to_create = False
+        while True:
+            try:
+                req = commands.InfoDomain(name=self.name)
+                return registry.send(req).res_data[0]
+            except RegistryError as e:
+                if already_tried_to_create:
+                    raise e
+                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                    # avoid infinite loop
+                    already_tried_to_create = True
+                    registrant = self._get_or_create_contact(
+                        PublicContact.get_default_registrant()
+                    )
+                    req = commands.CreateDomain(
+                        name=self.name,
+                        registrant=registrant.id,
+                        auth_info=epp.DomainAuthInfo(
+                            pw="2fooBAR123fooBaz"
+                        ),  # not a password
+                    )
+                    registry.send(req)
+                    # no error, so go ahead and update state
+                    self.state = Domain.State.CREATED
+                    self.save()
+                else:
+                    raise e
+
+    def _get_or_create_host(self):
+        """
+        This function does not exist for hosts, because of a chicken-and-egg problem.
+
+        If the host does not exist, it may require IP addresses to create it. However,
+        if the caller already has the IP addresses, it is unlikely they want any other
+        information about the host. (Hence, no need for "get".)
+        """
+        raise NotImplementedError()
+
+    def _get_or_create_contact(self, contact: PublicContact):
+        """Try to fetch info about a contact. Create it if it does not exist."""
+        while True:
+            try:
+                req = commands.InfoContact(id=contact.registry_id)
+                return registry.send(req).res_data[0]
+            except RegistryError as e:
+                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                    create = commands.CreateContact(
+                        id=contact.registry_id,
+                        postal_info=epp.PostalInfo(  # type: ignore
+                            name=contact.name,
+                            addr=epp.ContactAddr(
+                                street=[
+                                    getattr(contact, street)
+                                    for street in ["street1", "street2", "street3"]
+                                    if hasattr(contact, street)
+                                ],
+                                city=contact.city,
+                                pc=contact.pc,
+                                cc=contact.cc,
+                                sp=contact.sp,
+                            ),
+                            org=contact.org,
+                            type="loc",
+                        ),
+                        email=contact.email,
+                        voice=contact.voice,
+                        fax=contact.fax,
+                        auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+                    )
+                    # security contacts should only show email addresses, for now
+                    if (
+                        contact.contact_type
+                        == PublicContact.ContactTypeChoices.SECURITY
+                    ):
+                        DF = epp.DiscloseField
+                        create.disclose = epp.Disclose(
+                            flag=False,
+                            fields={DF.FAX, DF.VOICE, DF.ADDR},
+                            types={DF.ADDR: "loc"},
+                        )
+                    registry.send(create)
+                else:
+                    raise e
+
+    def _update_or_create_host(self, host):
+        raise NotImplementedError()
+
+    def _delete_host(self, host):
+        raise NotImplementedError()
+
+    def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
+        """Contact registry for info about a domain."""
+        try:
+            # get info from registry
+            data = self._get_or_create_domain()
+            # extract properties from response
+            # (Ellipsis is used to mean "null")
+            cache = {
+                "auth_info": getattr(data, "auth_info", ...),
+                "_contacts": getattr(data, "contacts", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "ex_date": getattr(data, "ex_date", ...),
+                "_hosts": getattr(data, "hosts", ...),
+                "name": getattr(data, "name", ...),
+                "registrant": getattr(data, "registrant", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+            }
+            # remove null properties (to distinguish between "a value of None" and null)
+            cleaned = {k: v for k, v in cache if v is not ...}
+
+            # get contact info, if there are any
+            if (
+                fetch_contacts
+                and "_contacts" in cleaned
+                and isinstance(cleaned["_contacts"], list)
+                and len(cleaned["_contacts"])
+            ):
+                cleaned["contacts"] = []
+                for id in cleaned["_contacts"]:
+                    # we do not use _get_or_create_* because we expect the object we
+                    # just asked the registry for still exists --
+                    # if not, that's a problem
+                    req = commands.InfoContact(id=id)
+                    data = registry.send(req).res_data[0]
+                    # extract properties from response
+                    # (Ellipsis is used to mean "null")
+                    contact = {
+                        "id": id,
+                        "auth_info": getattr(data, "auth_info", ...),
+                        "cr_date": getattr(data, "cr_date", ...),
+                        "disclose": getattr(data, "disclose", ...),
+                        "email": getattr(data, "email", ...),
+                        "fax": getattr(data, "fax", ...),
+                        "postal_info": getattr(data, "postal_info", ...),
+                        "statuses": getattr(data, "statuses", ...),
+                        "tr_date": getattr(data, "tr_date", ...),
+                        "up_date": getattr(data, "up_date", ...),
+                        "voice": getattr(data, "voice", ...),
+                    }
+                    cleaned["contacts"].append(
+                        {k: v for k, v in contact if v is not ...}
+                    )
+
+            # get nameserver info, if there are any
+            if (
+                fetch_hosts
+                and "_hosts" in cleaned
+                and isinstance(cleaned["_hosts"], list)
+                and len(cleaned["_hosts"])
+            ):
+                cleaned["hosts"] = []
+                for name in cleaned["_hosts"]:
+                    # we do not use _get_or_create_* because we expect the object we
+                    # just asked the registry for still exists --
+                    # if not, that's a problem
+                    req = commands.InfoHost(name=name)
+                    data = registry.send(req).res_data[0]
+                    # extract properties from response
+                    # (Ellipsis is used to mean "null")
+                    host = {
+                        "name": name,
+                        "addrs": getattr(data, "addrs", ...),
+                        "cr_date": getattr(data, "cr_date", ...),
+                        "statuses": getattr(data, "statuses", ...),
+                        "tr_date": getattr(data, "tr_date", ...),
+                        "up_date": getattr(data, "up_date", ...),
+                    }
+                    cleaned["hosts"].append({k: v for k, v in host if v is not ...})
+
+            # replace the prior cache with new data
+            self._cache = cleaned
+        except RegistryError as e:
+            logger.error(e)
+
+    def _invalidate_cache(self):
+        """Remove cache data when updates are made."""
+        self._cache = {}
+
+    def _get_property(self, property):
+        """Get some piece of info about a domain."""
+        if property not in self._cache:
+            self._fetch_cache(
+                fetch_hosts=(property == "hosts"),
+                fetch_contacts=(property == "contacts"),
+            )
+        if property in self._cache:
+            return self._cache[property]
+        else:
+            raise KeyError(
+                "Requested key %s was not found in registry cache." % str(property)
+            )

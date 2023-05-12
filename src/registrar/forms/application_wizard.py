@@ -11,7 +11,7 @@ from django.utils.safestring import mark_safe
 
 from api.views import DOMAIN_API_MESSAGES
 
-from registrar.models import Contact, DomainApplication, Domain
+from registrar.models import Contact, DomainApplication, DraftDomain, Domain
 from registrar.utility import errors
 
 logger = logging.getLogger(__name__)
@@ -441,7 +441,7 @@ class AlternativeDomainForm(RegistrarForm):
         """Validation code for domain names."""
         try:
             requested = self.cleaned_data.get("alternative_domain", None)
-            validated = Domain.validate(requested, blank_ok=True)
+            validated = DraftDomain.validate(requested, blank_ok=True)
         except errors.ExtraDotsError:
             raise forms.ValidationError(
                 DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots"
@@ -486,7 +486,7 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
 
     @classmethod
     def on_fetch(cls, query):
-        return [{"alternative_domain": domain.sld} for domain in query]
+        return [{"alternative_domain": Domain.sld(domain.name)} for domain in query]
 
     @classmethod
     def from_database(cls, obj):
@@ -512,7 +512,7 @@ class DotGovDomainForm(RegistrarForm):
                 requested_domain.name = f"{domain}.gov"
                 requested_domain.save()
             else:
-                requested_domain = Domain.objects.create(name=f"{domain}.gov")
+                requested_domain = DraftDomain.objects.create(name=f"{domain}.gov")
                 obj.requested_domain = requested_domain
                 obj.save()
 
@@ -523,14 +523,14 @@ class DotGovDomainForm(RegistrarForm):
         values = {}
         requested_domain = getattr(obj, "requested_domain", None)
         if requested_domain is not None:
-            values["requested_domain"] = requested_domain.sld
+            values["requested_domain"] = Domain.sld(requested_domain.name)
         return values
 
     def clean_requested_domain(self):
         """Validation code for domain names."""
         try:
             requested = self.cleaned_data.get("requested_domain", None)
-            validated = Domain.validate(requested)
+            validated = DraftDomain.validate(requested)
         except errors.BlankValueError:
             raise forms.ValidationError(
                 DOMAIN_API_MESSAGES["required"], code="required"

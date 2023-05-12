@@ -217,24 +217,24 @@ class DomainInformation(TimeStampedModel):
             return ""
 
     @classmethod
-    def create_from_da(cls, domain_application):
+    def create_from_da(cls, domain_application, domain=None):
         """Takes in a DomainApplication dict and converts it into DomainInformation"""
         da_dict = domain_application.to_dict()
         # remove the id so one can be assinged on creation
-        da_id = da_dict.pop("id")
+        da_id = da_dict.pop("id", None)
         # check if we have a record that corresponds with the domain
         # application, if so short circuit the create
         domain_info = cls.objects.filter(domain_application__id=da_id).first()
         if domain_info:
             return domain_info
         # the following information below is not needed in the domain information:
-        da_dict.pop("status")
-        da_dict.pop("current_websites")
-        da_dict.pop("investigator")
-        da_dict.pop("alternative_domains")
-        # use the requested_domain to create information for this domain
-        da_dict["domain"] = da_dict.pop("requested_domain")
-        other_contacts = da_dict.pop("other_contacts")
+        da_dict.pop("status", None)
+        da_dict.pop("current_websites", None)
+        da_dict.pop("investigator", None)
+        da_dict.pop("alternative_domains", None)
+        da_dict.pop("requested_domain", None)
+        da_dict.pop("approved_domain", None)
+        other_contacts = da_dict.pop("other_contacts", [])
         domain_info = cls(**da_dict)
         domain_info.domain_application = domain_application
         # Save so the object now have PK
@@ -243,6 +243,8 @@ class DomainInformation(TimeStampedModel):
 
         # Process the remaining "many to many" stuff
         domain_info.other_contacts.add(*other_contacts)
+        if domain:
+            domain_info.domain = domain
         domain_info.save()
         return domain_info
 

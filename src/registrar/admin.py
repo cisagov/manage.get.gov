@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
@@ -48,6 +48,45 @@ class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
 
     inlines = [HostIPInline]
+
+
+class DomainAdmin(AuditedAdmin):
+
+    """Custom domain admin class to add extra buttons."""
+
+    change_form_template = "django/admin/domain_change_form.html"
+    readonly_fields = ["state"]
+
+    def response_change(self, request, obj):
+        if "_activate" in request.POST:
+            try:
+                obj.activate()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    "%s is active. DNS information is available on the public internet."
+                    % obj.name,
+                )
+            return HttpResponseRedirect(".")
+        if "_place_client_hold" in request.POST:
+            try:
+                obj.place_client_hold()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    (
+                        "%s is in client hold. This domain is no longer accessible on"
+                        " the public internet."
+                    )
+                    % obj.name,
+                )
+            return HttpResponseRedirect(".")
+
+        return super().response_change(request, obj)
 
 
 admin.site.register(models.User, MyUserAdmin)

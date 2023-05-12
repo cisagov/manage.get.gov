@@ -28,8 +28,7 @@ information to make connections between registry users and the domains that
 they manage. The registrar stores very few fields about a domain except for
 its name, so it could be straightforward to import the exported list of domains
 from Verisign's `escrow_domains.daily.dotgov.GOV.txt`. It doesn't appear that
-that table stores a flag for active or inactive, so every domain in the file
-can be imported into our system as `is_active=True`.
+that table stores a flag for active or inactive.
 
 An example Django management command that can load the delimited text file
 from the daily escrow is in
