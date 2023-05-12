@@ -20,7 +20,6 @@ relationships are in [models_diagram.md](./models_diagram.md), created with
 the `django-model2puml` plugin.
 
 ```mermaid
-@startuml
 
 allowmixing
 left to right direction
@@ -131,5 +130,4 @@ user2 -[#green]-> DomainInformation : **/domain/<id>/?????**
 actor user3 #Green
 user3 -right[#green]-> UserDomainRole : **/domain/<id>/users/add**
 user3 -right[#green]-> DomainInvitation : **/domain/<id>/users/add**
-@enduml
 ```
