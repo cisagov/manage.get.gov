@@ -426,3 +426,9 @@ abbr[title] {
   border-bottom: none;
   text-decoration: none;
 }
+
+.usa-textarea {
+  @include at-media('tablet') {
+    height: units('mobile');
+  }
+}
