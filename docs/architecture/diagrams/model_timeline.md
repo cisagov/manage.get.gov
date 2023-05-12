@@ -23,6 +23,12 @@ the `django-model2puml` plugin.
 
 <details>
 <summary>PlantUML source code</summary>
+To regenerate this image using Docker, run
+
+```bash
+$ docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg model_timeline.md
+```
+
 
 ```plantuml
 @startuml

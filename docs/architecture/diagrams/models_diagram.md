@@ -13,6 +13,12 @@ $ docker compose app ./manage.py generate_puml --include registrar
 <details>
 <summary>PlantUML source code</summary>
 
+To regenerate this image using Docker, run
+
+```bash
+$ docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg models_diagram.md
+```
+
 ```plantuml
 @startuml 
 class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
