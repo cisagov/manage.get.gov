@@ -246,8 +246,6 @@ function handleValidationClick(e) {
   addButton.addEventListener('click', addForm)
 
   function addForm(e){
-      e.preventDefault()
-
       let newForm = serverForm[2].cloneNode(true)
       let formNumberRegex = RegExp(`form-(\\d){1}-`,'g')
       let formLabelRegex = RegExp(`Name server (\\d){1}`, 'g')
