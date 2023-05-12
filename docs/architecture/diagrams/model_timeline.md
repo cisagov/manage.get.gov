@@ -19,7 +19,7 @@ A more complete diagram of the data models, their fields, and their
 relationships are in [models_diagram.md](./models_diagram.md), created with
 the `django-model2puml` plugin.
 
-```plantuml
+```mermaid
 @startuml
 
 allowmixing

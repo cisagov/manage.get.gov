@@ -8,7 +8,7 @@ using the command
 $ docker compose app ./manage.py generate_puml --include registrar
 ```
 
-```plantuml
+```mermaid
 @startuml 
 class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
     contact
