@@ -1,24 +1,39 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n static %}
 
-{% block title %}{% translate "Server error" %}{% endblock %}
+{% block title %}{% translate "Server error | " %}{% endblock %}
 
 {% block content %}
 <main id="main-content" class="grid-container">
-  <h1>{% translate "Server Error" %}</h1>
+  <div class="grid-row grid-gap">
+    <div class="tablet:grid-col-6 usa-prose margin-bottom-3">
+      <h1>
+        {% translate "We're having some trouble" %}
+      </h1>
+      <h2>
+        {% translate "Status 500 – server error" %}
+      </h2>
+      {% if friendly_message %}
+        <p>{{ friendly_message }}</p>
+      {% else %}
+        <p>
+        Sorry! Try waiting a few minutes and then reloading the page.
+        <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/contact/"> Contact us </a> if you need help.
+        </p>
+      {% endif %}
 
-  {% if friendly_message %}
-  <p>{{ friendly_message }}</p>
-  {% else %}
-  <p>{% translate "An internal server error occurred." %}</p>
-  {% endif %}
-
-  {% if log_identifier %}
-  <p>Here's a unique identifier for this error.</p>
-  <blockquote>{{ log_identifier }}</blockquote>
-  <p>{% translate "Please include it if you contact us." %}</p>
-  {% endif %}
-
-  TODO: Content team to create a "how to contact us" footer for the error pages
+      {% if log_identifier %}
+      <p>Here's a unique identifier for this error.</p>
+      <p class="text-semibold">{{ log_identifier }}</p>
+      <p>{% translate "Please include it if you contact us." %}</p>
+      {% endif %}
+    </div>
+    <div class="tablet:grid-col-4 flex-align-self-end">
+      <img 
+         src="{%static 'img/registrar/dotgov_500_illo.svg' %}"
+         alt=""
+      />
+    </div>
+  </div>
 </main>
 {% endblock %}
