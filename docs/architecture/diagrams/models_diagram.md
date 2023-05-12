@@ -1,3 +1,14 @@
+# Complete model documentation
+
+This is an auto-generated diagram of our data models generated with the
+[django-model2puml](https://github.com/sen-den/django-model2puml) library
+using the command
+
+```bash
+$ docker compose app ./manage.py generate_puml --include registrar
+```
+
+```plantuml
 @startuml 
 class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
     contact
@@ -248,3 +259,4 @@ class "registrar.Website <Registrar>" as registrar.Website #d6f4e9 {
 
 
 @enduml
+```
