@@ -429,6 +429,6 @@ abbr[title] {
 
 .usa-textarea {
   @include at-media('tablet') {
-    height: 20rem;
+    height: units('mobile');
   }
 }
