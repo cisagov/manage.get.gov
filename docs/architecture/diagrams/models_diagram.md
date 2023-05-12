@@ -8,7 +8,7 @@ using the command
 $ docker compose app ./manage.py generate_puml --include registrar
 ```
 
-![./models_diagram.svg]
+![Complete data models diagram](./models_diagram.svg)
 
 <details>
 <summary>PlantUML source code</summary>

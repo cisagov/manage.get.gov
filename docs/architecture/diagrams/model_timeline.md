@@ -19,7 +19,7 @@ A more complete diagram of the data models, their fields, and their
 relationships are in [models_diagram.md](./models_diagram.md), created with
 the `django-model2puml` plugin.
 
-![./model_timeline.svg]
+![Data model timeline diagram](./model_timeline.svg)
 
 <details>
 <summary>PlantUML source code</summary>
