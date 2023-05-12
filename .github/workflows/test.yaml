@@ -32,6 +32,17 @@ jobs:
         working-directory: ./src
         run: docker compose run app python manage.py test
 
+  django-migrations-complete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for complete migrations
+        working-directory: ./src
+        run:  |
+          docker compose run app ./manage.py makemigrations --dry-run --verbosity 3 && \
+          docker compose run app ./manage.py makemigrations --check
+
   pa11y-scan:
     runs-on: ubuntu-20.04
     steps:
