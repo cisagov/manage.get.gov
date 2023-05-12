@@ -4,5 +4,6 @@
     {# hint: spacing in the class string matters #}
     class="{{ uswds_input_class }}{% if classes %} {{ classes }}{% endif %}"
     {% if widget.value != None %}value="{{ widget.value|stringformat:'s' }}"{% endif %}
+    {% if sublabel_text %}aria-describedby="{{ widget.attrs.id }}__sublabel"{% endif %}
     {% include "django/forms/widgets/attrs.html" %}
 />

@@ -1058,6 +1058,11 @@ class TestDomainPermissions(TestWithDomainPermissions):
         )
         self.assertEqual(response.status_code, 302)
 
+        response = self.client.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        self.assertEqual(response.status_code, 302)
+
     def test_no_domain_role(self):
         """Logged in but no role gets 403 Forbidden."""
         self.client.force_login(self.user)
@@ -1076,6 +1081,12 @@ class TestDomainPermissions(TestWithDomainPermissions):
         with less_console_noise():
             response = self.client.get(
                 reverse("domain-users-add", kwargs={"pk": self.domain.id})
+            )
+        self.assertEqual(response.status_code, 403)
+
+        with less_console_noise():
+            response = self.client.get(
+                reverse("domain-nameservers", kwargs={"pk": self.domain.id})
             )
         self.assertEqual(response.status_code, 403)
 
@@ -1221,6 +1232,55 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
         self.assertContains(home_page, self.domain.name)
+
+    def test_domain_nameservers(self):
+        """Can load domain's nameservers page."""
+        page = self.client.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Domain name servers")
+
+    def test_domain_nameservers_form(self):
+        """Can change domain's nameservers.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameservers_page = self.app.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post, response should be a redirect
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = result.follow()
+        self.assertContains(page, "The name servers for this domain have been updated")
+
+    def test_domain_nameservers_form_invalid(self):
+        """Can change domain's nameservers.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameservers_page = self.app.get(
+            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        nameservers_page.form["form-0-server"] = ""
+        with less_console_noise():  # swallow logged warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(result, "This field is required", count=2, status_code=200)
 
 
 class TestApplicationStatus(TestWithUser, WebTest):

@@ -28,6 +28,10 @@ error messages, if necessary.
     {% include "django/forms/label.html" %}
   {% endif %}
 
+  {% if sublabel_text %}
+    <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">{{ sublabel_text }}</p>
+  {% endif %}
+
   {% if field.errors %}
     <div id="{{ widget.attrs.id }}__error-message">
     {% for error in field.errors %}
