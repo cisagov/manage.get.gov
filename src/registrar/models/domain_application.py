@@ -9,7 +9,7 @@ from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
-
+from itertools import chain
 
 logger = logging.getLogger(__name__)
 
@@ -520,6 +520,10 @@ class DomainApplication(TimeStampedModel):
         Domain = apps.get_model("registrar.Domain")
         created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
 
+        # copy the information from domainapplication into domaininformation
+        DomainInformation = apps.get_model("registrar.DomainInformation")
+        DomainInformation.create_from_da(self)
+
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
@@ -577,3 +581,26 @@ class DomainApplication(TimeStampedModel):
         if self.organization_type == DomainApplication.OrganizationChoices.FEDERAL:
             return True
         return False
+
+    def to_dict(self):
+        """This is to process to_dict for Domain Information, making it friendly
+        to "copy" it
+
+        More information can be found at this- (This used #5)
+        https://stackoverflow.com/questions/21925671/convert-django-model-object-to-dict-with-all-of-the-fields-intact/29088221#29088221
+        """  # noqa 590
+        opts = self._meta
+        data = {}
+        for field in chain(opts.concrete_fields, opts.private_fields):
+            if field.get_internal_type() in ("ForeignKey", "OneToOneField"):
+                # get the related instance of the FK value
+                fk_id = field.value_from_object(self)
+                if fk_id:
+                    data[field.name] = field.related_model.objects.get(id=fk_id)
+                else:
+                    data[field.name] = None
+            else:
+                data[field.name] = field.value_from_object(self)
+        for field in opts.many_to_many:
+            data[field.name] = field.value_from_object(self)
+        return data
