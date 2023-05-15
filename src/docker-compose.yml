@@ -62,6 +62,9 @@ services:
       - POSTGRES_PASSWORD=feedabee
 
   node:
+    build:
+      context: .
+      dockerfile: node.Dockerfile
     image: node
     volumes:
       - .:/app

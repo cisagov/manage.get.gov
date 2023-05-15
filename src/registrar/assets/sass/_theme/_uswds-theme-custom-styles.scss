@@ -417,8 +417,18 @@ footer {
   color: color('primary');
 }
 
+.usa-identifier__logo {
+ height: units(7);
+}
+
 abbr[title] {
   // workaround for underlining abbr element
   border-bottom: none;
   text-decoration: none;
+}
+
+.usa-textarea {
+  @include at-media('tablet') {
+    height: units('mobile');
+  }
 }

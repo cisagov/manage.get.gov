@@ -5,7 +5,7 @@ from typing import Callable
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MaxLengthValidator
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
@@ -315,6 +315,12 @@ class TypeOfWorkForm(RegistrarForm):
         # label has to end in a space to get the label_suffix to show
         label="What type of work does your organization do? ",
         widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                1000,
+                message="Response must be less than 1000 characters.",
+            )
+        ],
         error_messages={"required": "Enter the type of work your organization does."},
     )
 
@@ -327,6 +333,12 @@ class TypeOfWorkForm(RegistrarForm):
             " support your claims. "
         ),
         widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                1000,
+                message="Response must be less than 1000 characters.",
+            )
+        ],
         error_messages={
             "required": (
                 "Describe how your organization is independent of a state government."
@@ -554,6 +566,12 @@ class PurposeForm(RegistrarForm):
     purpose = forms.CharField(
         label="Purpose",
         widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                1000,
+                message="Response must be less than 1000 characters.",
+            )
+        ],
         error_messages={
             "required": "Describe how you'll use the .gov domain you’re requesting."
         },
@@ -696,6 +714,12 @@ class AnythingElseForm(RegistrarForm):
         required=False,
         label="Anything else we should know?",
         widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                1000,
+                message="Response must be less than 1000 characters.",
+            )
+        ],
     )
 
 

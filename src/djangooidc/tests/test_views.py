@@ -49,7 +49,7 @@ class ViewsTest(TestCase):
         # assert
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, "500.html")
-        self.assertIn("Server Error", response.content.decode("utf-8"))
+        self.assertIn("server error", response.content.decode("utf-8"))
 
     def test_login_callback_reads_next(self, mock_client):
         # setup
