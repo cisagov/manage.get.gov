@@ -144,6 +144,10 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# OWASP
+zap.yaml
+zap_report.html
+
 # Pyre type checker
 .pyre/
 
