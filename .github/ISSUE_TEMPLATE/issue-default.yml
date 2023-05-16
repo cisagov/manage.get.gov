@@ -26,16 +26,17 @@ body:
       value: "While working on X or researching Y it was discovered that Z was an issue that need captured."
     validations:
       required: true
-  # - type: dropdown
-  #   id: version
-  #   attributes:
-  #     label: Version
-  #     description: What version of our software are you running?
-  #     options:
-  #       - 1.0.2 (Default)
-  #       - 1.0.3 (Edge)
-  #   validations:
-  #     required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Issue Type
+      description: What type of issue is this
+      options:
+        - research (Default)
+        - dev
+        - product
+    validations:
+      required: true
   # - type: dropdown
   #   id: browsers
   #   attributes:
