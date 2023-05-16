@@ -16,6 +16,7 @@ on:
       - '.gitignore'
     branches:
       - main
+      - bl-audit-paths-ignore
 
 jobs:
   python-linting:
