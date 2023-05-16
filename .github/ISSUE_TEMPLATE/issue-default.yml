@@ -9,14 +9,6 @@ body:
     attributes:
       value: |
         Please fill this out best you can
-  # - type: input
-  #   id: contact
-  #   attributes:
-  #     label: Contact Details
-  #     description: How can we get in touch with you if we need more info?
-  #     placeholder: ex. email@example.com
-  #   validations:
-  #     required: false
   - type: textarea
     id: why
     attributes:
@@ -37,27 +29,9 @@ body:
         - product
     validations:
       required: true
-  # - type: dropdown
-  #   id: browsers
-  #   attributes:
-  #     label: What browsers are you seeing the problem on?
-  #     multiple: true
-  #     options:
-  #       - Firefox
-  #       - Chrome
-  #       - Safari
-  #       - Microsoft Edge
   - type: textarea
     id: Dependencies
     attributes:
       label: Link dependent issues
       description: If this ticket is dependent on another issue or blocks a current issue, please link.
       render: shell
-  # - type: checkboxes
-  #   id: terms
-  #   attributes:
-  #     label: Code of Conduct
-  #     description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
-  #     options:
-  #       - label: I agree to follow this project's Code of Conduct
-  #         required: true
