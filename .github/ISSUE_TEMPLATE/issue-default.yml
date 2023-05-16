@@ -20,7 +20,7 @@ body:
   - type: textarea
     id: why
     attributes:
-      label: Why
+      label: Why or Acceptance Criteria
       description: What is the reason we determined we need an issue.
       placeholder: This issue is a product of...
       value: "While working on X or researching Y it was discovered that Z was an issue that need captured."
