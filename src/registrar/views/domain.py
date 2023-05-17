@@ -12,7 +12,7 @@ from django.views.generic.edit import DeleteView, FormMixin
 
 from registrar.models import Domain, DomainInvitation, User, UserDomainRole
 
-from ..forms import DomainAddUserForm, NameserverFormset
+from ..forms import DomainAddUserForm, NameserverFormset, DomainSecurityEmailForm
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
 
@@ -94,6 +94,55 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         )
         # superclass has the redirect
         return super().form_valid(formset)
+
+
+class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
+
+    """Domain security email editing view."""
+
+    model = Domain
+    template_name = "domain_security_email.html"
+    context_object_name = "domain"
+    form_class = DomainSecurityEmailForm
+
+    def get_initial(self):
+        """The initial value for the form."""
+        domain = self.get_object()
+        initial = super().get_initial()
+        initial["security_email"] = domain.security_email()
+        return initial
+
+    def get_success_url(self):
+        """Redirect to the overview page for the domain."""
+        return reverse("domain-security-email", kwargs={"pk": self.object.pk})
+
+    def post(self, request, *args, **kwargs):
+        """Formset submission posts to this view."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            # there is a valid email address in the form
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """The form is valid, call setter in model."""
+
+        # Set the security email from the from
+        try:
+            new_email = form.cleaned_data["security_email"]
+        except KeyError:
+            # no server information in this field, skip it
+            pass
+        domain = self.get_object()
+        domain.set_security_email(new_email)
+
+        messages.success(
+            self.request, "The security email for this domain have been updated"
+        )
+        # superclass has the redirect
+        return redirect(self.get_success_url())
 
 
 class DomainUsersView(DomainPermission, DetailView):
