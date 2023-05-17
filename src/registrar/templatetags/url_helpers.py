@@ -1,5 +1,3 @@
-from urllib.parse import urljoin
-
 from django import template
 from django.urls import reverse
 
@@ -30,8 +28,5 @@ def public_site_url(url_path):
     """
     base_url = settings.GETGOV_PUBLIC_SITE_URL
     # join the two halves with a single slash
-    public_url ="/".join([
-        base_url.rstrip("/"),
-        url_path.lstrip("/")
-    ])
+    public_url = "/".join([base_url.rstrip("/"), url_path.lstrip("/")])
     return public_url

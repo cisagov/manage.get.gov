@@ -4,8 +4,8 @@ from django.conf import settings
 from django.test import TestCase
 from django.template import Context, Template
 
-class TestTemplateTags(TestCase):
 
+class TestTemplateTags(TestCase):
     def _render_template(self, string, context=None):
         """Helper method to render a template given as a string.
 
