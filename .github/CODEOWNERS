@@ -1,4 +1,4 @@
 # For more information on CODEOWNERS, see the documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 * @abroddrick
-docs/* @DotGov
+docs/* @cisagov/dotgov
