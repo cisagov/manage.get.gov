@@ -83,7 +83,7 @@ The endpoint /admin can be used to view and manage site content, including but n
 
 ## Adding to CODEOWNERS (optional)
 
-The CODEOWNERS file set the tagged individuals as default PR reviewers on any commit regarding the content specify. "*" indicates a user will be added as PR reviewer for all files in the repo, while "subfolder/*" indicates a particular folder for which a user(s) will be added as default PR reviewer. To add yourself as code owner for all files:
+The CODEOWNERS file sets the tagged individuals as default PR reviewers on any commit regarding the content specified. An asterisk indicates a user will be added as PR reviewer for all files in the repo, while "subfolder/*" indicates a particular folder for which a user(s) will be added as default PR reviewer. To add yourself as code owner for all files:
 
 1. Go to .github\CODEOWNERS
 2. where you see "* @abroddrick" add a space followed by your github tag. For instance if your github username was @NewGithubUsername you would do the following:
