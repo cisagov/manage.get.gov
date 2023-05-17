@@ -90,7 +90,7 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         domain.set_nameservers(nameservers)
 
         messages.success(
-            self.request, "The name servers for this domain have been updated"
+            self.request, "The name servers for this domain have been updated."
         )
         # superclass has the redirect
         return super().form_valid(formset)
@@ -129,17 +129,13 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
     def form_valid(self, form):
         """The form is valid, call setter in model."""
 
-        # Set the security email from the from
-        try:
-            new_email = form.cleaned_data["security_email"]
-        except KeyError:
-            # no server information in this field, skip it
-            pass
+        # Set the security email from the form
+        new_email = form.cleaned_data["security_email"]
         domain = self.get_object()
         domain.set_security_email(new_email)
 
         messages.success(
-            self.request, "The security email for this domain have been updated"
+            self.request, "The security email for this domain have been updated."
         )
         # superclass has the redirect
         return redirect(self.get_success_url())

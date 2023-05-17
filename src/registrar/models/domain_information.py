@@ -200,12 +200,6 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         help_text="Acknowledged .gov acceptable use policy",
     )
-    security_email = models.EmailField(
-        max_length=320,
-        null=True,
-        blank=True,
-        help_text="Security email for public use",
-    )
 
     def __str__(self):
         try:
