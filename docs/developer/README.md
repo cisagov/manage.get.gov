@@ -81,6 +81,19 @@ The endpoint /admin can be used to view and manage site content, including but n
 
 5. In the browser, navigate to /admins. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
 
+## Adding to CODEOWNERS (optional)
+
+The CODEOWNERS file set the tagged individuals as default PR reviewers on any commit regarding the content specify. "*" indicates a user will be added as PR reviewer for all files in the repo, while "subfolder/*" indicates a particular folder for which a user(s) will be added as default PR reviewer. To add yourself as code owner for all files:
+
+1. Go to .github\CODEOWNERS
+2. where you see "* @abroddrick" add a space followed by your github tag. For instance if your github username was @NewGithubUsername you would do the following:
+
+```
+* @abroddrick @NewGithubUsername
+```
+
+3. Create a pull request to finalize your changes
+
 ## Viewing Logs
 
 If you run via `docker-compose up`, you'll see the logs in your terminal.
