@@ -62,8 +62,7 @@ secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
-# this needs to exist or a warning will be generated
-secret_getgov_public_site_url = secret("GETGOV_PUBLIC_SITE_URL")
+secret_getgov_public_site_url = secret("GETGOV_PUBLIC_SITE_URL", "")
 
 # region: Basic Django Config-----------------------------------------------###
 
