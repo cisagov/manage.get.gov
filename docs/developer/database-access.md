@@ -12,19 +12,32 @@ to get a `psql` shell on the sandbox environment's database.
 
 ## Running Migrations
 
+### On Local
+
+```shell
+docker-compose exec app bash
+./manage.py makemigrations
+```
+
+The docker compose down then up to run the new migrations.
+
+### On Cloud.gov
+
 When new code changes the database schema, we need to apply Django's migrations.
 We can run these using CloudFoundry's tasks to run the `manage.py migrate`
 command in the correct environment. For any developer environment, developers
 can manually run the task with
 
 ```shell
-cf run-task getgov-ENVIRONMENT --command 'python manage.py migrate' --name migrate
+cf run-task getgov-ENVIRONMENT --wait --command 'python manage.py migrate' --name migrate
 ```
+
+(The optional 'wait' argument will wait until the environment is stable)
 
 Optionally, load data from fixtures as well
 
 ```shell
-cf run-task getgov-ENVIRONMENT --command 'python manage.py load' --name loaddata
+cf run-task getgov-ENVIRONMENT --wait --command 'python manage.py load' --name loaddata
 ```
 
 For the `stable` environment, developers don't have credentials so we need to
