@@ -26,6 +26,15 @@
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
+            Organization name and mailing address
+        </a>
+      </li>      
+
+      <li class="usa-sidenav__item">
+        {% url 'todo' as url %}
+        <a href="{{ url }}"
+          {% if request.path == url %}class="usa-current"{% endif %}
+        >
             Authorizing official
         </a>
       </li>
