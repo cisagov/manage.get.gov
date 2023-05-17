@@ -29,5 +29,9 @@ def public_site_url(url_path):
     variable.
     """
     base_url = settings.GETGOV_PUBLIC_SITE_URL
-    public_url = urljoin(base_url, url_path)
+    # join the two halves with a single slash
+    public_url ="/".join([
+        base_url.rstrip("/"),
+        url_path.lstrip("/")
+    ])
     return public_url
