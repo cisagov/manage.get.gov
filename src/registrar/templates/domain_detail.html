@@ -1,6 +1,33 @@
 {% extends "domain_base.html" %}
+{% load static url_helpers %}
 
 {% block domain_content %}
   {{ block.super }}
   <p>Active: {% if domain.is_active %}Yes{% else %}No{% endif %}</p>
+  org type: {{domain.domain_info.organization_type}}
+
+  {% url 'domain-nameservers' pk=domain.id as url %}
+  {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' edit_link=url %}
+
+  {% url 'todo' as url %}
+  {% if domain.domain_info.organization_name %}
+    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url %}
+  {% endif %}
+
+  {% if domain.domain_info.authorizing_official %}
+    {% url 'todo' as url %}
+    {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url %}
+  {% endif %}
+
+  {% if domain.domain_info.submitter %}
+    {% url 'todo' as url %}
+    {% include "includes/summary_item.html" with title='Your contact information' value='---TODO---' edit_link=url %}
+  {% endif %}
+
+  {% url 'todo' as url %}
+  {% include "includes/summary_item.html" with title='Security email' value=domain.domain_info.security_email edit_link=url %}
+
+  {% url 'domain-users' pk=domain.id as url %}
+  {% include "includes/summary_item.html" with title='User management' users='true' value=domain.permissions.all edit_link=url %}
+
 {% endblock %}  {# domain_content #}
