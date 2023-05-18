@@ -12,6 +12,9 @@ to get a `psql` shell on the sandbox environment's database.
 
 ## Running Migrations
 
+When new code changes the database schema (ie, you change a model or pull some
+code that has), we need to apply Django's migrations.
+
 ### On Local
 
 ```shell
@@ -23,7 +26,6 @@ The docker compose down then up to run the new migrations.
 
 ### On Cloud.gov
 
-When new code changes the database schema, we need to apply Django's migrations.
 We can run these using CloudFoundry's tasks to run the `manage.py migrate`
 command in the correct environment. For any developer environment, developers
 can manually run the task with
