@@ -1,32 +1,32 @@
-name: Standard Issue Tempalte
+name: Standard Issue Template
 description: Create an Issue
-title: "[Issue]:"
+title: "[Issue]: "
 labels: ["research"]
-assignees:
-  - kitsushadow
+# assignees:
+#   - kitsushadow
 body:
   - type: markdown
     attributes:
       value: |
-        Please fill this out best you can
+        Describe an issue, idea, task, bug, or story.
   - type: textarea
     id: why
     attributes:
       label: Why or Acceptance Criteria
-      description: What is the reason we determined we need an issue.
+      description: What is the reason it was determined this is an issue.
       placeholder: This issue is a product of...
-      value: "While working on X or researching Y it was discovered that Z was an issue that need captured."
+      value: "While working on X or researching Y it was discovered that Z was an issue that needed captured."
     validations:
       required: true
   - type: dropdown
     id: type
     attributes:
       label: Issue Type
-      description: What type of issue is this
+      description: What kind of role would take action on your issue?
       options:
         - research (Default)
-        - dev
-        - product
+        - development
+        - product team
     validations:
       required: true
   - type: textarea
