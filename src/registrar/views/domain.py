@@ -130,7 +130,11 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
         """The form is valid, call setter in model."""
 
         # Set the security email from the form
-        new_email = form.cleaned_data["security_email"]
+        new_email = ""
+        try:
+            new_email = form.cleaned_data["security_email"]
+        except:
+            pass
         domain = self.get_object()
         domain.set_security_email(new_email)
 
