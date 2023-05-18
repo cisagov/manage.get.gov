@@ -19,7 +19,7 @@ docker-compose exec app bash
 ./manage.py makemigrations
 ```
 
-The docker compose down then up to run the new migrations.
+Then perform docker-compose down & docker-compose up to run with the new migrations.
 
 ### On Cloud.gov
 
