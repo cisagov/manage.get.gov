@@ -133,7 +133,7 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
         new_email = ""
         try:
             new_email = form.cleaned_data["security_email"]
-        except:
+        except KeyError:
             pass
         domain = self.get_object()
         domain.set_security_email(new_email)
