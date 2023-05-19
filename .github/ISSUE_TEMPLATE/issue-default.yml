@@ -1,7 +1,7 @@
-name: Standard Issue Template
-description: Create an Issue
-title: "[Issue]: "
-labels: ["research"]
+name: Issue
+description: Provide a title for the issue you are describing 
+title: ""
+labels: ["review"]
 # assignees:
 #   - kitsushadow
 body:
