@@ -23,8 +23,8 @@
     {% url 'todo' as url %}
     {% include "includes/summary_item.html" with title='Your contact information' value='---TODO---' edit_link=url %}
 
-    {% url 'todo' as url %}
-    {% include "includes/summary_item.html" with title='Security email' value=domain.domain_info.security_email edit_link=url %}
+    {% url 'domain-security-email' pk=domain.id as url %}
+    {% include "includes/summary_item.html" with title='Security email' value=domain.security_email edit_link=url %}
 
     {% url 'domain-users' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='User management' users='true' value=domain.permissions.all edit_link=url %}
