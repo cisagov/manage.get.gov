@@ -1,0 +1,37 @@
+name: Standard Issue Tempalte
+description: Create an Issue
+title: "[Issue]:"
+labels: ["research"]
+assignees:
+  - kitsushadow
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill this out best you can
+  - type: textarea
+    id: why
+    attributes:
+      label: Why or Acceptance Criteria
+      description: What is the reason we determined we need an issue.
+      placeholder: This issue is a product of...
+      value: "While working on X or researching Y it was discovered that Z was an issue that need captured."
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Issue Type
+      description: What type of issue is this
+      options:
+        - research (Default)
+        - dev
+        - product
+    validations:
+      required: true
+  - type: textarea
+    id: Dependencies
+    attributes:
+      label: Link dependent issues
+      description: If this ticket is dependent on another issue or blocks a current issue, please link.
+      render: shell
