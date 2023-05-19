@@ -43,7 +43,7 @@
              <li>{{ item }}</li>
             {% empty %}
              <li>None</li>
-            {% endfor %}</ul></p>
+            {% endfor %}</ul>
           </ul>
         {% endif %}
 
@@ -58,7 +58,7 @@
         {% endif %}
 
       {% else %}
-      <p class="margin-top-0">
+      <p class="margin-top-0 margin-bottom-0">
         {{ value }}
       </p>
       {% endif %}
@@ -66,7 +66,6 @@
 
     {% if edit_link %}
     <a
-        aria-describedby="summary-item__title"
         href="{{ edit_link }}"
     >
       Edit<span class="sr-only"> {{ title }}</span>
