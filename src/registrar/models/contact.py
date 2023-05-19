@@ -20,6 +20,7 @@ class Contact(TimeStampedModel):
         null=True,
         blank=True,
         help_text="First name",
+        verbose_name="first name / given name",
         db_index=True,
     )
     middle_name = models.TextField(
@@ -31,12 +32,14 @@ class Contact(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Last name",
+        verbose_name="last name / family name",
         db_index=True,
     )
     title = models.TextField(
         null=True,
         blank=True,
         help_text="Title",
+        verbose_name="title or role in your organization",
     )
     email = models.TextField(
         null=True,

@@ -84,6 +84,11 @@ urlpatterns = [
         name="domain-nameservers",
     ),
     path(
+        "domain/<int:pk>/authorizing-official",
+        views.DomainAuthorizingOfficialView.as_view(),
+        name="domain-authorizing-official",
+    ),
+    path(
         "domain/<int:pk>/users/add",
         views.DomainAddUserView.as_view(),
         name="domain-users-add",
