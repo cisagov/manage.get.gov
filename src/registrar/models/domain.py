@@ -235,6 +235,19 @@ class Domain(TimeStampedModel):
         # nothing.
         logger.warn("TODO: Fake setting nameservers to %s", new_nameservers)
 
+    def security_email(self) -> str:
+        """Get the security email for this domain.
+
+        TODO: call EPP to get this info instead of returning fake data.
+        """
+        return "mayor@igorville.gov"
+
+    def set_security_email(self, new_security_email: str):
+        """Set the security email for this domain."""
+        # TODO: call EPP to set these values in the registry instead of doing
+        # nothing.
+        logger.warn("TODO: Fake setting security email to %s", new_security_email)
+
     @property
     def roid(self):
         return self._get_property("roid")
