@@ -1,6 +1,6 @@
 name: Issue
 description: Provide a title for the issue you are describing 
-title: ""
+title: "Please provide a clear title"
 labels: ["review"]
 # assignees:
 #   - kitsushadow
