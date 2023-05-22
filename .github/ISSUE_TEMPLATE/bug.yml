@@ -45,4 +45,4 @@ body:
     id: additional-context
     attributes:
       label: Additional Context
-      description: "Please include additional references, screenshots, documentation that are relevant"
+      description: "Please include additional references, screenshots, documentation, etc. that are relevant"
