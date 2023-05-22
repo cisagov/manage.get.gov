@@ -84,9 +84,9 @@ urlpatterns = [
         name="domain-nameservers",
     ),
     path(
-        "domain/<int:pk>/contact-information",
-        views.DomainSecurityEmailView.as_view(),
-        name="domain-contact-information",
+        "domain/<int:pk>/your-contact-information",
+        views.DomainYourContactInformationView.as_view(),
+        name="domain-your-contact-information",
     ),
     path(
         "domain/<int:pk>/security-email",
