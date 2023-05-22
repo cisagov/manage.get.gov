@@ -62,3 +62,10 @@ class ContactForm(forms.ModelForm):
 
         for field_name in self.required:
             self.fields[field_name].required = True
+
+
+class DomainSecurityEmailForm(forms.Form):
+
+    """Form for adding or editing a security email to a domain."""
+
+    security_email = forms.EmailField(label="Security email")

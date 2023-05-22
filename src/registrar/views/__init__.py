@@ -3,6 +3,7 @@ from .domain import (
     DomainView,
     DomainAuthorizingOfficialView,
     DomainNameserversView,
+    DomainSecurityEmailView,
     DomainUsersView,
     DomainAddUserView,
     DomainInvitationDeleteView,
