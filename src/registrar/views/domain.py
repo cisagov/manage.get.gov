@@ -67,7 +67,6 @@ class DomainAuthorizingOfficialView(DomainPermission, FormMixin, DetailView):
 
     def form_valid(self, form):
         """The form is valid, save the authorizing official."""
-        domain = self.get_object()
         form.save()
 
         messages.success(
