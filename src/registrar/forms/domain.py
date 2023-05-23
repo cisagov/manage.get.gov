@@ -33,8 +33,8 @@ class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
     security_email = forms.EmailField(label="Security email")
-    
-    
+
+
 class ContactForm(forms.ModelForm):
 
     """Form for updating contacts."""
@@ -54,21 +54,13 @@ class ContactForm(forms.ModelForm):
     # the database fields have blank=True so ModelForm doesn't create
     # required fields by default. Use this list in __init__ to mark each
     # of these fields as required
-    required = [
-        "first_name",
-        "last_name",
-        "title",
-        "email",
-        "phone"
-    ]
+    required = ["first_name", "last_name", "title", "email", "phone"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
-        self.fields['phone'].widget.attrs.pop('maxlength', None)
+        self.fields["phone"].widget.attrs.pop("maxlength", None)
 
         for field_name in self.required:
             self.fields[field_name].required = True
-    
-    

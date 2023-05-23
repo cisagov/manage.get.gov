@@ -10,9 +10,20 @@ from django.urls import reverse
 from django.views.generic import DetailView
 from django.views.generic.edit import DeleteView, FormMixin
 
-from registrar.models import Domain, DomainInvitation, User, UserDomainRole, DomainInformation
+from registrar.models import (
+    Domain,
+    DomainInvitation,
+    User,
+    UserDomainRole,
+    DomainInformation,
+)
 
-from ..forms import DomainAddUserForm, NameserverFormset, DomainSecurityEmailForm, ContactForm
+from ..forms import (
+    DomainAddUserForm,
+    NameserverFormset,
+    DomainSecurityEmailForm,
+    ContactForm,
+)
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermission
 
@@ -94,8 +105,8 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         )
         # superclass has the redirect
         return super().form_valid(formset)
-    
-    
+
+
 class DomainYourContactInformationView(DomainPermission, FormMixin, DetailView):
 
     """Domain your contact information editing view."""
@@ -104,19 +115,7 @@ class DomainYourContactInformationView(DomainPermission, FormMixin, DetailView):
     template_name = "domain_your_contact_information.html"
     context_object_name = "domain"
     form_class = ContactForm
-    
-    # def get_initial(self):
-    #     """The initial value for the form."""
-    #     domainInformation = self.get_object()
-    #     initial = super().get_initial()
-    #     initial["first_name"] = domainInformation.submitter.first_name
-    #     initial["middle_name"] = domainInformation.submitter.middle_name
-    #     initial["last_name"] = domainInformation.submitter.last_name
-    #     initial["title"] = domainInformation.submitter.title
-    #     initial["email"] = domainInformation.submitter.email
-    #     initial["phone"] = domainInformation.submitter.phone
-    #     return initial
-    
+
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
@@ -141,9 +140,6 @@ class DomainYourContactInformationView(DomainPermission, FormMixin, DetailView):
         """The form is valid, call setter in model."""
 
         # Post to DB using values from the form
-        # new_email = form.cleaned_data["security_email"]
-        # domain = self.get_object()
-        # domain.set_security_email(new_email)
         domain = self.get_object()
         form.save()
 
