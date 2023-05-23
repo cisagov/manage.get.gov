@@ -15,7 +15,6 @@ from registrar.models import (
     DomainInvitation,
     User,
     UserDomainRole,
-    DomainInformation,
 )
 
 from ..forms import (
@@ -140,7 +139,6 @@ class DomainYourContactInformationView(DomainPermission, FormMixin, DetailView):
         """The form is valid, call setter in model."""
 
         # Post to DB using values from the form
-        domain = self.get_object()
         form.save()
 
         messages.success(

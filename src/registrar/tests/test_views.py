@@ -1055,7 +1055,8 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-nameservers",
-            "domain-your-contact-information" "domain-security-email",
+            "domain-your-contact-information",
+            "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
                 response = self.client.get(
@@ -1073,7 +1074,8 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-nameservers",
-            "domain-your-contact-information" "domain-security-email",
+            "domain-your-contact-information",
+            "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
                 with less_console_noise():
@@ -1287,7 +1289,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         )
         self.assertContains(page, "Domain contact information")
 
-    def test_domain_your_contact_information(self):
+    def test_domain_your_contact_information_content(self):
         """Your contact information appears on the page."""
         self.domain_information.submitter = Contact(first_name="Testy")
         self.domain_information.submitter.save()
