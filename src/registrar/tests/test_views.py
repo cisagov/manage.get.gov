@@ -1082,6 +1082,12 @@ class TestDomainPermissions(TestWithDomainPermissions):
                     )
                 self.assertEqual(response.status_code, 403)
 
+        with less_console_noise():
+            response = self.client.get(
+                reverse("domain-security-email", kwargs={"pk": self.domain.id})
+            )
+        self.assertEqual(response.status_code, 403)
+
 
 class TestDomainDetail(TestWithDomainPermissions, WebTest):
     def setUp(self):
