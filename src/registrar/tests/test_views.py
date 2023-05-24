@@ -1063,6 +1063,11 @@ class TestDomainPermissions(TestWithDomainPermissions):
         )
         self.assertEqual(response.status_code, 302)
 
+        response = self.client.get(
+            reverse("domain-security-email", kwargs={"pk": self.domain.id})
+        )
+        self.assertEqual(response.status_code, 302)
+
     def test_no_domain_role(self):
         """Logged in but no role gets 403 Forbidden."""
         self.client.force_login(self.user)
@@ -1087,6 +1092,12 @@ class TestDomainPermissions(TestWithDomainPermissions):
         with less_console_noise():
             response = self.client.get(
                 reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+            )
+        self.assertEqual(response.status_code, 403)
+
+        with less_console_noise():
+            response = self.client.get(
+                reverse("domain-security-email", kwargs={"pk": self.domain.id})
             )
         self.assertEqual(response.status_code, 403)
 
@@ -1281,6 +1292,38 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         # error text appears twice, once at the top of the page, once around
         # the field.
         self.assertContains(result, "This field is required", count=2, status_code=200)
+
+    def test_domain_security_email(self):
+        """Can load domain's security email page."""
+        page = self.client.get(
+            reverse("domain-security-email", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Domain security email")
+
+    def test_domain_security_email_form(self):
+        """Adding a security email works.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        security_email_page = self.app.get(
+            reverse("domain-security-email", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        security_email_page.form["security_email"] = "mayor@igorville.gov"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with less_console_noise():  # swallow log warning message
+            result = security_email_page.form.submit()
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-security-email", kwargs={"pk": self.domain.id}),
+        )
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = result.follow()
+        self.assertContains(
+            success_page, "The security email for this domain have been updated"
+        )
 
 
 class TestApplicationStatus(TestWithUser, WebTest):
