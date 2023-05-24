@@ -8,25 +8,25 @@ body:
   - type: markdown
     attributes:
       value: |
-        Describe an issue, idea, task, bug, or story.
+        Describe the ticket your are capturing in further detail.
   - type: textarea
     id: why
     attributes:
-      label: Why or Acceptance Criteria
-      description: What is the reason it was determined this is an issue.
-      placeholder: This issue is a product of...
-      value: "While working on X or researching Y it was discovered that Z was an issue that needed captured."
+      label: Ticket Description
+      description: Please provide details to accurately reflect why this ticket is being captured and also what is necessary to resolve.
+      placeholder: Provide details describing your lead up to needing this issue as well as any resolution or requirements for resolving or working on this more.
+      value: "While (working on or discussing) (issue #000 or domain request validation) I discovered there was (a missing workflow, an improvement, a missing feature). To resolve this (more research, a new feature, a new field, an interview) is required. Provide any links, screenshots, or mockups which would further detail the description."
     validations:
       required: true
   - type: dropdown
     id: type
     attributes:
       label: Issue Type
-      description: What kind of role would take action on your issue?
+      description: Does this work require
       options:
-        - research (Default)
+        - discovery (Default)
         - development
-        - product team
+        - design review
     validations:
       required: true
   - type: textarea

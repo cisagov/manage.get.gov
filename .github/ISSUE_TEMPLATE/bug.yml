@@ -24,7 +24,7 @@ body:
     id: steps-to-reproduce
     attributes:
       label: Steps to Reproduce
-      description: "How can the issue be reliably reproduced?"
+      description: "How can the issue be reliably reproduced? feel free to include screenshots or other supporting artifacts"
       placeholder: |
         Example:
         1. In the test environment, fill out the application for a new domain
