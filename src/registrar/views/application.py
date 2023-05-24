@@ -6,7 +6,6 @@ from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
-from django.views import generic
 from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
@@ -494,13 +493,13 @@ class ApplicationWithdrawConfirmation(DomainApplicationPermissionView):
 
 class ApplicationWithdrawn(DomainApplicationPermissionView):
     # this view renders no template
-    template_name = None
+    template_name = ""
 
     def get(self, *args, **kwargs):
         """View class that does the actual withdrawing.
 
-        If user click on withdraw confirm button, this view updates the status to withdraw
-        and send back to homepage.
+        If user click on withdraw confirm button, this view updates the status
+        to withdraw and send back to homepage.
         """
         application = DomainApplication.objects.get(id=self.kwargs["pk"])
         application.status = "withdrawn"

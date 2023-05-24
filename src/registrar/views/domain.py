@@ -12,10 +12,9 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import DetailView
-from django.views.generic.edit import DeleteView, FormMixin
+from django.views.generic.edit import FormMixin
 
-from registrar.models import Domain, DomainInvitation, User, UserDomainRole
+from registrar.models import DomainInvitation, User, UserDomainRole
 
 from ..forms import DomainAddUserForm, NameserverFormset, DomainSecurityEmailForm
 from ..utility.email import send_templated_email, EmailSendingError
@@ -235,7 +234,11 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
         return redirect(self.get_success_url())
 
 
-class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView):
+class DomainInvitationDeleteView(
+    DomainInvitationPermissionDeleteView, SuccessMessageMixin
+):
+    object: DomainInvitation  # workaround for type mismatch in DeleteView
+
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
