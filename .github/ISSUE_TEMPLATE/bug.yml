@@ -7,7 +7,9 @@ body:
   - type: markdown
     id: help
     attributes:
-      value: GitHub Issues use [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) for formatting.
+      value: |
+        > **Note**
+        > GitHub Issues use [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) for formatting.
   - type: textarea
     id: current-behavior
     attributes:
