@@ -24,25 +24,30 @@ body:
     id: steps-to-reproduce
     attributes:
       label: Steps to Reproduce
-      description: "How can the issue be reliably reproduced? feel free to include screenshots or other supporting artifacts"
-      placeholder: |
+      description: |
+        How can the issue be reliably reproduced? Feel free to include screenshots or other supporting artifacts
+        
         Example:
         1. In the test environment, fill out the application for a new domain
         2. Click the button to trigger a save/submit on the final page and complete the application 
         3. See the error
+      value: |
+        1.
     validations:
       required: true
   - type: textarea
     id: environment
     attributes:
-      label: Environment
-      description: "Where is this issue occurring? If related to development environment, list the specific relevant tool versions"
-      placeholder: |
+      label: Environment (optional)
+      description: |
+        Where is this issue occurring? If related to development environment, list the relevant tool versions.
+        
         Example:
+        - Environment: Sandbox
         - Browser: Chrome x.y.z
         - Python: x.y.z
   - type: textarea
     id: additional-context
     attributes:
-      label: Additional Context
+      label: Additional Context (optional)
       description: "Please include additional references, screenshots, documentation, etc. that are relevant"
