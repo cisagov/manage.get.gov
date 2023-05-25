@@ -13,6 +13,7 @@ import boto3_mocking  # type: ignore
 from registrar.models import (
     DomainApplication,
     Domain,
+    DraftDomain,
     DomainInvitation,
     Contact,
     Website,
@@ -75,7 +76,7 @@ class LoggedInTests(TestWithUser):
     def test_home_lists_domain_applications(self):
         response = self.client.get("/")
         self.assertNotContains(response, "igorville.gov")
-        site = Domain.objects.create(name="igorville.gov")
+        site = DraftDomain.objects.create(name="igorville.gov")
         application = DomainApplication.objects.create(
             creator=self.user, requested_domain=site
         )
@@ -1035,6 +1036,8 @@ class TestWithDomainPermissions(TestWithUser):
 
     def tearDown(self):
         try:
+            if hasattr(self.domain, "contacts"):
+                self.domain.contacts.all().delete()
             self.domain.delete()
             self.role.delete()
         except ValueError:  # pass if already deleted
@@ -1347,7 +1350,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(555) 555 5555",
         )
-        domain, _ = Domain.objects.get_or_create(name="citystatus.gov")
+        domain, _ = DraftDomain.objects.get_or_create(name="citystatus.gov")
         alt, _ = Website.objects.get_or_create(website="city1.gov")
         current, _ = Website.objects.get_or_create(website="city.com")
         you, _ = Contact.objects.get_or_create(
