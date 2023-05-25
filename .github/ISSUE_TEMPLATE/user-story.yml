@@ -1,0 +1,62 @@
+name: User Story
+description: Capture actionable sprint work
+title: "[Story]: "
+labels: ["story"]
+
+body:
+  - type: markdown
+    id: help
+    attributes:
+      value: |
+        > **Note**
+        > GitHub Issues use [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) for formatting.
+  - type: textarea
+    id: story
+    attributes:
+      label: User Story
+      description: |
+        Please add the "as a, I want, so that" details that describe the user story.
+        If more than one "as a, I want, so that" describes the story, add multiple. 
+        
+        Example:
+        As an administrator
+        I want the ability to approve a domain application
+        so that a request can be fulfilled and a new .gov domain can be provisioned
+      value: |
+        As a 
+        I want
+        so that
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: |
+        Please add the acceptance criteria using one or more "given, when, then" formulae
+        
+        Example:
+        Given that I am an administrator
+        When I click to approve a domain application
+        Then the domain provisioning process should be initiated, and the applicant should receive an email update.
+      value: |
+        Given 
+        When 
+        Then
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context (optional)
+      description: "Please include additional references, screenshots, documentation, etc. that are relevant"
+  - type: textarea
+    id: issue-links
+    attributes:
+      label: Issue Links (optional)
+      description: |
+        What other issues does this story relate to and how?
+        
+        Example:
+        - 🚧 Blocked by: #123
+        - 🔄 Relates to: #234
