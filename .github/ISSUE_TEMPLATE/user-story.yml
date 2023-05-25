@@ -36,7 +36,7 @@ body:
         Please add the acceptance criteria using one or more "given, when, then" formulae
         
         Example:
-        Given that I am an administrator
+        Given that I am an administrator who has finished reviewing a domain application
         When I click to approve a domain application
         Then the domain provisioning process should be initiated, and the applicant should receive an email update.
       value: |
