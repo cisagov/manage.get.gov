@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
             options={
                 "abstract": False,
             },
-            bases=(models.Model, registrar.models.utility.domain_helper.DomainHelper),
+            bases=(models.Model, registrar.models.utility.domain_helper.DomainHelper),  # type: ignore
         ),
         migrations.AddField(
             model_name="domainapplication",
