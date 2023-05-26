@@ -43,6 +43,7 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         domain = self.get_object()
         return [{"server": name} for name, *ip in domain.nameservers]
 
+
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
         return reverse("domain-nameservers", kwargs={"pk": self.object.pk})
