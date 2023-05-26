@@ -41,7 +41,7 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
         domain = self.get_object()
-        return [{"server": server} for server in domain.nameservers()]
+        return [{"server": name} for name, *ip in domain.nameservers]
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
@@ -82,12 +82,13 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         nameservers = []
         for form in formset:
             try:
-                nameservers.append(form.cleaned_data["server"])
+                as_tuple = (form.cleaned_data["server"],)
+                nameservers.append(as_tuple)
             except KeyError:
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
-        domain.set_nameservers(nameservers)
+        domain.nameservers = nameservers
 
         messages.success(
             self.request, "The name servers for this domain have been updated."
@@ -109,7 +110,7 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
         """The initial value for the form."""
         domain = self.get_object()
         initial = super().get_initial()
-        initial["security_email"] = domain.security_email()
+        initial["security_email"] = domain.security_contact.email
         return initial
 
     def get_success_url(self):
@@ -132,7 +133,9 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
         # Set the security email from the form
         new_email = form.cleaned_data.get("security_email", "")
         domain = self.get_object()
-        domain.set_security_email(new_email)
+        contact = domain.security_contact
+        contact.email = new_email
+        contact.save()
 
         messages.success(
             self.request, "The security email for this domain have been updated."
