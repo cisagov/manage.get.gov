@@ -71,20 +71,20 @@ class EPPLibWrapper:
             with self._connect as wire:
                 response = wire.send(command)
         except (ValueError, ParsingError) as err:
-            message = "%s failed to execute due to some syntax error." % cmd_type
-            logger.warning(message, exc_info=True)
+            message = "%s failed to execute due to some syntax error."
+            logger.warning(message, cmd_type, exc_info=True)
             raise RegistryError(message) from err
         except TransportError as err:
-            message = "%s failed to execute due to a connection error." % cmd_type
-            logger.warning(message, exc_info=True)
+            message = "%s failed to execute due to a connection error."
+            logger.warning(message, cmd_type, exc_info=True)
             raise RegistryError(message) from err
         except LoginError as err:
-            message = "%s failed to execute due to a registry login error." % cmd_type
-            logger.warning(message, exc_info=True)
+            message = "%s failed to execute due to a registry login error."
+            logger.warning(message, cmd_type, exc_info=True)
             raise RegistryError(message) from err
         except Exception as err:
-            message = "%s failed to execute due to an unknown error." % cmd_type
-            logger.warning(message, exc_info=True)
+            message = "%s failed to execute due to an unknown error."
+            logger.warning(message, cmd_type, exc_info=True)
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
