@@ -1136,7 +1136,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.assertContains(response, "Add another user")
 
     def test_domain_user_add_form(self):
-        """Adding a user works."""
+        """Adding an existing user works."""
         other_user, _ = get_user_model().objects.get_or_create(
             email="mayor@igorville.gov"
         )
@@ -1218,6 +1218,22 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
+
+    def test_domain_invitation_cancel_no_permissions(self):
+        """Posting to the delete view as a different user should fail."""
+        EMAIL = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(
+            domain=self.domain, email=EMAIL
+        )
+
+        other_user = User()
+        other_user.save()
+        self.client.force_login(other_user)
+        with less_console_noise():  # permission denied makes console errors
+            result = self.client.post(
+                reverse("invitation-delete", kwargs={"pk": invitation.id})
+            )
+        self.assertEqual(result.status_code, 403)
 
     @boto3_mocking.patching
     def test_domain_invitation_flow(self):
@@ -1330,6 +1346,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
+        self.client.force_login(self.user)
 
     def _completed_application(
         self,
@@ -1443,3 +1460,24 @@ class TestApplicationStatus(TestWithUser, WebTest):
         )
         home_page = self.app.get("/")
         self.assertContains(home_page, "Withdrawn")
+
+    def test_application_status_no_permissions(self):
+        """Can't access applications without being the creator."""
+        application = self._completed_application()
+        other_user = User()
+        other_user.save()
+        application.creator = other_user
+        application.save()
+
+        # PermissionDeniedErrors make lots of noise in test output
+        with less_console_noise():
+            for url_name in [
+                "application-status",
+                "application-withdraw-confirmation",
+                "application-withdrawn",
+            ]:
+                with self.subTest(url_name=url_name):
+                    page = self.client.get(
+                        reverse(url_name, kwargs={"pk": application.pk})
+                    )
+                    self.assertEqual(page.status_code, 403)
