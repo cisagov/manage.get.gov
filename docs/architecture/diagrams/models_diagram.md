@@ -65,6 +65,7 @@ class "registrar.DomainApplication <Registrar>" as registrar.DomainApplication #
     + type_of_work (TextField)
     + more_organization_information (TextField)
     ~ authorizing_official (ForeignKey)
+    ~ approved_domain (OneToOneField)
     ~ requested_domain (OneToOneField)
     ~ submitter (ForeignKey)
     + purpose (TextField)
@@ -79,6 +80,7 @@ class "registrar.DomainApplication <Registrar>" as registrar.DomainApplication #
 registrar.DomainApplication -- registrar.User
 registrar.DomainApplication -- registrar.User
 registrar.DomainApplication -- registrar.Contact
+registrar.DomainApplication -- registrar.DraftDomain
 registrar.DomainApplication -- registrar.Domain
 registrar.DomainApplication -- registrar.Contact
 registrar.DomainApplication *--* registrar.Website
@@ -129,6 +131,17 @@ registrar.DomainInformation -- registrar.Contact
 registrar.DomainInformation *--* registrar.Contact
 
 
+class "registrar.DraftDomain <Registrar>" as registrar.DraftDomain #d6f4e9 {
+    draft domain
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + name (CharField)
+    --
+}
+
+
 class "registrar.Domain <Registrar>" as registrar.Domain #d6f4e9 {
     domain
     --
@@ -136,7 +149,6 @@ class "registrar.Domain <Registrar>" as registrar.Domain #d6f4e9 {
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
     + name (CharField)
-    + is_active (FSMField)
     --
 }
 
@@ -218,6 +230,8 @@ class "registrar.PublicContact <Registrar>" as registrar.PublicContact #d6f4e9 {
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
     + contact_type (CharField)
+    + registry_id (CharField)
+    ~ domain (ForeignKey)
     + name (TextField)
     + org (TextField)
     + street1 (TextField)
@@ -233,6 +247,8 @@ class "registrar.PublicContact <Registrar>" as registrar.PublicContact #d6f4e9 {
     + pw (TextField)
     --
 }
+
+registrar.PublicContact -- registrar.Domain
 
 
 class "registrar.User <Registrar>" as registrar.User #d6f4e9 {
