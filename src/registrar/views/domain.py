@@ -1,4 +1,9 @@
-"""View for a single Domain."""
+"""Views for a single Domain.
+
+Authorization is handled by the `DomainPermissionView`. To ensure that only
+authorized users can see information on a domain, every view here should
+inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
+"""
 
 import logging
 
@@ -7,35 +12,30 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import DetailView
-from django.views.generic.edit import DeleteView, FormMixin
+from django.views.generic.edit import FormMixin
 
-from registrar.models import Domain, DomainInvitation, User, UserDomainRole
+from registrar.models import DomainInvitation, User, UserDomainRole
 
 from ..forms import DomainAddUserForm, NameserverFormset, DomainSecurityEmailForm
 from ..utility.email import send_templated_email, EmailSendingError
-from .utility import DomainPermission
+from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
 
 
 logger = logging.getLogger(__name__)
 
 
-class DomainView(DomainPermission, DetailView):
+class DomainView(DomainPermissionView):
 
     """Domain detail overview page."""
 
-    model = Domain
     template_name = "domain_detail.html"
-    context_object_name = "domain"
 
 
-class DomainNameserversView(DomainPermission, FormMixin, DetailView):
+class DomainNameserversView(DomainPermissionView, FormMixin):
 
     """Domain nameserver editing view."""
 
-    model = Domain
     template_name = "domain_nameservers.html"
-    context_object_name = "domain"
     form_class = NameserverFormset
 
     def get_initial(self):
@@ -96,13 +96,11 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         return super().form_valid(formset)
 
 
-class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
+class DomainSecurityEmailView(DomainPermissionView, FormMixin):
 
     """Domain security email editing view."""
 
-    model = Domain
     template_name = "domain_security_email.html"
-    context_object_name = "domain"
     form_class = DomainSecurityEmailForm
 
     def get_initial(self):
@@ -141,16 +139,14 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
         return redirect(self.get_success_url())
 
 
-class DomainUsersView(DomainPermission, DetailView):
+class DomainUsersView(DomainPermissionView):
 
     """User management page in the domain details."""
 
-    model = Domain
     template_name = "domain_users.html"
-    context_object_name = "domain"
 
 
-class DomainAddUserView(DomainPermission, FormMixin, DetailView):
+class DomainAddUserView(DomainPermissionView, FormMixin):
 
     """Inside of a domain's user management, a form for adding users.
 
@@ -159,7 +155,6 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
     """
 
     template_name = "domain_add_user.html"
-    model = Domain
     form_class = DomainAddUserForm
 
     def get_success_url(self):
@@ -239,8 +234,9 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
         return redirect(self.get_success_url())
 
 
-class DomainInvitationDeleteView(SuccessMessageMixin, DeleteView):
-    model = DomainInvitation
+class DomainInvitationDeleteView(
+    DomainInvitationPermissionDeleteView, SuccessMessageMixin
+):
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
     def get_success_url(self):
