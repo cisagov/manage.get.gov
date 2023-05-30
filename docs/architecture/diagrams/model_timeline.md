@@ -44,7 +44,8 @@ class DomainApplication {
   authorizing_official (Contact)
   submitter (Contact)
   other_contacts (Contacts)
-  requested_domain (Domain)
+  approved_domain (Domain)
+  requested_domain (DraftDomain)
   current_websites (Websites)
   alternative_domains (Websites)
   --
@@ -81,11 +82,19 @@ class Contact {
 
 DomainApplication *-r-* Contact : authorizing_official, submitter, other_contacts
 
+class DraftDomain {
+  Requested domain
+  --
+  name
+  --
+}
+
+DomainApplication -l- DraftDomain : requested_domain
+
 class Domain {
   Approved domain
   --
   name
-  is_active
   --
   <b>EPP methods</b>
 }
