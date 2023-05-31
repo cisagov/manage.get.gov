@@ -40,12 +40,6 @@ jobs:
           cf_space: ${{ github.event.inputs.environment }}
           full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
 
-  migrate:
-    runs-on: ubuntu-latest
-    env:
-      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
-      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
-    steps:
       - name: Run Django migrations for ${{ github.event.inputs.environment }}
         uses: 18f/cg-deploy-action@main
         with:
@@ -54,7 +48,6 @@ jobs:
           cf_org: cisa-getgov-prototyping
           cf_space: ${{ github.event.inputs.environment }}
           full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"
-
 
       - name: Load fake data for ${{ github.event.inputs.environment }}
         uses: 18f/cg-deploy-action@main
