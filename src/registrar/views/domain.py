@@ -14,9 +14,18 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 
-from registrar.models import DomainInvitation, User, UserDomainRole
+from registrar.models import (
+    DomainInvitation,
+    User,
+    UserDomainRole,
+)
 
-from ..forms import DomainAddUserForm, NameserverFormset, DomainSecurityEmailForm
+from ..forms import (
+    DomainAddUserForm,
+    NameserverFormset,
+    DomainSecurityEmailForm,
+    ContactForm,
+)
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
 
@@ -44,7 +53,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         return [{"server": server} for server in domain.nameservers()]
 
     def get_success_url(self):
-        """Redirect to the overview page for the domain."""
+        """Redirect to the nameservers page for the domain."""
         return reverse("domain-nameservers", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
@@ -96,6 +105,46 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         return super().form_valid(formset)
 
 
+class DomainYourContactInformationView(DomainPermissionView, FormMixin):
+
+    """Domain your contact information editing view."""
+
+    template_name = "domain_your_contact_information.html"
+    form_class = ContactForm
+
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.submitter instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.get_object().domain_info.submitter
+        return form_kwargs
+
+    def get_success_url(self):
+        """Redirect to the your contact information for the domain."""
+        return reverse("domain-your-contact-information", kwargs={"pk": self.object.pk})
+
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            # there is a valid email address in the form
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """The form is valid, call setter in model."""
+
+        # Post to DB using values from the form
+        form.save()
+
+        messages.success(
+            self.request, "Your contact information for this domain has been updated."
+        )
+        # superclass has the redirect
+        return super().form_valid(form)
+
+
 class DomainSecurityEmailView(DomainPermissionView, FormMixin):
 
     """Domain security email editing view."""
@@ -111,11 +160,11 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         return initial
 
     def get_success_url(self):
-        """Redirect to the overview page for the domain."""
+        """Redirect to the security email page for the domain."""
         return reverse("domain-security-email", kwargs={"pk": self.object.pk})
 
     def post(self, request, *args, **kwargs):
-        """Formset submission posts to this view."""
+        """Form submission posts to this view."""
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
