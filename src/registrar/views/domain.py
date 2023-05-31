@@ -15,7 +15,6 @@ from django.urls import reverse
 from django.views.generic.edit import FormMixin
 
 from registrar.models import (
-    Domain,
     DomainInvitation,
     User,
     UserDomainRole,
@@ -109,7 +108,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 class DomainYourContactInformationView(DomainPermissionView, FormMixin):
 
     """Domain your contact information editing view."""
-    
+
     template_name = "domain_your_contact_information.html"
     form_class = ContactForm
 
