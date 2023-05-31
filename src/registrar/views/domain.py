@@ -142,7 +142,7 @@ class DomainYourContactInformationView(DomainPermission, FormMixin, DetailView):
         form.save()
 
         messages.success(
-            self.request, "Your contact information for this domain have been updated."
+            self.request, "Your contact information for this domain has been updated."
         )
         # superclass has the redirect
         return super().form_valid(form)

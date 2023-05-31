@@ -59,7 +59,7 @@ class ContactForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # take off maxlength attribute for the phone number field
-        # which interferes with out input_with_errors template tag
+        # which interferes with our input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
 
         for field_name in self.required:
