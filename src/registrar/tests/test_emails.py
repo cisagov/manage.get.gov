@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from registrar.models import Contact, Domain, Website, DomainApplication
+from registrar.models import Contact, DraftDomain, Website, DomainApplication
 
 import boto3_mocking  # type: ignore
 
@@ -28,7 +28,7 @@ class TestEmails(TestCase):
             email="testy@town.com",
             phone="(555) 555 5555",
         )
-        domain, _ = Domain.objects.get_or_create(name="city.gov")
+        domain, _ = DraftDomain.objects.get_or_create(name="city.gov")
         alt, _ = Website.objects.get_or_create(website="city1.gov")
         current, _ = Website.objects.get_or_create(website="city.com")
         you, _ = Contact.objects.get_or_create(

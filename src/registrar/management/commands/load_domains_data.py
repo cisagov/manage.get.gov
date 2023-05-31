@@ -54,16 +54,6 @@ class Command(BaseCommand):
         domains = []
         for row in reader:
             name = row["Name"].lower()  # we typically use lowercase domains
-
-            # Ensure that there is a `Domain` object for each domain name in
-            # this file and that it is active. There is a uniqueness
-            # constraint for active Domain objects, so we are going to account
-            # for that here with this check so that our later bulk_create
-            # should succeed
-            if Domain.objects.filter(name=name, is_active=True).exists():
-                # don't do anything, this domain is here and active
-                continue
-            else:
-                domains.append(Domain(name=name, is_active=True))
+            domains.append(Domain(name=name))
         logger.info("Creating %d new domains", len(domains))
         Domain.objects.bulk_create(domains)

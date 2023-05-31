@@ -8,6 +8,7 @@ from registrar.models import (
     User,
     Website,
     Domain,
+    DraftDomain,
     DomainInvitation,
     UserDomainRole,
 )
@@ -40,7 +41,7 @@ class TestDomainApplication(TestCase):
         contact = Contact.objects.create()
         com_website, _ = Website.objects.get_or_create(website="igorville.com")
         gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         application = DomainApplication.objects.create(
             creator=user,
             investigator=user,
@@ -100,7 +101,7 @@ class TestDomainApplication(TestCase):
 
     def test_status_fsm_submit_succeed(self):
         user, _ = User.objects.get_or_create()
-        site = Domain.objects.create(name="igorville.gov")
+        site = DraftDomain.objects.create(name="igorville.gov")
         application = DomainApplication.objects.create(
             creator=user, requested_domain=site
         )
@@ -113,7 +114,7 @@ class TestDomainApplication(TestCase):
         """Create an application and submit it and see if email was sent."""
         user, _ = User.objects.get_or_create()
         contact = Contact.objects.create(email="test@test.gov")
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         application = DomainApplication.objects.create(
             creator=user,
             requested_domain=domain,
@@ -135,62 +136,22 @@ class TestDomainApplication(TestCase):
         )
 
 
-class TestDomain(TestCase):
-    def test_empty_create_fails(self):
-        """Can't create a completely empty domain."""
-        with self.assertRaisesRegex(IntegrityError, "name"):
-            Domain.objects.create()
-
-    def test_minimal_create(self):
-        """Can create with just a name."""
-        domain = Domain.objects.create(name="igorville.gov")
-        self.assertEqual(domain.is_active, False)
-
-    @skip("cannot activate a domain without mock registry")
-    def test_get_status(self):
-        """Returns proper status based on `is_active`."""
-        domain = Domain.objects.create(name="igorville.gov")
-        domain.save()
-        self.assertEqual(None, domain.status)
-        domain.activate()
-        domain.save()
-        self.assertIn("ok", domain.status)
-
-    def test_fsm_activate_fail_unique(self):
-        """Can't activate domain if name is not unique."""
-        d1, _ = Domain.objects.get_or_create(name="igorville.gov")
-        d2, _ = Domain.objects.get_or_create(name="igorville.gov")
-        d1.activate()
-        d1.save()
-        with self.assertRaises(ValueError):
-            d2.activate()
-
-    def test_fsm_activate_fail_unapproved(self):
-        """Can't activate domain if application isn't approved."""
-        d1, _ = Domain.objects.get_or_create(name="igorville.gov")
-        user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user)
-        d1.domain_application = application
-        d1.save()
-        with self.assertRaises(ValueError):
-            d1.activate()
-
-
 class TestPermissions(TestCase):
 
     """Test the User-Domain-Role connection."""
 
     def test_approval_creates_role(self):
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(
-            creator=user, requested_domain=domain
+            creator=user, requested_domain=draft_domain
         )
         # skip using the submit method
         application.status = DomainApplication.SUBMITTED
         application.approve()
 
         # should be a role for this user
+        domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
 
 
@@ -199,16 +160,17 @@ class TestDomainInfo(TestCase):
     """Test creation of Domain Information when approved."""
 
     def test_approval_creates_info(self):
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(
-            creator=user, requested_domain=domain
+            creator=user, requested_domain=draft_domain
         )
         # skip using the submit method
         application.status = DomainApplication.SUBMITTED
         application.approve()
 
         # should be an information present for this domain
+        domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(DomainInformation.objects.get(domain=domain))
 
 

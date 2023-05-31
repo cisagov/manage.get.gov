@@ -6,7 +6,6 @@ from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
-from django.views import generic
 from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
@@ -14,7 +13,7 @@ from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 
-from .utility import DomainPermission
+from .utility import DomainApplicationPermissionView
 
 logger = logging.getLogger(__name__)
 
@@ -478,29 +477,31 @@ class Finished(ApplicationWizard):
         return render(self.request, self.template_name, context)
 
 
-class ApplicationStatus(generic.DetailView):
-    model = DomainApplication
+class ApplicationStatus(DomainApplicationPermissionView):
     template_name = "application_status.html"
 
-    def get_context_data(self, **kwargs):
-        """Get context details to process information from application"""
-        context = super(ApplicationStatus, self).get_context_data(**kwargs)
-        return context
 
+class ApplicationWithdrawConfirmation(DomainApplicationPermissionView):
+    """This page will ask user to confirm if they want to withdraw
 
-class ApplicationWithdraw(LoginRequiredMixin, generic.DetailView, DomainPermission):
-    model = DomainApplication
-    template_name = "application_withdraw_confirmation.html"
-    """ The page above will display asking user to confirm if they want to withdraw;
-
-    Note it uses "DomainPermission" from Domain to ensure that the person who
-    applied only have access to withdraw the request
+    The DomainApplicationPermissionView restricts access so that only the
+    `creator` of the application may withdraw it.
     """
 
-    def updatestatus(request, pk):
-        """If user click on withdraw confirm button, it will be updated to withdraw
-        and send back to homepage"""
-        application = DomainApplication.objects.get(id=pk)
+    template_name = "application_withdraw_confirmation.html"
+
+
+class ApplicationWithdrawn(DomainApplicationPermissionView):
+    # this view renders no template
+    template_name = ""
+
+    def get(self, *args, **kwargs):
+        """View class that does the actual withdrawing.
+
+        If user click on withdraw confirm button, this view updates the status
+        to withdraw and send back to homepage.
+        """
+        application = DomainApplication.objects.get(id=self.kwargs["pk"])
         application.status = "withdrawn"
         application.save()
         return HttpResponseRedirect(reverse("home"))

@@ -4,6 +4,7 @@ from .contact import Contact
 from .domain_application import DomainApplication
 from .domain_information import DomainInformation
 from .domain import Domain
+from .draft_domain import DraftDomain
 from .host_ip import HostIP
 from .host import Host
 from .domain_invitation import DomainInvitation
@@ -18,6 +19,7 @@ __all__ = [
     "DomainApplication",
     "DomainInformation",
     "Domain",
+    "DraftDomain",
     "DomainInvitation",
     "HostIP",
     "Host",
@@ -31,6 +33,7 @@ __all__ = [
 auditlog.register(Contact)
 auditlog.register(DomainApplication)
 auditlog.register(Domain)
+auditlog.register(DraftDomain)
 auditlog.register(DomainInvitation)
 auditlog.register(HostIP)
 auditlog.register(Host)

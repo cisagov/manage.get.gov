@@ -81,6 +81,22 @@ The endpoint /admin can be used to view and manage site content, including but n
 
 5. In the browser, navigate to /admins. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
 
+## Adding to CODEOWNERS (optional)
+
+The CODEOWNERS file sets the tagged individuals as default reviewers on any Pull Request that changes files that they are marked as owners of.
+
+1. Go to [.github\CODEOWNERS](../../.github/CODEOWNERS)
+2. Following the [CODEOWNERS documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners), add yourself as owner to files that you wish to be automatically requested as reviewer for.
+   
+   For example, if you wish to add yourself as a default reviewer for all pull requests, add your GitHub username to the same line as the `*` designator:  
+
+   ```diff
+   - * @abroddrick
+   + * @abroddrick @YourGitHubUser
+   ```
+
+3. Create a pull request to finalize your changes
+
 ## Viewing Logs
 
 If you run via `docker-compose up`, you'll see the logs in your terminal.
