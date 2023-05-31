@@ -562,6 +562,7 @@ class DomainApplication(TimeStampedModel):
         """Show this step if the answer to the first question implies it.
 
         This shows for answers that aren't "Federal" or "Interstate".
+        This also doesnt show if user selected "School District" as well (#524)
         """
         user_choice = self.organization_type
         excluded = [
