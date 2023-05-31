@@ -568,7 +568,7 @@ class DomainApplication(TimeStampedModel):
         excluded = [
             DomainApplication.OrganizationChoices.FEDERAL,
             DomainApplication.OrganizationChoices.INTERSTATE,
-            DomainApplication.OrganizationChoices.SCHOOL_DISTRICT
+            DomainApplication.OrganizationChoices.SCHOOL_DISTRICT,
         ]
         return bool(user_choice and user_choice not in excluded)
 
