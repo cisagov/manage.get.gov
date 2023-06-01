@@ -281,17 +281,10 @@ class TestFormValidation(TestCase):
 
 
 class TestContactForm(TestCase):
-
     def test_contact_form_email_invalid(self):
         form = ContactForm(data={"email": "example.net"})
-        self.assertEqual(
-            form.errors["email"],
-            ["Enter a valid email address."]
-        )
+        self.assertEqual(form.errors["email"], ["Enter a valid email address."])
 
     def test_contact_form_email_invalid2(self):
         form = ContactForm(data={"email": "@"})
-        self.assertEqual(
-            form.errors["email"],
-            ["Enter a valid email address."]
-        )
+        self.assertEqual(form.errors["email"], ["Enter a valid email address."])
