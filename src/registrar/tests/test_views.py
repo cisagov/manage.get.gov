@@ -1312,6 +1312,8 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.domain_information.save()
         page = self.app.get(
             reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Testy")
 
     def test_domain_your_contact_information(self):
         """Can load domain's your contact information page."""
