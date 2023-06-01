@@ -1,0 +1,43 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers%}
+
+{% block title %}Domain authorizing official | {{ domain.name }} | {% endblock %}
+
+{% block domain_content %}
+  {# this is right after the messages block in the parent template #}
+  {% include "includes/form_errors.html" with form=form %}
+
+  <h1>Authorizing official</h1>
+
+  <p>Your authorizing official is the person within your organization who can
+  authorize domain requests. This is generally the highest-ranking or
+  highest-elected official in your organization. <a class="usa-link"
+    href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/domains/eligibility/#you-must-have-approval-from-an-authorizing-official-within-your-organization">Read more about who can serve
+    as an authorizing official.</a></p>
+
+  {% include "includes/required_fields.html" %}
+
+  <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+    {% csrf_token %}
+
+    {% input_with_errors form.first_name %}
+
+    {% input_with_errors form.middle_name %}
+
+    {% input_with_errors form.last_name %}
+
+    {% input_with_errors form.title %}
+
+    {% input_with_errors form.email %}
+
+    {% input_with_errors form.phone %}
+
+
+
+    <button
+          type="submit"
+          class="usa-button"
+      >Save</button>
+    </form>
+
+{% endblock %}  {# domain_content #}

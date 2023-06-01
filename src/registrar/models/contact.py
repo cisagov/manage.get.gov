@@ -41,7 +41,7 @@ class Contact(TimeStampedModel):
         help_text="Title",
         verbose_name="title or role in your organization",
     )
-    email = models.TextField(
+    email = models.EmailField(
         null=True,
         blank=True,
         help_text="Email",

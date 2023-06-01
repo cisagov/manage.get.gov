@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.views.generic.edit import FormMixin
 
 from registrar.models import (
+    Domain,
     DomainInvitation,
     User,
     UserDomainRole,
@@ -38,6 +39,48 @@ class DomainView(DomainPermissionView):
     """Domain detail overview page."""
 
     template_name = "domain_detail.html"
+
+
+class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
+
+    """Domain authorizing official editing view."""
+
+    model = Domain
+    template_name = "domain_authorizing_official.html"
+    context_object_name = "domain"
+    form_class = ContactForm
+
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.authorizing_official instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.get_object().domain_info.authorizing_official
+        return form_kwargs
+
+    def get_success_url(self):
+        """Redirect to the overview page for the domain."""
+        return reverse("domain-authorizing-official", kwargs={"pk": self.object.pk})
+
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view.
+
+        This post method harmonizes using DetailView and FormMixin together.
+        """
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """The form is valid, save the authorizing official."""
+        form.save()
+
+        messages.success(
+            self.request, "The authorizing official for this domain has been updated."
+        )
+        # superclass has the redirect
+        return super().form_valid(form)
 
 
 class DomainNameserversView(DomainPermissionView, FormMixin):
@@ -116,7 +159,7 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.get_object().domain_info.submitter
+        form_kwargs["instance"] = self.request.user.contact
         return form_kwargs
 
     def get_success_url(self):

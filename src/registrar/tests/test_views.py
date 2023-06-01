@@ -1058,6 +1058,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-nameservers",
+            "domain-authorizing-official",
             "domain-your-contact-information",
             "domain-security-email",
         ]:
@@ -1077,6 +1078,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-nameservers",
+            "domain-authorizing-official",
             "domain-your-contact-information",
             "domain-security-email",
         ]:
@@ -1086,12 +1088,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
                         reverse(view_name, kwargs={"pk": self.domain.id})
                     )
                 self.assertEqual(response.status_code, 403)
-
-        with less_console_noise():
-            response = self.client.get(
-                reverse("domain-security-email", kwargs={"pk": self.domain.id})
-            )
-        self.assertEqual(response.status_code, 403)
 
 
 class TestDomainDetail(TestWithDomainPermissions, WebTest):
@@ -1301,6 +1297,24 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         # the field.
         self.assertContains(result, "This field is required", count=2, status_code=200)
 
+    def test_domain_authorizing_official(self):
+        """Can load domain's authorizing official page."""
+        page = self.client.get(
+            reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
+        )
+        # once on the sidebar, once in the title
+        self.assertContains(page, "Authorizing official", count=2)
+
+    def test_domain_authorizing_official_content(self):
+        """Authorizing official information appears on the page."""
+        self.domain_information.authorizing_official = Contact(first_name="Testy")
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+        page = self.app.get(
+            reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Testy")
+
     def test_domain_your_contact_information(self):
         """Can load domain's your contact information page."""
         page = self.client.get(
@@ -1309,10 +1323,9 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.assertContains(page, "Domain contact information")
 
     def test_domain_your_contact_information_content(self):
-        """Your contact information appears on the page."""
-        self.domain_information.submitter = Contact(first_name="Testy")
-        self.domain_information.submitter.save()
-        self.domain_information.save()
+        """Logged-in user's contact information appears on the page."""
+        self.user.contact.first_name = "Testy"
+        self.user.contact.save()
         page = self.app.get(
             reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
         )
