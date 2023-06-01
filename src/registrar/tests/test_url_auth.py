@@ -114,6 +114,7 @@ class TestURLAuth(TestCase):
         "/openid/login/",
         "/openid/logout/",
         "/openid/callback",
+        "/openid/callback/login/",
         "/openid/callback/logout/",
     ]
 
