@@ -15,6 +15,7 @@ from registrar.forms.application_wizard import (
     AnythingElseForm,
     TypeOfWorkForm,
 )
+from registrar.forms.domain import ContactForm
 
 
 class TestFormValidation(TestCase):
@@ -276,4 +277,21 @@ class TestFormValidation(TestCase):
                 "tell us more about your tribe" in error
                 for error in form.non_field_errors()
             )
+        )
+
+
+class TestContactForm(TestCase):
+
+    def test_contact_form_email_invalid(self):
+        form = ContactForm(data={"email": "example.net"})
+        self.assertEqual(
+            form.errors["email"],
+            ["Enter a valid email address."]
+        )
+
+    def test_contact_form_email_invalid2(self):
+        form = ContactForm(data={"email": "@"})
+        self.assertEqual(
+            form.errors["email"],
+            ["Enter a valid email address."]
         )
