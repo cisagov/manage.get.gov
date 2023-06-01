@@ -17,7 +17,7 @@
     {% url 'todo' as url %}
     {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url %}
 
-    {% url 'todo' as url %}
+    {% url 'domain-authorizing-official' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url %}
 
     {% url 'domain-your-contact-information' pk=domain.id as url %}
