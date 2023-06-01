@@ -20,8 +20,8 @@
     {% url 'todo' as url %}
     {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url %}
 
-    {% url 'todo' as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact edit_link=url %}
+    {% url 'domain-your-contact-information' pk=domain.id as url %}
+    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='Security email' value=domain.security_email edit_link=url %}
