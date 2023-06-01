@@ -159,7 +159,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def password(self) -> str:
         """
         Get the `auth_info.pw` element from the registry. Not a real password.
-        
+
         This `auth_info` element is required by the EPP protocol, but the registry is
         using a different mechanism to ensure unauthorized clients cannot perform
         actions on domains they do not own. This field provides no security features.
