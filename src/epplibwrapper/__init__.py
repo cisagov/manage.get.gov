@@ -43,10 +43,15 @@ except NameError:
 # Attn: these imports should NOT be at the top of the file
 try:
     from .client import CLIENT, commands
+    from .errors import RegistryError, ErrorCode
+    from epplib.models import common
 except ImportError:
     pass
 
 __all__ = [
     "CLIENT",
     "commands",
+    "common",
+    "ErrorCode",
+    "RegistryError",
 ]

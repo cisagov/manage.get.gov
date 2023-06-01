@@ -67,54 +67,47 @@ class EPPLibWrapper:
     def _send(self, command):
         """Helper function used by `send`."""
         try:
+            cmd_type = command.__class__.__name__
             with self._connect as wire:
                 response = wire.send(command)
         except (ValueError, ParsingError) as err:
-            logger.warning(
-                "%s failed to execute due to some syntax error."
-                % command.__class__.__name__,
-                exc_info=True,
-            )
-            raise RegistryError() from err
+            message = "%s failed to execute due to some syntax error."
+            logger.warning(message, cmd_type, exc_info=True)
+            raise RegistryError(message) from err
         except TransportError as err:
-            logger.warning(
-                "%s failed to execute due to a connection error."
-                % command.__class__.__name__,
-                exc_info=True,
-            )
-            raise RegistryError() from err
+            message = "%s failed to execute due to a connection error."
+            logger.warning(message, cmd_type, exc_info=True)
+            raise RegistryError(message) from err
         except LoginError as err:
-            logger.warning(
-                "%s failed to execute due to a registry login error."
-                % command.__class__.__name__,
-                exc_info=True,
-            )
-            raise RegistryError() from err
+            message = "%s failed to execute due to a registry login error."
+            logger.warning(message, cmd_type, exc_info=True)
+            raise RegistryError(message) from err
         except Exception as err:
-            logger.warning(
-                "%s failed to execute due to an unknown error."
-                % command.__class__.__name__,
-                exc_info=True,
-            )
-            raise RegistryError() from err
+            message = "%s failed to execute due to an unknown error."
+            logger.warning(message, cmd_type, exc_info=True)
+            raise RegistryError(message) from err
         else:
             if response.code >= 2000:
-                raise RegistryError(response.msg)
+                raise RegistryError(response.msg, code=response.code)
             else:
                 return response
 
-    def send(self, command):
+    def send(self, command, *, cleaned=False):
         """Login, send the command, then close the connection. Tries 3 times."""
+        # try to prevent use of this method without appropriate safeguards
+        if not cleaned:
+            raise ValueError("Please sanitize user input before sending it.")
+
         counter = 0  # we'll try 3 times
         while True:
             try:
                 return self._send(command)
             except RegistryError as err:
-                if counter == 3:  # don't try again
-                    raise err
-                else:
+                if err.should_retry() and counter < 3:
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
+                else:  # don't try again
+                    raise err
 
 
 try:

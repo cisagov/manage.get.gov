@@ -62,6 +62,8 @@ secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
+secret_getgov_public_site_url = secret("GETGOV_PUBLIC_SITE_URL", "")
+
 # region: Basic Django Config-----------------------------------------------###
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
@@ -109,6 +111,8 @@ INSTALLED_APPS = [
     "registrar",
     # Our internal API application
     "api",
+    # Only for generating documentation, uncomment to run manage.py generate_puml
+    # "puml_generator",
 ]
 
 # Middleware are routines for processing web requests.
@@ -502,6 +506,10 @@ ROOT_URLCONF = "registrar.config.urls"
 # URL to use when referring to static files located in STATIC_ROOT
 # Must be relative and end with "/"
 STATIC_URL = "public/"
+
+# Base URL of our separate static public website. Used by the
+# {% public_site_url subdir/path %} template tag
+GETGOV_PUBLIC_SITE_URL = secret_getgov_public_site_url
 
 # endregion
 # region: Registry----------------------------------------------------------###

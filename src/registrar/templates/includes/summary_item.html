@@ -1,11 +1,13 @@
+{% load static url_helpers %}
+
 <section class="summary-item margin-top-3">
-  <hr class="" />
-  <p class="summary-item__title 
+  <hr class="" aria-hidden="true" />
+  <h2 class="summary-item__title
             text-primary-dark text-semibold
             margin-top-0 margin-bottom-05"
-  > 
-  {{ title }} 
-  </p>
+  >
+  {{ title }}
+  </h2>
   {% if address %}
     {% include "includes/organization_address.html" with organization=value %}
   {% elif contact %}
@@ -17,7 +19,7 @@
           {% for item in value %}
           <li>
             <p class="text-semibold margin-top-1 margin-bottom-0">
-              Conatct {{forloop.counter}}
+              Contact {{forloop.counter}}
             </p>
             {% include "includes/contact.html" with contact=item %}</li>
           {% empty %}
@@ -30,11 +32,19 @@
     {% endif %}
   {% elif list %}
     {% if value|length == 1 %}
-      <p class="margin-top-0">{{ value | first }} </p>
+        {% if users %}
+          <p class="margin-top-0">{{ value.0.user.email }} </p>
+        {% else %}
+          <p class="margin-top-0">{{ value | first }} </p>
+        {% endif %}
     {% else %}
       <ul class="usa-list margin-top-0">
         {% for item in value %}
-         <li>{{ item }}</li>
+        {% if users %}
+          <li>{{ item.user.email }}</li>
+        {% else %}
+          <li>{{ item }}</li>
+        {% endif %}
         {% empty %}
          <li>None</li>
         {% endfor %}</ul></p>
@@ -45,5 +55,13 @@
     {{ value }}
   </p>
   {% endif %}
-  
 
+    {% if edit_link %}
+    <a
+        href="{{ edit_link }}"
+    >
+      Edit<span class="sr-only"> {{ title }}</span>
+    </a>
+    {% endif %}
+
+</section>

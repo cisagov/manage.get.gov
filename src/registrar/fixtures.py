@@ -5,7 +5,7 @@ from faker import Faker
 from registrar.models import (
     User,
     DomainApplication,
-    Domain,
+    DraftDomain,
     Contact,
     Website,
 )
@@ -216,11 +216,13 @@ class DomainApplicationFixture:
 
         if not da.requested_domain:
             if "requested_domain" in app and app["requested_domain"] is not None:
-                da.requested_domain, _ = Domain.objects.get_or_create(
+                da.requested_domain, _ = DraftDomain.objects.get_or_create(
                     name=app["requested_domain"]
                 )
             else:
-                da.requested_domain = Domain.objects.create(name=cls.fake_dot_gov())
+                da.requested_domain = DraftDomain.objects.create(
+                    name=cls.fake_dot_gov()
+                )
 
     @classmethod
     def _set_many_to_many_relations(cls, da: DomainApplication, app: dict):
