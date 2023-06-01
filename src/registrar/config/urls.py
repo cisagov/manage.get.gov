@@ -89,6 +89,11 @@ urlpatterns = [
         name="domain-your-contact-information",
     ),
     path(
+        "domain/<int:pk>/authorizing-official",
+        views.DomainAuthorizingOfficialView.as_view(),
+        name="domain-authorizing-official",
+    ),
+    path(
         "domain/<int:pk>/security-email",
         views.DomainSecurityEmailView.as_view(),
         name="domain-security-email",
