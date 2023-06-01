@@ -115,7 +115,7 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.get_object().domain_info.submitter
+        form_kwargs["instance"] = self.request.user.contact
         return form_kwargs
 
     def get_success_url(self):

@@ -1309,10 +1309,9 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.assertContains(page, "Domain contact information")
 
     def test_domain_your_contact_information_content(self):
-        """Your contact information appears on the page."""
-        self.domain_information.submitter = Contact(first_name="Testy")
-        self.domain_information.submitter.save()
-        self.domain_information.save()
+        """Logged-in user's contact information appears on the page."""
+        self.user.contact.first_name = "Testy"
+        self.user.contact.save()
         page = self.app.get(
             reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
         )
