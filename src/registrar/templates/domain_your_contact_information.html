@@ -1,0 +1,35 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers %}
+
+{% block title %}Domain contact information | {{ domain.name }} | {% endblock %}
+
+{% block domain_content %}
+
+  <h1>Domain contact information</h1>
+
+  <p>If you’d like us to use a different name, email, or phone number you can make those changes below. Changing your contact information here won’t affect your Login.gov account information.</p>
+
+  {% include "includes/required_fields.html" %}
+
+  <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+    {% csrf_token %}
+
+    {% input_with_errors form.first_name %}
+
+    {% input_with_errors form.middle_name %}
+
+    {% input_with_errors form.last_name %}
+
+    {% input_with_errors form.title %}
+
+    {% input_with_errors form.email %}
+    
+    {% input_with_errors form.phone %}
+
+    <button
+      type="submit"
+      class="usa-button"
+    >Save</button>
+  </form>
+
+{% endblock %}  {# domain_content #}
