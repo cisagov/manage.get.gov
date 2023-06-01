@@ -8,7 +8,7 @@
         <a href="{{ url }}" 
           {% if request.path == url %}class="usa-current"{% endif %}
         >
-          Domain Overview
+          Domain overview
         </a>
       </li>
 
@@ -26,12 +26,21 @@
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
+            Organization name and mailing address
+        </a>
+      </li>      
+
+      <li class="usa-sidenav__item">
+        {% url 'todo' as url %}
+        <a href="{{ url }}"
+          {% if request.path == url %}class="usa-current"{% endif %}
+        >
             Authorizing official
         </a>
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'todo' as url %}
+        {% url 'domain-your-contact-information' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
@@ -40,7 +49,7 @@
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'todo' as url %}
+        {% url 'domain-security-email' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >

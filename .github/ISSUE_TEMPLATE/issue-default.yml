@@ -1,0 +1,37 @@
+name: Issue
+description: Provide a title for the issue you are describing 
+title: "Please provide a clear title"
+labels: ["review"]
+# assignees:
+#   - kitsushadow
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the ticket your are capturing in further detail.
+  - type: textarea
+    id: why
+    attributes:
+      label: Ticket Description
+      description: Please provide details to accurately reflect why this ticket is being captured and also what is necessary to resolve.
+      placeholder: Provide details describing your lead up to needing this issue as well as any resolution or requirements for resolving or working on this more.
+      value: "While (working on or discussing) (issue #000 or domain request validation) I discovered there was (a missing workflow, an improvement, a missing feature). To resolve this (more research, a new feature, a new field, an interview) is required. Provide any links, screenshots, or mockups which would further detail the description."
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Issue Type
+      description: Does this work require
+      options:
+        - discovery (Default)
+        - development
+        - design review
+    validations:
+      required: true
+  - type: textarea
+    id: Dependencies
+    attributes:
+      label: Link dependent issues
+      description: If this ticket is dependent on another issue or blocks a current issue, please link.
+      render: shell

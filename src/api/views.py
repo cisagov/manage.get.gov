@@ -37,7 +37,7 @@ def _domains():
     Fetch a file from DOMAIN_FILE_URL, parse the CSV for the domain,
     lowercase everything and return the list.
     """
-    Domain = apps.get_model("registrar.Domain")
+    DraftDomain = apps.get_model("registrar.DraftDomain")
     # 5 second timeout
     file_contents = requests.get(DOMAIN_FILE_URL, timeout=5).text
     domains = set()
@@ -46,7 +46,7 @@ def _domains():
         # get the domain before the first comma
         domain = line.split(",", 1)[0]
         # sanity-check the string we got from the file here
-        if Domain.string_could_be_domain(domain):
+        if DraftDomain.string_could_be_domain(domain):
             # lowercase everything when we put it in domains
             domains.add(domain.lower())
     return domains
@@ -75,12 +75,12 @@ def available(request, domain=""):
     Response is a JSON dictionary with the key "available" and value true or
     false.
     """
-    Domain = apps.get_model("registrar.Domain")
+    DraftDomain = apps.get_model("registrar.DraftDomain")
     # validate that the given domain could be a domain name and fail early if
     # not.
     if not (
-        Domain.string_could_be_domain(domain)
-        or Domain.string_could_be_domain(domain + ".gov")
+        DraftDomain.string_could_be_domain(domain)
+        or DraftDomain.string_could_be_domain(domain + ".gov")
     ):
         return JsonResponse(
             {"available": False, "message": DOMAIN_API_MESSAGES["invalid"]}

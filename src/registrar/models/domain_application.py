@@ -400,8 +400,17 @@ class DomainApplication(TimeStampedModel):
         related_name="current+",
     )
 
-    requested_domain = models.OneToOneField(
+    approved_domain = models.OneToOneField(
         "Domain",
+        null=True,
+        blank=True,
+        help_text="The approved domain",
+        related_name="domain_application",
+        on_delete=models.PROTECT,
+    )
+
+    requested_domain = models.OneToOneField(
+        "DraftDomain",
         null=True,
         blank=True,
         help_text="The requested domain",
@@ -499,8 +508,8 @@ class DomainApplication(TimeStampedModel):
         if self.requested_domain is None:
             raise ValueError("Requested domain is missing.")
 
-        Domain = apps.get_model("registrar.Domain")
-        if not Domain.string_could_be_domain(self.requested_domain.name):
+        DraftDomain = apps.get_model("registrar.DraftDomain")
+        if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
 
         # When an application is submitted, we need to send a confirmation email
@@ -516,13 +525,16 @@ class DomainApplication(TimeStampedModel):
         application into an admin on that domain.
         """
 
-        # create the domain if it doesn't exist
+        # create the domain
         Domain = apps.get_model("registrar.Domain")
-        created_domain, _ = Domain.objects.get_or_create(name=self.requested_domain)
+        if Domain.objects.filter(name=self.requested_domain.name).exists():
+            raise ValueError("Cannot approve. Requested domain is already in use.")
+        created_domain = Domain.objects.create(name=self.requested_domain.name)
+        self.approved_domain = created_domain
 
         # copy the information from domainapplication into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(self)
+        DomainInformation.create_from_da(self, domain=created_domain)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
@@ -550,11 +562,13 @@ class DomainApplication(TimeStampedModel):
         """Show this step if the answer to the first question implies it.
 
         This shows for answers that aren't "Federal" or "Interstate".
+        This also doesnt show if user selected "School District" as well (#524)
         """
         user_choice = self.organization_type
         excluded = [
             DomainApplication.OrganizationChoices.FEDERAL,
             DomainApplication.OrganizationChoices.INTERSTATE,
+            DomainApplication.OrganizationChoices.SCHOOL_DISTRICT,
         ]
         return bool(user_choice and user_choice not in excluded)
 
