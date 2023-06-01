@@ -23,6 +23,7 @@ requests = "*"
 django-fsm = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
+typing-extensions ='*'
 
 [dev-packages]
 django-debug-toolbar = "*"
