@@ -109,6 +109,8 @@ INSTALLED_APPS = [
     "registrar",
     # Our internal API application
     "api",
+    # Only for generating documentation, uncomment to run manage.py generate_puml
+    # "puml_generator",
 ]
 
 # Middleware are routines for processing web requests.

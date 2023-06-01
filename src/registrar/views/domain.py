@@ -1,4 +1,9 @@
-"""View for a single Domain."""
+"""Views for a single Domain.
+
+Authorization is handled by the `DomainPermissionView`. To ensure that only
+authorized users can see information on a domain, every view here should
+inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
+"""
 
 import logging
 
@@ -7,35 +12,39 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import DetailView
-from django.views.generic.edit import DeleteView, FormMixin
+from django.views.generic.edit import FormMixin
 
-from registrar.models import Domain, DomainInvitation, User, UserDomainRole
+from registrar.models import (
+    DomainInvitation,
+    User,
+    UserDomainRole,
+)
 
-from ..forms import DomainAddUserForm, NameserverFormset, DomainSecurityEmailForm
+from ..forms import (
+    DomainAddUserForm,
+    NameserverFormset,
+    DomainSecurityEmailForm,
+    ContactForm,
+)
 from ..utility.email import send_templated_email, EmailSendingError
-from .utility import DomainPermission
+from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
 
 
 logger = logging.getLogger(__name__)
 
 
-class DomainView(DomainPermission, DetailView):
+class DomainView(DomainPermissionView):
 
     """Domain detail overview page."""
 
-    model = Domain
     template_name = "domain_detail.html"
-    context_object_name = "domain"
 
 
-class DomainNameserversView(DomainPermission, FormMixin, DetailView):
+class DomainNameserversView(DomainPermissionView, FormMixin):
 
     """Domain nameserver editing view."""
 
-    model = Domain
     template_name = "domain_nameservers.html"
-    context_object_name = "domain"
     form_class = NameserverFormset
 
     def get_initial(self):
@@ -44,7 +53,7 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         return [{"server": name} for name, *ip in domain.nameservers]
 
     def get_success_url(self):
-        """Redirect to the overview page for the domain."""
+        """Redirect to the nameservers page for the domain."""
         return reverse("domain-nameservers", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
@@ -97,13 +106,51 @@ class DomainNameserversView(DomainPermission, FormMixin, DetailView):
         return super().form_valid(formset)
 
 
-class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
+class DomainYourContactInformationView(DomainPermissionView, FormMixin):
+
+    """Domain your contact information editing view."""
+
+    template_name = "domain_your_contact_information.html"
+    form_class = ContactForm
+
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.submitter instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.get_object().domain_info.submitter
+        return form_kwargs
+
+    def get_success_url(self):
+        """Redirect to the your contact information for the domain."""
+        return reverse("domain-your-contact-information", kwargs={"pk": self.object.pk})
+
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            # there is a valid email address in the form
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """The form is valid, call setter in model."""
+
+        # Post to DB using values from the form
+        form.save()
+
+        messages.success(
+            self.request, "Your contact information for this domain has been updated."
+        )
+        # superclass has the redirect
+        return super().form_valid(form)
+
+
+class DomainSecurityEmailView(DomainPermissionView, FormMixin):
 
     """Domain security email editing view."""
 
-    model = Domain
     template_name = "domain_security_email.html"
-    context_object_name = "domain"
     form_class = DomainSecurityEmailForm
 
     def get_initial(self):
@@ -114,11 +161,11 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
         return initial
 
     def get_success_url(self):
-        """Redirect to the overview page for the domain."""
+        """Redirect to the security email page for the domain."""
         return reverse("domain-security-email", kwargs={"pk": self.object.pk})
 
     def post(self, request, *args, **kwargs):
-        """Formset submission posts to this view."""
+        """Form submission posts to this view."""
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
@@ -144,16 +191,14 @@ class DomainSecurityEmailView(DomainPermission, FormMixin, DetailView):
         return redirect(self.get_success_url())
 
 
-class DomainUsersView(DomainPermission, DetailView):
+class DomainUsersView(DomainPermissionView):
 
     """User management page in the domain details."""
 
-    model = Domain
     template_name = "domain_users.html"
-    context_object_name = "domain"
 
 
-class DomainAddUserView(DomainPermission, FormMixin, DetailView):
+class DomainAddUserView(DomainPermissionView, FormMixin):
 
     """Inside of a domain's user management, a form for adding users.
 
@@ -162,7 +207,6 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
     """
 
     template_name = "domain_add_user.html"
-    model = Domain
     form_class = DomainAddUserForm
 
     def get_success_url(self):
@@ -242,8 +286,9 @@ class DomainAddUserView(DomainPermission, FormMixin, DetailView):
         return redirect(self.get_success_url())
 
 
-class DomainInvitationDeleteView(SuccessMessageMixin, DeleteView):
-    model = DomainInvitation
+class DomainInvitationDeleteView(
+    DomainInvitationPermissionDeleteView, SuccessMessageMixin
+):
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
     def get_success_url(self):
