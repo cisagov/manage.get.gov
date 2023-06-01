@@ -134,6 +134,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     # add `user` (the currently-logged-in user) to incoming HttpRequest objects
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Require login for every single request by default
+    "login_required.middleware.LoginRequiredMiddleware",
     # provide framework for displaying messages to the user, see documentation
     "django.contrib.messages.middleware.MessageMiddleware",
     # provide clickjacking protection via the X-Frame-Options header
@@ -460,6 +462,12 @@ AUTHENTICATION_BACKENDS = [
 # this is where unauthenticated requests are redirected when using
 # the login_required() decorator, LoginRequiredMixin, or AccessMixin
 LOGIN_URL = "/openid/login"
+
+# We don't want the OIDC app to be login-required because then it can't handle
+# the initial login requests without erroring.
+LOGIN_REQUIRED_IGNORE_PATHS = [
+    r"/openid/(.+)$",
+]
 
 # where to go after logging out
 LOGOUT_REDIRECT_URL = "home"

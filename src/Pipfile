@@ -24,6 +24,7 @@ django-fsm = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
 typing-extensions ='*'
+django-login-required-middleware = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

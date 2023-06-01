@@ -35,10 +35,9 @@ class TestViews(TestCase):
         self.assertContains(response, "OK", status_code=200)
 
     def test_home_page(self):
-        """Home page should be available without a login."""
+        """Home page should NOT be available without a login."""
         response = self.client.get("/")
-        self.assertContains(response, "registrar", status_code=200)
-        self.assertContains(response, "Sign in")
+        self.assertEqual(response.status_code, 302)
 
     def test_whoami_page_no_user(self):
         """Whoami page not accessible without a logged-in user."""
