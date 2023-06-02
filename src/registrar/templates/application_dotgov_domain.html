@@ -1,5 +1,5 @@
 {% extends 'application_form.html' %}
-{% load static field_helpers %}
+{% load field_helpers url_helpers %}
 
 {% block form_instructions %}
   <p>Before requesting a .gov domain, <a href="{% public_site_url 'domains/choosing' %}">please make sure it
