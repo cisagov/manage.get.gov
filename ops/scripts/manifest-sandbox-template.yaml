@@ -20,6 +20,8 @@ applications:
     DJANGO_BASE_URL: https://getgov-ENVIRONMENT.app.cloud.gov
     # Tell Django how much stuff to log
     DJANGO_LOG_LEVEL: INFO
+    # default public site location
+    GETGOV_PUBLIC_SITE_URL: https://beta.get.gov
   routes:
     - route: getgov-ENVIRONMENT.app.cloud.gov
   services:

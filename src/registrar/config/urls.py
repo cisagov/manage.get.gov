@@ -59,12 +59,12 @@ urlpatterns = [
     ),
     path(
         "application/<int:pk>/withdraw",
-        views.ApplicationWithdraw.as_view(),
+        views.ApplicationWithdrawConfirmation.as_view(),
         name="application-withdraw-confirmation",
     ),
     path(
         "application/<int:pk>/withdrawconfirmed",
-        views.ApplicationWithdraw.updatestatus,
+        views.ApplicationWithdrawn.as_view(),
         name="application-withdrawn",
     ),
     path("health/", views.health),
@@ -82,6 +82,16 @@ urlpatterns = [
         "domain/<int:pk>/nameservers",
         views.DomainNameserversView.as_view(),
         name="domain-nameservers",
+    ),
+    path(
+        "domain/<int:pk>/your-contact-information",
+        views.DomainYourContactInformationView.as_view(),
+        name="domain-your-contact-information",
+    ),
+    path(
+        "domain/<int:pk>/authorizing-official",
+        views.DomainAuthorizingOfficialView.as_view(),
+        name="domain-authorizing-official",
     ),
     path(
         "domain/<int:pk>/security-email",

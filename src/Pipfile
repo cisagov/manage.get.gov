@@ -23,6 +23,9 @@ requests = "*"
 django-fsm = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
+typing-extensions ='*'
+fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
+
 
 [dev-packages]
 django-debug-toolbar = "*"
@@ -37,3 +40,4 @@ django-webtest = "*"
 types-cachetools = "*"
 boto3-mocking = "*"
 boto3-stubs = "*"
+django-model2puml = "*"

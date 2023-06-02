@@ -1,6 +1,33 @@
 {% extends "domain_base.html" %}
+{% load static url_helpers %}
 
 {% block domain_content %}
   {{ block.super }}
-  <p>Active: {% if domain.is_active %}Yes{% else %}No{% endif %}</p>
+  <div class="margin-top-4 tablet:grid-col-10">
+
+    {% url 'domain-nameservers' pk=domain.id as url %}
+    {% if domain.nameservers %} 
+      {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' edit_link=url %}
+    {% else %}
+      <h2 class="margin-top-neg-1"> DNS name servers </h2>
+      <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
+      <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a> 
+    {% endif %}
+
+    {% url 'todo' as url %}
+    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url %}
+
+    {% url 'domain-authorizing-official' pk=domain.id as url %}
+    {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url %}
+
+    {% url 'domain-your-contact-information' pk=domain.id as url %}
+    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
+
+    {% url 'domain-security-email' pk=domain.id as url %}
+    {% include "includes/summary_item.html" with title='Security email' value=domain.security_email edit_link=url %}
+
+    {% url 'domain-users' pk=domain.id as url %}
+    {% include "includes/summary_item.html" with title='User management' users='true' list=True value=domain.permissions.all edit_link=url %}
+
+  </div>
 {% endblock %}  {# domain_content #}

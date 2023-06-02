@@ -2,6 +2,7 @@ import logging
 
 from datetime import date
 from string import digits
+from django_fsm import FSMField  # type: ignore
 
 from django.db import models
 
@@ -169,7 +170,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         IDs are provided as strings, e.g.
 
-            {"registrant": "jd1234", "admin": "sh8013",...}
+            { PublicContact.ContactTypeChoices.REGISTRANT: "jd1234",
+              PublicContact.ContactTypeChoices.ADMINISTRATIVE: "sh8013",...}
         """
         raise NotImplementedError()
 
@@ -199,7 +201,14 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @Cache
     def password(self) -> str:
-        """Get the `auth_info.pw` element from the registry. Not a real password."""
+        """
+        Get the `auth_info.pw` element from the registry. Not a real password.
+
+        This `auth_info` element is required by the EPP protocol, but the registry is
+        using a different mechanism to ensure unauthorized clients cannot perform
+        actions on domains they do not own. This field provides no security features.
+        It is not a secret.
+        """
         raise NotImplementedError()
 
     @Cache
@@ -319,10 +328,11 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text="Fully qualified domain name",
     )
 
-    state = models.CharField(
+    state = FSMField(
         max_length=21,
         choices=State.choices,
         default=State.UNKNOWN,
+        protected=True,  # cannot change state directly, particularly in Django admin
         help_text="Very basic info about the lifecycle of this domain object",
     )
 

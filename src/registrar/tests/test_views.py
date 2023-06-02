@@ -13,6 +13,7 @@ import boto3_mocking  # type: ignore
 from registrar.models import (
     DomainApplication,
     Domain,
+    DomainInformation,
     DraftDomain,
     DomainInvitation,
     Contact,
@@ -1030,12 +1031,16 @@ class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain
+        )
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
         )
 
     def tearDown(self):
         try:
+            self.domain_information.delete()
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
             self.domain.delete()
@@ -1048,61 +1053,41 @@ class TestWithDomainPermissions(TestWithUser):
 class TestDomainPermissions(TestWithDomainPermissions):
     def test_not_logged_in(self):
         """Not logged in gets a redirect to Login."""
-        response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
-        self.assertEqual(response.status_code, 302)
-
-        response = self.client.get(
-            reverse("domain-users", kwargs={"pk": self.domain.id})
-        )
-        self.assertEqual(response.status_code, 302)
-
-        response = self.client.get(
-            reverse("domain-users-add", kwargs={"pk": self.domain.id})
-        )
-        self.assertEqual(response.status_code, 302)
-
-        response = self.client.get(
-            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
-        )
-        self.assertEqual(response.status_code, 302)
-
-        response = self.client.get(
-            reverse("domain-security-email", kwargs={"pk": self.domain.id})
-        )
-        self.assertEqual(response.status_code, 302)
+        for view_name in [
+            "domain",
+            "domain-users",
+            "domain-users-add",
+            "domain-nameservers",
+            "domain-authorizing-official",
+            "domain-your-contact-information",
+            "domain-security-email",
+        ]:
+            with self.subTest(view_name=view_name):
+                response = self.client.get(
+                    reverse(view_name, kwargs={"pk": self.domain.id})
+                )
+                self.assertEqual(response.status_code, 302)
 
     def test_no_domain_role(self):
         """Logged in but no role gets 403 Forbidden."""
         self.client.force_login(self.user)
         self.role.delete()  # user no longer has a role on this domain
 
-        with less_console_noise():
-            response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
-        self.assertEqual(response.status_code, 403)
-
-        with less_console_noise():
-            response = self.client.get(
-                reverse("domain-users", kwargs={"pk": self.domain.id})
-            )
-        self.assertEqual(response.status_code, 403)
-
-        with less_console_noise():
-            response = self.client.get(
-                reverse("domain-users-add", kwargs={"pk": self.domain.id})
-            )
-        self.assertEqual(response.status_code, 403)
-
-        with less_console_noise():
-            response = self.client.get(
-                reverse("domain-nameservers", kwargs={"pk": self.domain.id})
-            )
-        self.assertEqual(response.status_code, 403)
-
-        with less_console_noise():
-            response = self.client.get(
-                reverse("domain-security-email", kwargs={"pk": self.domain.id})
-            )
-        self.assertEqual(response.status_code, 403)
+        for view_name in [
+            "domain",
+            "domain-users",
+            "domain-users-add",
+            "domain-nameservers",
+            "domain-authorizing-official",
+            "domain-your-contact-information",
+            "domain-security-email",
+        ]:
+            with self.subTest(view_name=view_name):
+                with less_console_noise():
+                    response = self.client.get(
+                        reverse(view_name, kwargs={"pk": self.domain.id})
+                    )
+                self.assertEqual(response.status_code, 403)
 
 
 class TestDomainDetail(TestWithDomainPermissions, WebTest):
@@ -1139,7 +1124,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.assertContains(response, "Add another user")
 
     def test_domain_user_add_form(self):
-        """Adding a user works."""
+        """Adding an existing user works."""
         other_user, _ = get_user_model().objects.get_or_create(
             email="mayor@igorville.gov"
         )
@@ -1222,6 +1207,22 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
+    def test_domain_invitation_cancel_no_permissions(self):
+        """Posting to the delete view as a different user should fail."""
+        EMAIL = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(
+            domain=self.domain, email=EMAIL
+        )
+
+        other_user = User()
+        other_user.save()
+        self.client.force_login(other_user)
+        with less_console_noise():  # permission denied makes console errors
+            result = self.client.post(
+                reverse("invitation-delete", kwargs={"pk": invitation.id})
+            )
+        self.assertEqual(result.status_code, 403)
+
     @boto3_mocking.patching
     def test_domain_invitation_flow(self):
         """Send an invitation to a new user, log in and load the dashboard."""
@@ -1296,6 +1297,40 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         # the field.
         self.assertContains(result, "This field is required", count=2, status_code=200)
 
+    def test_domain_authorizing_official(self):
+        """Can load domain's authorizing official page."""
+        page = self.client.get(
+            reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
+        )
+        # once on the sidebar, once in the title
+        self.assertContains(page, "Authorizing official", count=2)
+
+    def test_domain_authorizing_official_content(self):
+        """Authorizing official information appears on the page."""
+        self.domain_information.authorizing_official = Contact(first_name="Testy")
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+        page = self.app.get(
+            reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Testy")
+
+    def test_domain_your_contact_information(self):
+        """Can load domain's your contact information page."""
+        page = self.client.get(
+            reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Domain contact information")
+
+    def test_domain_your_contact_information_content(self):
+        """Logged-in user's contact information appears on the page."""
+        self.user.contact.first_name = "Testy"
+        self.user.contact.save()
+        page = self.app.get(
+            reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Testy")
+
     def test_domain_security_email(self):
         """Can load domain's security email page."""
         page = self.client.get(
@@ -1333,6 +1368,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
+        self.client.force_login(self.user)
 
     def _completed_application(
         self,
@@ -1446,3 +1482,24 @@ class TestApplicationStatus(TestWithUser, WebTest):
         )
         home_page = self.app.get("/")
         self.assertContains(home_page, "Withdrawn")
+
+    def test_application_status_no_permissions(self):
+        """Can't access applications without being the creator."""
+        application = self._completed_application()
+        other_user = User()
+        other_user.save()
+        application.creator = other_user
+        application.save()
+
+        # PermissionDeniedErrors make lots of noise in test output
+        with less_console_noise():
+            for url_name in [
+                "application-status",
+                "application-withdraw-confirmation",
+                "application-withdrawn",
+            ]:
+                with self.subTest(url_name=url_name):
+                    page = self.client.get(
+                        reverse(url_name, kwargs={"pk": application.pk})
+                    )
+                    self.assertEqual(page.status_code, 403)

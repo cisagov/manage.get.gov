@@ -1,7 +1,9 @@
 from .application import *
 from .domain import (
     DomainView,
+    DomainAuthorizingOfficialView,
     DomainNameserversView,
+    DomainYourContactInformationView,
     DomainSecurityEmailView,
     DomainUsersView,
     DomainAddUserView,
