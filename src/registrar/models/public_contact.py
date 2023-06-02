@@ -32,7 +32,7 @@ class PublicContact(TimeStampedModel):
         if hasattr(self, "domain"):
             match self.contact_type:
                 case PublicContact.ContactTypeChoices.REGISTRANT:
-                    self.domain.registrant = self
+                    self.domain.registrant_contact = self
                 case PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     self.domain.administrative_contact = self
                 case PublicContact.ContactTypeChoices.TECHNICAL:
