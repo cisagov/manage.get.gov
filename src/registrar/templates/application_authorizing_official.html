@@ -6,18 +6,16 @@
     Who is the authorizing official for your organization?
   </h2>
 
-  <p>Your authorizing official is the person within your organization who can authorize
-  your domain request. This is generally the highest-ranking or highest-elected official
-  in your organization. Read more about <a href="{% GETGOV_PUBLIC_SITE_URL 'domains/eligibility/#you-must-have-approval-from-an-authorizing-official-within-your-organization' %}">who can serve as an authorizing official</a>.</p>
+  <p>Your authorizing official is the person within your organization who can authorize your domain request. This is generally the highest-ranking or highest-elected official in your organization.</p>
 
   <div class="ao_example">
     {% include "includes/ao_example.html" %}
   </div>
 
-  <p>We’ll contact your authorizing official to let them know that you made this request
-  and to double check that they approve it.</p>
+  <p>We might contact your authorizing official, or their office, to double check that they approve this request.</p>
 {% endblock %}
 
+<p>Read more about <a href="{% public_site_url 'domains/eligibility/#you-must-have-approval-from-an-authorizing-official-within-your-organization' %}">who can serve as an authorizing official</a>.</p>
 
 {% block form_fields %}
   <fieldset class="usa-fieldset">
