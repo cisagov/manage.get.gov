@@ -101,8 +101,7 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         help_text="Street address",
     )
-    address_line2 = models.CharField(
-        max_length=15,
+    address_line2 = models.TextField(
         null=True,
         blank=True,
         help_text="Street address line 2",
