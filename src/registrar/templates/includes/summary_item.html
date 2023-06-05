@@ -4,60 +4,73 @@
   <hr class="" aria-hidden="true" />
   <div class="display-flex flex-justify">
     <div>
-    <h2 class="summary-item__title
-              font-sans-md
-              text-primary-dark text-semibold
-              margin-top-0 margin-bottom-05"
-    >
-    {{ title }}
-    </h2>
-    {% if address %}
-      {% include "includes/organization_address.html" with organization=value %}
-    {% elif contact %}
-      {% if list %}
-        {% if value|length == 1 %}
-          {% include "includes/contact.html" with contact=value|first %}
+    {% if heading_level %}
+      <{{ heading_level }}
+    {% else %} 
+      <h2
+    {% endif %} 
+      class="summary-item__title
+             font-sans-md
+             text-primary-dark text-semibold
+             margin-top-0 margin-bottom-05"
+      >
+        {{ title }}
+    {% if heading_level %}
+      </{{ heading_level }}>
+    {% else %} 
+      </h2>
+    {% endif %}
+      {% if address %}
+        {% include "includes/organization_address.html" with organization=value %}
+      {% elif contact %}
+        {% if list %}
+          {% if value|length == 1 %}
+            {% include "includes/contact.html" with contact=value|first %}
+          {% else %}
+            <ul class="usa-list usa-list--unstyled margin-top-0">
+              {% for item in value %}
+              <li>
+                <p class="text-semibold margin-top-1 margin-bottom-0">
+                  Contact {{forloop.counter}}
+                </p>
+                {% include "includes/contact.html" with contact=item %}</li>
+              {% empty %}
+               <li>None</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
         {% else %}
-          <ul class="usa-list usa-list--unstyled margin-top-0">
+          {% include "includes/contact.html" with contact=value %}
+        {% endif %}
+      {% elif list %}
+        {% if value|length == 1 %}
+            {% if users %}
+              <p class="margin-top-0">{{ value.0.user.email }} </p>
+            {% else %}
+              <p class="margin-top-0">{{ value | first }} </p>
+            {% endif %}
+        {% else %}
+          <ul class="usa-list margin-top-0">
             {% for item in value %}
-            <li>
-              <p class="text-semibold margin-top-1 margin-bottom-0">
-                Contact {{forloop.counter}}
-              </p>
-              {% include "includes/contact.html" with contact=item %}</li>
+            {% if users %}
+              <li>{{ item.user.email }}</li>
+            {% else %}
+              <li>{{ item }}</li>
+            {% endif %}
             {% empty %}
              <li>None</li>
             {% endfor %}
           </ul>
         {% endif %}
       {% else %}
-        {% include "includes/contact.html" with contact=value %}
+      <p class="margin-top-0 margin-bottom-0">
+        {% if value %}
+          {{ value }}
+        {% else %}
+          None
+        {% endif %}
+      </p>
       {% endif %}
-    {% elif list %}
-      {% if value|length == 1 %}
-          {% if users %}
-            <p class="margin-top-0">{{ value.0.user.email }} </p>
-          {% else %}
-            <p class="margin-top-0">{{ value | first }} </p>
-          {% endif %}
-      {% else %}
-        <ul class="usa-list margin-top-0">
-          {% for item in value %}
-          {% if users %}
-            <li>{{ item.user.email }}</li>
-          {% else %}
-            <li>{{ item }}</li>
-          {% endif %}
-          {% empty %}
-           <li>None</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% else %}
-    <p class="margin-top-0">
-      {{ value }}
-    </p>
-    {% endif %}
     </div>
 
     {% if edit_link %}
