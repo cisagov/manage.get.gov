@@ -112,6 +112,7 @@ class TestURLAuth(TestCase):
         # These are the OIDC auth endpoints that always need
         # to be public.
         "/openid/login/",
+        "/openid/logout/",
         "/openid/callback",
         "/openid/callback/login/",
         "/openid/callback/logout/",
