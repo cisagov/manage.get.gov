@@ -59,7 +59,7 @@ jobs:
         # by adding MockUserLogin to settings.MIDDLEWARE
         run: |
           perl -pi \
-          -e 's/"csp.middleware.CSPMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
+          -e 's/"django.contrib.auth.middleware.AuthenticationMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
           registrar/config/settings.py
 
       - name: Start container
