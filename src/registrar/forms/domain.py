@@ -141,10 +141,3 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
-"""
-    def clean(self): 
-        data = super().clean()
-        if not re.match(r"^[0-9]{5}(?:-[0-9]{4})?$|^$", data["zipcode"]):
-            raise forms.ValidationError("Enter a zip code in the form of 12345 or 12345-6789.", code="invalid")
-        return self.cleaned_data
-        """
