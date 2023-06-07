@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from registrar.models import Contact, DraftDomain, Website, DomainApplication, User
 
 from django.conf import settings
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock
 import boto3_mocking  # type: ignore
 
 
@@ -107,7 +107,7 @@ class TestDomainApplicationAdmin(TestCase):
 
             # Use the model admin's save_model method
             model_admin.save_model(request, application, form=None, change=True)
-            
+
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
         args, kwargs = call_args
@@ -116,7 +116,7 @@ class TestDomainApplicationAdmin(TestCase):
         from_email = kwargs.get("FromEmailAddress")
         to_email = kwargs["Destination"]["ToAddresses"][0]
         email_content = kwargs["Content"]
-        email_body = email_content['Simple']['Body']['Text']['Data']
+        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
 
         # Assert or perform other checks on the email details
         expected_string = "Your .gov domain request is being reviewed"
