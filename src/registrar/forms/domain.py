@@ -72,30 +72,54 @@ class DomainOrgNameAddressForm(forms.ModelForm):
 
     class Meta:
         model = DomainInformation
-        fields = ["federal_agency", "organization_name", "address_line1", "address_line2", "city", "state_territory", "zipcode", "urbanization"]
+        fields = [
+            "federal_agency",
+            "organization_name",
+            "address_line1",
+            "address_line2",
+            "city",
+            "state_territory",
+            "zipcode",
+            "urbanization",
+        ]
         labels = {
-                "address_line1": "Street address",
-                "address_line2": "Street address line 2",
-                "state_territory": "State, territory, or military post",
-                "urbanization": "Urbanization (Puerto Rico only)",
-                }
+            "address_line1": "Street address",
+            "address_line2": "Street address line 2",
+            "state_territory": "State, territory, or military post",
+            "urbanization": "Urbanization (Puerto Rico only)",
+        }
         error_messages = {
-            "federal_agency": {"required": "Select the federal agency for your organization." },
-            "organization_name": {"required": "Enter the name of your organization." },
-            "address_line1": {"required": "Enter the street address of your organization." }, 
+            "federal_agency": {
+                "required": "Select the federal agency for your organization."
+            },
+            "organization_name": {"required": "Enter the name of your organization."},
+            "address_line1": {
+                "required": "Enter the street address of your organization."
+            },
             "city": {"required": "Enter the city where your organization is located."},
-            "state_territory": {"required": "Select the state, territory, or military post where your organization  is located."},
-            "zipcode": {"required": "Enter a zip code in the form of 12345 or 12345-6789."},
+            "state_territory": {
+                "required": "Select the state, territory, or military post where your organization  is located."
+            },
+            "zipcode": {
+                "required": "Enter a zip code in the form of 12345 or 12345-6789."
+            },
         }
         widgets = {
-            "federal_agency": forms.Select(attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES),
+            "federal_agency": forms.Select(
+                attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES
+            ),
             "organization_name": forms.TextInput,
             "address_line1": forms.TextInput,
             "address_line2": forms.TextInput,
             "city": forms.TextInput,
-            "state_territory": forms.Select(attrs={"required": True,}, choices=DomainInformation.StateTerritoryChoices.choices),
+            "state_territory": forms.Select(
+                attrs={
+                    "required": True,
+                },
+                choices=DomainInformation.StateTerritoryChoices.choices,
+            ),
             "zipcode": forms.TextInput,
-            "urbanization" : forms.TextInput,
+            "urbanization": forms.TextInput,
         }
 
     # the database fields have blank=True so ModelForm doesn't create
@@ -109,13 +133,3 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
-
-
-
-
-
-
-
-
-
-

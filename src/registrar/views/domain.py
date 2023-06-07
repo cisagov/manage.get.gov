@@ -41,8 +41,10 @@ class DomainView(DomainPermissionView):
 
     template_name = "domain_detail.html"
 
+
 class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
-    """Organization name and mailing address view """
+    """Organization name and mailing address view"""
+
     model = Domain
     template_name = "domain_org_name_address.html"
     context_object_name = "domain"
@@ -52,7 +54,7 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         """Add domain_info.organization_name instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
         form_kwargs["instance"] = self.get_object().domain_info
-        return form_kwargs 
+        return form_kwargs
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
@@ -79,7 +81,6 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         )
         # superclass has the redirect
         return super().form_valid(form)
-
 
 
 class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
