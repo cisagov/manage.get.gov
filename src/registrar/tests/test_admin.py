@@ -107,14 +107,25 @@ class TestDomainApplicationAdmin(TestCase):
 
             # Use the model admin's save_model method
             model_admin.save_model(request, application, form=None, change=True)
+            
+        # Access the arguments passed to send_email
+        call_args = mock_client_instance.send_email.call_args
+        args, kwargs = call_args
 
-        # Assert that the email was sent
+        # Retrieve the email details from the arguments
+        from_email = kwargs.get("FromEmailAddress")
+        to_email = kwargs["Destination"]["ToAddresses"][0]
+        email_content = kwargs["Content"]
+        email_body = email_content['Simple']['Body']['Text']['Data']
 
-        mock_client_instance.send_email.assert_called_once_with(
-            FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
-            Destination={"ToAddresses": [EMAIL]},
-            Content=ANY,
-        )
+        # Assert or perform other checks on the email details
+        expected_string = "Your .gov domain request is being reviewed"
+        assert from_email == settings.DEFAULT_FROM_EMAIL
+        assert to_email == EMAIL
+        assert expected_string in email_body
+
+        # Perform assertions on the mock call itself
+        mock_client_instance.send_email.assert_called_once()
 
         # Cleanup
         application.delete()
