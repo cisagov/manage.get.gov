@@ -1,0 +1,81 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi {{ application.submitter.first_name }}.
+
+Your .gov domain request is being reviewed.
+
+DOMAIN REQUESTED: {{ application.requested_domain.name }}
+REQUEST RECEIVED ON: {{ application.updated_at|date }}
+REQUEST #: {{ application.id }}
+STATUS: In review
+
+
+NEED TO MAKE CHANGES?
+
+If you need to change your request you have to first withdraw it. Once you
+withdraw the request you can edit it and submit it again. Changing your request
+might add to the wait time. Learn more about withdrawing your request.
+<https://get.gov/help/domain-requests/#withdraw-your-domain-request>.
+
+
+NEXT STEPS
+
+- We’re reviewing your request. This usually takes 20 business days. 
+
+- You can check the status of your request at any time. 
+  <https://registrar.get.gov/application/{{ application.id }}>
+
+- We’ll email you with questions or when we complete our review.
+
+
+THANK YOU
+
+.Gov helps the public identify official, trusted information. Thank you for
+requesting a .gov domain.
+
+----------------------------------------------------------------
+
+SUMMARY OF YOUR DOMAIN REQUEST
+
+Type of organization:
+{{ application.get_organization_type_display }}
+
+Organization name and mailing address:
+{% spaceless %}{{ application.organization_name }}
+{{ application.address_line1 }}{% if  application.address_line2  %}
+{{ application.address_line2 }}{% endif %}
+{{ application.city }}, {{ application.state_territory }}
+{{ application.zipcode }}{% if application.urbanization  %}
+{{ application.urbanization }}{% endif %}{% endspaceless %}
+{% if application.type_of_work %}{# if block makes one newline if it's false #}
+Type of work:
+{% spaceless %}{{ application.type_of_work }}{% endspaceless %}
+{% endif %}
+Authorizing official:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=application.authorizing_official %}{% endspaceless %}
+{% if application.current_websites.exists %}{# if block makes a newline #}
+Current website for your organization: {% for site in application.current_websites.all %}
+{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}{% endif %}
+.gov domain:
+{{ application.requested_domain.name }}
+{% for site in application.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}
+Purpose of your domain:
+{{ application.purpose }}
+
+Your contact information:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=application.submitter %}{% endspaceless %}
+{% if application.other_contacts.all %}
+Other employees from your organization:
+{% for other in application.other_contacts.all %}
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
+{% endfor %}{% endif %}{% if application.anything_else %}
+Anything else we should know?
+{{ application.anything_else }}
+{% endif %}
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Visit <https://get.gov>
+{% endautoescape %}
