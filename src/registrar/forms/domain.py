@@ -98,7 +98,8 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             },
             "city": {"required": "Enter the city where your organization is located."},
             "state_territory": {
-                "required": "Select the state, territory, or military post where your organization  is located."
+                "required": "Select the state, territory, or military post where your"
+                "organization  is located."
             },
             "zipcode": {
                 "required": "Enter a zip code in the form of 12345 or 12345-6789."
