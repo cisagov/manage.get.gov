@@ -1,6 +1,7 @@
 """Forms for domain management."""
 
 from django import forms
+from django.core.validators import RegexValidator
 from django.forms import formset_factory
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -70,6 +71,16 @@ class DomainOrgNameAddressForm(forms.ModelForm):
 
     """Form for updating the organization name and mailing address."""
 
+    zipcode = forms.CharField(
+        label="Zip code",
+        validators=[
+            RegexValidator(
+                "^[0-9]{5}(?:-[0-9]{4})?$|^$",
+                message="Enter a zip code in the form of 12345 or 12345-6789.",
+            )
+        ],
+    )
+
     class Meta:
         model = DomainInformation
         fields = [
@@ -101,9 +112,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
                 "required": "Select the state, territory, or military post where your"
                 "organization  is located."
             },
-            "zipcode": {
-                "required": "Enter a zip code in the form of 12345 or 12345-6789."
-            },
         }
         widgets = {
             "federal_agency": forms.Select(
@@ -119,7 +127,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
                 },
                 choices=DomainInformation.StateTerritoryChoices.choices,
             ),
-            "zipcode": forms.TextInput,
             "urbanization": forms.TextInput,
         }
 
@@ -134,3 +141,10 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+"""
+    def clean(self): 
+        data = super().clean()
+        if not re.match(r"^[0-9]{5}(?:-[0-9]{4})?$|^$", data["zipcode"]):
+            raise forms.ValidationError("Enter a zip code in the form of 12345 or 12345-6789.", code="invalid")
+        return self.cleaned_data
+        """
