@@ -22,7 +22,7 @@
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'todo' as url %}
+        {% url 'domain-org-name-address' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
