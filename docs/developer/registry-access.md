@@ -81,7 +81,7 @@ request = commands.UpdateDomain(name="okay.gov", add=[common.HostObjSet(["ns1.ok
 ```
 
 ```
-request = commands.UpdateDomain(name="okay.gov", add=[common.DomainContact(contact="sh8014", type="technical")])
+request = commands.UpdateDomain(name="okay.gov", add=[common.DomainContact(contact="sh8014", type="tech")])
 ```
 
 ### How to see the raw XML
