@@ -65,7 +65,7 @@ request = commands.CreateDomain(name="okay.gov", registrant="sh8013", auth_info=
 ### Create a host object
 
 ```
-request = commands.CreateHost(name="ns1.okay.gov", addrs=[common.Ip(addr="127.0.01"), common.Ip(addr="0:0:0:0:0:0:0:1", ip="v6")])
+request = commands.CreateHost(name="ns1.okay.gov", addrs=[common.Ip(addr="127.0.0.1"), common.Ip(addr="0:0:0:0:0:0:0:1", ip="v6")])
 ```
 
 ### Check if a host is available
