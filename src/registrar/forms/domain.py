@@ -5,7 +5,7 @@ from django.forms import formset_factory
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 
-from ..models import Contact
+from ..models import Contact, DomainInformation
 
 
 class DomainAddUserForm(forms.Form):
@@ -64,3 +64,58 @@ class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
     security_email = forms.EmailField(label="Security email")
+
+
+class DomainOrgNameAddressForm(forms.ModelForm):
+
+    """Form for updating the organization name and mailing address."""
+
+    class Meta:
+        model = DomainInformation
+        fields = ["federal_agency", "organization_name", "address_line1", "address_line2", "city", "state_territory", "zipcode", "urbanization"]
+        labels = {
+                "address_line1": "Street address",
+                "address_line2": "Street address line 2",
+                "state_territory": "State, territory, or military post",
+                "urbanization": "Urbanization (Puerto Rico only)",
+                }
+        error_messages = {
+            "federal_agency": {"required": "Select the federal agency for your organization." },
+            "organization_name": {"required": "Enter the name of your organization." },
+            "address_line1": {"required": "Enter the street address of your organization." }, 
+            "city": {"required": "Enter the city where your organization is located."},
+            "state_territory": {"required": "Select the state, territory, or military post where your organization  is located."},
+            "zipcode": {"required": "Enter a zip code in the form of 12345 or 12345-6789."},
+        }
+        widgets = {
+            "federal_agency": forms.Select(attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES),
+            "organization_name": forms.TextInput,
+            "address_line1": forms.TextInput,
+            "address_line2": forms.TextInput,
+            "city": forms.TextInput,
+            "state_territory": forms.Select(attrs={"required": True,}, choices=DomainInformation.StateTerritoryChoices.choices),
+            "zipcode": forms.TextInput,
+            "urbanization" : forms.TextInput,
+        }
+
+    # the database fields have blank=True so ModelForm doesn't create
+    # required fields by default. Use this list in __init__ to mark each
+    # of these fields as required
+    required = ["organization_name", "address_line1", "city", "zipcode"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.required:
+            self.fields[field_name].required = True
+        self.fields["state_territory"].widget.attrs.pop("maxlength", None)
+        self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+
+
+
+
+
+
+
+
+
+
