@@ -57,3 +57,13 @@ body:
     attributes:
       label: Additional Context (optional)
       description: "Please include additional references, screenshots, documentation, etc. that are relevant"
+  - type: textarea
+    id: issue-links
+    attributes:
+      label: Issue Links (optional)
+      description: |
+        What other issues does this story relate to and how?
+        
+        Example:
+        - 🚧 Blocked by: #123
+        - 🔄 Relates to: #234
