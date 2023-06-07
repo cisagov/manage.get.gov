@@ -1,6 +1,6 @@
 name: User Story
 description: Capture actionable sprint work
-title: "[Story]: "
+title: ""
 labels: ["story"]
 
 body:
