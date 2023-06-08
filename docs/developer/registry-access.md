@@ -12,7 +12,7 @@
 
 ## Debugging in a Python shell
 
-You'll first need access to a Django shell in an environment with valid registry credentials. For example:
+You'll first need access to a Django shell in an environment with valid registry credentials. Only some environments are allowed access: your laptop is probably not one of them. For example:
 
 ```shell
 cf ssh getgov-ENVIRONMENT
@@ -99,3 +99,5 @@ request = commands.InfoDomain(name="ok.gov")
 registry._client.transport.send(request.xml())
 response = registry._client.transport.receive()
 ```
+
+This is helpful for debugging situations where epplib is not correctly or fully parsing the XML returned from the registry.
