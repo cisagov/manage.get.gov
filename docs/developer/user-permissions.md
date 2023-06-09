@@ -22,12 +22,22 @@ role or set of permissions that they have. We use a `UserDomainRole`
 ## Permission decorator
 
 The Django objects that need to be permission controlled are various views.
-For that purpose, we add a very simple permission mixin
-[`DomainPermission`](../../src/registrar/views/utility/mixins.py) that can be
-added to a view to require that (a) there is a logged-in user and (b) that the
-logged in user has a role that permits access to that view. This mixin is the
-place where the details of the permissions are enforced. It can allow a view
-to load, or deny access with various status codes, e.g. "403 Forbidden".
+For that purpose, we have a View subclass to enforce user permissions on a
+domain called
+[`DomainPermissionView`](../../src/registrar/views/utility/permission_views.py)
+that can be added to a view to require that (a) there is a logged-in user and
+(b) that the logged in user has a role that permits access to that view. This
+mixin is the place where the details of the permissions are enforced. It can
+allow a view to load, or deny access with various status codes, e.g. "403
+Forbidden".
+
+In addition, we now require all of our application views to have a logged-in
+user by using a Django middleware that makes every request "login required".
+This is slightly belt-and-suspenders because our permissions view also checks
+that the request includes a logged in user, but it avoids accidentally creating
+content that is publicly available by accident. We can specifically mark a view
+as "not login required" if we do need to have publicly accessible content (such
+as health checks used by our platform).
 
 ## Adding roles
 
