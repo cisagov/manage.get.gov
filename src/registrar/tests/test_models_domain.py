@@ -5,9 +5,12 @@ from registrar.models import (
     DomainApplication,
     User,
     Domain,
+    PublicContact
 )
 from unittest import skip
 
+##delete me
+from django.core.cache import cache
 
 class TestDomain(TestCase):
     def test_empty_create_fails(self):
@@ -21,6 +24,26 @@ class TestDomain(TestCase):
         # this assertion will not work -- for now, the fact that the
         # above command didn't error out is proof enough
         # self.assertEquals(domain.state, Domain.State.DRAFTED)
+    def test_cache(self):
+        # domain, _= Domain.objects.get_or_create(name="igorville.gov")
+
+
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        sec=domain.security_contact
+        print(sec) 
+        print("domain cache is as follows\n")
+
+        #would have expected the cache to contain the value 
+        print(domain._cache)
+        print("\n")
+        domain.registrant = 'abc123'
+        r=domain.registrant
+        print(domain._cache)
+
+
+
+
+
 
     @skip("cannot activate a domain without mock registry")
     def test_get_status(self):
