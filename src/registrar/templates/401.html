@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n static %}
+{% load url_helpers %}
 
 {% block title %}{% translate "Unauthorized | " %}{% endblock %}
 
@@ -25,7 +26,7 @@
         Would you like to <a href="{% url 'login' %}"> try logging in again?</a>
       </p>
       <p>
-        If you would like help with this error <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/contact/"> contact us </a>
+     If you'd like help with this error <a href="{% public_site_url 'contact' %}"> contact us </a>.
       </p>
 
       {% if log_identifier %}
