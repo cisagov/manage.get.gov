@@ -104,6 +104,9 @@ class AvailableAPITest(TestCase):
 
     def test_available_post(self):
         """Cannot post to the /available/ API endpoint."""
+        # have to log in to test the correct thing now that we require login
+        # for all URLs by default
+        self.client.force_login(self.user)
         with less_console_noise():
             response = self.client.post(API_BASE_PATH + "nonsense")
         self.assertEqual(response.status_code, 405)

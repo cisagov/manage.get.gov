@@ -72,8 +72,8 @@ jobs:
         # by adding MockUserLogin to settings.MIDDLEWARE
         run: |
           perl -pi \
-          -e 's/"csp.middleware.CSPMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
-          src/registrar/config/settings.py
+          -e 's/"django.contrib.auth.middleware.AuthenticationMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
+          registrar/config/settings.py
         working-directory: ./src
 
       - name: OWASP scan
