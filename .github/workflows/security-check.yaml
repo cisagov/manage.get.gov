@@ -73,7 +73,7 @@ jobs:
         run: |
           perl -pi \
           -e 's/"django.contrib.auth.middleware.AuthenticationMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
-          src/registrar/config/settings.py
+          registrar/config/settings.py
         working-directory: ./src
 
       - name: OWASP scan
