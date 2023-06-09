@@ -120,9 +120,9 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Assert or perform other checks on the email details
         expected_string = "Your .gov domain request is being reviewed"
-        assert from_email == settings.DEFAULT_FROM_EMAIL
-        assert to_email == EMAIL
-        assert expected_string in email_body
+        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(to_email, EMAIL)
+        self.assertIn(expected_string, email_body)
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
