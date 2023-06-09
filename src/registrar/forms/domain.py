@@ -93,12 +93,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             "zipcode",
             "urbanization",
         ]
-        labels = {
-            "address_line1": "Street address",
-            "address_line2": "Street address line 2",
-            "state_territory": "State, territory, or military post",
-            "urbanization": "Urbanization (Puerto Rico only)",
-        }
         error_messages = {
             "federal_agency": {
                 "required": "Select the federal agency for your organization."
@@ -114,6 +108,10 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             },
         }
         widgets = {
+            # We need to set the required attributed for federal_agency and
+            # state/territory because for these fields we are creating an individual
+            # instance of the Select. For the other fields we use the for loop to set 
+            # the class's required attribute to true. 
             "federal_agency": forms.Select(
                 attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES
             ),
