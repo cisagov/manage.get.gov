@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n static %}
+{% load field_helpers url_helpers %}
 
 {% block title %}{% translate "Server error | " %}{% endblock %}
 
@@ -18,7 +19,7 @@
       {% else %}
         <p>
         Sorry! Try waiting a few minutes and then reloading the page.
-        <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/contact/"> Contact us </a> if you need help.
+        <a href="{% public_site_url 'contact' %}"> contact us </a> if you need help.
         </p>
       {% endif %}
 
