@@ -34,6 +34,8 @@ request = ...
 response = registry.send(request)
 ```
 
+Note that you'll need to attest that the data you are sending has been sanitized to remove malicious or invalid strings. Use `send(..., cleaned=True)` to do that.
+
 See below for some example commands to send. Replace example data with data which makes sense for your debugging scenario. Other commands are available; see the source code of epplib for more options.
 
 
