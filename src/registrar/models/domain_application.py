@@ -577,7 +577,7 @@ class DomainApplication(TimeStampedModel):
         # When an application is moved to in review, we need to send a
         # confirmation email. This is a side-effect of the state transition
         updated_domain_application._send_in_review_email()
-        
+
     @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
     def withdraw(self):
         """Withdraw an application that has been submitted."""
