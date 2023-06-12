@@ -133,6 +133,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     # add `user` (the currently-logged-in user) to incoming HttpRequest objects
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Require login for every single request by default
+    "login_required.middleware.LoginRequiredMiddleware",
     # provide framework for displaying messages to the user, see documentation
     "django.contrib.messages.middleware.MessageMiddleware",
     # provide clickjacking protection via the X-Frame-Options header
