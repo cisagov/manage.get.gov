@@ -4,7 +4,6 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-from .utility.email import send_templated_email, EmailSendingError
 from . import models
 
 logger = logging.getLogger(__name__)
@@ -63,30 +62,16 @@ class DomainApplicationAdmin(AuditedAdmin):
             # Get the original application from the database
             original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-            if obj.status != original_obj.status and obj.status == "investigating":
-                if (
-                    original_obj.submitter is None
-                    or original_obj.submitter.email is None
-                ):
-                    logger.warning(
-                        "Cannot send status change (in review) email,"
-                        "no submitter email address."
-                    )
-                    return
-                try:
-                    print(
-                        f"original_obj.submitter.email {original_obj.submitter.email}"
-                    )
-                    send_templated_email(
-                        "emails/status_change_in_review.txt",
-                        "emails/status_change_in_review_subject.txt",
-                        original_obj.submitter.email,
-                        context={"application": obj},
-                    )
-                except EmailSendingError:
-                    logger.warning(
-                        "Failed to send status change (in review) email", exc_info=True
-                    )
+            if (
+                obj.status != original_obj.status
+                and obj.status == models.DomainApplication.INVESTIGATING
+            ):
+                # This is a transition annotated method in model which will throw an
+                # error if the condition is violated. To make this work, we need to
+                # call it  on the original object which has the right status value,
+                # but pass the current object which contains the up-to-date data
+                # for the email.
+                original_obj.in_review(obj)
 
         super().save_model(request, obj, form, change)
 
