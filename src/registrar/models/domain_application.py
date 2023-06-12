@@ -541,6 +541,10 @@ class DomainApplication(TimeStampedModel):
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.ADMIN
         )
 
+    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
+    def withdraw(self):
+        """Withdraw an application that has been submitted."""
+
     # ## Form policies ###
     #
     # These methods control what questions need to be answered by applicants

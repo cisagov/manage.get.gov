@@ -501,6 +501,6 @@ class ApplicationWithdrawn(DomainApplicationPermissionView):
         to withdraw and send back to homepage.
         """
         application = DomainApplication.objects.get(id=self.kwargs["pk"])
-        application.status = "withdrawn"
+        application.withdraw()
         application.save()
         return HttpResponseRedirect(reverse("home"))
