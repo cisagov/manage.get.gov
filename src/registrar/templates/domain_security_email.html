@@ -1,5 +1,5 @@
 {% extends "domain_base.html" %}
-{% load static field_helpers %}
+{% load static field_helpers url_helpers %}
 
 {% block title %}Domain security email | {{ domain.name }} | {% endblock %}
 
@@ -7,7 +7,7 @@
 
   <h1>Domain security email</h1>
 
-  <p>We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain. Security emails are made public and included in the <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/about/data/">.gov domain data</a> we provide.</p>
+  <p>We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain. Security emails are made public and included in the <a href="{% public_site_url 'about/data/' %}">.gov domain data</a> we provide.</p>
 
   <p>A security contact should be capable of evaluating or triaging security reports for your entire domain. Use a team email address, not an individual’s email. We recommend using an alias, like security@domain.gov.</p>
 

@@ -48,6 +48,7 @@ env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_base_url = env.str("DJANGO_BASE_URL")
+env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
 
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
@@ -61,8 +62,6 @@ secret_registry_cert = b64decode(secret("REGISTRY_CERT", ""))
 secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
-
-secret_getgov_public_site_url = secret("GETGOV_PUBLIC_SITE_URL", "")
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -134,6 +133,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     # add `user` (the currently-logged-in user) to incoming HttpRequest objects
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Require login for every single request by default
+    "login_required.middleware.LoginRequiredMiddleware",
     # provide framework for displaying messages to the user, see documentation
     "django.contrib.messages.middleware.MessageMiddleware",
     # provide clickjacking protection via the X-Frame-Options header
@@ -461,6 +462,12 @@ AUTHENTICATION_BACKENDS = [
 # the login_required() decorator, LoginRequiredMixin, or AccessMixin
 LOGIN_URL = "/openid/login"
 
+# We don't want the OIDC app to be login-required because then it can't handle
+# the initial login requests without erroring.
+LOGIN_REQUIRED_IGNORE_PATHS = [
+    r"/openid/(.+)$",
+]
+
 # where to go after logging out
 LOGOUT_REDIRECT_URL = "home"
 
@@ -509,7 +516,7 @@ STATIC_URL = "public/"
 
 # Base URL of our separate static public website. Used by the
 # {% public_site_url subdir/path %} template tag
-GETGOV_PUBLIC_SITE_URL = secret_getgov_public_site_url
+GETGOV_PUBLIC_SITE_URL = env_getgov_public_site_url
 
 # endregion
 # region: Registry----------------------------------------------------------###

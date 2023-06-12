@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n static %}
+{% load url_helpers %}
 
 {% block title %}{% translate "Page not found | " %}{% endblock %}
 
@@ -14,7 +15,7 @@
         {% translate "Status 404" %}
       </h2>
 
-      <p> Try going to the <a href="/">homepage</a>. If you can’t find what you’re looking for, <a href= "https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/contact/">contact us.</a>
+      <p> Try going to the <a href="/">homepage</a>. If you can’t find what you’re looking for, <a href="{% public_site_url 'contact' %}"> contact us </a>.
       </p>
     </div>
 

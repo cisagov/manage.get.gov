@@ -3,5 +3,6 @@ from .domain import (
     DomainAddUserForm,
     NameserverFormset,
     DomainSecurityEmailForm,
+    DomainOrgNameAddressForm,
     ContactForm,
 )
