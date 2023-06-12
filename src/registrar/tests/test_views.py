@@ -1057,6 +1057,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-nameservers",
+            "domain-org-name-address",
             "domain-authorizing-official",
             "domain-your-contact-information",
             "domain-security-email",
@@ -1077,6 +1078,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-nameservers",
+            "domain-org-name-address",
             "domain-authorizing-official",
             "domain-your-contact-information",
             "domain-security-email",
@@ -1313,6 +1315,42 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
             reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
         )
         self.assertContains(page, "Testy")
+
+    def test_domain_org_name_address(self):
+        """Can load domain's org name and mailing address page."""
+        page = self.client.get(
+            reverse("domain-org-name-address", kwargs={"pk": self.domain.id})
+        )
+        # once on the sidebar, once in the page title, once as H1
+        self.assertContains(page, "Organization name and mailing address", count=3)
+
+    def test_domain_org_name_address_content(self):
+        """Org name and address information appears on the page."""
+        self.domain_information.organization_name = "Town of Igorville"
+        self.domain_information.save()
+        page = self.app.get(
+            reverse("domain-org-name-address", kwargs={"pk": self.domain.id})
+        )
+        self.assertContains(page, "Town of Igorville")
+
+    def test_domain_org_name_address_form(self):
+        """Submitting changes works on the org name address page."""
+        self.domain_information.organization_name = "Town of Igorville"
+        self.domain_information.save()
+        org_name_page = self.app.get(
+            reverse("domain-org-name-address", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        org_name_page.form["organization_name"] = "Not igorville"
+        org_name_page.form["city"] = "Faketown"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result_page = org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 200)
+
+        self.assertContains(success_result_page, "Not igorville")
+        self.assertContains(success_result_page, "Faketown")
 
     def test_domain_your_contact_information(self):
         """Can load domain's your contact information page."""

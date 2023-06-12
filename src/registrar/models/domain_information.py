@@ -100,11 +100,13 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Street address",
+        verbose_name="Street address",
     )
     address_line2 = models.TextField(
         null=True,
         blank=True,
         help_text="Street address line 2",
+        verbose_name="Street address line 2",
     )
     city = models.TextField(
         null=True,
@@ -116,6 +118,7 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         help_text="State, territory, or military post",
+        verbose_name="State, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
@@ -128,6 +131,7 @@ class DomainInformation(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Urbanization (Puerto Rico only)",
+        verbose_name="Urbanization (Puerto Rico only)",
     )
 
     type_of_work = models.TextField(

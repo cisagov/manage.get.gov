@@ -22,10 +22,11 @@ from registrar.models import (
 )
 
 from ..forms import (
-    DomainAddUserForm,
-    NameserverFormset,
-    DomainSecurityEmailForm,
     ContactForm,
+    DomainOrgNameAddressForm,
+    DomainAddUserForm,
+    DomainSecurityEmailForm,
+    NameserverFormset,
 )
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
@@ -39,6 +40,47 @@ class DomainView(DomainPermissionView):
     """Domain detail overview page."""
 
     template_name = "domain_detail.html"
+
+
+class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
+    """Organization name and mailing address view"""
+
+    model = Domain
+    template_name = "domain_org_name_address.html"
+    context_object_name = "domain"
+    form_class = DomainOrgNameAddressForm
+
+    def get_form_kwargs(self, *args, **kwargs):
+        """Add domain_info.organization_name instance to make a bound form."""
+        form_kwargs = super().get_form_kwargs(*args, **kwargs)
+        form_kwargs["instance"] = self.get_object().domain_info
+        return form_kwargs
+
+    def get_success_url(self):
+        """Redirect to the overview page for the domain."""
+        return reverse("domain-org-name-address", kwargs={"pk": self.object.pk})
+
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view.
+
+        This post method harmonizes using DetailView and FormMixin together.
+        """
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """The form is valid, save the organization name and mailing address."""
+        form.save()
+
+        messages.success(
+            self.request, "The organization name and mailing address has been updated."
+        )
+        # superclass has the redirect
+        return super().form_valid(form)
 
 
 class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
