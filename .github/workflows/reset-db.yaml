@@ -15,6 +15,7 @@ on:
         description: Which environment should we flush and re-load data for?
         options:
           - stable
+          - gd
           - ko
           - ab
           - bl
