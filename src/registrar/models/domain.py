@@ -377,7 +377,7 @@ class Domain(TimeStampedModel, DomainHelper):
         while True:
             try:
                 req = commands.InfoDomain(name=self.name)
-                return registry.send(req).res_data[0]
+                return registry.send(req, cleaned=True).res_data[0]
             except RegistryError as e:
                 if already_tried_to_create:
                     raise e
@@ -394,7 +394,7 @@ class Domain(TimeStampedModel, DomainHelper):
                             pw="2fooBAR123fooBaz"
                         ),  # not a password
                     )
-                    registry.send(req)
+                    registry.send(req, cleaned=True)
                     # no error, so go ahead and update state
                     self.state = Domain.State.CREATED
                     self.save()
@@ -406,7 +406,7 @@ class Domain(TimeStampedModel, DomainHelper):
         while True:
             try:
                 req = commands.InfoContact(id=contact.registry_id)
-                return registry.send(req).res_data[0]
+                return registry.send(req, cleaned=True).res_data[0]
             except RegistryError as e:
                 if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                     create = commands.CreateContact(
@@ -457,9 +457,13 @@ class Domain(TimeStampedModel, DomainHelper):
         """Contact registry for info about a domain."""
         try:
             # get info from registry
+            print("calling get or create\n")
             data = self._get_or_create_domain()
+            print("after get or create\n")
             # extract properties from response
             # (Ellipsis is used to mean "null")
+            print("data is \n")
+            print(data)
             cache = {
                 "auth_info": getattr(data, "auth_info", ...),
                 "_contacts": getattr(data, "contacts", ...),
@@ -472,9 +476,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 "tr_date": getattr(data, "tr_date", ...),
                 "up_date": getattr(data, "up_date", ...),
             }
+            print("\nCACHE AT TOP\n\n"+str(cache)+"\n\n\n")
             # remove null properties (to distinguish between "a value of None" and null)
             cleaned = {k: v for k, v in cache if v is not ...}
-
+            print("\ncleaned is "+str(cleaned)+"\n\n")
             # get contact info, if there are any
             if (
                 fetch_contacts
@@ -488,7 +493,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     # just asked the registry for still exists --
                     # if not, that's a problem
                     req = commands.InfoContact(id=id)
-                    data = registry.send(req).res_data[0]
+                    data = registry.send(req, cleaned=True).res_data[0]
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
                     contact = {
@@ -521,7 +526,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     # just asked the registry for still exists --
                     # if not, that's a problem
                     req = commands.InfoHost(name=name)
-                    data = registry.send(req).res_data[0]
+                    data = registry.send(req, cleaned=True).res_data[0]
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
                     host = {
@@ -536,6 +541,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # replace the prior cache with new data
             self._cache = cleaned
+            print("cache is "+str(self._cache))
         except RegistryError as e:
             logger.error(e)
 
@@ -546,6 +552,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _get_property(self, property):
         """Get some piece of info about a domain."""
         if property not in self._cache:
+            print("get cache")
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
                 fetch_contacts=(property == "contacts"),
