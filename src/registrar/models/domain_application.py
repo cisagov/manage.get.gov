@@ -516,9 +516,7 @@ class DomainApplication(TimeStampedModel):
                 self.submitter.email,
                 context={"application": self},
             )
-            logger.info(
-                f"In review email sent to: {self.submitter.email}"
-            )
+            logger.info(f"In review email sent to: {self.submitter.email}")
         except EmailSendingError:
             logger.warning(
                 "Failed to send status change (in review) email", exc_info=True
