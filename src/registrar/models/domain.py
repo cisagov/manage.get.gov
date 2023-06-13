@@ -478,7 +478,7 @@ class Domain(TimeStampedModel, DomainHelper):
             }
             print("\nCACHE AT TOP\n\n"+str(cache)+"\n\n\n")
             # remove null properties (to distinguish between "a value of None" and null)
-            cleaned = {k: v for k, v in cache if v is not ...}
+            cleaned = {k: v for k, v in cache.items() if v is not ...}
             print("\ncleaned is "+str(cleaned)+"\n\n")
             # get contact info, if there are any
             if (

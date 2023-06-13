@@ -13,15 +13,19 @@ try:
     from epplib import InfoDomain
 except ImportError:
     # allow epplibwrapper to load without epplib, for testing and development
+    print("epplib didn't load")
     pass
 ##delete me
 from django.core.cache import cache
 
 class TestDomain(TestCase):
-    mockDataInfoDomain={"avail": False,
-                       "auth_info": None,
-                       "cr_date": datetime.datetime(2023, 5, 25, 19, 45, 35)
-                       }
+    class fakedEppObject(object):
+        def __init__(self, avail, auth_info, cr_date):
+            self.avail=avail
+            self.auth_info=auth_info
+            self.cr_date=cr_date
+
+    mockDataInfoDomain=fakedEppObject(False, None, datetime.datetime(2023, 5, 25, 19, 45, 35))
     # {'auth_info': <MagicMock name='send().res_data.__getitem__().auth_info' id='281473717645712'>, '_contacts': <MagicMock name='send().res_data.__getitem__().contacts' id='281473717644608'>, 'cr_date': <MagicMock name='send().res_data.__getitem__().cr_date' id='281473719330096'>, 'ex_date': <MagicMock name='send().res_data.__getitem__().ex_date' id='281473719328464'>, '_hosts': <MagicMock name='send().res_data.__getitem__().hosts' id='281473721505856'>, 'name': <MagicMock name='send().res_data.__getitem__().name' id='281473717398512'>, 'registrant': <MagicMock name='send().res_data.__getitem__().registrant' id='281473717289408'>, 'statuses': <MagicMock name='send().res_data.__getitem__().statuses' id='281473717293632'>, 'tr_date': <MagicMock name='send().res_data.__getitem__().tr_date' id='281473710170096'>, 'up_date': <MagicMock name='send().res_data.__getitem__().up_date' id='281473710170384'>}
 
     # mockDataContactInfo={
@@ -71,15 +75,21 @@ class TestDomain(TestCase):
         # print(patch)
         # domain, _= Domain.objects.get_or_create(name="igorville.gov")
         # mockSend=MagicMock(return_val)
-
+        # InfoDomain()
        
         with patch ("registrar.models.domain.registry.send", new=self.mock_send):
         # with patch("epplibwrapper.CLIENT") as registry_mock, \
         #     patch("epplibwrapper.CLIENT.send",side_effects=self.mock_send) as send_mock:
             # with patch("epplibwrapper.CLIENT.send",side_effects=self.mock_send):
             domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-            domain._get_property("auth_info")
+            domain._get_property("auth_info") 
+            # domain._get_property("cr_date")
             print(domain._cache)
+            self.assertEquals(domain._cache["auth_info"],self.mockDataInfoDomain.auth_info )
+            self.assertEquals(domain._cache["cr_date"],self.mockDataInfoDomain.cr_date )
+            self.assertFalse("avail" in domain._cache.keys())
+
+            #check it a second time and make sure send is not called
         # sec=domain.security_contact
         # print(sec) 
         # print("domain cache is as follows\n")
