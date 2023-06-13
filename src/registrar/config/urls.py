@@ -45,7 +45,6 @@ for step, view in [
 
 urlpatterns = [
     path("", views.index, name="home"),
-    path("whoami/", views.whoami, name="whoami"),
     path("admin/", admin.site.urls),
     path(
         "application/<id>/edit/",
