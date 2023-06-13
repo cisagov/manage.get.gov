@@ -516,9 +516,7 @@ class DomainApplication(TimeStampedModel):
                 self.submitter.email,
                 context={"application": self},
             )
-            logging.info(
-                f"In review email sent to: {self.submitter.email}"
-            )
+            logging.info(f"In review email sent to: {self.submitter.email}")
         except EmailSendingError:
             logger.warning(
                 "Failed to send status change (in review) email", exc_info=True
@@ -575,7 +573,7 @@ class DomainApplication(TimeStampedModel):
     @transition(field="status", source=SUBMITTED, target=INVESTIGATING)
     def in_review(self, updated_domain_application):
         """Investigate an application that has been submitted.
-        
+
         This method is called in admin.py on the original application
         which has the correct status value, but is passed the changed
         application which has the up-to-date data that we'll use
