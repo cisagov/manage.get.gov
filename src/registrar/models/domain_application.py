@@ -484,14 +484,14 @@ class DomainApplication(TimeStampedModel):
             )
             return
         try:
-            logger.info(
-                f"Submission confirmation email sent to: {self.submitter.email}"
-            )
             send_templated_email(
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
                 self.submitter.email,
                 context={"application": self},
+            )
+            logger.info(
+                f"Submission confirmation email sent to: {self.submitter.email}"
             )
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
@@ -510,12 +510,14 @@ class DomainApplication(TimeStampedModel):
             )
             return
         try:
-            logging.info(f"In review email sent to: {self.submitter.email}")
             send_templated_email(
                 "emails/status_change_in_review.txt",
                 "emails/status_change_in_review_subject.txt",
                 self.submitter.email,
                 context={"application": self},
+            )
+            logging.info(
+                f"In review email sent to: {self.submitter.email}"
             )
         except EmailSendingError:
             logger.warning(
@@ -572,7 +574,12 @@ class DomainApplication(TimeStampedModel):
 
     @transition(field="status", source=SUBMITTED, target=INVESTIGATING)
     def in_review(self, updated_domain_application):
-        """Investigate an application that has been submitted."""
+        """Investigate an application that has been submitted.
+        
+        This method is called in admin.py on the original application
+        which has the correct status value, but is passed the changed
+        application which has the up-to-date data that we'll use
+        in the email."""
 
         # When an application is moved to in review, we need to send a
         # confirmation email. This is a side-effect of the state transition

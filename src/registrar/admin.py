@@ -68,7 +68,7 @@ class DomainApplicationAdmin(AuditedAdmin):
             ):
                 # This is a transition annotated method in model which will throw an
                 # error if the condition is violated. To make this work, we need to
-                # call it  on the original object which has the right status value,
+                # call it on the original object which has the right status value,
                 # but pass the current object which contains the up-to-date data
                 # for the email.
                 original_obj.in_review(obj)
