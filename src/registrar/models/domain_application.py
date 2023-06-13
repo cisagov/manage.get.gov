@@ -484,14 +484,14 @@ class DomainApplication(TimeStampedModel):
             )
             return
         try:
-            logger.info(
-                f"Submission confirmation email sent to: {self.submitter.email}"
-            )
             send_templated_email(
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
                 self.submitter.email,
                 context={"application": self},
+            )
+            logger.info(
+                f"Submission confirmation email sent to: {self.submitter.email}"
             )
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
@@ -510,12 +510,14 @@ class DomainApplication(TimeStampedModel):
             )
             return
         try:
-            logging.info(f"In review email sent to: {self.submitter.email}")
             send_templated_email(
                 "emails/status_change_in_review.txt",
                 "emails/status_change_in_review_subject.txt",
                 self.submitter.email,
                 context={"application": self},
+            )
+            logger.info(
+                f"In review email sent to: {self.submitter.email}"
             )
         except EmailSendingError:
             logger.warning(
