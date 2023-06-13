@@ -36,7 +36,7 @@ class TestDomainApplicationAdmin(TestCase):
             model_admin = DomainApplicationAdmin(DomainApplication, self.site)
 
             # Modify the application's property
-            application.status = "investigating"
+            application.status = DomainApplication.INVESTIGATING
 
             # Use the model admin's save_model method
             model_admin.save_model(request, application, form=None, change=True)
