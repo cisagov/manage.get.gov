@@ -571,12 +571,12 @@ class DomainApplication(TimeStampedModel):
         )
 
     @transition(field="status", source=SUBMITTED, target=INVESTIGATING)
-    def in_review(self, updated_domain_application):
+    def in_review(self):
         """Investigate an application that has been submitted."""
 
         # When an application is moved to in review, we need to send a
         # confirmation email. This is a side-effect of the state transition
-        updated_domain_application._send_in_review_email()
+        self._send_in_review_email()
 
     @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
     def withdraw(self):

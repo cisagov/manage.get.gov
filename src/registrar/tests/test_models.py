@@ -15,7 +15,9 @@ from registrar.models import (
 from unittest import skip
 
 import boto3_mocking  # type: ignore
-from .common import MockSESClient, less_console_noise
+from .common import MockSESClient, less_console_noise, completed_application
+from unittest.mock import patch, MagicMock
+from django.conf import settings
 
 boto3_mocking.clients.register_handler("sesv2", MockSESClient)
 
@@ -134,6 +136,56 @@ class TestDomainApplication(TestCase):
             ),
             0,
         )
+
+    def test_status_change_to_invetigating_sends_email(self):
+        """Create an application and change its status to investigating,
+        trigger email send and test the email."""
+
+        application = completed_application(status=DomainApplication.SUBMITTED)
+
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # Mock the model's save method
+            with patch("registrar.models.DomainApplication.save") as mock_save:
+                # Set the return value of the save method
+                mock_save.return_value = None
+
+                # Perform the model change (e.g., update a field)
+                application.status = DomainApplication.INVESTIGATING
+                application.save()
+
+                # Trigger the email
+                application._send_in_review_email()
+
+                # Assert that the save method was called
+                mock_save.assert_called_once()
+
+                # Access the arguments passed to send_email
+                call_args = mock_client_instance.send_email.call_args
+                args, kwargs = call_args
+
+                # Retrieve the email details from the arguments
+                from_email = kwargs.get("FromEmailAddress")
+                to_email = kwargs["Destination"]["ToAddresses"][0]
+                email_content = kwargs["Content"]
+                email_body = email_content["Simple"]["Body"]["Text"]["Data"]
+
+                # Assert or perform other checks on the email details
+                expected_string = "Your .gov domain request is being reviewed"
+                self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
+                self.assertEqual(to_email, EMAIL)
+                self.assertIn(expected_string, email_body)
+
+                # Perform assertions on the mock call itself
+                mock_client_instance.send_email.assert_called_once()
+
+                # Cleanup
+                application.delete()
 
 
 class TestPermissions(TestCase):

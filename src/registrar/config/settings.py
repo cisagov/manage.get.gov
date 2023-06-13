@@ -21,12 +21,24 @@ from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
 from pathlib import Path
 from typing import Final
-
 from botocore.config import Config
+import django
+import django.utils.translation as translation
+import django.utils.encoding as encoding
 
 # # #                          ###
 #      Setup code goes here      #
 # # #                          ###
+
+# Resolve version sompatibility issues with fsm_admin
+
+# Update the relevant functions in the wrapper module
+translation.ugettext = translation.gettext_lazy  # type: ignore
+encoding.force_text = encoding.force_str  # type: ignore
+
+# Assign the wrapper module to the original modules
+django.utils.translation = translation
+django.utils.encoding = encoding
 
 env = environs.Env()
 
@@ -102,8 +114,9 @@ INSTALLED_APPS = [
     "auditlog",
     # library to simplify form templating
     "widget_tweaks",
-    # library for Finite State Machine statuses
+    # libraries for Finite State Machine statuses
     "django_fsm",
+    "fsm_admin",
     # library for phone numbers
     "phonenumber_field",
     # let's be sure to install our own application!
