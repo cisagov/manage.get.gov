@@ -16,6 +16,7 @@ on:
         options:
           - stable
           - rb
+          - ko
           - ab
           - bl
           - rjm
