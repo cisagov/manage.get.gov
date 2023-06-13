@@ -267,7 +267,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def place_client_hold(self):
         """This domain should not be active."""
-        raise NotImplementedError()
+        raise NotImplementedError("This is not implemented yet.")
 
     def remove_client_hold(self):
         """This domain is okay to be active."""
