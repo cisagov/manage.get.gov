@@ -227,9 +227,10 @@ Examine the results in the running application (remember to empty your cache!) a
 ## Finite State Machines
 
 In an effort to keep our domain logic centralized, we are representing the state of 
-objects in the application using the [django-fsm](https://github.com/viewflow/django-fsm)
-library. See the [ADR number 15](../architecture/decisions/0015-use-django-fs.md) for
-more information on the topic.
+objects in the application using [django-fsm](https://github.com/viewflow/django-fsm) 
+and [django-fsm-admin](https://github.com/gadventures/django-fsm-admin) library. 
+See the [ADR number 15](../architecture/decisions/0015-use-django-fs.md) for more 
+information on the topic.
 
 ## Login Time Bug
 
