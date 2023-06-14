@@ -2,6 +2,7 @@ from .application import *
 from .domain import (
     DomainView,
     DomainAuthorizingOfficialView,
+    DomainOrgNameAddressView,
     DomainNameserversView,
     DomainYourContactInformationView,
     DomainSecurityEmailView,

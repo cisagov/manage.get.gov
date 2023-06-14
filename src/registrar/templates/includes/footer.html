@@ -1,4 +1,5 @@
 {% load static %}
+{% load url_helpers %}
 
 <footer class="usa-footer">
     <div class="usa-footer__secondary-section">
@@ -26,11 +27,11 @@
             <address class="usa-footer__address">
               <div class="usa-footer__contact-info grid-row grid-gap-md">
                 <div class="grid-col-auto">
-                  <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/help/"> Help </a>
+                   <a href="{% public_site_url 'help/' %}" class="usa-link"> Help </a>
                 </div>
                 <span class=""> | </span>
                 <div class="grid-col-auto">
-                  <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/contact/" class="usa-link">Contact us</a>
+                  <a href="{% public_site_url 'contact/' %}" class="usa-link">Contact us</a>
                 </div>
               </div>
             </address>
@@ -73,11 +74,8 @@
       <div class="usa-identifier__container">
         <ul class="usa-identifier__required-links-list">
           <li class="usa-identifier__required-links-item">
-            <a
-              href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/about/"
-              class="usa-identifier__required-link usa-link"
-              >About .gov</a
-            >
+        <a href="{% public_site_url 'about/' %}"
+              class="usa-identifier__required-link usa-link">About .gov</a>
           </li>
           <li class="usa-identifier__required-links-item">
             <a
@@ -87,9 +85,7 @@
             >
           </li>
           <li class="usa-identifier__required-links-item">
-            <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/privacy-policy/" class="usa-identifier__required-link usa-link"
-              >Privacy policy</a
-            >
+ <a href="{% public_site_url 'privacy-policy/' %}" class="usa-identifier__required-link usa-link">Privacy policy</a>
           </li>
           <li class="usa-identifier__required-links-item">
             <a href="https://www.dhs.gov/accessibility" class="usa-identifier__required-link usa-link usa-link--external"
@@ -97,9 +93,8 @@
             >
           </li>
           <li class="usa-identifier__required-links-item">
-            <a href="https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/vulnerability-disclosure-policy/" class="usa-identifier__required-link usa-link"
-              >Vulnerability disclosure policy</a
-            >
+            <a href="{% public_site_url 'vulnerability-disclosure-policy/' %}" class="usa-identifier__required-link usa-link"
+              >Vulnerability disclosure policy</a>
           </li>
           <li class="usa-identifier__required-links-item">
             <a href="https://www.cisa.gov/cisa-no-fear-act-reporting" class="usa-identifier__required-link usa-link"

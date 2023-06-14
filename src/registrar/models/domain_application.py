@@ -343,8 +343,7 @@ class DomainApplication(TimeStampedModel):
         blank=True,
         help_text="Street address",
     )
-    address_line2 = models.CharField(
-        max_length=15,
+    address_line2 = models.TextField(
         null=True,
         blank=True,
         help_text="Street address line 2",
@@ -541,6 +540,10 @@ class DomainApplication(TimeStampedModel):
         UserDomainRole.objects.get_or_create(
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.ADMIN
         )
+
+    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
+    def withdraw(self):
+        """Withdraw an application that has been submitted."""
 
     # ## Form policies ###
     #

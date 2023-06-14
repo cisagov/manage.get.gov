@@ -14,7 +14,7 @@
       <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a> 
     {% endif %}
 
-    {% url 'todo' as url %}
+    {% url 'domain-org-name-address' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url %}
 
     {% url 'domain-authorizing-official' pk=domain.id as url %}

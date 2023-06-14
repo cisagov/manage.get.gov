@@ -24,8 +24,8 @@ django-fsm = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
 typing-extensions ='*'
+django-login-required-middleware = "*"
 fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
-
 
 [dev-packages]
 django-debug-toolbar = "*"

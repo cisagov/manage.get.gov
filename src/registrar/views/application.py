@@ -1,6 +1,5 @@
 import logging
 
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
@@ -44,7 +43,7 @@ class Step(StrEnum):
     REVIEW = "review"
 
 
-class ApplicationWizard(LoginRequiredMixin, TemplateView):
+class ApplicationWizard(TemplateView):
     """
     A common set of methods and configuration.
 
@@ -502,6 +501,6 @@ class ApplicationWithdrawn(DomainApplicationPermissionView):
         to withdraw and send back to homepage.
         """
         application = DomainApplication.objects.get(id=self.kwargs["pk"])
-        application.status = "withdrawn"
+        application.withdraw()
         application.save()
         return HttpResponseRedirect(reverse("home"))
