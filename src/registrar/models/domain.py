@@ -137,6 +137,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         def __get__(self, obj, objtype=None):
             """Called during get. Example: `r = domain.registrant`."""
+            print("within the get")
             return super().__get__(obj, objtype)
 
         def __set__(self, obj, value):
@@ -178,7 +179,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def creation_date(self) -> date:
         """Get the `cr_date` element from the registry."""
-        raise NotImplementedError()
+        return self._get_property("cr_date")
 
     @Cache
     def last_transferred_date(self) -> date:
@@ -188,12 +189,12 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def last_updated_date(self) -> date:
         """Get the `up_date` element from the registry."""
-        raise NotImplementedError()
+        return self._get_property("up_date")
 
     @Cache
     def expiration_date(self) -> date:
         """Get or set the `ex_date` element from the registry."""
-        raise NotImplementedError()
+        return self._get_property("ex_date")
 
     @expiration_date.setter  # type: ignore
     def expiration_date(self, ex_date: date):
@@ -256,10 +257,19 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def registrant_contact(self) -> PublicContact:
         """Get or set the registrant for this domain."""
+        # [admin, billing, tech, security]
         raise NotImplementedError()
 
     @registrant_contact.setter  # type: ignore
     def registrant_contact(self, contact: PublicContact):
+        
+        #get id PC.registry_id
+        #trystart
+        #request = common.DomainContact(contact=id, type="tech")])
+        #send request
+        #registrant for billing? registrant tag in infordomainResult
+        #update needs to be called cux registrant is set when domain is created
+        #UpdateDomain(takes registrant)
         raise NotImplementedError()
 
     @Cache
@@ -551,6 +561,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
+        print("I am called")
         if property not in self._cache:
             print("get cache")
             self._fetch_cache(
