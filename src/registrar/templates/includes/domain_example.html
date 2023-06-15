@@ -2,7 +2,7 @@
 
 {% if is_federal %}
   {% if federal_type == 'executive' %}
-    <p><strong>Examples:</strong></p>
+
     <ul class="usa-list">
       <li>fema.gov</li>
       <li>medicare.gov</li>
@@ -10,7 +10,7 @@
     </ul>
 
   {% elif federal_type == 'judicial' %}
-    <p><strong>Examples:</strong></p>
+
     <ul class="usa-list">
       <li>uscourts.gov</li>
       <li>ustaxcourt.gov</li>
@@ -18,7 +18,7 @@
     </ul>
 
   {% elif federal_type == 'legislative' %}
-    <p><strong>Examples:</strong></p>
+  
     <ul class="usa-list">
       <li>gao.gov</li>
       <li>gpo.gov</li>
@@ -27,7 +27,7 @@
 {% endif %}
 
 {% elif organization_type == 'interstate' %}
-  <p><strong>Examples:</strong></p>
+
   <ul class="usa-list">
     <li>EMScompact.gov</li>
     <li>wmataOIG.gov</li>
@@ -65,7 +65,7 @@
   </ul>
 
 {% elif organization_type == 'city' %}
-  <p>Most city domains must include the two-letter state abbreviation or clearly spell out the state name unless city or county exceptions apply. Using phrases like “City of” or “Town of” is optional.</p>
+  <p>Most city domains must include the two-letter state abbreviation or clearly spell out the state name unless <a href="{% public_site_url 'domains/choosing/#cities' %}">city exceptions apply</a>. Using phrases like “City of” or “Town of” is optional.</p>
   <p><strong>Examples:</strong></p>
     <ul class="usa-list">
       <li>CityofEudoraKS.gov</li>
