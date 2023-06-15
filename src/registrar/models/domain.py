@@ -256,18 +256,12 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def registrant_contact(self) -> PublicContact:
         """Get or set the registrant for this domain."""
-        # [admin, billing, tech, security]
         raise NotImplementedError()
 
     @registrant_contact.setter  # type: ignore
     def registrant_contact(self, contact: PublicContact):
-        
-        #get id PC.registry_id
-        #trystart
-        #request = common.DomainContact(contact=id, type="tech")])
-        #send request
-        #registrant for billing? registrant tag in infordomainResult
-        #UpdateDomain(takes registrant)
+        #get id from PublicContact->.registry_id
+        #call UpdateDomain() command with registrant as parameter
         raise NotImplementedError()
 
     @Cache
@@ -277,6 +271,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
+        #call CreateContact, if contact doesn't exist yet for domain
+        # call UpdateDomain with contact,
+        #  type options are[admin, billing, tech, security]
+        #use admin as type parameter for this contact
         raise NotImplementedError()
 
     @Cache
