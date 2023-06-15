@@ -1,3 +1,5 @@
+{% load field_helpers url_helpers %}
+
 {% if is_federal %}
   {% if federal_type == 'executive' %}
     <p><strong>Examples:</strong></p>
@@ -79,7 +81,7 @@
   </p>
 
 {% elif organization_type == 'special_district' %}
-  <p>Domain names must represent your organization or institutional name, not solely the services you provide. It also needs to include your two-letter state abbreviation or clearly spell out the state name unless <a href="{% url 'todo' %}">city or county exceptions apply</a>.</p>
+  <p>Domain names must represent your organization or institutional name, not solely the services you provide. It also needs to include your two-letter state abbreviation or clearly spell out the state name unless <a href="{% public_site_url 'domains/choosing/#counties' %}">city or county exceptions apply</a>.</p>
   <p><strong>Examples:</strong></p>
   <ul class="usa-list">
     <li>ElectionsShelbyTN.gov</li>
