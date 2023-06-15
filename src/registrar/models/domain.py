@@ -137,7 +137,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         def __get__(self, obj, objtype=None):
             """Called during get. Example: `r = domain.registrant`."""
-            print("within the get")
             return super().__get__(obj, objtype)
 
         def __set__(self, obj, value):
@@ -268,7 +267,6 @@ class Domain(TimeStampedModel, DomainHelper):
         #request = common.DomainContact(contact=id, type="tech")])
         #send request
         #registrant for billing? registrant tag in infordomainResult
-        #update needs to be called cux registrant is set when domain is created
         #UpdateDomain(takes registrant)
         raise NotImplementedError()
 
@@ -467,13 +465,9 @@ class Domain(TimeStampedModel, DomainHelper):
         """Contact registry for info about a domain."""
         try:
             # get info from registry
-            print("calling get or create\n")
             data = self._get_or_create_domain()
-            print("after get or create\n")
             # extract properties from response
             # (Ellipsis is used to mean "null")
-            print("data is \n")
-            print(data)
             cache = {
                 "auth_info": getattr(data, "auth_info", ...),
                 "_contacts": getattr(data, "contacts", ...),
@@ -486,10 +480,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 "tr_date": getattr(data, "tr_date", ...),
                 "up_date": getattr(data, "up_date", ...),
             }
-            print("\nCACHE AT TOP\n\n"+str(cache)+"\n\n\n")
+
             # remove null properties (to distinguish between "a value of None" and null)
             cleaned = {k: v for k, v in cache.items() if v is not ...}
-            print("\ncleaned is "+str(cleaned)+"\n\n")
+
             # get contact info, if there are any
             if (
                 fetch_contacts
@@ -504,6 +498,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     # if not, that's a problem
                     req = commands.InfoContact(id=id)
                     data = registry.send(req, cleaned=True).res_data[0]
+
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
                     contact = {
@@ -519,8 +514,9 @@ class Domain(TimeStampedModel, DomainHelper):
                         "up_date": getattr(data, "up_date", ...),
                         "voice": getattr(data, "voice", ...),
                     }
+
                     cleaned["contacts"].append(
-                        {k: v for k, v in contact if v is not ...}
+                        {k: v for k, v in contact.items() if v is not ...}
                     )
 
             # get nameserver info, if there are any
@@ -547,11 +543,11 @@ class Domain(TimeStampedModel, DomainHelper):
                         "tr_date": getattr(data, "tr_date", ...),
                         "up_date": getattr(data, "up_date", ...),
                     }
-                    cleaned["hosts"].append({k: v for k, v in host if v is not ...})
+                    cleaned["hosts"].append({k: v for k, v in host.items() if v is not ...})
 
             # replace the prior cache with new data
             self._cache = cleaned
-            print("cache is "+str(self._cache))
+
         except RegistryError as e:
             logger.error(e)
 
@@ -561,13 +557,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
-        print("I am called")
         if property not in self._cache:
-            print("get cache")
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
                 fetch_contacts=(property == "contacts"),
             )
+        
         if property in self._cache:
             return self._cache[property]
         else:
