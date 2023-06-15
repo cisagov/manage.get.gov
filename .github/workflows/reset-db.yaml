@@ -16,6 +16,7 @@ on:
         options:
           - stable
           - gd
+          - rb
           - ko
           - ab
           - bl

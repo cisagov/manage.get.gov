@@ -1,0 +1,39 @@
+SUMMARY OF YOUR DOMAIN REQUEST
+
+Type of organization:
+{{ application.get_organization_type_display }}
+
+Organization name and mailing address:
+{% spaceless %}{{ application.organization_name }}
+{{ application.address_line1 }}{% if  application.address_line2  %}
+{{ application.address_line2 }}{% endif %}
+{{ application.city }}, {{ application.state_territory }}
+{{ application.zipcode }}{% if application.urbanization  %}
+{{ application.urbanization }}{% endif %}{% endspaceless %}
+{% if application.type_of_work %}{# if block makes one newline if it's false #}
+Type of work:
+{% spaceless %}{{ application.type_of_work }}{% endspaceless %}
+{% endif %}
+Authorizing official:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=application.authorizing_official %}{% endspaceless %}
+{% if application.current_websites.exists %}{# if block makes a newline #}
+Current website for your organization: {% for site in application.current_websites.all %}
+{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}{% endif %}
+.gov domain:
+{{ application.requested_domain.name }}
+{% for site in application.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}
+Purpose of your domain:
+{{ application.purpose }}
+
+Your contact information:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=application.submitter %}{% endspaceless %}
+{% if application.other_contacts.all %}
+Other employees from your organization:
+{% for other in application.other_contacts.all %}
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
+{% endfor %}{% endif %}{% if application.anything_else %}
+Anything else we should know?
+{{ application.anything_else }}
+{% endif %}

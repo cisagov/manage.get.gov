@@ -490,8 +490,37 @@ class DomainApplication(TimeStampedModel):
                 self.submitter.email,
                 context={"application": self},
             )
+            logger.info(
+                f"Submission confirmation email sent to: {self.submitter.email}"
+            )
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
+
+    def _send_in_review_email(self):
+        """Send an email that this application is now in review.
+
+        The email goes to the email address that the submitter gave as their
+        contact information. If there is not submitter information, then do
+        nothing.
+        """
+        if self.submitter is None or self.submitter.email is None:
+            logger.warning(
+                "Cannot send status change (in review) email,"
+                "no submitter email address."
+            )
+            return
+        try:
+            send_templated_email(
+                "emails/status_change_in_review.txt",
+                "emails/status_change_in_review_subject.txt",
+                self.submitter.email,
+                context={"application": self},
+            )
+            logging.info(f"In review email sent to: {self.submitter.email}")
+        except EmailSendingError:
+            logger.warning(
+                "Failed to send status change (in review) email", exc_info=True
+            )
 
     @transition(field="status", source=[STARTED, WITHDRAWN], target=SUBMITTED)
     def submit(self):
@@ -540,6 +569,19 @@ class DomainApplication(TimeStampedModel):
         UserDomainRole.objects.get_or_create(
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.ADMIN
         )
+
+    @transition(field="status", source=SUBMITTED, target=INVESTIGATING)
+    def in_review(self, updated_domain_application):
+        """Investigate an application that has been submitted.
+
+        This method is called in admin.py on the original application
+        which has the correct status value, but is passed the changed
+        application which has the up-to-date data that we'll use
+        in the email."""
+
+        # When an application is moved to in review, we need to send a
+        # confirmation email. This is a side-effect of the state transition
+        updated_domain_application._send_in_review_email()
 
     @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
     def withdraw(self):
