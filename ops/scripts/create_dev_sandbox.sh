@@ -65,7 +65,7 @@ done
 echo "Creating new cloud.gov credentials for $1..."
 django_key=$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
 openssl req -nodes -x509 -days 365 -newkey rsa:2048 -keyout private-$1.pem -out public-$1.crt
-login_key=$(base64 private-$1.pem)
+login_key=$(base64 -i private-$1.pem)
 jq -n --arg django_key "$django_key" --arg login_key "$login_key" '{"DJANGO_SECRET_KEY":$django_key,"DJANGO_SECRET_LOGIN_KEY":$login_key}' > credentials-$1.json
 cf cups getgov-credentials -p credentials-$1.json
 
