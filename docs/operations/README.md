@@ -105,7 +105,7 @@ that can take time to learn how to use most effectively. A few hints:
 
   - Kibana queries and filters can be used to narrow in on particular
     environments. Try the query `@source.type:APP` to focus on messages from the
-    Django application or `@cf.app:"getgov-nmb"` to see results from a single
+    Django application or `@cf.app:"getgov-{environment}"` to see results from a single
     environment.
 
 Currently, our application emits Python's default log format which is textual
