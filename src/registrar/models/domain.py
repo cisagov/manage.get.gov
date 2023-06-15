@@ -49,7 +49,6 @@ class Domain(TimeStampedModel, DomainHelper):
         self._cache = {}
         super(Domain, self).__init__(*args, **kwargs)
 
-
     class Status(models.TextChoices):
         """
         The status codes we can receive from the registry.
@@ -103,7 +102,6 @@ class Domain(TimeStampedModel, DomainHelper):
         PENDING_TRANSFER = "pendingTransfer"
         PENDING_UPDATE = "pendingUpdate"
 
-
     class State(models.TextChoices):
         """These capture (some of) the states a domain object can be in."""
 
@@ -115,7 +113,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # the state is indeterminate
         UNKNOWN = "unknown"
-
 
     class Cache(property):
         """
@@ -148,7 +145,6 @@ class Domain(TimeStampedModel, DomainHelper):
         def __delete__(self, obj):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
-
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -260,8 +256,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @registrant_contact.setter  # type: ignore
     def registrant_contact(self, contact: PublicContact):
-        #get id from PublicContact->.registry_id
-        #call UpdateDomain() command with registrant as parameter
+        # get id from PublicContact->.registry_id
+        # call UpdateDomain() command with registrant as parameter
         raise NotImplementedError()
 
     @Cache
@@ -271,10 +267,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
-        #call CreateContact, if contact doesn't exist yet for domain
+        # call CreateContact, if contact doesn't exist yet for domain
         # call UpdateDomain with contact,
         #  type options are[admin, billing, tech, security]
-        #use admin as type parameter for this contact
+        # use admin as type parameter for this contact
         raise NotImplementedError()
 
     @Cache
@@ -541,7 +537,9 @@ class Domain(TimeStampedModel, DomainHelper):
                         "tr_date": getattr(data, "tr_date", ...),
                         "up_date": getattr(data, "up_date", ...),
                     }
-                    cleaned["hosts"].append({k: v for k, v in host.items() if v is not ...})
+                    cleaned["hosts"].append(
+                        {k: v for k, v in host.items() if v is not ...}
+                    )
 
             # replace the prior cache with new data
             self._cache = cleaned
@@ -560,7 +558,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 fetch_hosts=(property == "hosts"),
                 fetch_contacts=(property == "contacts"),
             )
-        
+
         if property in self._cache:
             return self._cache[property]
         else:
