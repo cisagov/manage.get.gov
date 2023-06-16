@@ -2,82 +2,14 @@
 
 from unittest.mock import MagicMock
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
+from .common import completed_application
 
-from registrar.models import Contact, DraftDomain, Website, DomainApplication
 
 import boto3_mocking  # type: ignore
 
 
 class TestEmails(TestCase):
-    def _completed_application(
-        self,
-        has_other_contacts=True,
-        has_current_website=True,
-        has_alternative_gov_domain=True,
-        has_type_of_work=True,
-        has_anything_else=True,
-    ):
-        """A completed domain application."""
-        user = get_user_model().objects.create(username="username")
-        ao, _ = Contact.objects.get_or_create(
-            first_name="Testy",
-            last_name="Tester",
-            title="Chief Tester",
-            email="testy@town.com",
-            phone="(555) 555 5555",
-        )
-        domain, _ = DraftDomain.objects.get_or_create(name="city.gov")
-        alt, _ = Website.objects.get_or_create(website="city1.gov")
-        current, _ = Website.objects.get_or_create(website="city.com")
-        you, _ = Contact.objects.get_or_create(
-            first_name="Testy you",
-            last_name="Tester you",
-            title="Admin Tester",
-            email="testy-admin@town.com",
-            phone="(555) 555 5556",
-        )
-        other, _ = Contact.objects.get_or_create(
-            first_name="Testy2",
-            last_name="Tester2",
-            title="Another Tester",
-            email="testy2@town.com",
-            phone="(555) 555 5557",
-        )
-        domain_application_kwargs = dict(
-            organization_type="federal",
-            federal_type="executive",
-            purpose="Purpose of the site",
-            is_policy_acknowledged=True,
-            organization_name="Testorg",
-            address_line1="address 1",
-            address_line2="address 2",
-            state_territory="NY",
-            zipcode="10002",
-            authorizing_official=ao,
-            requested_domain=domain,
-            submitter=you,
-            creator=user,
-        )
-        if has_type_of_work:
-            domain_application_kwargs["type_of_work"] = "e-Government"
-        if has_anything_else:
-            domain_application_kwargs["anything_else"] = "There is more"
-
-        application, _ = DomainApplication.objects.get_or_create(
-            **domain_application_kwargs
-        )
-
-        if has_other_contacts:
-            application.other_contacts.add(other)
-        if has_current_website:
-            application.current_websites.add(current)
-        if has_alternative_gov_domain:
-            application.alternative_domains.add(alt)
-
-        return application
-
     def setUp(self):
         self.mock_client_class = MagicMock()
         self.mock_client = self.mock_client_class.return_value
@@ -85,7 +17,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation(self):
         """Submission confirmation email works."""
-        application = self._completed_application()
+        application = completed_application()
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
@@ -122,7 +54,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_no_current_website_spacing(self):
         """Test line spacing without current_website."""
-        application = self._completed_application(has_current_website=False)
+        application = completed_application(has_current_website=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -134,7 +66,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_current_website_spacing(self):
         """Test line spacing with current_website."""
-        application = self._completed_application(has_current_website=True)
+        application = completed_application(has_current_website=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -147,7 +79,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_other_contacts_spacing(self):
         """Test line spacing with other contacts."""
-        application = self._completed_application(has_other_contacts=True)
+        application = completed_application(has_other_contacts=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -160,7 +92,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_no_other_contacts_spacing(self):
         """Test line spacing without other contacts."""
-        application = self._completed_application(has_other_contacts=False)
+        application = completed_application(has_other_contacts=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -172,7 +104,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_alternative_govdomain_spacing(self):
         """Test line spacing with alternative .gov domain."""
-        application = self._completed_application(has_alternative_gov_domain=True)
+        application = completed_application(has_alternative_gov_domain=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -184,7 +116,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_no_alternative_govdomain_spacing(self):
         """Test line spacing without alternative .gov domain."""
-        application = self._completed_application(has_alternative_gov_domain=False)
+        application = completed_application(has_alternative_gov_domain=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -196,7 +128,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_type_of_work_spacing(self):
         """Test line spacing with type of work."""
-        application = self._completed_application(has_type_of_work=True)
+        application = completed_application(has_type_of_work=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -208,7 +140,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_no_type_of_work_spacing(self):
         """Test line spacing without type of work."""
-        application = self._completed_application(has_type_of_work=False)
+        application = completed_application(has_type_of_work=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -220,7 +152,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_anything_else_spacing(self):
         """Test line spacing with anything else."""
-        application = self._completed_application(has_anything_else=True)
+        application = completed_application(has_anything_else=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -231,7 +163,7 @@ class TestEmails(TestCase):
     @boto3_mocking.patching
     def test_submission_confirmation_no_anything_else_spacing(self):
         """Test line spacing without anything else."""
-        application = self._completed_application(has_anything_else=False)
+        application = completed_application(has_anything_else=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args

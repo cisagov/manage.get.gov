@@ -8,6 +8,8 @@ from typing import List, Dict
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
+from registrar.models import Contact, DraftDomain, Website, DomainApplication
+
 
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
@@ -84,3 +86,74 @@ class MockSESClient(Mock):
 
     def send_email(self, *args, **kwargs):
         self.EMAILS_SENT.append({"args": args, "kwargs": kwargs})
+
+
+def completed_application(
+    has_other_contacts=True,
+    has_current_website=True,
+    has_alternative_gov_domain=True,
+    has_type_of_work=True,
+    has_anything_else=True,
+    status=DomainApplication.STARTED,
+    user=False,
+):
+    """A completed domain application."""
+    if not user:
+        user = get_user_model().objects.create(username="username")
+    ao, _ = Contact.objects.get_or_create(
+        first_name="Testy",
+        last_name="Tester",
+        title="Chief Tester",
+        email="testy@town.com",
+        phone="(555) 555 5555",
+    )
+    domain, _ = DraftDomain.objects.get_or_create(name="city.gov")
+    alt, _ = Website.objects.get_or_create(website="city1.gov")
+    current, _ = Website.objects.get_or_create(website="city.com")
+    you, _ = Contact.objects.get_or_create(
+        first_name="Testy you",
+        last_name="Tester you",
+        title="Admin Tester",
+        email="mayor@igorville.gov",
+        phone="(555) 555 5556",
+    )
+    other, _ = Contact.objects.get_or_create(
+        first_name="Testy2",
+        last_name="Tester2",
+        title="Another Tester",
+        email="testy2@town.com",
+        phone="(555) 555 5557",
+    )
+    domain_application_kwargs = dict(
+        organization_type="federal",
+        federal_type="executive",
+        purpose="Purpose of the site",
+        is_policy_acknowledged=True,
+        organization_name="Testorg",
+        address_line1="address 1",
+        address_line2="address 2",
+        state_territory="NY",
+        zipcode="10002",
+        authorizing_official=ao,
+        requested_domain=domain,
+        submitter=you,
+        creator=user,
+        status=status,
+    )
+    if has_type_of_work:
+        domain_application_kwargs["type_of_work"] = "e-Government"
+    if has_anything_else:
+        domain_application_kwargs["anything_else"] = "There is more"
+
+    application, _ = DomainApplication.objects.get_or_create(
+        **domain_application_kwargs
+    )
+
+    if has_other_contacts:
+        application.other_contacts.add(other)
+    if has_current_website:
+        application.current_websites.add(current)
+    if has_alternative_gov_domain:
+        application.alternative_domains.add(alt)
+
+    return application
