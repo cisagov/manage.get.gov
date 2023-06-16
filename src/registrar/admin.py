@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from . import models
+from .fsm_admin_mixins import FSMTransitionMixin
 
 logger = logging.getLogger(__name__)
 
@@ -80,28 +81,14 @@ class DomainAdmin(AuditedAdmin):
         return super().response_change(request, obj)
 
 
-class DomainApplicationAdmin(AuditedAdmin):
+class DomainApplicationAdmin(FSMTransitionMixin, AuditedAdmin):
 
     """Customize the applications listing view."""
 
-    # Trigger action when a fieldset is changed
-    def save_model(self, request, obj, form, change):
-        if change:  # Check if the application is being edited
-            # Get the original application from the database
-            original_obj = models.DomainApplication.objects.get(pk=obj.pk)
-
-            if (
-                obj.status != original_obj.status
-                and obj.status == models.DomainApplication.INVESTIGATING
-            ):
-                # This is a transition annotated method in model which will throw an
-                # error if the condition is violated. To make this work, we need to
-                # call it on the original object which has the right status value,
-                # but pass the current object which contains the up-to-date data
-                # for the email.
-                original_obj.in_review(obj)
-
-        super().save_model(request, obj, form, change)
+    # The name of one or more FSMFields on the model to transition
+    fsm_field = [
+        "status",
+    ]
 
 
 admin.site.register(models.User, MyUserAdmin)

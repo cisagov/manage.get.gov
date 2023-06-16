@@ -1,0 +1,20 @@
+{% load i18n %}
+
+{% if transition_hints %}
+  <div class="module aligned">
+    <h2>{% trans "Hints in order to..." %}</h2>
+
+    {% for action, hints in transition_hints.items %}
+        {% for hint in hints %}
+          <div class="form-row">
+            <div>
+                {% if forloop.first %}
+                  <label><strong>{{ action }}</strong></label>
+                {% endif %}
+                <p>{{ hint }}</p>
+            </div>
+          </div>
+        {% endfor %}
+    {% endfor %}
+  </div>
+{% endif %}
