@@ -413,7 +413,7 @@ class TestAnalystLock(TestCase):
         raise
 
     @skip("not implemented yet")
-    def test_analyst_removes_client_hold(self):
+    def test_analyst_removes_lock(self):
         """
         Scenario: Analyst unlocks a domain to allow deletion or edits
             Given `CLIENT_*_PROHIBITED` is in the domain's statuses
@@ -425,7 +425,7 @@ class TestAnalystLock(TestCase):
         raise
 
     @skip("not implemented yet")
-    def test_analyst_removes_client_hold_idempotent(self):
+    def test_analyst_removes_lock_idempotent(self):
         """
         Scenario: Analyst tries to unlock a domain twice
             Given `CLIENT_*_PROHIBITED` is not in the domain's statuses
