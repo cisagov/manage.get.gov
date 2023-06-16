@@ -19,6 +19,7 @@ jobs:
         || startsWith(github.head_ref, 'rjm/')
         || startsWith(github.head_ref, 'rb/')
         || startsWith(github.head_ref, 'ko/')
+        || startsWith(github.head_ref, 'gd/')
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
