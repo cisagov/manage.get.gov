@@ -313,7 +313,7 @@ class TestRegistrantDNSSEC(TestCase):
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
         """
-        Scenario: An update to the security contact is unsuccessful
+        Scenario: An update to the dns data is unsuccessful
             When an error is returned from epplibwrapper
             Then a user-friendly error message is returned for displaying on the web
         """
