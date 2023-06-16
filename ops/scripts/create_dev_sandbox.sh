@@ -43,7 +43,7 @@ cp ops/scripts/manifest-sandbox-template.yaml ops/manifests/manifest-$1.yaml
 sed -i '' "s/ENVIRONMENT/$1/" "ops/manifests/manifest-$1.yaml"
 
 echo "Adding new environment to settings.py..."
-sed -i '' '/getgov-stable.app.cloud.gov/ {a\
+sed -i '' '/getgov-staging.app.cloud.gov/ {a\
     '\"getgov-$1.app.cloud.gov\"',
 }' src/registrar/config/settings.py
 
@@ -105,11 +105,11 @@ echo
 echo "Moving on to setup Github automation..."
 
 echo "Adding new environment to Github Actions..."
-sed -i '' '/          - stable/ {a\
+sed -i '' '/          - staging/ {a\
           - '"$1"'
 }' .github/workflows/reset-db.yaml
 
-sed -i '' '/          - stable/ {a\
+sed -i '' '/          - staging/ {a\
           - '"$1"'
 }' .github/workflows/migrate.yaml
 
