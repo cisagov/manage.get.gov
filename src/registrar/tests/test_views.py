@@ -474,6 +474,41 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # check that any new pages are added to this test
         self.assertEqual(num_pages, num_pages_tested)
 
+    # This is the start of a test to check an existing application, it currently
+    # does not work and results in errors as noted in:
+    # https://github.com/cisagov/getgov/pull/728
+    @skip("WIP")
+    def test_application_form_started_allsteps(self):
+        num_pages_tested = 0
+        # elections, type_of_work, tribal_government, no_other_contacts
+        SKIPPED_PAGES = 4
+        DASHBOARD_PAGE = 1
+        num_pages = len(self.TITLES) - SKIPPED_PAGES + DASHBOARD_PAGE
+
+        application = completed_application(user=self.user)
+        application.save()
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "city.gov")
+        self.assertContains(home_page, "Started")
+        num_pages_tested += 1
+
+        # TODO: For some reason this click results in a new application being generated
+        # This appraoch is an alternatie to using get as is being done below
+        #
+        # type_page = home_page.click("Edit")
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        url = reverse("edit-application", kwargs={"id": application.pk})
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # TODO: The following line results in a django error on middleware
+        response = self.client.get(url, follow=True)
+        self.assertContains(response, "Type of organization")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # TODO: Step through the remaining pages
+
+        self.assertEqual(num_pages, num_pages_tested)
+
     def test_application_form_conditional_federal(self):
         """Federal branch question is shown for federal organizations."""
         type_page = self.app.get(reverse("application:")).follow()
