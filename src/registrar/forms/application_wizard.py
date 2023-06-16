@@ -498,7 +498,7 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
 
     @classmethod
     def on_fetch(cls, query):
-        return [{"alternative_domain": Domain.sld(domain.name)} for domain in query]
+        return [{"alternative_domain": Domain.sld(domain.website)} for domain in query]
 
     @classmethod
     def from_database(cls, obj):
