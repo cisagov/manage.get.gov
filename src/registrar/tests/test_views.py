@@ -40,12 +40,6 @@ class TestViews(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 302)
 
-    def test_whoami_page_no_user(self):
-        """Whoami page not accessible without a logged-in user."""
-        response = self.client.get("/whoami/")
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("?next=/whoami/", response.headers["Location"])
-
     def test_application_form_not_logged_in(self):
         """Application form not accessible without a logged-in user."""
         response = self.client.get("/register/")
@@ -99,13 +93,6 @@ class LoggedInTests(TestWithUser):
         self.assertContains(response, "igorville.gov", count=2)
         # clean up
         role.delete()
-
-    def test_whoami_page(self):
-        """User information appears on the whoami page."""
-        response = self.client.get("/whoami/")
-        self.assertContains(response, self.user.first_name)
-        self.assertContains(response, self.user.last_name)
-        self.assertContains(response, self.user.email)
 
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
