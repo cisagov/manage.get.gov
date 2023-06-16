@@ -37,7 +37,7 @@ class TestDomainCreation(TestCase):
         """
         Scenario: A registrant checks the status of a newly approved domain
             Given that no domain object exists in the registry
-            When `domain.is_active()` is called
+            When a property is accessed
             Then Domain sends `commands.CreateDomain` to the registry
             And `domain.state` is set to `CREATED`
             And `domain.is_active()` returns False
@@ -74,8 +74,9 @@ class TestRegistrantContacts(TestCase):
     @skip("not implemented yet")
     def test_no_security_email(self):
         """
-        Scenario: Registrant declines to add a security contact email
-            Given the domain exists in the registry
+        Scenario: Registrant has not added a security contact email
+            Given `domain.security_contact` has not been set to anything
+            When the domain is created in the registry
             Then the domain has a valid security contact with CISA defaults
             And disclose flags are set to keep the email address hidden
         """

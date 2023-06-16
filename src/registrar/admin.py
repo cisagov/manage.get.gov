@@ -58,7 +58,8 @@ class DomainAdmin(AuditedAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        if "_place_client_hold" in request.POST:
+        ACTION_BUTTON = "_place_client_hold"
+        if ACTION_BUTTON in request.POST:
             try:
                 obj.place_client_hold()
             except Exception as err:
