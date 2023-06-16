@@ -9,12 +9,7 @@ on:
 jobs:
   variables: 
     if: | 
-      startsWith(github.head_ref, 'ik/')
-        || startsWith(github.head_ref, 'jon')
-        || startsWith(github.head_ref, 'sspj/')
-        || startsWith(github.head_ref, 'mr/')
-        || startsWith(github.head_ref, 'nmb/')
-        || startsWith(github.head_ref, 'ab/')
+      startsWith(github.head_ref, 'ab/')
         || startsWith(github.head_ref, 'bl/')
         || startsWith(github.head_ref, 'rjm/')
         || startsWith(github.head_ref, 'rb/')

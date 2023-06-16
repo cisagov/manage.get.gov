@@ -20,11 +20,6 @@ on:
           - ab
           - bl
           - rjm
-          - jon
-          - ik
-          - sspj
-          - nmb
-          - mr
 
 jobs:
   migrate:
