@@ -36,7 +36,7 @@ Binding the database in `manifest-<ENVIRONMENT>.json` automatically inserts the 
 
 # Deploy
 
-We have three types of environments: developer "sandboxes", `staging` and `stable`. Developers can deploy locally to their sandbox whenever they want. However, only our CD service can deploy to `staging` and `stable`, and it does so when we make tagged releases of `main`. For `staging`, this is done to ensure there is a non-production level test envirornment that can be used for user testing or for testing code before it is pushed to `stable`. Whereas `stable` is used to ensure that we have a "golden" environment to point to. We can refer to `stable` as our production environment and `staging` as our pre-production (pre-prod) environment.
+We have three types of environments: developer "sandboxes", `staging` and `stable`. Developers can deploy locally to their sandbox whenever they want. However, only our CD service can deploy to `staging` and `stable`, and it does so when we make tagged releases of `main`. For `staging`, this is done to ensure there is a non-production level test envirornment that can be used for user testing or for testing code before it is pushed to `stable`. `Staging` can be especially helpful when testing database changes or migrations that could have adververse affects in `stable`. On the other hand, `stable` is used to ensure that we have a "golden" environment to point to. We can refer to `stable` as our production environment and `staging` as our pre-production (pre-prod) environment. As such, code on main should always be tagged for `staging` before it is tagged for `stable`.
 
 You should make sure all of the USWDS assets are compiled and collected before deploying to your sandbox. To deploy locally to `sandbox`:
 
