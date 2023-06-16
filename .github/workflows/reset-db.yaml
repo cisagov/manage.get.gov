@@ -16,15 +16,12 @@ on:
         options:
           - stable
           - staging
+          - gd
+          - rb
           - ko
           - ab
           - bl
           - rjm
-          - jon
-          - ik
-          - sspj
-          - nmb
-          - mr
 
 jobs:
   reset-db:
