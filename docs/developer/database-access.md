@@ -42,10 +42,9 @@ Optionally, load data from fixtures as well
 cf run-task getgov-ENVIRONMENT --wait --command 'python manage.py load' --name loaddata
 ```
 
-For the `stable` environment, developers don't have credentials so we need to
-run that command using Github Actions. Go to
+For the `stable` or `staging` environments, developers don't have credentials so we need to run that command using Github Actions. Go to
 <https://github.com/cisagov/getgov/actions/workflows/migrate.yaml> and select
-the "Run workflow" button, making sure that `stable` is selected.
+the "Run workflow" button, making sure that `stable` or `staging` depending on which envirornment you desire to update.
 
 ## Getting data for fixtures
 
