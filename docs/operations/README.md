@@ -36,7 +36,9 @@ Binding the database in `manifest-<ENVIRONMENT>.json` automatically inserts the 
 
 # Deploy
 
-We have two types of environments: developer "sandboxes" and `stable`. Developers can deploy locally to their sandbox whenever they want. However, only our CD service can deploy to `stable`, and it does so when we make tagged releases of `main`. This is to ensure that we have a "golden" environment to point to, and can still test things out in a sandbox space. You should make sure all of the USWDS assets are compiled and collected before deploying to your sandbox. To deploy locally to `sandbox`:
+We have three types of environments: developer "sandboxes", `staging` and `stable`. Developers can deploy locally to their sandbox whenever they want. However, only our CD service can deploy to `staging` and `stable`, and it does so when we make tagged releases of `main`. For `staging`, this is done to ensure there is a non-production level test envirornment that can be used for user testing or for testing code before it is pushed to `stable`. Whereas `stable` is used to ensure that we have a "golden" environment to point to. We can refer to `stable` as our production environment and `staging` as our pre-production (pre-prod) environment.
+
+You should make sure all of the USWDS assets are compiled and collected before deploying to your sandbox. To deploy locally to `sandbox`:
 
 For ease of use, you can run the `deploy.sh <sandbox name>` script in the `/src` directory to build the assets and deploy to your sandbox. Similarly, you could run `build.sh <sandbox name>` script to just compile and collect the assets without deploying.
 
