@@ -364,7 +364,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
             is_subordinate = hostname.split(".", 1)[-1] == self.name
             if is_subordinate and len(addresses) == 0:
-                raise ValueError("Must supply IP addresses for %s" % hostname)
+                raise ValueError("Must supply IP addresses for subordinate host %s" % hostname)
             if not is_subordinate and len(addresses) > 0:
                 raise ValueError("Must not supply IP addresses for %s" % hostname)
 
