@@ -12,7 +12,6 @@ from registrar.models import (
     DomainInvitation,
     UserDomainRole,
 )
-from unittest import skip
 
 import boto3_mocking  # type: ignore
 from .common import MockSESClient, less_console_noise
@@ -213,55 +212,3 @@ class TestInvitations(TestCase):
         """A new user's first_login callback retrieves their invitations."""
         self.user.first_login()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
-
-
-@skip("Not implemented yet.")
-class TestDomainApplicationLifeCycle(TestCase):
-    def test_application_approval(self):
-        # DomainApplication is created
-        # test: Domain is created and is inactive
-        # analyst approves DomainApplication
-        # test: Domain is activated
-        pass
-
-    def test_application_rejection(self):
-        # DomainApplication is created
-        # test: Domain is created and is inactive
-        # analyst rejects DomainApplication
-        # test: Domain remains inactive
-        pass
-
-    def test_application_deleted_before_approval(self):
-        # DomainApplication is created
-        # test: Domain is created and is inactive
-        # admin deletes DomainApplication
-        # test: Domain is deleted; Hosts, HostIps and Nameservers are deleted
-        pass
-
-    def test_application_deleted_following_approval(self):
-        # DomainApplication is created
-        # test: Domain is created and is inactive
-        # analyst approves DomainApplication
-        # admin deletes DomainApplication
-        # test: DomainApplication foreign key field on Domain is set to null
-        pass
-
-    def test_application_approval_with_conflicting_name(self):
-        # DomainApplication #1 is created
-        # test: Domain #1 is created and is inactive
-        # analyst approves DomainApplication #1
-        # test: Domain #1 is activated
-        # DomainApplication #2 is created, with the same domain name string
-        # test: Domain #2 is created and is inactive
-        # analyst approves DomainApplication #2
-        # test: error is raised
-        # test: DomainApplication #1 remains approved
-        # test: Domain #1 remains active
-        # test: DomainApplication #2 remains in investigating
-        # test: Domain #2 remains inactive
-        pass
-
-    def test_application_approval_with_network_errors(self):
-        # TODO: scenario wherein application is approved,
-        # but attempts to contact the registry to activate the domain fail
-        pass

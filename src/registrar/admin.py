@@ -1,5 +1,5 @@
 import logging
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
@@ -52,6 +52,34 @@ class MyHostAdmin(AuditedAdmin):
     inlines = [HostIPInline]
 
 
+class DomainAdmin(AuditedAdmin):
+
+    """Custom domain admin class to add extra buttons."""
+
+    change_form_template = "django/admin/domain_change_form.html"
+    readonly_fields = ["state"]
+
+    def response_change(self, request, obj):
+        ACTION_BUTTON = "_place_client_hold"
+        if ACTION_BUTTON in request.POST:
+            try:
+                obj.place_client_hold()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    (
+                        "%s is in client hold. This domain is no longer accessible on"
+                        " the public internet."
+                    )
+                    % obj.name,
+                )
+            return HttpResponseRedirect(".")
+
+        return super().response_change(request, obj)
+
+
 class DomainApplicationAdmin(AuditedAdmin):
 
     """Customize the applications listing view."""
@@ -81,7 +109,7 @@ admin.site.register(models.UserDomainRole, AuditedAdmin)
 admin.site.register(models.Contact, AuditedAdmin)
 admin.site.register(models.DomainInvitation, AuditedAdmin)
 admin.site.register(models.DomainInformation, AuditedAdmin)
-admin.site.register(models.Domain, AuditedAdmin)
+admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, AuditedAdmin)
