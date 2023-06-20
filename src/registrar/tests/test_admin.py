@@ -3,6 +3,8 @@ from django.contrib.admin.sites import AdminSite
 from registrar.admin import DomainApplicationAdmin
 from registrar.models import DomainApplication, User
 from .common import completed_application
+from django.contrib.auth import get_user_model
+from ..fsm_admin_mixins import FSMTransitionMixin
 
 from django.conf import settings
 from unittest.mock import MagicMock
@@ -11,6 +13,9 @@ import boto3_mocking  # type: ignore
 
 class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
+        # Create a test instance of DomainApplication
+        user = get_user_model().objects.create(username="username")
+        self.model_instance = DomainApplication.objects.create(creator=user)
         self.site = AdminSite()
         self.factory = RequestFactory()
 
@@ -24,22 +29,28 @@ class TestDomainApplicationAdmin(TestCase):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Create a sample application
-            application = completed_application(status=DomainApplication.SUBMITTED)
 
             # Create a mock request
             request = self.factory.post(
-                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+                "/admin/registrar/domainapplication/{}/change/".format(self.model_instance.pk)
             )
+            
+            user = get_user_model().objects.create(username="username2")
+            request.user = user
 
             # Create an instance of the model admin
             model_admin = DomainApplicationAdmin(DomainApplication, self.site)
 
             # Modify the application's property
-            application.status = DomainApplication.INVESTIGATING
+            self.model_instance.status = DomainApplication.INVESTIGATING
 
             # Use the model admin's save_model method
-            model_admin.save_model(request, application, form=None, change=True)
+            super(FSMTransitionMixin, model_admin).save_model(request, self.model_instance, form=None, change=True)
+            
+            # Trigger the email:
+            # Unfortunately, the email which triggers as a side effect of FSMTransitionMixin
+            # does not trigger in this test. We need to manually trigger its send. 
+            # application._send_in_review_email()
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
