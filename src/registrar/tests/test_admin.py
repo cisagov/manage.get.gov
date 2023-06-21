@@ -159,5 +159,6 @@ class TestDomainApplicationAdmin(TestCase):
         mock_client_instance.send_email.assert_called_once()
 
         # Cleanup
-        DomainInformation.objects.get(id=application.pk).delete()
+        if DomainInformation.objects.get(id=application.pk) is not None:
+            DomainInformation.objects.get(id=application.pk).delete()
         application.delete()
