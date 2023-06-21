@@ -1,0 +1,41 @@
+# This workflow runs on pushes of tagged commits.
+# "Releases" of tagged commits will deploy selected branch to staging.
+
+name: Build and deploy staging for tagged release
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
+      
+    tags:
+      - staging-*
+
+jobs:
+  deploy-staging:
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Compile USWDS assets
+        working-directory: ./src
+        run: |
+          docker compose run node npm install && 
+          docker compose run node npx gulp copyAssets &&
+          docker compose run node npx gulp compile 
+      - name: Collect static assets 
+        working-directory: ./src
+        run: docker compose run app python manage.py collectstatic --no-input
+      - name: Deploy to cloud.gov sandbox
+        uses: 18f/cg-deploy-action@main
+        env:
+          DEPLOY_NOW: thanks
+        with:
+          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
+          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+          cf_org: cisa-getgov-prototyping
+          cf_space: staging
+          push_arguments: "-f ops/manifests/manifest-staging.yaml"

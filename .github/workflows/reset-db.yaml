@@ -15,15 +15,13 @@ on:
         description: Which environment should we flush and re-load data for?
         options:
           - stable
+          - staging
+          - gd
+          - rb
           - ko
           - ab
           - bl
           - rjm
-          - jon
-          - ik
-          - sspj
-          - nmb
-          - mr
 
 jobs:
   reset-db:

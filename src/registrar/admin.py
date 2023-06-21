@@ -1,10 +1,12 @@
-from django.contrib import admin
+import logging
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-
 from . import models
+
+logger = logging.getLogger(__name__)
 
 
 class AuditedAdmin(admin.ModelAdmin):
@@ -50,13 +52,65 @@ class MyHostAdmin(AuditedAdmin):
     inlines = [HostIPInline]
 
 
+class DomainAdmin(AuditedAdmin):
+
+    """Custom domain admin class to add extra buttons."""
+
+    change_form_template = "django/admin/domain_change_form.html"
+    readonly_fields = ["state"]
+
+    def response_change(self, request, obj):
+        ACTION_BUTTON = "_place_client_hold"
+        if ACTION_BUTTON in request.POST:
+            try:
+                obj.place_client_hold()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    (
+                        "%s is in client hold. This domain is no longer accessible on"
+                        " the public internet."
+                    )
+                    % obj.name,
+                )
+            return HttpResponseRedirect(".")
+
+        return super().response_change(request, obj)
+
+
+class DomainApplicationAdmin(AuditedAdmin):
+
+    """Customize the applications listing view."""
+
+    # Trigger action when a fieldset is changed
+    def save_model(self, request, obj, form, change):
+        if change:  # Check if the application is being edited
+            # Get the original application from the database
+            original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+
+            if (
+                obj.status != original_obj.status
+                and obj.status == models.DomainApplication.INVESTIGATING
+            ):
+                # This is a transition annotated method in model which will throw an
+                # error if the condition is violated. To make this work, we need to
+                # call it on the original object which has the right status value,
+                # but pass the current object which contains the up-to-date data
+                # for the email.
+                original_obj.in_review(obj)
+
+        super().save_model(request, obj, form, change)
+
+
 admin.site.register(models.User, MyUserAdmin)
 admin.site.register(models.UserDomainRole, AuditedAdmin)
 admin.site.register(models.Contact, AuditedAdmin)
 admin.site.register(models.DomainInvitation, AuditedAdmin)
-admin.site.register(models.DomainApplication, AuditedAdmin)
 admin.site.register(models.DomainInformation, AuditedAdmin)
-admin.site.register(models.Domain, AuditedAdmin)
+admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, AuditedAdmin)
+admin.site.register(models.DomainApplication, DomainApplicationAdmin)

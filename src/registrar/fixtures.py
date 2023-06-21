@@ -25,31 +25,6 @@ class UserFixture:
 
     ADMINS = [
         {
-            "username": "c4a0e101-73b4-4d7d-9e5e-7f19a726a0fa",
-            "first_name": "Seamus",
-            "last_name": "Johnston",
-        },
-        {
-            "username": "d4c3bd84-dc3a-48bc-a3c3-f53111df2ec6",
-            "first_name": "Igor",
-            "last_name": "",
-        },
-        {
-            "username": "ee80bfe0-49ad-456d-8d82-e2b608a66517",
-            "first_name": "Logan",
-            "last_name": "",
-        },
-        {
-            "username": "2ffe71b0-cea4-4097-8fb6-7a35b901dd70",
-            "first_name": "Neil",
-            "last_name": "Martinsen-Burrell",
-        },
-        {
-            "username": "7185e6cd-d3c8-4adc-90a3-ceddba71d24f",
-            "first_name": "Jon",
-            "last_name": "Roberts",
-        },
-        {
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
             "first_name": "Rachid",
             "last_name": "Mrad",
@@ -58,11 +33,6 @@ class UserFixture:
             "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
             "first_name": "Alysia",
             "last_name": "Broddrick",
-        },
-        {
-            "username": "55a3bc26-cd1d-4a5c-a8c0-7e1f561ef7f4",
-            "first_name": "Michelle",
-            "last_name": "Rago",
         },
         {
             "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
