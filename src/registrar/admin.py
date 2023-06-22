@@ -78,11 +78,42 @@ class DomainAdmin(AuditedAdmin):
             return HttpResponseRedirect(".")
 
         return super().response_change(request, obj)
+    
+    
+class ContactAdmin(AuditedAdmin):
+    
+    """Custom contact admin class to add search."""
+
+    search_fields = ["email", "first_name", "last_name"]
+    
+    search_help_text = "Search by firstname, lastname or email."
 
 
 class DomainApplicationAdmin(AuditedAdmin):
 
     """Customize the applications listing view."""
+    
+    list_display = ["requested_domain", "status", "organization_type", "created_at", "submitter", "investigator"]  
+
+    list_filter = ('status', "organization_type", "investigator")  
+
+    search_fields = ["requested_domain__name", "submitter__email", "submitter__first_name", "submitter__last_name"]
+    
+    search_help_text = "Search by domain or submitter."
+    
+    fieldsets = [
+        (None, {"fields": ["status", "investigator", "creator", "is_policy_acknowledged"]}),
+        ("Type of organization", {"fields": ["organization_type", "federally_recognized_tribe", "state_recognized_tribe", "tribe_name", "federal_agency", "federal_type", "is_election_board", "type_of_work", "more_organization_information"]}),
+        ("Organization name and mailing address", {"fields": ["organization_name", "address_line1", "address_line2", "city", "state_territory", "zipcode", "urbanization"]}),
+        ("Authorizing official", {"fields": ["authorizing_official"]}),
+        ("Current websites", {"fields": ["current_websites"]}),
+        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        ("Purpose of your domain", {"fields": ["purpose"]}),
+        ("Your contact information", {"fields": ["submitter"]}),
+        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
+        ("No other employees from your organization?", {"fields": ["no_other_contacts_rationale"]}),
+        ("Anything else we should know?", {"fields": ["anything_else"]}),
+    ]
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -106,7 +137,7 @@ class DomainApplicationAdmin(AuditedAdmin):
 
 admin.site.register(models.User, MyUserAdmin)
 admin.site.register(models.UserDomainRole, AuditedAdmin)
-admin.site.register(models.Contact, AuditedAdmin)
+admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, AuditedAdmin)
 admin.site.register(models.DomainInformation, AuditedAdmin)
 admin.site.register(models.Domain, DomainAdmin)
