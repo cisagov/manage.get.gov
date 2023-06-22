@@ -22,7 +22,8 @@ development team.
 
 Django admin provides the team with a _huge_ head start on the creation of an administrator portal.
 
-While Django Admin is highly customizable, development will be constrained by what is possible within Django Admin.
+While Django Admin is highly customizable, design and development will be constrained by what is possible within Django
+Admin.
 
 We anticipate that this will, overall, speed up the time to MVP compared to building a completely custom solution.
 
@@ -37,4 +38,4 @@ While we anticipate that Django Admin will meet (or even exceed) the user needs 
 an open question whether Django Admin will be the long-term administrator tool of choice. A pivot away from Django Admin
 in the future would of course mean starting from scratch at a later date, and potentially juggling two separate admin
 portals for a period of time while a custom solution is incrementally developed. This would result in an overall 
-_increase_ to the total amount of development time invested in the administrator portal. 
+_increase_ to the total amount of time invested in building an administrator portal. 
