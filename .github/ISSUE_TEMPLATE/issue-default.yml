@@ -1,4 +1,5 @@
-description: Describe the item
+name: Issue
+description: Capture uncategorized work or content
 
 body:
   - type: markdown
