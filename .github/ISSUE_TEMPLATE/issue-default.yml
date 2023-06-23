@@ -1,4 +1,3 @@
-name: Issue
 description: Describe the item
 
 body:
@@ -11,7 +10,7 @@ body:
   - type: textarea
     id: issue
     attributes:
-      label: Issue
+      label: Issue Description
       description: |
         Describe the issue you are adding or content you are suggesting.
         Share any next steps that should be taken our outcomes that would be beneficial.
