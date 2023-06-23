@@ -108,6 +108,8 @@ class DomainApplicationAdmin(AuditedAdmin):
                     original_obj.approve(updated_domain_application=obj)
                 elif obj.status == models.DomainApplication.WITHDRAWN:
                     original_obj.withdraw()
+                else:
+                    logger.warning("Unknown status selected in django admin")
 
         super().save_model(request, obj, form, change)
 
