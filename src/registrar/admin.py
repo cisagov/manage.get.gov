@@ -94,31 +94,19 @@ class DomainApplicationAdmin(AuditedAdmin):
                 if obj.status == models.DomainApplication.STARTED:
                     # No conditions
                     pass
-                if obj.status == models.DomainApplication.SUBMITTED:
+                elif obj.status == models.DomainApplication.SUBMITTED:
                     # This is an fsm in model which will throw an error if the
                     # transition condition is violated, so we call it on the
                     # original object which has the right status value, and pass
                     # the updated object which contains the up-to-date data
-                    # for the side effects (like an email send).
+                    # for the side effects (like an email send). Same 
+                    # comment applies to original_obj method calls below.
                     original_obj.submit(updated_domain_application=obj)
-                if obj.status == models.DomainApplication.INVESTIGATING:
-                    # This is an fsm in model which will throw an error if the
-                    # transition condition is violated, so we call it on the
-                    # original object which has the right status value, and pass
-                    # the updated object which contains the up-to-date data
-                    # for the side effects (like an email send).
+                elif obj.status == models.DomainApplication.INVESTIGATING:
                     original_obj.in_review(updated_domain_application=obj)
-                if obj.status == models.DomainApplication.APPROVED:
-                    # This is an fsm in model which will throw an error if the
-                    # transition condition is violated, so we call it on the
-                    # original object which has the right status value, and pass
-                    # the updated object which contains the up-to-date data
-                    # for the side effects (like an email send).
+                elif obj.status == models.DomainApplication.APPROVED:
                     original_obj.approve(updated_domain_application=obj)
-                if obj.status == models.DomainApplication.WITHDRAWN:
-                    # This is a transition annotated method in model which will throw an
-                    # error if the condition is violated. To make this work, we need to
-                    # call it on the original object which has the right status value.
+                elif obj.status == models.DomainApplication.WITHDRAWN:
                     original_obj.withdraw()
 
         super().save_model(request, obj, form, change)
