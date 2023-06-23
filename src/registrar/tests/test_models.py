@@ -14,7 +14,8 @@ from registrar.models import (
 )
 
 import boto3_mocking  # type: ignore
-from .common import MockSESClient, less_console_noise
+from .common import MockSESClient, less_console_noise, completed_application
+from django_fsm import TransitionNotAllowed
 
 boto3_mocking.clients.register_handler("sesv2", MockSESClient)
 
@@ -133,6 +134,123 @@ class TestDomainApplication(TestCase):
             ),
             0,
         )
+
+    def test_transition_not_allowed_submitted_submitted(self):
+        """Create an application with status submitted and call submit
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.SUBMITTED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.submit()
+
+    def test_transition_not_allowed_investigating_submitted(self):
+        """Create an application with status investigating and call submit
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.INVESTIGATING)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.submit()
+
+    def test_transition_not_allowed_approved_submitted(self):
+        """Create an application with status approved and call submit
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.APPROVED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.submit()
+
+    def test_transition_not_allowed_started_investigating(self):
+        """Create an application with status started and call in_review
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.STARTED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.in_review()
+
+    def test_transition_not_allowed_investigating_investigating(self):
+        """Create an application with status investigating and call in_review
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.INVESTIGATING)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.in_review()
+
+    def test_transition_not_allowed_approved_investigating(self):
+        """Create an application with status approved and call in_review
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.APPROVED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.in_review()
+
+    def test_transition_not_allowed_withdrawn_investigating(self):
+        """Create an application with status withdrawn and call in_review
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.WITHDRAWN)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.in_review()
+
+    def test_transition_not_allowed_started_approved(self):
+        """Create an application with status started and call approve
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.STARTED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.approve()
+
+    def test_transition_not_allowed_approved_approved(self):
+        """Create an application with status approved and call approve
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.APPROVED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.approve()
+
+    def test_transition_not_allowed_withdrawn_approved(self):
+        """Create an application with status withdrawn and call approve
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.WITHDRAWN)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.approve()
+
+    def test_transition_not_allowed_started_withdrawn(self):
+        """Create an application with status started and call withdraw
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.STARTED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.withdraw()
+
+    def test_transition_not_allowed_approved_withdrawn(self):
+        """Create an application with status approved and call withdraw
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.APPROVED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.withdraw()
+
+    def test_transition_not_allowed_withdrawn_withdrawn(self):
+        """Create an application with status withdrawn and call withdraw
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.WITHDRAWN)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.withdraw()
 
 
 class TestPermissions(TestCase):

@@ -1,0 +1,40 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi {{ application.submitter.first_name }}.
+
+Congratulations! Your .gov domain request has been approved.
+
+DOMAIN REQUESTED: {{ application.requested_domain.name }}
+REQUEST RECEIVED ON: {{ application.updated_at|date }}
+REQUEST #: {{ application.id }}
+STATUS: In review
+
+Now that your .gov domain has been approved, there are a few more things to do before your domain can be used. 
+
+
+YOU MUST ADD DOMAIN NAME SERVER INFORMATION
+
+Before your .gov domain can be used, you have to connect it to your Domain Name System (DNS) hosting service. At this time, we don’t provide DNS hosting services.
+Go to the domain management page to add your domain name server information <https://registrar.get.gov/domain/{{ application.id }}/nameservers>.
+
+Get help with adding your domain name server information <https://get.gov/help/domain-management/#manage-dns-information-for-your-domain>.
+
+
+ADD DOMAIN MANAGERS, SECURITY EMAIL
+
+We strongly recommend that you add other points of contact who will help manage your domain. We also recommend that you provide a security email. This email will allow the public to report security issues on your domain. Security emails are made public. 
+
+Go to the domain management page to add domain contacts <https://registrar.get.gov/domain/{{ application.id }}/your-contact-information> and a security email <https://registrar.get.gov/domain/{{ application.id }}/security-email>. 
+
+Get help with managing your .gov domain <https://get.gov/help/domain-management/>.
+
+
+THANK YOU
+
+.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Visit <https://get.gov>
+{% endautoescape %}
