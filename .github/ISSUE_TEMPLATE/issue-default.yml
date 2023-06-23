@@ -1,37 +1,34 @@
 name: Issue
-description: Provide a title for the issue you are describing 
-title: "Please provide a clear title"
-labels: ["review"]
-# assignees:
-#   - kitsushadow
+description: Describe the item
+
 body:
   - type: markdown
+    id: help
     attributes:
       value: |
-        Describe the ticket your are capturing in further detail.
+        > **Note**
+        > GitHub Issues use [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) for formatting.
   - type: textarea
-    id: why
+    id: issue
     attributes:
-      label: Ticket Description
-      description: Please provide details to accurately reflect why this ticket is being captured and also what is necessary to resolve.
-      placeholder: Provide details describing your lead up to needing this issue as well as any resolution or requirements for resolving or working on this more.
-      value: "While (working on or discussing) (issue #000 or domain request validation) I discovered there was (a missing workflow, an improvement, a missing feature). To resolve this (more research, a new feature, a new field, an interview) is required. Provide any links, screenshots, or mockups which would further detail the description."
-    validations:
-      required: true
-  - type: dropdown
-    id: type
-    attributes:
-      label: Issue Type
-      description: Does this work require
-      options:
-        - discovery (Default)
-        - development
-        - design review
+      label: Issue
+      description: |
+        Describe the issue you are adding or content you are suggesting.
+        Share any next steps that should be taken our outcomes that would be beneficial.
     validations:
       required: true
   - type: textarea
-    id: Dependencies
+    id: additional-context
     attributes:
-      label: Link dependent issues
-      description: If this ticket is dependent on another issue or blocks a current issue, please link.
-      render: shell
+      label: Additional Context (optional)
+      description: "Include additional references (screenshots, design links, documentation, etc.) that are relevant"
+  - type: textarea
+    id: issue-links
+    attributes:
+      label: Issue Links (optional)
+      description: |
+        Does this issue relate to any other existing work?
+        
+        Example:
+        - 🚧 Blocked by: #123
+        - 🔄 Relates to: #234
