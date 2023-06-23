@@ -13,7 +13,7 @@ body:
     attributes:
       label: Issue
       description: |
-        Please describe the issue you are adding or content you are suggesting.
+        Describe the issue you are adding or content you are suggesting.
         Share any next steps that should be taken our outcomes that would be beneficial.
     validations:
       required: true
@@ -21,7 +21,7 @@ body:
     id: additional-context
     attributes:
       label: Additional Context (optional)
-      description: "Please include additional references (screenshots, design links, documentation, etc.) that are relevant"
+      description: "Include additional references (screenshots, design links, documentation, etc.) that are relevant"
   - type: textarea
     id: issue-links
     attributes:
