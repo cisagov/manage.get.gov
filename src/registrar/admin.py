@@ -99,7 +99,7 @@ class DomainApplicationAdmin(AuditedAdmin):
                     # transition condition is violated, so we call it on the
                     # original object which has the right status value, and pass
                     # the updated object which contains the up-to-date data
-                    # for the side effects (like an email send). Same 
+                    # for the side effects (like an email send). Same
                     # comment applies to original_obj method calls below.
                     original_obj.submit(updated_domain_application=obj)
                 elif obj.status == models.DomainApplication.INVESTIGATING:

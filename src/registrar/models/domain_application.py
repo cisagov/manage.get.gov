@@ -500,9 +500,9 @@ class DomainApplication(TimeStampedModel):
     @transition(field="status", source=[STARTED, WITHDRAWN], target=SUBMITTED)
     def submit(self, updated_domain_application=None):
         """Submit an application that is started.
-        
+
         As a side effect, an email notification is sent.
-        
+
         This method is called in admin.py on the original application
         which has the correct status value, but is passed the changed
         application which has the up-to-date data that we'll use
@@ -543,7 +543,7 @@ class DomainApplication(TimeStampedModel):
         """Investigate an application that has been submitted.
 
         As a side effect, an email notification is sent.
-        
+
         This method is called in admin.py on the original application
         which has the correct status value, but is passed the changed
         application which has the up-to-date data that we'll use
@@ -563,7 +563,7 @@ class DomainApplication(TimeStampedModel):
         object for the approved Domain and makes the user who created the
         application into an admin on that domain. It also triggers an email
         notification.
-        
+
         This method is called in admin.py on the original application
         which has the correct status value, but is passed the changed
         application which has the up-to-date data that we'll use
