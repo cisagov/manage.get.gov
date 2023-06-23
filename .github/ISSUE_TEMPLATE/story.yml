@@ -47,12 +47,12 @@ body:
   - type: textarea
     id: additional-context
     attributes:
-      label: Additional Context (optional)
+      label: Additional Context
       description: "Please include additional references (screenshots, design links, documentation, etc.) that are relevant"
   - type: textarea
     id: issue-links
     attributes:
-      label: Issue Links (optional)
+      label: Issue Links
       description: |
         What other issues does this story relate to and how?
         
