@@ -102,7 +102,7 @@ class DomainApplicationAdmin(AuditedAdmin):
     search_help_text = "Search by domain or submitter."
     
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator", "is_policy_acknowledged"]}),
+        (None, {"fields": ["status", "investigator", "creator"]}),
         ("Type of organization", {"fields": ["organization_type", "federally_recognized_tribe", "state_recognized_tribe", "tribe_name", "federal_agency", "federal_type", "is_election_board", "type_of_work", "more_organization_information"]}),
         ("Organization name and mailing address", {"fields": ["organization_name", "address_line1", "address_line2", "city", "state_territory", "zipcode", "urbanization"]}),
         ("Authorizing official", {"fields": ["authorizing_official"]}),
@@ -113,6 +113,7 @@ class DomainApplicationAdmin(AuditedAdmin):
         ("Other employees from your organization?", {"fields": ["other_contacts"]}),
         ("No other employees from your organization?", {"fields": ["no_other_contacts_rationale"]}),
         ("Anything else we should know?", {"fields": ["anything_else"]}),
+        ("Requirements for operating .gov domains", {"fields": ["is_policy_acknowledged"]}),
     ]
 
     # Trigger action when a fieldset is changed

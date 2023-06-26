@@ -16,5 +16,4 @@ Staff
 
 admin | log entry | can view log entry
 registrar | contact | can view contact
-registrar | domain application | can view domain application
 registrar | domain application | can change domain application
