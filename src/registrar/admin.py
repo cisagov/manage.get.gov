@@ -134,6 +134,16 @@ class DomainApplicationAdmin(AuditedAdmin):
                 original_obj.in_review(obj)
 
         super().save_model(request, obj, form, change)
+    
+    readonly_fields = ["status", "creator", "submitter", "is_policy_acknowledged"]
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            # Superusers have full access, no fields are read-only
+            return ()
+        else:
+            # Regular users can only view the specified fields
+            return self.readonly_fields
 
 
 admin.site.register(models.User, MyUserAdmin)
