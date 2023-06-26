@@ -135,7 +135,7 @@ class DomainApplicationAdmin(AuditedAdmin):
 
         super().save_model(request, obj, form, change)
     
-    readonly_fields = ["status", "creator", "submitter", "is_policy_acknowledged"]
+    readonly_fields = ["creator", "type_of_work", "more_organization_information", "address_line1", "address_line2", "zipcode", "requested_domain", "alternative_domains", "purpose", "submitter", "no_other_contacts_rationale", "anything_else", "is_policy_acknowledged"]
 
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:
