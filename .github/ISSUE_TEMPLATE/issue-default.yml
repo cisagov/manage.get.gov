@@ -1,4 +1,5 @@
-description: Describe the item
+name: Issue
+description: Capture uncategorized work or content
 
 body:
   - type: markdown
@@ -24,9 +25,9 @@ body:
   - type: textarea
     id: issue-links
     attributes:
-      label: Issue Links (optional)
+      label: Issue Links
       description: |
-        Does this issue relate to any other existing work?
+        What other issues does this story relate to and how?
         
         Example:
         - 🚧 Blocked by: #123
