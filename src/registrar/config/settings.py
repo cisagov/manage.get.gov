@@ -78,6 +78,12 @@ DEBUG = env_debug
 # Installing them here makes them available for execution.
 # Do not access INSTALLED_APPS directly. Use `django.apps.apps` instead.
 INSTALLED_APPS = [
+    # let's be sure to install our own application!
+    # it needs to be listed before django.contrib.admin 
+    # otherwise Django would find the default template 
+    # provided by django.contrib.admin first and use 
+    # that instead of our custom templates.
+    "registrar",
     # Django automatic admin interface reads metadata
     # from database models to provide a quick, model-centric
     # interface where trusted users can manage content
@@ -106,8 +112,6 @@ INSTALLED_APPS = [
     "django_fsm",
     # library for phone numbers
     "phonenumber_field",
-    # let's be sure to install our own application!
-    "registrar",
     # Our internal API application
     "api",
     # Only for generating documentation, uncomment to run manage.py generate_puml

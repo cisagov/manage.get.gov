@@ -140,6 +140,26 @@ class DomainApplicationAdmin(AuditedAdmin):
         else:
             # Regular users can only view the specified fields
             return self.readonly_fields
+        
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        # Get the filtered values
+        filters = self.get_filters(request)
+        # Pass the filtered values to the template context
+        extra_context['filters'] = filters
+        extra_context['search_query'] = request.GET.get('q', '')  # Assuming the search query parameter is 'q'
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_filters(self, request):
+        filters = []
+        # Retrieve the filter parameters
+        for param in request.GET.keys():
+            # Exclude the default search parameter 'q'
+            if param != 'q' and param != 'o':
+                # Append the filter parameter and its value to the list
+                filters.append({'parameter_name': param.replace('__exact','').replace('_type','').replace('__id',' id'), 'parameter_value': request.GET.get(param)})
+        return filters
 
 
 admin.site.register(models.User, MyUserAdmin)
