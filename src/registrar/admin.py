@@ -56,6 +56,8 @@ class DomainAdmin(AuditedAdmin):
 
     """Custom domain admin class to add extra buttons."""
 
+    search_fields = ["name"]
+    search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
     readonly_fields = ["state"]
 
@@ -85,7 +87,6 @@ class ContactAdmin(AuditedAdmin):
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]
-    
     search_help_text = "Search by firstname, lastname or email."
 
 
@@ -94,13 +95,9 @@ class DomainApplicationAdmin(AuditedAdmin):
     """Customize the applications listing view."""
     
     list_display = ["requested_domain", "status", "organization_type", "created_at", "submitter", "investigator"]  
-
     list_filter = ('status', "organization_type", "investigator")  
-
     search_fields = ["requested_domain__name", "submitter__email", "submitter__first_name", "submitter__last_name"]
-    
     search_help_text = "Search by domain or submitter."
-    
     fieldsets = [
         (None, {"fields": ["status", "investigator", "creator"]}),
         ("Type of organization", {"fields": ["organization_type", "federally_recognized_tribe", "state_recognized_tribe", "tribe_name", "federal_agency", "federal_type", "is_election_board", "type_of_work", "more_organization_information"]}),
@@ -115,6 +112,7 @@ class DomainApplicationAdmin(AuditedAdmin):
         ("Anything else we should know?", {"fields": ["anything_else"]}),
         ("Requirements for operating .gov domains", {"fields": ["is_policy_acknowledged"]}),
     ]
+    readonly_fields = ["creator", "type_of_work", "more_organization_information", "address_line1", "address_line2", "zipcode", "requested_domain", "alternative_domains", "purpose", "submitter", "no_other_contacts_rationale", "anything_else", "is_policy_acknowledged"]
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -134,8 +132,6 @@ class DomainApplicationAdmin(AuditedAdmin):
                 original_obj.in_review(obj)
 
         super().save_model(request, obj, form, change)
-    
-    readonly_fields = ["creator", "type_of_work", "more_organization_information", "address_line1", "address_line2", "zipcode", "requested_domain", "alternative_domains", "purpose", "submitter", "no_other_contacts_rationale", "anything_else", "is_policy_acknowledged"]
 
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:

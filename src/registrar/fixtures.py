@@ -10,6 +10,8 @@ from registrar.models import (
     Website,
 )
 
+from django.contrib.auth.models import Permission
+
 fake = Faker()
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,14 @@ class UserFixture:
             "last_name": "Dixon",
         },
     ]
+    
+    STAFF = [
+        {
+            "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
+            "first_name": "Rachid-Analyst",
+            "last_name": "Mrad-Analyst",
+        },
+    ]
 
     @classmethod
     def load(cls):
@@ -64,6 +74,30 @@ class UserFixture:
                 user.last_name = admin["last_name"]
                 user.is_staff = True
                 user.is_active = True
+                user.save()
+                logger.debug("User object created for %s" % admin["first_name"])
+            except Exception as e:
+                logger.warning(e)
+        for staff in cls.STAFF:
+            try:
+                user, _ = User.objects.get_or_create(
+                    username=staff["username"],
+                )
+                user.is_superuser = False
+                user.first_name = admin["first_name"]
+                user.last_name = admin["last_name"]
+                user.is_staff = True
+                user.is_active = True
+                # CISA ANALYST permissions
+                # id 24 = codename view_logentry (auditlog)
+                # id 32 = codename view_contact
+                # id 38 = codename change_domainapplication
+                # id 44 = codename view_domain
+                permission_ids = [24, 32, 38, 44]  # List of permission IDs to assign
+                # Retrieve the corresponding permission objects
+                permissions = Permission.objects.filter(id__in=permission_ids)
+                # Add the permissions to the user
+                user.user_permissions.add(*permissions)
                 user.save()
                 logger.debug("User object created for %s" % admin["first_name"])
             except Exception as e:
