@@ -22,7 +22,32 @@ class AuditedAdmin(admin.ModelAdmin):
                 object_id=object_id,
             )
         )
+        
 
+class ListHeaderAdmin(AuditedAdmin):
+
+    """Custom admin to add a descriptive subheader to list views."""
+
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        # Get the filtered values
+        filters = self.get_filters(request)
+        # Pass the filtered values to the template context
+        extra_context['filters'] = filters
+        extra_context['search_query'] = request.GET.get('q', '')  # Assuming the search query parameter is 'q'
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_filters(self, request):
+        filters = []
+        # Retrieve the filter parameters
+        for param in request.GET.keys():
+            # Exclude the default search parameter 'q'
+            if param != 'q' and param != 'o':
+                # Append the filter parameter and its value to the list
+                filters.append({'parameter_name': param.replace('__exact','').replace('_type','').replace('__id',' id'), 'parameter_value': request.GET.get(param)})
+        return filters
+        
 
 class UserContactInline(admin.StackedInline):
 
@@ -52,7 +77,7 @@ class MyHostAdmin(AuditedAdmin):
     inlines = [HostIPInline]
 
 
-class DomainAdmin(AuditedAdmin):
+class DomainAdmin(ListHeaderAdmin):
 
     """Custom domain admin class to add extra buttons."""
 
@@ -82,7 +107,7 @@ class DomainAdmin(AuditedAdmin):
         return super().response_change(request, obj)
     
     
-class ContactAdmin(AuditedAdmin):
+class ContactAdmin(ListHeaderAdmin):
     
     """Custom contact admin class to add search."""
 
@@ -90,7 +115,7 @@ class ContactAdmin(AuditedAdmin):
     search_help_text = "Search by firstname, lastname or email."
 
 
-class DomainApplicationAdmin(AuditedAdmin):
+class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Customize the applications listing view."""
     
@@ -140,26 +165,6 @@ class DomainApplicationAdmin(AuditedAdmin):
         else:
             # Regular users can only view the specified fields
             return self.readonly_fields
-        
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        # Get the filtered values
-        filters = self.get_filters(request)
-        # Pass the filtered values to the template context
-        extra_context['filters'] = filters
-        extra_context['search_query'] = request.GET.get('q', '')  # Assuming the search query parameter is 'q'
-        return super().changelist_view(request, extra_context=extra_context)
-
-    def get_filters(self, request):
-        filters = []
-        # Retrieve the filter parameters
-        for param in request.GET.keys():
-            # Exclude the default search parameter 'q'
-            if param != 'q' and param != 'o':
-                # Append the filter parameter and its value to the list
-                filters.append({'parameter_name': param.replace('__exact','').replace('_type','').replace('__id',' id'), 'parameter_value': request.GET.get(param)})
-        return filters
 
 
 admin.site.register(models.User, MyUserAdmin)

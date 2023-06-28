@@ -11,6 +11,7 @@ from registrar.models import (
 )
 
 from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -60,10 +61,33 @@ class UserFixture:
             "last_name": "Mrad-Analyst",
         },
     ]
+    
+    STAFF_PERMISSIONS = [
+        {
+            'app_label': 'auditlog',
+            'model': 'logentry',
+            'permissions': ['view_logentry']
+        },
+        {
+            'app_label': 'registrar',
+            'model': 'contact',
+            'permissions': ['view_contact']
+        },
+        {
+            'app_label': 'registrar',
+            'model': 'domainapplication',
+            'permissions': ['change_domainapplication']
+        },
+        {
+            'app_label': 'registrar',
+            'model': 'domain',
+            'permissions': ['view_domain']
+        },
+    ]
 
     @classmethod
     def load(cls):
-        logger.info("Going to load %s users" % str(len(cls.ADMINS)))
+        logger.info("Going to load %s superusers" % str(len(cls.ADMINS)))
         for admin in cls.ADMINS:
             try:
                 user, _ = User.objects.get_or_create(
@@ -78,31 +102,41 @@ class UserFixture:
                 logger.debug("User object created for %s" % admin["first_name"])
             except Exception as e:
                 logger.warning(e)
+        logger.debug("All superusers loaded.")
+        
+        logger.info("Going to load %s CISA analysts (staff)" % str(len(cls.STAFF)))
         for staff in cls.STAFF:
             try:
                 user, _ = User.objects.get_or_create(
                     username=staff["username"],
                 )
                 user.is_superuser = False
-                user.first_name = admin["first_name"]
-                user.last_name = admin["last_name"]
+                user.first_name = staff["first_name"]
+                user.last_name = staff["last_name"]
                 user.is_staff = True
                 user.is_active = True
-                # CISA ANALYST permissions
-                # id 24 = codename view_logentry (auditlog)
-                # id 32 = codename view_contact
-                # id 38 = codename change_domainapplication
-                # id 44 = codename view_domain
-                permission_ids = [24, 32, 38, 44]  # List of permission IDs to assign
-                # Retrieve the corresponding permission objects
-                permissions = Permission.objects.filter(id__in=permission_ids)
-                # Add the permissions to the user
-                user.user_permissions.add(*permissions)
+                
+                for permission in cls.STAFF_PERMISSIONS:
+                    app_label = permission['app_label']
+                    model_name = permission['model']
+                    permissions = permission['permissions']
+
+                    # Retrieve the content type for the app and model
+                    content_type = ContentType.objects.get(app_label=app_label, model=model_name)
+
+                    # Retrieve the permissions based on their codenames
+                    permissions = Permission.objects.filter(content_type=content_type, codename__in=permissions)
+
+                    # Assign the permissions to the user
+                    user.user_permissions.add(*permissions)
+                    logger.debug(f"{app_label} | {model_name} | {permissions} added for user {staff['first_name']}")
+                    
                 user.save()
-                logger.debug("User object created for %s" % admin["first_name"])
+                logger.debug("User object created for %s" % staff["first_name"])
             except Exception as e:
                 logger.warning(e)
-        logger.debug("All users loaded.")
+        logger.debug("All CISA analysts (staff) loaded.")
+        
 
 
 class DomainApplicationFixture:

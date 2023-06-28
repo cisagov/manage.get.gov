@@ -14,6 +14,7 @@ Staff
 
 ### Additional group permissions
 
-admin | log entry | can view log entry
+auditlog | log entry | can view log entry
 registrar | contact | can view contact
 registrar | domain application | can change domain application
+registrar | domain | can view domain

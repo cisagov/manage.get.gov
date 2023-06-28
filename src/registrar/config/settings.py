@@ -92,6 +92,8 @@ INSTALLED_APPS = [
     # the "user" model! *\o/*
     "django.contrib.auth",
     # generic interface for Django models
+    "auditlog",
+    # library to simplify form templating
     "django.contrib.contenttypes",
     # required for CSRF protection and many other things
     "django.contrib.sessions",
@@ -105,8 +107,6 @@ INSTALLED_APPS = [
     # application used for integrating with Login.gov
     "djangooidc",
     # audit logging of changes to models
-    "auditlog",
-    # library to simplify form templating
     "widget_tweaks",
     # library for Finite State Machine statuses
     "django_fsm",
