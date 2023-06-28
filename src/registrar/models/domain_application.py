@@ -598,7 +598,7 @@ class DomainApplication(TimeStampedModel):
             self._send_status_update_email(
                 "application approved",
                 "emails/status_change_approved.txt",
-                "emails/status_change_approved.txt",
+                "emails/status_change_approved_subject.txt",
             )
 
     @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
