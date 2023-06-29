@@ -36,6 +36,7 @@ class ListHeaderAdmin(AuditedAdmin):
         # Pass the filtered values to the template context
         extra_context['filters'] = filters
         extra_context['search_query'] = request.GET.get('q', '')  # Assuming the search query parameter is 'q'
+        logger.debug(f'changelist_view {extra_context}')
         return super().changelist_view(request, extra_context=extra_context)
 
     def get_filters(self, request):

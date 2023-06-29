@@ -94,6 +94,8 @@ INSTALLED_APPS = [
     # generic interface for Django models
     "auditlog",
     # library to simplify form templating
+    # it needs to be listed before django.contrib.contenttypes 
+    # for a ContentType query in fixtures.py 
     "django.contrib.contenttypes",
     # required for CSRF protection and many other things
     "django.contrib.sessions",
