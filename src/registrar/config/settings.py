@@ -79,9 +79,9 @@ DEBUG = env_debug
 # Do not access INSTALLED_APPS directly. Use `django.apps.apps` instead.
 INSTALLED_APPS = [
     # let's be sure to install our own application!
-    # it needs to be listed before django.contrib.admin 
-    # otherwise Django would find the default template 
-    # provided by django.contrib.admin first and use 
+    # it needs to be listed before django.contrib.admin
+    # otherwise Django would find the default template
+    # provided by django.contrib.admin first and use
     # that instead of our custom templates.
     "registrar",
     # Django automatic admin interface reads metadata
@@ -94,8 +94,8 @@ INSTALLED_APPS = [
     # generic interface for Django models
     "auditlog",
     # library to simplify form templating
-    # it needs to be listed before django.contrib.contenttypes 
-    # for a ContentType query in fixtures.py 
+    # it needs to be listed before django.contrib.contenttypes
+    # for a ContentType query in fixtures.py
     "django.contrib.contenttypes",
     # required for CSRF protection and many other things
     "django.contrib.sessions",

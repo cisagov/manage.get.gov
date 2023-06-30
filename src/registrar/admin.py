@@ -22,7 +22,7 @@ class AuditedAdmin(admin.ModelAdmin):
                 object_id=object_id,
             )
         )
-        
+
 
 class ListHeaderAdmin(AuditedAdmin):
 
@@ -34,9 +34,10 @@ class ListHeaderAdmin(AuditedAdmin):
         # Get the filtered values
         filters = self.get_filters(request)
         # Pass the filtered values to the template context
-        extra_context['filters'] = filters
-        extra_context['search_query'] = request.GET.get('q', '')  # Assuming the search query parameter is 'q'
-        logger.debug(f'changelist_view {extra_context}')
+        extra_context["filters"] = filters
+        extra_context["search_query"] = request.GET.get(
+            "q", ""
+        )  # Assuming the search query parameter is 'q'
         return super().changelist_view(request, extra_context=extra_context)
 
     def get_filters(self, request):
@@ -44,11 +45,18 @@ class ListHeaderAdmin(AuditedAdmin):
         # Retrieve the filter parameters
         for param in request.GET.keys():
             # Exclude the default search parameter 'q'
-            if param != 'q' and param != 'o':
+            if param != "q" and param != "o":
                 # Append the filter parameter and its value to the list
-                filters.append({'parameter_name': param.replace('__exact','').replace('_type','').replace('__id',' id'), 'parameter_value': request.GET.get(param)})
+                filters.append(
+                    {
+                        "parameter_name": param.replace("__exact", "")
+                        .replace("_type", "")
+                        .replace("__id", " id"),
+                        "parameter_value": request.GET.get(param),
+                    }
+                )
         return filters
-        
+
 
 class UserContactInline(admin.StackedInline):
 
@@ -106,10 +114,10 @@ class DomainAdmin(ListHeaderAdmin):
             return HttpResponseRedirect(".")
 
         return super().response_change(request, obj)
-    
-    
+
+
 class ContactAdmin(ListHeaderAdmin):
-    
+
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]
@@ -119,26 +127,86 @@ class ContactAdmin(ListHeaderAdmin):
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Customize the applications listing view."""
-    
-    list_display = ["requested_domain", "status", "organization_type", "created_at", "submitter", "investigator"]  
-    list_filter = ('status', "organization_type", "investigator")  
-    search_fields = ["requested_domain__name", "submitter__email", "submitter__first_name", "submitter__last_name"]
+
+    list_display = [
+        "requested_domain",
+        "status",
+        "organization_type",
+        "created_at",
+        "submitter",
+        "investigator",
+    ]
+    list_filter = ("status", "organization_type", "investigator")
+    search_fields = [
+        "requested_domain__name",
+        "submitter__email",
+        "submitter__first_name",
+        "submitter__last_name",
+    ]
     search_help_text = "Search by domain or submitter."
     fieldsets = [
         (None, {"fields": ["status", "investigator", "creator"]}),
-        ("Type of organization", {"fields": ["organization_type", "federally_recognized_tribe", "state_recognized_tribe", "tribe_name", "federal_agency", "federal_type", "is_election_board", "type_of_work", "more_organization_information"]}),
-        ("Organization name and mailing address", {"fields": ["organization_name", "address_line1", "address_line2", "city", "state_territory", "zipcode", "urbanization"]}),
+        (
+            "Type of organization",
+            {
+                "fields": [
+                    "organization_type",
+                    "federally_recognized_tribe",
+                    "state_recognized_tribe",
+                    "tribe_name",
+                    "federal_agency",
+                    "federal_type",
+                    "is_election_board",
+                    "type_of_work",
+                    "more_organization_information",
+                ]
+            },
+        ),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "organization_name",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "state_territory",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
         ("Authorizing official", {"fields": ["authorizing_official"]}),
         ("Current websites", {"fields": ["current_websites"]}),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
         ("Purpose of your domain", {"fields": ["purpose"]}),
         ("Your contact information", {"fields": ["submitter"]}),
         ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        ("No other employees from your organization?", {"fields": ["no_other_contacts_rationale"]}),
+        (
+            "No other employees from your organization?",
+            {"fields": ["no_other_contacts_rationale"]},
+        ),
         ("Anything else we should know?", {"fields": ["anything_else"]}),
-        ("Requirements for operating .gov domains", {"fields": ["is_policy_acknowledged"]}),
+        (
+            "Requirements for operating .gov domains",
+            {"fields": ["is_policy_acknowledged"]},
+        ),
     ]
-    readonly_fields = ["creator", "type_of_work", "more_organization_information", "address_line1", "address_line2", "zipcode", "requested_domain", "alternative_domains", "purpose", "submitter", "no_other_contacts_rationale", "anything_else", "is_policy_acknowledged"]
+    readonly_fields = [
+        "creator",
+        "type_of_work",
+        "more_organization_information",
+        "address_line1",
+        "address_line2",
+        "zipcode",
+        "requested_domain",
+        "alternative_domains",
+        "purpose",
+        "submitter",
+        "no_other_contacts_rationale",
+        "anything_else",
+        "is_policy_acknowledged",
+    ]
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):

@@ -53,7 +53,7 @@ class UserFixture:
             "last_name": "Dixon",
         },
     ]
-    
+
     STAFF = [
         {
             "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
@@ -61,28 +61,20 @@ class UserFixture:
             "last_name": "Mrad-Analyst",
         },
     ]
-    
+
     STAFF_PERMISSIONS = [
         {
-            'app_label': 'auditlog',
-            'model': 'logentry',
-            'permissions': ['view_logentry']
+            "app_label": "auditlog",
+            "model": "logentry",
+            "permissions": ["view_logentry"],
         },
+        {"app_label": "registrar", "model": "contact", "permissions": ["view_contact"]},
         {
-            'app_label': 'registrar',
-            'model': 'contact',
-            'permissions': ['view_contact']
+            "app_label": "registrar",
+            "model": "domainapplication",
+            "permissions": ["change_domainapplication"],
         },
-        {
-            'app_label': 'registrar',
-            'model': 'domainapplication',
-            'permissions': ['change_domainapplication']
-        },
-        {
-            'app_label': 'registrar',
-            'model': 'domain',
-            'permissions': ['view_domain']
-        },
+        {"app_label": "registrar", "model": "domain", "permissions": ["view_domain"]},
     ]
 
     @classmethod
@@ -103,7 +95,7 @@ class UserFixture:
             except Exception as e:
                 logger.warning(e)
         logger.debug("All superusers loaded.")
-        
+
         logger.info("Going to load %s CISA analysts (staff)" % str(len(cls.STAFF)))
         for staff in cls.STAFF:
             try:
@@ -115,28 +107,39 @@ class UserFixture:
                 user.last_name = staff["last_name"]
                 user.is_staff = True
                 user.is_active = True
-                
+
                 for permission in cls.STAFF_PERMISSIONS:
-                    app_label = permission['app_label']
-                    model_name = permission['model']
-                    permissions = permission['permissions']
+                    app_label = permission["app_label"]
+                    model_name = permission["model"]
+                    permissions = permission["permissions"]
 
                     # Retrieve the content type for the app and model
-                    content_type = ContentType.objects.get(app_label=app_label, model=model_name)
+                    content_type = ContentType.objects.get(
+                        app_label=app_label, model=model_name
+                    )
 
                     # Retrieve the permissions based on their codenames
-                    permissions = Permission.objects.filter(content_type=content_type, codename__in=permissions)
+                    permissions = Permission.objects.filter(
+                        content_type=content_type, codename__in=permissions
+                    )
 
                     # Assign the permissions to the user
                     user.user_permissions.add(*permissions)
-                    logger.debug(f"{app_label} | {model_name} | {permissions} added for user {staff['first_name']}")
-                    
+                    logger.debug(
+                        app_label
+                        + " | "
+                        + model_name
+                        + " | "
+                        + permissions
+                        + " added for user "
+                        + staff["first_name"]
+                    )
+
                 user.save()
                 logger.debug("User object created for %s" % staff["first_name"])
             except Exception as e:
                 logger.warning(e)
         logger.debug("All CISA analysts (staff) loaded.")
-        
 
 
 class DomainApplicationFixture:
