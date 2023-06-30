@@ -130,12 +130,16 @@ class UserFixture:
 
                     # Assign the permissions to the user
                     user.user_permissions.add(*permissions)
+                    
+                    # Convert the permissions QuerySet to a list of codenames
+                    permission_list = list(permissions.values_list('codename', flat=True))
+                    
                     logger.debug(
                         app_label
                         + " | "
                         + model_name
                         + " | "
-                        + permissions
+                        + ', '.join(permission_list)
                         + " added for user "
                         + staff["first_name"]
                     )
