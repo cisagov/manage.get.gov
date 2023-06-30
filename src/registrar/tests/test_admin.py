@@ -15,7 +15,7 @@ class TestDomainApplicationAdmin(TestCase):
         self.site = AdminSite()
         self.factory = RequestFactory()
         self.admin = ListHeaderAdmin(model=DomainApplication, admin_site=None)
-        self.client = Client(HTTP_HOST="localhost:8080")
+        self.client = Client(HTTP_HOST="localhoost:8080")
         username = "admin"
         first_name = "First"
         last_name = "Last"
