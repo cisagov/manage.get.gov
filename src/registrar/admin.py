@@ -41,20 +41,48 @@ class ListHeaderAdmin(AuditedAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
     def get_filters(self, request):
+        """Retrieve the current set of parameters being used to filter the table
+        Returns:
+            dictionary objects in the format {parameter_name: string,
+            parameter_value: string}
+        TODO: convert investigator id to investigator username
+        """
+
         filters = []
         # Retrieve the filter parameters
         for param in request.GET.keys():
             # Exclude the default search parameter 'q'
             if param != "q" and param != "o":
-                # Append the filter parameter and its value to the list
-                filters.append(
-                    {
-                        "parameter_name": param.replace("__exact", "")
-                        .replace("_type", "")
-                        .replace("__id", " id"),
-                        "parameter_value": request.GET.get(param),
-                    }
+                parameter_name = (
+                    param.replace("__exact", "")
+                    .replace("_type", "")
+                    .replace("__id", " id")
                 )
+
+                if parameter_name == "investigator id":
+                    # Retrieves the corresponding contact from Users
+                    id_value = request.GET.get(param)
+                    try:
+                        contact = models.User.objects.get(id=id_value)
+                        investigator_name = contact.first_name + " " + contact.last_name
+
+                        filters.append(
+                            {
+                                "parameter_name": "investigator",
+                                "parameter_value": investigator_name,
+                            }
+                        )
+                    except models.User.DoesNotExist:
+                        pass
+                else:
+                    # For other parameter names, append a dictionary with the original
+                    # parameter_name and the corresponding parameter_value
+                    filters.append(
+                        {
+                            "parameter_name": parameter_name,
+                            "parameter_value": request.GET.get(param),
+                        }
+                    )
         return filters
 
 
@@ -128,6 +156,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Customize the applications listing view."""
 
+    # Columns
     list_display = [
         "requested_domain",
         "status",
@@ -136,7 +165,11 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "submitter",
         "investigator",
     ]
+
+    # Filters
     list_filter = ("status", "organization_type", "investigator")
+
+    # Search
     search_fields = [
         "requested_domain__name",
         "submitter__email",
@@ -144,6 +177,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "submitter__last_name",
     ]
     search_help_text = "Search by domain or submitter."
+
+    # Detail view
     fieldsets = [
         (None, {"fields": ["status", "investigator", "creator"]}),
         (
@@ -192,6 +227,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             {"fields": ["is_policy_acknowledged"]},
         ),
     ]
+
+    # Read only that we'll leverage for CISA Analysts
     readonly_fields = [
         "creator",
         "type_of_work",
@@ -240,7 +277,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:
             # Superusers have full access, no fields are read-only
-            return ()
+            return []
         else:
             # Regular users can only view the specified fields
             return self.readonly_fields

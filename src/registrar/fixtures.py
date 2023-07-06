@@ -65,6 +65,11 @@ class UserFixture:
             "first_name": "Rachid-Analyst",
             "last_name": "Mrad-Analyst",
         },
+        {
+            "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
+            "first_name": "Alysia-Analyst",
+            "last_name": "Alysia-Analyst",
+        },
     ]
 
     STAFF_PERMISSIONS = [
@@ -99,7 +104,7 @@ class UserFixture:
                 logger.debug("User object created for %s" % admin["first_name"])
             except Exception as e:
                 logger.warning(e)
-        logger.debug("All superusers loaded.")
+        logger.info("All superusers loaded.")
 
         logger.info("Going to load %s CISA analysts (staff)" % str(len(cls.STAFF)))
         for staff in cls.STAFF:
@@ -150,7 +155,7 @@ class UserFixture:
                 logger.debug("User object created for %s" % staff["first_name"])
             except Exception as e:
                 logger.warning(e)
-        logger.debug("All CISA analysts (staff) loaded.")
+        logger.info("All CISA analysts (staff) loaded.")
 
 
 class DomainApplicationFixture:

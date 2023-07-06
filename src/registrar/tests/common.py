@@ -8,7 +8,7 @@ from typing import List, Dict
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
-from registrar.models import Contact, DraftDomain, Website, DomainApplication
+from registrar.models import Contact, DraftDomain, Website, DomainApplication, User
 
 
 def get_handlers():
@@ -157,3 +157,17 @@ def completed_application(
         application.alternative_domains.add(alt)
 
     return application
+
+def mock_user():
+    """A simple user."""
+    user_kwargs = dict(
+        id = 4,
+        first_name = "Rachid",
+        last_name = "Mrad",
+    )
+    
+    user, _ = User.objects.get_or_create(
+        **user_kwargs
+    )
+
+    return user

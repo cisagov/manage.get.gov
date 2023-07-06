@@ -91,11 +91,11 @@ INSTALLED_APPS = [
     # vv Required by django.contrib.admin vv
     # the "user" model! *\o/*
     "django.contrib.auth",
-    # generic interface for Django models
-    "auditlog",
-    # library to simplify form templating
+    # audit logging of changes to models
     # it needs to be listed before django.contrib.contenttypes
     # for a ContentType query in fixtures.py
+    "auditlog",
+    # generic interface for Django models
     "django.contrib.contenttypes",
     # required for CSRF protection and many other things
     "django.contrib.sessions",
@@ -108,7 +108,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # application used for integrating with Login.gov
     "djangooidc",
-    # audit logging of changes to models
+    # library to simplify form templating
     "widget_tweaks",
     # library for Finite State Machine statuses
     "django_fsm",

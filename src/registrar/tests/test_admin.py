@@ -2,7 +2,7 @@ from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
 from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin
 from registrar.models import DomainApplication, DomainInformation, User
-from .common import completed_application
+from .common import completed_application, mock_user
 from django.contrib.auth import get_user_model
 
 from django.conf import settings
@@ -183,13 +183,16 @@ class TestDomainApplicationAdmin(TestCase):
         # Have to get creative to get past linter
         p = "adminpassword"
         self.client.login(username="admin", password=p)
+        
+        # Mock a user
+        user = mock_user()
 
         # Make the request using the Client class
         # which handles CSRF
         # Follow=True handles the redirect
         response = self.client.get(
             "/admin/registrar/domainapplication/",
-            {"status__exact": "started", "investigator__id__exact": "4", "q": "Hello"},
+            {"status__exact": "started", "investigator__id__exact": user.id, "q": "Hello"},
             follow=True,
         )
 
@@ -204,7 +207,7 @@ class TestDomainApplicationAdmin(TestCase):
             filters,
             [
                 {"parameter_name": "status", "parameter_value": "started"},
-                {"parameter_name": "investigator id", "parameter_value": "4"},
+                {"parameter_name": "investigator", "parameter_value": user.first_name + " " + user.last_name},
             ],
         )
 
@@ -212,7 +215,7 @@ class TestDomainApplicationAdmin(TestCase):
         # Create a mock request object
         request = self.factory.get("/admin/yourmodel/")
         # Set the GET parameters for testing
-        request.GET = {"status": "started", "investigator id": "4", "q": "search_value"}
+        request.GET = {"status": "started", "investigator": "Rachid Mrad", "q": "search_value"}
         # Call the get_filters method
         filters = self.admin.get_filters(request)
 
@@ -221,11 +224,12 @@ class TestDomainApplicationAdmin(TestCase):
             filters,
             [
                 {"parameter_name": "status", "parameter_value": "started"},
-                {"parameter_name": "investigator id", "parameter_value": "4"},
+                {"parameter_name": "investigator", "parameter_value": "Rachid Mrad"},
             ],
         )
 
     def tearDown(self):
         # delete any applications too
         DomainApplication.objects.all().delete()
+        User.objects.all().delete()
         self.superuser.delete()
