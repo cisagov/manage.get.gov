@@ -158,16 +158,15 @@ def completed_application(
 
     return application
 
+
 def mock_user():
     """A simple user."""
     user_kwargs = dict(
-        id = 4,
-        first_name = "Rachid",
-        last_name = "Mrad",
+        id=4,
+        first_name="Rachid",
+        last_name="Mrad",
     )
-    
-    user, _ = User.objects.get_or_create(
-        **user_kwargs
-    )
+
+    user, _ = User.objects.get_or_create(**user_kwargs)
 
     return user

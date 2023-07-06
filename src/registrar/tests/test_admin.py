@@ -183,7 +183,7 @@ class TestDomainApplicationAdmin(TestCase):
         # Have to get creative to get past linter
         p = "adminpassword"
         self.client.login(username="admin", password=p)
-        
+
         # Mock a user
         user = mock_user()
 
@@ -192,7 +192,11 @@ class TestDomainApplicationAdmin(TestCase):
         # Follow=True handles the redirect
         response = self.client.get(
             "/admin/registrar/domainapplication/",
-            {"status__exact": "started", "investigator__id__exact": user.id, "q": "Hello"},
+            {
+                "status__exact": "started",
+                "investigator__id__exact": user.id,
+                "q": "Hello",
+            },
             follow=True,
         )
 
@@ -207,7 +211,10 @@ class TestDomainApplicationAdmin(TestCase):
             filters,
             [
                 {"parameter_name": "status", "parameter_value": "started"},
-                {"parameter_name": "investigator", "parameter_value": user.first_name + " " + user.last_name},
+                {
+                    "parameter_name": "investigator",
+                    "parameter_value": user.first_name + " " + user.last_name,
+                },
             ],
         )
 
@@ -215,7 +222,11 @@ class TestDomainApplicationAdmin(TestCase):
         # Create a mock request object
         request = self.factory.get("/admin/yourmodel/")
         # Set the GET parameters for testing
-        request.GET = {"status": "started", "investigator": "Rachid Mrad", "q": "search_value"}
+        request.GET = {
+            "status": "started",
+            "investigator": "Rachid Mrad",
+            "q": "search_value",
+        }
         # Call the get_filters method
         filters = self.admin.get_filters(request)
 
