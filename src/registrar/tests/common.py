@@ -88,6 +88,37 @@ class MockSESClient(Mock):
         self.EMAILS_SENT.append({"args": args, "kwargs": kwargs})
 
 
+def mock_user():
+    """A simple user."""
+    user_kwargs = dict(
+        id=4,
+        first_name="Rachid",
+        last_name="Mrad",
+    )
+    mock_user, _ = User.objects.get_or_create(**user_kwargs)
+    return mock_user
+
+
+def create_superuser(self):
+    User = get_user_model()
+    p = "adminpass"
+    return User.objects.create_superuser(
+        username="superuser",
+        email="admin@example.com",
+        password=p,
+    )
+
+
+def create_user(self):
+    User = get_user_model()
+    p = "userpass"
+    return User.objects.create_user(
+        username="staffuser",
+        email="user@example.com",
+        password=p,
+    )
+
+
 def completed_application(
     has_other_contacts=True,
     has_current_website=True,
@@ -157,16 +188,3 @@ def completed_application(
         application.alternative_domains.add(alt)
 
     return application
-
-
-def mock_user():
-    """A simple user."""
-    user_kwargs = dict(
-        id=4,
-        first_name="Rachid",
-        last_name="Mrad",
-    )
-
-    user, _ = User.objects.get_or_create(**user_kwargs)
-
-    return user
