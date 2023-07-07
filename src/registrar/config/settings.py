@@ -78,6 +78,12 @@ DEBUG = env_debug
 # Installing them here makes them available for execution.
 # Do not access INSTALLED_APPS directly. Use `django.apps.apps` instead.
 INSTALLED_APPS = [
+    # let's be sure to install our own application!
+    # it needs to be listed before django.contrib.admin
+    # otherwise Django would find the default template
+    # provided by django.contrib.admin first and use
+    # that instead of our custom templates.
+    "registrar",
     # Django automatic admin interface reads metadata
     # from database models to provide a quick, model-centric
     # interface where trusted users can manage content
@@ -85,6 +91,10 @@ INSTALLED_APPS = [
     # vv Required by django.contrib.admin vv
     # the "user" model! *\o/*
     "django.contrib.auth",
+    # audit logging of changes to models
+    # it needs to be listed before django.contrib.contenttypes
+    # for a ContentType query in fixtures.py
+    "auditlog",
     # generic interface for Django models
     "django.contrib.contenttypes",
     # required for CSRF protection and many other things
@@ -98,16 +108,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # application used for integrating with Login.gov
     "djangooidc",
-    # audit logging of changes to models
-    "auditlog",
     # library to simplify form templating
     "widget_tweaks",
     # library for Finite State Machine statuses
     "django_fsm",
     # library for phone numbers
     "phonenumber_field",
-    # let's be sure to install our own application!
-    "registrar",
     # Our internal API application
     "api",
     # Only for generating documentation, uncomment to run manage.py generate_puml

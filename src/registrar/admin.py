@@ -24,6 +24,68 @@ class AuditedAdmin(admin.ModelAdmin):
         )
 
 
+class ListHeaderAdmin(AuditedAdmin):
+
+    """Custom admin to add a descriptive subheader to list views."""
+
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        # Get the filtered values
+        filters = self.get_filters(request)
+        # Pass the filtered values to the template context
+        extra_context["filters"] = filters
+        extra_context["search_query"] = request.GET.get(
+            "q", ""
+        )  # Assuming the search query parameter is 'q'
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_filters(self, request):
+        """Retrieve the current set of parameters being used to filter the table
+        Returns:
+            dictionary objects in the format {parameter_name: string,
+            parameter_value: string}
+        TODO: convert investigator id to investigator username
+        """
+
+        filters = []
+        # Retrieve the filter parameters
+        for param in request.GET.keys():
+            # Exclude the default search parameter 'q'
+            if param != "q" and param != "o":
+                parameter_name = (
+                    param.replace("__exact", "")
+                    .replace("_type", "")
+                    .replace("__id", " id")
+                )
+
+                if parameter_name == "investigator id":
+                    # Retrieves the corresponding contact from Users
+                    id_value = request.GET.get(param)
+                    try:
+                        contact = models.User.objects.get(id=id_value)
+                        investigator_name = contact.first_name + " " + contact.last_name
+
+                        filters.append(
+                            {
+                                "parameter_name": "investigator",
+                                "parameter_value": investigator_name,
+                            }
+                        )
+                    except models.User.DoesNotExist:
+                        pass
+                else:
+                    # For other parameter names, append a dictionary with the original
+                    # parameter_name and the corresponding parameter_value
+                    filters.append(
+                        {
+                            "parameter_name": parameter_name,
+                            "parameter_value": request.GET.get(param),
+                        }
+                    )
+        return filters
+
+
 class UserContactInline(admin.StackedInline):
 
     """Edit a user's profile on the user page."""
@@ -52,10 +114,12 @@ class MyHostAdmin(AuditedAdmin):
     inlines = [HostIPInline]
 
 
-class DomainAdmin(AuditedAdmin):
+class DomainAdmin(ListHeaderAdmin):
 
     """Custom domain admin class to add extra buttons."""
 
+    search_fields = ["name"]
+    search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
     readonly_fields = ["state"]
 
@@ -80,9 +144,106 @@ class DomainAdmin(AuditedAdmin):
         return super().response_change(request, obj)
 
 
-class DomainApplicationAdmin(AuditedAdmin):
+class ContactAdmin(ListHeaderAdmin):
+
+    """Custom contact admin class to add search."""
+
+    search_fields = ["email", "first_name", "last_name"]
+    search_help_text = "Search by firstname, lastname or email."
+
+
+class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Customize the applications listing view."""
+
+    # Columns
+    list_display = [
+        "requested_domain",
+        "status",
+        "organization_type",
+        "created_at",
+        "submitter",
+        "investigator",
+    ]
+
+    # Filters
+    list_filter = ("status", "organization_type", "investigator")
+
+    # Search
+    search_fields = [
+        "requested_domain__name",
+        "submitter__email",
+        "submitter__first_name",
+        "submitter__last_name",
+    ]
+    search_help_text = "Search by domain or submitter."
+
+    # Detail view
+    fieldsets = [
+        (None, {"fields": ["status", "investigator", "creator"]}),
+        (
+            "Type of organization",
+            {
+                "fields": [
+                    "organization_type",
+                    "federally_recognized_tribe",
+                    "state_recognized_tribe",
+                    "tribe_name",
+                    "federal_agency",
+                    "federal_type",
+                    "is_election_board",
+                    "type_of_work",
+                    "more_organization_information",
+                ]
+            },
+        ),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "organization_name",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "state_territory",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
+        ("Authorizing official", {"fields": ["authorizing_official"]}),
+        ("Current websites", {"fields": ["current_websites"]}),
+        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        ("Purpose of your domain", {"fields": ["purpose"]}),
+        ("Your contact information", {"fields": ["submitter"]}),
+        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
+        (
+            "No other employees from your organization?",
+            {"fields": ["no_other_contacts_rationale"]},
+        ),
+        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        (
+            "Requirements for operating .gov domains",
+            {"fields": ["is_policy_acknowledged"]},
+        ),
+    ]
+
+    # Read only that we'll leverage for CISA Analysts
+    readonly_fields = [
+        "creator",
+        "type_of_work",
+        "more_organization_information",
+        "address_line1",
+        "address_line2",
+        "zipcode",
+        "requested_domain",
+        "alternative_domains",
+        "purpose",
+        "submitter",
+        "no_other_contacts_rationale",
+        "anything_else",
+        "is_policy_acknowledged",
+    ]
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -113,10 +274,18 @@ class DomainApplicationAdmin(AuditedAdmin):
 
         super().save_model(request, obj, form, change)
 
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            # Superusers have full access, no fields are read-only
+            return []
+        else:
+            # Regular users can only view the specified fields
+            return self.readonly_fields
+
 
 admin.site.register(models.User, MyUserAdmin)
 admin.site.register(models.UserDomainRole, AuditedAdmin)
-admin.site.register(models.Contact, AuditedAdmin)
+admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, AuditedAdmin)
 admin.site.register(models.DomainInformation, AuditedAdmin)
 admin.site.register(models.Domain, DomainAdmin)

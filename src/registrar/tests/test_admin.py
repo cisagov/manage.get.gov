@@ -1,8 +1,9 @@
-from django.test import TestCase, RequestFactory
+from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-from registrar.admin import DomainApplicationAdmin
+from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin
 from registrar.models import DomainApplication, DomainInformation, User
-from .common import completed_application
+from .common import completed_application, mock_user
+from django.contrib.auth import get_user_model
 
 from django.conf import settings
 from unittest.mock import MagicMock
@@ -13,6 +14,21 @@ class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.factory = RequestFactory()
+        self.admin = ListHeaderAdmin(model=DomainApplication, admin_site=None)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        username = "admin"
+        first_name = "First"
+        last_name = "Last"
+        email = "info@example.com"
+        p = "adminpassword"
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=p,
+        )
 
     @boto3_mocking.patching
     def test_save_model_sends_submitted_email(self):
@@ -162,3 +178,69 @@ class TestDomainApplicationAdmin(TestCase):
         if DomainInformation.objects.get(id=application.pk) is not None:
             DomainInformation.objects.get(id=application.pk).delete()
         application.delete()
+
+    def test_changelist_view(self):
+        # Have to get creative to get past linter
+        p = "adminpassword"
+        self.client.login(username="admin", password=p)
+
+        # Mock a user
+        user = mock_user()
+
+        # Make the request using the Client class
+        # which handles CSRF
+        # Follow=True handles the redirect
+        response = self.client.get(
+            "/admin/registrar/domainapplication/",
+            {
+                "status__exact": "started",
+                "investigator__id__exact": user.id,
+                "q": "Hello",
+            },
+            follow=True,
+        )
+
+        # Assert that the filters and search_query are added to the extra_context
+        self.assertIn("filters", response.context)
+        self.assertIn("search_query", response.context)
+        # Assert the content of filters and search_query
+        filters = response.context["filters"]
+        search_query = response.context["search_query"]
+        self.assertEqual(search_query, "Hello")
+        self.assertEqual(
+            filters,
+            [
+                {"parameter_name": "status", "parameter_value": "started"},
+                {
+                    "parameter_name": "investigator",
+                    "parameter_value": user.first_name + " " + user.last_name,
+                },
+            ],
+        )
+
+    def test_get_filters(self):
+        # Create a mock request object
+        request = self.factory.get("/admin/yourmodel/")
+        # Set the GET parameters for testing
+        request.GET = {
+            "status": "started",
+            "investigator": "Rachid Mrad",
+            "q": "search_value",
+        }
+        # Call the get_filters method
+        filters = self.admin.get_filters(request)
+
+        # Assert the filters extracted from the request GET
+        self.assertEqual(
+            filters,
+            [
+                {"parameter_name": "status", "parameter_value": "started"},
+                {"parameter_name": "investigator", "parameter_value": "Rachid Mrad"},
+            ],
+        )
+
+    def tearDown(self):
+        # delete any applications too
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+        self.superuser.delete()
