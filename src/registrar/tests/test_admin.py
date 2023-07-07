@@ -14,9 +14,6 @@ class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.factory = RequestFactory()
-        # self.admin = ListHeaderAdmin(model=DomainApplication, admin_site=None)
-        # self.client = Client(HTTP_HOST="localhost:8080")
-        # self.superuser = create_superuser(self)
 
     @boto3_mocking.patching
     def test_save_model_sends_submitted_email(self):
