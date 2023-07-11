@@ -265,6 +265,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     original_obj.submit(updated_domain_application=obj)
                 elif obj.status == models.DomainApplication.INVESTIGATING:
                     original_obj.in_review(updated_domain_application=obj)
+                elif obj.status == models.DomainApplication.ACTION_NEEDED:
+                    original_obj.action_needed(updated_domain_application=obj)
                 elif obj.status == models.DomainApplication.APPROVED:
                     original_obj.approve(updated_domain_application=obj)
                 elif obj.status == models.DomainApplication.WITHDRAWN:

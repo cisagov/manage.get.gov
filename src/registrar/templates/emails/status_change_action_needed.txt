@@ -1,0 +1,43 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi {{ application.submitter.first_name }}.
+
+ACTION NEEDED: Your .gov domain request requires your attention. A CISA analyst will get in touch with you shortly with more details.
+
+DOMAIN REQUESTED: {{ application.requested_domain.name }}
+REQUEST RECEIVED ON: {{ application.updated_at|date }}
+REQUEST #: {{ application.id }}
+STATUS: Action needed
+
+
+NEED TO MAKE CHANGES?
+
+If you need to change your request you have to first withdraw it. Once you
+withdraw the request you can edit it and submit it again. Changing your request
+might add to the wait time. Learn more about withdrawing your request.
+<https://get.gov/help/domain-requests/#withdraw-your-domain-request>.
+
+
+NEXT STEPS
+
+- We’re reviewing your request. This usually takes 20 business days. 
+
+- You can check the status of your request at any time. 
+  <https://registrar.get.gov/application/{{ application.id }}>
+
+- We’ll email you with questions or when we complete our review.
+
+
+THANK YOU
+
+.Gov helps the public identify official, trusted information. Thank you for
+requesting a .gov domain.
+
+----------------------------------------------------------------
+
+{% include 'emails/includes/application_summary.txt' %}
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Visit <https://get.gov>
+{% endautoescape %}

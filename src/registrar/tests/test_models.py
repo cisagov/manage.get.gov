@@ -197,6 +197,51 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
+            
+    def test_transition_not_allowed_started_action_needed(self):
+        """Create an application with status started and call action_needed
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.STARTED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.action_needed()
+            
+    def test_transition_not_allowed_submitted_action_needed(self):
+        """Create an application with status submitted and call action_needed
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.SUBMITTED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.action_needed()
+            
+    def test_transition_not_allowed_action_needed_action_needed(self):
+        """Create an application with status action needed and call action_needed
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.ACTION_NEEDED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.action_needed()
+            
+    def test_transition_not_allowed_approved_action_needed(self):
+        """Create an application with status approved and call action_needed
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.APPROVED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.action_needed()
+            
+    def test_transition_not_allowed_withdrawn_action_needed(self):
+        """Create an application with status withdrawn and call action_needed
+        against transition rules"""
+
+        application = completed_application(status=DomainApplication.WITHDRAWN)
+
+        with self.assertRaises(TransitionNotAllowed):
+            application.action_needed()
 
     def test_transition_not_allowed_started_approved(self):
         """Create an application with status started and call approve

@@ -18,16 +18,18 @@ class DomainApplication(TimeStampedModel):
 
     """A registrant's application for a new domain."""
 
-    # #### Contants for choice fields ####
+    # #### Constants for choice fields ####
     STARTED = "started"
     SUBMITTED = "submitted"
     INVESTIGATING = "investigating"
+    ACTION_NEEDED = "action needed"
     APPROVED = "approved"
     WITHDRAWN = "withdrawn"
     STATUS_CHOICES = [
         (STARTED, STARTED),
         (SUBMITTED, SUBMITTED),
         (INVESTIGATING, INVESTIGATING),
+        (ACTION_NEEDED, ACTION_NEEDED),
         (APPROVED, APPROVED),
         (WITHDRAWN, WITHDRAWN),
     ]
@@ -497,7 +499,7 @@ class DomainApplication(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
-    @transition(field="status", source=[STARTED, WITHDRAWN], target=SUBMITTED)
+    @transition(field="status", source=[STARTED, ACTION_NEEDED, WITHDRAWN], target=SUBMITTED)
     def submit(self, updated_domain_application=None):
         """Submit an application that is started.
 
@@ -553,6 +555,18 @@ class DomainApplication(TimeStampedModel):
             "application in review",
             "emails/status_change_in_review.txt",
             "emails/status_change_in_review_subject.txt",
+        )
+        
+    @transition(field="status", source=[INVESTIGATING], target=ACTION_NEEDED)
+    def action_needed(self, updated_domain_application):
+        """Send back an application that is under investigation or rejected.
+
+        As a side effect, an email notification is sent, similar to in_review"""
+
+        updated_domain_application._send_status_update_email(
+            "action needed",
+            "emails/status_change_action_needed.txt",
+            "emails/status_change_action_needed_subject.txt",
         )
 
     @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=APPROVED)
