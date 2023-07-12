@@ -501,7 +501,9 @@ class DomainApplication(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
-    @transition(field="status", source=[STARTED, ACTION_NEEDED, WITHDRAWN], target=SUBMITTED)
+    @transition(
+        field="status", source=[STARTED, ACTION_NEEDED, WITHDRAWN], target=SUBMITTED
+    )
     def submit(self, updated_domain_application=None):
         """Submit an application that is started.
 
@@ -558,7 +560,7 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_in_review.txt",
             "emails/status_change_in_review_subject.txt",
         )
-        
+
     @transition(field="status", source=[INVESTIGATING, REJECTED], target=ACTION_NEEDED)
     def action_needed(self, updated_domain_application):
         """Send back an application that is under investigation or rejected.
@@ -571,7 +573,9 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_action_needed_subject.txt",
         )
 
-    @transition(field="status", source=[SUBMITTED, INVESTIGATING, REJECTED], target=APPROVED)
+    @transition(
+        field="status", source=[SUBMITTED, INVESTIGATING, REJECTED], target=APPROVED
+    )
     def approve(self, updated_domain_application=None):
         """Approve an application that has been submitted.
 
@@ -620,10 +624,18 @@ class DomainApplication(TimeStampedModel):
     @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
     def withdraw(self):
         """Withdraw an application that has been submitted."""
-        
+
     @transition(field="status", source=[INVESTIGATING, APPROVED], target=REJECTED)
-    def reject(self):
-        """Reject an application that has been submitted."""
+    def reject(self, updated_domain_application):
+        """Reject an application that has been submitted.
+
+        As a side effect, an email notification is sent, similar to in_review"""
+
+        updated_domain_application._send_status_update_email(
+            "action needed",
+            "emails/status_change_rejected.txt",
+            "emails/status_change_rejected_subject.txt",
+        )
 
     # ## Form policies ###
     #

@@ -272,7 +272,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 elif obj.status == models.DomainApplication.WITHDRAWN:
                     original_obj.withdraw()
                 elif obj.status == models.DomainApplication.REJECTED:
-                    original_obj.reject()
+                    original_obj.reject(updated_domain_application=obj)
                 else:
                     logger.warning("Unknown status selected in django admin")
 

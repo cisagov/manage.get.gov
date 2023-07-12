@@ -161,7 +161,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.submit()
-            
+
     def test_transition_not_allowed_rejected_submitted(self):
         """Create an application with status rejected and call submit
         against transition rules"""
@@ -197,7 +197,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
-            
+
     def test_transition_not_allowed_action_needed_investigating(self):
         """Create an application with status action needed and call in_review
         against transition rules"""
@@ -206,7 +206,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
-            
+
     def test_transition_not_allowed_rejected_investigating(self):
         """Create an application with status rejected and call in_review
         against transition rules"""
@@ -224,7 +224,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
-            
+
     def test_transition_not_allowed_started_action_needed(self):
         """Create an application with status started and call action_needed
         against transition rules"""
@@ -233,7 +233,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.action_needed()
-            
+
     def test_transition_not_allowed_submitted_action_needed(self):
         """Create an application with status submitted and call action_needed
         against transition rules"""
@@ -242,7 +242,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.action_needed()
-            
+
     def test_transition_not_allowed_action_needed_action_needed(self):
         """Create an application with status action needed and call action_needed
         against transition rules"""
@@ -251,7 +251,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.action_needed()
-            
+
     def test_transition_not_allowed_approved_action_needed(self):
         """Create an application with status approved and call action_needed
         against transition rules"""
@@ -260,7 +260,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.action_needed()
-            
+
     def test_transition_not_allowed_withdrawn_action_needed(self):
         """Create an application with status withdrawn and call action_needed
         against transition rules"""
@@ -287,7 +287,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.approve()
-            
+
     def test_transition_not_allowed_action_needed_approved(self):
         """Create an application with status action needed and call approve
         against transition rules"""
@@ -323,7 +323,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.withdraw()
-            
+
     def test_transition_not_allowed_action_needed_withdrawn(self):
         """Create an application with status action needed and call withdraw
         against transition rules"""
@@ -332,7 +332,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.withdraw()
-    
+
     def test_transition_not_allowed_rejected_withdrawn(self):
         """Create an application with status rejected and call withdraw
         against transition rules"""
@@ -341,7 +341,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.withdraw()
-            
+
     def test_transition_not_allowed_withdrawn_withdrawn(self):
         """Create an application with status withdrawn and call withdraw
         against transition rules"""
@@ -350,7 +350,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.withdraw()
-            
+
     def test_transition_not_allowed_started_rejected(self):
         """Create an application with status started and call reject
         against transition rules"""
@@ -359,7 +359,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject()
-            
+
     def test_transition_not_allowed_submitted_rejected(self):
         """Create an application with status submitted and call reject
         against transition rules"""
@@ -368,7 +368,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject()
-            
+
     def test_transition_not_allowed_action_needed_rejected(self):
         """Create an application with status action needed and call reject
         against transition rules"""
@@ -377,7 +377,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject()
-            
+
     def test_transition_not_allowed_withdrawn_rejected(self):
         """Create an application with status withdrawn and call reject
         against transition rules"""
@@ -386,7 +386,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject()
-            
+
     def test_transition_not_allowed_rejected_rejected(self):
         """Create an application with status rejected and call reject
         against transition rules"""
