@@ -1,6 +1,6 @@
 import logging
 from django.contrib import admin, messages
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
@@ -93,11 +93,28 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
-class MyUserAdmin(UserAdmin):
+class MyUserAdmin(BaseUserAdmin):
 
     """Custom user admin class to use our inlines."""
 
     inlines = [UserContactInline]
+
+    def get_list_display(self, request):
+        if not request.user.is_superuser:
+            # Customize the list display for staff users
+            return ("email", "first_name", "last_name", "is_staff", "is_superuser")
+
+        # Use the default list display for non-staff users
+        return super().get_list_display(request)
+
+    def get_fieldsets(self, request, obj=None):
+        if not request.user.is_superuser:
+            # If the user doesn't have permission to change the model,
+            # show a read-only fieldset
+            return ((None, {"fields": []}),)
+
+        # If the user has permission to change the model, show all fields
+        return super().get_fieldsets(request, obj)
 
 
 class HostIPInline(admin.StackedInline):

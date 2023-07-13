@@ -85,6 +85,7 @@ class UserFixture:
             "permissions": ["change_domainapplication"],
         },
         {"app_label": "registrar", "model": "domain", "permissions": ["view_domain"]},
+        {"app_label": "registrar", "model": "user", "permissions": ["view_user"]},
     ]
 
     @classmethod
