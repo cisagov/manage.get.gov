@@ -175,7 +175,7 @@ class ListHeaderAdminTest(TestCase):
         self.factory = RequestFactory()
         self.admin = ListHeaderAdmin(model=DomainApplication, admin_site=None)
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser(self)
+        self.superuser = create_superuser()
 
     def test_changelist_view(self):
         # Have to get creative to get past linter
@@ -249,7 +249,7 @@ class MyUserAdminTest(TestCase):
 
     def test_list_display_without_username(self):
         request = self.client.request().wsgi_request
-        request.user = create_user(self)
+        request.user = create_user()
 
         list_display = self.admin.get_list_display(request)
         expected_list_display = (
@@ -265,14 +265,14 @@ class MyUserAdminTest(TestCase):
 
     def test_get_fieldsets_superuser(self):
         request = self.client.request().wsgi_request
-        request.user = create_superuser(self)
+        request.user = create_superuser()
         fieldsets = self.admin.get_fieldsets(request)
         expected_fieldsets = super(MyUserAdmin, self.admin).get_fieldsets(request)
         self.assertEqual(fieldsets, expected_fieldsets)
 
     def test_get_fieldsets_non_superuser(self):
         request = self.client.request().wsgi_request
-        request.user = create_user(self)
+        request.user = create_user()
         fieldsets = self.admin.get_fieldsets(request)
         expected_fieldsets = ((None, {"fields": []}),)
         self.assertEqual(fieldsets, expected_fieldsets)

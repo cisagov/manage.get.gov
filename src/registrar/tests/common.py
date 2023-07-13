@@ -99,7 +99,7 @@ def mock_user():
     return mock_user
 
 
-def create_superuser(self):
+def create_superuser():
     User = get_user_model()
     p = "adminpass"
     return User.objects.create_superuser(
@@ -109,7 +109,7 @@ def create_superuser(self):
     )
 
 
-def create_user(self):
+def create_user():
     User = get_user_model()
     p = "userpass"
     return User.objects.create_user(

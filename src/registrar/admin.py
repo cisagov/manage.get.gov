@@ -103,9 +103,9 @@ class MyUserAdmin(BaseUserAdmin):
         if not request.user.is_superuser:
             # Customize the list display for staff users
             return ("email", "first_name", "last_name", "is_staff", "is_superuser")
-        else:
-            # Use the default list display for non-staff users
-            return super().get_list_display(request)
+
+        # Use the default list display for non-staff users
+        return super().get_list_display(request)
 
     def get_fieldsets(self, request, obj=None):
         if not request.user.is_superuser:
