@@ -1,8 +1,8 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin
+from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin
 from registrar.models import DomainApplication, DomainInformation, User
-from .common import completed_application, mock_user
+from .common import completed_application, mock_user, create_superuser, create_user
 from django.contrib.auth import get_user_model
 
 from django.conf import settings
@@ -14,21 +14,6 @@ class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.factory = RequestFactory()
-        self.admin = ListHeaderAdmin(model=DomainApplication, admin_site=None)
-        self.client = Client(HTTP_HOST="localhost:8080")
-        username = "admin"
-        first_name = "First"
-        last_name = "Last"
-        email = "info@example.com"
-        p = "adminpassword"
-        User = get_user_model()
-        self.superuser = User.objects.create_superuser(
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            password=p,
-        )
 
     @boto3_mocking.patching
     def test_save_model_sends_submitted_email(self):
@@ -260,10 +245,23 @@ class TestDomainApplicationAdmin(TestCase):
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
 
+    def tearDown(self):
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+
+
+class ListHeaderAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.admin = ListHeaderAdmin(model=DomainApplication, admin_site=None)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+
     def test_changelist_view(self):
         # Have to get creative to get past linter
-        p = "adminpassword"
-        self.client.login(username="admin", password=p)
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
 
         # Mock a user
         user = mock_user()
@@ -326,3 +324,42 @@ class TestDomainApplicationAdmin(TestCase):
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
         self.superuser.delete()
+
+
+class MyUserAdminTest(TestCase):
+    def setUp(self):
+        admin_site = AdminSite()
+        self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
+
+    def test_list_display_without_username(self):
+        request = self.client.request().wsgi_request
+        request.user = create_user()
+
+        list_display = self.admin.get_list_display(request)
+        expected_list_display = (
+            "email",
+            "first_name",
+            "last_name",
+            "is_staff",
+            "is_superuser",
+        )
+
+        self.assertEqual(list_display, expected_list_display)
+        self.assertNotIn("username", list_display)
+
+    def test_get_fieldsets_superuser(self):
+        request = self.client.request().wsgi_request
+        request.user = create_superuser()
+        fieldsets = self.admin.get_fieldsets(request)
+        expected_fieldsets = super(MyUserAdmin, self.admin).get_fieldsets(request)
+        self.assertEqual(fieldsets, expected_fieldsets)
+
+    def test_get_fieldsets_non_superuser(self):
+        request = self.client.request().wsgi_request
+        request.user = create_user()
+        fieldsets = self.admin.get_fieldsets(request)
+        expected_fieldsets = ((None, {"fields": []}),)
+        self.assertEqual(fieldsets, expected_fieldsets)
+
+    def tearDown(self):
+        User.objects.all().delete()
