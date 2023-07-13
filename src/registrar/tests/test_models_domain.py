@@ -11,6 +11,10 @@ from registrar.models import Domain  # add in DomainApplication, User,
 
 from unittest import skip
 from epplibwrapper import commands
+from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_information import DomainInformation
+from registrar.models.draft_domain import DraftDomain
+from registrar.models.user import User
 
 
 class TestDomainCache(TestCase):
@@ -47,8 +51,8 @@ class TestDomainCache(TestCase):
     def setUp(self):
         """mock epp send function as this will fail locally"""
         self.patcher = patch("registrar.models.domain.registry.send")
-        self.mock_foo = self.patcher.start()
-        self.mock_foo.side_effect = self.mockSend
+        self.mockedSendFunction = self.patcher.start()
+        self.mockedSendFunction.side_effect = self.mockSend
 
     def tearDown(self):
         self.patcher.stop()
@@ -70,7 +74,7 @@ class TestDomainCache(TestCase):
         self.assertEquals(domain._cache, {})
 
         # send should have been called only once
-        self.mock_foo.assert_called_once()
+        self.mockedSendFunction.assert_called_once()
 
     def test_cache_used_when_avail(self):
         """Cache is pulled from if the object has already been accessed"""
@@ -85,7 +89,7 @@ class TestDomainCache(TestCase):
         self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
 
         # send was only called once & not on the second getter call
-        self.mock_foo.assert_called_once()
+        self.mockedSendFunction.assert_called_once()
 
     def test_cache_nested_elements(self):
         """Cache works correctly with the nested objects cache and hosts"""
@@ -135,7 +139,20 @@ class TestDomainCreation(TestCase):
             Then a Domain exists in the database with the same `name`
             But a domain object does not exist in the registry
         """
-        raise
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+        user, _ = User.objects.get_or_create()
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=draft_domain
+        )
+        # skip using the submit method
+        application.status = DomainApplication.SUBMITTED
+        #trnasistion to approve state
+        application.approve()
+
+        # should be an information present for this domain
+        domain = Domain.objects.get(name="igorville.gov")
+        self.assertTrue(domain)
+
 
     @skip("not implemented yet")
     def test_accessing_domain_properties_creates_domain_in_registry(self):
