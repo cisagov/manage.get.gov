@@ -144,11 +144,11 @@ class TestDomainApplication(TestCase):
         with self.assertRaises(TransitionNotAllowed):
             application.submit()
 
-    def test_transition_not_allowed_investigating_submitted(self):
-        """Create an application with status investigating and call submit
+    def test_transition_not_allowed_in_review_submitted(self):
+        """Create an application with status in review and call submit
         against transition rules"""
 
-        application = completed_application(status=DomainApplication.INVESTIGATING)
+        application = completed_application(status=DomainApplication.IN_REVIEW)
 
         with self.assertRaises(TransitionNotAllowed):
             application.submit()
@@ -162,7 +162,7 @@ class TestDomainApplication(TestCase):
         with self.assertRaises(TransitionNotAllowed):
             application.submit()
 
-    def test_transition_not_allowed_started_investigating(self):
+    def test_transition_not_allowed_started_in_review(self):
         """Create an application with status started and call in_review
         against transition rules"""
 
@@ -171,16 +171,16 @@ class TestDomainApplication(TestCase):
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
 
-    def test_transition_not_allowed_investigating_investigating(self):
-        """Create an application with status investigating and call in_review
+    def test_transition_not_allowed_in_review_in_review(self):
+        """Create an application with status in review and call in_review
         against transition rules"""
 
-        application = completed_application(status=DomainApplication.INVESTIGATING)
+        application = completed_application(status=DomainApplication.IN_REVIEW)
 
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
 
-    def test_transition_not_allowed_approved_investigating(self):
+    def test_transition_not_allowed_approved_in_review(self):
         """Create an application with status approved and call in_review
         against transition rules"""
 
@@ -189,7 +189,7 @@ class TestDomainApplication(TestCase):
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
 
-    def test_transition_not_allowed_withdrawn_investigating(self):
+    def test_transition_not_allowed_withdrawn_in_review(self):
         """Create an application with status withdrawn and call in_review
         against transition rules"""
 

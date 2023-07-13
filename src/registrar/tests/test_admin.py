@@ -86,7 +86,7 @@ class TestDomainApplicationAdmin(TestCase):
             model_admin = DomainApplicationAdmin(DomainApplication, self.site)
 
             # Modify the application's property
-            application.status = DomainApplication.INVESTIGATING
+            application.status = DomainApplication.IN_REVIEW
 
             # Use the model admin's save_model method
             model_admin.save_model(request, application, form=None, change=True)
@@ -124,7 +124,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Create a sample application
-            application = completed_application(status=DomainApplication.INVESTIGATING)
+            application = completed_application(status=DomainApplication.IN_REVIEW)
 
             # Create a mock request
             request = self.factory.post(

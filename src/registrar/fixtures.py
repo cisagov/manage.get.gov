@@ -202,11 +202,11 @@ class DomainApplicationFixture:
             "organization_name": "Example - Submitted but pending Investigation",
         },
         {
-            "status": "investigating",
+            "status": "in review",
             "organization_name": "Example - In Investigation",
         },
         {
-            "status": "investigating",
+            "status": "in review",
             "organization_name": "Example - Approved",
         },
         {
@@ -378,9 +378,9 @@ class DomainFixture(DomainApplicationFixture):
             return
 
         for user in users:
-            # approve one of each users investigating status domains
+            # approve one of each users in review status domains
             application = DomainApplication.objects.filter(
-                creator=user, status=DomainApplication.INVESTIGATING
+                creator=user, status=DomainApplication.IN_REVIEW
             ).last()
             logger.debug(f"Approving {application} for {user}")
             application.approve()

@@ -280,7 +280,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     # for the side effects (like an email send). Same
                     # comment applies to original_obj method calls below.
                     original_obj.submit(updated_domain_application=obj)
-                elif obj.status == models.DomainApplication.INVESTIGATING:
+                elif obj.status == models.DomainApplication.IN_REVIEW:
                     original_obj.in_review(updated_domain_application=obj)
                 elif obj.status == models.DomainApplication.APPROVED:
                     original_obj.approve(updated_domain_application=obj)
