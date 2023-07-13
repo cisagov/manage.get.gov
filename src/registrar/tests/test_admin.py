@@ -246,6 +246,7 @@ class TestDomainApplicationAdmin(TestCase):
         mock_client_instance.send_email.assert_called_once()
 
     def tearDown(self):
+        DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
 
