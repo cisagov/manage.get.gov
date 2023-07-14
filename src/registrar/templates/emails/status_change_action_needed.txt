@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi {{ application.submitter.first_name }}.
 
-ACTION NEEDED: Your .gov domain request requires your attention. A CISA analyst will get in touch with you shortly with more details.
+Your .gov domain request requires a follow-up action to help with our review.
 
 DOMAIN REQUESTED: {{ application.requested_domain.name }}
 REQUEST RECEIVED ON: {{ application.updated_at|date }}
@@ -19,12 +19,12 @@ might add to the wait time. Learn more about withdrawing your request.
 
 NEXT STEPS
 
-- We’re reviewing your request. This usually takes 20 business days. 
+- You will receive a separate email from one of our analysts that provides details 
+about the action needed from you. You may need to update your application or 
+provide additional information. 
 
-- You can check the status of your request at any time. 
-  <https://registrar.get.gov/application/{{ application.id }}>
-
-- We’ll email you with questions or when we complete our review.
+- If you do not receive a separate email with these details, please contact us:
+  <https://forms.office.com/pages/responsepage.aspx?id=bOfNPG2UEkq7evydCEI1SqHke9Gh6wJEl3kQ5EjWUKlUQzRJWDlBNTBCQUxTTzBaNlhTWURSSTBLTC4u>
 
 
 THANK YOU
