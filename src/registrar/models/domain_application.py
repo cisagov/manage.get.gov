@@ -21,7 +21,7 @@ class DomainApplication(TimeStampedModel):
     # #### Constants for choice fields ####
     STARTED = "started"
     SUBMITTED = "submitted"
-    INVESTIGATING = "investigating"
+    IN_REVIEW = "in review"
     ACTION_NEEDED = "action needed"
     APPROVED = "approved"
     WITHDRAWN = "withdrawn"
@@ -29,7 +29,7 @@ class DomainApplication(TimeStampedModel):
     STATUS_CHOICES = [
         (STARTED, STARTED),
         (SUBMITTED, SUBMITTED),
-        (INVESTIGATING, INVESTIGATING),
+        (IN_REVIEW, IN_REVIEW),
         (ACTION_NEEDED, ACTION_NEEDED),
         (APPROVED, APPROVED),
         (WITHDRAWN, WITHDRAWN),
@@ -544,7 +544,7 @@ class DomainApplication(TimeStampedModel):
                 "emails/submission_confirmation_subject.txt",
             )
 
-    @transition(field="status", source=SUBMITTED, target=INVESTIGATING)
+    @transition(field="status", source=SUBMITTED, target=IN_REVIEW)
     def in_review(self, updated_domain_application):
         """Investigate an application that has been submitted.
 
@@ -561,7 +561,7 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_in_review_subject.txt",
         )
 
-    @transition(field="status", source=[INVESTIGATING, REJECTED], target=ACTION_NEEDED)
+    @transition(field="status", source=[IN_REVIEW, REJECTED], target=ACTION_NEEDED)
     def action_needed(self, updated_domain_application):
         """Send back an application that is under investigation or rejected.
 
@@ -574,7 +574,7 @@ class DomainApplication(TimeStampedModel):
         )
 
     @transition(
-        field="status", source=[SUBMITTED, INVESTIGATING, REJECTED], target=APPROVED
+        field="status", source=[SUBMITTED, IN_REVIEW, REJECTED], target=APPROVED
     )
     def approve(self, updated_domain_application=None):
         """Approve an application that has been submitted.
@@ -621,7 +621,7 @@ class DomainApplication(TimeStampedModel):
                 "emails/status_change_approved_subject.txt",
             )
 
-    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
+    @transition(field="status", source=[SUBMITTED, IN_REVIEW], target=WITHDRAWN)
     def withdraw(self):
         """Withdraw an application that has been submitted."""
 
