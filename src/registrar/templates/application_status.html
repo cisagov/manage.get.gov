@@ -20,7 +20,7 @@
              Status:
           </span>
           {% if domainapplication.status == 'approved' %} Approved 
-          {% elif domainapplication.status == 'investigating' %} In Review 
+          {% elif domainapplication.status == 'in review' %} In Review 
           {% elif domainapplication.status == 'submitted' %} Received
           {% else %}ERROR Please contact technical support/dev
           {% endif %}

@@ -21,13 +21,13 @@ class DomainApplication(TimeStampedModel):
     # #### Contants for choice fields ####
     STARTED = "started"
     SUBMITTED = "submitted"
-    INVESTIGATING = "investigating"
+    IN_REVIEW = "in review"
     APPROVED = "approved"
     WITHDRAWN = "withdrawn"
     STATUS_CHOICES = [
         (STARTED, STARTED),
         (SUBMITTED, SUBMITTED),
-        (INVESTIGATING, INVESTIGATING),
+        (IN_REVIEW, IN_REVIEW),
         (APPROVED, APPROVED),
         (WITHDRAWN, WITHDRAWN),
     ]
@@ -538,7 +538,7 @@ class DomainApplication(TimeStampedModel):
                 "emails/submission_confirmation_subject.txt",
             )
 
-    @transition(field="status", source=SUBMITTED, target=INVESTIGATING)
+    @transition(field="status", source=SUBMITTED, target=IN_REVIEW)
     def in_review(self, updated_domain_application):
         """Investigate an application that has been submitted.
 
@@ -555,7 +555,7 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_in_review_subject.txt",
         )
 
-    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=APPROVED)
+    @transition(field="status", source=[SUBMITTED, IN_REVIEW], target=APPROVED)
     def approve(self, updated_domain_application=None):
         """Approve an application that has been submitted.
 
@@ -601,7 +601,7 @@ class DomainApplication(TimeStampedModel):
                 "emails/status_change_approved_subject.txt",
             )
 
-    @transition(field="status", source=[SUBMITTED, INVESTIGATING], target=WITHDRAWN)
+    @transition(field="status", source=[SUBMITTED, IN_REVIEW], target=WITHDRAWN)
     def withdraw(self):
         """Withdraw an application that has been submitted."""
 
