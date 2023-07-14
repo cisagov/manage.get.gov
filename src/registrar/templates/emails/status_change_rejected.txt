@@ -1,0 +1,32 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi {{ application.submitter.first_name }}.
+
+Your .gov domain request has been rejected.
+
+DOMAIN REQUESTED: {{ application.requested_domain.name }}
+REQUEST RECEIVED ON: {{ application.updated_at|date }}
+REQUEST #: {{ application.id }}
+STATUS: Rejected
+
+
+YOU CAN SUBMIT A NEW REQUEST
+
+The details of your request are included below. If your organization is eligible for a .gov 
+domain and you meet our other requirements, you can submit a new request. Learn 
+more about .gov domains <https://get.gov/help/domains/>.
+
+
+THANK YOU
+
+.Gov helps the public identify official, trusted information. Thank you for
+requesting a .gov domain.
+
+----------------------------------------------------------------
+
+{% include 'emails/includes/application_summary.txt' %}
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Visit <https://get.gov>
+{% endautoescape %}

@@ -61,9 +61,6 @@ class TestDomainApplicationAdmin(TestCase):
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
 
-        # Cleanup
-        application.delete()
-
     @boto3_mocking.patching
     def test_save_model_sends_in_review_email(self):
         # make sure there is no user with this email
@@ -109,9 +106,6 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
-
-        # Cleanup
-        application.delete()
 
     @boto3_mocking.patching
     def test_save_model_sends_approved_email(self):
@@ -159,12 +153,103 @@ class TestDomainApplicationAdmin(TestCase):
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
 
-        # Cleanup
-        if DomainInformation.objects.get(id=application.pk) is not None:
-            DomainInformation.objects.get(id=application.pk).delete()
-        application.delete()
+    @boto3_mocking.patching
+    def test_save_model_sends_action_needed_email(self):
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # Create a sample application
+            application = completed_application(status=DomainApplication.IN_REVIEW)
+
+            # Create a mock request
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+            )
+
+            # Create an instance of the model admin
+            model_admin = DomainApplicationAdmin(DomainApplication, self.site)
+
+            # Modify the application's property
+            application.status = DomainApplication.ACTION_NEEDED
+
+            # Use the model admin's save_model method
+            model_admin.save_model(request, application, form=None, change=True)
+
+        # Access the arguments passed to send_email
+        call_args = mock_client_instance.send_email.call_args
+        args, kwargs = call_args
+
+        # Retrieve the email details from the arguments
+        from_email = kwargs.get("FromEmailAddress")
+        to_email = kwargs["Destination"]["ToAddresses"][0]
+        email_content = kwargs["Content"]
+        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
+
+        # Assert or perform other checks on the email details
+        expected_string = (
+            "Your .gov domain request requires a follow-up action "
+            "to help with our review."
+        )
+        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(to_email, EMAIL)
+        self.assertIn(expected_string, email_body)
+
+        # Perform assertions on the mock call itself
+        mock_client_instance.send_email.assert_called_once()
+
+    @boto3_mocking.patching
+    def test_save_model_sends_rejected_email(self):
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # Create a sample application
+            application = completed_application(status=DomainApplication.IN_REVIEW)
+
+            # Create a mock request
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+            )
+
+            # Create an instance of the model admin
+            model_admin = DomainApplicationAdmin(DomainApplication, self.site)
+
+            # Modify the application's property
+            application.status = DomainApplication.REJECTED
+
+            # Use the model admin's save_model method
+            model_admin.save_model(request, application, form=None, change=True)
+
+        # Access the arguments passed to send_email
+        call_args = mock_client_instance.send_email.call_args
+        args, kwargs = call_args
+
+        # Retrieve the email details from the arguments
+        from_email = kwargs.get("FromEmailAddress")
+        to_email = kwargs["Destination"]["ToAddresses"][0]
+        email_content = kwargs["Content"]
+        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
+
+        # Assert or perform other checks on the email details
+        expected_string = "Your .gov domain request has been rejected."
+        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(to_email, EMAIL)
+        self.assertIn(expected_string, email_body)
+
+        # Perform assertions on the mock call itself
+        mock_client_instance.send_email.assert_called_once()
 
     def tearDown(self):
+        DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
 
@@ -238,6 +323,9 @@ class ListHeaderAdminTest(TestCase):
         )
 
     def tearDown(self):
+        # delete any applications too
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
         User.objects.all().delete()
         self.superuser.delete()
 

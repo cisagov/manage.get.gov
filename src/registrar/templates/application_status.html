@@ -21,6 +21,7 @@
           </span>
           {% if domainapplication.status == 'approved' %} Approved 
           {% elif domainapplication.status == 'in review' %} In Review 
+          {% elif domainapplication.status == 'rejected' %} Rejected
           {% elif domainapplication.status == 'submitted' %} Received
           {% else %}ERROR Please contact technical support/dev
           {% endif %}

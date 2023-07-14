@@ -88,7 +88,7 @@
           <td data-sort-value="{{ application.created_at|date:"U" }}" data-label="Date created">{{ application.created_at|date }}</td>
           <td data-label="Status">{{ application.status|title }}</td>
           <td>
-             {% if application.status == "started" or application.status == "withdrawn"  %}
+             {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
               <a href="{% url 'edit-application' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
