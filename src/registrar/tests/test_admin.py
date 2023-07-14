@@ -164,7 +164,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Create a sample application
-            application = completed_application(status=DomainApplication.INVESTIGATING)
+            application = completed_application(status=DomainApplication.IN_REVIEW)
 
             # Create a mock request
             request = self.factory.post(
@@ -210,7 +210,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Create a sample application
-            application = completed_application(status=DomainApplication.INVESTIGATING)
+            application = completed_application(status=DomainApplication.IN_REVIEW)
 
             # Create a mock request
             request = self.factory.post(

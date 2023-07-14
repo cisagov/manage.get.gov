@@ -625,7 +625,7 @@ class DomainApplication(TimeStampedModel):
     def withdraw(self):
         """Withdraw an application that has been submitted."""
 
-    @transition(field="status", source=[INVESTIGATING, APPROVED], target=REJECTED)
+    @transition(field="status", source=[IN_REVIEW, APPROVED], target=REJECTED)
     def reject(self, updated_domain_application):
         """Reject an application that has been submitted.
 
