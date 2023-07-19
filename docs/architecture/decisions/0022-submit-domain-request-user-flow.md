@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-Historically, Verisign has managed the identity verification for users who request to apply for a .gov domain. With CISA's new system, any user who creates an account and verifies themselves through Login.gov will be able to request a .gov domain. As another layer of mitigation against abuse of the system, we needed a way to stop new users from submitting multiple domain requests before they are verified by CISA analysts.
+Historically, the .gov vendor managed initial identity verification and organizational affiliation for users that request a .gov domain. With the new registrar, _any user with a valid Login.gov account_ will be able to make a request. As a primary layer of abuse prevention (i.e., DDoSing the registry program with illegitimate requests), we need a way to stop new users from submitting multiple domain requests before they are known to the .gov registry. In this case, "known" means they have at least one approved domain application or existing domain.
 
 ## Considered Options
 
@@ -18,4 +18,6 @@ Option 2: Users that don't meet the requirement of having a prior approved appli
 
 ## Decision
 
-We have decided to go with option 1. New users of the registrar will need to have at least one approved application OR prior registered .gov domain in order to submit another application. We would like to allow users be able to work on applications, even if they are unable to submit them. [A user flow diagram that demonstrates this logic can be viewed at this link](https://miro.com/app/board/uXjVM3jz3Bs=/?share_link_id=875307531981). 
+We have decided to go with option 1. New users of the registrar will need to have at least one approved application OR prior registered .gov domain in order to submit another application. We would like to allow users be able to work on applications, even if they are unable to submit them. 
+
+A [user flow diagram](https://miro.com/app/board/uXjVM3jz3Bs=/?share_link_id=875307531981)https://miro.com/app/board/uXjVM3jz3Bs=/?share_link_id=875307531981 demonstrates our decision.
