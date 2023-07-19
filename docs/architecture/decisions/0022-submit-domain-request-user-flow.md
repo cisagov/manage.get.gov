@@ -20,4 +20,4 @@ Option 2: Users that don't meet the requirement of having a prior approved appli
 
 We have decided to go with option 1. New users of the registrar will need to have at least one approved application OR prior registered .gov domain in order to submit another application. We would like to allow users be able to work on applications, even if they are unable to submit them. 
 
-A [user flow diagram](https://miro.com/app/board/uXjVM3jz3Bs=/?share_link_id=875307531981)https://miro.com/app/board/uXjVM3jz3Bs=/?share_link_id=875307531981 demonstrates our decision.
+A [user flow diagram](https://miro.com/app/board/uXjVM3jz3Bs=/?share_link_id=875307531981) demonstrates our decision.
