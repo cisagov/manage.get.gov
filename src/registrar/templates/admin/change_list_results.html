@@ -22,7 +22,7 @@ Load our custom filters to extract info from the django generated markup.
     <div class="text">
         <span>
             <input type="checkbox" name="_selected_action" id="action-toggle">
-            <label for="action-toggle">Toggle all</label>
+            <label for="action-toggle" class="usa-sr-only">Toggle all</label>
         </span>
     </div>
     <div class="clear"></div>
@@ -73,7 +73,7 @@ checkboxes.
             {% with result_label=result.1|extract_a_text %}
                 <td>
                     <input type="checkbox" name="_selected_action" value="{{ result_value|default:'value' }}" id="{{ result_label|default:result_value }}" class="action-select">
-                    <label for="{{ result_label|default:result_value }}">{{ result_label|default:'label' }}</label>
+                    <label class="usa-sr-only" for="{{ result_label|default:result_value }}">{{ result_label|default:'label' }}</label>
                 </td>
                 {% endwith %}
         {% endwith %}
