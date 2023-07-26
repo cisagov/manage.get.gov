@@ -166,6 +166,16 @@ from .common import less_console_noise
             # <test code goes here>
 ```
 
+### Accessibility Testing in the browser
+
+We use the [ANDI](https://www.ssa.gov/accessibility/andi/help/install.html) browser extension 
+from ssa.gov for accessibility testing outside the pipeline. 
+
+ANDI will get blocked by our CSP settings, so you will need to install the 
+[Disable Content-Security-Policy extension](https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden) and activate it for the page you'd like
+to test.
+
+
 ### Accessibility Scanning
 
 The tool `pa11y-ci` is used to scan pages for compliance with a set of
@@ -203,7 +213,7 @@ Assets are stored in `registrar/assets` during development and served from `regi
 
 We utilize the [uswds-compile tool](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) from USWDS to compile and package USWDS assets.
 
-## Making and view style changes
+## Making and viewing style changes
 
 When you run `docker-compose up` the `node` service in the container will begin to watch for changes in the `registrar/assets` folder, and will recompile once any changes are made.
 
