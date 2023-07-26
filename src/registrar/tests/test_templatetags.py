@@ -29,3 +29,33 @@ class TestTemplateTags(TestCase):
         self.assertTrue(result.startswith(settings.GETGOV_PUBLIC_SITE_URL))
         # slash-slash host slash directory slash page
         self.assertEqual(result.count("/"), 4)
+
+
+class CustomFiltersTestCase(TestCase):
+    def test_extract_value_filter(self):
+        from registrar.templatetags.custom_filters import extract_value
+
+        html_input = (
+            '<input type="checkbox" name="_selected_action" value="123" '
+            'id="label_123" class="action-select">'
+        )
+        result = extract_value(html_input)
+        self.assertEqual(result, "123")
+
+        html_input = (
+            '<input type="checkbox" name="_selected_action" value="abc" '
+            'id="label_123" class="action-select">'
+        )
+        result = extract_value(html_input)
+        self.assertEqual(result, "abc")
+
+    def test_extract_a_text_filter(self):
+        from registrar.templatetags.custom_filters import extract_a_text
+
+        input_text = '<a href="#">Link Text</a>'
+        result = extract_a_text(input_text)
+        self.assertEqual(result, "Link Text")
+
+        input_text = '<a href="/example">Another Link</a>'
+        result = extract_a_text(input_text)
+        self.assertEqual(result, "Another Link")
