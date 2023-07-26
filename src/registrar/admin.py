@@ -125,9 +125,48 @@ class DomainAdmin(ListHeaderAdmin):
 
     def response_change(self, request, obj):
         ACTION_BUTTON = "_place_client_hold"
+        GET_SECURITY_EMAIL="_get_security_contact"
+        SET_SECURITY_EMAIL="_set_security_contact"
         if ACTION_BUTTON in request.POST:
             try:
                 obj.place_client_hold()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    (
+                        "%s is in client hold. This domain is no longer accessible on"
+                        " the public internet."
+                    )
+                    % obj.name,
+                )
+            return HttpResponseRedirect(".")
+   
+        if GET_SECURITY_EMAIL in request.POST:
+            try:
+               security_email=obj.get_security_email()
+               
+               
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(request,
+                    (
+                        "The security email is %"
+                        ". Thanks!"
+                    )
+                    % security_email,
+                )
+            return HttpResponseRedirect(".")
+
+        return super().response_change(request, obj)
+    def response_change(self, request, obj):
+        ACTION_BUTTON = "_get_security_email"
+
+        if ACTION_BUTTON in request.POST:
+            try:
+                obj.security
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
