@@ -177,7 +177,6 @@ and activate it for the page you'd like to test.
 
 Note - you will have to hot refresh on a given page after activating the extension.
 
-
 ### Accessibility Scanning
 
 The tool `pa11y-ci` is used to scan pages for compliance with a set of
