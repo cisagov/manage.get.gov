@@ -175,7 +175,7 @@ ANDI will get blocked by our CSP settings, so you will need to install the
 [Disable Content-Security-Policy extension](https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden) 
 and activate it for the page you'd like to test.
 
-Note - you will have to hot refresh on a given page after activating the extension.
+Note - refresh after enabling the extension on a page but before clicking ANDI.
 
 ### Accessibility Scanning
 
