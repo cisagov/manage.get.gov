@@ -172,8 +172,10 @@ We use the [ANDI](https://www.ssa.gov/accessibility/andi/help/install.html) brow
 from ssa.gov for accessibility testing outside the pipeline. 
 
 ANDI will get blocked by our CSP settings, so you will need to install the 
-[Disable Content-Security-Policy extension](https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden) and activate it for the page you'd like
-to test.
+[Disable Content-Security-Policy extension](https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden) 
+and activate it for the page you'd like to test.
+
+Note - you will have to hot refresh on a given page after activating the extension.
 
 
 ### Accessibility Scanning
