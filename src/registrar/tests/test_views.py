@@ -150,7 +150,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         type_result = type_page.form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
-
         self.assertEqual(application.organization_type, "federal")
         # the post request should return a redirect to the next form in
         # the application
@@ -168,7 +167,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
         federal_result = federal_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -182,7 +180,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
         # federal agency so we have to fill in federal_agency
@@ -199,7 +196,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
         org_contact_result = org_contact_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -221,7 +217,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- AUTHORIZING OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
         ao_page = org_contact_result.follow()
         ao_form = ao_page.form
         ao_form["authorizing_official-first_name"] = "Testy ATO"
