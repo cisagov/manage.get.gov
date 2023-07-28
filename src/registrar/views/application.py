@@ -67,7 +67,7 @@ class ApplicationWizard(TemplateView):
     URL_NAMESPACE = "application"
     # name for accessing /application/<id>/edit
     EDIT_URL_NAME = "edit-application"
-
+    NEW_URL_NAME = "/register/"
     # We need to pass our human-readable step titles as context to the templates.
     TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
@@ -144,6 +144,7 @@ class ApplicationWizard(TemplateView):
         self._application = DomainApplication.objects.create(
             creator=self.request.user,  # type: ignore
         )
+
         self.storage["application_id"] = self._application.id
         return self._application
 
@@ -195,7 +196,6 @@ class ApplicationWizard(TemplateView):
 
     def get(self, request, *args, **kwargs):
         """This method handles GET requests."""
-
         current_url = resolve(request.path_info).url_name
 
         # if user visited via an "edit" url, associate the id of the
@@ -213,12 +213,15 @@ class ApplicationWizard(TemplateView):
         #     send users "to the application wizard" without needing to
         #     know which view is first in the list of steps.
         if self.__class__ == ApplicationWizard:
+            # if starting a new application, clear the storage
+            if request.path_info == self.NEW_URL_NAME:
+                del self.storage
+
             return self.goto(self.steps.first)
 
         self.steps.current = current_url
         context = self.get_context_data()
         context["forms"] = self.get_forms()
-
         return render(request, self.template_name, context)
 
     def get_all_forms(self, **kwargs) -> list:
@@ -242,7 +245,6 @@ class ApplicationWizard(TemplateView):
         and from the database if `use_db` is True (provided that record exists).
         An empty form will be provided if neither of those are true.
         """
-
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
