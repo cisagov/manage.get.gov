@@ -67,7 +67,7 @@ class ApplicationWizard(TemplateView):
     URL_NAMESPACE = "application"
     # name for accessing /application/<id>/edit
     EDIT_URL_NAME = "edit-application"
-    NEW_URL_NAME = "register"
+    NEW_URL_NAME = "/register/"
     # We need to pass our human-readable step titles as context to the templates.
     TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
@@ -147,7 +147,6 @@ class ApplicationWizard(TemplateView):
         )
 
         self.storage["application_id"] = self._application.id
-        logger.debug("applications id %s",str(self.storage["application_id"]))
         return self._application
 
     @property
@@ -159,7 +158,6 @@ class ApplicationWizard(TemplateView):
 
     @storage.setter
     def storage(self, value):
-        logger.debug("requested session is  %s",  str(self.request.session))
         self.request.session[self.prefix] = value
         self.request.session.modified = True
 
@@ -199,18 +197,15 @@ class ApplicationWizard(TemplateView):
 
     def get(self, request, *args, **kwargs):
         """This method handles GET requests."""
-        logger.debug("IN GET application")
         current_url = resolve(request.path_info).url_name
-        logger.debug("Current url is %s", current_url)
+
         # if user visited via an "edit" url, associate the id of the
         # application they are trying to edit to this wizard instance
         # and remove any prior wizard data from their session
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
-            logger.debug("Storage was %s", self.storage)
             del self.storage
             self.storage["application_id"] = kwargs["id"]
-            logger.debug("storage is now %s", str(self.storage))
-            logger.debug("id set to %s", kwargs["id"])
+
         # if accessing this class directly, redirect to the first step
         #     in other words, if `ApplicationWizard` is called as view
         #     directly by some redirect or url handler, we'll send users
@@ -219,24 +214,16 @@ class ApplicationWizard(TemplateView):
         #     send users "to the application wizard" without needing to
         #     know which view is first in the list of steps.
         if self.__class__ == ApplicationWizard:
-            ##hmmm could we use this to redirect users if they shouldn't view editable data?
-            ## this is where it resets to send to first 
-            #this is called when clicking an edit link AND when clicking new app
-            #not called when navigating between steps (such as clicking save and continue)
-            logger.debug("Current url is %s", current_url)
-            if current_url == self.NEW_URL_NAME:## find the right URL
-                logger.debug("In if check")
-
+         
+            if request.path_info == self.NEW_URL_NAME:
                 del self.storage
                 self.storage["application_id"] = None #reset the app
-            logger.debug("calling go to first step")
-            #del self.storage
+
             return self.goto(self.steps.first)
 
         self.steps.current = current_url
         context = self.get_context_data()
         context["forms"] = self.get_forms()
-        logger.debug("Context set to %s", str(context))
         return render(request, self.template_name, context)
 
     def get_all_forms(self, **kwargs) -> list:
@@ -329,7 +316,6 @@ class ApplicationWizard(TemplateView):
         """This method handles POST requests."""
         # if accessing this class directly, redirect to the first step
         if self.__class__ == ApplicationWizard:
-            logger.debug("post redirect to first steps")
             return self.goto(self.steps.first)
 
         # which button did the user press?
