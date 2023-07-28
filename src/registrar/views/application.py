@@ -133,22 +133,19 @@ class ApplicationWizard(TemplateView):
         if self.has_pk():
             id = self.storage["application_id"]
             try:
-                logger.debug("Trying to get the application")
                 self._application = DomainApplication.objects.get(
                     creator=self.request.user,  # type: ignore
                     pk=id,
                 )
-                logger.debug("applicaiton is %s",self._application)
                 return self._application
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
-        logger.debug("creating application with next id")
+
         self._application = DomainApplication.objects.create(
             creator=self.request.user,  # type: ignore
         )
 
         self.storage["application_id"] = self._application.id
-        logger.debug("setting id to %s",self._application.id)
         return self._application
 
     @property
@@ -216,10 +213,9 @@ class ApplicationWizard(TemplateView):
         #     send users "to the application wizard" without needing to
         #     know which view is first in the list of steps.
         if self.__class__ == ApplicationWizard:
-            #if starting a new application, clear the storage
+            # if starting a new application, clear the storage
             if request.path_info == self.NEW_URL_NAME:
                 del self.storage
-                # self.storage["application_id"] = None #reset the app
 
             return self.goto(self.steps.first)
 

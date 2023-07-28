@@ -130,7 +130,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         As we add additional form pages, we need to include them here to make
         this test work.
         """
-        print("in form submission")
         num_pages_tested = 0
         # elections, type_of_work, tribal_government, no_other_contacts
         SKIPPED_PAGES = 4
@@ -142,39 +141,26 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        session_wizard=self.app.session['wizard_application']
-        
-        try:
-            print(self.app.session)
-            print(self.app.session.items())
-        except:
-            print("cant print session")
-            print(self.app)
 
         # ---- TYPE PAGE  ----
         type_form = type_page.form
         type_form["organization_type-organization_type"] = "federal"
-        print("submitting form with federal")
         # test next button and validate data
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         type_result = type_page.form.submit()
         # should see results in db
         application = DomainApplication.objects.get()  # there's only one
-        print("domain application is %s", str(application))
+
         self.assertEqual(application.organization_type, "federal")
         # the post request should return a redirect to the next form in
         # the application
-        print("going to organization federal")
         self.assertEqual(type_result.status_code, 302)
         self.assertEqual(type_result["Location"], "/register/organization_federal/")
         num_pages_tested += 1
 
         # ---- FEDERAL BRANCH PAGE  ----
         # Follow the redirect to the next form page
-        print("clicking exective")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
 
         federal_page = type_result.follow()
         federal_form = federal_page.form
@@ -182,7 +168,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
 
         federal_result = federal_form.submit()
         # validate that data from this step are being saved
@@ -190,7 +175,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEqual(application.federal_type, "executive")
         # the post request should return a redirect to the next form in
         # the application
-        print("clicking contact")
         self.assertEqual(federal_result.status_code, 302)
         self.assertEqual(federal_result["Location"], "/register/organization_contact/")
         num_pages_tested += 1
@@ -198,7 +182,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
 
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
@@ -216,7 +199,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
 
         org_contact_result = org_contact_form.submit()
         # validate that data from this step are being saved
@@ -239,7 +221,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- AUTHORIZING OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
 
         ao_page = org_contact_result.follow()
         ao_form = ao_page.form
@@ -251,7 +232,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard 
         ao_result = ao_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -269,14 +249,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- CURRENT SITES PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         current_sites_page = ao_result.follow()
         current_sites_form = current_sites_page.form
         current_sites_form["current_sites-0-website"] = "www.city.com"
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         current_sites_result = current_sites_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -293,14 +271,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- DOTGOV DOMAIN PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         dotgov_page = current_sites_result.follow()
         dotgov_form = dotgov_page.form
         dotgov_form["dotgov_domain-requested_domain"] = "city"
         dotgov_form["dotgov_domain-0-alternative_domain"] = "city1"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         dotgov_result = dotgov_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -317,14 +293,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- PURPOSE PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         purpose_page = dotgov_result.follow()
         purpose_form = purpose_page.form
         purpose_form["purpose-purpose"] = "For all kinds of things."
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         purpose_result = purpose_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -338,7 +312,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- YOUR CONTACT INFO PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         your_contact_page = purpose_result.follow()
         your_contact_form = your_contact_page.form
 
@@ -350,7 +323,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         your_contact_result = your_contact_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -368,7 +340,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- OTHER CONTACTS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         other_contacts_page = your_contact_result.follow()
         other_contacts_form = other_contacts_page.form
 
@@ -380,7 +351,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         other_contacts_result = other_contacts_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -410,7 +380,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         anything_else_result = anything_else_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
@@ -424,7 +393,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- REQUIREMENTS PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         requirements_page = anything_else_result.follow()
         requirements_form = requirements_page.form
 
@@ -445,7 +413,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- REVIEW AND FINSIHED PAGES  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         review_page = requirements_result.follow()
         review_form = review_page.form
 
@@ -482,7 +449,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # final submission results in a redirect to the "finished" URL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         with less_console_noise():
             review_result = review_form.submit()
 
@@ -493,7 +459,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # following this redirect is a GET request, so include the cookie
         # here too.
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         with less_console_noise():
             final_result = review_result.follow()
         self.assertContains(final_result, "Thanks for your domain request!")
@@ -525,16 +490,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # type_page = home_page.click("Edit")
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        session_wizard=self.app.session['wizard_application']
+        session_wizard = self.app.session["wizard_application"]
         url = reverse("edit-application", kwargs={"id": application.pk})
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
 
         # TODO: The following line results in a django error on middleware
         response = self.client.get(url, follow=True)
         self.assertContains(response, "Type of organization")
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.session["wizard_application"]=session_wizard
         # TODO: Step through the remaining pages
 
         self.assertEqual(num_pages, num_pages_tested)
