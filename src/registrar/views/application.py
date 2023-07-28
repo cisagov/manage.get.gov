@@ -141,7 +141,6 @@ class ApplicationWizard(TemplateView):
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
 
-        ##not being called for the new application when one
         self._application = DomainApplication.objects.create(
             creator=self.request.user,  # type: ignore
         )
@@ -214,7 +213,7 @@ class ApplicationWizard(TemplateView):
         #     send users "to the application wizard" without needing to
         #     know which view is first in the list of steps.
         if self.__class__ == ApplicationWizard:
-         
+            #if starting a new application, clear the storage
             if request.path_info == self.NEW_URL_NAME:
                 del self.storage
                 self.storage["application_id"] = None #reset the app
@@ -247,15 +246,14 @@ class ApplicationWizard(TemplateView):
         and from the database if `use_db` is True (provided that record exists).
         An empty form will be provided if neither of those are true.
         """
-        ##bug is here an empty form is not provided if these are false!!!
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
             "application": self.application,  # this is a property, not an object
-        }##application here causing the issue?
+        }
 
         if step is None:
-            forms = self.forms ##what dis?
+            forms = self.forms
         else:
             url = reverse(f"{self.URL_NAMESPACE}:{step}")
             forms = resolve(url).func.view_class.forms
