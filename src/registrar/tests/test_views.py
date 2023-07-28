@@ -490,7 +490,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # type_page = home_page.click("Edit")
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        session_wizard = self.app.session["wizard_application"]
         url = reverse("edit-application", kwargs={"id": application.pk})
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
