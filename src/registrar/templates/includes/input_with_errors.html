@@ -29,7 +29,12 @@ error messages, if necessary.
   {% endif %}
 
   {% if sublabel_text %}
-    <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">{{ sublabel_text }}</p>
+    <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">
+      {{ sublabel_text }}
+      {% if link_text %}
+        <a href="{{ link_href }}">{{ link_text }}</a>.
+      {% endif %}
+    </p>
   {% endif %}
 
   {% if field.errors %}

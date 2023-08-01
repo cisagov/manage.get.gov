@@ -3,7 +3,15 @@
 
 
 {% block form_fields %}
-  {% input_with_errors forms.0.tribe_name %}
+
+  {% with sublabel_text="Please include the entire name of your tribe as recognized by the" %}
+    {% with link_text="Bureau of Indian Affairs" %}
+      {% with link_href="https://rachid.me" %}
+        {% input_with_errors forms.0.tribe_name %}
+      {% endwith %}
+    {% endwith %}
+  {% endwith %}
+
   <fieldset class="usa-fieldset">
     <legend class="usa-legend">
       <p>Is your organization a federally-recognized tribe or a state-recognized tribe? Check all that apply.
