@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi {{ application.submitter.first_name }}.
 
-Your .gov domain request requires a follow-up action to help with our review.
+We've identified an action needed to complete the review of your .gov domain request.
 
 DOMAIN REQUESTED: {{ application.requested_domain.name }}
 REQUEST RECEIVED ON: {{ application.updated_at|date }}
@@ -19,11 +19,10 @@ might add to the wait time. Learn more about withdrawing your request.
 
 NEXT STEPS
 
-- You will receive a separate email from one of our analysts that provides details 
-about the action needed from you. You may need to update your application or 
-provide additional information. 
+- You will receive a separate email from our team that provides details about the action needed. 
+You may need to update your application or provide additional information.
 
-- If you do not receive a separate email with these details, please contact us:
+- If you do not receive a separate email with these details within one business day, please contact us:
 <https://forms.office.com/pages/responsepage.aspx?id=bOfNPG2UEkq7evydCEI1SqHke9Gh6wJEl3kQ5EjWUKlUQzRJWDlBNTBCQUxTTzBaNlhTWURSSTBLTC4u>
 
 
