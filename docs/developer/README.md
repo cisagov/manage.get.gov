@@ -18,6 +18,9 @@ If you're new to Django, see [Getting Started with Django](https://www.djangopro
 
 Visit the running application at [http://localhost:8080](http://localhost:8080).
 
+Note: If you are using Windows, you may need to change your [line endings](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings). 
+If you'd rather not change this globally, add a .gitattributes file in the project root with `* text eol=lf` as the text content, and [refresh the repo](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings#refreshing-a-repository-after-changing-line-endings)
+
 ## Branch Conventions
 
 We use the branch convention of `initials/branch-topic` (ex: `lmm/fix-footer`). This allows for automated deployment to a developer sandbox namespaced to the initials.
