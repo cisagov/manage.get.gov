@@ -16,7 +16,6 @@ def index(request):
             pk=F("domain__id"),
             name=F("domain__name"),
             created_time=F("domain__created_at"),
-            application_status=F("domain__domain_application__status"),
         )
         context["domains"] = domains
     return render(request, "home.html", context)
