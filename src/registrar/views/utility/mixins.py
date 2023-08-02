@@ -24,11 +24,12 @@ class DomainPermission(PermissionsLoginMixin):
         The user is in self.request.user and the domain needs to be looked
         up from the domain's primary key in self.kwargs["pk"]
         """
-        
+
         # ticket 806
-        # if self.request.user is staff or admin and domain.application__status = 'approved' or 'rejected' or 'action needed'
+        # if self.request.user is staff or admin and
+        # domain.application__status = 'approved' or 'rejected' or 'action needed'
         #     return True
-        
+
         if not self.request.user.is_authenticated:
             return False
 
@@ -37,10 +38,10 @@ class DomainPermission(PermissionsLoginMixin):
             user=self.request.user, domain__id=self.kwargs["pk"]
         ).exists():
             return False
-        
+
         # ticket 796
         # if domain.application__status != 'approved'
-        #     return false    
+        #     return false
 
         # if we need to check more about the nature of role, do it here.
         return True
