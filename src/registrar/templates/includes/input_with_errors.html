@@ -32,7 +32,7 @@ error messages, if necessary.
 
   {% if sublabel_text %}
     <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">
-      {% comment %} If the link_text appears twice, the first instance will be a link and the second instance will be ignored {% endcomment %}
+      {% comment %} If the link_text appears more than once, the first instance will be a link and the other instances will be ignored {% endcomment %}
       {% if link_text and link_text in sublabel_text %}
         {% with link_index=sublabel_text|find_index:link_text %}
           {{ sublabel_text|slice:link_index }}
