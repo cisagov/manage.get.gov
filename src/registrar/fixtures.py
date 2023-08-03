@@ -25,6 +25,7 @@ class UserFixture:
     in management/commands/load.py, then use `./manage.py load`
     to run this code.
     """
+    
     ADMINS = [
         {
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
