@@ -20,10 +20,10 @@ Load our custom filters to extract info from the django generated markup.
 {# .gov - hardcode the select all checkbox #}
 <th scope="col" class="action-checkbox-column" title="Toggle all">
     <div class="text">
-        <span>
-            <input type="checkbox" name="_selected_action" id="action-toggle">
-            <label for="action-toggle" class="usa-sr-only">Toggle all</label>
-        </span>
+        <div class="usa-checkbox">
+            <input type="checkbox" name="_selected_action" id="action-toggle" class="usa-checkbox__input">
+            <label for="action-toggle" class="usa-checkbox__label"><span class="usa-sr-only">Toggle all</span></label>
+        </div>
     </div>
     <div class="clear"></div>
 </th>
@@ -72,8 +72,10 @@ checkboxes.
         {% with result_value=result.0|extract_value %}
             {% with result_label=result.1|extract_a_text %}
                 <td>
-                    <input type="checkbox" name="_selected_action" value="{{ result_value|default:'value' }}" id="{{ result_label|default:result_value }}" class="action-select">
-                    <label class="usa-sr-only" for="{{ result_label|default:result_value }}">{{ result_label|default:'label' }}</label>
+                    <div class="usa-checkbox">
+                        <input type="checkbox" name="_selected_action" value="{{ result_value|default:'value' }}" id="{{ result_label|default:result_value }}" class="action-select usa-checkbox__input">
+                        <label class="usa-checkbox__label" for="{{ result_label|default:result_value }}"><span class="usa-sr-only">{{ result_label|default:'label' }}</span></label>
+                    </div>    
                 </td>
                 {% endwith %}
         {% endwith %}
