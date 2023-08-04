@@ -78,6 +78,7 @@ The endpoint /admin can be used to view and manage site content, including but n
         ...
  ]
 ```
+
 5. In the browser, navigate to /admin. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
 
 ### Adding an Analyst to /admin
