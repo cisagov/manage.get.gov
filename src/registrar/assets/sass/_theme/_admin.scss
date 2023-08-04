@@ -2,8 +2,8 @@
 @use "uswds-core" as *;
 
 // We'll use Django's CSS vars: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#theming-support 
-// and assign Uswds theme vars whenever possible
-// If needed (see below), we'll use the Uswds hex value
+// and assign USWDS theme vars whenever possible
+// If needed (see below), we'll use the USWDS hex value
 // As a last resort, we'll use CISA colors to supplement the palette
 :root {
     --primary: #{$theme-color-primary};
@@ -11,7 +11,7 @@
     --accent: #{$theme-color-accent-cool};
     // --primary-fg: #fff;
 
-    // Uswds theme vars that are set to a token, such as #{$theme-color-base-darker}
+    // USWDS theme vars that are set to a token, such as #{$theme-color-base-darker}
     // would interpolate to 'gray-cool-70' and output invalid CSS, so we use the hex
     // source value instead: https://designsystem.digital.gov/design-tokens/color/system-tokens/
     --body-fg: #3d4551;
@@ -24,7 +24,7 @@
     // --header-bg: var(--secondary);
     // --header-link-color: var(--primary-fg);
 
-    --breadcrumbs-fg: #{$theme-color-accent-cool-lighter};
+    --breadcrumbs-fg: #{$theme-color-accent-cool-lightest};
     // --breadcrumbs-link-fg: var(--body-bg);
     --breadcrumbs-bg: #{$theme-color-primary-dark};
 
@@ -64,19 +64,6 @@
     // --object-tools-fg: var(--button-fg);
     // --object-tools-bg: var(--close-button-bg);
     // --object-tools-hover-bg: var(--close-button-hover-bg);
-
-    --font-family-primary:
-        "Public Sans Pro Web",
-        "Segoe UI",
-        system-ui,
-        Roboto,
-        "Helvetica Neue",
-        Arial,
-        sans-serif,
-        "Apple Color Emoji",
-        "Segoe UI Emoji",
-        "Segoe UI Symbol",
-        "Noto Color Emoji";
 }
 
 // Fold dark theme settings into our main CSS
@@ -116,7 +103,9 @@
       --close-button-hover-bg: #666666;
     }
 
-    // Fix dark mode bug    
+    // Fix dark mode bug
+    // The structure of our CSS messes with the cascade and causes some body copy in tables 
+    //to have light mode colors in dark mode, resulting in a severe contrast issue.
     body {
         color: var(--body-fg)!important;
     }
@@ -124,6 +113,20 @@
 
 #branding h1 a:link, #branding h1 a:visited {
     color: var(--primary-fg);
+}
+
+#branding h1,
+h1, h2, h3 {
+    font-weight: font-weight('bold');
+}
+
+table > caption > a {
+    font-weight: font-weight('bold');
+    text-transform: none;
+}
+
+#nav-sidebar {
+    padding-top: 20px;
 }
 
 // 'Delete button' layout bug
