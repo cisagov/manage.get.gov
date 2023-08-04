@@ -16,6 +16,7 @@ on:
         options:
           - stable
           - staging
+          - za
           - gd
           - rb
           - ko
