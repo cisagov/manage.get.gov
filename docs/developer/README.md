@@ -102,7 +102,7 @@ Analysts are a variant of the admin role with limited permissions. The process f
 
 5. In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
 
-Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name. Example: `Bob-Analyst`
+Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
 ## Adding to CODEOWNERS (optional)
 
 The CODEOWNERS file sets the tagged individuals as default reviewers on any Pull Request that changes files that they are marked as owners of.
