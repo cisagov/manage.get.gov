@@ -66,7 +66,7 @@ The endpoint /admin can be used to view and manage site content, including but n
 1. Login via login.gov
 2. Go to the home page and make sure you can see the part where you can submit an application
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4
-4. in src/registrar/fixtures.py add to the ADMINS list in that file by adding your UUID as your username along with your first and last name. See below:
+4. in src/registrar/fixtures.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
 
 ```
  ADMINS = [
@@ -79,8 +79,30 @@ The endpoint /admin can be used to view and manage site content, including but n
  ]
 ```
 
-5. In the browser, navigate to /admins. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
+5. In the browser, navigate to /admin. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
 
+### Adding an Analyst to /admin
+Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
+
+1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
+2. Go to the home page and make sure you can see the part where you can submit an application
+3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
+4. in src/registrar/fixtures.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
+
+```
+ STAFF = [
+        {
+            "username": "<UUID here>",
+            "first_name": "",
+            "last_name": "",
+        },
+        ...
+ ]
+```
+
+5. In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
+
+Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
 ## Adding to CODEOWNERS (optional)
 
 The CODEOWNERS file sets the tagged individuals as default reviewers on any Pull Request that changes files that they are marked as owners of.
