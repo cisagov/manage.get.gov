@@ -80,6 +80,15 @@ You may need to add these two lines to your shell's rc file (e.g. `.bashrc` or `
 GPG_TTY=$(tty)
 export GPG_TTY
 ```
+and then
+
+```bash
+source ~/.bashrc
+```
+or
+```bash
+source ~/.zshrc
+```
 
 ## Setting up developer sandbox
 
