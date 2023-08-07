@@ -25,7 +25,7 @@ class UserFixture:
     in management/commands/load.py, then use `./manage.py load`
     to run this code.
     """
-    # Add new admins here
+
     ADMINS = [
         {
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
@@ -68,7 +68,7 @@ class UserFixture:
             "last_name": "Kuykendall",
         },
     ]
-    # Add new Analysts here
+
     STAFF = [
         {
             "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
