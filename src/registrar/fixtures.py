@@ -53,6 +53,11 @@ class UserFixture:
             "last_name": "Dixon",
         },
         {
+            "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
+            "first_name": "Ryan",
+            "last_name": "Brooks",
+        },
+        {
             "username": "30001ee7-0467-4df2-8db2-786e79606060",
             "first_name": "Zander",
             "last_name": "Adkinson",
@@ -61,11 +66,6 @@ class UserFixture:
             "username": "bb21f687-c773-4df3-9243-111cfd4c0be4",
             "first_name": "Paul",
             "last_name": "Kuykendall",
-        },
-        {
-            "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
-            "first_name": "Ryan",
-            "last_name": "Brooks",
         },
     ]
     #Add new Analysts here
