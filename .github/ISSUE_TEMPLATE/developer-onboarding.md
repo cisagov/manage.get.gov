@@ -3,7 +3,7 @@ name: Developer Onboarding
 about: Onboarding steps for developers.
 title: 'Developer Onboarding: GH_HANDLE'
 labels: dev, onboarding
-assignees: loganmeetsworld
+assignees: abroddrick
 
 ---
 
@@ -16,7 +16,7 @@ assignees: loganmeetsworld
 
 There are several tools we use locally that you will need to have.
 - [ ] [Install the cf CLI v7](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) for the ability to deploy
-- [ ] Make sure you have `gpg` >2.1.7. Run `gpg --version` to check.
+- [ ] Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
 - [ ] Install the [Github CLI](https://cli.github.com/)
 
 ## Access
