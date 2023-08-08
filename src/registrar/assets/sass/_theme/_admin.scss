@@ -125,6 +125,15 @@ table > caption > a {
     text-transform: none;
 }
 
+.change-list {
+    .usa-table--striped tbody tr:nth-child(odd) td,
+    .usa-table--striped tbody tr:nth-child(odd) th,
+    .usa-table td,
+    .usa-table th {
+        background-color: transparent;
+    }
+}
+
 #nav-sidebar {
     padding-top: 20px;
 }
