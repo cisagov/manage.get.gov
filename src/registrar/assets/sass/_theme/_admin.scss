@@ -104,10 +104,10 @@ html[data-theme="light"] {
       --close-button-hover-bg: #666666;
     }
 
-    // Fix dark mode bug
-    // The structure of our CSS messes with the cascade and causes some body copy in tables 
-    //to have light mode colors in dark mode, resulting in a severe contrast issue.
-    body {
+    // Dark mode django (bug due to scss cascade) and USWDS tables
+    body,
+    .usa-table,
+    .usa-table--striped tbody tr:nth-child(odd) td {
         color: var(--body-fg)!important;
     }
 }
