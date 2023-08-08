@@ -5,7 +5,8 @@
 // and assign USWDS theme vars whenever possible
 // If needed (see below), we'll use the USWDS hex value
 // As a last resort, we'll use CISA colors to supplement the palette
-:root {
+:root,
+html[data-theme="light"] {
     --primary: #{$theme-color-primary};
     --secondary: #{$theme-color-primary-darkest};
     --accent: #{$theme-color-accent-cool};
