@@ -33,6 +33,8 @@
       </thead>
       <tbody>
         {% for domain in domains %}
+        {% comment %} ticket 796
+        {% if domain.application_status == "approved" or (domain.application does not exist)  %} {% endcomment %}
         <tr>
           <th th scope="row" role="rowheader" data-label="Domain name">
             {{ domain.name }}

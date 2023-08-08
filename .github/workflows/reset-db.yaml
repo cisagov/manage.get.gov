@@ -17,6 +17,7 @@ on:
           - stable
           - staging
           - rh
+          - za
           - gd
           - rb
           - ko
