@@ -22,17 +22,16 @@ class AuditedAdmin(admin.ModelAdmin):
                 object_id=object_id,
             )
         )
-    
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Used to sort dropdown fields alphabetically but can be expanded upon"""
         # Determines what we want to sort by, ex: by name
         order_by_list = []
-        if db_field.name == "submitter" or db_field.name == "authorizing_official" or db_field.name == "creator" or db_field.name == "investigator":
+        if db_field.name == "submitter" or db_field.name == "authorizing_official" or db_field.name == "creator":
             order_by_list = ['first_name', 'last_name']
         elif db_field.name == "requested_domain":
             order_by_list = ['name']
-       
+
         return self.formfield_order_helper(order_by_list, db_field, request, **kwargs)
     
     def formfield_order_helper(self, order_by_list, db_field, request, **kwargs):
@@ -42,9 +41,7 @@ class AuditedAdmin(admin.ModelAdmin):
         if order_by_list:
             formfield.queryset = formfield.queryset.order_by(*order_by_list)
 
-        return formfield      
-
-
+        return formfield     
 
 
 class ListHeaderAdmin(AuditedAdmin):
