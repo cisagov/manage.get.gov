@@ -192,8 +192,8 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Assert or perform other checks on the email details
         expected_string = (
-            "Your .gov domain request requires a follow-up action "
-            "to help with our review."
+            "We've identified an action needed to complete the "
+            "review of your .gov domain request."
         )
         self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(to_email, EMAIL)
