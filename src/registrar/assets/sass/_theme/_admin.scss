@@ -112,6 +112,15 @@ html[data-theme="light"] {
     }
 }
 
+// FF needs this to be specifically set
+html[data-theme="dark"] {
+    body,
+    .change-list .usa-table,
+    .change-list .usa-table--striped tbody tr:nth-child(odd) td {
+        color: var(--body-fg)!important;
+    }
+}
+
 #branding h1 a:link, #branding h1 a:visited {
     color: var(--primary-fg);
 }
