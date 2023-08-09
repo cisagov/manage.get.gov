@@ -23,3 +23,20 @@ def extract_a_text(value):
         extracted_text = ""
 
     return extracted_text
+
+
+@register.filter
+def find_index(haystack, needle):
+    try:
+        return haystack.index(needle)
+    except ValueError:
+        return -1
+
+
+@register.filter
+def slice_after(value, substring):
+    index = value.find(substring)
+    if index != -1:
+        result = value[index + len(substring) :]
+        return result
+    return value

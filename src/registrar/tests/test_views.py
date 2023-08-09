@@ -145,7 +145,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- TYPE PAGE  ----
         type_form = type_page.form
         type_form["organization_type-organization_type"] = "federal"
-
         # test next button and validate data
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
@@ -161,6 +160,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- FEDERAL BRANCH PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
         federal_page = type_result.follow()
         federal_form = federal_page.form
         federal_form["organization_federal-federal_type"] = "executive"

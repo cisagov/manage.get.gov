@@ -3,6 +3,8 @@ Template include for form fields with classes and their corresponding
 error messages, if necessary.
 {% endcomment %}
 
+{% load custom_filters %}
+
 {% load widget_tweaks %}
 
 {% if widget.attrs.maxlength %}
@@ -29,8 +31,19 @@ error messages, if necessary.
   {% endif %}
 
   {% if sublabel_text %}
-    <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">{{ sublabel_text }}</p>
-  {% endif %}
+    <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">
+      {% comment %} If the link_text appears more than once, the first instance will be a link and the other instances will be ignored {% endcomment %}
+      {% if link_text and link_text in sublabel_text %}
+        {% with link_index=sublabel_text|find_index:link_text %}
+          {{ sublabel_text|slice:link_index }}
+          {% comment %} HTML will convert a new line into a space, resulting with a space before the fullstop in case link_text is at the end of sublabel_text, hence the unfortunate line below {% endcomment %}
+          <a {% if target_blank == "true" %}target="_blank" {% endif %}href="{{ link_href }}">{{ link_text }}</a>{% with sublabel_part_after=sublabel_text|slice_after:link_text %}{{ sublabel_part_after }}{% endwith %}
+        {% endwith %}
+      {% else %}
+        {{ sublabel_text }}
+      {% endif %}
+    </p>
+  {% endif %} 
 
   {% if field.errors %}
     <div id="{{ widget.attrs.id }}__error-message">
