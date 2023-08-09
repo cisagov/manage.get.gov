@@ -67,6 +67,11 @@ class UserFixture:
             "first_name": "Paul",
             "last_name": "Kuykendall",
         },
+        {
+            "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
+            "first_name": "Rebecca",
+            "last_name": "Hsieh",
+        },
     ]
 
     STAFF = [
@@ -89,6 +94,11 @@ class UserFixture:
             "username": "57ab5847-7789-49fe-a2f9-21d38076d699",
             "first_name": "Paul-Analyst",
             "last_name": "Kuykendall-Analyst",
+        },
+        {
+            "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
+            "first_name": "Rebecca-Analyst",
+            "last_name": "Hsieh-Analyst",
         },
     ]
 
