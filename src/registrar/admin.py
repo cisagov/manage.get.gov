@@ -4,22 +4,19 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
+
+from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper, SortingDictInterface
 from . import models
 
 logger = logging.getLogger(__name__)
 
 # Used to keep track of how we want to order_by certain FKs
-foreignkey_orderby_dict = {
-    # foreign_key   # order_by
-    "submitter" : ['first_name', 'last_name'],
-    "authorizing_official" : ['first_name', 'last_name'],
-    "investigator" : ['first_name', 'last_name'],
-    "creator" : ['first_name', 'last_name'],
-    "user" : ['first_name', 'last_name'],
-    "domain" : ['name'],
-    "requested_domain" : ['name'],
-    "domain_application" : ['id'],
-}
+foreignkey_orderby_dict: [SortingDictInterface] = [
+    #foreign_key - order_by
+    SortingDictInterface(["submitter", "authorizing_official", "investigator", "creator", "user"], ['first_name', 'last_name']).sorting_dict,
+    SortingDictInterface(["domain", "requested_domain"], ["name"]).sorting_dict,
+    SortingDictInterface(["domain_application"], ['id']).sorting_dict
+]
 
 class AuditedAdmin(admin.ModelAdmin):
     """Custom admin to make auditing easier."""
@@ -36,16 +33,9 @@ class AuditedAdmin(admin.ModelAdmin):
         
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Used to sort dropdown fields alphabetically but can be expanded upon"""
-        order_by_list = []
-
-        # Determines what we want to sort by, ex: by name
-        if db_field.name in foreignkey_orderby_dict:
-            order_by_list = foreignkey_orderby_dict.get(db_field.name)
-
         form_field = super(AuditedAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
-        return formfield_order_helper(form_field, order_by_list)
+        return form_field_order_helper(form_field, db_field)
     
-   
 
 
 class ListHeaderAdmin(AuditedAdmin):
@@ -193,13 +183,8 @@ class ContactAdmin(ListHeaderAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Used to sort dropdown fields alphabetically but can be expanded upon"""
-        order_by_list = []
-        # Determines what we want to sort by, ex: by name
-        if db_field.name in foreignkey_orderby_dict:
-            order_by_list = foreignkey_orderby_dict.get(db_field.name)
-
         form_field = super(ContactAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
-        return formfield_order_helper(form_field, order_by_list)
+        return form_field_order_helper(form_field, db_field)
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
@@ -336,14 +321,9 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             # Regular users can only view the specified fields
             return self.readonly_fields
 
-
-def formfield_order_helper(form_field, order_by_list):
-    """A helper function to order a dropdown field in Django Admin, takes the fields you want to order by as an array"""
-    # Only order if we choose to do so
-    if order_by_list:
-        form_field.queryset = form_field.queryset.order_by(*order_by_list)
-
-    return form_field
+def form_field_order_helper(form_field, db_field):
+    form = AdminFormOrderHelper(foreignkey_orderby_dict)
+    return form.get_ordered_form_field(form_field, db_field)
 
 admin.site.register(models.User, MyUserAdmin)
 admin.site.register(models.UserDomainRole, AuditedAdmin)
