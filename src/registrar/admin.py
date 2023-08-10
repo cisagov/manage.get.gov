@@ -197,7 +197,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Detail view
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator"]}),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
         (
             "Type of organization",
             {
@@ -286,6 +286,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     original_obj.action_needed(updated_domain_application=obj)
                 elif obj.status == models.DomainApplication.APPROVED:
                     original_obj.approve(updated_domain_application=obj)
+                    obj.set_approved_domain()
                 elif obj.status == models.DomainApplication.WITHDRAWN:
                     original_obj.withdraw()
                 elif obj.status == models.DomainApplication.REJECTED:
