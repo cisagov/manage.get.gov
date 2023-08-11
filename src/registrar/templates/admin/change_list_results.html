@@ -76,7 +76,7 @@ Load our custom filters to extract info from the django generated markup.
     </tr>
     {% endfor %}
 
-{% else %}
+{% else %} {# results doesn't have a form as its first element #}
     
     {% for header in result_headers %}  
     <th scope="col"{{ header.class_attrib }}>
