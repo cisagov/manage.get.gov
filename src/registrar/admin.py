@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 foreignkey_orderby_dict: [SortingDictInterface] = [
     #foreign_key - order_by
     SortingDictInterface(["submitter", "authorizing_official", "investigator", "creator", "user"], ['first_name', 'last_name']).sorting_dict,
-    SortingDictInterface(["domain", "requested_domain"], ["name"]).sorting_dict,
-    SortingDictInterface(["domain_application"], ['id']).sorting_dict
+    SortingDictInterface(["domain", "requested_domain"], ["name"]).sorting_dict
 ]
 
 class AuditedAdmin(admin.ModelAdmin):

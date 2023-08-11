@@ -1,15 +1,17 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin
+from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin, AuditedAdmin
 from registrar.models import DomainApplication, DomainInformation, User
-from .common import completed_application, mock_user, create_superuser, create_user
+from registrar.models.contact import Contact
+from .common import completed_application, mock_user, create_superuser, create_user, multiple_completed_applications
 from django.contrib.auth import get_user_model
 
 from django.conf import settings
 from unittest.mock import MagicMock
 import boto3_mocking  # type: ignore
+import logging
 
-
+logger = logging.getLogger(__name__)
 class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
@@ -367,3 +369,44 @@ class MyUserAdminTest(TestCase):
 
     def tearDown(self):
         User.objects.all().delete()
+
+class AuditedAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+        self.factory.post
+
+    def test_alphabetically_sorted_fk_fields(self):
+        mock_client = MagicMock()
+        
+        #tested_fields = [{"name": "submitter"}, {"name": "authorizing_official"}, {"name": "investigator"}, {"name": "creator"}, {"name": "user"}]
+        tested_fields = [DomainApplication.authorizing_official.field, DomainApplication.submitter.field, DomainApplication.investigator.field, DomainApplication.creator.field]
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # Create a sample application - review status does not matter
+            applications = multiple_completed_applications(status=DomainApplication.IN_REVIEW)
+            # Create a mock request
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
+            )
+            
+            model_admin = AuditedAdmin(DomainApplication, self.site)
+            
+            for field in tested_fields:
+                desired_order = model_admin.get_queryset(request).order_by("{}__first_name".format(field.name))
+                current_sort_order = model_admin.formfield_for_foreignkey(field, request).queryset
+
+                self.assertEqual(desired_order, current_sort_order, "{} is not ordered alphabetically".format(field.name))
+            # Is initalized in alphabetical order
+            
+
+            for x in model_admin.get_queryset(request).all():
+                logger.debug(x.authorizing_official)
+       
+
+    def tearDown(self):
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+        self.superuser.delete()
