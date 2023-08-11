@@ -398,11 +398,6 @@ class AuditedAdminTest(TestCase):
                 current_sort_order = model_admin.formfield_for_foreignkey(field, request).queryset
 
                 self.assertEqual(desired_order, current_sort_order, "{} is not ordered alphabetically".format(field.name))
-            # Is initalized in alphabetical order
-            
-
-            for x in model_admin.get_queryset(request).all():
-                logger.debug(x.authorizing_official)
        
 
     def tearDown(self):
