@@ -473,7 +473,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     # avoid infinite loop
 
                     already_tried_to_create = True
-                    self._make_domain_in_registry
+                    self._make_domain_in_registry()
                 else:
                     logger.error(e)
                     logger.error(e.code)
