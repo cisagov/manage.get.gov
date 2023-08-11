@@ -1,7 +1,11 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
 from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin
-from registrar.models import DomainApplication, DomainInformation, User, DraftDomain, Domain
+from registrar.models import (
+    DomainApplication,
+    DomainInformation,
+    User,
+)
 from .common import completed_application, mock_user, create_superuser, create_user
 from django.contrib.auth import get_user_model
 
@@ -152,7 +156,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
-        
+
     def test_save_model_sets_approved_domain(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -176,8 +180,9 @@ class TestDomainApplicationAdmin(TestCase):
         model_admin.save_model(request, application, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
-        self.assertEqual(application.requested_domain.name, application.approved_domain.name)
-        
+        self.assertEqual(
+            application.requested_domain.name, application.approved_domain.name
+        )
 
     @boto3_mocking.patching
     def test_save_model_sends_action_needed_email(self):
