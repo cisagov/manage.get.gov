@@ -191,7 +191,7 @@ def completed_application(
 
     return application
 
-def multiple_completed_applications(has_other_contacts=True,
+def multiple_completed_applications_for_alphabetical_test(has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
     has_type_of_work=True,
@@ -202,11 +202,14 @@ def multiple_completed_applications(has_other_contacts=True,
     list_of_letters = list(ascii_uppercase)
     random.shuffle(list_of_letters)
     for x in list_of_letters: 
-        if not user:
-            user = get_user_model().objects.create(username="username{}".format(x))
+        user = get_user_model().objects.create(
+            first_name="{} First:cre".format(x),
+            last_name="{} Last:cre".format(x),
+            username="{} username:cre".format(x)
+        )
         ao, _ = Contact.objects.get_or_create(
-            first_name="{} Testy".format(x),
-            last_name="{} Tester".format(x),
+            first_name="{} First:ao".format(x),
+            last_name="{} Last:ao".format(x),
             title="{} Chief Tester".format(x),
             email="testy@town.com",
             phone="(555) 555 5555",
@@ -215,18 +218,23 @@ def multiple_completed_applications(has_other_contacts=True,
         alt, _ = Website.objects.get_or_create(website="cityalt{}.gov".format(x))
         current, _ = Website.objects.get_or_create(website="city{}.com".format(x))
         you, _ = Contact.objects.get_or_create(
-            first_name="{} Testy you".format(x),
-            last_name="{} Tester you".format(x),
+            first_name="{} First:you".format(x),
+            last_name="{} Last:you".format(x),
             title="{} Admin Tester".format(x),
             email="mayor@igorville.gov",
             phone="(555) 555 5556",
         )
         other, _ = Contact.objects.get_or_create(
-            first_name="{} Testy".format(x),
-            last_name="{} Tester".format(x),
+            first_name="{} First:other".format(x),
+            last_name="{} Last:other".format(x),
             title="{} Another Tester".format(x),
             email="{}testy2@town.com".format(x),
             phone="(555) 555 5557",
+        )
+        inv, _ = User.objects.get_or_create(
+            first_name="{} First:inv".format(x),
+            last_name="{} Last:inv".format(x),
+            username="{} username:inv".format(x)
         )
         domain_application_kwargs = dict(
             organization_type="federal",
@@ -243,6 +251,7 @@ def multiple_completed_applications(has_other_contacts=True,
             submitter=you,
             creator=user,
             status=status,
+            investigator=inv
         )
         if has_type_of_work:
             domain_application_kwargs["type_of_work"] = "e-Government"
@@ -260,5 +269,4 @@ def multiple_completed_applications(has_other_contacts=True,
         if has_alternative_gov_domain:
             application.alternative_domains.add(alt)
         applications.append(application)
-        
     return applications

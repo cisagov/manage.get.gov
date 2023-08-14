@@ -3,7 +3,7 @@ from django.contrib.admin.sites import AdminSite
 from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin, AuditedAdmin
 from registrar.models import DomainApplication, DomainInformation, User
 from registrar.models.contact import Contact
-from .common import completed_application, mock_user, create_superuser, create_user, multiple_completed_applications
+from .common import completed_application, mock_user, create_superuser, create_user, multiple_completed_applications_for_alphabetical_test
 from django.contrib.auth import get_user_model
 
 from django.conf import settings
@@ -375,33 +375,67 @@ class AuditedAdminTest(TestCase):
         self.site = AdminSite()
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
-        self.factory.post
 
-    def test_alphabetically_sorted_fk_fields(self):
-        mock_client = MagicMock()
-        
-        #tested_fields = [{"name": "submitter"}, {"name": "authorizing_official"}, {"name": "investigator"}, {"name": "creator"}, {"name": "user"}]
+    def test_alphabetically_sorted_fk_fields_domain_application(self):
         tested_fields = [DomainApplication.authorizing_official.field, DomainApplication.submitter.field, DomainApplication.investigator.field, DomainApplication.creator.field]
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Create a sample application - review status does not matter
-            applications = multiple_completed_applications(status=DomainApplication.IN_REVIEW)
-            # Create a mock request
-            request = self.factory.post(
-                "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
-            )
-            
-            model_admin = AuditedAdmin(DomainApplication, self.site)
-            
-            for field in tested_fields:
-                desired_order = model_admin.get_queryset(request).order_by("{}__first_name".format(field.name))
-                current_sort_order = model_admin.formfield_for_foreignkey(field, request).queryset
 
-                self.assertEqual(desired_order, current_sort_order, "{} is not ordered alphabetically".format(field.name))
-       
+        # Create a sample application - review status does not matter
+        applications = multiple_completed_applications_for_alphabetical_test(status=DomainApplication.IN_REVIEW)
 
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
+        )
+        
+        model_admin = AuditedAdmin(DomainApplication, self.site)
+        
+        # Typically we wouldnt want two nested for fields, but both fields are of a fixed length.
+        # For test case purposes, this should be performant.
+        for field in tested_fields:
+            first_name_field = "{}__first_name".format(field.name)
+            last_name_field = "{}__last_name".format(field.name)
+
+            desired_order = list(model_admin.get_queryset(request).order_by(
+                first_name_field, last_name_field).values_list(first_name_field, last_name_field))
+            logger.debug(desired_order)
+            current_sort_order: Contact = list(model_admin.formfield_for_foreignkey(field, request).queryset)
+            current_sort_order_coerced_type = []
+
+            # This is necessary as .queryset and get_queryset return lists of different types/structures.
+            # We need to parse this data and coerce them into the same type.
+            for contact in current_sort_order:
+                first_name = contact.first_name
+                last_name = contact.last_name
+
+                match field.name:
+                    case DomainApplication.authorizing_official.field.name:
+                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'ao', ':')
+                        if name_tuple:
+                            current_sort_order_coerced_type.append((first_name, last_name))
+                    case DomainApplication.submitter.field.name:
+                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'you', ':')
+                        if name_tuple:
+                            current_sort_order_coerced_type.append((first_name, last_name))
+                    case DomainApplication.investigator.field.name:
+                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'inv', ':')
+                        if name_tuple:
+                            current_sort_order_coerced_type.append((first_name, last_name))
+                    case DomainApplication.creator.field.name:
+                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'cre', ':')
+                        if name_tuple:
+                            current_sort_order_coerced_type.append((first_name, last_name))
+            logger.debug("current: {}".format(current_sort_order_coerced_type))
+
+            self.assertEqual(desired_order, current_sort_order_coerced_type, "{} is not ordered alphabetically".format(field.name))
+
+    # I originally spent some time trying to fully generalize this to replace the match/arg fields, 
+    # but I think for this specific use-case its not necessary since it'll only be used here
+    def coerced_fk_field_helper(self, first_name, last_name, field_name, queryset_shorthand):
+        if(first_name and first_name.split(queryset_shorthand)[1] == field_name):
+            return (first_name, last_name)
+        else:
+            return None
+    
     def tearDown(self):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
-        User.objects.all().delete()
-        self.superuser.delete()
