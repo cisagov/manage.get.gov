@@ -152,7 +152,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
-        
+
     def test_save_model_sets_approved_domain(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"

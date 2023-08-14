@@ -275,7 +275,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 elif obj.status == models.DomainApplication.SUBMITTED:
                     # This is an fsm in model which will throw an error if the
                     # transition condition is violated, so we roll back the
-                    # status to what it was before the admn user changed it and
+                    # status to what it was before the admin user changed it and
                     # let the fsm method set it. Same comment applies to
                     # transition method calls below.
                     obj.status = original_obj.status
