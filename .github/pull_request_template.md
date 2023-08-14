@@ -42,9 +42,18 @@ Resolves #00
 - [ ] Created/modified automated tests
 - [ ] Added at least 2 developers as PR reviewers (only 1 will need to approve)
 - [ ] Messaged on Slack or in standup to notify the team that a PR is ready for review
+- [ ] Changes to “how we do things” are documented in READMEs and or onboarding guide
+
+Code standards are met:
+
+- [ ] All new functions and methods are commented using plain language
+- [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
+- [ ] Interactions with external systems are wrapped in try/except
+- [ ] Error handling exists for unusual or missing values
 
 #### Validated user-facing changes (if applicable)
 
+- [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 - [ ] Add at least 1 designer as PR reviewer
@@ -55,12 +64,20 @@ Resolves #00
 
 - [ ] Pulled this branch locally and tested it
 - [ ] Reviewed this code and left comments
+- [ ] All new functions and methods are commented using plain language
 - [ ] Checked that all code is adequately covered by tests
 - [ ] Made it clear which comments need to be addressed before this work is merged
-- [ ] Considered marking this as accepted even if there are small changes needed
+
+Code standards are met:
+
+- [ ] All new functions and methods are commented using plain language
+- [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
+- [ ] Interactions with external systems are wrapped in try/except
+- [ ] Error handling exists for unusual or missing values
 
 #### Validated user-facing changes as a developer
 
+- [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
