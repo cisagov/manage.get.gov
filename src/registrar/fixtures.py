@@ -79,6 +79,7 @@ class UserFixture:
             "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
             "first_name": "Rachid-Analyst",
             "last_name": "Mrad-Analyst",
+            "email": "rachid.mrad@gmail.com",
         },
         {
             "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
@@ -129,6 +130,8 @@ class UserFixture:
                 user.is_superuser = True
                 user.first_name = admin["first_name"]
                 user.last_name = admin["last_name"]
+                if "email" in admin.keys(): 
+                    user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
                 user.save()
@@ -146,6 +149,8 @@ class UserFixture:
                 user.is_superuser = False
                 user.first_name = staff["first_name"]
                 user.last_name = staff["last_name"]
+                if "email" in admin.keys(): 
+                    user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
 
