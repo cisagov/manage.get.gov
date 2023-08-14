@@ -4,9 +4,8 @@ from django.conf import settings
 from django.core.management import call_command
 from django.db.models.signals import post_save, post_migrate
 from django.dispatch import receiver
-# from django_fsm.signals import post_transition
 
-from .models import User, Contact, DomainApplication
+from .models import User, Contact
 
 
 logger = logging.getLogger(__name__)
@@ -67,11 +66,3 @@ def handle_loaddata(**kwargs):
         except Exception as e:
             logger.warning(e)
             
-            
-# @receiver(post_transition, sender=DomainApplication)
-# def save_new_workflow_state(sender, instance, name, source, target, **kwargs):
-#     """Save the new workflow state following successful django_fsm transition."""
-#     logger.debug('POST TRANSITION')
-#     if source != target:
-#         logger.debug('SOURCE IS DIFFERENT THAN TARGET')
-#         instance.save()
