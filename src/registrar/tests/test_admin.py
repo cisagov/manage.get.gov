@@ -395,10 +395,9 @@ class AuditedAdminTest(TestCase):
             first_name_field = "{}__first_name".format(field.name)
             last_name_field = "{}__last_name".format(field.name)
 
-            desired_order = list(model_admin.get_queryset(request).order_by(
-                first_name_field, last_name_field).values_list(first_name_field, last_name_field))
-            logger.debug(desired_order)
+            desired_order = list(model_admin.get_queryset(request).order_by(first_name_field, last_name_field).values_list(first_name_field, last_name_field))
             current_sort_order: Contact = list(model_admin.formfield_for_foreignkey(field, request).queryset)
+
             current_sort_order_coerced_type = []
 
             # This is necessary as .queryset and get_queryset return lists of different types/structures.
@@ -424,7 +423,6 @@ class AuditedAdminTest(TestCase):
                         name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'cre', ':')
                         if name_tuple:
                             current_sort_order_coerced_type.append((first_name, last_name))
-            logger.debug("current: {}".format(current_sort_order_coerced_type))
 
             self.assertEqual(desired_order, current_sort_order_coerced_type, "{} is not ordered alphabetically".format(field.name))
 
