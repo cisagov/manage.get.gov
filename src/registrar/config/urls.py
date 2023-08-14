@@ -46,9 +46,9 @@ for step, view in [
 urlpatterns = [
     path("", views.index, name="home"),
     path(
-            "admin/logout/",
-            RedirectView.as_view(pattern_name="logout", permanent=False),
-        ),
+        "admin/logout/",
+        RedirectView.as_view(pattern_name="logout", permanent=False),
+    ),
     path("admin/", admin.site.urls),
     path(
         "application/<id>/edit/",
@@ -118,7 +118,9 @@ urlpatterns = [
     ),
 ]
 
-
+# What is the purpose of this?
+# This behaviour gets overwritten, so this doesn't do anything...
+# Login in particular
 if not settings.DEBUG:
     urlpatterns += [
         # redirect to login.gov
