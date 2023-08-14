@@ -502,7 +502,7 @@ class DomainApplication(TimeStampedModel):
             logger.warning("Failed to send confirmation email", exc_info=True)
 
     def set_approved_domain(self):
-        """Always called in parallel to the approve method"""
+        """Always called in parallel to the approve method and is used to link the domain as a foreign key in the application"""
 
         # The domain should be ready for us, let's find it
         Domain = apps.get_model("registrar.Domain")
