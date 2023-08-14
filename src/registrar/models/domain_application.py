@@ -500,16 +500,16 @@ class DomainApplication(TimeStampedModel):
             logger.info(f"The {new_status} email sent to: {self.submitter.email}")
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
-            
+
     def set_approved_domain(self):
         """Always called in parallel to the approve method"""
-        
+
         # The domain should be ready for us, let's find it
         Domain = apps.get_model("registrar.Domain")
         if not Domain.objects.filter(name=self.requested_domain.name).exists():
             raise ValueError("Something went wrong and the domain did not get created.")
         created_domain = Domain.objects.get(name=self.requested_domain.name)
-        
+
         self.approved_domain = created_domain
         self.save()  # Save the model instance to persist the changes.
 
@@ -539,7 +539,7 @@ class DomainApplication(TimeStampedModel):
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
-        
+
         if updated_domain_application is not None:
             # A DomainApplication is being passed to this method (ie from admin)
             updated_domain_application._send_status_update_email(
@@ -600,18 +600,18 @@ class DomainApplication(TimeStampedModel):
         which has the correct status value, but is passed the changed
         application which has the up-to-date data that we'll use
         in the email.
-        
+
         Finally, we set the domain application's approved_domain. Note that
-        this was faling to save when embedded in this annotated transition 
-        method, so the set_approved_domain is called in parallel. 
+        this was faling to save when embedded in this annotated transition
+        method, so the set_approved_domain is called in parallel.
         """
-        
+
         # create the domain
         Domain = apps.get_model("registrar.Domain")
         if Domain.objects.filter(name=self.requested_domain.name).exists():
             raise ValueError("Cannot approve. Requested domain is already in use.")
         created_domain = Domain.objects.create(name=self.requested_domain.name)
-        
+
         # copy the information from domainapplication into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
         DomainInformation.create_from_da(self, domain=created_domain)
@@ -728,4 +728,3 @@ class DomainApplication(TimeStampedModel):
         for field in opts.many_to_many:
             data[field.name] = field.value_from_object(self)
         return data
-    
