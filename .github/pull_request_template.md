@@ -1,6 +1,11 @@
 ## Ticket
 
 Resolves #00
+<!--Reminder, when a code change is made that is user facing, beyond content updates, then the following are required:
+- a developer approves the PR
+- a designer approves the PR or checks off all relevant items in this checklist.
+
+All other changes require just a single approving review.-->
 
 ## Changes
 
@@ -10,7 +15,7 @@ Resolves #00
 
 <!--
     Please add/remove/edit any of the template below to fit the needs
-    of this specific PR
+    of this specific PR.
 --->
 
 ## Context for reviewers
