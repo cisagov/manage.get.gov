@@ -2,7 +2,8 @@
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
-from registrar.models import UserDomainRole, DomainApplication, DomainInvitation
+from registrar.models import UserDomainRole, DomainApplication, DomainInvitation, Domain
+from django.shortcuts import get_object_or_404
 
 
 class PermissionsLoginMixin(PermissionRequiredMixin):
@@ -39,9 +40,14 @@ class DomainPermission(PermissionsLoginMixin):
         ).exists():
             return False
 
-        # ticket 796
-        # if domain.application__status != 'approved'
-        #     return false
+        domain = get_object_or_404(Domain, id=self.kwargs["pk"])
+
+        domain_application = domain.domain_application
+
+        # Check if the related application's status is not 'approved'
+        if domain_application.status != 'approved':
+            # Perform actions when the status is not 'approved'
+            return False
 
         # if we need to check more about the nature of role, do it here.
         return True

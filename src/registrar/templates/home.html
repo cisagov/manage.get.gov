@@ -20,7 +20,7 @@
 
   <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
     <h2>Registered domains</h2>
-    {% if domains %}
+    {% if approved_domain_applications %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
       <thead>
@@ -32,9 +32,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for domain in domains %}
-        {% comment %} ticket 796
-        {% if domain.application_status == "approved" or (domain.application does not exist)  %} {% endcomment %}
+        {% for domain in approved_domain_applications %}
         <tr>
           <th th scope="row" role="rowheader" data-label="Domain name">
             {{ domain.name }}
