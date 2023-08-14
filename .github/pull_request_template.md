@@ -96,7 +96,7 @@ All other changes require just a single approving review.-->
 
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
-**Note:** Multiple code reviews can share the checklists above, a second reviewers should not make a duplicate checklist
+**Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist
 
 ### As a designer reviewer, I have
 
