@@ -502,15 +502,16 @@ class DomainApplication(TimeStampedModel):
             logger.warning("Failed to send confirmation email", exc_info=True)
 
     def set_approved_domain(self):
-        """Always called in parallel to the approve method and is used to link the domain as a foreign key in the application"""
+        """Always called in parallel to the approve method and is used
+        to link the domain as a foreign key in the application"""
 
         # The domain should be ready for us, let's find it
         Domain = apps.get_model("registrar.Domain")
         if not Domain.objects.filter(name=self.requested_domain.name).exists():
             raise ValueError("Something went wrong and the domain did not get created.")
-        created_domain = Domain.objects.get(name=self.requested_domain.name)
+        linked_domain = Domain.objects.get(name=self.requested_domain.name)
 
-        self.approved_domain = created_domain
+        self.approved_domain = linked_domain
         self.save()  # Save the model instance to persist the changes.
 
     @transition(

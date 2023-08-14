@@ -1,11 +1,7 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
 from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin
-from registrar.models import (
-    DomainApplication,
-    DomainInformation,
-    User,
-)
+from registrar.models import DomainApplication, DomainInformation, User, DraftDomain
 from .common import completed_application, mock_user, create_superuser, create_user
 from django.contrib.auth import get_user_model
 
@@ -184,6 +180,14 @@ class TestDomainApplicationAdmin(TestCase):
             application.requested_domain.name, application.approved_domain.name
         )
 
+    def test_save_model_fails_to_set_approved_domain_when_created_domain_not_exists(self):
+        instance = DomainApplication()
+        instance.requested_domain = DraftDomain(name="example.com")
+        # We did not create the DraftDoamin, so the
+        # set_approved_domain should fail
+        with self.assertRaises(ValueError):
+            instance.set_approved_domain()
+
     @boto3_mocking.patching
     def test_save_model_sends_action_needed_email(self):
         # make sure there is no user with this email
@@ -282,6 +286,7 @@ class TestDomainApplicationAdmin(TestCase):
     def tearDown(self):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
+        DraftDomain.objects.all().delete()
         User.objects.all().delete()
 
 
