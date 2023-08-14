@@ -65,4 +65,3 @@ def handle_loaddata(**kwargs):
             call_command("load")
         except Exception as e:
             logger.warning(e)
-            
