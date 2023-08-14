@@ -109,7 +109,8 @@ html[data-theme="light"] {
     .change-list .usa-table--striped tbody tr:nth-child(odd) td,
     .change-list .usa-table--borderless thead th,
     .change-list .usa-table thead td, 
-    .change-list .usa-table thead th {
+    .change-list .usa-table thead th,
+    body.dashboard {
         color: var(--body-fg);
     }
 }
@@ -120,7 +121,8 @@ html[data-theme="dark"] {
     .change-list .usa-table--striped tbody tr:nth-child(odd) td,
     .change-list .usa-table--borderless thead th,
     .change-list .usa-table thead td, 
-    .change-list .usa-table thead th {
+    .change-list .usa-table thead th,
+    body.dashboard {
         color: var(--body-fg);
     }
 }
