@@ -26,7 +26,10 @@ Resolves #00
     echo "Code goes here"
     ``` 
     
-    Example 2: if the PR was to add a new link with a redirect, this section could simply say go to /path/to/start/page. Click the blue link in the <insert location> and see the user is redirected to <propper end location>
+    Example 2: If the PR was to add a new link with a redirect, this section could simply be:
+    -go to /path/to/start/page
+    -click the blue link in the <insert location>
+    -notice user is redirected to <proper end location>
 -->
 
 ## Code Review Verification Steps
@@ -66,7 +69,7 @@ Resolves #00
 
 #### Verified that the changes match the design intention
 
-- [ ] Checked in the design translated visually
+- [ ] Checked that the design translated visually
 - [ ] Checked behavior
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Checked for landmarks, page heading structure, and links
