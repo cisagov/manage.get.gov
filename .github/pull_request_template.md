@@ -43,8 +43,9 @@ Resolves #00
 - [ ] Added at least 2 developers as PR reviewers (only 1 will need to approve)
 - [ ] Messaged on Slack or in standup to notify the team that a PR is ready for review
 - [ ] Changes to “how we do things” are documented in READMEs and or onboarding guide
+- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the assoicated migrations file has been commited.
 
-##### Code standards are met (Original Developer)
+##### Ensured code standards are met (Original Developer)
 
 - [ ] All new functions and methods are commented using plain language
 - [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
@@ -58,7 +59,7 @@ Resolves #00
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 - [ ] Add at least 1 designer as PR reviewer
 
-### As code reviewer(s), I have
+### As a code reviewer, I have
 
 #### Reviewed, tested, and left feedback about the changes
 
@@ -66,8 +67,9 @@ Resolves #00
 - [ ] Reviewed this code and left comments
 - [ ] Checked that all code is adequately covered by tests
 - [ ] Made it clear which comments need to be addressed before this work is merged
+- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the assoicated migrations file has been commited.
 
-##### Code standards are met (Code reviewer)
+##### Ensured code standards are met (Code reviewer)
 
 - [ ] All new functions and methods are commented using plain language
 - [ ] Interactions with external systems are wrapped in try/except
@@ -87,7 +89,9 @@ Resolves #00
   - [ ] FireFox
   - [ ] Safari
 
-- [ ] (Rarely needed) Test as both an analyst and applicant user
+- [ ] (Rarely needed) Tested as both an analyst and applicant user
+
+**Note:** Multiple code reviews can share the checklists above, a second reviewers should not make a duplicate checklist
 
 ### As a designer reviewer, I have
 
@@ -110,7 +114,7 @@ Resolves #00
   - [ ] FireFox
   - [ ] Safari
 
-- [ ] (Rarely needed) Test as both an analyst and applicant user
+- [ ] (Rarely needed) Tested as both an analyst and applicant user
 
 ## Screenshots
 
