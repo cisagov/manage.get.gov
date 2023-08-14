@@ -45,6 +45,10 @@ for step, view in [
 
 urlpatterns = [
     path("", views.index, name="home"),
+    path(
+            "admin/logout/",
+            RedirectView.as_view(url="/openid/logout", permanent=False),
+        ),
     path("admin/", admin.site.urls),
     path(
         "application/<id>/edit/",
