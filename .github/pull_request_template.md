@@ -44,7 +44,7 @@ Resolves #00
 - [ ] Messaged on Slack or in standup to notify the team that a PR is ready for review
 - [ ] Changes to “how we do things” are documented in READMEs and or onboarding guide
 
-Code standards are met:
+* Code standards are met:
 
 - [ ] All new functions and methods are commented using plain language
 - [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
@@ -68,7 +68,7 @@ Code standards are met:
 - [ ] Checked that all code is adequately covered by tests
 - [ ] Made it clear which comments need to be addressed before this work is merged
 
-Code standards are met:
+* Code standards are met:
 
 - [ ] All new functions and methods are commented using plain language
 - [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
