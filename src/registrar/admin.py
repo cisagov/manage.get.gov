@@ -274,22 +274,27 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     pass
                 elif obj.status == models.DomainApplication.SUBMITTED:
                     # This is an fsm in model which will throw an error if the
-                    # transition condition is violated, so we call it on the
-                    # original object which has the right status value, and pass
-                    # the updated object which contains the up-to-date data
-                    # for the side effects (like an email send). Same
-                    # comment applies to original_obj method calls below.
-                    original_obj.submit(updated_domain_application=obj)
+                    # transition condition is violated, so we roll back the
+                    # status to what it was before the admn user changed it and
+                    # let the fsm method set it. Same comment applies to
+                    # transition method calls below.
+                    obj.status = original_obj.status
+                    obj.submit()
                 elif obj.status == models.DomainApplication.IN_REVIEW:
-                    original_obj.in_review(updated_domain_application=obj)
+                    obj.status = original_obj.status
+                    obj.in_review()
                 elif obj.status == models.DomainApplication.ACTION_NEEDED:
-                    original_obj.action_needed(updated_domain_application=obj)
+                    obj.status = original_obj.status
+                    obj.action_needed()
                 elif obj.status == models.DomainApplication.APPROVED:
-                    original_obj.approve(updated_domain_application=obj)
+                    obj.status = original_obj.status
+                    obj.approve()
                 elif obj.status == models.DomainApplication.WITHDRAWN:
-                    original_obj.withdraw()
+                    obj.status = original_obj.status
+                    obj.withdraw()
                 elif obj.status == models.DomainApplication.REJECTED:
-                    original_obj.reject(updated_domain_application=obj)
+                    obj.status = original_obj.status
+                    obj.reject()
                 else:
                     logger.warning("Unknown status selected in django admin")
 
