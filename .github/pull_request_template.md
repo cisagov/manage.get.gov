@@ -44,7 +44,7 @@ Resolves #00
 - [ ] Messaged on Slack or in standup to notify the team that a PR is ready for review
 - [ ] Changes to “how we do things” are documented in READMEs and or onboarding guide
 
-* Code standards are met:
+##### Code standards are met (Original Developer)
 
 - [ ] All new functions and methods are commented using plain language
 - [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
@@ -64,16 +64,15 @@ Resolves #00
 
 - [ ] Pulled this branch locally and tested it
 - [ ] Reviewed this code and left comments
-- [ ] All new functions and methods are commented using plain language
 - [ ] Checked that all code is adequately covered by tests
 - [ ] Made it clear which comments need to be addressed before this work is merged
 
-* Code standards are met:
+##### Code standards are met (Code reviewer)
 
 - [ ] All new functions and methods are commented using plain language
-- [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
 - [ ] Interactions with external systems are wrapped in try/except
 - [ ] Error handling exists for unusual or missing values
+- [ ] (Rarely needed) Did dependency updates in Pipfile also get changed in requirements.txt?
 
 #### Validated user-facing changes as a developer
 
@@ -81,6 +80,14 @@ Resolves #00
 - [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
+
+- [ ] Tested with multiple browsers, the suggestion is to use ones that the developer didn't (check off which ones were used)
+  - [ ] Chrome
+  - [ ] Microsoft Edge
+  - [ ] FireFox
+  - [ ] Safari
+
+- [ ] (Rarely needed) Test as both an analyst and applicant user
 
 ### As a designer reviewer, I have
 
@@ -96,6 +103,14 @@ Resolves #00
 
 - [ ] Checked keyboard navigability
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
+
+- [ ] Tested with multiple browsers (check off which ones were used)
+  - [ ] Chrome
+  - [ ] Microsoft Edge
+  - [ ] FireFox
+  - [ ] Safari
+
+- [ ] (Rarely needed) Test as both an analyst and applicant user
 
 ## Screenshots
 
