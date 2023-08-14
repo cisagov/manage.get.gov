@@ -21,7 +21,7 @@ class AdminFormOrderHelper():
     """A helper class to order a dropdown field in Django Admin, takes the fields you want to order by as an array""" # noqa
 
     # Used to keep track of how we want to order_by certain FKs
-    _sorting_dict: [SortingDictInterface] = [...] # noqa
+    _sorting_dict: list[SortingDictInterface] = [...] # noqa
 
     def __init__(self, sort):
         self._sorting_dict = sort
