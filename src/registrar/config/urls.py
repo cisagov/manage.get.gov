@@ -47,7 +47,7 @@ urlpatterns = [
     path("", views.index, name="home"),
     path(
             "admin/logout/",
-            RedirectView.as_view(url="/openid/logout", permanent=False),
+            RedirectView.as_view(pattern_name="logout", permanent=False),
         ),
     path("admin/", admin.site.urls),
     path(
@@ -124,11 +124,6 @@ if not settings.DEBUG:
         # redirect to login.gov
         path(
             "admin/login/", RedirectView.as_view(pattern_name="login", permanent=False)
-        ),
-        # redirect to login.gov
-        path(
-            "admin/logout/",
-            RedirectView.as_view(pattern_name="logout", permanent=False),
         ),
     ]
 

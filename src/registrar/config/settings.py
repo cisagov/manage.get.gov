@@ -285,12 +285,12 @@ SERVER_EMAIL = "root@get.gov"
 
 # Content-Security-Policy configuration
 # this can be restrictive because we have few external scripts
-allowed_sources = ("'self'", "https://idp.int.identitysandbox.gov", "https://idp.int.identitysandbox.gov/openid_connect/logout")
+allowed_sources = ("'self'")
 CSP_DEFAULT_SRC = allowed_sources
 # Most things fall back to default-src, but these two do not and should be
 # explicitly set
 CSP_FRAME_ANCESTORS = allowed_sources
-CSP_FORM_ACTION = allowed_sources
+CSP_FORM_ACTION = ("'self'", "https://idp.int.identitysandbox.gov/openid_connect/logout")
 
 
 # Content-Length header is set by django.middleware.common.CommonMiddleware
