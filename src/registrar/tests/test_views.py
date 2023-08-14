@@ -1052,16 +1052,10 @@ class DomainApplicationTests(TestWithUser, WebTest):
 class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
         super().setUp()
-        #self.domain, _ = DraftDomain.objects.get_or_create(name="city.gov")
-        self.domain, _ = Domain.objects.get_or_create(name="city.gov")
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.domain_information, _ = DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain
         )
-        application = completed_application(
-            status=DomainApplication.STARTED, user=self.user
-        )
-        application.save()
-        self.domain_application = application
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
         )
