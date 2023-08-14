@@ -183,6 +183,8 @@ class TestDomainApplicationAdmin(TestCase):
     def test_save_model_fails_to_set_approved_domain_when_created_domain_not_exists(self):
         instance = DomainApplication()
         instance.requested_domain = DraftDomain(name="example.com")
+        # Creating a Domain is a side effect of
+        # the approve() transition.
         # We did not create the DraftDoamin, so the
         # set_approved_domain should fail
         with self.assertRaises(ValueError):
