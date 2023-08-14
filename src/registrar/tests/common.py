@@ -8,7 +8,7 @@ from typing import List, Dict
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
-from registrar.models import Contact, DraftDomain, Website, DomainApplication, User
+from registrar.models import Contact, DraftDomain, Website, DomainApplication, User, Domain
 
 
 def get_handlers():
@@ -127,17 +127,21 @@ def completed_application(
     has_anything_else=True,
     status=DomainApplication.STARTED,
     user=False,
+    domain_exists=False,
+    existing_domain=Domain.objects.get_or_create(name="city.gov"),
+    ao_first_name="Testy"
 ):
     """A completed domain application."""
     if not user:
         user = get_user_model().objects.create(username="username")
     ao, _ = Contact.objects.get_or_create(
-        first_name="Testy",
+        first_name=ao_first_name,
         last_name="Tester",
         title="Chief Tester",
         email="testy@town.com",
         phone="(555) 555 5555",
     )
+    
     domain, _ = DraftDomain.objects.get_or_create(name="city.gov")
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
@@ -187,4 +191,7 @@ def completed_application(
     if has_alternative_gov_domain:
         application.alternative_domains.add(alt)
 
+    if status is DomainApplication.APPROVED:
+        application.approved_domain=domain
+        
     return application
