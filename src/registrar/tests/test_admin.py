@@ -436,7 +436,7 @@ class AuditedAdminTest(TestCase):
 
             self.assertEqual(desired_order,
                              current_sort_order_coerced_type,
-                             "{} is not ordered alphabetically".format(field_name))
+                             "{} is not ordered alphabetically".format(field.name))
 
     # I originally spent some time trying to fully
     # generalize this to replace the match/arg fields,

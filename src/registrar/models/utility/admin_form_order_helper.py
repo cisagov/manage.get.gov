@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class SortingDictInterface:
     _model_list: Dict[type, type] = {}
     _sort_list: list[type] = []
-    sorting_dict = {}
+    sorting_dict: Dict[type, type] = {}
 
     def __init__(self, model_list, sort_list):
         self.sorting_dict = {
@@ -21,7 +21,7 @@ class AdminFormOrderHelper():
     """A helper class to order a dropdown field in Django Admin, takes the fields you want to order by as an array""" # noqa
 
     # Used to keep track of how we want to order_by certain FKs
-    _sorting_dict: [SortingDictInterface] = [...]
+    _sorting_dict: [SortingDictInterface] = [...] # noqa
 
     def __init__(self, sort):
         self._sorting_dict = sort
