@@ -144,8 +144,8 @@ def completed_application(
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
     you, _ = Contact.objects.get_or_create(
-        first_name="Testy you",
-        last_name="Tester you",
+        first_name="Testy2",
+        last_name="Tester2",
         title="Admin Tester",
         email="mayor@igorville.gov",
         phone="(555) 555 5556",
@@ -191,17 +191,20 @@ def completed_application(
 
     return application
 
-def multiple_completed_applications_for_alphabetical_test(has_other_contacts=True,
+
+def multiple_unalphabetical_applications(
+    has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
     has_type_of_work=True,
     has_anything_else=True,
     status=DomainApplication.STARTED,
-    user=False,):
+    user=False,
+):
     applications = []
     list_of_letters = list(ascii_uppercase)
     random.shuffle(list_of_letters)
-    for x in list_of_letters: 
+    for x in list_of_letters:
         user = get_user_model().objects.create(
             first_name="{} First:cre".format(x),
             last_name="{} Last:cre".format(x),

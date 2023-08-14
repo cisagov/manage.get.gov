@@ -1,9 +1,9 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin, AuditedAdmin
+from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin, AuditedAdmin # noqa
 from registrar.models import DomainApplication, DomainInformation, User
 from registrar.models.contact import Contact
-from .common import completed_application, mock_user, create_superuser, create_user, multiple_completed_applications_for_alphabetical_test
+from .common import completed_application, mock_user, create_superuser, create_user, multiple_unalphabetical_applications # noqa
 from django.contrib.auth import get_user_model
 
 from django.conf import settings
@@ -12,6 +12,8 @@ import boto3_mocking  # type: ignore
 import logging
 
 logger = logging.getLogger(__name__)
+
+
 class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
@@ -370,6 +372,7 @@ class MyUserAdminTest(TestCase):
     def tearDown(self):
         User.objects.all().delete()
 
+
 class AuditedAdminTest(TestCase):
     def setUp(self):
         self.site = AdminSite()
@@ -377,63 +380,74 @@ class AuditedAdminTest(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
 
     def test_alphabetically_sorted_fk_fields_domain_application(self):
-        tested_fields = [DomainApplication.authorizing_official.field, DomainApplication.submitter.field, DomainApplication.investigator.field, DomainApplication.creator.field]
+        tested_fields = [
+                        # field (0) - field shorthand (1)
+                        # the 'field shorthand' is used for type coercion.
+                        # It is only used here to reduce boilerplate,
+                        # but keep in mind that it is not needed outside this class.
+                        (DomainApplication.authorizing_official.field, 'ao'),
+                        (DomainApplication.submitter.field, 'you'),
+                        (DomainApplication.investigator.field, 'inv'),
+                        (DomainApplication.creator.field, 'cre')
+                        ]
 
         # Create a sample application - review status does not matter
-        applications = multiple_completed_applications_for_alphabetical_test(status=DomainApplication.IN_REVIEW)
+        applications = multiple_unalphabetical_applications()
 
         # Create a mock request
         request = self.factory.post(
             "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
         )
-        
+
         model_admin = AuditedAdmin(DomainApplication, self.site)
-        
-        # Typically we wouldnt want two nested for fields, but both fields are of a fixed length.
+
+        # Typically we wouldn't want two nested for fields,
+        # but both fields are of a fixed length.
         # For test case purposes, this should be performant.
         for field in tested_fields:
-            first_name_field = "{}__first_name".format(field.name)
-            last_name_field = "{}__last_name".format(field.name)
+            field_name = field[0].name
+            first_name_field = "{}__first_name".format(field_name)
+            last_name_field = "{}__last_name".format(field_name)
 
-            desired_order = list(model_admin.get_queryset(request).order_by(first_name_field, last_name_field).values_list(first_name_field, last_name_field))
-            current_sort_order: Contact = list(model_admin.formfield_for_foreignkey(field, request).queryset)
+            # We want both of these to be lists, as it is richer test wise.
+            # Not really a fan of how this looks, but as the linter demands...
+            desired_order = list(
+                model_admin.get_queryset(request).order_by(
+                                        first_name_field, last_name_field).values_list(
+                                        first_name_field, last_name_field)
+                )
+            current_sort_order: Contact = list(
+                model_admin.formfield_for_foreignkey(field[0], request).queryset
+                )
 
+            # Conforms to the same object structure as desired_order
             current_sort_order_coerced_type = []
 
-            # This is necessary as .queryset and get_queryset return lists of different types/structures.
+            # This is necessary as .queryset and get_queryset
+            # return lists of different types/structures.
             # We need to parse this data and coerce them into the same type.
             for contact in current_sort_order:
-                first_name = contact.first_name
-                last_name = contact.last_name
+                first = contact.first_name
+                last = contact.last_name
 
-                match field.name:
-                    case DomainApplication.authorizing_official.field.name:
-                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'ao', ':')
-                        if name_tuple:
-                            current_sort_order_coerced_type.append((first_name, last_name))
-                    case DomainApplication.submitter.field.name:
-                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'you', ':')
-                        if name_tuple:
-                            current_sort_order_coerced_type.append((first_name, last_name))
-                    case DomainApplication.investigator.field.name:
-                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'inv', ':')
-                        if name_tuple:
-                            current_sort_order_coerced_type.append((first_name, last_name))
-                    case DomainApplication.creator.field.name:
-                        name_tuple = self.coerced_fk_field_helper(first_name, last_name, 'cre', ':')
-                        if name_tuple:
-                            current_sort_order_coerced_type.append((first_name, last_name))
+                name_tuple = self.coerced_fk_field_helper(first, last, field[1], ':')
+                if name_tuple:
+                    current_sort_order_coerced_type.append((first, last))
 
-            self.assertEqual(desired_order, current_sort_order_coerced_type, "{} is not ordered alphabetically".format(field.name))
+            self.assertEqual(desired_order,
+                             current_sort_order_coerced_type,
+                             "{} is not ordered alphabetically".format(field_name))
 
-    # I originally spent some time trying to fully generalize this to replace the match/arg fields, 
-    # but I think for this specific use-case its not necessary since it'll only be used here
-    def coerced_fk_field_helper(self, first_name, last_name, field_name, queryset_shorthand):
-        if(first_name and first_name.split(queryset_shorthand)[1] == field_name):
+    # I originally spent some time trying to fully
+    # generalize this to replace the match/arg fields,
+    # but I think for this specific use case
+    # its not necessary since it'll only be used here.
+    def coerced_fk_field_helper(self, first_name, last_name, field_name, queryset_shorthand): # noqa
+        if(first_name and first_name.split(queryset_shorthand)[1] == field_name): # noqa
             return (first_name, last_name)
         else:
             return None
-    
+
     def tearDown(self):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
