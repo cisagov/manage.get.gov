@@ -180,7 +180,9 @@ class TestDomainApplicationAdmin(TestCase):
             application.requested_domain.name, application.approved_domain.name
         )
 
-    def test_save_model_fails_to_set_approved_domain_when_created_domain_not_exists(self):
+    def test_save_model_fails_to_set_approved_domain_when_created_domain_not_exists(
+        self,
+    ):
         instance = DomainApplication()
         instance.requested_domain = DraftDomain(name="example.com")
         # Creating a Domain is a side effect of
