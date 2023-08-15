@@ -118,17 +118,6 @@ urlpatterns = [
     ),
 ]
 
-# What is the purpose of this?
-# This behaviour gets overwritten, so this doesn't do anything...
-# Login in particular
-if not settings.DEBUG:
-    urlpatterns += [
-        # redirect to login.gov
-        path(
-            "admin/login/", RedirectView.as_view(pattern_name="login", permanent=False)
-        ),
-    ]
-
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG
 # was actually True. Instead, let's add these URLs any time we are able to
