@@ -50,7 +50,7 @@ All other changes require just a single approving review.-->
 - [ ] Changes to “how we do things” are documented in READMEs and or onboarding guide
 - [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the assoicated migrations file has been commited.
 
-##### Ensured code standards are met (Original Developer)
+#### Ensured code standards are met (Original Developer)
 
 - [ ] All new functions and methods are commented using plain language
 - [ ] Did dependency updates in Pipfile also get changed in requirements.txt?
@@ -74,7 +74,7 @@ All other changes require just a single approving review.-->
 - [ ] Made it clear which comments need to be addressed before this work is merged
 - [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the assoicated migrations file has been commited.
 
-##### Ensured code standards are met (Code reviewer)
+#### Ensured code standards are met (Code reviewer)
 
 - [ ] All new functions and methods are commented using plain language
 - [ ] Interactions with external systems are wrapped in try/except
