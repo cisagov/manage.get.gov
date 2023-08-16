@@ -13,8 +13,8 @@ audited_admin_item_names = ["submitter", "authorizing_official",
                             "investigator", "creator", "user"]
 audited_admin_orderby_names = ['first_name', 'last_name']
 
-contact_admin_item_names = ["domain", "requested_domain"]
-contact_admin_orderby_names = ["name"]
+special_audited_admin_item_names = ["domain", "requested_domain"]
+special_audited_admin_orderby_names = ["name"]
 # Used to keep track of how we want to order_by certain FKs
 foreignkey_orderby_dict: list[SortingDictInterface] = [
     # foreign_key - order_by
@@ -22,9 +22,10 @@ foreignkey_orderby_dict: list[SortingDictInterface] = [
                         audited_admin_item_names,
                         audited_admin_orderby_names
                         ).sorting_dict,
+    # Handles fields that are sorted by 'name'
     SortingDictInterface(
-                        contact_admin_item_names,
-                        contact_admin_orderby_names
+                        special_audited_admin_item_names,
+                        special_audited_admin_orderby_names
                         ).sorting_dict
 ]
 
@@ -186,14 +187,8 @@ class DomainAdmin(ListHeaderAdmin):
 
 class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
-
     search_fields = ["email", "first_name", "last_name"]
     search_help_text = "Search by firstname, lastname or email."
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """Used to sort dropdown fields alphabetically but can be expanded upon"""
-        form_field = super().formfield_for_foreignkey(db_field, request, **kwargs)
-        return form_field_order_helper(form_field, db_field)
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
@@ -333,7 +328,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
 # For readability purposes, but can be replaced with a one liner
 def form_field_order_helper(form_field, db_field):
-    """A shorthand for AdminFormOrderHelper(foreignkey_orderby_dict).get_ordered_form_field(form_field, db_field)""" # noqa
+    """A shorthand for AdminFormOrderHelper(foreignkey_orderby_dict)
+    .get_ordered_form_field(form_field, db_field)"""
 
     form = AdminFormOrderHelper(foreignkey_orderby_dict)
     return form.get_ordered_form_field(form_field, db_field)

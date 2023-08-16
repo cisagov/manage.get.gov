@@ -18,16 +18,18 @@ class SortingDictInterface:
 
 
 class AdminFormOrderHelper():
-    """A helper class to order a dropdown field in Django Admin, takes the fields you want to order by as an array""" # noqa
+    """A helper class to order a dropdown field in Django Admin,
+    takes the fields you want to order by as an array"""
 
     # Used to keep track of how we want to order_by certain FKs
-    _sorting_dict: list[SortingDictInterface] = [] # noqa
+    _sorting_dict: list[SortingDictInterface] = []
 
     def __init__(self, sort):
         self._sorting_dict = sort
 
     def get_ordered_form_field(self, form_field, db_field) -> (ModelChoiceField | None):
-        """Orders the queryset for a ModelChoiceField based on the order_by_dict dictionary""" # noqa
+        """Orders the queryset for a ModelChoiceField
+        based on the order_by_dict dictionary"""
         _order_by_list = []
 
         for item in self._sorting_dict:
@@ -41,7 +43,7 @@ class AdminFormOrderHelper():
                 break
 
         # Only order if we choose to do so
-        if not _order_by_list is None:
+        if _order_by_list is not None:
             form_field.queryset = form_field.queryset.order_by(*_order_by_list)
 
         return form_field

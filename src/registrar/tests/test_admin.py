@@ -384,7 +384,13 @@ class AuditedAdminTest(TestCase):
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
 
-    def order_by_desired_field_helper(self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names):
+    def order_by_desired_field_helper(
+        self,
+        obj_to_sort: AuditedAdmin,
+        request,
+        field_name,
+        *obj_names
+    ):
         formatted_sort_fields = []
         for obj in obj_names:
             formatted_sort_fields.append("{}__{}".format(field_name, obj))
@@ -408,7 +414,7 @@ class AuditedAdminTest(TestCase):
                         DomainApplication.creator.field,
                         ]
 
-        # Create a sample application - review status does not matter
+        # Creates multiple domain applications - review status does not matter
         applications = multiple_unalphabetical_domain_objects("application")
 
         # Create a mock request
@@ -424,7 +430,13 @@ class AuditedAdminTest(TestCase):
         for field in tested_fields:
 
             # We want both of these to be lists, as it is richer test wise.
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, "first_name", "last_name")
+            desired_order = self.order_by_desired_field_helper(
+                                model_admin,
+                                request,
+                                field.name,
+                                "first_name",
+                                "last_name"
+                            )
             current_sort_order: Contact = list(
                 model_admin.formfield_for_foreignkey(field, request).queryset
                 )
@@ -443,9 +455,11 @@ class AuditedAdminTest(TestCase):
                 if name_tuple:
                     current_sort_order_coerced_type.append((first, last))
 
-            self.assertEqual(desired_order,
-                            current_sort_order_coerced_type,
-                            "{} is not ordered alphabetically".format(field.name))
+            self.assertEqual(
+                desired_order,
+                current_sort_order_coerced_type,
+                "{} is not ordered alphabetically".format(field.name)
+            )
 
     def test_alphabetically_sorted_fk_fields_domain_information(self):
         tested_fields = [
@@ -455,7 +469,7 @@ class AuditedAdminTest(TestCase):
                         DomainInformation.creator.field
                         ]
 
-        # Create a sample application - review status does not matter
+        # Creates multiple domain applications - review status does not matter
         applications = multiple_unalphabetical_domain_objects("information")
 
         # Create a mock request
@@ -471,13 +485,18 @@ class AuditedAdminTest(TestCase):
         # For test case purposes, this should be performant.
         for field in tested_fields:
             isNamefield: bool = (field == DomainInformation.domain.field)
-            if(isNamefield):
+            if (isNamefield):
                 sorted_fields = ["name"]
             else:
                 sorted_fields = ["first_name", "last_name"]
             # We want both of these to be lists, as it is richer test wise.
 
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
+            desired_order = self.order_by_desired_field_helper(
+                                model_admin,
+                                request,
+                                field.name,
+                                *sorted_fields
+                            )
             current_sort_order = list(
                 model_admin.formfield_for_foreignkey(field, request).queryset
             )
@@ -497,17 +516,19 @@ class AuditedAdminTest(TestCase):
                     last = None
 
                 name_tuple = self.coerced_fk_field_helper(first, last, field.name, ':')
-                if not name_tuple is None:
+                if name_tuple is not None:
                     current_sort_order_coerced_type.append(name_tuple)
 
-            self.assertEqual(desired_order,
-                            current_sort_order_coerced_type,
-                            "{} is not ordered alphabetically".format(field.name))
+            self.assertEqual(
+                desired_order,
+                current_sort_order_coerced_type,
+                "{} is not ordered alphabetically".format(field.name)
+            )
 
     def test_alphabetically_sorted_fk_fields_domain_invitation(self):
         tested_fields = [DomainInvitation.domain.field]
 
-        # Create a sample application - review status does not matter
+        # Creates multiple domain applications - review status does not matter
         applications = multiple_unalphabetical_domain_objects("invitation")
 
         # Create a mock request
@@ -525,7 +546,12 @@ class AuditedAdminTest(TestCase):
             sorted_fields = ["name"]
             # We want both of these to be lists, as it is richer test wise.
 
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
+            desired_order = self.order_by_desired_field_helper(
+                model_admin,
+                request,
+                field.name,
+                *sorted_fields
+            )
             current_sort_order = list(
                 model_admin.formfield_for_foreignkey(field, request).queryset
             )
@@ -541,20 +567,31 @@ class AuditedAdminTest(TestCase):
                 last = None
 
                 name_tuple = self.coerced_fk_field_helper(first, last, field.name, ':')
-                if not name_tuple is None:
+                if name_tuple is not None:
                     current_sort_order_coerced_type.append(name_tuple)
 
-            self.assertEqual(desired_order,
-                            current_sort_order_coerced_type,
-                            "{} is not ordered alphabetically".format(field.name))
+            self.assertEqual(
+                desired_order,
+                current_sort_order_coerced_type,
+                "{} is not ordered alphabetically".format(field.name)
+            )
 
-    def coerced_fk_field_helper(self, first_name, last_name, field_name, queryset_shorthand): # noqa
+    def coerced_fk_field_helper(
+        self,
+        first_name,
+        last_name,
+        field_name,
+        queryset_shorthand
+    ):
+        if first_name is None:
+            raise ValueError('Invalid value for first_name, must be defined')
+
         returned_tuple = (first_name, last_name)
         # Handles edge case for names - structured strangely
         if last_name is None:
             return (first_name,)
 
-        if(first_name and first_name.split(queryset_shorthand)[1] == field_name): # noqa
+        if(first_name.split(queryset_shorthand)[1] == field_name):
             return returned_tuple
         else:
             return None
