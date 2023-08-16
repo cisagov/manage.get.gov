@@ -130,7 +130,7 @@ class UserFixture:
                 user.is_superuser = True
                 user.first_name = admin["first_name"]
                 user.last_name = admin["last_name"]
-                if "email" in admin.keys(): 
+                if "email" in admin.keys():
                     user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
@@ -149,7 +149,7 @@ class UserFixture:
                 user.is_superuser = False
                 user.first_name = staff["first_name"]
                 user.last_name = staff["last_name"]
-                if "email" in admin.keys(): 
+                if "email" in admin.keys():
                     user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
