@@ -10,8 +10,13 @@ from typing import List, Dict
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
-from registrar.models import Contact, DraftDomain, Website, DomainApplication, User
+from registrar.models import Contact, DraftDomain, Website, DomainApplication, DomainInvitation, User
+import logging
+from registrar.models.domain import Domain
 
+from registrar.models.domain_information import DomainInformation
+
+logger = logging.getLogger(__name__)
 
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
@@ -89,6 +94,170 @@ class MockSESClient(Mock):
     def send_email(self, *args, **kwargs):
         self.EMAILS_SENT.append({"args": args, "kwargs": kwargs})
 
+
+class AuditedAdminMockData:
+    """Creates simple data mocks for AuditedAdminTest"""
+
+    # Constants for different domain object types
+    INFORMATION = "information"
+    APPLICATION = "application"
+    INVITATION = "invitation"
+
+    # These all can likely be generalized more if necessary, particulary with shorthands.
+    # These are kept basic for now.
+    # As for why we have shorthands to begin with:
+    # .queryset returns a list of all objects of the same type,
+    # rather than by seperating out those fields.
+    # For such scenarios, the shorthand allows us to not only id a field,
+    # but append additional information to it.
+    # This is useful for that scenario and outside it for identifying if values swapped unexpectedly
+    def dummy_user(self, item_name, shorthand):
+        """Creates a dummy user object,
+        but with a shorthand and support for multiple"""
+        user = User.objects.get_or_create(
+            first_name="{} First:{}".format(item_name, shorthand),
+            last_name="{} Last:{}".format(item_name, shorthand),
+            username="{} username:{}".format(item_name, shorthand)
+        )[0]
+        return user
+
+    def dummy_contact(self, item_name, shorthand):
+        """Creates a dummy contact object"""
+        contact = Contact.objects.get_or_create(
+            first_name="{} First:{}".format(item_name, shorthand),
+            last_name="{} Last:{}".format(item_name, shorthand),
+            title="{} title:{}".format(item_name, shorthand),
+            email="{}testy@town.com".format(item_name),
+            phone="(555) 555 5555"
+        )[0]
+        return contact
+
+    def dummy_draft_domain(self,item_name):
+        """Creates a dummy draft domain object"""
+        return DraftDomain.objects.get_or_create(name="city{}.gov".format(item_name))[0]
+
+    def dummy_domain(self,item_name):
+        """Creates a dummy domain object"""
+        return Domain.objects.get_or_create(name="city{}.gov".format(item_name))[0]
+
+    def dummy_alt(self, item_name):
+        """Creates a dummy website object for alternates"""
+        return Website.objects.get_or_create(website="cityalt{}.gov".format(item_name))[0]
+
+    def dummy_current(self, item_name):
+        """Creates a dummy website object for current"""
+        return Website.objects.get_or_create(website="city{}.com".format(item_name))[0]
+
+    def get_common_domain_arg_dictionary(self, item_name, org_type="federal", federal_type="executive", purpose="Purpose of the site"):
+        """Generates a generic argument list for most domains"""
+        common_args = dict(
+            organization_type=org_type,
+            federal_type=federal_type,
+            purpose=purpose,
+            organization_name="{} Testorg".format(item_name),
+            address_line1="{} address 1".format(item_name),
+            address_line2="{} address 2".format(item_name),
+            is_policy_acknowledged=True,
+            state_territory="NY",
+            zipcode="10002",
+            type_of_work = 'e-Government',
+            anything_else = "There is more",
+            authorizing_official = self.dummy_contact(item_name, 'authorizing_official'),
+            submitter = self.dummy_contact(item_name, 'submitter'),
+            creator = self.dummy_user(item_name, 'creator'),
+        )
+        return common_args
+
+    # This can be boiled down more, though for our purposes this is OK
+    def dummy_kwarg_boilerplate(self, domain_type, item_name, status, org_type="federal", federal_type="executive", purpose="Purpose of the site"):
+        """Returns kwargs for different domain object types"""
+        common_args = self.get_common_domain_arg_dictionary(item_name, org_type, federal_type, purpose)
+        full_arg_list = None
+        match domain_type:
+            case self.APPLICATION:
+                full_arg_list = dict(
+                    **common_args,
+                    requested_domain = self.dummy_draft_domain(item_name),
+                    investigator = self.dummy_user(item_name, 'investigator'),
+                    status = status,
+                )
+            case self.INFORMATION:
+                full_arg_list = dict(
+                    **common_args,
+                    domain = self.dummy_domain(item_name),
+                    domain_application = self.create_full_dummy_domain_application(item_name)
+                )
+            case self.INVITATION:
+                full_arg_list = dict(
+                    email = "test_mail@mail.com",
+                    domain = self.dummy_domain(item_name),
+                    status = DomainInvitation.INVITED
+                )
+        return full_arg_list
+
+    def create_full_dummy_domain_application(
+        self,
+        object_name,
+        status=DomainApplication.STARTED
+    ):
+        """Creates a dummy domain application object"""
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.APPLICATION, object_name, status)
+        application = DomainApplication.objects.get_or_create(**domain_application_kwargs)[0]
+        return application
+
+    def create_full_dummy_domain_information(
+        self,
+        object_name,
+        status=DomainApplication.STARTED
+    ):
+        """Creates a dummy domain information object"""
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, object_name, status)
+        application = DomainInformation.objects.get_or_create(**domain_application_kwargs)[0]
+        return application
+
+    def create_full_dummy_domain_invitation(
+        self,
+        object_name,
+        status=DomainApplication.STARTED
+    ):
+        """Creates a dummy domain invitation object"""
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, object_name, status)
+        application = DomainInvitation.objects.get_or_create(**domain_application_kwargs)[0]
+
+        return application
+
+    def create_full_dummy_domain_object(
+        self,
+        domain_type,
+        object_name,
+        has_other_contacts=True,
+        has_current_website=True,
+        has_alternative_gov_domain=True,
+        status=DomainApplication.STARTED
+    ):
+        """A helper to create a dummy domain application object"""
+        application = None
+        match domain_type:
+            case self.APPLICATION:
+                application = self.create_full_dummy_domain_application(object_name, status)
+            case self.INVITATION:
+                application = self.create_full_dummy_domain_invitation(object_name, status)
+            case self.INFORMATION:
+                application = self.create_full_dummy_domain_information(object_name, status)
+            case _:
+                raise ValueError("Invalid domain_type, must conform to given constants")
+
+        if has_other_contacts and domain_type != self.INVITATION:
+            other = self.dummy_contact(object_name, 'other')
+            application.other_contacts.add(other)
+        if has_current_website and domain_type == self.APPLICATION:
+            current = self.dummy_current(object_name)
+            application.current_websites.add(current)
+        if has_alternative_gov_domain and domain_type == self.APPLICATION:
+            alt = self.dummy_alt(object_name)
+            application.alternative_domains.add(alt)
+
+        return application
 
 def mock_user():
     """A simple user."""
@@ -192,84 +361,15 @@ def completed_application(
     return application
 
 
-def multiple_unalphabetical_applications(
-    has_other_contacts=True,
-    has_current_website=True,
-    has_alternative_gov_domain=True,
-    has_type_of_work=True,
-    has_anything_else=True,
-    status=DomainApplication.STARTED,
-    user=False,
-):
+def multiple_unalphabetical_domain_objects(domain_type = AuditedAdminMockData.APPLICATION):
+    """Returns a list of generic domain objects for testing purposes"""
     applications = []
     list_of_letters = list(ascii_uppercase)
     random.shuffle(list_of_letters)
-    for x in list_of_letters:
-        user = get_user_model().objects.create(
-            first_name="{} First:cre".format(x),
-            last_name="{} Last:cre".format(x),
-            username="{} username:cre".format(x)
-        )
-        ao, _ = Contact.objects.get_or_create(
-            first_name="{} First:ao".format(x),
-            last_name="{} Last:ao".format(x),
-            title="{} Chief Tester".format(x),
-            email="testy@town.com",
-            phone="(555) 555 5555",
-        )
-        domain, _ = DraftDomain.objects.get_or_create(name="city{}.gov".format(x))
-        alt, _ = Website.objects.get_or_create(website="cityalt{}.gov".format(x))
-        current, _ = Website.objects.get_or_create(website="city{}.com".format(x))
-        you, _ = Contact.objects.get_or_create(
-            first_name="{} First:you".format(x),
-            last_name="{} Last:you".format(x),
-            title="{} Admin Tester".format(x),
-            email="mayor@igorville.gov",
-            phone="(555) 555 5556",
-        )
-        other, _ = Contact.objects.get_or_create(
-            first_name="{} First:other".format(x),
-            last_name="{} Last:other".format(x),
-            title="{} Another Tester".format(x),
-            email="{}testy2@town.com".format(x),
-            phone="(555) 555 5557",
-        )
-        inv, _ = User.objects.get_or_create(
-            first_name="{} First:inv".format(x),
-            last_name="{} Last:inv".format(x),
-            username="{} username:inv".format(x)
-        )
-        domain_application_kwargs = dict(
-            organization_type="federal",
-            federal_type="executive",
-            purpose="Purpose of the site",
-            is_policy_acknowledged=True,
-            organization_name="{}Testorg".format(x),
-            address_line1="address 1",
-            address_line2="address 2",
-            state_territory="NY",
-            zipcode="10002",
-            authorizing_official=ao,
-            requested_domain=domain,
-            submitter=you,
-            creator=user,
-            status=status,
-            investigator=inv
-        )
-        if has_type_of_work:
-            domain_application_kwargs["type_of_work"] = "e-Government"
-        if has_anything_else:
-            domain_application_kwargs["anything_else"] = "There is more"
 
-        application, _ = DomainApplication.objects.get_or_create(
-            **domain_application_kwargs
-        )
-
-        if has_other_contacts:
-            application.other_contacts.add(other)
-        if has_current_website:
-            application.current_websites.add(current)
-        if has_alternative_gov_domain:
-            application.alternative_domains.add(alt)
+    mock = AuditedAdminMockData()
+    for object_name in list_of_letters:
+        application = mock.create_full_dummy_domain_object(domain_type, object_name)
         applications.append(application)
     return applications
+

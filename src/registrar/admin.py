@@ -16,7 +16,7 @@ audited_admin_orderby_names = ['first_name', 'last_name']
 contact_admin_item_names = ["domain", "requested_domain"]
 contact_admin_orderby_names = ["name"]
 # Used to keep track of how we want to order_by certain FKs
-foreignkey_orderby_dict: [SortingDictInterface] = [
+foreignkey_orderby_dict: list[SortingDictInterface] = [
     # foreign_key - order_by
     SortingDictInterface(
                         audited_admin_item_names,

@@ -31,14 +31,17 @@ class AdminFormOrderHelper():
         _order_by_list = []
 
         for item in self._sorting_dict:
+            # Used to disable black as this is a false positive
+            # fmt: off
             drop_down_selected = item.get("dropDownSelected")
+            # fmt: on
             sort_by = item.get("sortBy")
             if db_field.name in drop_down_selected:
                 _order_by_list = sort_by
                 break
 
         # Only order if we choose to do so
-        if _order_by_list:
+        if not _order_by_list is None:
             form_field.queryset = form_field.queryset.order_by(*_order_by_list)
 
         return form_field
