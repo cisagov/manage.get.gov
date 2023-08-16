@@ -244,3 +244,6 @@ class DomainInformation(TimeStampedModel):
             domain_info.domain = domain
         domain_info.save()
         return domain_info
+
+    class Meta:
+        verbose_name_plural = "Domain Information"
