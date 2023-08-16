@@ -43,13 +43,13 @@
           <td data-label="Status">{{ domain.application_status|title }}</td>
           <td>
             <a href="{% url "domain" pk=domain.pk %}">
-              <svg 
-                class="usa-icon" 
-                aria-hidden="true" 
-                focusable="false" 
-                role="img" 
+              <svg
+                class="usa-icon"
+                aria-hidden="true"
+                focusable="false"
+                role="img"
                 width="24"
-              > 
+              >
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
                 Manage <span class="usa-sr-only">{{ domain.name }}</span>
@@ -115,14 +115,16 @@
       aria-live="polite"
     ></div>
     {% else %}
-    <p>You don't have any active domain requests right now</p> 
+    <p>You don't have any active domain requests right now</p>
     {% endif %}
     <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
   </section>
 
+  {# Note: Reimplement this later after MVP #}
+  <!--
   <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
     <h2>Archived domains</h2>
-    <p>You don't have any archived domains</p> 
+    <p>You don't have any archived domains</p>
   </section>
 
   <section class="tablet:grid-col-11 desktop:grid-col-10">
@@ -132,7 +134,7 @@
       Export domains as csv
     </a>
   </section>
-
+  -->
 </div>
 
 {% else %} {# not user.is_authenticated #}
