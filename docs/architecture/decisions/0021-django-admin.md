@@ -34,7 +34,7 @@ In contrast to building an admin interface from scratch where development activi
 involve _building up_, leveraging Django Admin will require carefully _pairing back_ the functionalities available to
 users such as analysts.
 
-On accessibility: Django admin is almost fully accessible out-of-the-box, the expections being tables, checkboxes, and
+On accessibility: Django admin is almost fully accessible out-of-the-box, the exceptions being tables, checkboxes, and
 color contrast. We have remedied the first 2 with template overrides and the 3rd with theming (see below).
 
 On USWDS and theming: Django admin brings its own high level design framework. We have determined that theming on top of Django (scss)
