@@ -223,6 +223,8 @@ class Domain(TimeStampedModel, DomainHelper):
         while non-subordinate hosts MUST NOT.
         """
         # TODO: call EPP to get this info instead of returning fake data.
+        #MISSING FROM DISPLAY
+        
         return [
             ("ns1.example.com",),
             ("ns2.example.com",),
@@ -232,6 +234,9 @@ class Domain(TimeStampedModel, DomainHelper):
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str]]):
         # TODO: call EPP to set this info.
+        # if two nameservers change state to created, don't do it automatically
+
+        self.state=Domain.State.CREATED
         pass
 
     @Cache
@@ -468,10 +473,12 @@ class Domain(TimeStampedModel, DomainHelper):
                 return registry.send(req, cleaned=True).res_data[0]
             except RegistryError as e:
                 if already_tried_to_create:
+                    logger.error("Already tried to create")
+                    logger.error(e)
+                    logger.error(e.code)
                     raise e
                 if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                     # avoid infinite loop
-
                     already_tried_to_create = True
                     self._make_domain_in_registry()
                 else:
@@ -479,33 +486,42 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e.code)
                     raise e
     def _make_domain_in_registry(self):
-        registrant = self._get_or_create_contact(
-        PublicContact.get_default_registrant()
-    )
+        logger.info("In make domain in registry ")
+        registrant = PublicContact.get_default_registrant()
+        self._make_contact_in_registry(registrant)
+        logger.info("registrant is %s" % registrant)
 
         #TODO-notes no chg item for registrant in the epplib should
-       
-        security_contact = self._get_or_create_contact(self.get_default_security_contact())
-
+        security_contact = self._get_or_create_contact( PublicContact.get_default_security())
         req = commands.CreateDomain(
             name=self.name,
-            registrant=registrant.id,
+            registrant=registrant.registry_id,
             auth_info=epp.DomainAuthInfo(
                 pw="2fooBAR123fooBaz"
             ),  # not a password
         )
         logger.info("_get_or_create_domain()-> about to send domain request")
+        logger.info(req)
+        try:
 
-        response=registry.send(req, cleaned=True)
+            response=registry.send(req, cleaned=True)
+        except RegistryError as err:
+            if err.code!=ErrorCode.OBJECT_EXISTS:
+                raise err
         logger.info("_get_or_create_domain()-> registry received create for  "+self.name)
         logger.info(response)
         # no error, so go ahead and update state
+        ##
+        #make this a trainsition function
         self.state = Domain.State.PENDING_CREATE
         self.save()
+        logger.info("update domain with secutity contact")
         self._update_domain_with_contact(security_contact, rem=False)
         
     def _make_contact_in_registry(self, contact: PublicContact):
         """Create the contact in the registry, ignore duplicate contact errors"""
+        logger.info(contact)
+        logger.info(contact.registry_id)
         create = commands.CreateContact(
             id=contact.registry_id,
             postal_info=epp.PostalInfo(  # type: ignore
@@ -541,26 +557,35 @@ class Domain(TimeStampedModel, DomainHelper):
                 types={DF.ADDR: "loc"},
             )
         try:
+            logger.info("sending contact")
             registry.send(create, cleaned=True)
             return contact
         except RegistryError as err:
             #don't throw an error if it is just saying this is a duplicate contact
             if err.code!=ErrorCode.OBJECT_EXISTS:
-                raise err
+                logger.error("Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",contact.registry_id, contact.contact_type, err.code, err)
+                #TODO - Error handling here
             else:
                 logger.warning("Registrar tried to create duplicate contact for id %s",contact.registry_id)
             
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
-        while True:
-            try:
-                req = commands.InfoContact(id=contact.registry_id)
-                return registry.send(req, cleaned=True).res_data[0]
-            except RegistryError as e:
-                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
-                    return self._make_contact_in_registry(contact=contact) 
-                else:
-                    raise e
+     
+    
+            
+        try:
+            req = commands.InfoContact(id=contact.registry_id)
+            return registry.send(req, cleaned=True).res_data[0]
+
+        except RegistryError as e:
+
+            if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                logger.info("_get_or_create_contact()-> contact doesn't exist so making it")
+                return self._make_contact_in_registry(contact=contact) 
+            else:
+                logger.error("Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",contact.registry_id, contact.contact_type, err.code, err)
+
+                raise e
 
     def _update_or_create_host(self, host):
         raise NotImplementedError()
@@ -595,8 +620,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # get contact info, if there are any
             if (
-                fetch_contacts
-                and "_contacts" in cleaned
+                # fetch_contacts and
+                 "_contacts" in cleaned
                 and isinstance(cleaned["_contacts"], list)
                 and len(cleaned["_contacts"])
             ):
@@ -633,8 +658,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # get nameserver info, if there are any
             if (
-                fetch_hosts
-                and "_hosts" in cleaned
+                # fetch_hosts and
+                 "_hosts" in cleaned
                 and isinstance(cleaned["_hosts"], list)
                 and len(cleaned["_hosts"])
             ):
@@ -661,6 +686,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     )
 
             # replace the prior cache with new data
+            logger.info("cache at the end of fetch is %s" % str(cache))
             self._cache = cleaned
 
         except RegistryError as e:
