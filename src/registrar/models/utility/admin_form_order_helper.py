@@ -10,9 +10,20 @@ class SortingDictInterface:
     _sort_list: list[type] = []
     sorting_dict: Dict[type, type] = {}
 
+    # _model_list and _sort_list can be
+    # any length, and will be called multiple times.
+    # We want the perf advantage of a dictionary,
+    # while making creating new SortingDictInterface
+    # items pretty straight forward and easy (aka as a list)
+    def convert_list_to_dict(self, value_list):
+        dictionary: Dict[type, type] = {}
+        for item in value_list:
+            dictionary[item] = item
+        return dictionary
+
     def __init__(self, model_list, sort_list):
         self.sorting_dict = {
-            "dropDownSelected": model_list,
+            "dropDownSelected": self.convert_list_to_dict(model_list),
             "sortBy": sort_list
         }
 
@@ -33,11 +44,9 @@ class AdminFormOrderHelper():
         _order_by_list = []
 
         for item in self._sorting_dict:
-            # Used to disable black as this is a false positive
-            # fmt: off
-            drop_down_selected = item.get("dropDownSelected")
-            # fmt: on
-            sort_by = item.get("sortBy")
+            drop_down_selected = item["dropDownSelected"]
+            sort_by = item["sortBy"]
+
             if db_field.name in drop_down_selected:
                 _order_by_list = sort_by
                 break
