@@ -77,8 +77,8 @@ class UserFixture:
     STAFF = [
         {
             "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
-            "first_name": "Rachid-Analyst",
-            "last_name": "Mrad-Analyst",
+            "first_name": "Rachid-Analysta",
+            "last_name": "Mrad-Analysta",
         },
         {
             "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
