@@ -207,7 +207,7 @@ class AuditedAdminMockData:
 
         In more detail: domain_type specifies what kind of domain object you'd like to create, i.e.
         domain_application (APPLICATION), or domain_information (INFORMATION).
-        """
+        """ # noqa
         common_args = self.get_common_domain_arg_dictionary(
             item_name, org_type, federal_type, purpose
         )
