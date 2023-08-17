@@ -1500,7 +1500,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
                         reverse(url_name, kwargs={"pk": application.pk})
                     )
                     self.assertEqual(page.status_code, 403)
-                    
+
     def test_approved_application_not_in_active_requests(self):
         """An approved application is not shown in the Active
         Requests table on home.html."""
@@ -1508,12 +1508,10 @@ class TestApplicationStatus(TestWithUser, WebTest):
             status=DomainApplication.APPROVED, user=self.user
         )
         application.save()
-        
+
         home_page = self.app.get("/")
         # This works in our test environemnt because creating
         # an approved application here does not generate a
         # domain object, so we do not expect to see 'city.gov'
         # in either the Domains or Requests tables.
         self.assertNotContains(home_page, "city.gov")
-
-
