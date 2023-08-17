@@ -4,10 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper
-
-# Split up for the linter
-from registrar.models.utility.admin_form_order_helper import SortingDict
+from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper, SortingDict # noqa
 from . import models
 
 logger = logging.getLogger(__name__)

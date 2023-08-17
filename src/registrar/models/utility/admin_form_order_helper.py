@@ -10,23 +10,16 @@ class SortingDict:
 
     _sorting_dict: Dict[type, type] = {}
 
-    # model_list can be will be called multiple times.
-    # Not super necessary, but it'd be nice
-    # to have the perf advantage of a dictionary,
-    # while minimizing typing when
-    # adding a new SortingDict (input as a list)
-    def convert_list_to_dict(self, value_list):
-        """Used internally to convert model_list to a dictionary"""
-        dictionary: Dict[type, type] = {}
-        for item in value_list:
-            dictionary[item] = item
-        return dictionary
-
     def __init__(self, model_list, sort_list):
         self._sorting_dict = {
             "dropDownSelected": self.convert_list_to_dict(model_list),
             "sortBy": sort_list,
         }
+
+    # Used in __init__ for model_list for performance reasons
+    def convert_list_to_dict(self, value_list):
+        """Used internally to convert model_list to a dictionary"""
+        return {item: item for item in value_list}
 
     def get_dict(self):
         """Grabs the associated dictionary item,
@@ -59,10 +52,12 @@ class AdminFormOrderHelper:
 
             if db_field.name in drop_down_selected:
                 _order_by_list = sort_by
+                # Exit loop when order_by_list is found
                 break
 
         # Only order if we choose to do so
-        if _order_by_list is not None:
+        # noqa for the linter... reduces readability otherwise
+        if _order_by_list is not None and _order_by_list != []: # noqa
             form_field.queryset = form_field.queryset.order_by(*_order_by_list)
 
         return form_field

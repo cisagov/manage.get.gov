@@ -10,10 +10,7 @@ from typing import List, Dict
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
-from registrar.models import Contact, DraftDomain, Website, DomainApplication
-
-# For the linter
-from registrar.models import DomainInvitation, User, DomainInformation, Domain
+from registrar.models import Contact, DraftDomain, Website, DomainApplication, DomainInvitation, User, DomainInformation, Domain # noqa
 
 logger = logging.getLogger(__name__)
 
@@ -96,39 +93,51 @@ class MockSESClient(Mock):
 
 
 class AuditedAdminMockData:
-    """Creates simple data mocks for AuditedAdminTest"""
+    """Creates simple data mocks for AuditedAdminTest.
+    Can likely be more generalized, but the primary purpose of this class is to simplify
+    mock data creation, especially for lists of items,
+    by making the assumption that for most use cases we don't have to worry about
+    data 'accuracy' ('testy 2' is not an accurate first_name for example), we just care about
+    implementing some kind of patterning, especially with lists of items.
+
+    Two variables are used across multiple functions:
+
+    *item_name* - Used in patterning. Will be appended en masse to multiple string fields,
+    like first_name. For example, item_name 'egg' will return a user object of:
+
+    first_name: 'egg first_name:user',
+    last_name: 'egg last_name:user',
+    username: 'egg username:user'
+
+    where 'user' is the short_hand
+
+    *short_hand* - Used in patterning. Certain fields will have ':{shorthand}' appended to it,
+    as a way to optionally include metadata in the string itself. Can be further expanded on.
+    Came from a bug where different querysets used in testing would effectively be 'anonymized', wherein
+    it would only display a list of types, but not include the variable name.
+    """ # noqa
 
     # Constants for different domain object types
     INFORMATION = "information"
     APPLICATION = "application"
     INVITATION = "invitation"
 
-    # These all can likely be generalized more if necessary,
-    # particulary with shorthands.
-    # These are kept basic for now.
-    # As for why we have shorthands to begin with:
-    # .queryset returns a list of all objects of the same type,
-    # rather than by seperating out those fields.
-    # For such scenarios, the shorthand allows us to not only id a field,
-    # but append additional information to it.
-    # This is useful for that scenario and outside it for
-    # identifying if values swapped unexpectedly
-    def dummy_user(self, item_name, shorthand):
+    def dummy_user(self, item_name, short_hand):
         """Creates a dummy user object,
         but with a shorthand and support for multiple"""
         user = User.objects.get_or_create(
-            first_name="{} First:{}".format(item_name, shorthand),
-            last_name="{} Last:{}".format(item_name, shorthand),
-            username="{} username:{}".format(item_name, shorthand),
+            first_name="{} first_name:{}".format(item_name, short_hand),
+            last_name="{} last_name:{}".format(item_name, short_hand),
+            username="{} username:{}".format(item_name, short_hand),
         )[0]
         return user
 
-    def dummy_contact(self, item_name, shorthand):
+    def dummy_contact(self, item_name, short_hand):
         """Creates a dummy contact object"""
         contact = Contact.objects.get_or_create(
-            first_name="{} First:{}".format(item_name, shorthand),
-            last_name="{} Last:{}".format(item_name, shorthand),
-            title="{} title:{}".format(item_name, shorthand),
+            first_name="{} first_name:{}".format(item_name, short_hand),
+            last_name="{} last_name:{}".format(item_name, short_hand),
+            title="{} title:{}".format(item_name, short_hand),
             email="{}testy@town.com".format(item_name),
             phone="(555) 555 5555",
         )[0]
@@ -164,9 +173,9 @@ class AuditedAdminMockData:
             organization_type=org_type,
             federal_type=federal_type,
             purpose=purpose,
-            organization_name="{} Testorg".format(item_name),
-            address_line1="{} address 1".format(item_name),
-            address_line2="{} address 2".format(item_name),
+            organization_name="{} organization".format(item_name),
+            address_line1="{} address_line1".format(item_name),
+            address_line2="{} address_line2".format(item_name),
             is_policy_acknowledged=True,
             state_territory="NY",
             zipcode="10002",
@@ -178,7 +187,6 @@ class AuditedAdminMockData:
         )
         return common_args
 
-    # This can be boiled down more, though for our purposes this is OK
     def dummy_kwarg_boilerplate(
         self,
         domain_type,
@@ -188,7 +196,18 @@ class AuditedAdminMockData:
         federal_type="executive",
         purpose="Purpose of the site",
     ):
-        """Returns kwargs for different domain object types"""
+        """
+        A helper function that returns premade kwargs for easily creating different domain object types.
+        There is a decent amount of boilerplate associated with
+        creating new domain objects (such as domain_application, or domain_information),
+        so for test case purposes, we can make some assumptions and utilize that to simplify
+        the object creation process.
+
+        *domain_type* uses constants. Used to identify what kind of 'Domain' object you'd like to make.
+
+        In more detail: domain_type specifies what kind of domain object you'd like to create, i.e.
+        domain_application (APPLICATION), or domain_information (INFORMATION).
+        """
         common_args = self.get_common_domain_arg_dictionary(
             item_name, org_type, federal_type, purpose
         )

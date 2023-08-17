@@ -1,16 +1,10 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin
+# noqa is used on all three of these as the linter doesn't like the length of this line
+from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin, AuditedAdmin # noqa
+from registrar.models import DomainApplication, DomainInformation, User, Contact, DomainInvitation # noqa
+from .common import completed_application, mock_user, create_superuser, create_user, multiple_unalphabetical_domain_objects # noqa
 
-# Need to split these up due to the linter
-from registrar.admin import MyUserAdmin, AuditedAdmin
-from registrar.models import DomainApplication, DomainInformation, User
-from registrar.models.contact import Contact
-from registrar.models.domain_invitation import DomainInvitation
-from .common import completed_application, mock_user, create_superuser, create_user
-
-# Need to split these up due to the linter
-from .common import multiple_unalphabetical_domain_objects
 from django.contrib.auth import get_user_model
 
 from django.conf import settings
@@ -393,7 +387,6 @@ class AuditedAdminTest(TestCase):
         for obj in obj_names:
             formatted_sort_fields.append("{}__{}".format(field_name, obj))
 
-        # Not really a fan of how this looks, but as the linter demands...
         ordered_list = list(
             obj_to_sort.get_queryset(request)
             .order_by(*formatted_sort_fields)
@@ -402,8 +395,6 @@ class AuditedAdminTest(TestCase):
 
         return ordered_list
 
-    # Q: These three tests can be generalized into an object,
-    # is it worth the time investment to do so?
     def test_alphabetically_sorted_fk_fields_domain_application(self):
         tested_fields = [
             DomainApplication.authorizing_official.field,
