@@ -57,7 +57,7 @@ class AdminFormOrderHelper:
 
         # Only order if we choose to do so
         # noqa for the linter... reduces readability otherwise
-        if _order_by_list is not None and _order_by_list != []: # noqa
+        if _order_by_list is not None and _order_by_list != []:  # noqa
             form_field.queryset = form_field.queryset.order_by(*_order_by_list)
 
         return form_field

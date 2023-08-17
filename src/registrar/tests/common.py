@@ -10,7 +10,16 @@ from typing import List, Dict
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
-from registrar.models import Contact, DraftDomain, Website, DomainApplication, DomainInvitation, User, DomainInformation, Domain # noqa
+from registrar.models import (
+    Contact,
+    DraftDomain,
+    Website,
+    DomainApplication,
+    DomainInvitation,
+    User,
+    DomainInformation,
+    Domain,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +124,7 @@ class AuditedAdminMockData:
     as a way to optionally include metadata in the string itself. Can be further expanded on.
     Came from a bug where different querysets used in testing would effectively be 'anonymized', wherein
     it would only display a list of types, but not include the variable name.
-    """ # noqa
+    """  # noqa
 
     # Constants for different domain object types
     INFORMATION = "information"
@@ -207,7 +216,7 @@ class AuditedAdminMockData:
 
         In more detail: domain_type specifies what kind of domain object you'd like to create, i.e.
         domain_application (APPLICATION), or domain_information (INFORMATION).
-        """ # noqa
+        """  # noqa
         common_args = self.get_common_domain_arg_dictionary(
             item_name, org_type, federal_type, purpose
         )

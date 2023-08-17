@@ -1,9 +1,26 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-# noqa is used on all three of these as the linter doesn't like the length of this line
-from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin, AuditedAdmin # noqa
-from registrar.models import DomainApplication, DomainInformation, User, Contact, DomainInvitation # noqa
-from .common import completed_application, mock_user, create_superuser, create_user, multiple_unalphabetical_domain_objects # noqa
+
+from registrar.admin import (
+    DomainApplicationAdmin,
+    ListHeaderAdmin,
+    MyUserAdmin,
+    AuditedAdmin,
+)
+from registrar.models import (
+    DomainApplication,
+    DomainInformation,
+    User,
+    Contact,
+    DomainInvitation,
+)
+from .common import (
+    completed_application,
+    mock_user,
+    create_superuser,
+    create_user,
+    multiple_unalphabetical_domain_objects,
+)
 
 from django.contrib.auth import get_user_model
 
