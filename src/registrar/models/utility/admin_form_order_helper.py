@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 class SortingDict:
     """Stores a sorting dictionary object"""
+
     _sorting_dict: Dict[type, type] = {}
 
     # model_list can be will be called multiple times.
@@ -24,7 +25,7 @@ class SortingDict:
     def __init__(self, model_list, sort_list):
         self._sorting_dict = {
             "dropDownSelected": self.convert_list_to_dict(model_list),
-            "sortBy": sort_list
+            "sortBy": sort_list,
         }
 
     def get_dict(self):
@@ -36,7 +37,7 @@ class SortingDict:
         return self._sorting_dict
 
 
-class AdminFormOrderHelper():
+class AdminFormOrderHelper:
     """A helper class to order a dropdown field in Django Admin,
     takes the fields you want to order by as an array"""
 
@@ -46,7 +47,7 @@ class AdminFormOrderHelper():
     def __init__(self, sort: list[SortingDict]):
         self._sorting_list = sort
 
-    def get_ordered_form_field(self, form_field, db_field) -> (ModelChoiceField | None):
+    def get_ordered_form_field(self, form_field, db_field) -> ModelChoiceField | None:
         """Orders the queryset for a ModelChoiceField
         based on the order_by_dict dictionary"""
         _order_by_list = []

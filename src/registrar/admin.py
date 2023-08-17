@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper
+
 # Split up for the linter
 from registrar.models.utility.admin_form_order_helper import SortingDict
 from . import models
@@ -17,13 +18,10 @@ foreignkey_orderby_dict: list[SortingDict] = [
     # Handles fields that are sorted by 'first_name / last_name
     SortingDict(
         ["submitter", "authorizing_official", "investigator", "creator", "user"],
-        ['first_name', 'last_name']
+        ["first_name", "last_name"],
     ),
     # Handles fields that are sorted by 'name'
-    SortingDict(
-        ["domain", "requested_domain"],
-        ["name"]
-    )
+    SortingDict(["domain", "requested_domain"], ["name"]),
 ]
 
 
@@ -184,6 +182,7 @@ class DomainAdmin(ListHeaderAdmin):
 
 class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
+
     search_fields = ["email", "first_name", "last_name"]
     search_help_text = "Search by firstname, lastname or email."
 
