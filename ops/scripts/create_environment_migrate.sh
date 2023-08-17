@@ -40,7 +40,7 @@ then
 fi
 
 echo "Creating manifest for $1..."
-cp ops/scripts/manifest-sandbox-template.yaml ops/manifests/manifest-$1.yaml
+cp ops/scripts/manifest-sandbox-template-migrate.yaml ops/manifests/manifest-$1.yaml
 sed -i '' "s/ENVIRONMENT/$1/" "ops/manifests/manifest-$1.yaml"
 
 echo "Adding new environment to settings.py..."
@@ -129,7 +129,7 @@ then
     exit 1
 fi
 
-cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.username, .password]|@tsv' | 
+cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.credentials.username, .credentials.password]|@tsv' | 
 while read -r username password; do
     gh secret --repo cisagov/getgov set CF_${upcase_name}_USERNAME --body $username
     gh secret --repo cisagov/getgov set CF_${upcase_name}_PASSWORD --body $password
