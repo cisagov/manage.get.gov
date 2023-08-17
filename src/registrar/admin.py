@@ -4,29 +4,26 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper, SortingDictInterface # noqa
+from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper, SortingDict
+# Split up for the linter
+from registrar.models.utility.admin_form_order_helper import SortingDict
 from . import models
 
 logger = logging.getLogger(__name__)
-# The linter does not like the length of SortingDictInterface, so these are split here
-audited_admin_item_names = ["submitter", "authorizing_official",
-                            "investigator", "creator", "user"]
-audited_admin_orderby_names = ['first_name', 'last_name']
 
-special_audited_admin_item_names = ["domain", "requested_domain"]
-special_audited_admin_orderby_names = ["name"]
 # Used to keep track of how we want to order_by certain FKs
-foreignkey_orderby_dict: list[SortingDictInterface] = [
+foreignkey_orderby_dict: list[SortingDict] = [
     # foreign_key - order_by
-    SortingDictInterface(
-                        audited_admin_item_names,
-                        audited_admin_orderby_names
-                        ).sorting_dict,
+    # Handles fields that are sorted by 'first_name / last_name
+    SortingDict(
+    ["submitter", "authorizing_official", "investigator", "creator", "user"],
+    ['first_name', 'last_name']
+    ),
     # Handles fields that are sorted by 'name'
-    SortingDictInterface(
-                        special_audited_admin_item_names,
-                        special_audited_admin_orderby_names
-                        ).sorting_dict
+    SortingDict(
+    ["domain", "requested_domain"],
+    ["name"]
+    )
 ]
 
 
