@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class SortingDict:
+    """Stores a sorting dictionary object"""
     _sorting_dict: Dict[type, type] = {}
 
     # model_list can be will be called multiple times.
@@ -14,6 +15,7 @@ class SortingDict:
     # while minimizing typing when
     # adding a new SortingDict (input as a list)
     def convert_list_to_dict(self, value_list):
+        """Used internally to convert model_list to a dictionary"""
         dictionary: Dict[type, type] = {}
         for item in value_list:
             dictionary[item] = item
@@ -26,6 +28,8 @@ class SortingDict:
         }
 
     def get_dict(self):
+        """Grabs the associated dictionary item,
+        has two fields: 'dropDownSelected': model_list and 'sortBy': sort_list"""
         # This should never happen so we need to log this
         if self._sorting_dict is None:
             raise ValueError("_sorting_dict was None")
@@ -39,7 +43,7 @@ class AdminFormOrderHelper():
     # Used to keep track of how we want to order_by certain FKs
     _sorting_list: list[SortingDict] = []
 
-    def __init__(self, sort):
+    def __init__(self, sort: list[SortingDict]):
         self._sorting_list = sort
 
     def get_ordered_form_field(self, form_field, db_field) -> (ModelChoiceField | None):

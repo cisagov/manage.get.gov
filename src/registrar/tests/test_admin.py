@@ -583,6 +583,7 @@ class AuditedAdminTest(TestCase):
         field_name,
         queryset_shorthand
     ):
+        """Handles edge cases for test cases"""
         if first_name is None:
             raise ValueError('Invalid value for first_name, must be defined')
 
@@ -591,7 +592,7 @@ class AuditedAdminTest(TestCase):
         if last_name is None:
             return (first_name,)
 
-        if(first_name.split(queryset_shorthand)[1] == field_name):
+        if (first_name.split(queryset_shorthand)[1] == field_name):
             return returned_tuple
         else:
             return None

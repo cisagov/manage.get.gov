@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper, SortingDict
+from registrar.models.utility.admin_form_order_helper import AdminFormOrderHelper
 # Split up for the linter
 from registrar.models.utility.admin_form_order_helper import SortingDict
 from . import models
@@ -16,13 +16,13 @@ foreignkey_orderby_dict: list[SortingDict] = [
     # foreign_key - order_by
     # Handles fields that are sorted by 'first_name / last_name
     SortingDict(
-    ["submitter", "authorizing_official", "investigator", "creator", "user"],
-    ['first_name', 'last_name']
+        ["submitter", "authorizing_official", "investigator", "creator", "user"],
+        ['first_name', 'last_name']
     ),
     # Handles fields that are sorted by 'name'
     SortingDict(
-    ["domain", "requested_domain"],
-    ["name"]
+        ["domain", "requested_domain"],
+        ["name"]
     )
 ]
 
