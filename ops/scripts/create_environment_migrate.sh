@@ -43,11 +43,6 @@ echo "Creating manifest for $1..."
 cp ops/scripts/manifest-sandbox-template-migrate.yaml ops/manifests/manifest-$1.yaml
 sed -i '' "s/ENVIRONMENT/$1/" "ops/manifests/manifest-$1.yaml"
 
-echo "Adding new environment to settings.py..."
-sed -i '' '/getgov-staging.app.cloud.gov/ {a\
-    '\"getgov-$1.app.cloud.gov\"',
-}' src/registrar/config/settings.py
-
 echo "Creating new cloud.gov space for $1..."
 cf create-space $1
 cf target -o "cisa-dotgov" -s $1
@@ -104,19 +99,6 @@ fi
 echo "Alright, your app is up and running at https://getgov-$1.app.cloud.gov!"
 echo
 echo "Moving on to setup Github automation..."
-
-echo "Adding new environment to Github Actions..."
-sed -i '' '/          - staging/ {a\
-          - '"$1"'
-}' .github/workflows/reset-db.yaml
-
-sed -i '' '/          - staging/ {a\
-          - '"$1"'
-}' .github/workflows/migrate.yaml
-
-sed -i '' '/${{startsWith(github.head_ref, / {a\
-        || startsWith(github.head_ref, '"'$1'"')
-}' .github/workflows/deploy-sandbox.yaml
 
 echo "Creating space deployer for Github deploys..."
 cf create-service cloud-gov-service-account space-deployer github-cd-account
