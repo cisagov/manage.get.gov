@@ -5,14 +5,15 @@ import abc  # abstract base class
 from django.views.generic import DetailView, DeleteView
 
 from registrar.models import Domain, DomainApplication, DomainInvitation
+from registrar.models.domain_information import DomainInformation
 
 from .mixins import (
     DomainPermission,
     DomainApplicationPermission,
     DomainInvitationPermission,
 )
-
-
+import logging
+logger = logging.getLogger(__name__)
 class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
     """Abstract base view for domains that enforces permissions.
@@ -25,6 +26,17 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     model = Domain
     # variable name in template context for the model object
     context_object_name = "domain"
+
+    # Adds context information for user permissions
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context['primary_key'] = self.kwargs["pk"]
+        context['is_analyst_or_superuser'] = user.is_superuser or user.is_staff
+        context['is_original_creator'] = DomainInformation.objects.filter(
+            creator=self.request.user, id=self.kwargs["pk"]
+        ).exists()
+        return context
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property

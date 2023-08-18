@@ -160,6 +160,17 @@ class DomainAdmin(ListHeaderAdmin):
 
         return super().response_change(request, obj)
 
+    # Sets domain_id as a context var
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["domain_id"] = object_id
+        return super().change_view(
+            request,
+            object_id,
+            form_url,
+            extra_context=extra_context,
+        )
+
 
 class ContactAdmin(ListHeaderAdmin):
 

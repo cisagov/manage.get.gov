@@ -4,24 +4,38 @@
 {% block domain_content %}
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
-
     {% url 'domain-nameservers' pk=domain.id as url %}
-    {% if domain.nameservers %} 
-      {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' edit_link=url %}
+    {% if domain.nameservers %}
+      {% if is_original_creator %}
+        {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' edit_link=url %}
+      {% else %}
+        {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' %}
+      {% endif %}
     {% else %}
       <h2 class="margin-top-neg-1"> DNS name servers </h2>
+      {% if is_original_creator %}
       <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
-      <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a> 
+      <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
+      {% else %}
+        <p>No DNS name servers have been added yet.</p>
+      {% endif %}
     {% endif %}
 
     {% url 'domain-org-name-address' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url %}
 
     {% url 'domain-authorizing-official' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url %}
-
+    {% if is_original_creator %}
+      {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true'%}
+    {% endif %}
     {% url 'domain-your-contact-information' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
+    {% if is_original_creator %}
+      {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Contact information' value=request.user.contact contact='true' %}
+    {% endif %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='Security email' value=domain.security_email edit_link=url %}

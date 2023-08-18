@@ -4,23 +4,23 @@
   <nav aria-label="Domain sections">
     <ul class="usa-sidenav">
       <li class="usa-sidenav__item">
-        {% url 'domain' pk=domain.id as url %} 
-        <a href="{{ url }}" 
+        {% url 'domain' pk=domain.id as url %}
+        <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
           Domain overview
         </a>
       </li>
-
+      {% if is_original_creator %}
       <li class="usa-sidenav__item">
-        {% url 'domain-nameservers' pk=domain.id as url %} 
+        {% url 'domain-nameservers' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
             DNS name servers
         </a>
       </li>
-
+      {% endif %}
       <li class="usa-sidenav__item">
         {% url 'domain-org-name-address' pk=domain.id as url %}
         <a href="{{ url }}"
@@ -28,8 +28,8 @@
         >
             Organization name and mailing address
         </a>
-      </li>      
-
+      </li>
+      {% if is_original_creator %}
       <li class="usa-sidenav__item">
         {% url 'domain-authorizing-official' pk=domain.id as url %}
         <a href="{{ url }}"
@@ -38,16 +38,17 @@
             Authorizing official
         </a>
       </li>
-
+      {% endif %}
+      {% if is_original_creator %}
       <li class="usa-sidenav__item">
         {% url 'domain-your-contact-information' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
-            Your contact information
+          Your contact information
         </a>
       </li>
-
+      {% endif %}
       <li class="usa-sidenav__item">
         {% url 'domain-security-email' pk=domain.id as url %}
         <a href="{{ url }}"

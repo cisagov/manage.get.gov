@@ -3,7 +3,8 @@
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from registrar.models import UserDomainRole, DomainApplication, DomainInvitation
-
+import logging
+logger = logging.getLogger(__name__)
 
 class PermissionsLoginMixin(PermissionRequiredMixin):
 
@@ -23,6 +24,8 @@ class DomainPermission(PermissionsLoginMixin):
 
         The user is in self.request.user and the domain needs to be looked
         up from the domain's primary key in self.kwargs["pk"]
+
+        analysts and superusers are exempt
         """
 
         # ticket 806
@@ -33,10 +36,15 @@ class DomainPermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
+        # user needs to be the creator of the application
+        # this query is empty if there isn't a domain application with this
+        # id and this user as creator
+        user_is_creator: bool = DomainApplication.objects.filter(
+            creator=self.request.user, id=self.kwargs["pk"]
+        ).exists()
+        user_is_analyst_or_superuser = self.request.user.is_staff or self.request.user.is_superuser
         # user needs to have a role on the domain
-        if not UserDomainRole.objects.filter(
-            user=self.request.user, domain__id=self.kwargs["pk"]
-        ).exists():
+        if not user_is_creator and not user_is_analyst_or_superuser:
             return False
 
         # ticket 796

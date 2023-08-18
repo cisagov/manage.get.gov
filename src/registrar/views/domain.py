@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 class DomainView(DomainPermissionView):
 
     """Domain detail overview page."""
-
     template_name = "domain_detail.html"
 
 
