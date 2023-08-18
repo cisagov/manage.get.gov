@@ -4,7 +4,6 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-from registrar.models.domain_application import DomainApplication
 from registrar.models.utility.admin_form_order_helper import (
     AdminFormOrderHelper,
     SortingDict,
@@ -23,7 +22,7 @@ foreignkey_orderby_dict: list[SortingDict] = [
     ),
     # Handles fields that are sorted by 'name'
     SortingDict(["domain", "requested_domain"], ["name"]),
-    SortingDict(['domain_application'], ['requested_domain__name']),
+    SortingDict(["domain_application"], ["requested_domain__name"]),
 ]
 
 

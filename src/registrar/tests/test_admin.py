@@ -11,7 +11,6 @@ from registrar.models import (
     DomainApplication,
     DomainInformation,
     User,
-    Contact,
     DomainInvitation,
 )
 from .common import (
@@ -431,7 +430,6 @@ class AuditedAdminTest(TestCase):
 
         model_admin = AuditedAdmin(DomainApplication, self.site)
 
-
         sorted_fields = []
         # Typically we wouldn't want two nested for fields,
         # but both fields are of a fixed length.
@@ -480,8 +478,8 @@ class AuditedAdminTest(TestCase):
             DomainInformation.authorizing_official.field,
             DomainInformation.submitter.field,
             DomainInformation.creator.field,
-            (DomainInformation.domain.field, ['name']),
-            (DomainInformation.domain_application.field, ['requested_domain__name']),
+            (DomainInformation.domain.field, ["name"]),
+            (DomainInformation.domain_application.field, ["requested_domain__name"]),
         ]
         # Creates multiple domain applications - review status does not matter
         applications = multiple_unalphabetical_domain_objects("information")
@@ -521,19 +519,19 @@ class AuditedAdminTest(TestCase):
             # return lists of different types/structures.
             # We need to parse this data and coerce them into the same type.
             for obj in current_sort_order:
+                last = None
                 if not isOtherOrderfield:
                     first = obj.first_name
                     last = obj.last_name
                 elif field_obj == DomainInformation.domain.field:
                     first = obj.name
-                    last = None
-                elif field_obj.name == DomainInformation.domain_application.field:
-                    first = obj.requested_domain
-                    last = None
+                elif field_obj == DomainInformation.domain_application.field:
+                    first = obj.requested_domain.name
 
-                name_tuple = self.coerced_fk_field_helper(first, last, field_obj.name, ":")
+                name_tuple = self.coerced_fk_field_helper(
+                    first, last, field_obj.name, ":"
+                )
                 if name_tuple is not None:
-                    logger.debug(name_tuple)
                     current_sort_order_coerced_type.append(name_tuple)
 
             self.assertEqual(
