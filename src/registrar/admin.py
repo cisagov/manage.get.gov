@@ -4,29 +4,13 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-from registrar.models.utility.admin_form_order_helper import (
-    AdminFormOrderHelper,
-    SortingDict,
-)
+from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 
 logger = logging.getLogger(__name__)
 
-# Used to keep track of how we want to order_by certain FKs
-foreignkey_orderby_dict: list[SortingDict] = [
-    # foreign_key - order_by
-    # Handles fields that are sorted by 'first_name / last_name
-    SortingDict(
-        ["submitter", "authorizing_official", "investigator", "creator", "user"],
-        ["first_name", "last_name"],
-    ),
-    # Handles fields that are sorted by 'name'
-    SortingDict(["domain", "requested_domain"], ["name"]),
-    SortingDict(["domain_application"], ["requested_domain__name"]),
-]
 
-
-class AuditedAdmin(admin.ModelAdmin):
+class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
     """Custom admin to make auditing easier."""
 
     def history_view(self, request, object_id, extra_context=None):
@@ -42,7 +26,7 @@ class AuditedAdmin(admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Used to sort dropdown fields alphabetically but can be expanded upon"""
         form_field = super().formfield_for_foreignkey(db_field, request, **kwargs)
-        return form_field_order_helper(form_field, db_field)
+        return self.form_field_order_helper(form_field, db_field)
 
 
 class ListHeaderAdmin(AuditedAdmin):
@@ -321,15 +305,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         else:
             # Regular users can only view the specified fields
             return self.readonly_fields
-
-
-# For readability purposes, but can be replaced with a one liner
-def form_field_order_helper(form_field, db_field):
-    """A shorthand for AdminFormOrderHelper(foreignkey_orderby_dict)
-    .get_ordered_form_field(form_field, db_field)"""
-
-    form = AdminFormOrderHelper(foreignkey_orderby_dict)
-    return form.get_ordered_form_field(form_field, db_field)
 
 
 admin.site.register(models.User, MyUserAdmin)
