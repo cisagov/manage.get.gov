@@ -98,6 +98,15 @@ class MyUserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
 
     inlines = [UserContactInline]
+    
+    list_display = ("email", "first_name", "last_name", "is_staff", "is_superuser", "status")
+    
+    fieldsets = (
+        (None, {'fields': ('username', 'password', 'status')}), # Add the 'status' field here
+        ('Personal Info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
 
     def get_list_display(self, request):
         if not request.user.is_superuser:
@@ -295,6 +304,9 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 elif obj.status == models.DomainApplication.REJECTED:
                     obj.status = original_obj.status
                     obj.reject()
+                elif obj.status == models.DomainApplication.INELIGIBLE:
+                    obj.status = original_obj.status
+                    obj.reject_with_prejudice()
                 else:
                     logger.warning("Unknown status selected in django admin")
 

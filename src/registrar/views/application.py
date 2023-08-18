@@ -12,7 +12,7 @@ from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 
-from .utility import DomainApplicationPermissionView
+from .utility import DomainApplicationPermissionView, ApplicationWizardPermissionView
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class Step(StrEnum):
     REVIEW = "review"
 
 
-class ApplicationWizard(TemplateView):
+class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     """
     A common set of methods and configuration.
 
@@ -59,6 +59,8 @@ class ApplicationWizard(TemplateView):
     Any method not marked as internal can be overridden in a subclass,
     although not without consulting the base implementation, first.
     """
+    
+    template_name = ""
 
     # uniquely namespace the wizard in urls.py
     # (this is not seen _in_ urls, only for Django's internal naming)
