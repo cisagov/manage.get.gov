@@ -610,7 +610,9 @@ class DomainApplication(TimeStampedModel):
         """The applicant is a bad actor, reject with prejudice.
 
         No email As a side effect, but we block the applicant from editing
-        any existing domains and from submitting new apllications"""
+        any existing domains/applications and from submitting new aplications.
+        We do this by setting an ineligible status on the user, which the
+        permissions classes test against"""
         
         self.creator.block_user()
 

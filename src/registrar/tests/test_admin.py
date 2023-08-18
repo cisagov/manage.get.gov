@@ -274,6 +274,33 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
+        
+    def test_save_model_sets_ineligible_status_on_user(self):
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
+
+        # Create an instance of the model admin
+        model_admin = DomainApplicationAdmin(DomainApplication, self.site)
+
+        # Modify the application's property
+        application.status = DomainApplication.INELIGIBLE
+
+        # Use the model admin's save_model method
+        model_admin.save_model(request, application, form=None, change=True)
+
+        # Test that approved domain exists and equals requested domain
+        self.assertEqual(
+            application.creator.status, "ineligible"
+        )
 
     def tearDown(self):
         DomainInformation.objects.all().delete()
