@@ -245,11 +245,11 @@ class AuditedAdminMockData:
         return full_arg_list
 
     def create_full_dummy_domain_application(
-        self, object_name, status=DomainApplication.STARTED
+        self, item_name, status=DomainApplication.STARTED
     ):
         """Creates a dummy domain application object"""
         domain_application_kwargs = self.dummy_kwarg_boilerplate(
-            self.APPLICATION, object_name, status
+            self.APPLICATION, item_name, status
         )
         application = DomainApplication.objects.get_or_create(
             **domain_application_kwargs
@@ -257,11 +257,11 @@ class AuditedAdminMockData:
         return application
 
     def create_full_dummy_domain_information(
-        self, object_name, status=DomainApplication.STARTED
+        self, item_name, status=DomainApplication.STARTED
     ):
         """Creates a dummy domain information object"""
         domain_application_kwargs = self.dummy_kwarg_boilerplate(
-            self.INFORMATION, object_name, status
+            self.INFORMATION, item_name, status
         )
         application = DomainInformation.objects.get_or_create(
             **domain_application_kwargs
@@ -269,11 +269,11 @@ class AuditedAdminMockData:
         return application
 
     def create_full_dummy_domain_invitation(
-        self, object_name, status=DomainApplication.STARTED
+        self, item_name, status=DomainApplication.STARTED
     ):
         """Creates a dummy domain invitation object"""
         domain_application_kwargs = self.dummy_kwarg_boilerplate(
-            self.INVITATION, object_name, status
+            self.INVITATION, item_name, status
         )
         application = DomainInvitation.objects.get_or_create(
             **domain_application_kwargs
@@ -284,7 +284,7 @@ class AuditedAdminMockData:
     def create_full_dummy_domain_object(
         self,
         domain_type,
-        object_name,
+        item_name,
         has_other_contacts=True,
         has_current_website=True,
         has_alternative_gov_domain=True,
@@ -295,27 +295,27 @@ class AuditedAdminMockData:
         match domain_type:
             case self.APPLICATION:
                 application = self.create_full_dummy_domain_application(
-                    object_name, status
+                    item_name, status
                 )
             case self.INVITATION:
                 application = self.create_full_dummy_domain_invitation(
-                    object_name, status
+                    item_name, status
                 )
             case self.INFORMATION:
                 application = self.create_full_dummy_domain_information(
-                    object_name, status
+                    item_name, status
                 )
             case _:
                 raise ValueError("Invalid domain_type, must conform to given constants")
 
         if has_other_contacts and domain_type != self.INVITATION:
-            other = self.dummy_contact(object_name, "other")
+            other = self.dummy_contact(item_name, "other")
             application.other_contacts.add(other)
         if has_current_website and domain_type == self.APPLICATION:
-            current = self.dummy_current(object_name)
+            current = self.dummy_current(item_name)
             application.current_websites.add(current)
         if has_alternative_gov_domain and domain_type == self.APPLICATION:
-            alt = self.dummy_alt(object_name)
+            alt = self.dummy_alt(item_name)
             application.alternative_domains.add(alt)
 
         return application
