@@ -590,6 +590,11 @@ class DomainApplication(TimeStampedModel):
     @transition(field="status", source=[SUBMITTED, IN_REVIEW], target=WITHDRAWN)
     def withdraw(self):
         """Withdraw an application that has been submitted."""
+        self._send_status_update_email(
+            "action needed",
+            "emails/domain_request_withdrawn.txt",
+            "emails/domain_request_withdrawn_subject.txt",
+        )
 
     @transition(field="status", source=[IN_REVIEW, APPROVED], target=REJECTED)
     def reject(self):

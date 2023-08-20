@@ -1,0 +1,69 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi {{ application.submitter.first_name }}.
+
+Your .gov domain request has been withdrawn.
+DOMAIN REQUESTED: {{ application.requested_domain.name }}
+REQUEST #: {{ application.id }}
+STATUS: Withdrawn
+
+
+YOU CAN EDIT YOUR WITHDRAWN REQUEST
+The details of your withdrawn request are included below. You can edit and resubmit this application by logging into the registrar. <https://manage.get.gov/>.
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
+
+----------------------------------------------------------------
+SUMMARY OF YOUR DOMAIN REQUEST
+Type of organization:
+
+Organization name and mailing address:
+{{ application.organization_name }}
+{{ application.address_line1 }}
+{{ application.address_line2 }}
+{{ application.city }}
+{{ application.state_territory }}
+{{ application.zipcode }}
+
+Type of work:
+{{ application.type_of_work }}
+
+Authorizing official:
+{{ application.authorizing_official }}
+
+Current website for your organization:
+just current_websites
+{{ application.current_websites }}
+all
+{{ application.current_websites.all }}
+
+
+.gov domain:
+{{ application.requested_domain.name }}
+
+Purpose of your domain:
+{{ application.purpose }}
+
+Your contact information:
+{{ application.submitter.title }}
+{{ application.submitter }}
+{{ application.submitter.email }}
+{{ application.submitter.phone }}
+
+Other employees from your organization: 
+all
+{{ application.other_contacts.all }}
+name
+{{ application.other_contacts.name }}
+
+Anything else we should know?:
+{{ application.anything_else }}
+
+Requirements for operating .gov domains:
+{{ application.more_organization_information }}
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Visit <https://get.gov>
+{% endautoescape %}
