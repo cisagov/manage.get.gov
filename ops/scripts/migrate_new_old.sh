@@ -22,9 +22,15 @@ cf delete-route app.cloud.gov -n getgov-$1
 # re-claim the route on new orf
 cf target -o $NEW_ORG -s $1
 cf map-route getgov-$1 app.cloud.gov -n getgov-$1
+cf delete-route app.cloud.gov -n getgov-$1-migrate
 
-# delete old app
+# delete old app and services
 cf target -o $OLD_ORG -s $1
 cf delete getgov-$1
+cf delete-service getgov-$1-database
+cf delete-service getgov-credentials
+cf delete-service getgov-cd-account
+cf delete-space $1
+
 
 printf "Remove -migrate from ops/manifests/manifest-$1.yaml"
