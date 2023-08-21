@@ -94,6 +94,7 @@ The endpoint /admin can be used to view and manage site content, including but n
 ```
 
 5. In the browser, navigate to /admin. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
+6. Add an optional email key/value pair
 
 ### Adding an Analyst to /admin
 Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
@@ -115,6 +116,7 @@ Analysts are a variant of the admin role with limited permissions. The process f
 ```
 
 5. In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
+6. Add an optional email key/value pair
 
 Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
 ## Adding to CODEOWNERS (optional)
