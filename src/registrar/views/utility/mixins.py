@@ -1,9 +1,12 @@
 """Permissions-related mixin classes."""
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.http import Http404
 
-from registrar.models import UserDomainRole, DomainApplication, DomainInvitation
+from registrar.models import DomainApplication, DomainInvitation
 import logging
+
+from registrar.models.domain_information import DomainInformation
 logger = logging.getLogger(__name__)
 
 class PermissionsLoginMixin(PermissionRequiredMixin):
@@ -24,35 +27,49 @@ class DomainPermission(PermissionsLoginMixin):
 
         The user is in self.request.user and the domain needs to be looked
         up from the domain's primary key in self.kwargs["pk"]
-
-        analysts and superusers are exempt
         """
-
-        # ticket 806
-        # if self.request.user is staff or admin and
-        # domain.application__status = 'approved' or 'rejected' or 'action needed'
-        #     return True
 
         if not self.request.user.is_authenticated:
             return False
 
-        # user needs to be the creator of the application
-        # this query is empty if there isn't a domain application with this
-        # id and this user as creator
-        user_is_creator: bool = DomainApplication.objects.filter(
-            creator=self.request.user, id=self.kwargs["pk"]
-        ).exists()
-        user_is_analyst_or_superuser = self.request.user.is_staff or self.request.user.is_superuser
+        pk = self.kwargs["pk"]
+        if pk is None:
+            raise ValueError("Primary key is null for Domain")
+
+        requested_domain = None
+
+        try:
+            requested_domain = DomainInformation.objects.get(
+                id=pk
+            )
+
+        # This should never happen in normal flow.
+        # If it does, then it likely means something bad happened...
+        except DomainInformation.DoesNotExist:
+            raise Http404()
+
+        # Checks if the creator is the user requesting this item
+        user_is_creator: bool = requested_domain.creator.username == self.request.user.username
+        
         # user needs to have a role on the domain
-        if not user_is_creator and not user_is_analyst_or_superuser:
-            return False
+        if user_is_creator:
+            return True
+
+        # ticket 806
+        # Analysts may manage domains, when they are in these statuses:
+        valid_domain_statuses = [DomainApplication.APPROVED, DomainApplication.IN_REVIEW, DomainApplication.REJECTED, DomainApplication.ACTION_NEEDED]
+        # Check if the user is permissioned...
+        user_is_analyst_or_superuser = self.request.user.is_staff or self.request.user.is_superuser
+
+        if user_is_analyst_or_superuser and requested_domain.domain_application.status in valid_domain_statuses:
+            return True
 
         # ticket 796
         # if domain.application__status != 'approved'
         #     return false
 
         # if we need to check more about the nature of role, do it here.
-        return True
+        return False
 
 
 class DomainApplicationPermission(PermissionsLoginMixin):

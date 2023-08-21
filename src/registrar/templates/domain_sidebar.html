@@ -39,16 +39,19 @@
         </a>
       </li>
       {% endif %}
-      {% if is_original_creator %}
       <li class="usa-sidenav__item">
         {% url 'domain-your-contact-information' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
+        {% if is_original_creator %}
           Your contact information
+        {% else %}
+          Contact information
+        {% endif %}
         </a>
       </li>
-      {% endif %}
+
       <li class="usa-sidenav__item">
         {% url 'domain-security-email' pk=domain.id as url %}
         <a href="{{ url }}"

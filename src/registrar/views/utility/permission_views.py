@@ -31,11 +31,20 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        # Q: is there a more efficent way to do this?
+        # Searches by creator_id instead of creator,
+        # should be slightly faster than by creator...
+        is_original_creator = DomainInformation.objects.filter(
+            creator_id=self.request.user.id, id=self.kwargs["pk"]
+        ).exists()
+
         context['primary_key'] = self.kwargs["pk"]
         context['is_analyst_or_superuser'] = user.is_superuser or user.is_staff
-        context['is_original_creator'] = DomainInformation.objects.filter(
-            creator=self.request.user, id=self.kwargs["pk"]
-        ).exists()
+        context['is_original_creator'] = is_original_creator
+        context['is_active_user'] = DomainInformation.objects.filter(
+            id=self.kwargs["pk"]
+        )
+
         return context
 
     # Abstract property enforces NotImplementedError on an attribute.

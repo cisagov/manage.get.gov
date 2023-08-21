@@ -34,7 +34,7 @@
     {% if is_original_creator %}
       {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
     {% else %}
-      {% include "includes/summary_item.html" with title='Contact information' value=request.user.contact contact='true' %}
+      {% include "includes/summary_item.html" with title='Contact information' value=request.user.contact contact='true' edit_link=url %}
     {% endif %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
