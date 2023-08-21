@@ -72,11 +72,6 @@ class UserFixture:
             "first_name": "Rebecca",
             "last_name": "Hsieh",
         },
-        {
-            "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
-            "first_name": "Dave",
-            "last_name": "Kennedy",
-        },  
     ]
 
     STAFF = [
