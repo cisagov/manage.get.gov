@@ -111,7 +111,7 @@ class AuditedAdminMockData:
 
     Two variables are used across multiple functions:
 
-    *item_name* - Used in patterning. Will be appended en masse to multiple string fields,
+    *item_name* - Used in patterning. Will be appended en masse to multiple str fields,
     like first_name. For example, item_name 'egg' will return a user object of:
 
     first_name: 'egg first_name:user',
@@ -121,7 +121,7 @@ class AuditedAdminMockData:
     where 'user' is the short_hand
 
     *short_hand* - Used in patterning. Certain fields will have ':{shorthand}' appended to it,
-    as a way to optionally include metadata in the string itself. Can be further expanded on.
+    as a way to optionally include metadata in the str itself. Can be further expanded on.
     Came from a bug where different querysets used in testing would effectively be 'anonymized', wherein
     it would only display a list of types, but not include the variable name.
     """  # noqa
@@ -152,23 +152,64 @@ class AuditedAdminMockData:
         )[0]
         return contact
 
-    def dummy_draft_domain(self, item_name):
-        """Creates a dummy draft domain object"""
-        return DraftDomain.objects.get_or_create(name="city{}.gov".format(item_name))[0]
+    def dummy_draft_domain(self, item_name, prebuilt=False):
+        """
+        Creates a dummy DraftDomain object
+        Args:
+            item_name (str): Value for 'name' in a DraftDomain object.
+            prebuilt (boolean): Determines return type.
+        Returns:
+            DraftDomain: Where name = 'item_name'. If prebuilt = True, then
+            name will be "city{}.gov".format(item_name).
+        """
+        if prebuilt:
+            item_name = "city{}.gov".format(item_name)
+        return DraftDomain.objects.get_or_create(name=item_name)[0]
 
-    def dummy_domain(self, item_name):
-        """Creates a dummy domain object"""
-        return Domain.objects.get_or_create(name="city{}.gov".format(item_name))[0]
+    def dummy_domain(self, item_name, prebuilt=False):
+        """
+        Creates a dummy domain object
+        Args:
+            item_name (str): Value for 'name' in a Domain object.
+            prebuilt (boolean): Determines return type.
+        Returns:
+            Domain: Where name = 'item_name'. If prebuilt = True, then
+            domain name will be "city{}.gov".format(item_name).
+        """
+        if prebuilt:
+            item_name = "city{}.gov".format(item_name)
+        return Domain.objects.get_or_create(name=item_name)[0]
+
+    def dummy_website(self, item_name):
+        """
+        Creates a dummy website object
+        Args:
+            item_name (str): Value for 'website' in a Website object.
+        Returns:
+            Website: Where website = 'item_name'.
+        """
+        return Website.objects.get_or_create(website=item_name)[0]
 
     def dummy_alt(self, item_name):
-        """Creates a dummy website object for alternates"""
-        return Website.objects.get_or_create(website="cityalt{}.gov".format(item_name))[
-            0
-        ]
+        """
+        Creates a dummy website object for alternates
+        Args:
+            item_name (str): Value for 'website' in a Website object.
+        Returns:
+            Website: Where website = "cityalt{}.gov".format(item_name).
+        """
+        return self.dummy_website(item_name="cityalt{}.gov".format(item_name))
 
     def dummy_current(self, item_name):
-        """Creates a dummy website object for current"""
-        return Website.objects.get_or_create(website="city{}.com".format(item_name))[0]
+        """
+        Creates a dummy website object for current
+        Args:
+            item_name (str): Value for 'website' in a Website object.
+            prebuilt (boolean): Determines return type.
+        Returns:
+            Website: Where website = "city{}.gov".format(item_name)
+        """
+        return self.dummy_website(item_name="city{}.com".format(item_name))
 
     def get_common_domain_arg_dictionary(
         self,
@@ -177,7 +218,36 @@ class AuditedAdminMockData:
         federal_type="executive",
         purpose="Purpose of the site",
     ):
-        """Generates a generic argument list for most domains"""
+        """
+        Generates a generic argument dict for most domains
+        Args:
+            item_name (str): A shared str value appended to first_name, last_name,
+            organization_name, address_line1, address_line2,
+            title, email, and username.
+
+            org_type (str - optional): Sets a domains org_type
+
+            federal_type (str - optional): Sets a domains federal_type
+
+            purpose (str - optional): Sets a domains purpose
+        Returns:
+            Dictionary: {
+                organization_type: str,
+                federal_type: str,
+                purpose: str,
+                organization_name: str = "{} organization".format(item_name),
+                address_line1: str = "{} address_line1".format(item_name),
+                address_line2: str = "{} address_line2".format(item_name),
+                is_policy_acknowledged: boolean = True,
+                state_territory: str = "NY",
+                zipcode: str = "10002",
+                type_of_work: str = "e-Government",
+                anything_else: str = "There is more",
+                authorizing_official: Contact = self.dummy_contact(item_name, "authorizing_official"),
+                submitter: Contact = self.dummy_contact(item_name, "submitter"),
+                creator: User = self.dummy_user(item_name, "creator"),
+            }
+        """ # noqa
         common_args = dict(
             organization_type=org_type,
             federal_type=federal_type,
@@ -200,30 +270,42 @@ class AuditedAdminMockData:
         self,
         domain_type,
         item_name,
-        status,
+        status=DomainApplication.STARTED,
         org_type="federal",
         federal_type="executive",
         purpose="Purpose of the site",
     ):
         """
-        A helper function that returns premade kwargs for easily creating different domain object types.
-        There is a decent amount of boilerplate associated with
-        creating new domain objects (such as domain_application, or domain_information),
-        so for test case purposes, we can make some assumptions and utilize that to simplify
-        the object creation process.
+        Returns a prebuilt kwarg dictionary for DomainApplication,
+        DomainInformation, or DomainInvitation.
+        Args:
+            domain_type (str): is either 'application', 'information',
+            or 'invitation'.
 
-        *domain_type* uses constants. Used to identify what kind of 'Domain' object you'd like to make.
+            item_name (str): A shared str value appended to first_name, last_name,
+            organization_name, address_line1, address_line2,
+            title, email, and username.
 
-        In more detail: domain_type specifies what kind of domain object you'd like to create, i.e.
-        domain_application (APPLICATION), or domain_information (INFORMATION).
+            status (str - optional): Defines the status for DomainApplication,
+            e.g. DomainApplication.STARTED
+
+            org_type (str - optional): Sets a domains org_type
+
+            federal_type (str - optional): Sets a domains federal_type
+
+            purpose (str - optional): Sets a domains purpose
+        Returns:
+            dict: Returns a dictionary structurally consistent with the expected input
+            of either DomainApplication, DomainInvitation, or DomainInformation
+            based on the 'domain_type' field.
         """  # noqa
         common_args = self.get_common_domain_arg_dictionary(
             item_name, org_type, federal_type, purpose
         )
-        full_arg_list = None
+        full_arg_dict = None
         match domain_type:
             case self.APPLICATION:
-                full_arg_list = dict(
+                full_arg_dict = dict(
                     **common_args,
                     requested_domain=self.dummy_draft_domain(item_name),
                     investigator=self.dummy_user(item_name, "investigator"),
@@ -231,18 +313,18 @@ class AuditedAdminMockData:
                 )
             case self.INFORMATION:
                 domain_app = self.create_full_dummy_domain_application(item_name)
-                full_arg_list = dict(
+                full_arg_dict = dict(
                     **common_args,
-                    domain=self.dummy_domain(item_name),
+                    domain=self.dummy_domain(item_name, True),
                     domain_application=domain_app,
                 )
             case self.INVITATION:
-                full_arg_list = dict(
+                full_arg_dict = dict(
                     email="test_mail@mail.com",
-                    domain=self.dummy_domain(item_name),
+                    domain=self.dummy_domain(item_name, True),
                     status=DomainInvitation.INVITED,
                 )
-        return full_arg_list
+        return full_arg_dict
 
     def create_full_dummy_domain_application(
         self, item_name, status=DomainApplication.STARTED
