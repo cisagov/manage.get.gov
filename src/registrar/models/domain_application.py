@@ -504,15 +504,10 @@ class DomainApplication(TimeStampedModel):
     @transition(
         field="status", source=[STARTED, ACTION_NEEDED, WITHDRAWN], target=SUBMITTED
     )
-    def submit(self, updated_domain_application=None):
+    def submit(self):
         """Submit an application that is started.
 
-        As a side effect, an email notification is sent.
-
-        This method is called in admin.py on the original application
-        which has the correct status value, but is passed the changed
-        application which has the up-to-date data that we'll use
-        in the email."""
+        As a side effect, an email notification is sent."""
 
         # check our conditions here inside the `submit` method so that we
         # can raise more informative exceptions
@@ -528,46 +523,31 @@ class DomainApplication(TimeStampedModel):
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
 
-        if updated_domain_application is not None:
-            # A DomainApplication is being passed to this method (ie from admin)
-            updated_domain_application._send_status_update_email(
-                "submission confirmation",
-                "emails/submission_confirmation.txt",
-                "emails/submission_confirmation_subject.txt",
-            )
-        else:
-            # Or this method is called with the right application
-            # for context, ie from views/application.py
-            self._send_status_update_email(
-                "submission confirmation",
-                "emails/submission_confirmation.txt",
-                "emails/submission_confirmation_subject.txt",
-            )
+        self._send_status_update_email(
+            "submission confirmation",
+            "emails/submission_confirmation.txt",
+            "emails/submission_confirmation_subject.txt",
+        )
 
     @transition(field="status", source=SUBMITTED, target=IN_REVIEW)
-    def in_review(self, updated_domain_application):
+    def in_review(self):
         """Investigate an application that has been submitted.
 
-        As a side effect, an email notification is sent.
+        As a side effect, an email notification is sent."""
 
-        This method is called in admin.py on the original application
-        which has the correct status value, but is passed the changed
-        application which has the up-to-date data that we'll use
-        in the email."""
-
-        updated_domain_application._send_status_update_email(
+        self._send_status_update_email(
             "application in review",
             "emails/status_change_in_review.txt",
             "emails/status_change_in_review_subject.txt",
         )
 
     @transition(field="status", source=[IN_REVIEW, REJECTED], target=ACTION_NEEDED)
-    def action_needed(self, updated_domain_application):
+    def action_needed(self):
         """Send back an application that is under investigation or rejected.
 
-        As a side effect, an email notification is sent, similar to in_review"""
+        As a side effect, an email notification is sent."""
 
-        updated_domain_application._send_status_update_email(
+        self._send_status_update_email(
             "action needed",
             "emails/status_change_action_needed.txt",
             "emails/status_change_action_needed_subject.txt",
@@ -576,19 +556,13 @@ class DomainApplication(TimeStampedModel):
     @transition(
         field="status", source=[SUBMITTED, IN_REVIEW, REJECTED], target=APPROVED
     )
-    def approve(self, updated_domain_application=None):
+    def approve(self):
         """Approve an application that has been submitted.
 
         This has substantial side-effects because it creates another database
         object for the approved Domain and makes the user who created the
         application into an admin on that domain. It also triggers an email
-        notification.
-
-        This method is called in admin.py on the original application
-        which has the correct status value, but is passed the changed
-        application which has the up-to-date data that we'll use
-        in the email.
-        """
+        notification."""
 
         # create the domain
         Domain = apps.get_model("registrar.Domain")
@@ -607,31 +581,23 @@ class DomainApplication(TimeStampedModel):
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.ADMIN
         )
 
-        if updated_domain_application is not None:
-            # A DomainApplication is being passed to this method (ie from admin)
-            updated_domain_application._send_status_update_email(
-                "application approved",
-                "emails/status_change_approved.txt",
-                "emails/status_change_approved_subject.txt",
-            )
-        else:
-            self._send_status_update_email(
-                "application approved",
-                "emails/status_change_approved.txt",
-                "emails/status_change_approved_subject.txt",
-            )
+        self._send_status_update_email(
+            "application approved",
+            "emails/status_change_approved.txt",
+            "emails/status_change_approved_subject.txt",
+        )
 
     @transition(field="status", source=[SUBMITTED, IN_REVIEW], target=WITHDRAWN)
     def withdraw(self):
         """Withdraw an application that has been submitted."""
 
     @transition(field="status", source=[IN_REVIEW, APPROVED], target=REJECTED)
-    def reject(self, updated_domain_application):
+    def reject(self):
         """Reject an application that has been submitted.
 
         As a side effect, an email notification is sent, similar to in_review"""
 
-        updated_domain_application._send_status_update_email(
+        self._send_status_update_email(
             "action needed",
             "emails/status_change_rejected.txt",
             "emails/status_change_rejected_subject.txt",
