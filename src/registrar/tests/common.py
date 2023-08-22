@@ -247,7 +247,7 @@ class AuditedAdminMockData:
                 submitter: Contact = self.dummy_contact(item_name, "submitter"),
                 creator: User = self.dummy_user(item_name, "creator"),
             }
-        """ # noqa
+        """  # noqa
         common_args = dict(
             organization_type=org_type,
             federal_type=federal_type,
