@@ -9,10 +9,7 @@ def index(request):
     context = {}
     if request.user.is_authenticated:
         applications = DomainApplication.objects.filter(creator=request.user)
-        # Let's exclude the approved applications since our
-        # domain_applications context will be used to populate
-        # the active applications table
-        context["domain_applications"] = applications.exclude(status="approved")
+        context["domain_applications"] = applications
 
         domains = request.user.permissions.values(
             "role",
