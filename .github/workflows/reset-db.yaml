@@ -26,6 +26,7 @@ on:
           - ab
           - bl
           - rjm
+          - dk
 
 jobs:
   reset-db:

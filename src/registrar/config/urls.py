@@ -4,7 +4,6 @@ For more information see:
     https://docs.djangoproject.com/en/4.0/topics/http/urls/
 """
 
-from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
@@ -45,6 +44,10 @@ for step, view in [
 
 urlpatterns = [
     path("", views.index, name="home"),
+    path(
+        "admin/logout/",
+        RedirectView.as_view(pattern_name="logout", permanent=False),
+    ),
     path("admin/", admin.site.urls),
     path(
         "application/<id>/edit/",
@@ -113,20 +116,6 @@ urlpatterns = [
         name="invitation-delete",
     ),
 ]
-
-
-if not settings.DEBUG:
-    urlpatterns += [
-        # redirect to login.gov
-        path(
-            "admin/login/", RedirectView.as_view(pattern_name="login", permanent=False)
-        ),
-        # redirect to login.gov
-        path(
-            "admin/logout/",
-            RedirectView.as_view(pattern_name="logout", permanent=False),
-        ),
-    ]
 
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG

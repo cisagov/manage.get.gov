@@ -25,6 +25,7 @@ on:
           - ab
           - bl
           - rjm
+          - dk
 
 jobs:
   migrate:

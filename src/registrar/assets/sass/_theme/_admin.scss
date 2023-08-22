@@ -105,19 +105,29 @@ html[data-theme="light"] {
     }
 
     // Dark mode django (bug due to scss cascade) and USWDS tables
-    body,
     .change-list .usa-table,
-    .change-list .usa-table--striped tbody tr:nth-child(odd) td {
-        color: var(--body-fg)!important;
+    .change-list .usa-table--striped tbody tr:nth-child(odd) td,
+    .change-list .usa-table--borderless thead th,
+    .change-list .usa-table thead td, 
+    .change-list .usa-table thead th,
+    body.dashboard,
+    body.change-list,
+    body.change-form {
+        color: var(--body-fg);
     }
 }
 
 // Firefox needs this to be specifically set
 html[data-theme="dark"] {
-    body,
     .change-list .usa-table,
-    .change-list .usa-table--striped tbody tr:nth-child(odd) td {
-        color: var(--body-fg)!important;
+    .change-list .usa-table--striped tbody tr:nth-child(odd) td,
+    .change-list .usa-table--borderless thead th,
+    .change-list .usa-table thead td, 
+    .change-list .usa-table thead th,
+    body.dashboard,
+    body.change-list,
+    body.change-form {
+        color: var(--body-fg);
     }
 }
 

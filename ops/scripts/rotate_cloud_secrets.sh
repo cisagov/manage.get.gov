@@ -9,8 +9,8 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-cf target -o cisa-getgov-prototyping -s $1
-read -p "Are you logged in to the cisa-getgov-prototyping CF org above and targeting the correct space? (y/n) " -n 1 -r
+cf target -o cisa-dotgov -s $1
+read -p "Are you logged in to the cisa-dotgov CF org above and targeting the correct space? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
