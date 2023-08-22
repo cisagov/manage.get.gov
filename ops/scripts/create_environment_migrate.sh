@@ -111,7 +111,7 @@ then
     exit 1
 fi
 
-cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.credentials.username, .credentials.password]|@tsv' | 
+cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.credentials.username, .credentials.password]|@tsv' |
 while read -r username password; do
     gh secret --repo cisagov/getgov set CF_${upcase_name}_USERNAME --body $username
     gh secret --repo cisagov/getgov set CF_${upcase_name}_PASSWORD --body $password
@@ -121,7 +121,7 @@ read -p "All done! Should we open a PR with these changes? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    git add ops/manifests/manifest-$1.yaml .github/workflows/ src/registrar/config/settings.py 
+    git add ops/manifests/manifest-$1.yaml .github/workflows/ src/registrar/config/settings.py
     git commit -m "Add new developer sandbox '"$1"' infrastructure"
     gh pr create
 fi
