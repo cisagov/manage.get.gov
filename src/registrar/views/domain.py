@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 class DomainView(DomainPermissionView):
 
     """Domain detail overview page."""
+
     template_name = "domain_detail.html"
 
 
@@ -81,7 +82,9 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
 
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(self.form_class.__name__, self.get_object().domain_info)
+            self.log_analyst_form_actions(
+                self.form_class.__name__, self.get_object().domain_info
+            )
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -128,7 +131,9 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
 
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(self.form_class.__name__, self.get_object().domain_info)
+            self.log_analyst_form_actions(
+                self.form_class.__name__, self.get_object().domain_info
+            )
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -199,7 +204,9 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(self.form_class.__name__, self.get_object().domain_info)
+            self.log_analyst_form_actions(
+                self.form_class.__name__, self.get_object().domain_info
+            )
 
         # superclass has the redirect
         return super().form_valid(formset)
@@ -244,7 +251,9 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
 
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(self.form_class.__name__, self.get_object().domain_info)
+            self.log_analyst_form_actions(
+                self.form_class.__name__, self.get_object().domain_info
+            )
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -294,7 +303,9 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
 
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(self.form_class.__name__, self.get_object().domain_info)
+            self.log_analyst_form_actions(
+                self.form_class.__name__, self.get_object().domain_info
+            )
 
         # superclass has the redirect
         return redirect(self.get_success_url())
@@ -373,7 +384,9 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
                 )
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(self.form_class.__name__, self.get_object().domain_info)
+            self.log_analyst_form_actions(
+                self.form_class.__name__, self.get_object().domain_info
+            )
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
@@ -398,7 +411,9 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
 
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(self.form_class.__name__, self.get_object().domain_info)
+            self.log_analyst_form_actions(
+                self.form_class.__name__, self.get_object().domain_info
+            )
 
         return redirect(self.get_success_url())
 

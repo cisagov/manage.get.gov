@@ -13,7 +13,10 @@ from .mixins import (
     DomainInvitationPermission,
 )
 import logging
+
 logger = logging.getLogger(__name__)
+
+
 class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
     """Abstract base view for domains that enforces permissions.
@@ -37,22 +40,22 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         is_original_creator = DomainInformation.objects.filter(
             creator_id=self.request.user.id, id=self.kwargs["pk"]
         ).exists()
-        context['is_original_creator'] = is_original_creator
-        context['is_analyst_or_superuser'] = user.is_superuser or user.is_staff
+        context["is_original_creator"] = is_original_creator
+        context["is_analyst_or_superuser"] = user.is_superuser or user.is_staff
 
         # Flag to see if an analyst is attempting to make edits
-        if 'analyst_action' in self.request.session:
-            context['analyst_action'] = self.request.session['analyst_action']
+        if "analyst_action" in self.request.session:
+            context["analyst_action"] = self.request.session["analyst_action"]
 
         return context
 
     def log_analyst_form_actions(self, form_class_name, printable_object_info):
-        """ Generates a log for when 'analyst_action' exists on the session """
-        if 'analyst_action' in self.request.session:
-            action = self.request.session['analyst_action']
+        """Generates a log for when 'analyst_action' exists on the session"""
+        if "analyst_action" in self.request.session:
+            action = self.request.session["analyst_action"]
 
             user_type = "Analyst"
-            if(self.request.user.is_superuser):
+            if self.request.user.is_superuser:
                 user_type = "Superuser"
 
             # Template for potential future expansion,
@@ -60,11 +63,15 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
             # Could include things such as 'view'
             # or 'copy', for instance.
             match action:
-                case 'edit':
+                case "edit":
                     # Q: do we want to be logging on every changed field?
-                    # I could see that becoming spammy log-wise, but it may also be important.
-                    # To do so, I'd likely have to override some of the save() functionality of ModelForm.
-                    logger.info(f"{user_type} {self.request.user} edited {form_class_name} in {printable_object_info}")
+                    # I could see that becoming spammy log-wise,
+                    # but it may also be important.
+
+                    # noqa here as breaking this up further leaves it hard to read
+                    logger.info(
+                        f"{user_type} {self.request.user} edited {form_class_name} in {printable_object_info}"  # noqa
+                    )
         else:
             logger.debug("'analyst_action' does not exist on the session")
 

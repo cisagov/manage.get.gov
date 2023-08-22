@@ -161,20 +161,21 @@ class DomainAdmin(ListHeaderAdmin):
             return HttpResponseRedirect(".")
         elif EDIT_DOMAIN in request.POST:
             # We want to know, globally, when an edit action occurs
-            request.session['analyst_action'] = 'edit'
+            request.session["analyst_action"] = "edit"
             # Restricts this action to this domain only
-            request.session['analyst_action_location'] = obj.id
+            request.session["analyst_action_location"] = obj.id
 
-            return HttpResponseRedirect(reverse('domain', args=(obj.id,)))
+            return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
         return super().response_change(request, obj)
+
     # Sets domain_id as a context var
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        if 'analyst_action' in request.session:
+        if "analyst_action" in request.session:
             # If an analyst performed an edit action,
             # delete the session variable
-            del request.session['analyst_action']
+            del request.session["analyst_action"]
             # delete the associated location
-            del request.session['analyst_action_location']
+            del request.session["analyst_action_location"]
 
         extra_context = extra_context or {}
         extra_context["domain_id"] = object_id
