@@ -44,13 +44,13 @@ class DomainPermission(PermissionsLoginMixin):
             )
 
         # This should never happen in normal flow.
-        # If it does, then it likely means something bad happened...
+        # That said, it does need to be raised here.
         except DomainInformation.DoesNotExist:
             raise Http404()
 
         # Checks if the creator is the user requesting this item
         user_is_creator: bool = requested_domain.creator.username == self.request.user.username
-        
+
         # user needs to have a role on the domain
         if user_is_creator:
             return True
@@ -58,10 +58,18 @@ class DomainPermission(PermissionsLoginMixin):
         # ticket 806
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [DomainApplication.APPROVED, DomainApplication.IN_REVIEW, DomainApplication.REJECTED, DomainApplication.ACTION_NEEDED]
+
         # Check if the user is permissioned...
         user_is_analyst_or_superuser = self.request.user.is_staff or self.request.user.is_superuser
 
-        if user_is_analyst_or_superuser and requested_domain.domain_application.status in valid_domain_statuses:
+        session = self.request.session
+
+        # Check if the user is attempting a valid edit action.
+        # If analyst_action is present, analyst_action_location will be present.
+        # if it isn't, then it either suggests tampering or a larger omnipresent issue with sessions.
+        can_do_action = 'analyst_action' in session and session['analyst_action_location'] == pk
+
+        if can_do_action and user_is_analyst_or_superuser and requested_domain.domain_application.status in valid_domain_statuses:
             return True
 
         # ticket 796

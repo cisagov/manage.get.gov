@@ -43,10 +43,30 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         # Flag to see if an analyst is attempting to make edits
         if 'analyst_action' in self.request.session:
             context['analyst_action'] = self.request.session['analyst_action']
-            # Clear the session variable after use
-            # del self.request.session['analyst_action']
 
         return context
+
+    def log_analyst_form_actions(self, form_class_name, printable_object_info):
+        """ Generates a log for when 'analyst_action' exists on the session """
+        if 'analyst_action' in self.request.session:
+            action = self.request.session['analyst_action']
+
+            user_type = "Analyst"
+            if(self.request.user.is_superuser):
+                user_type = "Superuser"
+
+            # Template for potential future expansion,
+            # in the event we want more logging granularity.
+            # Could include things such as 'view'
+            # or 'copy', for instance.
+            match action:
+                case 'edit':
+                    # Q: do we want to be logging on every changed field?
+                    # I could see that becoming spammy log-wise, but it may also be important.
+                    # To do so, I'd likely have to override some of the save() functionality of ModelForm.
+                    logger.info(f"{user_type} {self.request.user} edited {form_class_name} in {printable_object_info}")
+        else:
+            logger.debug("'analyst_action' does not exist on the session")
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
