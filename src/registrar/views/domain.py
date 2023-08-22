@@ -78,6 +78,28 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "The organization name and mailing address has been updated."
         )
+
+        # If the user is not privileged, don't do any special checks
+        if not self.request.user.is_staff and not self.request.user.is_superuser:
+            # superclass has the redirect
+            return super().form_valid(form)
+
+        # Otherwise, if they are editing from an '/admin' redirect, log their actions
+        # Q: do we want to be logging on every changed field?
+        # I could see that becoming spammy log-wise, but it may also be important.
+        # To do so, I'd likely have to override some of the save() functionality of ModelForm.
+        if 'analyst_action' in self.request.session:
+            action = self.request.session['analyst_action']
+
+            # Template for future expansion,
+            # in the event we want more logging granularity.
+            # Could include things such as 'view'
+            # or 'copy', for instance.
+            match action:
+                case 'edit':
+                    if(self.request.user.is_staff):
+                        logger.info("Analyst {} edited {} for {}".format(self.request.user, type(form_class).__name__, self.get_object().domain_info))
+
         # superclass has the redirect
         return super().form_valid(form)
 

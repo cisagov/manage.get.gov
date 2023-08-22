@@ -37,13 +37,14 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         is_original_creator = DomainInformation.objects.filter(
             creator_id=self.request.user.id, id=self.kwargs["pk"]
         ).exists()
-
-        context['primary_key'] = self.kwargs["pk"]
-        context['is_analyst_or_superuser'] = user.is_superuser or user.is_staff
         context['is_original_creator'] = is_original_creator
-        context['is_active_user'] = DomainInformation.objects.filter(
-            id=self.kwargs["pk"]
-        )
+        context['is_analyst_or_superuser'] = user.is_superuser or user.is_staff
+
+        # Flag to see if an analyst is attempting to make edits
+        if 'analyst_action' in self.request.session:
+            context['analyst_action'] = self.request.session['analyst_action']
+            # Clear the session variable after use
+            # del self.request.session['analyst_action']
 
         return context
 

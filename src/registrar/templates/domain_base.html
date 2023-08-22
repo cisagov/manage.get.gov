@@ -19,7 +19,7 @@
 
     <div class="tablet:grid-col-9">
       <main id="main-content" class="grid-container">
-    {% if not is_analyst_or_superuser or is_original_creator %}
+    {% if not is_analyst_or_superuser or not analyst_action%}
 	  <a href="{% url 'home' %}" class="breadcrumb__back">
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
         <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
@@ -30,14 +30,14 @@
         </p>
 
       </a>
-      {% elif is_analyst_or_superuser%}
+      {% elif is_analyst_or_superuser and analyst_action == 'edit' %}
       <a href="{% url 'admin:registrar_domain_change' domain.id%}" class="breadcrumb__back">
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
         <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
         </svg>
-        {# Q: should this be 'Back to .gov admin' or  'Back to manage your domains'? #}
+        {# Q: For analysts, should this be 'Back to .gov admin' or  'Back to change domain'? #}
         <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-        Back to change domain
+        Back to manage your domains
         </p>
 
       </a>

@@ -6,6 +6,7 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from . import models
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -141,8 +142,10 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        ACTION_BUTTON = "_place_client_hold"
-        if ACTION_BUTTON in request.POST:
+        PLACE_HOLD = "_place_client_hold"
+        EDIT_DOMAIN = "_edit_domain"
+        if PLACE_HOLD in request.POST:
+            logger.debug("Hit!")
             try:
                 obj.place_client_hold()
             except Exception as err:
@@ -157,11 +160,17 @@ class DomainAdmin(ListHeaderAdmin):
                     % obj.name,
                 )
             return HttpResponseRedirect(".")
-
+        elif EDIT_DOMAIN in request.POST:
+            # We want to know, globally, when an edit action occurs
+            request.session['analyst_action'] = 'edit'
+            return HttpResponseRedirect(reverse('domain', args=(obj.id,)))
         return super().response_change(request, obj)
-
     # Sets domain_id as a context var
     def change_view(self, request, object_id, form_url="", extra_context=None):
+        if 'analyst_action' in request.session:
+            # If an analyst performed an edit action,
+            # delete the session variable
+            del request.session['analyst_action']
         extra_context = extra_context or {}
         extra_context["domain_id"] = object_id
         return super().change_view(

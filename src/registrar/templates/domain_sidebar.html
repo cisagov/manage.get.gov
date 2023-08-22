@@ -11,7 +11,6 @@
           Domain overview
         </a>
       </li>
-      {% if is_original_creator %}
       <li class="usa-sidenav__item">
         {% url 'domain-nameservers' pk=domain.id as url %}
         <a href="{{ url }}"
@@ -20,7 +19,6 @@
             DNS name servers
         </a>
       </li>
-      {% endif %}
       <li class="usa-sidenav__item">
         {% url 'domain-org-name-address' pk=domain.id as url %}
         <a href="{{ url }}"
@@ -29,7 +27,6 @@
             Organization name and mailing address
         </a>
       </li>
-      {% if is_original_creator %}
       <li class="usa-sidenav__item">
         {% url 'domain-authorizing-official' pk=domain.id as url %}
         <a href="{{ url }}"
@@ -38,17 +35,12 @@
             Authorizing official
         </a>
       </li>
-      {% endif %}
       <li class="usa-sidenav__item">
         {% url 'domain-your-contact-information' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
-        {% if is_original_creator %}
-          Your contact information
-        {% else %}
-          Contact information
-        {% endif %}
+        Your contact information
         </a>
       </li>
 
