@@ -571,7 +571,6 @@ SECURE_SSL_REDIRECT = True
 ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
-    "getgov-dk.app.cloud.gov",
     "getgov-nl.app.cloud.gov",
     "getgov-rh.app.cloud.gov",
     "getgov-za.app.cloud.gov",
