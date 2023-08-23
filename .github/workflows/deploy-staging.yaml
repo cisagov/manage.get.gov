@@ -36,6 +36,6 @@ jobs:
         with:
           cf_username: ${{ secrets.CF_STAGING_USERNAME }}
           cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
-          cf_org: cisa-getgov-prototyping
+          cf_org: cisa-dotgov
           cf_space: staging
           push_arguments: "-f ops/manifests/manifest-staging.yaml"

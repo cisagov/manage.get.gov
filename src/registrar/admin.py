@@ -1,16 +1,16 @@
 import logging
 from django.contrib import admin, messages
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
+from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 
 logger = logging.getLogger(__name__)
 
 
-class AuditedAdmin(admin.ModelAdmin):
-
+class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
     """Custom admin to make auditing easier."""
 
     def history_view(self, request, object_id, extra_context=None):
@@ -23,9 +23,13 @@ class AuditedAdmin(admin.ModelAdmin):
             )
         )
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Used to sort dropdown fields alphabetically but can be expanded upon"""
+        form_field = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        return self.form_field_order_helper(form_field, db_field)
+
 
 class ListHeaderAdmin(AuditedAdmin):
-
     """Custom admin to add a descriptive subheader to list views."""
 
     def changelist_view(self, request, extra_context=None):
@@ -93,11 +97,28 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
-class MyUserAdmin(UserAdmin):
+class MyUserAdmin(BaseUserAdmin):
 
     """Custom user admin class to use our inlines."""
 
     inlines = [UserContactInline]
+
+    def get_list_display(self, request):
+        if not request.user.is_superuser:
+            # Customize the list display for staff users
+            return ("email", "first_name", "last_name", "is_staff", "is_superuser")
+
+        # Use the default list display for non-staff users
+        return super().get_list_display(request)
+
+    def get_fieldsets(self, request, obj=None):
+        if not request.user.is_superuser:
+            # If the user doesn't have permission to change the model,
+            # show a read-only fieldset
+            return ((None, {"fields": []}),)
+
+        # If the user has permission to change the model, show all fields
+        return super().get_fieldsets(request, obj)
 
 
 class HostIPInline(admin.StackedInline):
@@ -224,7 +245,6 @@ class DomainAdmin(ListHeaderAdmin):
 
 
 class ContactAdmin(ListHeaderAdmin):
-
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]
@@ -336,18 +356,27 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     pass
                 elif obj.status == models.DomainApplication.SUBMITTED:
                     # This is an fsm in model which will throw an error if the
-                    # transition condition is violated, so we call it on the
-                    # original object which has the right status value, and pass
-                    # the updated object which contains the up-to-date data
-                    # for the side effects (like an email send). Same
-                    # comment applies to original_obj method calls below.
-                    original_obj.submit(updated_domain_application=obj)
-                elif obj.status == models.DomainApplication.INVESTIGATING:
-                    original_obj.in_review(updated_domain_application=obj)
+                    # transition condition is violated, so we roll back the
+                    # status to what it was before the admin user changed it and
+                    # let the fsm method set it. Same comment applies to
+                    # transition method calls below.
+                    obj.status = original_obj.status
+                    obj.submit()
+                elif obj.status == models.DomainApplication.IN_REVIEW:
+                    obj.status = original_obj.status
+                    obj.in_review()
+                elif obj.status == models.DomainApplication.ACTION_NEEDED:
+                    obj.status = original_obj.status
+                    obj.action_needed()
                 elif obj.status == models.DomainApplication.APPROVED:
-                    original_obj.approve(updated_domain_application=obj)
+                    obj.status = original_obj.status
+                    obj.approve()
                 elif obj.status == models.DomainApplication.WITHDRAWN:
-                    original_obj.withdraw()
+                    obj.status = original_obj.status
+                    obj.withdraw()
+                elif obj.status == models.DomainApplication.REJECTED:
+                    obj.status = original_obj.status
+                    obj.reject()
                 else:
                     logger.warning("Unknown status selected in django admin")
 

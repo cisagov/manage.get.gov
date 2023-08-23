@@ -18,6 +18,20 @@ If you're new to Django, see [Getting Started with Django](https://www.djangopro
 
 Visit the running application at [http://localhost:8080](http://localhost:8080).
 
+
+### Troubleshooting 
+
+* If you are using Windows, you may need to change your [line endings](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings). If not, you may not be able to run manage.py. 
+* Unix based operating systems (like macOS or Linux) handle line separators [differently than Windows does](https://superuser.com/questions/374028/how-are-n-and-r-handled-differently-on-linux-and-windows). This can break bash scripts in particular. In the case of manage.py, it uses *#!/usr/bin/env python* to access the Python executable. Since the script is still thinking in terms of unix line seperators, it may look for the executable *python\r* rather than *python* (since Windows cannot read the carriage return on its own) - thus leading to the error `usr/bin/env: 'python\r' no such file or directory` 
+* If you'd rather not change this globally, add a `.gitattributes` file in the project root with `* text eol=lf` as the text content, and [refresh the repo](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings#refreshing-a-repository-after-changing-line-endings)
+* If you are using a Mac with a M1 chip, and see this error `The chromium binary is not available for arm64.` or an error involving `puppeteer`, try adding this line below into your `.bashrc` or `.zshrc`. 
+
+```
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+```
+
+When completed, don't forget to rerun `docker-compose up`! 
+
 ## Branch Conventions
 
 We use the branch convention of `initials/branch-topic` (ex: `lmm/fix-footer`). This allows for automated deployment to a developer sandbox namespaced to the initials.
@@ -66,7 +80,7 @@ The endpoint /admin can be used to view and manage site content, including but n
 1. Login via login.gov
 2. Go to the home page and make sure you can see the part where you can submit an application
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4
-4. in src/registrar/fixtures.py add to the ADMINS list in that file by adding your UUID as your username along with your first and last name. See below:
+4. in src/registrar/fixtures.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
 
 ```
  ADMINS = [
@@ -79,8 +93,32 @@ The endpoint /admin can be used to view and manage site content, including but n
  ]
 ```
 
-5. In the browser, navigate to /admins. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
+5. In the browser, navigate to /admin. To verify that all is working correctly, under "domain applications" you should see fake domains with various fake statuses.
+6. Add an optional email key/value pair
 
+### Adding an Analyst to /admin
+Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
+
+1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
+2. Go to the home page and make sure you can see the part where you can submit an application
+3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
+4. in src/registrar/fixtures.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
+
+```
+ STAFF = [
+        {
+            "username": "<UUID here>",
+            "first_name": "",
+            "last_name": "",
+        },
+        ...
+ ]
+```
+
+5. In the browser, navigate to /admin. To verify that all is working correctly, verify that you can only see a sub-section of the modules and some are set to view-only.
+6. Add an optional email key/value pair
+
+Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
 ## Adding to CODEOWNERS (optional)
 
 The CODEOWNERS file sets the tagged individuals as default reviewers on any Pull Request that changes files that they are marked as owners of.
@@ -166,6 +204,17 @@ from .common import less_console_noise
             # <test code goes here>
 ```
 
+### Accessibility Testing in the browser
+
+We use the [ANDI](https://www.ssa.gov/accessibility/andi/help/install.html) browser extension 
+from ssa.gov for accessibility testing outside the pipeline. 
+
+ANDI will get blocked by our CSP settings, so you will need to install the 
+[Disable Content-Security-Policy extension](https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden) 
+and activate it for the page you'd like to test.
+
+Note - refresh after enabling the extension on a page but before clicking ANDI.
+
 ### Accessibility Scanning
 
 The tool `pa11y-ci` is used to scan pages for compliance with a set of
@@ -203,7 +252,7 @@ Assets are stored in `registrar/assets` during development and served from `regi
 
 We utilize the [uswds-compile tool](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) from USWDS to compile and package USWDS assets.
 
-## Making and view style changes
+## Making and viewing style changes
 
 When you run `docker-compose up` the `node` service in the container will begin to watch for changes in the `registrar/assets` folder, and will recompile once any changes are made.
 

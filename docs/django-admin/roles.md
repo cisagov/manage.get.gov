@@ -18,3 +18,4 @@ auditlog | log entry | can view log entry
 registrar | contact | can view contact
 registrar | domain application | can change domain application
 registrar | domain | can view domain
+registrar | user | can view user

@@ -1,0 +1,172 @@
+@use "cisa_colors" as *;
+@use "uswds-core" as *;
+
+// We'll use Django's CSS vars: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#theming-support 
+// and assign USWDS theme vars whenever possible
+// If needed (see below), we'll use the USWDS hex value
+// As a last resort, we'll use CISA colors to supplement the palette
+:root,
+html[data-theme="light"] {
+    --primary: #{$theme-color-primary};
+    --secondary: #{$theme-color-primary-darkest};
+    --accent: #{$theme-color-accent-cool};
+    // --primary-fg: #fff;
+
+    // USWDS theme vars that are set to a token, such as #{$theme-color-base-darker}
+    // would interpolate to 'gray-cool-70' and output invalid CSS, so we use the hex
+    // source value instead: https://designsystem.digital.gov/design-tokens/color/system-tokens/
+    --body-fg: #3d4551;
+    // --body-bg: #fff;
+    --body-quiet-color: #{$theme-color-base-dark};
+    // --body-loud-color: #000;
+
+    --header-color: var( --primary-fg);
+    --header-branding-color:  var( --primary-fg);
+    // --header-bg: var(--secondary);
+    // --header-link-color: var(--primary-fg);
+
+    --breadcrumbs-fg: #{$theme-color-accent-cool-lightest};
+    // --breadcrumbs-link-fg: var(--body-bg);
+    --breadcrumbs-bg: #{$theme-color-primary-dark};
+
+    // #{$theme-link-color} would interpolate to 'primary', so we use the source value instead
+    --link-fg: #{$theme-color-primary};
+    --link-hover-color: #{$theme-color-primary-darker};
+    // $theme-link-visited-color - violet-70v
+    --link-selected-fg: #54278f;
+
+    --hairline-color: #{$dhs-gray-15};
+    // $theme-color-base-lightest - gray-5
+    --border-color: #f0f0f0;
+
+    --error-fg: #{$theme-color-error};
+
+    --message-success-bg: #{$theme-color-success-lighter};
+    // $theme-color-warning-lighter - yellow-5
+    --message-warning-bg: #faf3d1;
+    --message-error-bg: #{$theme-color-error-lighter};
+
+    --darkened-bg: #{$dhs-gray-15}; /* A bit darker than --body-bg */
+    --selected-bg: var(--border-color); /* E.g. selected table cells */
+    --selected-row: var(--message-warning-bg);
+
+    // --button-fg: #fff;
+    // --button-bg: var(--secondary);
+    --button-hover-bg: #{$theme-color-primary-darker};
+    --default-button-bg: #{$theme-color-primary-dark};
+    --default-button-hover-bg: #{$theme-color-primary-darkest};
+    // #{$theme-color-base} - 'gray-cool-50'
+    --close-button-bg: #71767a;
+    // #{$theme-color-base-darker} - 'gray-cool-70'
+    --close-button-hover-bg: #3d4551;
+    --delete-button-bg: #{$theme-color-error};
+    --delete-button-hover-bg: #{$theme-color-error-dark};
+
+    // --object-tools-fg: var(--button-fg);
+    // --object-tools-bg: var(--close-button-bg);
+    // --object-tools-hover-bg: var(--close-button-hover-bg);
+}
+
+// Fold dark theme settings into our main CSS
+// https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#theming-support > dark theme note
+@media (prefers-color-scheme: dark) {
+    :root,
+    html[data-theme="dark"] {
+      // Edit the primary to meet accessibility requ.  
+      --primary: #23485a;
+      --primary-fg: #f7f7f7;
+  
+      --body-fg: #eeeeee;
+      --body-bg: #121212;
+      --body-quiet-color: #e0e0e0;
+      --body-loud-color: #ffffff;
+  
+      --breadcrumbs-link-fg: #e0e0e0;
+      --breadcrumbs-bg: var(--primary);
+  
+      --link-fg: #81d4fa;
+      --link-hover-color: #4ac1f7;
+      --link-selected-fg: #6f94c6;
+  
+      --hairline-color: #272727;
+      --border-color: #353535;
+  
+      --error-fg: #e35f5f;
+      --message-success-bg: #006b1b;
+      --message-warning-bg: #583305;
+      --message-error-bg: #570808;
+  
+      --darkened-bg: #212121;
+      --selected-bg: #1b1b1b;
+      --selected-row: #00363a;
+  
+      --close-button-bg: #333333;
+      --close-button-hover-bg: #666666;
+    }
+
+    // Dark mode django (bug due to scss cascade) and USWDS tables
+    .change-list .usa-table,
+    .change-list .usa-table--striped tbody tr:nth-child(odd) td,
+    .change-list .usa-table--borderless thead th,
+    .change-list .usa-table thead td, 
+    .change-list .usa-table thead th,
+    body.dashboard,
+    body.change-list,
+    body.change-form {
+        color: var(--body-fg);
+    }
+}
+
+// Firefox needs this to be specifically set
+html[data-theme="dark"] {
+    .change-list .usa-table,
+    .change-list .usa-table--striped tbody tr:nth-child(odd) td,
+    .change-list .usa-table--borderless thead th,
+    .change-list .usa-table thead td, 
+    .change-list .usa-table thead th,
+    body.dashboard,
+    body.change-list,
+    body.change-form {
+        color: var(--body-fg);
+    }
+}
+
+#branding h1 a:link, #branding h1 a:visited {
+    color: var(--primary-fg);
+}
+
+#branding h1,
+h1, h2, h3 {
+    font-weight: font-weight('bold');
+}
+
+table > caption > a {
+    font-weight: font-weight('bold');
+    text-transform: none;
+}
+
+.change-list {
+    .usa-table--striped tbody tr:nth-child(odd) td,
+    .usa-table--striped tbody tr:nth-child(odd) th,
+    .usa-table td,
+    .usa-table th {
+        background-color: transparent;
+    }
+}
+
+#nav-sidebar {
+    padding-top: 20px;
+}
+
+// 'Delete button' layout bug
+.submit-row a.deletelink {
+    height: auto!important;
+}
+
+// Keep th from collapsing 
+.min-width-25 {
+    min-width: 25px;
+}
+.min-width-81 {
+    min-width: 81px;
+}

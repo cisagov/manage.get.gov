@@ -57,6 +57,21 @@ class UserFixture:
             "first_name": "Ryan",
             "last_name": "Brooks",
         },
+        {
+            "username": "30001ee7-0467-4df2-8db2-786e79606060",
+            "first_name": "Zander",
+            "last_name": "Adkinson",
+        },
+        {
+            "username": "bb21f687-c773-4df3-9243-111cfd4c0be4",
+            "first_name": "Paul",
+            "last_name": "Kuykendall",
+        },
+        {
+            "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
+            "first_name": "Rebecca",
+            "last_name": "Hsieh",
+        },
     ]
 
     STAFF = [
@@ -64,11 +79,27 @@ class UserFixture:
             "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
             "first_name": "Rachid-Analyst",
             "last_name": "Mrad-Analyst",
+            "email": "rachid.mrad@gmail.com",
         },
         {
             "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
             "first_name": "Alysia-Analyst",
             "last_name": "Alysia-Analyst",
+        },
+        {
+            "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
+            "first_name": "Zander-Analyst",
+            "last_name": "Adkinson-Analyst",
+        },
+        {
+            "username": "57ab5847-7789-49fe-a2f9-21d38076d699",
+            "first_name": "Paul-Analyst",
+            "last_name": "Kuykendall-Analyst",
+        },
+        {
+            "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
+            "first_name": "Rebecca-Analyst",
+            "last_name": "Hsieh-Analyst",
         },
     ]
 
@@ -85,6 +116,7 @@ class UserFixture:
             "permissions": ["change_domainapplication"],
         },
         {"app_label": "registrar", "model": "domain", "permissions": ["view_domain"]},
+        {"app_label": "registrar", "model": "user", "permissions": ["view_user"]},
     ]
 
     @classmethod
@@ -98,6 +130,8 @@ class UserFixture:
                 user.is_superuser = True
                 user.first_name = admin["first_name"]
                 user.last_name = admin["last_name"]
+                if "email" in admin.keys():
+                    user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
                 user.save()
@@ -115,6 +149,8 @@ class UserFixture:
                 user.is_superuser = False
                 user.first_name = staff["first_name"]
                 user.last_name = staff["last_name"]
+                if "email" in admin.keys():
+                    user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
 
@@ -201,11 +237,11 @@ class DomainApplicationFixture:
             "organization_name": "Example - Submitted but pending Investigation",
         },
         {
-            "status": "investigating",
+            "status": "in review",
             "organization_name": "Example - In Investigation",
         },
         {
-            "status": "investigating",
+            "status": "in review",
             "organization_name": "Example - Approved",
         },
         {
@@ -377,9 +413,9 @@ class DomainFixture(DomainApplicationFixture):
             return
 
         for user in users:
-            # approve one of each users investigating status domains
+            # approve one of each users in review status domains
             application = DomainApplication.objects.filter(
-                creator=user, status=DomainApplication.INVESTIGATING
+                creator=user, status=DomainApplication.IN_REVIEW
             ).last()
             logger.debug(f"Approving {application} for {user}")
             application.approve()

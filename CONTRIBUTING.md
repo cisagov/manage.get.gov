@@ -9,6 +9,22 @@ There are a handful of things we do not commit to the repository:
 - Compliance documentation that includes IP addresses
 - Secrets of any kind
 
+## Branch naming convention
+
+For developers, you can auto-deploy your code to your sandbox (if applicable) by naming your branch thusly: jsd/123-feature-description
+Where 'jsd' stands for your initials and sandbox environment name (if you were called John Smith Doe), and 123 matches the ticket number if applicable.
+
+## Approvals
+
+When a code change is made that is not user facing, then the following is required:
+- a developer approves the PR
+
+When a code change is made that is user facing, beyond content updates, then the following are required:
+- a developer approves the PR
+- a designer approves the PR or checks off all relevant items in this checklist
+
+Content or document updates require a single person to approve.
+
 ## Project Management
 
 We use [Github Projects](https://docs.github.com/en/issues/planning-and-tracking-with-projects/learning-about-projects/about-projects) for project management and tracking.

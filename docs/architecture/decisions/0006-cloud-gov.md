@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-We need a place to run our application for the registrar. Cloud.gov is a FIMSA Moderate Fedramped solution that supports our language and framework selections.
+We need a place to run our application for the registrar. Cloud.gov is a FISMA Moderate FedRAMP'd solution that supports our language and framework selections.
 
 ## Decision
 
@@ -16,10 +16,10 @@ To use cloud.gov to host our application(s).
 
 ## Consequences
 
-Choosing cloud.gov for our solution means we are locked into its opinionated choices for our infrastructure. It forces us to run 12-factor applications. It doesn't support brokering for services we may need like email notifications. 
-
-It also means the compliance lift is much lighter. We do not need to prove we are compliance for the majority of our infrastructure and our runtime enviornment.
+* Choosing Cloud.gov for our solution means we are assisted by its opinionated choices for our infrastructure. For example, it forces us to run 12-factor applications.
+* It doesn't support brokering for services we may need like email notifications.
+* The compliance lift is lighter. We can inherit Cloud.gov's controls for the majority of our infrastructure and our runtime enviornment.
 
 ## Alternatives Considered
 
-Run our application on in either CISA's Azure or AWS environment with a continerized deployment.
+Run our application on in either CISA's Azure or AWS environment with a containerized deployment.

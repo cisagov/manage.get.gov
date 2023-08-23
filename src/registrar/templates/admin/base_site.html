@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "css/styles.css" %}" />
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">.gov admin</a></h1>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
+{% endif %}
+{% endblock %}
+{% comment %}
+  This was copied from the 'userlinks' template, with a few minor changes.
+  You can find that here:
+  https://github.com/django/django/blob/d25f3892114466d689fd6936f79f3bd9a9acc30e/django/contrib/admin/templates/admin/base.html#L59
+{% endcomment %}
+{% block userlinks %}
+  {% if site_url %}
+      <a href="{{ site_url }}">{% translate 'View site' %}</a> /
+  {% endif %}
+  {% if user.is_active and user.is_staff %}
+      {% url 'django-admindocs-docroot' as docsroot %}
+      {% if docsroot %}
+          <a href="{{ docsroot }}">{% translate 'Documentation' %}</a> /
+      {% endif %}
+  {% endif %}
+  {% if user.has_usable_password %}
+      <a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a> /
+  {% endif %}
+      <a href="{% url 'admin:logout' %}" id="admin-logout-button">{% translate 'Log out' %}</a>
+  {% include "admin/color_theme_toggle.html" %}
+ {% endblock %}
+{% block nav-global %}{% endblock %}
