@@ -19,7 +19,7 @@
 
     <div class="tablet:grid-col-9">
       <main id="main-content" class="grid-container">
-    {% if not is_analyst_or_superuser or not analyst_action%}
+    {% if not is_analyst_or_superuser or not analyst_action %}
 	  <a href="{% url 'home' %}" class="breadcrumb__back">
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
         <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
@@ -39,7 +39,6 @@
         <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
         Back to manage your domains
         </p>
-
       </a>
       {% endif %}
       {# messages block is under the back breadcrumb link #}

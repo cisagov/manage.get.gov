@@ -34,23 +34,20 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        # Q: is there a more efficent way to do this?
-        # Searches by creator_id instead of creator,
-        # should be slightly faster than by creator...
-        is_original_creator = DomainInformation.objects.filter(
-            creator_id=self.request.user.id, id=self.kwargs["pk"]
-        ).exists()
-        context["is_original_creator"] = is_original_creator
-        context["is_analyst_or_superuser"] = user.is_superuser or user.is_staff
 
+        context["is_analyst_or_superuser"] = user.is_superuser or user.is_staff
         # Flag to see if an analyst is attempting to make edits
         if "analyst_action" in self.request.session:
             context["analyst_action"] = self.request.session["analyst_action"]
+            context["analyst_action_location"] = self.request.session["analyst_action_location"]
 
         return context
 
     def log_analyst_form_actions(self, form_class_name, printable_object_info):
-        """Generates a log for when 'analyst_action' exists on the session"""
+        """Generates a log for when key 'analyst_action' exists on the session.
+            Follows this format: f"{user_type} {self.request.user}
+            edited {form_class_name} in {printable_object_info}"
+        """
         if "analyst_action" in self.request.session:
             action = self.request.session["analyst_action"]
 
@@ -72,8 +69,6 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
                     logger.info(
                         f"{user_type} {self.request.user} edited {form_class_name} in {printable_object_info}"  # noqa
                     )
-        else:
-            logger.debug("'analyst_action' does not exist on the session")
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property

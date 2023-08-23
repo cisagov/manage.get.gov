@@ -6,7 +6,6 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from . import models
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -162,7 +161,7 @@ class DomainAdmin(ListHeaderAdmin):
         elif EDIT_DOMAIN in request.POST:
             # We want to know, globally, when an edit action occurs
             request.session["analyst_action"] = "edit"
-            # Restricts this action to this domain only
+            # Restricts this action to this domain (pk) only
             request.session["analyst_action_location"] = obj.id
 
             return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
@@ -179,12 +178,21 @@ class DomainAdmin(ListHeaderAdmin):
 
         extra_context = extra_context or {}
         extra_context["domain_id"] = object_id
+
         return super().change_view(
             request,
             object_id,
             form_url,
             extra_context=extra_context,
         )
+
+    def has_change_permission(self, request, obj=None):
+        # Fixes a bug wherein users which are only is_staff can access 'change' when GET,
+        # but cannot access this page when it is a request of type POST.
+        if request.user.is_staff:
+            return True
+
+        return super().has_change_permission(request, obj)
 
 
 class ContactAdmin(ListHeaderAdmin):

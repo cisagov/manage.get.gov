@@ -4,9 +4,9 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import Http404
 
 from registrar.models import DomainApplication, DomainInvitation
-import logging
 
-from registrar.models.domain_information import DomainInformation
+from registrar.models import DomainInformation, UserDomainRole
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -35,29 +35,36 @@ class DomainPermission(PermissionsLoginMixin):
             return False
 
         pk = self.kwargs["pk"]
+
+        # If pk is none then something went very wrong...
         if pk is None:
-            raise ValueError("Primary key is null for Domain")
-
-        requested_domain = None
-
-        try:
-            requested_domain = DomainInformation.objects.get(id=pk)
-
-        # This should never happen in normal flow.
-        # That said, it does need to be raised here.
-        except DomainInformation.DoesNotExist:
-            raise Http404()
+            raise ValueError("Primary key is None")
 
         # Checks if the creator is the user requesting this item
-        user_is_creator: bool = (
-            requested_domain.creator.username == self.request.user.username
-        )
+
+        user_is_creator: bool = UserDomainRole.objects.filter(
+            user=self.request.user, domain__id=pk
+        ).exists()
 
         # user needs to have a role on the domain
         if user_is_creator:
             return True
 
         # ticket 806
+        requested_domain: DomainInformation = None
+
+        try:
+            requested_domain = DomainInformation.objects.get(id=pk)
+
+        except DomainInformation.DoesNotExist:
+            # Q: While testing, I saw that, application-wide, if you go to a domain
+            # that does not exist (i.e: https://getgov-staging.app.cloud.gov/domain/73333),
+            # the page throws a 403 error,
+            # instead of a 404. This fixes that behaviour,
+            # but do we want it to throw a 403 instead?
+            # Basically, should this be logger.debug()?
+            raise Http404()
+
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [
             DomainApplication.APPROVED,
