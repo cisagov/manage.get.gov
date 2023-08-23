@@ -1,7 +1,8 @@
 # This script sets up a completely new Cloud.gov CF Space with all the corresponding
 # infrastructure needed to run get.gov. It can serve for documentation for running
 # NOTE: This script was written for MacOS and to be run at the root directory
-# of the repository.
+# of the repository. It uses `docker compose` to compile assets, so it is
+# safest to `docker compose down` before using this script. 
 
 if [ -z "$1" ]; then
     echo 'Please specify a name on the command line for the new space (i.e. lmm)' >&2
