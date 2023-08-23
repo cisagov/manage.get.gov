@@ -24,27 +24,27 @@ There are several tools we use locally that you will need to have.
 ### Steps for the onboardee
 - [ ] Setup [commit signing in Github](#setting-up-commit-signing) and with git locally.
 - [ ] [Create a cloud.gov account](https://cloud.gov/docs/getting-started/accounts/)
-- [ ] Have an admin add you to the CISA Github organization and Dotgov Team.
+- [ ] Email github@cisa.dhs.gov (cc: Cameron) to add you to the [CISA Github organization](https://github.com/getgov) and [.gov Team](https://github.com/orgs/cisagov/teams/gov).
 - [ ] Ensure you can login to your cloud.gov account via the CLI
 ```bash
 cf login -a api.fr.cloud.gov  --sso
 ```
 - [ ] Have an admin add you to cloud.gov org and set up your [sandbox developer space](#setting-up-developer-sandbox). Ensure you can deploy to your sandbox space.
-- [ ] Have an admin add you to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/).
+- [ ] Have an admin add you to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/).
 
  **Note:** As mentioned in the [Login documentation](https://developers.login.gov/testing/), the sandbox Login account is different account from your regular, production Login account. If you have not created a Login account for the sandbox before, you will need to create a new account first.
 
 - [ ] Optional- add yourself as a codeowner if desired. See the [Developer readme](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md) for how to do this and what it does.
 
 ### Steps for the onboarder
-- [ ] Add the onboardee to cloud.gov org (cisa-getgov-prototyping) 
+- [ ] Add the onboardee to cloud.gov org (cisa-dotgov) 
 - [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
-- [ ] Add the onboardee to our login.gov sandbox team (`.gov registrar poc`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
+- [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 
 
 ## Documents to Review
 
-- [ ] [Team Charter](https://docs.google.com/document/d/1xhMKlW8bMcxyF7ipsOYxw1SQYVi-lWPkcDHSUS6miNg/edit), in particular our Github Policy
+- [ ] [Team Onboarding](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?usp=sharing)
 - [ ] [Architecture Decision Records](https://github.com/cisagov/dotgov/tree/main/docs/architecture/decisions)
 - [ ] [Contributing Policy](https://github.com/cisagov/dotgov/tree/main/CONTRIBUTING.md)
 
