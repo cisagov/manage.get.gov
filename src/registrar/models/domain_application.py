@@ -591,7 +591,7 @@ class DomainApplication(TimeStampedModel):
     def withdraw(self):
         """Withdraw an application that has been submitted."""
         self._send_status_update_email(
-            "action needed",
+            "withdraw",
             "emails/domain_request_withdrawn.txt",
             "emails/domain_request_withdrawn_subject.txt",
         )
