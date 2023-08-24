@@ -37,7 +37,7 @@ cf login -a api.fr.cloud.gov  --sso
 - [ ] Optional- add yourself as a codeowner if desired. See the [Developer readme](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md) for how to do this and what it does.
 
 ### Steps for the onboarder
-- [ ] Add the onboardee to cloud.gov org (cisa-getgov-prototyping) 
+- [ ] Add the onboardee to cloud.gov org (cisa-dotgov) 
 - [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 

@@ -18,6 +18,7 @@ jobs:
         || startsWith(github.head_ref, 'za/')
         || startsWith(github.head_ref, 'rh/')
         || startsWith(github.head_ref, 'nl/')
+        || startsWith(github.head_ref, 'dk/')
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
@@ -52,7 +53,7 @@ jobs:
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-getgov-prototyping
+          cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
           push_arguments: "-f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml"
   comment:
