@@ -170,7 +170,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.submit()
-            
+
     def test_transition_not_allowed_ineligible_submitted(self):
         """Create an application with status ineligible and call submit
         against transition rules"""
@@ -233,7 +233,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.in_review()
-            
+
     def test_transition_not_allowed_ineligible_in_review(self):
         """Create an application with status ineligible and call in_review
         against transition rules"""
@@ -287,7 +287,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.action_needed()
-            
+
     def test_transition_not_allowed_ineligible_action_needed(self):
         """Create an application with status ineligible and call action_needed
         against transition rules"""
@@ -377,7 +377,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.withdraw()
-            
+
     def test_transition_not_allowed_ineligible_withdrawn(self):
         """Create an application with status ineligible and call withdraw
         against transition rules"""
@@ -431,7 +431,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject()
-            
+
     def test_transition_not_allowed_ineligible_rejected(self):
         """Create an application with status ineligible and call reject
         against transition rules"""
@@ -440,7 +440,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject_with_prejudice()
-            
+
     def test_transition_not_allowed_started_ineligible(self):
         """Create an application with status started and call reject
         against transition rules"""
@@ -485,7 +485,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject_with_prejudice()
-            
+
     def test_transition_not_allowed_ineligible_ineligible(self):
         """Create an application with status ineligible and call reject
         against transition rules"""

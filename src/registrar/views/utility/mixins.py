@@ -69,7 +69,7 @@ class DomainApplicationPermission(PermissionsLoginMixin):
             return False
 
         return True
-    
+
 
 class ApplicationWizardPermission(PermissionsLoginMixin):
 
@@ -80,7 +80,7 @@ class ApplicationWizardPermission(PermissionsLoginMixin):
 
         The user is in self.request.user
         """
-        
+
         # The user has an ineligible flag
         if self.request.user.is_blocked():
             return False

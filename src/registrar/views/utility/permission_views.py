@@ -10,7 +10,7 @@ from .mixins import (
     DomainPermission,
     DomainApplicationPermission,
     DomainInvitationPermission,
-    ApplicationWizardPermission
+    ApplicationWizardPermission,
 )
 
 
@@ -52,9 +52,11 @@ class DomainApplicationPermissionView(DomainApplicationPermission, DetailView, a
     @abc.abstractmethod
     def template_name(self):
         raise NotImplementedError
-    
-    
-class ApplicationWizardPermissionView(ApplicationWizardPermission, TemplateView, abc.ABC):
+
+
+class ApplicationWizardPermissionView(
+    ApplicationWizardPermission, TemplateView, abc.ABC
+):
 
     """Abstract base view for the application form that enforces permissions
 

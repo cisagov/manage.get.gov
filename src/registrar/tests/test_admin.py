@@ -15,7 +15,9 @@ class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.factory = RequestFactory()
-        self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
+        self.admin = DomainApplicationAdmin(
+            model=DomainApplication, admin_site=self.site
+        )
         self.superuser = create_superuser()
         self.staffuser = create_user()
 
@@ -260,7 +262,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
-        
+
     def test_save_model_sets_ineligible_status_on_user(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -281,60 +283,110 @@ class TestDomainApplicationAdmin(TestCase):
         self.admin.save_model(request, application, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
-        self.assertEqual(
-            application.creator.status, "ineligible"
-        )
-        
+        self.assertEqual(application.creator.status, "ineligible")
+
     def test_readonly_when_ineligible_creator(self):
         application = completed_application(status=DomainApplication.IN_REVIEW)
-        application.creator.status = 'ineligible'
+        application.creator.status = "ineligible"
         application.creator.save()
-        
-        request = self.factory.get('/')
+
+        request = self.factory.get("/")
         request.user = self.superuser
-        
+
         readonly_fields = self.admin.get_readonly_fields(request, application)
-                
-        expected_fields = ['id', 'created_at', 'updated_at', 'status', 'creator', 'investigator', 'organization_type', 'federally_recognized_tribe', 'state_recognized_tribe', 'tribe_name', 'federal_agency', 'federal_type', 'is_election_board', 'organization_name', 'address_line1', 'address_line2', 'city', 'state_territory', 'zipcode', 'urbanization', 'type_of_work', 'more_organization_information', 'authorizing_official', 'approved_domain', 'requested_domain', 'submitter', 'purpose', 'no_other_contacts_rationale', 'anything_else', 'is_policy_acknowledged', 'current_websites', 'other_contacts', 'alternative_domains']
-        
+
+        expected_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "status",
+            "creator",
+            "investigator",
+            "organization_type",
+            "federally_recognized_tribe",
+            "state_recognized_tribe",
+            "tribe_name",
+            "federal_agency",
+            "federal_type",
+            "is_election_board",
+            "organization_name",
+            "address_line1",
+            "address_line2",
+            "city",
+            "state_territory",
+            "zipcode",
+            "urbanization",
+            "type_of_work",
+            "more_organization_information",
+            "authorizing_official",
+            "approved_domain",
+            "requested_domain",
+            "submitter",
+            "purpose",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "is_policy_acknowledged",
+            "current_websites",
+            "other_contacts",
+            "alternative_domains",
+        ]
+
         self.assertEqual(readonly_fields, expected_fields)
-        
+
     def test_readonly_fields_for_analyst(self):
-        request = self.factory.get('/')  # Use the correct method and path
+        request = self.factory.get("/")  # Use the correct method and path
         request.user = self.staffuser
-        
+
         readonly_fields = self.admin.get_readonly_fields(request)
-                
-        expected_fields = ['creator', 'type_of_work', 'more_organization_information', 'address_line1', 'address_line2', 'zipcode', 'requested_domain', 'alternative_domains', 'purpose', 'submitter', 'no_other_contacts_rationale', 'anything_else', 'is_policy_acknowledged']
-    
+
+        expected_fields = [
+            "creator",
+            "type_of_work",
+            "more_organization_information",
+            "address_line1",
+            "address_line2",
+            "zipcode",
+            "requested_domain",
+            "alternative_domains",
+            "purpose",
+            "submitter",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "is_policy_acknowledged",
+        ]
+
         self.assertEqual(readonly_fields, expected_fields)
-        
+
     def test_readonly_fields_for_superuser(self):
-        request = self.factory.get('/')  # Use the correct method and path
+        request = self.factory.get("/")  # Use the correct method and path
         request.user = self.superuser
-        
+
         readonly_fields = self.admin.get_readonly_fields(request)
-                
+
         expected_fields = []
-    
+
         self.assertEqual(readonly_fields, expected_fields)
-        
+
     def test_saving_when_ineligible_creator(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.IN_REVIEW)
-        application.creator.status = 'ineligible'
+        application.creator.status = "ineligible"
         application.creator.save()
-        
+
         # Create a request object with a superuser
-        request = self.factory.get('/')
+        request = self.factory.get("/")
         request.user = self.superuser
-        
-        with patch('django.contrib.messages.error') as mock_error:
+
+        with patch("django.contrib.messages.error") as mock_error:
             # Simulate saving the model
             self.admin.save_model(request, application, None, False)
-            
+
             # Assert that the error message was called with the correct argument
-            mock_error.assert_called_once_with(request, "This action is not permitted for applications with an ineligible creator.")
+            mock_error.assert_called_once_with(
+                request,
+                "This action is not permitted for applications with "
+                + "an ineligible creator.",
+            )
 
         # Assert that the status has not changed
         self.assertEqual(application.status, DomainApplication.IN_REVIEW)
@@ -418,7 +470,7 @@ class ListHeaderAdminTest(TestCase):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
-        
+
 
 class MyUserAdminTest(TestCase):
     def setUp(self):

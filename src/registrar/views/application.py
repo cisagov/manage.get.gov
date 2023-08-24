@@ -59,7 +59,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     Any method not marked as internal can be overridden in a subclass,
     although not without consulting the base implementation, first.
     """
-    
+
     template_name = ""
 
     # uniquely namespace the wizard in urls.py

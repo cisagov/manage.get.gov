@@ -100,14 +100,14 @@ class LoggedInTests(TestWithUser):
             response,
             "What kind of U.S.-based government organization do you represent?",
         )
-        
+
     def test_domain_application_form_with_ineligible_user(self):
         """Application form not accessible for an ineligible user.
         This test should be solid enough since all application wizard
         views share the same permissions class"""
         self.user.status = "ineligible"
         self.user.save()
-        
+
         with less_console_noise():
             response = self.client.get("/register/", follow=True)
             print(response.status_code)
@@ -1434,7 +1434,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.assertContains(
             success_page, "The security email for this domain have been updated"
         )
-        
+
     def test_domain_overview_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
@@ -1443,10 +1443,8 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.user.save()
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")
-        with less_console_noise():   
-            response = self.client.get(
-                reverse("domain", kwargs={"pk": self.domain.id})
-            )        
+        with less_console_noise():
+            response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
 
 
@@ -1472,13 +1470,13 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.assertContains(detail_page, "testy@town.com")
         self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
-        
+
     def test_application_status_with_ineligible_user(self):
         """Checking application status page whith a blocked user.
         The user should still have access to view."""
         self.user.status = "ineligible"
         self.user.save()
-        
+
         application = completed_application(
             status=DomainApplication.SUBMITTED, user=self.user
         )

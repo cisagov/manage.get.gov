@@ -35,7 +35,7 @@ class DomainApplication(TimeStampedModel):
         (APPROVED, APPROVED),
         (WITHDRAWN, WITHDRAWN),
         (REJECTED, REJECTED),
-        (INELIGIBLE, INELIGIBLE)
+        (INELIGIBLE, INELIGIBLE),
     ]
 
     class StateTerritoryChoices(models.TextChoices):
@@ -556,7 +556,9 @@ class DomainApplication(TimeStampedModel):
         )
 
     @transition(
-        field="status", source=[SUBMITTED, IN_REVIEW, REJECTED, INELIGIBLE], target=APPROVED
+        field="status",
+        source=[SUBMITTED, IN_REVIEW, REJECTED, INELIGIBLE],
+        target=APPROVED,
     )
     def approve(self):
         """Approve an application that has been submitted.
@@ -604,7 +606,7 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_rejected.txt",
             "emails/status_change_rejected_subject.txt",
         )
-        
+
     @transition(field="status", source=[IN_REVIEW, APPROVED], target=INELIGIBLE)
     def reject_with_prejudice(self):
         """The applicant is a bad actor, reject with prejudice.
@@ -613,10 +615,8 @@ class DomainApplication(TimeStampedModel):
         any existing domains/applications and from submitting new aplications.
         We do this by setting an ineligible status on the user, which the
         permissions classes test against"""
-        
+
         self.creator.block_user()
-
-
 
     # ## Form policies ###
     #

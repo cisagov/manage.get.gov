@@ -16,19 +16,17 @@ class User(AbstractUser):
     A custom user model that performs identically to the default user model
     but can be customized later.
     """
-    
+
     # #### Constants for choice fields ####
-    INELIGIBLE = 'ineligible'
-    STATUS_CHOICES = (
-        (INELIGIBLE, INELIGIBLE),
-    )
-    
+    INELIGIBLE = "ineligible"
+    STATUS_CHOICES = ((INELIGIBLE, INELIGIBLE),)
+
     status = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
         default=None,  # Set the default value to None
-        null=True,     # Allow the field to be null
-        blank=True,    # Allow the field to be blank
+        null=True,  # Allow the field to be null
+        blank=True,  # Allow the field to be blank
     )
 
     domains = models.ManyToManyField(
@@ -52,15 +50,15 @@ class User(AbstractUser):
             return self.email
         else:
             return self.username
-        
+
     def block_user(self):
         self.status = "ineligible"
         self.save()
-        
+
     def unblock_user(self):
         self.status = None
         self.save()
-        
+
     def is_blocked(self):
         if self.status == "ineligible":
             return True
