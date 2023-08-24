@@ -191,7 +191,8 @@ class DomainAdmin(ListHeaderAdmin):
         )
 
     def has_change_permission(self, request, obj=None):
-        # Fixes a bug wherein users which are only is_staff can access 'change' when GET,
+        # Fixes a bug wherein users which are only is_staff
+        # can access 'change' when GET,
         # but cannot access this page when it is a request of type POST.
         if request.user.is_staff:
             return True

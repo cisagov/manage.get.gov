@@ -5,7 +5,7 @@ import abc  # abstract base class
 from django.views.generic import DetailView, DeleteView
 
 from registrar.models import Domain, DomainApplication, DomainInvitation
-from registrar.models.domain_information import DomainInformation
+
 
 from .mixins import (
     DomainPermission,
@@ -35,11 +35,13 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        context["is_analyst_or_superuser"] = user.is_superuser or user.is_staff
+        context["is_analyst_or_superuser"] = user.is_staff or user.is_superuser
         # Flag to see if an analyst is attempting to make edits
         if "analyst_action" in self.request.session:
-            context["analyst_action"] = self.request.session["analyst_action"]
-            context["analyst_action_location"] = self.request.session["analyst_action_location"]
+            # Stored in a variable for the linter
+            action = "analyst_action"
+            context[action] = self.request.session[action]
+            context[f"{action}_location"] = self.request.session[f"{action}_location"]
 
         return context
 

@@ -58,10 +58,10 @@ class DomainPermission(PermissionsLoginMixin):
 
         except DomainInformation.DoesNotExist:
             # Q: While testing, I saw that, application-wide, if you go to a domain
-            # that does not exist (i.e: https://getgov-staging.app.cloud.gov/domain/73333),
-            # the page throws a 403 error,
-            # instead of a 404. This fixes that behaviour,
-            # but do we want it to throw a 403 instead?
+            # that does not exist, for example,
+            # https://getgov-staging.app.cloud.gov/domain/73333,
+            # the page throws a 403 error, instead of a 404.
+            # This fixes that behaviour, but do we want it to throw a 403 instead?
             # Basically, should this be logger.debug()?
             raise Http404()
 
