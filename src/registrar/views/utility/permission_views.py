@@ -47,8 +47,8 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
     def log_analyst_form_actions(self, form_class_name, printable_object_info):
         """Generates a log for when key 'analyst_action' exists on the session.
-            Follows this format: f"{user_type} {self.request.user}
-            edited {form_class_name} in {printable_object_info}"
+        Follows this format: f"{user_type} {self.request.user}
+        edited {form_class_name} in {printable_object_info}"
         """
         if "analyst_action" in self.request.session:
             action = self.request.session["analyst_action"]

@@ -1,7 +1,6 @@
 """Permissions-related mixin classes."""
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.http import Http404
 
 from registrar.models import DomainApplication, DomainInvitation
 
@@ -61,9 +60,10 @@ class DomainPermission(PermissionsLoginMixin):
             # that does not exist, for example,
             # https://getgov-staging.app.cloud.gov/domain/73333,
             # the page throws a 403 error, instead of a 404.
-            # This fixes that behaviour, but do we want it to throw a 403 instead?
-            # Basically, should this be logger.debug()?
-            raise Http404()
+            # Do we want it to throw a 404 instead?
+            # Basically, should this be Http404()?
+            logger.warning(f"Domain with PK {pk} does not exist")
+            return False
 
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [
