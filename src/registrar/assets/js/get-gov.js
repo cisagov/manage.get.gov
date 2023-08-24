@@ -261,4 +261,3 @@ function handleValidationClick(e) {
       totalForms.setAttribute('value', `${formNum+1}`)
   }
 })();
-
