@@ -6,11 +6,13 @@
 {% block content %}
 <div class="grid-container">
   <div class="grid-row">
+    {% if not is_analyst_or_superuser or not analyst_action %}
     <p class="font-body-md margin-top-0 margin-bottom-2
               text-primary-darker text-semibold"
     >
       <span class="usa-sr-only"> Domain name:</span> {{ domain.name }}
     </p>
+    {% endif %}
   </div>
   <div class="grid-row grid-gap">
     <div class="tablet:grid-col-3">
@@ -31,15 +33,14 @@
 
       </a>
       {% elif is_analyst_or_superuser and analyst_action == 'edit' %}
-      <a href="{% url 'admin:registrar_domain_change' domain.id%}" class="breadcrumb__back">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-        </svg>
-        {# Q: For analysts, should this be 'Back to .gov admin' or  'Back to change domain'? #}
-        <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-        Back to manage your domains
-        </p>
-      </a>
+      <div class="usa-alert usa-alert--warning">
+        <div class="usa-alert__body">
+          <h4 class="usa-alert__heading larger-font-sizing ">Attention!</h4>
+          <p class="usa-alert__text ">
+            You are making changes to a registrant’s domain. When finished making changes, close this tab and inform the registrant of your updates
+          </p>
+        </div>
+      </div>
       {% endif %}
       {# messages block is under the back breadcrumb link #}
       {% if messages %}

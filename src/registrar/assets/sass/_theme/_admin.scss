@@ -170,24 +170,3 @@ table > caption > a {
 .min-width-81 {
     min-width: 81px;
 }
-
-.buttonAdminPadding {
-    background: var(--button-bg);
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    color: var(--button-fg);
-    cursor: pointer;
-    transition: background 0.15s;
-
-}
-
-.submit-row input {
-    height: 2.1875rem;
-    line-height: 0.9375rem;
-}
-
-a.button{
-    font-size: 100% !important;
-    padding: 9px 15px !important;
-}
