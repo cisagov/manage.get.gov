@@ -171,24 +171,14 @@ class DomainAdmin(ListHeaderAdmin):
             return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
         return super().response_change(request, obj)
 
-    # Sets domain_id as a context var
-    def change_view(self, request, object_id, form_url="", extra_context=None):
+    def change_view(self, request, object_id):
+        # If the analyst was recently editing
         if "analyst_action" in request.session:
-            # If an analyst performed an edit action,
             # delete the session variable
             del request.session["analyst_action"]
             # delete the associated location
             del request.session["analyst_action_location"]
-
-        extra_context = extra_context or {}
-        extra_context["domain_id"] = object_id
-
-        return super().change_view(
-            request,
-            object_id,
-            form_url,
-            extra_context=extra_context,
-        )
+        return super().change_view(request, object_id)
 
     def has_change_permission(self, request, obj=None):
         # Fixes a bug wherein users which are only is_staff
@@ -196,7 +186,6 @@ class DomainAdmin(ListHeaderAdmin):
         # but cannot access this page when it is a request of type POST.
         if request.user.is_staff:
             return True
-
         return super().has_change_permission(request, obj)
 
 

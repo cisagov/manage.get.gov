@@ -2,9 +2,7 @@
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
-from registrar.models import DomainApplication, DomainInvitation
-
-from registrar.models import DomainInformation, UserDomainRole
+from registrar.models import DomainApplication, DomainInvitation, DomainInformation, UserDomainRole
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,27 +32,20 @@ class DomainPermission(PermissionsLoginMixin):
             return False
 
         pk = self.kwargs["pk"]
-
         # If pk is none then something went very wrong...
         if pk is None:
             raise ValueError("Primary key is None")
 
-        # Checks if the creator is the user requesting this item
-
-        user_is_creator: bool = UserDomainRole.objects.filter(
-            user=self.request.user, domain__id=pk
-        ).exists()
-
         # user needs to have a role on the domain
-        if user_is_creator:
+        if UserDomainRole.objects.filter(
+            user=self.request.user, domain__id=pk
+        ).exists():
             return True
 
         # ticket 806
         requested_domain: DomainInformation = None
-
         try:
             requested_domain = DomainInformation.objects.get(id=pk)
-
         except DomainInformation.DoesNotExist:
             # Q: While testing, I saw that, application-wide, if you go to a domain
             # that does not exist, for example,
@@ -62,7 +53,7 @@ class DomainPermission(PermissionsLoginMixin):
             # the page throws a 403 error, instead of a 404.
             # Do we want it to throw a 404 instead?
             # Basically, should this be Http404()?
-            logger.warning(f"Domain with PK {pk} does not exist")
+            logger.debug(f"Domain with PK {pk} does not exist")
             return False
 
         # Analysts may manage domains, when they are in these statuses:
@@ -79,7 +70,6 @@ class DomainPermission(PermissionsLoginMixin):
         )
 
         session = self.request.session
-
         # Check if the user is attempting a valid edit action.
         # If analyst_action is present, analyst_action_location will be present.
         # if it isn't, then it either suggests tampering

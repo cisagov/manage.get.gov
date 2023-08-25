@@ -14,10 +14,9 @@ from registrar.models import (
     DomainInformation,
     User,
     DomainInvitation,
+    Domain
 )
-from registrar.models.domain import Domain
 from .common import (
-    AuditedAdminMockData,
     completed_application,
     generic_domain_object,
     mock_user,
@@ -25,11 +24,8 @@ from .common import (
     create_user,
     multiple_unalphabetical_domain_objects,
 )
-
 from django.contrib.sessions.backends.db import SessionStore
-
 from django.contrib.auth import get_user_model
-
 from django.conf import settings
 from unittest.mock import MagicMock
 import boto3_mocking  # type: ignore
@@ -651,7 +647,6 @@ class DomainSessionVariableTest(TestCase):
         self.factory = RequestFactory()
         self.admin = DomainAdmin(Domain, None)
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.superuser = create_superuser()
 
     def test_session_variables_set_correctly(self):
         """Checks if session variables are being set correctly"""
@@ -660,12 +655,7 @@ class DomainSessionVariableTest(TestCase):
         self.client.login(username="superuser", password=p)
 
         dummy_domain_information: DomainInformation = generic_domain_object("information", "session")
-        request = self.factory.post(
-            reverse('admin:registrar_domain_change', args=(dummy_domain_information.domain.pk,)),
-            {'_edit_domain': 'true'},
-            follow=True
-        )
-
+        request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
         self.populate_session_values(request, dummy_domain_information.domain)
 
         self.assertEqual(request.session['analyst_action'], 'edit')
@@ -676,19 +666,13 @@ class DomainSessionVariableTest(TestCase):
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
-        # We need to create multiple of these to ensure data is consistent across all of them
-        dummy_domain_information_list: [DomainInformation] = multiple_unalphabetical_domain_objects("invitation")
+        dummy_domain_information_list: [DomainInformation] = multiple_unalphabetical_domain_objects("information")
         for item in dummy_domain_information_list:
-            request = self.factory.post(
-                reverse('admin:registrar_domain_change', args=(item.pk,)),
-                {'_edit_domain': 'true'},
-                follow=True
-            )
-
+            request = self.get_factory_post_edit_domain(item.domain.pk)
             self.populate_session_values(request, item)
 
             self.assertEqual(request.session['analyst_action'], 'edit')
-            self.assertEqual(request.session['analyst_action_location'], item.pk)
+            self.assertEqual(request.session['analyst_action_location'], item.domain.pk)
 
     def test_session_variables_concurrent_requests(self):
         """ Simulates two requests at once """
@@ -731,3 +715,13 @@ class DomainSessionVariableTest(TestCase):
         request.session = SessionStore()
         request.session.create()
         self.admin.response_change(request, domain_object)
+
+    def get_factory_post_edit_domain(self, primary_key):
+        """Posts to registrar domain change
+        with the edit domain button 'clicked',
+        then returns the factory object"""
+        return self.factory.post(
+            reverse('admin:registrar_domain_change', args=(primary_key,)),
+            {'_edit_domain': 'true'},
+            follow=True
+        )
