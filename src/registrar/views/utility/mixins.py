@@ -2,7 +2,12 @@
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
-from registrar.models import DomainApplication, DomainInvitation, DomainInformation, UserDomainRole
+from registrar.models import (
+    DomainApplication,
+    DomainInvitation,
+    DomainInformation,
+    UserDomainRole,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -71,11 +76,10 @@ class DomainPermission(PermissionsLoginMixin):
 
         session = self.request.session
         # Check if the user is attempting a valid edit action.
-        # If analyst_action is present, analyst_action_location will be present.
-        # if it isn't, then it either suggests tampering
-        # or a larger omnipresent issue with sessions.
         can_do_action = (
-            "analyst_action" in session and session["analyst_action_location"] == pk
+            "analyst_action" in session
+            and "analyst_action_location" in session
+            and session["analyst_action_location"] == pk
         )
 
         # If the valid session keys exist, if the user is permissioned,

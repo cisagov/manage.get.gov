@@ -211,7 +211,7 @@ function handleValidationClick(e) {
  * An IIFE that will attach validators to inputs.
  *
  * It looks for elements with `validate="<type> <type>"` and adds change handlers.
- *
+ * 
  * These handlers know about two other attributes:
  *  - `validate-for="<id>"` creates a button which will run the validator(s) on <id>
  *  - `auto-validate` will run validator(s) when the user stops typing (otherwise,

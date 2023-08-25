@@ -4,8 +4,8 @@
   <nav aria-label="Domain sections">
     <ul class="usa-sidenav">
       <li class="usa-sidenav__item">
-        {% url 'domain' pk=domain.id as url %}
-        <a href="{{ url }}"
+        {% url 'domain' pk=domain.id as url %} 
+        <a href="{{ url }}" 
           {% if request.path == url %}class="usa-current"{% endif %}
         >
           Domain overview
@@ -13,7 +13,7 @@
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'domain-nameservers' pk=domain.id as url %}
+        {% url 'domain-nameservers' pk=domain.id as url %} 
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
@@ -28,7 +28,7 @@
         >
             Organization name and mailing address
         </a>
-      </li>
+      </li>      
 
       <li class="usa-sidenav__item">
         {% url 'domain-authorizing-official' pk=domain.id as url %}

@@ -1,7 +1,7 @@
 @use "cisa_colors" as *;
 @use "uswds-core" as *;
 
-// We'll use Django's CSS vars: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#theming-support
+// We'll use Django's CSS vars: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#theming-support 
 // and assign USWDS theme vars whenever possible
 // If needed (see below), we'll use the USWDS hex value
 // As a last resort, we'll use CISA colors to supplement the palette
@@ -72,34 +72,34 @@ html[data-theme="light"] {
 @media (prefers-color-scheme: dark) {
     :root,
     html[data-theme="dark"] {
-      // Edit the primary to meet accessibility requ.
+      // Edit the primary to meet accessibility requ.  
       --primary: #23485a;
       --primary-fg: #f7f7f7;
-
+  
       --body-fg: #eeeeee;
       --body-bg: #121212;
       --body-quiet-color: #e0e0e0;
       --body-loud-color: #ffffff;
-
+  
       --breadcrumbs-link-fg: #e0e0e0;
       --breadcrumbs-bg: var(--primary);
-
+  
       --link-fg: #81d4fa;
       --link-hover-color: #4ac1f7;
       --link-selected-fg: #6f94c6;
-
+  
       --hairline-color: #272727;
       --border-color: #353535;
-
+  
       --error-fg: #e35f5f;
       --message-success-bg: #006b1b;
       --message-warning-bg: #583305;
       --message-error-bg: #570808;
-
+  
       --darkened-bg: #212121;
       --selected-bg: #1b1b1b;
       --selected-row: #00363a;
-
+  
       --close-button-bg: #333333;
       --close-button-hover-bg: #666666;
     }
@@ -108,7 +108,7 @@ html[data-theme="light"] {
     .change-list .usa-table,
     .change-list .usa-table--striped tbody tr:nth-child(odd) td,
     .change-list .usa-table--borderless thead th,
-    .change-list .usa-table thead td,
+    .change-list .usa-table thead td, 
     .change-list .usa-table thead th,
     body.dashboard,
     body.change-list,
@@ -122,7 +122,7 @@ html[data-theme="dark"] {
     .change-list .usa-table,
     .change-list .usa-table--striped tbody tr:nth-child(odd) td,
     .change-list .usa-table--borderless thead th,
-    .change-list .usa-table thead td,
+    .change-list .usa-table thead td, 
     .change-list .usa-table thead th,
     body.dashboard,
     body.change-list,
@@ -163,7 +163,7 @@ table > caption > a {
     height: auto!important;
 }
 
-// Keep th from collapsing
+// Keep th from collapsing 
 .min-width-25 {
     min-width: 25px;
 }

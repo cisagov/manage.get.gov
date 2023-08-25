@@ -26,7 +26,6 @@ $letter-space--xs: .0125em;
 @use "uswds-core" as *;
 
 /* Styles for making visible to screen reader / AT users only. */
-
 .sr-only {
    @include sr-only;
  }
@@ -62,9 +61,9 @@ body {
 }
 
 p,
-address,
-.usa-list li {
-  @include typeset('sans', 'sm', 5);
+address, 
+.usa-list li { 
+  @include typeset('sans', 'sm', 5); 
   max-width: measure(5);
 }
 
@@ -119,7 +118,7 @@ h2 {
     color: color('violet-70v'); //USWDS default
   }
 }
-.register-form-step .usa-form-group:first-of-type,
+.register-form-step .usa-form-group:first-of-type, 
 .register-form-step .usa-label:first-of-type {
   margin-top: units(1);
 }
@@ -181,7 +180,7 @@ a.withdraw:active {
       a.link_usa-checked {
         padding: 0;
       }
-    }
+    }    
   }
 }
 
@@ -243,7 +242,7 @@ a.withdraw:active {
 
 .usa-form .usa-button {
   margin-top: units(3);
-}
+} 
 
 .usa-button--unstyled .usa-icon {
   vertical-align: bottom;
@@ -396,7 +395,7 @@ a.usa-button--unstyled:visited {
 }
 
 .dotgov-status-box {
-  background-color: color('primary-lightest');
+  background-color: color('primary-lightest'); 
   border-color: color('accent-cool-lighter');
 }
 
@@ -440,4 +439,14 @@ abbr[title] {
   .usa-alert__heading.larger-font-sizing {
     font-size: units(3);
   }
+}
+
+// The icon was off center for some reason
+// Fixes that issue
+@media (min-width: 64em){
+  .usa-alert--warning{
+    .usa-alert__body::before {
+      left: 1rem !important;
+    }
+  } 
 }

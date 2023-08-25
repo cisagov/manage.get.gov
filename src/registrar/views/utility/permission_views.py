@@ -34,14 +34,15 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-
         context["is_analyst_or_superuser"] = user.is_staff or user.is_superuser
+        # Stored in a variable for the linter
+        action = "analyst_action"
+        action_location = "analyst_action_location"
         # Flag to see if an analyst is attempting to make edits
-        if "analyst_action" in self.request.session:
-            # Stored in a variable for the linter
-            action = "analyst_action"
+        if action in self.request.session:
             context[action] = self.request.session[action]
-            context[f"{action}_location"] = self.request.session[f"{action}_location"]
+        if action_location in self.request.session:
+            context[action_location] = self.request.session[action_location]
 
         return context
 
