@@ -1,14 +1,35 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
-from registrar.admin import DomainApplicationAdmin, ListHeaderAdmin, MyUserAdmin
-from registrar.models import DomainApplication, DomainInformation, User
-from .common import completed_application, mock_user, create_superuser, create_user
+
+from registrar.admin import (
+    DomainApplicationAdmin,
+    ListHeaderAdmin,
+    MyUserAdmin,
+    AuditedAdmin,
+)
+from registrar.models import (
+    DomainApplication,
+    DomainInformation,
+    User,
+    DomainInvitation,
+)
+from .common import (
+    completed_application,
+    mock_user,
+    create_superuser,
+    create_user,
+    multiple_unalphabetical_domain_objects,
+)
+
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 
 from django.conf import settings
 from unittest.mock import MagicMock
 import boto3_mocking  # type: ignore
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TestDomainApplicationAdmin(TestCase):
@@ -531,3 +552,224 @@ class MyUserAdminTest(TestCase):
 
     def tearDown(self):
         User.objects.all().delete()
+
+
+class AuditedAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+
+    def order_by_desired_field_helper(
+        self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names
+    ):
+        formatted_sort_fields = []
+        for obj in obj_names:
+            formatted_sort_fields.append("{}__{}".format(field_name, obj))
+
+        ordered_list = list(
+            obj_to_sort.get_queryset(request)
+            .order_by(*formatted_sort_fields)
+            .values_list(*formatted_sort_fields)
+        )
+
+        return ordered_list
+
+    def test_alphabetically_sorted_fk_fields_domain_application(self):
+        tested_fields = [
+            DomainApplication.authorizing_official.field,
+            DomainApplication.submitter.field,
+            DomainApplication.investigator.field,
+            DomainApplication.creator.field,
+            DomainApplication.requested_domain.field,
+        ]
+
+        # Creates multiple domain applications - review status does not matter
+        applications = multiple_unalphabetical_domain_objects("application")
+
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
+        )
+
+        model_admin = AuditedAdmin(DomainApplication, self.site)
+
+        sorted_fields = []
+        # Typically we wouldn't want two nested for fields,
+        # but both fields are of a fixed length.
+        # For test case purposes, this should be performant.
+        for field in tested_fields:
+            isNamefield: bool = field == DomainApplication.requested_domain.field
+            if isNamefield:
+                sorted_fields = ["name"]
+            else:
+                sorted_fields = ["first_name", "last_name"]
+            # We want both of these to be lists, as it is richer test wise.
+
+            desired_order = self.order_by_desired_field_helper(
+                model_admin, request, field.name, *sorted_fields
+            )
+            current_sort_order = list(
+                model_admin.formfield_for_foreignkey(field, request).queryset
+            )
+
+            # Conforms to the same object structure as desired_order
+            current_sort_order_coerced_type = []
+
+            # This is necessary as .queryset and get_queryset
+            # return lists of different types/structures.
+            # We need to parse this data and coerce them into the same type.
+            for contact in current_sort_order:
+                if not isNamefield:
+                    first = contact.first_name
+                    last = contact.last_name
+                else:
+                    first = contact.name
+                    last = None
+
+                name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
+                if name_tuple is not None:
+                    current_sort_order_coerced_type.append(name_tuple)
+
+            self.assertEqual(
+                desired_order,
+                current_sort_order_coerced_type,
+                "{} is not ordered alphabetically".format(field.name),
+            )
+
+    def test_alphabetically_sorted_fk_fields_domain_information(self):
+        tested_fields = [
+            DomainInformation.authorizing_official.field,
+            DomainInformation.submitter.field,
+            DomainInformation.creator.field,
+            (DomainInformation.domain.field, ["name"]),
+            (DomainInformation.domain_application.field, ["requested_domain__name"]),
+        ]
+        # Creates multiple domain applications - review status does not matter
+        applications = multiple_unalphabetical_domain_objects("information")
+
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domaininformation/{}/change/".format(applications[0].pk)
+        )
+
+        model_admin = AuditedAdmin(DomainInformation, self.site)
+
+        sorted_fields = []
+        # Typically we wouldn't want two nested for fields,
+        # but both fields are of a fixed length.
+        # For test case purposes, this should be performant.
+        for field in tested_fields:
+            isOtherOrderfield: bool = isinstance(field, tuple)
+            field_obj = None
+            if isOtherOrderfield:
+                sorted_fields = field[1]
+                field_obj = field[0]
+            else:
+                sorted_fields = ["first_name", "last_name"]
+                field_obj = field
+            # We want both of these to be lists, as it is richer test wise.
+            desired_order = self.order_by_desired_field_helper(
+                model_admin, request, field_obj.name, *sorted_fields
+            )
+            current_sort_order = list(
+                model_admin.formfield_for_foreignkey(field_obj, request).queryset
+            )
+
+            # Conforms to the same object structure as desired_order
+            current_sort_order_coerced_type = []
+
+            # This is necessary as .queryset and get_queryset
+            # return lists of different types/structures.
+            # We need to parse this data and coerce them into the same type.
+            for obj in current_sort_order:
+                last = None
+                if not isOtherOrderfield:
+                    first = obj.first_name
+                    last = obj.last_name
+                elif field_obj == DomainInformation.domain.field:
+                    first = obj.name
+                elif field_obj == DomainInformation.domain_application.field:
+                    first = obj.requested_domain.name
+
+                name_tuple = self.coerced_fk_field_helper(
+                    first, last, field_obj.name, ":"
+                )
+                if name_tuple is not None:
+                    current_sort_order_coerced_type.append(name_tuple)
+
+            self.assertEqual(
+                desired_order,
+                current_sort_order_coerced_type,
+                "{} is not ordered alphabetically".format(field_obj.name),
+            )
+
+    def test_alphabetically_sorted_fk_fields_domain_invitation(self):
+        tested_fields = [DomainInvitation.domain.field]
+
+        # Creates multiple domain applications - review status does not matter
+        applications = multiple_unalphabetical_domain_objects("invitation")
+
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domaininvitation/{}/change/".format(applications[0].pk)
+        )
+
+        model_admin = AuditedAdmin(DomainInvitation, self.site)
+
+        sorted_fields = []
+        # Typically we wouldn't want two nested for fields,
+        # but both fields are of a fixed length.
+        # For test case purposes, this should be performant.
+        for field in tested_fields:
+            sorted_fields = ["name"]
+            # We want both of these to be lists, as it is richer test wise.
+
+            desired_order = self.order_by_desired_field_helper(
+                model_admin, request, field.name, *sorted_fields
+            )
+            current_sort_order = list(
+                model_admin.formfield_for_foreignkey(field, request).queryset
+            )
+
+            # Conforms to the same object structure as desired_order
+            current_sort_order_coerced_type = []
+
+            # This is necessary as .queryset and get_queryset
+            # return lists of different types/structures.
+            # We need to parse this data and coerce them into the same type.
+            for contact in current_sort_order:
+                first = contact.name
+                last = None
+
+                name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
+                if name_tuple is not None:
+                    current_sort_order_coerced_type.append(name_tuple)
+
+            self.assertEqual(
+                desired_order,
+                current_sort_order_coerced_type,
+                "{} is not ordered alphabetically".format(field.name),
+            )
+
+    def coerced_fk_field_helper(
+        self, first_name, last_name, field_name, queryset_shorthand
+    ):
+        """Handles edge cases for test cases"""
+        if first_name is None:
+            raise ValueError("Invalid value for first_name, must be defined")
+
+        returned_tuple = (first_name, last_name)
+        # Handles edge case for names - structured strangely
+        if last_name is None:
+            return (first_name,)
+
+        if first_name.split(queryset_shorthand)[1] == field_name:
+            return returned_tuple
+        else:
+            return None
+
+    def tearDown(self):
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        DomainInvitation.objects.all().delete()

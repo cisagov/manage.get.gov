@@ -25,6 +25,7 @@ on:
           - ab
           - bl
           - rjm
+          - dk
 
 jobs:
   reset-db:
@@ -38,7 +39,7 @@ jobs:
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-getgov-prototyping
+          cf_org: cisa-dotgov
           cf_space: ${{ github.event.inputs.environment }}
           full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
 
@@ -47,7 +48,7 @@ jobs:
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-getgov-prototyping
+          cf_org: cisa-dotgov
           cf_space: ${{ github.event.inputs.environment }}
           full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"
 
@@ -56,6 +57,6 @@ jobs:
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-getgov-prototyping
+          cf_org: cisa-dotgov
           cf_space: ${{ github.event.inputs.environment }}
           full_command: "cf run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py load' --name loaddata"
