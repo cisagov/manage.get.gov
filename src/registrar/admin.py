@@ -167,16 +167,14 @@ class DomainAdmin(ListHeaderAdmin):
             request.session["analyst_action"] = "edit"
             # Restricts this action to this domain (pk) only
             request.session["analyst_action_location"] = obj.id
-
             return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
         return super().response_change(request, obj)
 
     def change_view(self, request, object_id):
-        # If the analyst was recently editing
+        # If the analyst was recently editing a domain page,
+        # delete any associated session values
         if "analyst_action" in request.session:
-            # delete the session variable
             del request.session["analyst_action"]
-            # delete the associated location
             del request.session["analyst_action_location"]
         return super().change_view(request, object_id)
 

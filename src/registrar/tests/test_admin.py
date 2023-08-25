@@ -654,7 +654,7 @@ class DomainSessionVariableTest(TestCase):
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
-        dummy_domain_information: DomainInformation = generic_domain_object("information", "session")
+        dummy_domain_information = generic_domain_object("information", "session")
         request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
         self.populate_session_values(request, dummy_domain_information.domain)
 
@@ -663,10 +663,11 @@ class DomainSessionVariableTest(TestCase):
 
     def test_session_variables_retain_information(self):
         """ Checks to see if session variables retain old information """
+
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
-        dummy_domain_information_list: [DomainInformation] = multiple_unalphabetical_domain_objects("information")
+        dummy_domain_information_list = multiple_unalphabetical_domain_objects("information")
         for item in dummy_domain_information_list:
             request = self.get_factory_post_edit_domain(item.domain.pk)
             self.populate_session_values(request, item)
@@ -676,22 +677,15 @@ class DomainSessionVariableTest(TestCase):
 
     def test_session_variables_concurrent_requests(self):
         """ Simulates two requests at once """
+
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
-        info_first: DomainInformation = generic_domain_object("information", "session")
-        info_second: DomainInformation = generic_domain_object("information", "session2")
+        info_first = generic_domain_object("information", "session")
+        info_second = generic_domain_object("information", "session2")
 
-        request_first = self.factory.post(
-            reverse('admin:registrar_domain_change', args=(info_first.domain.pk,)),
-            {'_edit_domain': 'true'},
-            follow=True
-        )
-        request_second = self.factory.post(
-            reverse('admin:registrar_domain_change', args=(info_second.domain.pk,)),
-            {'_edit_domain': 'true'},
-            follow=True
-        )
+        request_first = self.get_factory_post_edit_domain(info_first.domain.pk)
+        request_second = self.get_factory_post_edit_domain(info_second.domain.pk)
 
         self.populate_session_values(request_first, info_first.domain)
         self.populate_session_values(request_second, info_second.domain)

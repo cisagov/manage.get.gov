@@ -81,9 +81,7 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         )
 
         # Q: Is there a more efficent way to do this?
-        # I don't like repeating code across these functions,
-        # But I can't figure out a way to do this without installing
-        # middleware...
+        # It would be ideal if we didn't have to repeat this.
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
             self.log_analyst_form_actions(
