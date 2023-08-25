@@ -409,7 +409,8 @@ class TestDomainApplicationAdmin(TestCase):
             # Assert that the error message was called with the correct argument
             mock_warning.assert_called_once_with(
                 request,
-                "Cannot edit an application when its creator has a status of ineligible.",
+                "Cannot edit an application when its creator "
+                + "has a status of ineligible.",
             )
 
     def tearDown(self):

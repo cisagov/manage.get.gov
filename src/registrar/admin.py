@@ -367,7 +367,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         if obj and obj.creator.status == "ineligible":
             messages.warning(
                 request,
-                "Cannot edit an application when its creator has a status of ineligible.",
+                "Cannot edit an application when its creator "
+                + "has a status of ineligible.",
             )
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
