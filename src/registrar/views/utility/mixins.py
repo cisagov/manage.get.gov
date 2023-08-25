@@ -81,7 +81,7 @@ class DomainPermission(PermissionsLoginMixin):
             and "analyst_action_location" in session
             and session["analyst_action_location"] == pk
         )
-
+        
         # If the valid session keys exist, if the user is permissioned,
         # and if its in a valid status
         if (
