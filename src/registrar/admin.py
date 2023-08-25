@@ -4,13 +4,13 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
+from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 
 logger = logging.getLogger(__name__)
 
 
-class AuditedAdmin(admin.ModelAdmin):
-
+class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
     """Custom admin to make auditing easier."""
 
     def history_view(self, request, object_id, extra_context=None):
@@ -23,9 +23,13 @@ class AuditedAdmin(admin.ModelAdmin):
             )
         )
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Used to sort dropdown fields alphabetically but can be expanded upon"""
+        form_field = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        return self.form_field_order_helper(form_field, db_field)
+
 
 class ListHeaderAdmin(AuditedAdmin):
-
     """Custom admin to add a descriptive subheader to list views."""
 
     def changelist_view(self, request, extra_context=None):
@@ -162,7 +166,6 @@ class DomainAdmin(ListHeaderAdmin):
 
 
 class ContactAdmin(ListHeaderAdmin):
-
     """Custom contact admin class to add search."""
 
     search_fields = ["email", "first_name", "last_name"]

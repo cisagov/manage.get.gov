@@ -20,9 +20,9 @@ then
     git checkout -b remove-dev-sandbox-$1
 fi
 
-cf target -o cisa-getgov-prototyping -s $1
+cf target -o cisa-dotgov -s $1
 
-read -p "Are you logged in to the cisa-getgov-prototyping CF org above? (y/n) " -n 1 -r
+read -p "Are you logged in to the cisa-dotgov CF org above? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then

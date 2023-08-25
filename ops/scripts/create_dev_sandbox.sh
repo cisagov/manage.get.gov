@@ -21,9 +21,9 @@ then
     git checkout -b new-dev-sandbox-$1
 fi
 
-cf target -o cisa-getgov-prototyping
+cf target -o cisa-dotgov
 
-read -p "Are you logged in to the cisa-getgov-prototyping CF org above? (y/n) " -n 1 -r
+read -p "Are you logged in to the cisa-dotgov CF org above? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
@@ -49,9 +49,9 @@ sed -i '' '/getgov-staging.app.cloud.gov/ {a\
 
 echo "Creating new cloud.gov space for $1..."
 cf create-space $1
-cf target -o "cisa-getgov-prototyping" -s $1
-cf bind-security-group public_networks_egress cisa-getgov-prototyping --space $1
-cf bind-security-group trusted_local_networks_egress cisa-getgov-prototyping --space $1
+cf target -o "cisa-dotgov" -s $1
+cf bind-security-group public_networks_egress cisa-dotgov --space $1
+cf bind-security-group trusted_local_networks_egress cisa-dotgov --space $1
 
 echo "Creating new cloud.gov DB for $1. This usually takes about 5 minutes..."
 cf create-service aws-rds micro-psql getgov-$1-database
@@ -91,7 +91,7 @@ cd ..
 cf push getgov-$1 -f ops/manifests/manifest-$1.yaml
 
 read -p "Please provide the email of the space developer: " -r
-cf set-space-role $REPLY cisa-getgov-prototyping $1 SpaceDeveloper
+cf set-space-role $REPLY cisa-dotgov $1 SpaceDeveloper
 
 read -p "Should we run migrations? (y/n) " -n 1 -r
 echo
