@@ -80,6 +80,10 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
             self.request, "The organization name and mailing address has been updated."
         )
 
+        # Q: Is there a more efficent way to do this?
+        # I don't like repeating code across these functions,
+        # But I can't figure out a way to do this without installing
+        # middleware...
         if self.request.user.is_staff or self.request.user.is_superuser:
             # if they are editing from an '/admin' redirect, log their actions
             self.log_analyst_form_actions(
