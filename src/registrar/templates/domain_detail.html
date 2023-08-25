@@ -4,14 +4,14 @@
 {% block domain_content %}
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
-    
+
     {% url 'domain-nameservers' pk=domain.id as url %}
-    {% if domain.nameservers %}
+    {% if domain.nameservers %} 
       {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' edit_link=url %}
     {% else %}
       <h2 class="margin-top-neg-1"> DNS name servers </h2>
       <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
-      <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
+      <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a> 
     {% endif %}
 
     {% url 'domain-org-name-address' pk=domain.id as url %}
