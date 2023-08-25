@@ -48,18 +48,9 @@ class DomainPermission(PermissionsLoginMixin):
             return True
 
         # ticket 806
-        requested_domain: DomainInformation = None
-        try:
+        requested_domain = None
+        if(DomainInformation.objects.filter(id=pk).exists()):
             requested_domain = DomainInformation.objects.get(id=pk)
-        except DomainInformation.DoesNotExist:
-            # Q: While testing, I saw that, application-wide, if you go to a domain
-            # that does not exist, for example,
-            # https://getgov-staging.app.cloud.gov/domain/73333,
-            # the page throws a 403 error, instead of a 404.
-            # Do we want it to throw a 404 instead?
-            # Basically, should this be Http404()?
-            logger.debug(f"Domain with PK {pk} does not exist")
-            return False
 
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [
@@ -81,13 +72,21 @@ class DomainPermission(PermissionsLoginMixin):
             and "analyst_action_location" in session
             and session["analyst_action_location"] == pk
         )
-        
+
+        # Edge case - some domains do not have
+        # a status or DomainInformation... aka a status of 'None'
+        # This checks that it has a status, before checking if it does
+        # Otherwise, analysts can edit these domains
+        if (requested_domain is not None):
+            can_do_action = (
+                can_do_action 
+                and requested_domain.domain_application.status in valid_domain_statuses
+            )
         # If the valid session keys exist, if the user is permissioned,
         # and if its in a valid status
         if (
             can_do_action
             and user_is_analyst_or_superuser
-            and requested_domain.domain_application.status in valid_domain_statuses
         ):
             return True
 
