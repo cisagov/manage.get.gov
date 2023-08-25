@@ -1,7 +1,9 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from django.urls import reverse
 
 from registrar.admin import (
+    DomainAdmin,
     DomainApplicationAdmin,
     ListHeaderAdmin,
     MyUserAdmin,
@@ -13,13 +15,18 @@ from registrar.models import (
     User,
     DomainInvitation,
 )
+from registrar.models.domain import Domain
 from .common import (
+    AuditedAdminMockData,
     completed_application,
+    generic_domain_object,
     mock_user,
     create_superuser,
     create_user,
     multiple_unalphabetical_domain_objects,
 )
+
+from django.contrib.sessions.backends.db import SessionStore
 
 from django.contrib.auth import get_user_model
 
@@ -636,3 +643,91 @@ class AuditedAdminTest(TestCase):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         DomainInvitation.objects.all().delete()
+
+
+class DomainSessionVariableTest(TestCase):
+    """Test cases for session variables in Django Admin"""
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.admin = DomainAdmin(Domain, None)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+
+    def test_session_variables_set_correctly(self):
+        """Checks if session variables are being set correctly"""
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        dummy_domain_information: DomainInformation = generic_domain_object("information", "session")
+        request = self.factory.post(
+            reverse('admin:registrar_domain_change', args=(dummy_domain_information.domain.pk,)),
+            {'_edit_domain': 'true'},
+            follow=True
+        )
+
+        self.populate_session_values(request, dummy_domain_information.domain)
+
+        self.assertEqual(request.session['analyst_action'], 'edit')
+        self.assertEqual(request.session['analyst_action_location'], dummy_domain_information.domain.pk)
+
+    def test_session_variables_retain_information(self):
+        """ Checks to see if session variables retain old information """
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        # We need to create multiple of these to ensure data is consistent across all of them
+        dummy_domain_information_list: [DomainInformation] = multiple_unalphabetical_domain_objects("invitation")
+        for item in dummy_domain_information_list:
+            request = self.factory.post(
+                reverse('admin:registrar_domain_change', args=(item.pk,)),
+                {'_edit_domain': 'true'},
+                follow=True
+            )
+
+            self.populate_session_values(request, item)
+
+            self.assertEqual(request.session['analyst_action'], 'edit')
+            self.assertEqual(request.session['analyst_action_location'], item.pk)
+
+    def test_session_variables_concurrent_requests(self):
+        """ Simulates two requests at once """
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        info_first: DomainInformation = generic_domain_object("information", "session")
+        info_second: DomainInformation = generic_domain_object("information", "session2")
+
+        request_first = self.factory.post(
+            reverse('admin:registrar_domain_change', args=(info_first.domain.pk,)),
+            {'_edit_domain': 'true'},
+            follow=True
+        )
+        request_second = self.factory.post(
+            reverse('admin:registrar_domain_change', args=(info_second.domain.pk,)),
+            {'_edit_domain': 'true'},
+            follow=True
+        )
+
+        self.populate_session_values(request_first, info_first.domain)
+        self.populate_session_values(request_second, info_second.domain)
+
+        # Check if anything got nulled out
+        self.assertNotEqual(request_first.session['analyst_action'], None)
+        self.assertNotEqual(request_second.session['analyst_action'], None)
+        self.assertNotEqual(request_first.session['analyst_action_location'], None)
+        self.assertNotEqual(request_second.session['analyst_action_location'], None)
+
+        # Check if they are both the same action 'type'
+        self.assertEqual(request_first.session['analyst_action'], 'edit')
+        self.assertEqual(request_second.session['analyst_action'], 'edit')
+
+        # Check their locations, and ensure they aren't the same across both
+        self.assertNotEqual(request_first.session['analyst_action_location'], request_second.session['analyst_action_location'])
+
+    def populate_session_values(self, request, domain_object):
+        """Boilerplate for creating mock sessions"""
+        request.user = self.client
+        request.session = SessionStore()
+        request.session.create()
+        self.admin.response_change(request, domain_object)
