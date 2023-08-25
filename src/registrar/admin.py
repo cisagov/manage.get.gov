@@ -304,39 +304,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 # Get the original application from the database
                 original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-                # if obj.status != original_obj.status:
-                #     if obj.status == models.DomainApplication.STARTED:
-                #         # No conditions
-                #         pass
-                #     elif obj.status == models.DomainApplication.SUBMITTED:
-                #         # This is an fsm in model which will throw an error if the
-                #         # transition condition is violated, so we roll back the
-                #         # status to what it was before the admin user changed it and
-                #         # let the fsm method set it. Same comment applies to
-                #         # transition method calls below.
-                #         obj.status = original_obj.status
-                #         obj.submit()
-                #     elif obj.status == models.DomainApplication.IN_REVIEW:
-                #         obj.status = original_obj.status
-                #         obj.in_review()
-                #     elif obj.status == models.DomainApplication.ACTION_NEEDED:
-                #         obj.status = original_obj.status
-                #         obj.action_needed()
-                #     elif obj.status == models.DomainApplication.APPROVED:
-                #         obj.status = original_obj.status
-                #         obj.approve()
-                #     elif obj.status == models.DomainApplication.WITHDRAWN:
-                #         obj.status = original_obj.status
-                #         obj.withdraw()
-                #     elif obj.status == models.DomainApplication.REJECTED:
-                #         obj.status = original_obj.status
-                #         obj.reject()
-                #     elif obj.status == models.DomainApplication.INELIGIBLE:
-                #         obj.status = original_obj.status
-                #         obj.reject_with_prejudice()
-                #     else:
-                #         logger.warning("Unknown status selected in django admin")
-
                 if obj.status != original_obj.status:
                     status_method_mapping = {
                         models.DomainApplication.STARTED: None,
@@ -352,11 +319,18 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     if selected_method is None:
                         logger.warning("Unknown status selected in django admin")
                     else:
+                        # This is an fsm in model which will throw an error if the
+                        # transition condition is violated, so we roll back the
+                        # status to what it was before the admin user changed it and
+                        # let the fsm method set it.
                         obj.status = original_obj.status
                         selected_method()
 
             super().save_model(request, obj, form, change)
         else:
+            # Clear the success message
+            messages.set_level(request, messages.ERROR)
+
             messages.error(
                 request,
                 "This action is not permitted for applications "
@@ -388,6 +362,18 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         else:
             readonly_fields.extend([field for field in self.analyst_readonly_fields])
             return readonly_fields
+
+    def display_ineligible_warning(self, request, obj):
+        if obj and obj.creator.status == "ineligible":
+            messages.warning(
+                request,
+                "Cannot edit an application when its creator has a status of ineligible.",
+            )
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        obj = self.get_object(request, object_id)
+        self.display_ineligible_warning(request, obj)
+        return super().change_view(request, object_id, form_url, extra_context)
 
 
 admin.site.register(models.User, MyUserAdmin)

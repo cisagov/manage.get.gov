@@ -391,6 +391,27 @@ class TestDomainApplicationAdmin(TestCase):
         # Assert that the status has not changed
         self.assertEqual(application.status, DomainApplication.IN_REVIEW)
 
+    def test_change_view_with_ineligible_creator(self):
+        # Create an instance of the model
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application.creator.status = "ineligible"
+        application.creator.save()
+
+        with patch("django.contrib.messages.warning") as mock_warning:
+            # Create a request object with a superuser
+            request = self.factory.get(
+                "/admin/your_app/domainapplication/{}/change/".format(application.pk)
+            )
+            request.user = self.superuser
+
+            self.admin.display_ineligible_warning(request, application)
+
+            # Assert that the error message was called with the correct argument
+            mock_warning.assert_called_once_with(
+                request,
+                "Cannot edit an application when its creator has a status of ineligible.",
+            )
+
     def tearDown(self):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
