@@ -75,7 +75,7 @@ class UserFixture:
         {
             "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
             "first_name": "David",
-            "last_name": "Kennedy"
+            "last_name": "Kennedy",
         },
     ]
 
@@ -109,7 +109,7 @@ class UserFixture:
         {
             "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
             "first_name": "David-Analyst",
-            "last_name": "Kennedy-Analyst"
+            "last_name": "Kennedy-Analyst",
         },
     ]
 
