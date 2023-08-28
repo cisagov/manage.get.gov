@@ -649,6 +649,11 @@ class DomainSessionVariableTest(TestCase):
         self.admin = DomainAdmin(Domain, None)
         self.client = Client(HTTP_HOST="localhost:8080")
 
+        # Test data seems to linger in the sandbox for tests.
+        # We delete this here for these tests.
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+
     def test_session_vars_set_correctly(self):
         """Checks if session variables are being set correctly"""
 
