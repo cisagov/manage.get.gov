@@ -57,9 +57,11 @@ error messages, if necessary.
 
   {% if www_gov %}
     <div class="display-flex flex-align-center">
-      <span class="padding-top-05 padding-right-2px">www.</span>
+      {# Commented out for ticket #720: https://github.com/cisagov/getgov/issues/720 #}
+      <!--
+        <span class="padding-top-05 padding-right-2px">www.</span>
+      -->
   {% endif %}
-
   {# this is the input field, itself #}
   {% include widget.template_name %}
 
