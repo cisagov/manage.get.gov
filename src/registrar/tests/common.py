@@ -519,6 +519,7 @@ def multiple_unalphabetical_domain_objects(
         applications.append(application)
     return applications
 
+
 def generic_domain_object(domain_type, object_name):
     """Returns a generic domain object of
     domain_type 'application', 'information', or 'invitation'"""

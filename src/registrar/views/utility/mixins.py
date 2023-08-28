@@ -49,7 +49,7 @@ class DomainPermission(PermissionsLoginMixin):
 
         # ticket 806
         requested_domain = None
-        if(DomainInformation.objects.filter(id=pk).exists()):
+        if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
 
         # Analysts may manage domains, when they are in these statuses:
@@ -77,17 +77,14 @@ class DomainPermission(PermissionsLoginMixin):
         # a status or DomainInformation... aka a status of 'None'
         # This checks that it has a status, before checking if it does
         # Otherwise, analysts can edit these domains
-        if (requested_domain is not None):
+        if requested_domain is not None:
             can_do_action = (
-                can_do_action 
+                can_do_action
                 and requested_domain.domain_application.status in valid_domain_statuses
             )
         # If the valid session keys exist, if the user is permissioned,
         # and if its in a valid status
-        if (
-            can_do_action
-            and user_is_analyst_or_superuser
-        ):
+        if can_do_action and user_is_analyst_or_superuser:
             return True
 
         # ticket 796

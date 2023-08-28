@@ -83,9 +83,10 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         # Q: Is there a more efficent way to do this?
         # It would be ideal if we didn't have to repeat this.
         if self.request.user.is_staff or self.request.user.is_superuser:
+            changes = {field: form.cleaned_data[field] for field in form.changed_data}
             # if they are editing from an '/admin' redirect, log their actions
             self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info
+                self.form_class.__name__, self.get_object().domain_info, changes
             )
 
         # superclass has the redirect
