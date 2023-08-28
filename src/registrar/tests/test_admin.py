@@ -648,7 +648,7 @@ class DomainSessionVariableTest(TestCase):
         self.factory = RequestFactory()
         self.admin = DomainAdmin(Domain, None)
         self.client = Client(HTTP_HOST="localhost:8080")
-
+        
     def test_session_vars_set_correctly(self):
         """Checks if session variables are being set correctly"""
 
@@ -698,22 +698,6 @@ class DomainSessionVariableTest(TestCase):
             dummy_domain_information.domain.pk,
         )
 
-    def test_unauthorized_user(self):
-        """Checks for when a user has invalid perms"""
-
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        dummy_domain_information = generic_domain_object("information", "session")
-        request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
-        self.populate_session_values(request, dummy_domain_information.domain)
-
-        self.assertEqual(request.session["analyst_action"], "edit")
-        self.assertEqual(
-            request.session["analyst_action_location"],
-            dummy_domain_information.domain.pk,
-        )
-
     def test_session_variables_retain_information(self):
         """Checks to see if session variables retain old information"""
 
@@ -725,15 +709,10 @@ class DomainSessionVariableTest(TestCase):
         )
         for item in dummy_domain_information_list:
             request = self.get_factory_post_edit_domain(item.domain.pk)
-            logger.info(
-                f"Before populate - Domain Pk: {item.domain.pk} obj pk: {item.pk}"
-            )
-            self.populate_session_values(request, item)
-            logger.info(
-                f"After populate - Domain Pk: {item.domain.pk} obj pk: {item.pk}"
-            )
-            #self.assertEqual(request.session["analyst_action"], "edit")
-            #self.assertEqual(request.session["analyst_action_location"], item.domain.pk)
+            self.populate_session_values(request, item.domain)
+
+            self.assertEqual(request.session["analyst_action"], "edit")
+            self.assertEqual(request.session["analyst_action_location"], item.domain.pk)
 
     def test_session_variables_concurrent_requests(self):
         """Simulates two requests at once"""
