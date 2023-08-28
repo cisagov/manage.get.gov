@@ -725,11 +725,11 @@ class DomainSessionVariableTest(TestCase):
         )
         for item in dummy_domain_information_list:
             request = self.get_factory_post_edit_domain(item.domain.pk)
-            logger.debug(
+            logger.info(
                 f"Before populate - Domain Pk: {item.domain.pk} obj pk: {item.pk}"
             )
             self.populate_session_values(request, item)
-            logger.debug(
+            logger.info(
                 f"After populate - Domain Pk: {item.domain.pk} obj pk: {item.pk}"
             )
             self.assertEqual(request.session["analyst_action"], "edit")
