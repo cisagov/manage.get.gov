@@ -689,7 +689,7 @@ class DomainSessionVariableTest(TestCase):
         request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
 
         self.populate_session_values(
-            request, dummy_domain_information.domain, preloadBadData=True
+            request, dummy_domain_information.domain, preload_bad_data=True
         )
 
         self.assertEqual(request.session["analyst_action"], "edit")
@@ -747,8 +747,8 @@ class DomainSessionVariableTest(TestCase):
         request_first = self.get_factory_post_edit_domain(info_first.domain.pk)
         request_second = self.get_factory_post_edit_domain(info_second.domain.pk)
 
-        self.populate_session_values(request_first, info_first.domain)
-        self.populate_session_values(request_second, info_second.domain)
+        self.populate_session_values(request_first, info_first.domain, True)
+        self.populate_session_values(request_second, info_second.domain, True)
 
         # Check if anything got nulled out
         self.assertNotEqual(request_first.session["analyst_action"], None)
@@ -766,12 +766,12 @@ class DomainSessionVariableTest(TestCase):
             request_second.session["analyst_action_location"],
         )
 
-    def populate_session_values(self, request, domain_object, preloadBadData=False):
+    def populate_session_values(self, request, domain_object, preload_bad_data=False):
         """Boilerplate for creating mock sessions"""
         request.user = self.client
         request.session = SessionStore()
         request.session.create()
-        if preloadBadData:
+        if preload_bad_data:
             request.session["analyst_action"] = "invalid"
             request.session["analyst_action_location"] = "bad location"
         self.admin.response_change(request, domain_object)
