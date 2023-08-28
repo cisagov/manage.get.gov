@@ -55,20 +55,14 @@ error messages, if necessary.
     </div>
   {% endif %}
 
-  {% if prepend_www or append_gov %}
+  {% if append_gov %}
     <div class="display-flex flex-align-center">
-      {# ticket #720: https://github.com/cisagov/getgov/issues/720 #}
-      {% if prepend_www %}
-      <span class="padding-top-05 padding-right-2px">www.</span>
-      {% endif %}
   {% endif %}
   {# this is the input field, itself #}
   {% include widget.template_name %}
 
-  {% if prepend_www or append_gov %}
-      {% if append_gov %}
+  {% if append_gov %}
       <span class="padding-top-05 padding-left-2px">.gov </span>
-      {% endif %}
     </div>
   {% endif %}
 
