@@ -648,7 +648,7 @@ class DomainSessionVariableTest(TestCase):
         self.factory = RequestFactory()
         self.admin = DomainAdmin(Domain, None)
         self.client = Client(HTTP_HOST="localhost:8080")
-        
+
     def test_session_vars_set_correctly(self):
         """Checks if session variables are being set correctly"""
 
