@@ -111,6 +111,12 @@ class UserFixture:
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
         },
+        {
+            "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
+            "first_name": "Katherine-Analyst",
+            "last_name": "Osos-Analyst",
+            "email": "kosos@truss.works",
+        },
     ]
 
     STAFF_PERMISSIONS = [
@@ -257,6 +263,14 @@ class DomainApplicationFixture:
         {
             "status": "withdrawn",
             "organization_name": "Example - Withdrawn",
+        },
+        {
+            "status": "action needed",
+            "organization_name": "Example - Action Needed",
+        },
+        {
+            "status": "rejected",
+            "organization_name": "Example - Rejected",
         },
     ]
 
