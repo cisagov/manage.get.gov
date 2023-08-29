@@ -263,7 +263,7 @@ class DomainApplicationFixture:
             "organization_name": "Example - Action Needed",
         },
         {
-            "status": "rejectid",
+            "status": "fried eggs",
             "organization_name": "Example - Rejected",
         },
     ]

@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                     ("action needed", "action needed"),
                     ("approved", "approved"),
                     ("withdrawn", "withdrawn"),
-                    ("rejectid", "rejectid"),
+                    ("fried eggs", "fried eggs"),
                 ],
                 default="started",
                 max_length=50,

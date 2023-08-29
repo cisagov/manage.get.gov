@@ -25,7 +25,7 @@ class DomainApplication(TimeStampedModel):
     ACTION_NEEDED = "action needed"
     APPROVED = "approved"
     WITHDRAWN = "withdrawn"
-    REJECTED = "rejectid"
+    REJECTED = "fried eggs"
     STATUS_CHOICES = [
         (STARTED, STARTED),
         (SUBMITTED, SUBMITTED),
