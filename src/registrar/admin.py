@@ -116,7 +116,7 @@ class MyUserAdmin(BaseUserAdmin):
         (
             None,
             {"fields": ("username", "password", "status")},
-        ),  # Add the 'status' field here
+        ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
             "Permissions",
@@ -301,7 +301,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        if obj and obj.creator.status != "ineligible":
+        if obj and obj.creator.status != models.User.RESTRICTED:
             if change:  # Check if the application is being edited
                 # Get the original application from the database
                 original_obj = models.DomainApplication.objects.get(pk=obj.pk)
@@ -336,7 +336,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             messages.error(
                 request,
                 "This action is not permitted for applications "
-                + "with an ineligible creator.",
+                + "with a restricted creator.",
             )
 
     def get_readonly_fields(self, request, obj=None):
@@ -348,8 +348,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
         readonly_fields = list(self.readonly_fields)
 
-        # Check if the creator is ineligible
-        if obj and obj.creator.status == "ineligible":
+        # Check if the creator is restricted
+        if obj and obj.creator.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -365,17 +365,16 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             readonly_fields.extend([field for field in self.analyst_readonly_fields])
             return readonly_fields
 
-    def display_ineligible_warning(self, request, obj):
-        if obj and obj.creator.status == "ineligible":
+    def display_restricted_warning(self, request, obj):
+        if obj and obj.creator.status == models.User.RESTRICTED:
             messages.warning(
                 request,
-                "Cannot edit an application when its creator "
-                + "has a status of ineligible.",
+                "Cannot edit an application with a restricted creator.",
             )
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         obj = self.get_object(request, object_id)
-        self.display_ineligible_warning(request, obj)
+        self.display_restricted_warning(request, obj)
         return super().change_view(request, object_id, form_url, extra_context)
 
 

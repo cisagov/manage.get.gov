@@ -18,8 +18,8 @@ class User(AbstractUser):
     """
 
     # #### Constants for choice fields ####
-    INELIGIBLE = "ineligible"
-    STATUS_CHOICES = ((INELIGIBLE, INELIGIBLE),)
+    RESTRICTED = "restricted"
+    STATUS_CHOICES = ((RESTRICTED, RESTRICTED),)
 
     status = models.CharField(
         max_length=10,
@@ -51,18 +51,16 @@ class User(AbstractUser):
         else:
             return self.username
 
-    def block_user(self):
-        self.status = "ineligible"
+    def restrict_user(self):
+        self.status = self.RESTRICTED
         self.save()
 
-    def unblock_user(self):
+    def unrestrict_user(self):
         self.status = None
         self.save()
 
-    def is_blocked(self):
-        if self.status == "ineligible":
-            return True
-        return False
+    def is_restricted(self):
+        return self.status == self.RESTRICTED
 
     def first_login(self):
         """Callback when the user is authenticated for the very first time.

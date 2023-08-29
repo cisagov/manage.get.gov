@@ -621,7 +621,7 @@ class DomainApplication(TimeStampedModel):
         We do this by setting an ineligible status on the user, which the
         permissions classes test against"""
 
-        self.creator.block_user()
+        self.creator.restrict_user()
 
     # ## Form policies ###
     #

@@ -105,7 +105,7 @@ class LoggedInTests(TestWithUser):
         """Application form not accessible for an ineligible user.
         This test should be solid enough since all application wizard
         views share the same permissions class"""
-        self.user.status = "ineligible"
+        self.user.status = User.RESTRICTED
         self.user.save()
 
         with less_console_noise():
@@ -1439,7 +1439,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
         management pages share the same permissions class"""
-        self.user.status = "ineligible"
+        self.user.status = User.RESTRICTED
         self.user.save()
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")

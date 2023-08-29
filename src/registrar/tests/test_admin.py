@@ -284,7 +284,7 @@ class TestDomainApplicationAdmin(TestCase):
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
 
-    def test_save_model_sets_ineligible_status_on_user(self):
+    def test_save_model_sets_restricted_status_on_user(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
@@ -304,11 +304,11 @@ class TestDomainApplicationAdmin(TestCase):
         self.admin.save_model(request, application, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
-        self.assertEqual(application.creator.status, "ineligible")
+        self.assertEqual(application.creator.status, "restricted")
 
-    def test_readonly_when_ineligible_creator(self):
+    def test_readonly_when_restricted_creator(self):
         application = completed_application(status=DomainApplication.IN_REVIEW)
-        application.creator.status = "ineligible"
+        application.creator.status = User.RESTRICTED
         application.creator.save()
 
         request = self.factory.get("/")
@@ -388,10 +388,10 @@ class TestDomainApplicationAdmin(TestCase):
 
         self.assertEqual(readonly_fields, expected_fields)
 
-    def test_saving_when_ineligible_creator(self):
+    def test_saving_when_restricted_creator(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.IN_REVIEW)
-        application.creator.status = "ineligible"
+        application.creator.status = User.RESTRICTED
         application.creator.save()
 
         # Create a request object with a superuser
@@ -405,17 +405,17 @@ class TestDomainApplicationAdmin(TestCase):
             # Assert that the error message was called with the correct argument
             mock_error.assert_called_once_with(
                 request,
-                "This action is not permitted for applications with "
-                + "an ineligible creator.",
+                "This action is not permitted for applications "
+                + "with a restricted creator.",
             )
 
         # Assert that the status has not changed
         self.assertEqual(application.status, DomainApplication.IN_REVIEW)
 
-    def test_change_view_with_ineligible_creator(self):
+    def test_change_view_with_restricted_creator(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.IN_REVIEW)
-        application.creator.status = "ineligible"
+        application.creator.status = User.RESTRICTED
         application.creator.save()
 
         with patch("django.contrib.messages.warning") as mock_warning:
@@ -425,13 +425,12 @@ class TestDomainApplicationAdmin(TestCase):
             )
             request.user = self.superuser
 
-            self.admin.display_ineligible_warning(request, application)
+            self.admin.display_restricted_warning(request, application)
 
             # Assert that the error message was called with the correct argument
             mock_warning.assert_called_once_with(
                 request,
-                "Cannot edit an application when its creator "
-                + "has a status of ineligible.",
+                "Cannot edit an application with a restricted creator.",
             )
 
     def tearDown(self):

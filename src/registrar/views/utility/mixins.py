@@ -40,7 +40,7 @@ class DomainPermission(PermissionsLoginMixin):
             return False
 
         # The user has an ineligible flag
-        if self.request.user.is_blocked():
+        if self.request.user.is_restricted():
             return False
 
         # if we need to check more about the nature of role, do it here.
@@ -82,7 +82,7 @@ class ApplicationWizardPermission(PermissionsLoginMixin):
         """
 
         # The user has an ineligible flag
-        if self.request.user.is_blocked():
+        if self.request.user.is_restricted():
             return False
 
         return True
