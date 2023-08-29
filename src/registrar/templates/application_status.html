@@ -83,6 +83,10 @@
       {% include "includes/summary_item.html" with title='Current website for your organization' value=domainapplication.current_websites.all list='true' heading_level=heading_level %}
     {% endif %}
 
+    {% if domainapplication.requested_domain %}
+      {% include "includes/summary_item.html" with title='.gov domain' value=domainapplication requested_domain='true' heading_level=heading_level %}
+    {% endif %}
+
     {% if domainapplication.purpose %}
       {% include "includes/summary_item.html" with title='Purpose of your domain' value=domainapplication.purpose heading_level=heading_level %}
     {% endif %}

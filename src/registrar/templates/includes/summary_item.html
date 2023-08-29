@@ -43,6 +43,21 @@
         {% else %}
           {% include "includes/contact.html" with contact=value %}
         {% endif %}
+      {% elif requested_domain %}
+        {% if value.alternative_domains.all %}
+          <ul class="usa-list usa-list--unstyled margin-bottom-105">
+            <li>{{ value.requested_domain.name|default:"Incomplete" }}</li>
+          </ul>
+          <ul class="usa-list usa-list--unstyled">
+          {% for domain in value.alternative_domains.all %}
+            <li>{{ domain.website }}</li>
+          {% endfor %}
+          </ul>
+        {% else %}
+          <p class="margin-top-0 margin-bottom-0">
+            {{ value.requested_domain }}
+          </p>
+        {% endif %}
       {% elif list %}
         {% if value|length == 1 %}
             {% if users %}

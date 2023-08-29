@@ -1442,6 +1442,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         # click the "Manage" link
         detail_page = home_page.click("Manage")
         self.assertContains(detail_page, "city.gov")
+        self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
         self.assertContains(detail_page, "Admin Tester")
@@ -1459,6 +1460,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         # click the "Manage" link
         detail_page = home_page.click("Manage")
         self.assertContains(detail_page, "city.gov")
+        self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
         self.assertContains(detail_page, "Admin Tester")
