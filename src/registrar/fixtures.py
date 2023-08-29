@@ -262,10 +262,10 @@ class DomainApplicationFixture:
             "status": "action needed",
             "organization_name": "Example - Action Needed",
         },
-        # {
-        #     "status": "rejected",
-        #     "organization_name": "Example - Rejected",
-        # },
+        {
+            "status": "rejectid",
+            "organization_name": "Example - Rejected",
+        },
     ]
 
     @classmethod
