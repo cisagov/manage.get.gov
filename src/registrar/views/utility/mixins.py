@@ -39,9 +39,9 @@ class DomainPermission(PermissionsLoginMixin):
         ).exists():
             return False
 
-        # ticket 796
-        # if domain.application__status != 'approved'
-        #     return false
+        # The user has an ineligible flag
+        if self.request.user.is_restricted():
+            return False
 
         # if we need to check more about the nature of role, do it here.
         return True
@@ -66,6 +66,23 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         if not DomainApplication.objects.filter(
             creator=self.request.user, id=self.kwargs["pk"]
         ).exists():
+            return False
+
+        return True
+
+
+class ApplicationWizardPermission(PermissionsLoginMixin):
+
+    """Does the logged-in user have permission to start or edit an application?"""
+
+    def has_permission(self):
+        """Check if this user has permission to start or edit an application.
+
+        The user is in self.request.user
+        """
+
+        # The user has an ineligible flag
+        if self.request.user.is_restricted():
             return False
 
         return True

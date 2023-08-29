@@ -17,6 +17,18 @@ class User(AbstractUser):
     but can be customized later.
     """
 
+    # #### Constants for choice fields ####
+    RESTRICTED = "restricted"
+    STATUS_CHOICES = ((RESTRICTED, RESTRICTED),)
+
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=None,  # Set the default value to None
+        null=True,  # Allow the field to be null
+        blank=True,  # Allow the field to be blank
+    )
+
     domains = models.ManyToManyField(
         "registrar.Domain",
         through="registrar.UserDomainRole",
@@ -38,6 +50,17 @@ class User(AbstractUser):
             return self.email
         else:
             return self.username
+
+    def restrict_user(self):
+        self.status = self.RESTRICTED
+        self.save()
+
+    def unrestrict_user(self):
+        self.status = None
+        self.save()
+
+    def is_restricted(self):
+        return self.status == self.RESTRICTED
 
     def first_login(self):
         """Callback when the user is authenticated for the very first time.
