@@ -25,7 +25,7 @@ class DomainApplication(TimeStampedModel):
     ACTION_NEEDED = "action needed"
     APPROVED = "approved"
     WITHDRAWN = "withdrawn"
-    REJECTED = "fried eggs"
+    FRIEDEGGS = "fried eggs"
     STATUS_CHOICES = [
         (STARTED, STARTED),
         (SUBMITTED, SUBMITTED),
@@ -33,7 +33,7 @@ class DomainApplication(TimeStampedModel):
         (ACTION_NEEDED, ACTION_NEEDED),
         (APPROVED, APPROVED),
         (WITHDRAWN, WITHDRAWN),
-        (REJECTED, REJECTED),
+        (FRIEDEGGS, FRIEDEGGS),
     ]
 
     class StateTerritoryChoices(models.TextChoices):
@@ -541,7 +541,7 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_in_review_subject.txt",
         )
 
-    @transition(field="status", source=[IN_REVIEW, REJECTED], target=ACTION_NEEDED)
+    @transition(field="status", source=[IN_REVIEW, FRIEDEGGS], target=ACTION_NEEDED)
     def action_needed(self):
         """Send back an application that is under investigation or rejected.
 
@@ -554,7 +554,7 @@ class DomainApplication(TimeStampedModel):
         )
 
     @transition(
-        field="status", source=[SUBMITTED, IN_REVIEW, REJECTED], target=APPROVED
+        field="status", source=[SUBMITTED, IN_REVIEW, FRIEDEGGS], target=APPROVED
     )
     def approve(self):
         """Approve an application that has been submitted.
@@ -596,7 +596,7 @@ class DomainApplication(TimeStampedModel):
             "emails/domain_request_withdrawn_subject.txt",
         )
 
-    @transition(field="status", source=[IN_REVIEW, APPROVED], target=REJECTED)
+    @transition(field="status", source=[IN_REVIEW, APPROVED], target=FRIEDEGGS)
     def reject(self):
         """Reject an application that has been submitted.
 

@@ -264,7 +264,7 @@ class DomainApplicationFixture:
         },
         {
             "status": "fried eggs",
-            "organization_name": "Example - Rejected",
+            "organization_name": "Example - Fried Eggs",
         },
     ]
 

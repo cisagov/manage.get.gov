@@ -295,7 +295,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 elif obj.status == models.DomainApplication.WITHDRAWN:
                     obj.status = original_obj.status
                     obj.withdraw()
-                elif obj.status == models.DomainApplication.REJECTED:
+                elif obj.status == models.DomainApplication.FRIEDEGGS:
                     obj.status = original_obj.status
                     obj.reject()
                 else:
