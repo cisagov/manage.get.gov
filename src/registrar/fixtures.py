@@ -258,6 +258,10 @@ class DomainApplicationFixture:
             "status": "withdrawn",
             "organization_name": "Example - Withdrawn",
         },
+        {
+            "status": "action needed",
+            "organization_name": "Example - Action Needed",
+        },
     ]
 
     @classmethod
