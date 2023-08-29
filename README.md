@@ -1,6 +1,6 @@
-# Get (your very own) .gov
+# Infrastructure as a (public) service
 
-Welcome to the repo for a WIP brand new registrar for .gov domains. Get.gov intends to serve all government entities in the United States looking for a .gov domain to use publicly (for a website, for an email address, etc.). Here you can find the code for the registrar and other artifacts about our product strategy and research. 
+The .gov domain helps U.S.-based government organizations gain public trust by being easily recognized online. This repo contains the code for the new .gov registrar – where governments request and manage domains – and other artifacts about our product strategy and research.
 
 ## Onboarding
 
