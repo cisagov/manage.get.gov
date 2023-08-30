@@ -43,13 +43,15 @@ class DomainPermission(PermissionsLoginMixin):
 
         # user needs to have a role on the domain,
         # and user cannot be restricted
-        if UserDomainRole.objects.filter(
-            user=self.request.user, domain__id=pk
-        ).exists() and not self.request.user.is_restricted():
+        if (
+            UserDomainRole.objects.filter(
+                user=self.request.user, domain__id=pk
+            ).exists()
+            and not self.request.user.is_restricted()
+        ):
             return True
         elif self.request.user.is_restricted():
             return False
-
 
         # ticket 806
         requested_domain = None
