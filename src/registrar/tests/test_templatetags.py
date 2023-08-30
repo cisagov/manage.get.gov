@@ -8,6 +8,7 @@ from registrar.templatetags.custom_filters import (
     extract_a_text,
     find_index,
     slice_after,
+    contains_checkbox,
 )
 
 
@@ -83,3 +84,21 @@ class CustomFiltersTestCase(TestCase):
         self.assertEqual(
             result, value
         )  # Should return the original value if substring not found
+
+    def test_contains_checkbox_with_checkbox(self):
+        # Test the filter when HTML list contains a checkbox
+        html_list = [
+            '<input type="checkbox" name="_selected_action">',
+            "<div>Some other HTML content</div>",
+        ]
+        result = contains_checkbox(html_list)
+        self.assertTrue(result)  # Expecting True
+
+    def test_contains_checkbox_without_checkbox(self):
+        # Test the filter when HTML list does not contain a checkbox
+        html_list = [
+            "<div>Some HTML content without checkbox</div>",
+            "<p>More HTML content</p>",
+        ]
+        result = contains_checkbox(html_list)
+        self.assertFalse(result)  # Expecting False
