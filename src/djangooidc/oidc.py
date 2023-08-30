@@ -238,7 +238,7 @@ class Client(oic.Client):
                     "client_secret": self.client_secret,
                 },
                 authn_method=self.registration_response["token_endpoint_auth_method"],
-                # There is a time desync issue between login.gov and cloud,
+                # There is a time desync issue between login.gov and cloud
                 # this addresses that by adding a clock skew.
                 # See here: https://github.com/GSA-TTS/FAC/pull/1968#pullrequestreview-1601224051
                 skew=10,
