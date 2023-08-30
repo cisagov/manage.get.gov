@@ -2,7 +2,7 @@
 
 import abc  # abstract base class
 
-from django.views.generic import DetailView, DeleteView
+from django.views.generic import DetailView, DeleteView, TemplateView
 
 from registrar.models import Domain, DomainApplication, DomainInvitation
 
@@ -11,6 +11,7 @@ from .mixins import (
     DomainPermission,
     DomainApplicationPermission,
     DomainInvitationPermission,
+    ApplicationWizardPermission,
 )
 import logging
 
@@ -112,6 +113,23 @@ class DomainApplicationPermissionView(DomainApplicationPermission, DetailView, a
     model = DomainApplication
     # variable name in template context for the model object
     context_object_name = "domainapplication"
+
+    # Abstract property enforces NotImplementedError on an attribute.
+    @property
+    @abc.abstractmethod
+    def template_name(self):
+        raise NotImplementedError
+
+
+class ApplicationWizardPermissionView(
+    ApplicationWizardPermission, TemplateView, abc.ABC
+):
+
+    """Abstract base view for the application form that enforces permissions
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property

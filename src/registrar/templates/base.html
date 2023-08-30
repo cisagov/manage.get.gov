@@ -149,12 +149,12 @@
         <button type="button" class="usa-nav__close">
           <img src="/public/img/usa-icons/close.svg" role="img" alt="Close" />
         </button>
-        <ul class="usa-nav__primary usa-accordion">
+        <ul class="usa-nav__primary usa-accordion display-flex flex-align-center">
           <li class="usa-nav__primary-item">
             {% if user.is_authenticated %}
             <span>{{ user.email }}</span>
           </li>
-          <li class="usa-nav__primary-item display-flex flex-align-center">
+          <li class="usa-nav__primary-item display-flex flex-align-center margin-left-2">
             <span class="text-base"> | </span>
             <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
           </li>

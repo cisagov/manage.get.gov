@@ -20,8 +20,8 @@ applications:
     DJANGO_BASE_URL: https://getgov-dk.app.cloud.gov
     # Tell Django how much stuff to log
     DJANGO_LOG_LEVEL: INFO
-    # Public site base URL
-    GETGOV_PUBLIC_SITE_URL: https://federalist-877ab29f-16f6-4f12-961c-96cf064cf070.sites.pages.cloud.gov/site/cisagov/getgov-home/
+    # default public site location
+    GETGOV_PUBLIC_SITE_URL: https://beta.get.gov
   routes:
     - route: getgov-dk.app.cloud.gov
   services:

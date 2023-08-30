@@ -55,15 +55,13 @@ error messages, if necessary.
     </div>
   {% endif %}
 
-  {% if www_gov %}
+  {% if append_gov %}
     <div class="display-flex flex-align-center">
-      <span class="padding-top-05 padding-right-2px">www.</span>
   {% endif %}
-
   {# this is the input field, itself #}
   {% include widget.template_name %}
 
-  {% if www_gov %}
+  {% if append_gov %}
       <span class="padding-top-05 padding-left-2px">.gov </span>
     </div>
   {% endif %}

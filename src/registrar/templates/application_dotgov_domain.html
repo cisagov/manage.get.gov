@@ -51,7 +51,7 @@
 
     {% with attr_aria_describedby="domain_instructions domain_instructions2" %}
       {# attr_validate / validate="domain" invokes code in get-gov.js #}
-      {% with www_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
+      {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
         {% input_with_errors forms.0.requested_domain %}
       {% endwith %}
     {% endwith %}
@@ -75,7 +75,7 @@
     {% with attr_aria_describedby="alt_domain_instructions" %}
       {# attr_validate / validate="domain" invokes code in get-gov.js #}
       {# attr_auto_validate likewise triggers behavior in get-gov.js #}
-      {% with www_gov=True attr_validate="domain" attr_auto_validate=True %}
+      {% with append_gov=True attr_validate="domain" attr_auto_validate=True %}
         {% for form in forms.1 %}
           {% input_with_errors form.alternative_domain %}
         {% endfor %}

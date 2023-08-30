@@ -26,6 +26,8 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
+from unittest.mock import patch
+
 from django.conf import settings
 from unittest.mock import MagicMock
 import boto3_mocking  # type: ignore
@@ -38,6 +40,11 @@ class TestDomainApplicationAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.factory = RequestFactory()
+        self.admin = DomainApplicationAdmin(
+            model=DomainApplication, admin_site=self.site
+        )
+        self.superuser = create_superuser()
+        self.staffuser = create_user()
 
     @boto3_mocking.patching
     def test_save_model_sends_submitted_email(self):
@@ -57,14 +64,11 @@ class TestDomainApplicationAdmin(TestCase):
                 "/admin/registrar/domainapplication/{}/change/".format(application.pk)
             )
 
-            # Create an instance of the model admin
-            model_admin = DomainApplicationAdmin(DomainApplication, self.site)
-
             # Modify the application's property
             application.status = DomainApplication.SUBMITTED
 
             # Use the model admin's save_model method
-            model_admin.save_model(request, application, form=None, change=True)
+            self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -103,14 +107,11 @@ class TestDomainApplicationAdmin(TestCase):
                 "/admin/registrar/domainapplication/{}/change/".format(application.pk)
             )
 
-            # Create an instance of the model admin
-            model_admin = DomainApplicationAdmin(DomainApplication, self.site)
-
             # Modify the application's property
             application.status = DomainApplication.IN_REVIEW
 
             # Use the model admin's save_model method
-            model_admin.save_model(request, application, form=None, change=True)
+            self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -149,14 +150,11 @@ class TestDomainApplicationAdmin(TestCase):
                 "/admin/registrar/domainapplication/{}/change/".format(application.pk)
             )
 
-            # Create an instance of the model admin
-            model_admin = DomainApplicationAdmin(DomainApplication, self.site)
-
             # Modify the application's property
             application.status = DomainApplication.APPROVED
 
             # Use the model admin's save_model method
-            model_admin.save_model(request, application, form=None, change=True)
+            self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -190,14 +188,11 @@ class TestDomainApplicationAdmin(TestCase):
             "/admin/registrar/domainapplication/{}/change/".format(application.pk)
         )
 
-        # Create an instance of the model admin
-        model_admin = DomainApplicationAdmin(DomainApplication, self.site)
-
         # Modify the application's property
         application.status = DomainApplication.APPROVED
 
         # Use the model admin's save_model method
-        model_admin.save_model(request, application, form=None, change=True)
+        self.admin.save_model(request, application, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
         self.assertEqual(
@@ -222,14 +217,11 @@ class TestDomainApplicationAdmin(TestCase):
                 "/admin/registrar/domainapplication/{}/change/".format(application.pk)
             )
 
-            # Create an instance of the model admin
-            model_admin = DomainApplicationAdmin(DomainApplication, self.site)
-
             # Modify the application's property
             application.status = DomainApplication.ACTION_NEEDED
 
             # Use the model admin's save_model method
-            model_admin.save_model(request, application, form=None, change=True)
+            self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -271,14 +263,11 @@ class TestDomainApplicationAdmin(TestCase):
                 "/admin/registrar/domainapplication/{}/change/".format(application.pk)
             )
 
-            # Create an instance of the model admin
-            model_admin = DomainApplicationAdmin(DomainApplication, self.site)
-
             # Modify the application's property
             application.status = DomainApplication.REJECTED
 
             # Use the model admin's save_model method
-            model_admin.save_model(request, application, form=None, change=True)
+            self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -298,6 +287,155 @@ class TestDomainApplicationAdmin(TestCase):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
+
+    def test_save_model_sets_restricted_status_on_user(self):
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+
+        # Create a mock request
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
+
+        # Modify the application's property
+        application.status = DomainApplication.INELIGIBLE
+
+        # Use the model admin's save_model method
+        self.admin.save_model(request, application, form=None, change=True)
+
+        # Test that approved domain exists and equals requested domain
+        self.assertEqual(application.creator.status, "restricted")
+
+    def test_readonly_when_restricted_creator(self):
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application.creator.status = User.RESTRICTED
+        application.creator.save()
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        readonly_fields = self.admin.get_readonly_fields(request, application)
+
+        expected_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "status",
+            "creator",
+            "investigator",
+            "organization_type",
+            "federally_recognized_tribe",
+            "state_recognized_tribe",
+            "tribe_name",
+            "federal_agency",
+            "federal_type",
+            "is_election_board",
+            "organization_name",
+            "address_line1",
+            "address_line2",
+            "city",
+            "state_territory",
+            "zipcode",
+            "urbanization",
+            "type_of_work",
+            "more_organization_information",
+            "authorizing_official",
+            "approved_domain",
+            "requested_domain",
+            "submitter",
+            "purpose",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "is_policy_acknowledged",
+            "current_websites",
+            "other_contacts",
+            "alternative_domains",
+        ]
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_fields_for_analyst(self):
+        request = self.factory.get("/")  # Use the correct method and path
+        request.user = self.staffuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = [
+            "creator",
+            "type_of_work",
+            "more_organization_information",
+            "address_line1",
+            "address_line2",
+            "zipcode",
+            "requested_domain",
+            "alternative_domains",
+            "purpose",
+            "submitter",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "is_policy_acknowledged",
+        ]
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_fields_for_superuser(self):
+        request = self.factory.get("/")  # Use the correct method and path
+        request.user = self.superuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = []
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def test_saving_when_restricted_creator(self):
+        # Create an instance of the model
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application.creator.status = User.RESTRICTED
+        application.creator.save()
+
+        # Create a request object with a superuser
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        with patch("django.contrib.messages.error") as mock_error:
+            # Simulate saving the model
+            self.admin.save_model(request, application, None, False)
+
+            # Assert that the error message was called with the correct argument
+            mock_error.assert_called_once_with(
+                request,
+                "This action is not permitted for applications "
+                + "with a restricted creator.",
+            )
+
+        # Assert that the status has not changed
+        self.assertEqual(application.status, DomainApplication.IN_REVIEW)
+
+    def test_change_view_with_restricted_creator(self):
+        # Create an instance of the model
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application.creator.status = User.RESTRICTED
+        application.creator.save()
+
+        with patch("django.contrib.messages.warning") as mock_warning:
+            # Create a request object with a superuser
+            request = self.factory.get(
+                "/admin/your_app/domainapplication/{}/change/".format(application.pk)
+            )
+            request.user = self.superuser
+
+            self.admin.display_restricted_warning(request, application)
+
+            # Assert that the error message was called with the correct argument
+            mock_warning.assert_called_once_with(
+                request,
+                "Cannot edit an application with a restricted creator.",
+            )
 
     def tearDown(self):
         DomainInformation.objects.all().delete()
@@ -378,7 +516,6 @@ class ListHeaderAdminTest(TestCase):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
-        self.superuser.delete()
 
 
 class MyUserAdminTest(TestCase):
