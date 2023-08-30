@@ -84,7 +84,11 @@
     {% endif %}
 
     {% if domainapplication.requested_domain %}
-      {% include "includes/summary_item.html" with title='.gov domain' value=domainapplication requested_domain='true' heading_level=heading_level %}
+      {% include "includes/summary_item.html" with title='.gov domain' value=domainapplication.requested_domain heading_level=heading_level %}
+    {% endif %}
+
+    {% if domainapplication.alternative_domains.all %}
+      {% include "includes/summary_item.html" with title='Alternative domains' value=domainapplication.alternative_domains.all list='true' heading_level=heading_level %}
     {% endif %}
 
     {% if domainapplication.purpose %}
