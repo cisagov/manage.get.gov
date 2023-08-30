@@ -145,8 +145,15 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
+        print(request.POST)
         ACTION_BUTTON = "_place_client_hold"
+        GET_SECURITY_EMAIL="_get_security_email"
+        SET_SECURITY_CONTACT="_set_security_contact"
+        MAKE_DOMAIN="_make_domain_in_registry"
+        logger.info("in response")
         if ACTION_BUTTON in request.POST:
+            logger.info("in action button")
+            print("in action button")
             try:
                 obj.place_client_hold()
             except Exception as err:
@@ -161,8 +168,80 @@ class DomainAdmin(ListHeaderAdmin):
                     % obj.name,
                 )
             return HttpResponseRedirect(".")
+   
+        if GET_SECURITY_EMAIL in request.POST:
+            try:
+               security_email=obj.get_security_email()
+               
+               
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(request,
+                    (
+                        "The security email is %"
+                        ". Thanks!"
+                    )
+                    % security_email,
+                )
+            return HttpResponseRedirect(".")
 
+           
+        if SET_SECURITY_CONTACT in request.POST:
+            try:
+               security_contact = obj.get_default_security_contact()
+               security_contact.email="ab@test.gov"
+               
+               obj.security_contact=security_contact
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(request,
+                    (
+                        "The security email is %"
+                        ". Thanks!"
+                    )
+                    % security_email,
+                )
+        print("above make domain")
+
+        if MAKE_DOMAIN in request.POST:
+            print("in make domain")
+
+            try:
+                obj._get_or_create_domain()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(request,
+                    (
+                        "Domain created with %"
+                        ". Thanks!"
+                    )
+                    % obj.name,
+                )
+            return HttpResponseRedirect(".")
         return super().response_change(request, obj)
+    # def response_change(self, request, obj):
+    #     ACTION_BUTTON = "_get_security_email"
+
+    #     if ACTION_BUTTON in request.POST:
+    #         try:
+    #             obj.security
+    #         except Exception as err:
+    #             self.message_user(request, err, messages.ERROR)
+    #         else:
+    #             self.message_user(
+    #                 request,
+    #                 (
+    #                     "%s is in client hold. This domain is no longer accessible on"
+    #                     " the public internet."
+    #                 )
+    #                 % obj.name,
+    #             )
+    #         return HttpResponseRedirect(".")
+
+    #     return super().response_change(request, obj)
 
 
 class ContactAdmin(ListHeaderAdmin):
@@ -321,4 +400,5 @@ admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, AuditedAdmin)
+admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)

@@ -83,7 +83,7 @@ class EPPLibWrapper:
             logger.warning(message, cmd_type, exc_info=True)
             raise RegistryError(message) from err
         except Exception as err:
-            message = "%s failed to execute due to an unknown error."
+            message = '%s failed to execute due to an unknown error.' % err
             logger.warning(message, cmd_type, exc_info=True)
             raise RegistryError(message) from err
         else:

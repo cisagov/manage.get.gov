@@ -10,10 +10,14 @@ import datetime
 from registrar.models import Domain  # add in DomainApplication, User,
 
 from unittest import skip
-from epplibwrapper import commands
+from epplibwrapper import commands,common
+from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_information import DomainInformation
+from registrar.models.draft_domain import DraftDomain
+from registrar.models.public_contact import PublicContact
+from registrar.models.user import User
 
-
-class TestDomainCache(TestCase):
+class MockEppLib(TestCase):
     class fakedEppObject(object):
         """"""
 
@@ -29,6 +33,12 @@ class TestDomainCache(TestCase):
         contacts=["123"],
         hosts=["fake.host.com"],
     )
+    infoDomainNoContact= fakedEppObject(
+        "security",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=["fake.host.com"],
+    )
     mockDataInfoContact = fakedEppObject(
         "anotherPw", cr_date=datetime.datetime(2023, 7, 25, 19, 45, 35)
     )
@@ -39,19 +49,33 @@ class TestDomainCache(TestCase):
     def mockSend(self, _request, cleaned):
         """"""
         if isinstance(_request, commands.InfoDomain):
+            if getattr(_request,"name",None)=="security.gov":
+                return MagicMock(res_data=[self.infoDomainNoContact])
             return MagicMock(res_data=[self.mockDataInfoDomain])
         elif isinstance(_request, commands.InfoContact):
             return MagicMock(res_data=[self.mockDataInfoContact])
+
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):
         """mock epp send function as this will fail locally"""
-        self.patcher = patch("registrar.models.domain.registry.send")
-        self.mock_foo = self.patcher.start()
-        self.mock_foo.side_effect = self.mockSend
+        self.mockSendPatch = patch("registrar.models.domain.registry.send")
+        self.mockedSendFunction = self.mockSendPatch.start()
+        self.mockedSendFunction.side_effect = self.mockSend
 
     def tearDown(self):
-        self.patcher.stop()
+        self.mockSendPatch.stop()
+
+class TestDomainCache(MockEppLib):
+    
+
+    # def setUp(self):
+    #     #call setup from the mock epplib
+    #     super().setUp()
+
+    # def tearDown(self):
+    #     #call setup from the mock epplib
+    #     super().tearDown()
 
     def test_cache_sets_resets(self):
         """Cache should be set on getter and reset on setter calls"""
@@ -70,7 +94,7 @@ class TestDomainCache(TestCase):
         self.assertEquals(domain._cache, {})
 
         # send should have been called only once
-        self.mock_foo.assert_called_once()
+        self.mockedSendFunction.assert_called_once()
 
     def test_cache_used_when_avail(self):
         """Cache is pulled from if the object has already been accessed"""
@@ -85,7 +109,7 @@ class TestDomainCache(TestCase):
         self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
 
         # send was only called once & not on the second getter call
-        self.mock_foo.assert_called_once()
+        self.mockedSendFunction.assert_called_once()
 
     def test_cache_nested_elements(self):
         """Cache works correctly with the nested objects cache and hosts"""
@@ -116,18 +140,17 @@ class TestDomainCache(TestCase):
         # get and check hosts is set correctly
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-
+        ##IS THERE AN ERROR HERE???, 
 
 class TestDomainCreation(TestCase):
     """Rule: An approved domain application must result in a domain"""
 
-    def setUp(self):
-        """
-        Background:
-            Given that a valid domain application exists
-        """
-
-    @skip("not implemented yet")
+    # def setUp(self):
+    #     """
+    #     Background:
+    #         Given that a valid domain application exists
+    #     """
+       
     def test_approved_application_creates_domain_locally(self):
         """
         Scenario: Analyst approves a domain application
@@ -135,7 +158,22 @@ class TestDomainCreation(TestCase):
             Then a Domain exists in the database with the same `name`
             But a domain object does not exist in the registry
         """
-        raise
+        patcher = patch("registrar.models.domain.Domain._get_or_create_domain")
+        mocked_domain_creation=patcher.start()
+        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+        user, _ = User.objects.get_or_create()
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=draft_domain
+        )
+        # skip using the submit method
+        application.status = DomainApplication.SUBMITTED    
+        #transition to approve state
+        application.approve()
+        # should hav information present for this domain
+        domain = Domain.objects.get(name="igorville.gov")
+        self.assertTrue(domain)
+        mocked_domain_creation.assert_not_called()
+
 
     @skip("not implemented yet")
     def test_accessing_domain_properties_creates_domain_in_registry(self):
@@ -173,9 +211,12 @@ class TestDomainCreation(TestCase):
         domain.activate()
         domain.save()
         self.assertIn("ok", domain.status)
+    
+    def tearDown(self) -> None:
+        Domain.objects.delete()
+        # User.objects.delete()
 
-
-class TestRegistrantContacts(TestCase):
+class TestRegistrantContacts(MockEppLib):
     """Rule: Registrants may modify their WHOIS data"""
 
     def setUp(self):
@@ -184,9 +225,33 @@ class TestRegistrantContacts(TestCase):
             Given the registrant is logged in
             And the registrant is the admin on a domain
         """
-        pass
+        super().setUp()
+        #mock create contact email extension
+        self.contactMailingAddressPatch = patch("registrar.models.domain.commands.command_extensions.CreateContactMailingAddressExtension")
+        self.mockCreateContactExtension=self.contactMailingAddressPatch.start()
+        
+        #mock create contact
+        self.createContactPatch = patch("registrar.models.domain.commands.CreateContact")
+        self.mockCreateContact=self.createContactPatch.start()
+        #mock the sending
+        
+      
+        self.domain,_ = Domain.objects.get_or_create(name="security.gov")
+        # draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+        # user, _ = User.objects.get_or_create()
+        
+        # self.application = DomainApplication.objects.create(
+        #     creator=user, requested_domain=draft_domain
+        # )
+        # self.application.status = DomainApplication.SUBMITTED    
+        #transition to approve state
+        
+    def tearDown(self):
+        super().tearDown()
+        # self.contactMailingAddressPatch.stop()
+        # self.createContactPatch.stop()
 
-    @skip("not implemented yet")
+    # @skip("source code not implemented")
     def test_no_security_email(self):
         """
         Scenario: Registrant has not added a security contact email
@@ -195,7 +260,29 @@ class TestRegistrantContacts(TestCase):
             Then the domain has a valid security contact with CISA defaults
             And disclose flags are set to keep the email address hidden
         """
-        raise
+        print(self.domain)
+        #get security contact
+        expectedSecContact=PublicContact.get_default_security()
+        expectedSecContact.domain=self.domain
+
+        receivedSecContact=self.domain.security_contact
+
+        DF = common.DiscloseField
+        di = common.Disclose(flag=False, fields={DF.FAX, DF.VOICE, DF.ADDR}, types={DF.ADDR: "loc"})
+        
+        #check docs here looks like we may have more than one address field but 
+        addr = common.ContactAddr(street=[expectedSecContact.street1,expectedSecContact.street2,expectedSecContact.street3] , city=expectedSecContact.city, pc=expectedSecContact.pc, cc=expectedSecContact.cc, sp=expectedSecContact.sp)
+        pi = common.PostalInfo(name=expectedSecContact.name, addr=addr, org=expectedSecContact.org, type="loc")
+        ai = common.ContactAuthInfo(pw='feedabee')
+        expectedCreateCommand=commands.CreateContact(id=expectedSecContact.registry_id, postal_info=pi, email=expectedSecContact.email, voice=expectedSecContact.voice, fax=expectedSecContact.fax, auth_info=ai, disclose=di, vat=None, ident=None, notify_email=None)
+        expectedUpdateDomain =commands.UpdateDomain(name=self.domain.name, add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")])
+        #check that send has triggered the create command
+        
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand,True)
+        self.mockedSendFunction.assert_any_call(expectedUpdateDomain, True)
+        #check that the security contact sent is the same as the one recieved
+        self.assertEqual(receivedSecContact,expectedSecContact)
+
 
     @skip("not implemented yet")
     def test_user_adds_security_email(self):
@@ -207,7 +294,30 @@ class TestRegistrantContacts(TestCase):
             And Domain sends `commands.UpdateDomain` to the registry with the newly
                 created contact of type 'security'
         """
-        raise
+        #make a security contact that is a PublicContact
+        expectedSecContact=PublicContact.get_default_security()
+        expectedSecContact.domain=self.domain
+        expectedSecContact.email="newEmail@fake.com"
+        expectedSecContact.registry_id="456"
+        expectedSecContact.name="Fakey McPhakerson"
+        self.domain.security_contact=expectedSecContact
+
+        #check create contact sent with email
+        DF = common.DiscloseField
+        di = common.Disclose(flag=False, fields={DF.FAX, DF.VOICE, DF.ADDR}, types={DF.ADDR: "loc"})
+        
+        addr = common.ContactAddr(street=[expectedSecContact.street1,expectedSecContact.street2,expectedSecContact.street3] , city=expectedSecContact.city, pc=expectedSecContact.pc, cc=expectedSecContact.cc, sp=expectedSecContact.sp)
+        pi = common.PostalInfo(name=expectedSecContact.name, addr=addr, org=expectedSecContact.org, type="loc")
+        ai = common.ContactAuthInfo(pw='feedabee')
+
+        expectedCreateCommand=commands.CreateContact(id=expectedSecContact.registry_id, postal_info=pi, email=expectedSecContact.email, voice=expectedSecContact.voice, fax=expectedSecContact.fax, auth_info=ai, disclose=di, vat=None, ident=None, notify_email=None)
+        expectedUpdateDomain =commands.UpdateDomain(name=self.domain.name, add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")])
+
+        #check that send has triggered the create command for the contact
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, True)
+        ##check domain contact was updated
+        self.mockedSendFunction.assert_any_call(expectedUpdateDomain, True)
+
 
     @skip("not implemented yet")
     def test_security_email_is_idempotent(self):
@@ -220,6 +330,10 @@ class TestRegistrantContacts(TestCase):
         # implementation note: this requires seeing what happens when these are actually
         # sent like this, and then implementing appropriate mocks for any errors the
         # registry normally sends in this case
+            #will send epplibwrapper.errors.RegistryError with code 2302 for a duplicate contact
+        
+        #set the smae fake contact to the email
+        #show no errors
         raise
 
     @skip("not implemented yet")
@@ -411,7 +525,7 @@ class TestRegistrantDNSSEC(TestCase):
     def test_user_adds_dns_data(self):
         """
         Scenario: Registrant adds DNS data
-            ...
+            
         """
         raise
 
@@ -419,7 +533,7 @@ class TestRegistrantDNSSEC(TestCase):
     def test_dnssec_is_idempotent(self):
         """
         Scenario: Registrant adds DNS data twice, due to a UI glitch
-            ...
+            
         """
         # implementation note: this requires seeing what happens when these are actually
         # sent like this, and then implementing appropriate mocks for any errors the

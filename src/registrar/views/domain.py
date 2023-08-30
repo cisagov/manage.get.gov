@@ -269,6 +269,8 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         contact.email = new_email
         contact.save()
 
+        ##update security email here
+        #call the setter
         messages.success(
             self.request, "The security email for this domain have been updated."
         )
