@@ -674,6 +674,7 @@ class DomainSessionVariableTest(TestCase):
             "information", "session"
         )
         dummy_domain_information.domain.pk = 1
+
         request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
         self.populate_session_values(request, dummy_domain_information.domain)
         self.assertEqual(request.session["analyst_action"], "edit")
