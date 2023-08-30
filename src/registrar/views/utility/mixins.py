@@ -41,11 +41,15 @@ class DomainPermission(PermissionsLoginMixin):
         if pk is None:
             raise ValueError("Primary key is None")
 
-        # user needs to have a role on the domain
+        # user needs to have a role on the domain,
+        # and user cannot be restricted
         if UserDomainRole.objects.filter(
             user=self.request.user, domain__id=pk
-        ).exists():
+        ).exists() and not self.request.user.is_restricted():
             return True
+        elif self.request.user.is_restricted():
+            return False
+
 
         # ticket 806
         requested_domain = None
@@ -86,10 +90,6 @@ class DomainPermission(PermissionsLoginMixin):
         # and if its in a valid status
         if can_do_action and user_is_analyst_or_superuser:
             return True
-
-        # The user has an ineligible flag
-        if self.request.user.is_restricted():
-            return False
 
         # if we need to check more about the nature of role, do it here.
         return False
