@@ -24,3 +24,11 @@
         {% endif %}
     </h2>    
 {% endblock %}
+
+{% block object-tools %}
+    <p class="object-tools">
+        {% block object-tools-items %}
+            {{ block.super }}
+        {% endblock %}
+    </p>
+{% endblock %}
