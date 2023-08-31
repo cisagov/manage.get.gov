@@ -116,7 +116,7 @@ class UserFixture:
             "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
-        }
+        },
         {
            "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
            "first_name": "Gaby-Analyst",
