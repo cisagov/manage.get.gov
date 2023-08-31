@@ -23,6 +23,7 @@
           {% elif domainapplication.status == 'in review' %} In Review 
           {% elif domainapplication.status == 'rejected' %} Rejected
           {% elif domainapplication.status == 'submitted' %} Submitted
+          {% elif domainapplication.status == 'ineligible' %} Ineligible
           {% else %}ERROR Please contact technical support/dev
           {% endif %}
         </p>
@@ -81,6 +82,14 @@
 
     {% if domainapplication.current_websites.all %}
       {% include "includes/summary_item.html" with title='Current website for your organization' value=domainapplication.current_websites.all list='true' heading_level=heading_level %}
+    {% endif %}
+
+    {% if domainapplication.requested_domain %}
+      {% include "includes/summary_item.html" with title='.gov domain' value=domainapplication.requested_domain heading_level=heading_level %}
+    {% endif %}
+
+    {% if domainapplication.alternative_domains.all %}
+      {% include "includes/summary_item.html" with title='Alternative domains' value=domainapplication.alternative_domains.all list='true' heading_level=heading_level %}
     {% endif %}
 
     {% if domainapplication.purpose %}
