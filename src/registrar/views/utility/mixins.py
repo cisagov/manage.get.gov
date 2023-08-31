@@ -36,27 +36,55 @@ class DomainPermission(PermissionsLoginMixin):
         if not self.request.user.is_authenticated:
             return False
 
+        if self.request.user.is_restricted():
+            return False
+
         pk = self.kwargs["pk"]
         # If pk is none then something went very wrong...
         if pk is None:
             raise ValueError("Primary key is None")
 
+        # ticket 806
+        if self.can_access_other_user_domains(pk):
+            return True
+
         # user needs to have a role on the domain,
         # and user cannot be restricted
-        if (
-            UserDomainRole.objects.filter(
-                user=self.request.user, domain__id=pk
-            ).exists()
-            and not self.request.user.is_restricted()
-        ):
-            return True
-        elif self.request.user.is_restricted():
+        if not UserDomainRole.objects.filter(
+            user=self.request.user, domain__id=pk
+        ).exists():
             return False
 
-        # ticket 806
-        requested_domain = None
-        if DomainInformation.objects.filter(id=pk).exists():
-            requested_domain = DomainInformation.objects.get(id=pk)
+        # if we need to check more about the nature of role, do it here.
+        return True
+
+    def can_access_other_user_domains(self, pk):
+        """Checks to see if an authorized user (staff or superuser)
+        can access a domain that they did not create or was invited to.
+        """
+
+        # Check if the user is permissioned...
+        user_is_analyst_or_superuser = (
+            self.request.user.is_staff or self.request.user.is_superuser
+        )
+        logger.debug(f"is auth {user_is_analyst_or_superuser}")
+
+        if not user_is_analyst_or_superuser:
+            return False
+
+        # Check if the user is attempting a valid edit action.
+        # In other words, if the analyst/admin did not click
+        # the 'Manage Domain' button in /admin,
+        # then they cannot access this page.
+        session = self.request.session
+        can_do_action = (
+            "analyst_action" in session
+            and "analyst_action_location" in session
+            and session["analyst_action_location"] == pk
+        )
+        logger.debug(f"can do {can_do_action}")
+        if not can_do_action:
+            return False
 
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [
@@ -64,37 +92,23 @@ class DomainPermission(PermissionsLoginMixin):
             DomainApplication.IN_REVIEW,
             DomainApplication.REJECTED,
             DomainApplication.ACTION_NEEDED,
+            # Edge case - some domains do not have
+            # a status or DomainInformation... aka a status of 'None'.
+            # It is necessary to access those to correct errors.
+            None,
         ]
 
-        # Check if the user is permissioned...
-        user_is_analyst_or_superuser = (
-            self.request.user.is_staff or self.request.user.is_superuser
-        )
+        requested_domain = None
+        if DomainInformation.objects.filter(id=pk).exists():
+            requested_domain = DomainInformation.objects.get(id=pk)
 
-        session = self.request.session
-        # Check if the user is attempting a valid edit action.
-        can_do_action = (
-            "analyst_action" in session
-            and "analyst_action_location" in session
-            and session["analyst_action_location"] == pk
-        )
+        if not requested_domain.domain_application.status in valid_domain_statuses:
+            return False
 
-        # Edge case - some domains do not have
-        # a status or DomainInformation... aka a status of 'None'
-        # This checks that it has a status, before checking if it does
-        # Otherwise, analysts can edit these domains
-        if requested_domain is not None:
-            can_do_action = (
-                can_do_action
-                and requested_domain.domain_application.status in valid_domain_statuses
-            )
-        # If the valid session keys exist, if the user is permissioned,
-        # and if its in a valid status
-        if can_do_action and user_is_analyst_or_superuser:
-            return True
-
-        # if we need to check more about the nature of role, do it here.
-        return False
+        # Valid session keys exist,
+        # the user is permissioned,
+        # and it is in a valid status
+        return True
 
 
 class DomainApplicationPermission(PermissionsLoginMixin):

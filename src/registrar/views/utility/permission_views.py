@@ -3,9 +3,9 @@
 import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
-
+from django.contrib.contenttypes.models import ContentType
 from registrar.models import Domain, DomainApplication, DomainInvitation
-
+from django.contrib.admin.models import LogEntry, CHANGE
 
 from .mixins import (
     DomainPermission,
@@ -48,7 +48,7 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         return context
 
     def log_analyst_form_actions(
-        self, form_class_name, printable_object_info, changes=None
+        self, form_class_name, printable_object_info, changes=None, obj=None
     ):
         """Generates a log for when key 'analyst_action' exists on the session.
         Follows this format:
@@ -72,12 +72,20 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
             # or 'copy', for instance.
             match action:
                 case "edit":
-                    # Q: do we want to be logging on every changed field?
-                    # I could see that becoming spammy log-wise,
-                    # but it may also be important.
+                    if obj is not None:
+                        content_type = ContentType.objects.get_for_model(obj)
+                        LogEntry.objects.log_action(
+                            user_id=self.request.user.id,
+                            content_type_id=content_type.pk,
+                            object_id=obj.id,
+                            object_repr=str(obj),
+                            action_flag=CHANGE,
+                        )
+
                     if changes is not None:
-                        # Logs every change made to the domain field
-                        # noqa for readability/format
+                        # Logs every change made to the domain field.
+                        # noqa for readability/format.
+                        # Used to manually capture changes, if need be.
                         for field, new_value in changes.items():
                             logger.info(
                                 f"""
