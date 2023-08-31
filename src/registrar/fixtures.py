@@ -117,6 +117,12 @@ class UserFixture:
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
         },
+        {
+            "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
+            "first_name": "Gaby-Analyst",
+            "last_name": "DiSarli-Analyst",
+            "email": "gaby@truss.works",
+        },
     ]
 
     STAFF_PERMISSIONS = [
