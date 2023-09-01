@@ -2,7 +2,11 @@
 
 {% block field_sets %}
     <div class="submit-row">
-        <input type="submit" value="Place hold" name="_place_client_hold">
+        {% if original.state == original.State.READY %}
+          <input type="submit" value="Place hold" name="_place_client_hold">
+        {% elif original.state == original.State.ONHOLD %}
+          <input type="submit" value="Remove hold" name="_remove_client_hold">
+        {% endif %}
     </div>
     {{ block.super }}
 {% endblock %}

@@ -2,7 +2,7 @@ import logging
 
 from datetime import date
 from string import digits
-from django_fsm import FSMField  # type: ignore
+from django_fsm import FSMField, transition  # type: ignore
 
 from django.db import models
 
@@ -113,6 +113,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # the state is indeterminate
         UNKNOWN = "unknown"
+
+        # the ready state for a domain object
+        READY = "ready"
+
+        # when a domain is on hold
+        ONHOLD="onhold"
 
     class Cache(property):
         """
@@ -311,13 +317,21 @@ class Domain(TimeStampedModel, DomainHelper):
         """Time to renew. Not implemented."""
         raise NotImplementedError()
 
+    @transition(
+        field="state", source=[State.READY], target=State.ONHOLD
+    )
     def place_client_hold(self):
         """This domain should not be active."""
-        raise NotImplementedError("This is not implemented yet.")
+        # This method is changing the state of the domain in registrar
+        # TODO: implement EPP call
 
+    @transition(
+        field="state", source=[State.ONHOLD], target=State.READY
+    )
     def remove_client_hold(self):
         """This domain is okay to be active."""
-        raise NotImplementedError()
+        # This method is changing the state of the domain in registrar
+        # TODO: implement EPP call
 
     def __str__(self) -> str:
         return self.name

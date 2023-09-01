@@ -164,7 +164,6 @@ class MyHostAdmin(AuditedAdmin):
 
     inlines = [HostIPInline]
 
-
 class DomainAdmin(ListHeaderAdmin):
 
     """Custom domain admin class to add extra buttons."""
@@ -175,10 +174,12 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        ACTION_BUTTON = "_place_client_hold"
-        if ACTION_BUTTON in request.POST:
+        PLACE_HOLD = "_place_client_hold"
+        REMOVE_HOLD = "_remove_client_hold"
+        if PLACE_HOLD in request.POST:
             try:
                 obj.place_client_hold()
+                obj.save()
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
@@ -191,9 +192,31 @@ class DomainAdmin(ListHeaderAdmin):
                     % obj.name,
                 )
             return HttpResponseRedirect(".")
-
+        elif REMOVE_HOLD in request.POST:
+            try:
+                obj.remove_client_hold()
+                obj.save()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    (
+                        "%s is ready. This domain is accessible on the public "
+                        "internet."
+                    )
+                    % obj.name,
+                )
+            return HttpResponseRedirect(".")
         return super().response_change(request, obj)
 
+    def has_change_permission(self, request, obj=None):
+        # Fixes a bug wherein users which are only is_staff
+        # can access 'change' when GET,
+        # but cannot access this page when it is a request of type POST.
+        if request.user.is_staff:
+            return True
+        return super().has_change_permission(request, obj)
 
 class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
