@@ -118,7 +118,7 @@ class Domain(TimeStampedModel, DomainHelper):
         READY = "ready"
 
         # when a domain is on hold
-        ONHOLD="onhold"
+        ONHOLD = "onhold"
 
     class Cache(property):
         """
@@ -317,17 +317,13 @@ class Domain(TimeStampedModel, DomainHelper):
         """Time to renew. Not implemented."""
         raise NotImplementedError()
 
-    @transition(
-        field="state", source=[State.READY], target=State.ONHOLD
-    )
+    @transition(field="state", source=[State.READY], target=State.ONHOLD)
     def place_client_hold(self):
         """This domain should not be active."""
         # This method is changing the state of the domain in registrar
         # TODO: implement EPP call
 
-    @transition(
-        field="state", source=[State.ONHOLD], target=State.READY
-    )
+    @transition(field="state", source=[State.ONHOLD], target=State.READY)
     def remove_client_hold(self):
         """This domain is okay to be active."""
         # This method is changing the state of the domain in registrar

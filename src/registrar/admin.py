@@ -164,6 +164,7 @@ class MyHostAdmin(AuditedAdmin):
 
     inlines = [HostIPInline]
 
+
 class DomainAdmin(ListHeaderAdmin):
 
     """Custom domain admin class to add extra buttons."""
@@ -217,6 +218,7 @@ class DomainAdmin(ListHeaderAdmin):
         if request.user.is_staff:
             return True
         return super().has_change_permission(request, obj)
+
 
 class ContactAdmin(ListHeaderAdmin):
     """Custom contact admin class to add search."""
