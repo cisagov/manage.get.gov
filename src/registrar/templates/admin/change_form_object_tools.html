@@ -1,7 +1,20 @@
 {% load i18n admin_urls %}
 
+{% comment %} Replace li with p for more semantic HTML if we have a single child {% endcomment %}
 {% block object-tools-items %}
-{% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
-<a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
-{% if has_absolute_url %}<a href="{{ absolute_url }}" class="viewsitelink">{% translate "View on site" %}</a>{% endif %}
+    {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+    {% if has_absolute_url %}
+        <ul>
+            <li>
+                <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
+            </li>
+            <li>
+                <a href="{{ absolute_url }}" class="viewsitelink">{% translate "View on site" %}</a>
+            </li>
+        </ul>
+    {% else %}
+        <p class="margin-0 padding-0">
+            <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
+        </p>
+    {% endif %}
 {% endblock %}

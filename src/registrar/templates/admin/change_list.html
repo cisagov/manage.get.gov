@@ -25,10 +25,11 @@
     </h2>    
 {% endblock %}
 
+{% comment %} Replace the Django ul markup with a div. We'll replace the li with a p in change_list_object_tools {% endcomment %}
 {% block object-tools %}
-    <p class="object-tools">
+    <div class="object-tools">
         {% block object-tools-items %}
             {{ block.super }}
         {% endblock %}
-    </p>
+    </div>
 {% endblock %}

@@ -268,11 +268,10 @@ class DomainApplicationFixture:
             "status": "action needed",
             "organization_name": "Example - Action Needed",
         },
-        # Pa11y does not like this fixture
-        # {
-        #     "status": "rejected",
-        #     "organization_name": "Example - Rejected",
-        # },
+        {
+            "status": "rejected",
+            "organization_name": "Example - Rejected",
+        },
     ]
 
     @classmethod
