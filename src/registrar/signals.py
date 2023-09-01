@@ -54,4 +54,3 @@ def handle_profile(sender, instance, **kwargs):
                 "There are multiple Contacts with the same email address."
                 f" Picking #{contacts[0].id} for User #{instance.id}."
             )
-
