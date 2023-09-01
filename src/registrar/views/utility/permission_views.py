@@ -47,61 +47,6 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
         return context
 
-    def log_analyst_form_actions(
-        self, form_class_name, printable_object_info, changes=None, obj=None
-    ):
-        """Generates a log for when key 'analyst_action' exists on the session.
-        Follows this format:
-
-        for field, new_value in changes.items():
-                "{user_type} '{self.request.user}'
-                set field '{field}': '{new_value}'
-                under class '{form_class_name}'
-                in domain '{printable_object_info}'"
-        """
-        if "analyst_action" in self.request.session:
-            action = self.request.session["analyst_action"]
-
-            user_type = "Analyst"
-            if self.request.user.is_superuser:
-                user_type = "Superuser"
-
-            # Template for potential future expansion,
-            # in the event we want more logging granularity.
-            # Could include things such as 'view'
-            # or 'copy', for instance.
-            match action:
-                case "edit":
-                    if obj is not None:
-                        content_type = ContentType.objects.get_for_model(obj)
-                        LogEntry.objects.log_action(
-                            user_id=self.request.user.id,
-                            content_type_id=content_type.pk,
-                            object_id=obj.id,
-                            object_repr=str(obj),
-                            action_flag=CHANGE,
-                        )
-
-                    if changes is not None:
-                        # Logs every change made to the domain field.
-                        # noqa for readability/format.
-                        # Used to manually capture changes, if need be.
-                        for field, new_value in changes.items():
-                            logger.info(
-                                f"""
-                                An analyst or superuser made alterations to a domain: 
-                                {user_type} '{self.request.user}' 
-                                set field '{field}': '{new_value}' 
-                                under class '{form_class_name}' 
-                                in domain '{printable_object_info}'
-                                """  # noqa
-                            )
-                    else:
-                        # noqa here as breaking this up further leaves it hard to read
-                        logger.info(
-                            f"{user_type} {self.request.user} edited {form_class_name} in {printable_object_info}"  # noqa
-                        )
-
     # Abstract property enforces NotImplementedError on an attribute.
     @property
     @abc.abstractmethod

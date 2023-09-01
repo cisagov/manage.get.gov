@@ -80,15 +80,6 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
             self.request, "The organization name and mailing address has been updated."
         )
 
-        # Q: Is there a more efficent way to do this?
-        # It would be ideal if we didn't have to repeat this.
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # if they are editing from an '/admin' redirect, log their actions
-            changes = {field: form.cleaned_data[field] for field in form.changed_data}
-            self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info, changes, obj=self.get_object()
-            )
-
         # superclass has the redirect
         return super().form_valid(form)
 
@@ -132,12 +123,7 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
             self.request, "The authorizing official for this domain has been updated."
         )
 
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # if they are editing from an '/admin' redirect, log their actions
-            changes = {field: form.cleaned_data[field] for field in form.changed_data}
-            self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info, changes, obj=self.get_object()
-            )
+
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -206,13 +192,6 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
             self.request, "The name servers for this domain have been updated."
         )
 
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # if they are editing from an '/admin' redirect, log their actions
-            changes = {field: formset.cleaned_data[field] for field in formset.changed_data}
-            self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info, changes, obj=self.get_object()
-            )
-
         # superclass has the redirect
         return super().form_valid(formset)
 
@@ -253,13 +232,6 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "Your contact information for this domain has been updated."
         )
-
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # if they are editing from an '/admin' redirect, log their actions
-            changes = {field: form.cleaned_data[field] for field in form.changed_data}
-            self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info, changes, obj=self.get_object()
-            )
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -306,13 +278,6 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "The security email for this domain have been updated."
         )
-
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # if they are editing from an '/admin' redirect, log their actions
-            changes = {field: form.cleaned_data[field] for field in form.changed_data}
-            self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info, changes, obj=self.get_object()
-            )
 
         # superclass has the redirect
         return redirect(self.get_success_url())
@@ -389,11 +354,7 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
                 messages.success(
                     self.request, f"Invited {email_address} to this domain."
                 )
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # if they are editing from an '/admin' redirect, log their actions
-            self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info, obj=self.get_object()
-            )
+
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
@@ -416,12 +377,6 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
 
         messages.success(self.request, f"Added user {requested_email}.")
 
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            # if they are editing from an '/admin' redirect, log their actions
-            changes = {field: form.cleaned_data[field] for field in form.changed_data}
-            self.log_analyst_form_actions(
-                self.form_class.__name__, self.get_object().domain_info, changes, obj=self.get_object()
-            )
 
         return redirect(self.get_success_url())
 

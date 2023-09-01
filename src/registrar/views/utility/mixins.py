@@ -10,6 +10,7 @@ from registrar.models import (
 )
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,12 +45,10 @@ class DomainPermission(PermissionsLoginMixin):
         if pk is None:
             raise ValueError("Primary key is None")
 
-        # ticket 806
         if self.can_access_other_user_domains(pk):
             return True
 
-        # user needs to have a role on the domain,
-        # and user cannot be restricted
+        # user needs to have a role on the domain
         if not UserDomainRole.objects.filter(
             user=self.request.user, domain__id=pk
         ).exists():
@@ -67,7 +66,6 @@ class DomainPermission(PermissionsLoginMixin):
         user_is_analyst_or_superuser = (
             self.request.user.is_staff or self.request.user.is_superuser
         )
-        logger.debug(f"is auth {user_is_analyst_or_superuser}")
 
         if not user_is_analyst_or_superuser:
             return False
@@ -82,7 +80,7 @@ class DomainPermission(PermissionsLoginMixin):
             and "analyst_action_location" in session
             and session["analyst_action_location"] == pk
         )
-        logger.debug(f"can do {can_do_action}")
+
         if not can_do_action:
             return False
 

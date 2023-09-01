@@ -27,11 +27,16 @@ function openInNewTab(el, removeAttribute = false){
  * Currently only appends target="_blank" to the domain_form object,
  * but this can be expanded.
 */
-(function prepareDjangoAdmin(){
-    let domainFormElement = document.getElementById("domain_form");
-    let domainSubmitButton = document.getElementById("manageDomainSubmitButton");
-    if(domainSubmitButton && domainFormElement){
-      domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
-      domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
+(function (){
+    // Keep scope tight and allow for scalability
+    function prepareDjangoAdmin() {
+        let domainFormElement = document.getElementById("domain_form");
+        let domainSubmitButton = document.getElementById("manageDomainSubmitButton");
+        if(domainSubmitButton && domainFormElement){
+          domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
+          domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
+        }
     }
+
+    prepareDjangoAdmin();
 })();
