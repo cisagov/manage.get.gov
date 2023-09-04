@@ -309,12 +309,8 @@ class OrganizationContactForm(RegistrarForm):
                 )
         return federal_agency
 
-
+# TODO-446: Update name of form  + variable naming
 class TypeOfWorkForm(RegistrarForm):
-    # TO DO:
-    # 1. Confirm it's required
-    # 2. Even if it is required, the label seems to be reading from somewhere and not hiding itself
-    # 3. Fix all emails to be - about your organization but we need to fix title somehow
     type_of_work = forms.CharField(
         required=False,
         label="TypeOfWork",
@@ -325,7 +321,7 @@ class TypeOfWorkForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        # Confirm if this error message wording is ok, prev was "Enter the type of work your organization does."
+        # TODO-446: Confirm if this error message wording is ok, prev was "Enter the type of work your organization does."
         error_messages={
             "required": ("Enter information about your organization.")
         },

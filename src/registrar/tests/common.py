@@ -248,6 +248,7 @@ class AuditedAdminMockData:
                 creator: User = self.dummy_user(item_name, "creator"),
             }
         """  # noqa
+        # TODO-446: Update type_of_work to about_your_organization
         common_args = dict(
             organization_type=org_type,
             federal_type=federal_type,
@@ -433,7 +434,7 @@ def create_user():
         password=p,
     )
 
-
+# TODO-446: Update has_type_of_work to has_about_your_organization
 def completed_application(
     has_other_contacts=True,
     has_current_website=True,
@@ -486,6 +487,7 @@ def completed_application(
         creator=user,
         status=status,
     )
+    # TODO-446: Update has_type_of_work to has_about_your_organization
     if has_type_of_work:
         domain_application_kwargs["type_of_work"] = "e-Government"
     if has_anything_else:

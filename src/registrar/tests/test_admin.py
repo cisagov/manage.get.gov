@@ -315,7 +315,8 @@ class TestDomainApplicationAdmin(TestCase):
         request.user = self.superuser
 
         readonly_fields = self.admin.get_readonly_fields(request, application)
-
+        
+        # TODO-446: Add about_your_organization + remove type_of_work and more_organization_information
         expected_fields = [
             "id",
             "created_at",
@@ -360,6 +361,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         readonly_fields = self.admin.get_readonly_fields(request)
 
+        # TODO-446: Add about_your_organization + remove type_of_work and more_organization_information
         expected_fields = [
             "creator",
             "type_of_work",

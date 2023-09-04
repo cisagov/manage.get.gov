@@ -125,6 +125,7 @@ class TestEmails(TestCase):
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"city.gov\n\nPurpose of your domain:")
 
+    # TODO-446: Update type_of_work -> about_your_organization
     @boto3_mocking.patching
     def test_submission_confirmation_type_of_work_spacing(self):
         """Test line spacing with type of work."""
@@ -137,6 +138,7 @@ class TestEmails(TestCase):
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"10002\n\nType of work:")
 
+    # TODO-446: Update type_of_work -> about_your_organization
     @boto3_mocking.patching
     def test_submission_confirmation_no_type_of_work_spacing(self):
         """Test line spacing without type of work."""

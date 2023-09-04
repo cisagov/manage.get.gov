@@ -233,6 +233,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     # Detail view
+    # TODO-446: Add "about_your_organization" + remove "type_of_work" and "more_organization_information"
     fieldsets = [
         (None, {"fields": ["status", "investigator", "creator"]}),
         (
@@ -283,6 +284,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     # Read only that we'll leverage for CISA Analysts
+    # TODO-446: Add "about_your_organization" + remove "type_of_work" and "more_organization_information"
     analyst_readonly_fields = [
         "creator",
         "type_of_work",
