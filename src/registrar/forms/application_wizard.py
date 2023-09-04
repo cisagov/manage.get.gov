@@ -311,9 +311,13 @@ class OrganizationContactForm(RegistrarForm):
 
 
 class TypeOfWorkForm(RegistrarForm):
+    # TO DO:
+    # 1. Confirm it's required
+    # 2. Even if it is required, the label seems to be reading from somewhere and not hiding itself
+    # 3. Fix all emails to be - about your organization but we need to fix title somehow
     type_of_work = forms.CharField(
-        # label has to end in a space to get the label_suffix to show
-        label="What type of work does your organization do? ",
+        required=False,
+        label="TypeOfWork",
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(
@@ -321,31 +325,11 @@ class TypeOfWorkForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        error_messages={"required": "Enter the type of work your organization does."},
-    )
-
-    more_organization_information = forms.CharField(
-        # label has to end in a space to get the label_suffix to show
-        label=(
-            "Describe how your organization is a government organization that is"
-            " independent of a state government. Include links to authorizing"
-            " legislation, applicable bylaws or charter, or other documentation to"
-            " support your claims. "
-        ),
-        widget=forms.Textarea(),
-        validators=[
-            MaxLengthValidator(
-                1000,
-                message="Response must be less than 1000 characters.",
-            )
-        ],
+        # Confirm if this error message wording is ok, prev was "Enter the type of work your organization does."
         error_messages={
-            "required": (
-                "Describe how your organization is independent of a state government."
-            )
+            "required": ("Enter information about your organization.")
         },
     )
-
 
 class AuthorizingOfficialForm(RegistrarForm):
     def to_database(self, obj):
