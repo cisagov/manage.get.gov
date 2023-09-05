@@ -13,6 +13,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
+from registrar.models.utility.epp_helper import EppHelper
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
@@ -454,38 +455,62 @@ class Domain(TimeStampedModel, DomainHelper):
         #   send the public default contact
         try:
             contacts = self._get_property("contacts")
-        except KeyError as err:
+        except KeyError:
             logger.info("Found a key error in security_contact get")
-            ## send public contact to the thingy
-
-            ##TODO - change to get or create in db?
-            default = self.get_default_security_contact()
-
-            # self._cache["contacts"]=[]
-            # self._cache["contacts"].append({"type":"security", "contact":default})
-            self.security_contact = default
-            return default
-        except Exception as e:
-            logger.error("found an error ")
-            logger.error(e)
+            return self.get_or_create_default_security_contact()
+        except Exception as error:
+            logger.error("Exception when getting security_contacts")
+            logger.error(error)
         else:
             logger.info("Showing contacts")
-            for contact in contacts:
-                if (
-                    isinstance(contact, dict)
-                    and "type" in contact.keys()
-                    and "contact" in contact.keys()
-                    and contact["type"] == "security"
-                ):
-                    return contact["contact"]
-
-                ##TODO -get the security contact, requires changing the implemenation below and the parser from epplib
-                # request=InfoContact(securityID)
-                # contactInfo=...send(request)
-                # convert info to a PublicContact
-                # return the info in Public conta
+            # TODO - set get_from_registry = True
+            cached_contact = self.grab_contact_in_keys(contacts, "security", get_from_registry=False)
+            if(cached_contact is not None):
+                return cached_contact
             # TODO - below line never executes with current logic
             return self.get_default_security_contact()
+
+    def get_or_create_default_security_contact(self):
+        """Gets a default security contact, then
+        creates it if it does not exist. Returns it 
+        if it does.
+        """
+        default = self.get_default_security_contact()
+        return self._get_or_create_contact(default)
+
+    def grab_contact_in_keys(self, contacts, check_type, get_from_registry=True):
+        """ Grabs a contact object.
+        Returns None if nothing is found.
+        check_type compares contact["type"] == check_type.
+
+        For example, check_type = 'security'
+        
+        get_from_registry --> bool which specifies if
+        a InfoContact command should be send to the
+        registry when grabbing the object.
+        If it is set to false, we just grab from cache.
+        Otherwise, we grab from  the registry.
+        """
+        for contact in contacts:
+            if (
+                isinstance(contact, dict)
+                and "type" in contact.keys()
+                and "contact" in contact.keys()
+                and contact["type"] == check_type
+            ):
+                ##TODO - Test / Finish this implementation
+                if(get_from_registry):
+                    # logger.debug(f"contact object {contact.__dict__}")
+                    request = commands.InfoContact(id=contact.get("name"))
+                    # TODO - Additional error checking
+                    # Does this have performance implications?
+                    # Expecting/sending a response for every object
+                    # seems potentially taxing
+                    contact_info = registry.send(request, cleaned=True)
+                    returned_contact = EppHelper.EppContact(**contact_info)
+                    return returned_contact.map_to_public_contact(check_type)
+                
+                return contact["contact"]
 
     def _add_registrant_to_existing_domain(self, contact: PublicContact):
         self._update_epp_contact(contact=contact)
@@ -723,27 +748,32 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.info(
                     "_get_or_create_domain()-> getting info on the domain, should hit an error"
                 )
-
                 req = commands.InfoDomain(name=self.name)
+                logger.debug(req.__dict__)
+                # this isn't running????
                 domainInfo = registry.send(req, cleaned=True).res_data[0]
                 already_tried_to_create = True
                 return domainInfo
-            except RegistryError as e:
+            except RegistryError as error:
                 count += 1
 
                 if already_tried_to_create:
                     logger.error("Already tried to create")
-                    logger.error(e)
-                    logger.error(e.code)
-                    raise e
-                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                    logger.error(error)
+                    logger.error(error.code)
+                    raise error
+                if error.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.pendingCreate()
                 else:
-                    logger.error(e)
-                    logger.error(e.code)
-                    raise e
+                    logger.error(error)
+                    logger.error(error.code)
+                    raise error
+            except Exception as error:
+                logger.error(f"Could not run commands.InfoDomain on {self.name}")
+                logger.error(error)
+                raise error
 
     @transition(field="state", source=State.UNKNOWN, target=State.PENDING_CREATE)
     def pendingCreate(self):
@@ -812,18 +842,31 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # TODO - do anything else here?
 
-    def _disclose_fields(self, disclose_email=False):
+    def _disclose_fields(self, disclose_email = False, disclosed_fields=None):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
-        if item is security email then make sure email is visable"""
+
+        disclose_email adds EMAIL to the field list,
+        if it doesn't already exist. If it doesn't,
+        it creates a new dictionary and appends that value.
+
+        disclosed_fields (optional) specifies which fields to disclose.
+        Defaults to {DF.FAX, DF.VOICE, DF.ADDR}.
+        """
         DF = epp.DiscloseField
-        fields = {DF.FAX, DF.VOICE, DF.ADDR}
-        if disclose_email:
-            fields.add(DF.EMAIL)
+        # Default disclosed fields.
+        # Defined here rather than in the function definition
+        # As defining a dictionary that way can persist
+        # throughout multiple function calls
+        if(disclosed_fields == None):
+            disclosed_fields = {DF.FAX, DF.VOICE, DF.ADDR}
+
+        if disclose_email and DF.EMAIL not in disclosed_fields:
+            disclosed_fields.add(DF.EMAIL)
 
         return epp.Disclose(
             flag=False,
-            fields={DF.FAX, DF.VOICE, DF.ADDR},
+            fields=disclosed_fields,
             types={DF.ADDR: "loc"},
         )
 
@@ -934,7 +977,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # (Ellipsis is used to mean "null")
             cache = {
                 "auth_info": getattr(data, "auth_info", ...),
-                "_contacts": getattr(data, "auth_info", ...),
+                "_contacts": getattr(data, "contacts", ...),
                 "cr_date": getattr(data, "cr_date", ...),
                 "ex_date": getattr(data, "ex_date", ...),
                 "_hosts": getattr(data, "hosts", ...),
@@ -961,7 +1004,11 @@ class Domain(TimeStampedModel, DomainHelper):
                     # we do not use _get_or_create_* because we expect the object we
                     # just asked the registry for still exists --
                     # if not, that's a problem
+                    if id is None:
+                        raise ValueError("_fetch_cache()-> contact id cannot be None")
+
                     req = commands.InfoContact(id=id)
+                    
                     data = registry.send(req, cleaned=True).res_data[0]
 
                     # extract properties from response

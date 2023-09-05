@@ -90,11 +90,13 @@ class EPPLibWrapper:
             if response.code >= 2000:
                 raise RegistryError(response.msg, code=response.code)
             else:
+                logger.debug(f"_send()-> response {response.__dict__}")
                 return response
 
     def send(self, command, *, cleaned=False):
         """Login, send the command, then close the connection. Tries 3 times."""
         # try to prevent use of this method without appropriate safeguards
+        logger.error("send()-> was hit!")
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
 
