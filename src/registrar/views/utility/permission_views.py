@@ -3,9 +3,7 @@
 import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
-from django.contrib.contenttypes.models import ContentType
 from registrar.models import Domain, DomainApplication, DomainInvitation
-from django.contrib.admin.models import LogEntry, CHANGE
 
 from .mixins import (
     DomainPermission,

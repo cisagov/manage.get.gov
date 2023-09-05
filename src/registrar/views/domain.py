@@ -123,8 +123,6 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
             self.request, "The authorizing official for this domain has been updated."
         )
 
-
-
         # superclass has the redirect
         return super().form_valid(form)
 
@@ -376,7 +374,6 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
             pass
 
         messages.success(self.request, f"Added user {requested_email}.")
-
 
         return redirect(self.get_success_url())
 
