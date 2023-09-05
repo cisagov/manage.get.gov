@@ -411,7 +411,7 @@ class DomainApplication(TimeStampedModel):
         blank=True,
         help_text="The approved domain",
         related_name="domain_application",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
     )
 
     requested_domain = models.OneToOneField(
@@ -476,6 +476,11 @@ class DomainApplication(TimeStampedModel):
                 return f"{self.status} application created by {self.creator}"
         except Exception:
             return ""
+
+    def domain_is_not_active(self):
+        if self.approved_domain:
+            return not self.approved_domain.is_active()
+        return True
 
     def _send_status_update_email(
         self, new_status, email_template, email_template_subject
@@ -600,11 +605,22 @@ class DomainApplication(TimeStampedModel):
             "emails/domain_request_withdrawn_subject.txt",
         )
 
-    @transition(field="status", source=[IN_REVIEW, APPROVED], target=REJECTED)
+    @transition(
+        field="status",
+        source=[IN_REVIEW, APPROVED],
+        target=REJECTED,
+        conditions=[domain_is_not_active],
+    )
     def reject(self):
         """Reject an application that has been submitted.
 
-        As a side effect, an email notification is sent, similar to in_review"""
+        As a side effect this will delete the domain and domain_information
+        (will cascade), and send an email notification"""
+
+        if self.status == self.APPROVED:
+            self.approved_domain.delete_request()
+            self.approved_domain.delete()
+            self.approved_domain = None
 
         self._send_status_update_email(
             "action needed",
@@ -612,14 +628,25 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_rejected_subject.txt",
         )
 
-    @transition(field="status", source=[IN_REVIEW, APPROVED], target=INELIGIBLE)
+    @transition(
+        field="status",
+        source=[IN_REVIEW, APPROVED],
+        target=INELIGIBLE,
+        conditions=[domain_is_not_active],
+    )
     def reject_with_prejudice(self):
         """The applicant is a bad actor, reject with prejudice.
 
         No email As a side effect, but we block the applicant from editing
         any existing domains/applications and from submitting new aplications.
         We do this by setting an ineligible status on the user, which the
-        permissions classes test against"""
+        permissions classes test against. This will also delete the domain
+        and domain_information (will cascade)"""
+
+        if self.status == self.APPROVED:
+            self.approved_domain.delete_request()
+            self.approved_domain.delete()
+            self.approved_domain = None
 
         self.creator.restrict_user()
 

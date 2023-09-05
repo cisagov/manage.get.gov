@@ -301,7 +301,13 @@ class Domain(TimeStampedModel, DomainHelper):
         # TODO: implement a check -- should be performant so it can be called for
         # any number of domains on a status page
         # this is NOT as simple as checking if Domain.Status.OK is in self.statuses
+
+        # NOTE: This was stubbed in all along for 852 and 811
         return False
+
+    def delete_request(self):
+        """Delete from host. Possibly a duplicate of _delete_host?"""
+        pass
 
     def transfer(self):
         """Going somewhere. Not implemented."""
@@ -337,9 +343,6 @@ class Domain(TimeStampedModel, DomainHelper):
         protected=True,  # cannot change state directly, particularly in Django admin
         help_text="Very basic info about the lifecycle of this domain object",
     )
-
-    def isActive(self):
-        return self.state == Domain.State.CREATED
 
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain

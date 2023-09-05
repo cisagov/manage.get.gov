@@ -104,6 +104,7 @@ class MyUserAdmin(BaseUserAdmin):
     inlines = [UserContactInline]
 
     list_display = (
+        "username",
         "email",
         "first_name",
         "last_name",
@@ -202,6 +203,13 @@ class ContactAdmin(ListHeaderAdmin):
     search_help_text = "Search by firstname, lastname or email."
 
 
+class DomainInformationAdmin(ListHeaderAdmin):
+    """Custom contact admin class to add search."""
+
+    search_fields = ["domain__name"]
+    search_help_text = "Search by domain name."
+
+
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Customize the applications listing view."""
@@ -234,7 +242,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Detail view
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator"]}),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
         (
             "Type of organization",
             {
@@ -306,29 +314,57 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 # Get the original application from the database
                 original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-                if obj.status != original_obj.status:
-                    status_method_mapping = {
-                        models.DomainApplication.STARTED: None,
-                        models.DomainApplication.SUBMITTED: obj.submit,
-                        models.DomainApplication.IN_REVIEW: obj.in_review,
-                        models.DomainApplication.ACTION_NEEDED: obj.action_needed,
-                        models.DomainApplication.APPROVED: obj.approve,
-                        models.DomainApplication.WITHDRAWN: obj.withdraw,
-                        models.DomainApplication.REJECTED: obj.reject,
-                        models.DomainApplication.INELIGIBLE: obj.reject_with_prejudice,
-                    }
-                    selected_method = status_method_mapping.get(obj.status)
-                    if selected_method is None:
-                        logger.warning("Unknown status selected in django admin")
-                    else:
-                        # This is an fsm in model which will throw an error if the
-                        # transition condition is violated, so we roll back the
-                        # status to what it was before the admin user changed it and
-                        # let the fsm method set it.
-                        obj.status = original_obj.status
-                        selected_method()
+                if (
+                    obj
+                    and original_obj.status == models.DomainApplication.APPROVED
+                    and (
+                        obj.status == models.DomainApplication.REJECTED
+                        or obj.status == models.DomainApplication.INELIGIBLE
+                    )
+                    and not obj.domain_is_not_active()
+                ):
+                    # If an admin tried to set an approved application to
+                    # rejected or ineligible and the related domain is already
+                    # active, shortcut the action and throw a friendly
+                    # error message. This action would still not go through
+                    # shortcut or not as the rules are duplicated on the model,
+                    # but the error would be an ugly Django error screen.
 
-            super().save_model(request, obj, form, change)
+                    # Clear the success message
+                    messages.set_level(request, messages.ERROR)
+
+                    messages.error(
+                        request,
+                        "This action is not permitted, the domain "
+                        + "is already active.",
+                    )
+
+                else:
+                    if obj.status != original_obj.status:
+                        status_method_mapping = {
+                            models.DomainApplication.STARTED: None,
+                            models.DomainApplication.SUBMITTED: obj.submit,
+                            models.DomainApplication.IN_REVIEW: obj.in_review,
+                            models.DomainApplication.ACTION_NEEDED: obj.action_needed,
+                            models.DomainApplication.APPROVED: obj.approve,
+                            models.DomainApplication.WITHDRAWN: obj.withdraw,
+                            models.DomainApplication.REJECTED: obj.reject,
+                            models.DomainApplication.INELIGIBLE: (
+                                obj.reject_with_prejudice
+                            ),
+                        }
+                        selected_method = status_method_mapping.get(obj.status)
+                        if selected_method is None:
+                            logger.warning("Unknown status selected in django admin")
+                        else:
+                            # This is an fsm in model which will throw an error if the
+                            # transition condition is violated, so we roll back the
+                            # status to what it was before the admin user changed it and
+                            # let the fsm method set it.
+                            obj.status = original_obj.status
+                            selected_method()
+
+                    super().save_model(request, obj, form, change)
         else:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
@@ -382,7 +418,7 @@ admin.site.register(models.User, MyUserAdmin)
 admin.site.register(models.UserDomainRole, AuditedAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, AuditedAdmin)
-admin.site.register(models.DomainInformation, AuditedAdmin)
+admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)

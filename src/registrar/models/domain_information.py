@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class DomainInformation(TimeStampedModel):
 
     """A registrant's domain information for that domain, exported from
-    DomainApplication. We use these field from DomainApplication with few exceptation
+    DomainApplication. We use these field from DomainApplication with few exceptions
     which are 'removed' via pop at the bottom of this file. Most of design for domain
     management's user information are based on application, but we cannot change
     the application once approved, so copying them that way we can make changes
@@ -156,7 +156,7 @@ class DomainInformation(TimeStampedModel):
 
     domain = models.OneToOneField(
         "registrar.Domain",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         # Access this information via Domain as "domain.domain_info"
