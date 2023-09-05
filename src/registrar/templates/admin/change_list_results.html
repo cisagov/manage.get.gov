@@ -63,8 +63,8 @@ Load our custom filters to extract info from the django generated markup.
         {% with result_value=result.0|extract_value %}
             {% with result_label=result.1|extract_a_text %}
                 <td>
-                    <input type="checkbox" name="_selected_action" value="{{ result_value|default:'value' }}" id="{{ result_value|default:'value' }} {{ result_label|default:'label' }}" class="action-select">
-                    <label class="usa-sr-only" for="{{ result_value|default:'value' }} {{ result_label|default:'label' }}">{{ result_label|default:'label' }}</label>
+                    <input type="checkbox" name="_selected_action" value="{{ result_value|default:'value' }}" id="{{ result_value|default:'value' }}-{{ result_label|default:'label' }}" class="action-select">
+                    <label class="usa-sr-only" for="{{ result_value|default:'value' }}-{{ result_label|default:'label' }}">{{ result_label|default:'label' }}</label>
                 </td>
                 {% endwith %}
         {% endwith %}
