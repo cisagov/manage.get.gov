@@ -441,7 +441,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject()
-            
+
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
         is active, and call reject against transition rules"""
@@ -450,13 +450,13 @@ class TestDomainApplication(TestCase):
         domain = Domain.objects.create(name=application.requested_domain.name)
         application.approved_domain = domain
         application.save()
-        
+
         # Define a custom implementation for is_active
         def custom_is_active(self):
             return True  # Override to return True
-        
+
         # Use patch to temporarily replace is_active with the custom implementation
-        with patch.object(Domain, 'is_active', custom_is_active):
+        with patch.object(Domain, "is_active", custom_is_active):
             # Now, when you call is_active on Domain, it will return True
             with self.assertRaises(TransitionNotAllowed):
                 application.reject()
@@ -514,7 +514,7 @@ class TestDomainApplication(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             application.reject_with_prejudice()
-            
+
     def test_transition_not_allowed_approved_ineligible_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
         is active, and call reject_with_prejudice against transition rules"""
@@ -523,13 +523,13 @@ class TestDomainApplication(TestCase):
         domain = Domain.objects.create(name=application.requested_domain.name)
         application.approved_domain = domain
         application.save()
-        
+
         # Define a custom implementation for is_active
         def custom_is_active(self):
             return True  # Override to return True
-        
+
         # Use patch to temporarily replace is_active with the custom implementation
-        with patch.object(Domain, 'is_active', custom_is_active):
+        with patch.object(Domain, "is_active", custom_is_active):
             # Now, when you call is_active on Domain, it will return True
             with self.assertRaises(TransitionNotAllowed):
                 application.reject_with_prejudice()

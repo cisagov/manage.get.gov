@@ -614,8 +614,8 @@ class DomainApplication(TimeStampedModel):
     def reject(self):
         """Reject an application that has been submitted.
 
-        As a side effect this will delete the domain and domain_information
-        (will cascade), and send an email notification"""
+        As side effects this will delete the domain and domain_information
+        (will cascade), and send an email notification."""
 
         if self.status == self.APPROVED:
             self.approved_domain.delete_request()
@@ -641,7 +641,7 @@ class DomainApplication(TimeStampedModel):
         any existing domains/applications and from submitting new aplications.
         We do this by setting an ineligible status on the user, which the
         permissions classes test against. This will also delete the domain
-        and domain_information (will cascade)"""
+        and domain_information (will cascade) when they exist."""
 
         if self.status == self.APPROVED:
             self.approved_domain.delete_request()
