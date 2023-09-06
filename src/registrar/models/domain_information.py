@@ -134,27 +134,12 @@ class DomainInformation(TimeStampedModel):
         verbose_name="Urbanization (Puerto Rico only)",
     )
 
-    type_of_work = models.TextField(
+    about_your_organization = models.TextField(
         null=True,
         blank=True,
-        help_text="Type of work of the organization",
-    )
-
-    # TODO-446:
-    # about_your_organization = models.TextField(
-    #     null=True,
-    #     blank=True,
-    #     help_text="Information about your organization",
-    # )
-
-    more_organization_information = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Further information about the government organization",
+        help_text="Information about your organization",
     )
     
-    # TODO-446: Remove above bc we don't need this textbox anymore 
-
     authorizing_official = models.ForeignKey(
         "registrar.Contact",
         null=True,

@@ -19,7 +19,6 @@ application_urls = [
     path("finished/", views.Finished.as_view(), name="finished"),
 ]
 
-# TODO-446: (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
 # dynamically generate the other application_urls
 for step, view in [
     # add/remove steps here
@@ -28,7 +27,7 @@ for step, view in [
     (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
     (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
     (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
-    (Step.TYPE_OF_WORK, views.TypeOfWork),
+    (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
     (Step.AUTHORIZING_OFFICIAL, views.AuthorizingOfficial),
     (Step.CURRENT_SITES, views.CurrentSites),
     (Step.DOTGOV_DOMAIN, views.DotgovDomain),

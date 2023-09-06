@@ -1,8 +1,6 @@
 {% extends 'application_form.html' %}
 {% load field_helpers %}
 
-<!-- TODO-446: Change name of file to be application_about_your_organization.html -->
-
 {% block form_instructions %}
   <p>[For special districts, interstate governments]</p>
   <p>We’d like to know more about your organization. Include the following in your response: </p>
@@ -19,9 +17,8 @@
   <p class="text-semibold"><abbr class="usa-hint usa-hint--required" title="required">*</abbr>This question is required.</p>
 {% endblock %}
 
-<!-- TODO-446: Change name form name -->
 {% block form_fields %}
     {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
-      {% input_with_errors forms.0.type_of_work %}
+      {% input_with_errors forms.0.about_your_organization %}
     {% endwith %}
 {% endblock %}

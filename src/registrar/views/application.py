@@ -17,7 +17,6 @@ from .utility import DomainApplicationPermissionView, ApplicationWizardPermissio
 logger = logging.getLogger(__name__)
 
 
-# TODO-446: ABOUT_YOUR_ORGANIZATION = "about_your_organization"
 class Step(StrEnum):
     """
     Names for each page of the application wizard.
@@ -31,7 +30,7 @@ class Step(StrEnum):
     ORGANIZATION_FEDERAL = "organization_federal"
     ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
-    TYPE_OF_WORK = "type_of_work"
+    ABOUT_YOUR_ORGANIZATION = "about_your_organization"
     AUTHORIZING_OFFICIAL = "authorizing_official"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
@@ -72,14 +71,13 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     EDIT_URL_NAME = "edit-application"
     NEW_URL_NAME = "/register/"
     # We need to pass our human-readable step titles as context to the templates.
-    # TODO-446: Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
     TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
         Step.TRIBAL_GOVERNMENT: _("Tribal government"),
         Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
         Step.ORGANIZATION_ELECTION: _("Election office"),
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
-        Step.TYPE_OF_WORK: _("Type of work"),
+        Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
         Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
         Step.CURRENT_SITES: _("Current website for your organization"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
@@ -94,7 +92,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     # We can use a dictionary with step names and callables that return booleans
     # to show or hide particular steps based on the state of the process.
-    # TODO-446: Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     WIZARD_CONDITIONS = {
         Step.ORGANIZATION_FEDERAL: lambda w: w.from_model(
             "show_organization_federal", False
@@ -103,7 +100,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.ORGANIZATION_ELECTION: lambda w: w.from_model(
             "show_organization_election", False
         ),
-        Step.TYPE_OF_WORK: lambda w: w.from_model("show_type_of_work", False),
+        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
         Step.NO_OTHER_CONTACTS: lambda w: w.from_model(
             "show_no_other_contacts_rationale", False
         ),
@@ -375,10 +372,10 @@ class OrganizationContact(ApplicationWizard):
     template_name = "application_org_contact.html"
     forms = [forms.OrganizationContactForm]
 
-# TODO-446: Probs step 1 after migration? Update typeofwork naming to about_your_organization
-class TypeOfWork(ApplicationWizard):
-    template_name = "application_type_of_work.html"
-    forms = [forms.TypeOfWorkForm]
+
+class AboutYourOrganization(ApplicationWizard):
+    template_name = "application_about_your_organization.html"
+    forms = [forms.AboutYourOrganizationForm]
 
 
 class AuthorizingOfficial(ApplicationWizard):
