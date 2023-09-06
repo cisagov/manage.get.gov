@@ -219,7 +219,7 @@ class DomainAdmin(ListHeaderAdmin):
            
         if SET_SECURITY_CONTACT in request.POST:
             try:
-               security_contact = obj.get_default_security_contact()
+               security_contact = obj.get_contact_default("security")
                security_contact.email="ab@test.gov"
                
                obj.security_contact=security_contact

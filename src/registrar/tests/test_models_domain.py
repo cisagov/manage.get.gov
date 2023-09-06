@@ -53,7 +53,7 @@ class MockEppLib(TestCase):
                 return MagicMock(res_data=[self.infoDomainNoContact])
             elif getattr(_request, "name", None) == "raise-registry-error.gov":
                 # 2303 = OBJECT_DOES_NOT_EXIST
-                return MagicMock(RegistryError(code=2303))
+                raise RegistryError(code=2303)
             return MagicMock(res_data=[self.mockDataInfoDomain])
         elif isinstance(_request, commands.InfoContact):
             return MagicMock(res_data=[self.mockDataInfoContact])
@@ -269,12 +269,13 @@ class TestRegistrantContacts(MockEppLib):
             Then the domain has a valid security contact with CISA defaults
             And disclose flags are set to keep the email address hidden
         """
+        tested_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         # get security contact
         expectedSecContact = PublicContact.get_default_security()
-        expectedSecContact.domain = self.domain_raise_error
+        expectedSecContact.domain = tested_domain
 
         # We expect that a new object gets created
-        receivedSecContact = self.domain_raise_error.security_contact
+        receivedSecContact = tested_domain.security_contact
 
         DF = common.DiscloseField
         di = common.Disclose(
@@ -321,8 +322,8 @@ class TestRegistrantContacts(MockEppLib):
             ],
         )
         # check that send has triggered the create command
-        #self.mockedSendFunction.assert_any_call(expectedCreateCommand, True)
-        #self.mockedSendFunction.assert_any_call(expectedUpdateDomain, True)
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, True)
+        self.mockedSendFunction.assert_any_call(expectedUpdateDomain, True)
         # check that the security contact sent is the same as the one recieved
         self.assertEqual(receivedSecContact, expectedSecContact)
         # TODO - check disclose fields
@@ -337,15 +338,17 @@ class TestRegistrantContacts(MockEppLib):
             And Domain sends `commands.UpdateDomain` to the registry with the newly
                 created contact of type 'security'
         """
+        tested_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         # make a security contact that is a PublicContact
         expectedSecContact = PublicContact.get_default_security()
-        expectedSecContact.domain = self.domain
+        expectedSecContact.domain = tested_domain
         expectedSecContact.email = "newEmail@fake.com"
         expectedSecContact.registry_id = "456"
         expectedSecContact.name = "Fakey McPhakerson"
-        self.domain.security_contact = expectedSecContact
-
-        self.assertNotEqual(self.domain.security_contact, expectedSecContact)
+        
+        # Should create a new object with the above credentials
+        receivedSecContact = tested_domain.security_contact
+    
         # check create contact sent with email
         DF = common.DiscloseField
         di = common.Disclose(
@@ -393,14 +396,11 @@ class TestRegistrantContacts(MockEppLib):
         )
 
         # check that send has triggered the create command for the contact
-        #self.mockedSendFunction.assert_any_call(expectedCreateCommand, True)
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, True)
         # check domain contact was updated
-        #self.mockedSendFunction.assert_any_call(expectedUpdateDomain, True)
-        logger.debug(f"rec {self.domain.security_contact.__dict__} expec {expectedSecContact.__dict__}")
-        self.domain.security_contact = expectedSecContact
-        # The security contact object should be the same after it is set
-        # (Necessary as it has internal setter rules which could alter its state)
-        self.assertEqual(self.domain.security_contact, expectedSecContact)
+        self.mockedSendFunction.assert_any_call(expectedUpdateDomain, True)
+
+        self.assertEqual(receivedSecContact, expectedSecContact)
 
         # TODO - check disclose fields
         # self.assertTrue(receivedSecContact.disclose.fields.contains(DF.EMAIL))

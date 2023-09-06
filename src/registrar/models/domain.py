@@ -360,21 +360,40 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def registrant_contact(self) -> PublicContact:
         """Get or set the registrant for this domain."""
-        raise NotImplementedError()
+        registrant = PublicContact.ContactTypeChoices.REGISTRANT
+        return self.cache_contact_helper(registrant)
 
     @registrant_contact.setter  # type: ignore
     def registrant_contact(self, contact: PublicContact):
         """Registrant is set when a domain is created, so follow on additions will update the current registrant"""
         ###incorrect should update an existing registrant
         logger.info("making registrant contact")
+
         self._set_singleton_contact(
             contact=contact, expectedType=contact.ContactTypeChoices.REGISTRANT
+        )
+    
+    @Cache
+    def tech_contact(self) -> PublicContact:
+        """Get or set the registrant for this domain."""
+        tech = PublicContact.ContactTypeChoices.TECHNICAL
+        return self.cache_contact_helper(tech)
+
+    @tech_contact.setter  # type: ignore
+    def tech_contact(self, contact: PublicContact):
+        """Registrant is set when a domain is created, so follow on additions will update the current registrant"""
+        ###incorrect should update an existing registrant
+        logger.info("making registrant contact")
+
+        self._set_singleton_contact(
+            contact=contact, expectedType=contact.ContactTypeChoices.TECHNICAL
         )
 
     @Cache
     def administrative_contact(self) -> PublicContact:
         """Get or set the admin contact for this domain."""
-        raise NotImplementedError()
+        admin = PublicContact.ContactTypeChoices.ADMINISTRATIVE
+        return self.cache_contact_helper(admin)
 
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
@@ -390,12 +409,6 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("administrative_contact()-> update domain with admin contact")
         self._make_contact_in_registry(contact=contact)
         self._update_domain_with_contact(contact, rem=False)
-
-    def get_default_security_contact(self):
-        logger.info("getting default sec contact")
-        contact = PublicContact.get_default_security()
-        contact.domain = self
-        return contact
 
     def _update_epp_contact(self, contact: PublicContact):
         """Sends UpdateContact to update the actual contact object, domain object remains unaffected
@@ -444,38 +457,69 @@ class Domain(TimeStampedModel, DomainHelper):
                 "Can't %s the contact of type %s" % (action, contact.contact_type)
             )
 
-    @Cache
-    def security_contact(self) -> PublicContact:
-        """Get or set the security contact for this domain."""
+    def get_contact_default(self, contact_type_choice: PublicContact.ContactTypeChoices)  -> PublicContact:
+        """ Returns a default contact based off the contact_type_choice.
 
+        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
+        for instance: PublicContact.ContactTypeChoices.SECURITY.
+
+        If you wanted to get the default contact for Security, you would call: 
+        get_contact_default(PublicContact.ContactTypeChoices.SECURITY),
+        or get_contact_default("security")
+        """
+        logger.info(f"getting default {contact_type_choice} contact")
+        choices = PublicContact.ContactTypeChoices
+        contact: PublicContact
+        match(contact_type_choice):
+            case choices.ADMINISTRATIVE:
+                contact = PublicContact.get_default_administrative()
+            case choices.SECURITY: 
+                contact = PublicContact.get_default_security()
+            case choices.TECHNICAL:
+                contact = PublicContact.get_default_technical()
+            case choices.REGISTRANT:
+                contact = PublicContact.get_default_registrant()
+
+        contact.domain = self
+        return contact
+
+    def cache_contact_helper(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact:
+        """ Abstracts the cache logic on EppLib contact items 
+        
+        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
+        for instance: PublicContact.ContactTypeChoices.SECURITY.
+
+        If you wanted to setup getter logic for Security, you would call: 
+        cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
+        or cache_contact_helper("security")
+        """
         # get the contacts: call _get_property(contacts=True)
-        # if contacts exist and security contact is in the contact list
+        # if contacts exist and the contact_type is in the contact list
         # return that contact
         # else call the setter
         #   send the public default contact
         try:
             contacts = self._get_property("contacts")
         except KeyError:
-            logger.info("Found a key error in security_contact get")
-            return self.get_or_create_default_security_contact()
+            return self.get_or_create_default_contact(contact_type_choice)
         except Exception as error:
             logger.error("Exception when getting security_contacts")
             logger.error(error)
         else:
             logger.info("Showing contacts")
             # TODO - set get_from_registry = True
-            cached_contact = self.grab_contact_in_keys(contacts, "security", get_from_registry=False)
+            cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice, get_from_registry=False)
             if(cached_contact is not None):
                 return cached_contact
             # TODO - below line never executes with current logic
-            return self.get_default_security_contact()
-
-    def get_or_create_default_security_contact(self):
-        """Gets a default security contact, then
+            return self.get_contact_default(contact_type_choice)
+        
+    def get_or_create_default_contact(self, contact_type_choice: PublicContact.ContactTypeChoices):
+        """Gets a default contact object, then
         creates it if it does not exist. Returns it 
         if it does.
         """
-        default = self.get_default_security_contact()
+        default = self.get_contact_default(contact_type_choice)
         return self._get_or_create_contact(default)
 
     def grab_contact_in_keys(self, contacts, check_type, get_from_registry=True):
@@ -511,6 +555,18 @@ class Domain(TimeStampedModel, DomainHelper):
                     return returned_contact.map_to_public_contact(check_type)
                 
                 return contact["contact"]
+
+    @Cache
+    def security_contact(self) -> PublicContact:
+        """Get or set the security contact for this domain."""
+
+        # get the contacts: call _get_property(contacts=True)
+        # if contacts exist and security contact is in the contact list
+        # return that contact
+        # else call the setter
+        #   send the public default contact
+        security = PublicContact.ContactTypeChoices.SECURITY
+        return self.cache_contact_helper(security)
 
     def _add_registrant_to_existing_domain(self, contact: PublicContact):
         self._update_epp_contact(contact=contact)
@@ -631,8 +687,6 @@ class Domain(TimeStampedModel, DomainHelper):
         from domain information (not domain application)
         and should have the security email from DomainApplication"""
         logger.info("making security contact in registry")
-        if contact is None:
-            raise ValueError("contact cannot be None")
 
         # if no email is specified, set to the default
         if contact.email is None or contact.email == "":
@@ -784,7 +838,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("registrant is %s" % registrant)
 
         # TODO-notes no chg item for registrant in the epplib should
-        security_contact = self.get_default_security_contact()
+        security_contact = self.get_contact_default(PublicContact.ContactTypeChoices.SECURITY)
 
         req = commands.CreateDomain(
             name=self.name,
@@ -1014,7 +1068,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
                     logger.info("_fetch_cache()->contacts are ")
-                    logger.info(data)
+                    logger.info(data.__dict__)
                     contact = {
                         "id": id,
                         "auth_info": getattr(data, "auth_info", ...),
