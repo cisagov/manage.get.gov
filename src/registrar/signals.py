@@ -1,8 +1,6 @@
 import logging
 
-from django.conf import settings
-from django.core.management import call_command
-from django.db.models.signals import post_save, post_migrate
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .models import User, Contact
@@ -55,13 +53,3 @@ def handle_profile(sender, instance, **kwargs):
                 "There are multiple Contacts with the same email address."
                 f" Picking #{contacts[0].id} for User #{instance.id}."
             )
-
-
-@receiver(post_migrate)
-def handle_loaddata(**kwargs):
-    """Attempt to load test fixtures when in DEBUG mode."""
-    if settings.DEBUG:
-        try:
-            call_command("load")
-        except Exception as e:
-            logger.warning(e)

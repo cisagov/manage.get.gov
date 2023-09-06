@@ -92,6 +92,12 @@ class UserFixture:
             "last_name": "Alysia-Analyst",
         },
         {
+            "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
+            "first_name": "Katherine-Analyst",
+            "last_name": "Osos-Analyst",
+            "email": "kosos@truss.works",
+        },
+        {
             "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
             "first_name": "Zander-Analyst",
             "last_name": "Adkinson-Analyst",
@@ -110,6 +116,12 @@ class UserFixture:
             "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
+        },
+        {
+            "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
+            "first_name": "Gaby-Analyst",
+            "last_name": "DiSarli-Analyst",
+            "email": "gaby@truss.works",
         },
     ]
 
@@ -257,6 +269,14 @@ class DomainApplicationFixture:
         {
             "status": "withdrawn",
             "organization_name": "Example - Withdrawn",
+        },
+        {
+            "status": "action needed",
+            "organization_name": "Example - Action Needed",
+        },
+        {
+            "status": "rejected",
+            "organization_name": "Example - Rejected",
         },
     ]
 

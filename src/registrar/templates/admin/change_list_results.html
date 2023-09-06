@@ -17,7 +17,7 @@ Load our custom filters to extract info from the django generated markup.
 <thead>
 <tr>
 
-{% if results.0.form %}
+{% if results.0|contains_checkbox %}
     {# .gov - hardcode the select all checkbox #}
     <th scope="col" class="action-checkbox-column" title="Toggle all">
         <div class="text">
