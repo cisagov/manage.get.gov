@@ -125,29 +125,27 @@ class TestEmails(TestCase):
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"city.gov\n\nPurpose of your domain:")
 
-    # TODO-446: Update type_of_work -> about_your_organization
     @boto3_mocking.patching
-    def test_submission_confirmation_type_of_work_spacing(self):
-        """Test line spacing with type of work."""
-        application = completed_application(has_type_of_work=True)
+    def test_submission_confirmation_about_your_organization_spacing(self):
+        """Test line spacing with about your organization."""
+        application = completed_application(has_about_your_organization=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertIn("Type of work:", body)
+        self.assertIn("About your organization:", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"10002\n\nType of work:")
+        self.assertRegex(body, r"10002\n\nAbout your organization:")
 
-    # TODO-446: Update type_of_work -> about_your_organization
     @boto3_mocking.patching
-    def test_submission_confirmation_no_type_of_work_spacing(self):
+    def test_submission_confirmation_no_about_your_organization_spacing(self):
         """Test line spacing without type of work."""
-        application = completed_application(has_type_of_work=False)
+        application = completed_application(has_about_your_organization=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertNotIn("Type of work:", body)
+        self.assertNotIn("About your organization:", body)
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"10002\n\nAuthorizing official:")
 

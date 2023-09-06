@@ -309,6 +309,7 @@ class OrganizationContactForm(RegistrarForm):
                 )
         return federal_agency
 
+
 class AboutYourOrganizationForm(RegistrarForm):
     about_your_organization = forms.CharField(
         label="About your organization",
@@ -319,11 +320,13 @@ class AboutYourOrganizationForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        # TODO-446: Confirm if this error message wording is ok, prev was "Enter the type of work your organization does."
+        # TODO-446: Confirm if err msg wording is ok, previously
+        # TODO-446: "Enter the type of work your organization does."
         error_messages={
-            "required": ("Enter information about your organization.")
+            "required": ("Enter the information about your organization.")
         },
     )
+
 
 class AuthorizingOfficialForm(RegistrarForm):
     def to_database(self, obj):

@@ -433,6 +433,7 @@ def create_user():
         password=p,
     )
 
+
 def completed_application(
     has_other_contacts=True,
     has_current_website=True,

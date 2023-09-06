@@ -139,7 +139,7 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         help_text="Information about your organization",
     )
-    
+
     authorizing_official = models.ForeignKey(
         "registrar.Contact",
         null=True,

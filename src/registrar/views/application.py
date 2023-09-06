@@ -100,7 +100,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.ORGANIZATION_ELECTION: lambda w: w.from_model(
             "show_organization_election", False
         ),
-        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
+        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model(
+            "show_about_your_organization", False
+        ),
         Step.NO_OTHER_CONTACTS: lambda w: w.from_model(
             "show_no_other_contacts_rationale", False
         ),
