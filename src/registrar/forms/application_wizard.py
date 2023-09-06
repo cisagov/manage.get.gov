@@ -309,11 +309,10 @@ class OrganizationContactForm(RegistrarForm):
                 )
         return federal_agency
 
-# TODO-446: Update name of form  + variable naming
+# TODO-446: Update name of form  + variable naming + change label
 class TypeOfWorkForm(RegistrarForm):
     type_of_work = forms.CharField(
-        required=False,
-        label="TypeOfWork",
+        label="Type of work",
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(
