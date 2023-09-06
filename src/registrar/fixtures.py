@@ -63,7 +63,7 @@ class UserFixture:
             "last_name": "Adkinson",
         },
         {
-            "username": "bb21f687-c773-4df3-9243-111cfd4c0be4",
+            "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
             "first_name": "Paul",
             "last_name": "Kuykendall",
         },

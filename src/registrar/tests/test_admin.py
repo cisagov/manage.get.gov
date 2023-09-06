@@ -1,7 +1,9 @@
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from django.urls import reverse
 
 from registrar.admin import (
+    DomainAdmin,
     DomainApplicationAdmin,
     ListHeaderAdmin,
     MyUserAdmin,
@@ -12,15 +14,17 @@ from registrar.models import (
     DomainInformation,
     User,
     DomainInvitation,
+    Domain,
 )
 from .common import (
     completed_application,
+    generic_domain_object,
     mock_user,
     create_superuser,
     create_user,
     multiple_unalphabetical_domain_objects,
 )
-
+from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 
@@ -772,3 +776,129 @@ class AuditedAdminTest(TestCase):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         DomainInvitation.objects.all().delete()
+
+
+class DomainSessionVariableTest(TestCase):
+    """Test cases for session variables in Django Admin"""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.admin = DomainAdmin(Domain, None)
+        self.client = Client(HTTP_HOST="localhost:8080")
+
+    def test_session_vars_set_correctly(self):
+        """Checks if session variables are being set correctly"""
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        dummy_domain_information = generic_domain_object("information", "session")
+        request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
+        self.populate_session_values(request, dummy_domain_information.domain)
+        self.assertEqual(request.session["analyst_action"], "edit")
+        self.assertEqual(
+            request.session["analyst_action_location"],
+            dummy_domain_information.domain.pk,
+        )
+
+    def test_session_vars_set_correctly_hardcoded_domain(self):
+        """Checks if session variables are being set correctly"""
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        dummy_domain_information: Domain = generic_domain_object(
+            "information", "session"
+        )
+        dummy_domain_information.domain.pk = 1
+
+        request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
+        self.populate_session_values(request, dummy_domain_information.domain)
+        self.assertEqual(request.session["analyst_action"], "edit")
+        self.assertEqual(request.session["analyst_action_location"], 1)
+
+    def test_session_variables_reset_correctly(self):
+        """Checks if incorrect session variables get overridden"""
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        dummy_domain_information = generic_domain_object("information", "session")
+        request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
+
+        self.populate_session_values(
+            request, dummy_domain_information.domain, preload_bad_data=True
+        )
+
+        self.assertEqual(request.session["analyst_action"], "edit")
+        self.assertEqual(
+            request.session["analyst_action_location"],
+            dummy_domain_information.domain.pk,
+        )
+
+    def test_session_variables_retain_information(self):
+        """Checks to see if session variables retain old information"""
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        dummy_domain_information_list = multiple_unalphabetical_domain_objects(
+            "information"
+        )
+        for item in dummy_domain_information_list:
+            request = self.get_factory_post_edit_domain(item.domain.pk)
+            self.populate_session_values(request, item.domain)
+
+            self.assertEqual(request.session["analyst_action"], "edit")
+            self.assertEqual(request.session["analyst_action_location"], item.domain.pk)
+
+    def test_session_variables_concurrent_requests(self):
+        """Simulates two requests at once"""
+
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        info_first = generic_domain_object("information", "session")
+        info_second = generic_domain_object("information", "session2")
+
+        request_first = self.get_factory_post_edit_domain(info_first.domain.pk)
+        request_second = self.get_factory_post_edit_domain(info_second.domain.pk)
+
+        self.populate_session_values(request_first, info_first.domain, True)
+        self.populate_session_values(request_second, info_second.domain, True)
+
+        # Check if anything got nulled out
+        self.assertNotEqual(request_first.session["analyst_action"], None)
+        self.assertNotEqual(request_second.session["analyst_action"], None)
+        self.assertNotEqual(request_first.session["analyst_action_location"], None)
+        self.assertNotEqual(request_second.session["analyst_action_location"], None)
+
+        # Check if they are both the same action 'type'
+        self.assertEqual(request_first.session["analyst_action"], "edit")
+        self.assertEqual(request_second.session["analyst_action"], "edit")
+
+        # Check their locations, and ensure they aren't the same across both
+        self.assertNotEqual(
+            request_first.session["analyst_action_location"],
+            request_second.session["analyst_action_location"],
+        )
+
+    def populate_session_values(self, request, domain_object, preload_bad_data=False):
+        """Boilerplate for creating mock sessions"""
+        request.user = self.client
+        request.session = SessionStore()
+        request.session.create()
+        if preload_bad_data:
+            request.session["analyst_action"] = "invalid"
+            request.session["analyst_action_location"] = "bad location"
+        self.admin.response_change(request, domain_object)
+
+    def get_factory_post_edit_domain(self, primary_key):
+        """Posts to registrar domain change
+        with the edit domain button 'clicked',
+        then returns the factory object"""
+        return self.factory.post(
+            reverse("admin:registrar_domain_change", args=(primary_key,)),
+            {"_edit_domain": "true"},
+            follow=True,
+        )

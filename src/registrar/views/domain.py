@@ -79,6 +79,7 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "The organization name and mailing address has been updated."
         )
+
         # superclass has the redirect
         return super().form_valid(form)
 
@@ -121,6 +122,7 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "The authorizing official for this domain has been updated."
         )
+
         # superclass has the redirect
         return super().form_valid(form)
 
@@ -187,6 +189,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "The name servers for this domain have been updated."
         )
+
         # superclass has the redirect
         return super().form_valid(formset)
 
@@ -227,6 +230,7 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "Your contact information for this domain has been updated."
         )
+
         # superclass has the redirect
         return super().form_valid(form)
 
@@ -272,6 +276,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         messages.success(
             self.request, "The security email for this domain have been updated."
         )
+
         # superclass has the redirect
         return redirect(self.get_success_url())
 
@@ -347,6 +352,7 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
                 messages.success(
                     self.request, f"Invited {email_address} to this domain."
                 )
+
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
@@ -368,6 +374,7 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
             pass
 
         messages.success(self.request, f"Added user {requested_email}.")
+
         return redirect(self.get_success_url())
 
 
