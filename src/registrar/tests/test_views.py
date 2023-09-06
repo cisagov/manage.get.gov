@@ -660,8 +660,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_result = org_contact_form.submit()
 
-        # the post request should return a redirect to the type of work page
-        # if it was successful.
+        # the post request should return a redirect to the
+        # about your organization page if it was successful.
         self.assertEqual(contact_result.status_code, 302)
         self.assertEqual(
             contact_result["Location"],

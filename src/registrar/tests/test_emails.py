@@ -48,7 +48,7 @@ class TestEmails(TestCase):
         self.assertIn("Testy2 Tester2", body)
         self.assertIn("Current website for your organization:", body)
         self.assertIn("city.com", body)
-        self.assertIn("Type of work:", body)
+        self.assertIn("About your organization:", body)
         self.assertIn("Anything else", body)
 
     @boto3_mocking.patching
@@ -139,7 +139,7 @@ class TestEmails(TestCase):
 
     @boto3_mocking.patching
     def test_submission_confirmation_no_about_your_organization_spacing(self):
-        """Test line spacing without type of work."""
+        """Test line spacing without about your organization."""
         application = completed_application(has_about_your_organization=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
