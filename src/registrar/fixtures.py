@@ -63,7 +63,7 @@ class UserFixture:
             "last_name": "Adkinson",
         },
         {
-            "username": "bb21f687-c773-4df3-9243-111cfd4c0be4",
+            "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
             "first_name": "Paul",
             "last_name": "Kuykendall",
         },
@@ -116,6 +116,12 @@ class UserFixture:
             "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
+        },
+        {
+            "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
+            "first_name": "Gaby-Analyst",
+            "last_name": "DiSarli-Analyst",
+            "email": "gaby@truss.works",
         },
     ]
 

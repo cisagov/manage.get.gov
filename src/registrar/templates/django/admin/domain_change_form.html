@@ -1,4 +1,10 @@
 {% extends 'admin/change_form.html' %}
+{% load i18n static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script type="application/javascript" src="{% static 'js/get-gov-admin.js' %}" defer></script>
+{% endblock %}
 
 {% block field_sets %}
     <div class="submit-row">
@@ -7,6 +13,7 @@
         {% elif original.state == original.State.ONHOLD %}
           <input type="submit" value="Remove hold" name="_remove_client_hold">
         {% endif %}
+        <input id="manageDomainSubmitButton" type="submit" value="Manage Domain" name="_edit_domain">
     </div>
     {{ block.super }}
 {% endblock %}

@@ -348,6 +348,9 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text="Very basic info about the lifecycle of this domain object",
     )
 
+    def isActive(self):
+        return self.state == Domain.State.CREATED
+
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
 

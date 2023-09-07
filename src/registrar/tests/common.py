@@ -526,3 +526,11 @@ def multiple_unalphabetical_domain_objects(
         application = mock.create_full_dummy_domain_object(domain_type, object_name)
         applications.append(application)
     return applications
+
+
+def generic_domain_object(domain_type, object_name):
+    """Returns a generic domain object of
+    domain_type 'application', 'information', or 'invitation'"""
+    mock = AuditedAdminMockData()
+    application = mock.create_full_dummy_domain_object(domain_type, object_name)
+    return application

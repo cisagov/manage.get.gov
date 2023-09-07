@@ -177,10 +177,13 @@ class DomainAdmin(ListHeaderAdmin):
     def response_change(self, request, obj):
         PLACE_HOLD = "_place_client_hold"
         REMOVE_HOLD = "_remove_client_hold"
+        EDIT_DOMAIN = "_edit_domain"
         if PLACE_HOLD in request.POST:
             return self.do_place_client_hold(request, obj)
         elif REMOVE_HOLD in request.POST:
             return self.do_remove_client_hold(request, obj)
+        elif EDIT_DOMAIN in request.POST:
+            return self.do_edit_domain(request, obj)
         return super().response_change(request, obj)
 
     def do_place_client_hold(self, request, obj):
@@ -216,6 +219,21 @@ class DomainAdmin(ListHeaderAdmin):
                 % obj.name,
             )
         return HttpResponseRedirect(".")
+
+    def do_edit_domain(self, request, obj):
+        # We want to know, globally, when an edit action occurs
+        request.session["analyst_action"] = "edit"
+        # Restricts this action to this domain (pk) only
+        request.session["analyst_action_location"] = obj.id
+        return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
+
+    def change_view(self, request, object_id):
+        # If the analyst was recently editing a domain page,
+        # delete any associated session values
+        if "analyst_action" in request.session:
+            del request.session["analyst_action"]
+            del request.session["analyst_action_location"]
+        return super().change_view(request, object_id)
 
     def has_change_permission(self, request, obj=None):
         # Fixes a bug wherein users which are only is_staff
