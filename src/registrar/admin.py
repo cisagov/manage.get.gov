@@ -176,8 +176,9 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        ACTION_BUTTON = "_place_client_hold"
-        if ACTION_BUTTON in request.POST:
+        PLACE_HOLD = "_place_client_hold"
+        EDIT_DOMAIN = "_edit_domain"
+        if PLACE_HOLD in request.POST:
             try:
                 obj.place_client_hold()
             except Exception as err:
@@ -192,8 +193,29 @@ class DomainAdmin(ListHeaderAdmin):
                     % obj.name,
                 )
             return HttpResponseRedirect(".")
-
+        elif EDIT_DOMAIN in request.POST:
+            # We want to know, globally, when an edit action occurs
+            request.session["analyst_action"] = "edit"
+            # Restricts this action to this domain (pk) only
+            request.session["analyst_action_location"] = obj.id
+            return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
         return super().response_change(request, obj)
+
+    def change_view(self, request, object_id):
+        # If the analyst was recently editing a domain page,
+        # delete any associated session values
+        if "analyst_action" in request.session:
+            del request.session["analyst_action"]
+            del request.session["analyst_action_location"]
+        return super().change_view(request, object_id)
+
+    def has_change_permission(self, request, obj=None):
+        # Fixes a bug wherein users which are only is_staff
+        # can access 'change' when GET,
+        # but cannot access this page when it is a request of type POST.
+        if request.user.is_staff:
+            return True
+        return super().has_change_permission(request, obj)
 
 
 class ContactAdmin(ListHeaderAdmin):
