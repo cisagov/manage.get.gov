@@ -134,10 +134,51 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    analyst_fieldsets = (
+        (
+            None,
+            {"fields": ("password", "status")},
+        ),
+        ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    analyst_readonly_fields = [
+        "password",
+        "Personal Info",
+        "first_name",
+        "last_name",
+        "email",
+        "Permissions",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "Important dates",
+        "last_login",
+        "date_joined",
+    ]
+
     def get_list_display(self, request):
         if not request.user.is_superuser:
             # Customize the list display for staff users
-            return ("email", "first_name", "last_name", "is_staff", "is_superuser")
+            return (
+                "email",
+                "first_name",
+                "last_name",
+                "is_staff",
+                "is_superuser",
+                "status",
+            )
 
         # Use the default list display for non-staff users
         return super().get_list_display(request)
@@ -146,10 +187,17 @@ class MyUserAdmin(BaseUserAdmin):
         if not request.user.is_superuser:
             # If the user doesn't have permission to change the model,
             # show a read-only fieldset
-            return ((None, {"fields": []}),)
+            return self.analyst_fieldsets
 
         # If the user has permission to change the model, show all fields
         return super().get_fieldsets(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ()  # No read-only fields for superusers
+        elif request.user.is_staff:
+            return self.analyst_readonly_fields  # Read-only fields for staff
+        return ()  # No read-only fields for other users
 
 
 class HostIPInline(admin.StackedInline):
