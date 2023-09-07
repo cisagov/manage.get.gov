@@ -664,8 +664,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # about your organization page if it was successful.
         self.assertEqual(contact_result.status_code, 302)
         self.assertEqual(
-            contact_result["Location"],
-            "/register/about_your_organization/"
+            contact_result["Location"], "/register/about_your_organization/"
         )
 
     def test_application_about_your_organization_special(self):

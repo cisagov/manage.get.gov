@@ -322,9 +322,7 @@ class AboutYourOrganizationForm(RegistrarForm):
         ],
         # TODO-446: Confirm if err msg wording is ok, previously
         # TODO-446: "Enter the type of work your organization does."
-        error_messages={
-            "required": ("Enter the information about your organization.")
-        },
+        error_messages={"required": ("Enter the information about your organization.")},
     )
 
 
