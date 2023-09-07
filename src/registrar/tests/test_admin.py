@@ -689,6 +689,7 @@ class MyUserAdminTest(TestCase):
             "last_name",
             "is_staff",
             "is_superuser",
+            "status",
         )
 
         self.assertEqual(list_display, expected_list_display)
@@ -705,7 +706,12 @@ class MyUserAdminTest(TestCase):
         request = self.client.request().wsgi_request
         request.user = create_user()
         fieldsets = self.admin.get_fieldsets(request)
-        expected_fieldsets = ((None, {"fields": []}),)
+        expected_fieldsets = (
+            (None, {"fields": ("password", "status")}),
+            ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+            ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser")}),
+            ("Important dates", {"fields": ("last_login", "date_joined")}),
+        )
         self.assertEqual(fieldsets, expected_fieldsets)
 
     def tearDown(self):
