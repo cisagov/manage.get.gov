@@ -175,14 +175,16 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        PLACE_HOLD = "_place_client_hold"
-        REMOVE_HOLD = "_remove_client_hold"
-        EDIT_DOMAIN = "_edit_domain"
-        if PLACE_HOLD in request.POST:
+        ACTION_BUTTONS = {
+            "PLACE_HOLD": "_place_client_hold",
+            "REMOVE_HOLD": "_remove_client_hold",
+            "EDIT_DOMAIN": "_edit_domain",
+        }
+        if ACTION_BUTTONS["PLACE_HOLD"] in request.POST:
             return self.do_place_client_hold(request, obj)
-        elif REMOVE_HOLD in request.POST:
+        elif ACTION_BUTTONS["REMOVE_HOLD"] in request.POST:
             return self.do_remove_client_hold(request, obj)
-        elif EDIT_DOMAIN in request.POST:
+        elif ACTION_BUTTONS["EDIT_DOMAIN"] in request.POST:
             return self.do_edit_domain(request, obj)
         return super().response_change(request, obj)
 
