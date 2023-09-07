@@ -41,6 +41,7 @@ class TestDomainAdmin(TestCase):
         self.factory = RequestFactory()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
         self.staffuser = create_user()
 
     def test_place_and_remove_hold(self):
@@ -79,6 +80,10 @@ class TestDomainAdmin(TestCase):
         self.assertContains(response, domain.name)
         self.assertContains(response, "Place hold")
         self.assertNotContains(response, "Remove hold")
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        User.objects.all().delete()
 
 
 class TestDomainApplicationAdmin(TestCase):

@@ -178,38 +178,44 @@ class DomainAdmin(ListHeaderAdmin):
         PLACE_HOLD = "_place_client_hold"
         REMOVE_HOLD = "_remove_client_hold"
         if PLACE_HOLD in request.POST:
-            try:
-                obj.place_client_hold()
-                obj.save()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    (
-                        "%s is in client hold. This domain is no longer accessible on"
-                        " the public internet."
-                    )
-                    % obj.name,
-                )
-            return HttpResponseRedirect(".")
+            return self.do_place_client_hold(request, obj)
         elif REMOVE_HOLD in request.POST:
-            try:
-                obj.remove_client_hold()
-                obj.save()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    (
-                        "%s is ready. This domain is accessible on the public "
-                        "internet."
-                    )
-                    % obj.name,
-                )
-            return HttpResponseRedirect(".")
+            return self.do_remove_client_hold(request, obj)
         return super().response_change(request, obj)
+
+    def do_place_client_hold(self, request, obj):
+        try:
+            obj.place_client_hold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                (
+                    "%s is in client hold. This domain is no longer accessible on"
+                    " the public internet."
+                )
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_remove_client_hold(self, request, obj):
+        try:
+            obj.remove_client_hold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                (
+                    "%s is ready. This domain is accessible on the public "
+                    "internet."
+                )
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
 
     def has_change_permission(self, request, obj=None):
         # Fixes a bug wherein users which are only is_staff

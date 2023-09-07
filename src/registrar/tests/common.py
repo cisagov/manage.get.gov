@@ -434,6 +434,7 @@ def create_user():
     )
     staffuser.is_staff = True
     staffuser.save()
+    return staffuser
 
 
 def create_ready_domain():
