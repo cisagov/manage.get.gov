@@ -151,7 +151,8 @@ class TestFormValidation(TestCase):
         """Response must be less than 1000 characters."""
         form = AboutYourOrganizationForm(
             data={
-                "about_your_organization": "Bacon ipsum dolor amet fatback strip steak pastrami"
+                "about_your_organization": "Bacon ipsum dolor amet fatback"
+                "strip steak pastrami"
                 "shankle, drumstick doner chicken landjaeger turkey andouille."
                 "Buffalo biltong chuck pork chop tongue bresaola turkey. Doner"
                 "ground round strip steak, jowl tail chuck ribeye bacon"
