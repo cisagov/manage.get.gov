@@ -212,10 +212,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                (
-                    "%s is ready. This domain is accessible on the public "
-                    "internet."
-                )
+                ("%s is ready. This domain is accessible on the public internet.")
                 % obj.name,
             )
         return HttpResponseRedirect(".")
