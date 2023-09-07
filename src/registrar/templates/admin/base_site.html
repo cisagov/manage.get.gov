@@ -2,6 +2,24 @@
 {% load static %}
 {% load i18n %}
 
+{% block extrahead %}
+  <link rel="icon" type="image/png" sizes="32x32" 
+  href="{% static 'img/registrar/favicons/favicon-32.png' %}"
+  >
+  <link rel="icon" type="image/png" sizes="192x192" 
+  href="{% static 'img/registrar/favicons/favicon-192.png' %}"
+  >
+  <link rel="icon" type="image/svg+xml" 
+  href="{% static 'img/registrar/favicons/favicon.svg' %}"
+  >
+  <link rel="shortcut icon" type="image/x-icon"
+  href="{% static 'img/registrar/favicons/favicon.ico' %}"
+  >
+  <link rel="apple-touch-icon" size="180x180" 
+  href="{% static 'img/registrar/favicons/favicon-180.png' %}"
+  >
+{% endblock %}
+
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block extrastyle %}{{ block.super }}

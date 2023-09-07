@@ -4,11 +4,13 @@
   {% for app in app_list %}
     <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
       <table>
+        {# .gov override: remove link #}
         <caption>
-          <a href="{{ app.app_url }}" class="section" title="{% blocktranslate with name=app.name %}Models in the {{ name }} application{% endblocktranslate %}">{{ app.name }}</a>
+          <span class="section">{{ app.name }}</span>
         </caption>
+        {# end .gov override #}
 
-        {# .gov override #}
+        {# .gov override: add headers #}
         <thead>
           <tr>
             <th scope="col">Model</th>

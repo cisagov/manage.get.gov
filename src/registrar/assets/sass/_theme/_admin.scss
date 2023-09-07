@@ -140,7 +140,7 @@ h1, h2, h3 {
     font-weight: font-weight('bold');
 }
 
-table > caption > a {
+table > caption > span {
     font-weight: font-weight('bold');
     text-transform: none;
 }
@@ -158,8 +158,10 @@ table > caption > a {
     padding-top: 20px;
 }
 
-// 'Delete button' layout bug
-.submit-row a.deletelink {
+// Fix django admin button height bugs
+.submit-row a.deletelink,
+.delete-confirmation form .cancel-link,
+.submit-row a.closelink {
     height: auto!important;
 }
 

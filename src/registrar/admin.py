@@ -6,8 +6,19 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
+from auditlog.models import LogEntry # type: ignore
+from auditlog.admin import LogEntryAdmin # type: ignore
+
 
 logger = logging.getLogger(__name__)
+
+class CustomLogEntryAdmin(LogEntryAdmin):
+    # Overwrite the generated LogEntry admin class
+    
+    search_help_text = "Search by resource, changed field, or user."
+    
+    change_form_template = 'admin/change_form_no_submit.html'
+    add_form_template = 'admin/change_form_no_submit.html'
 
 
 class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
@@ -400,6 +411,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
+admin.site.unregister(LogEntry)  # Unregister the default registration
+admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
 admin.site.register(models.UserDomainRole, AuditedAdmin)
 admin.site.register(models.Contact, ContactAdmin)
