@@ -198,9 +198,7 @@ class DomainAdmin(ListHeaderAdmin):
     ]
 
     def organization_type(self, obj):
-        return (
-            obj.domain_info.organization_type
-        )
+        return obj.domain_info.organization_type
 
     # Filters
     list_filter = ["domain_info__organization_type"]
