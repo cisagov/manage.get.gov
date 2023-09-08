@@ -131,7 +131,7 @@ class UserFixture:
         {
             "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
             "first_name": "Nicolle-Analyst",
-            "last_name": "LeClair",
+            "last_name": "LeClair-Analyst",
             "email": "nicolle.leclair@ecstech.com",
         },
     ]
