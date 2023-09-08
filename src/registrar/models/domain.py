@@ -11,7 +11,7 @@ from epplibwrapper import (
     commands,
     common as epp,
     RegistryError,
-    ErrorCode,
+    ErrorCode
 )
 
 from .utility.domain_field import DomainField
@@ -251,8 +251,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @Cache
     def registrant_contact(self) -> PublicContact:
-        """Get or set the registrant for this domain."""
-        raise NotImplementedError()
+        registrant = PublicContact.ContactTypeChoices.REGISTRANT
+        return self.generic_contact_getter(registrant)
 
     @registrant_contact.setter  # type: ignore
     def registrant_contact(self, contact: PublicContact):
@@ -263,7 +263,8 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def administrative_contact(self) -> PublicContact:
         """Get or set the admin contact for this domain."""
-        raise NotImplementedError()
+        admin = PublicContact.ContactTypeChoices.ADMINISTRATIVE
+        return self.generic_contact_getter(admin)
 
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
@@ -277,10 +278,8 @@ class Domain(TimeStampedModel, DomainHelper):
     def security_contact(self) -> PublicContact:
         """Get or set the security contact for this domain."""
         # TODO: replace this with a real implementation
-        contact = PublicContact.get_default_security()
-        contact.domain = self
-        contact.email = "mayor@igorville.gov"
-        return contact
+        security = PublicContact.ContactTypeChoices.SECURITY
+        return self.generic_contact_getter(security)
 
     @security_contact.setter  # type: ignore
     def security_contact(self, contact: PublicContact):
@@ -290,7 +289,8 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def technical_contact(self) -> PublicContact:
         """Get or set the tech contact for this domain."""
-        raise NotImplementedError()
+        tech = PublicContact.ContactTypeChoices.TECHNICAL
+        return self.generic_contact_getter(tech)
 
     @technical_contact.setter  # type: ignore
     def technical_contact(self, contact: PublicContact):
@@ -341,6 +341,218 @@ class Domain(TimeStampedModel, DomainHelper):
     def isActive(self):
         return self.state == Domain.State.CREATED
 
+    # Q: I don't like this function name much,
+    # what would be better here?
+    def map_DomainContact_to_PublicContact(self, contact: epp.DomainContact, only_map_domain_contact = False):
+        """Maps the Epps DomainContact Object to a PublicContact object
+        
+        contact -> DomainContact: the returned contact for InfoDomain
+
+        only_map_domain_contact -> bool: DomainContact doesn't give enough information on
+        its own to fully qualify PublicContact, but if you only want the contact_type
+        and registry_id fields, then set this to True.
+        """
+        if(contact is None or contact == {}):
+            raise ValueError("Contact cannot be empty or none")
+        
+        if(contact.contact is None or contact.contact == ""):
+            raise ValueError("No contact id was provided")
+        
+        if(contact.type is None or contact.type == ""):
+            raise ValueError("no contact_type was provided")
+
+        if(contact.type not in PublicContact.ContactTypeChoice.values()):
+            raise ValueError(f"Invalid contact_type of '{contact.type}' for object {contact}. Must exist within PublicContact.ContactTypeChoice")
+        
+        mapped_contact: PublicContact = PublicContact(
+            # todo - check contact is valid type
+            domain=self,
+            contact_type=contact.type,
+            registry_id=contact.contact
+        )
+
+        if only_map_domain_contact:
+            return mapped_contact
+        
+        extra_contact_info: epp.InfoContactResultData = self._request_contact_info(mapped_contact)
+        
+        # For readability
+        return self.map_InfoContactResultData_to_PublicContact(extra_contact_info)
+    
+    def map_InfoContactResultData_to_PublicContact(self, contact):
+        """Maps the Epps InfoContactResultData Object to a PublicContact object"""
+        if(contact is None or contact == {}):
+            raise ValueError("Contact cannot be empty or none")
+        
+        if(contact.id is None or contact.id == ""):
+            raise ValueError("No contact id was provided")
+        
+        if(contact.type is None or contact.type == ""):
+            raise ValueError("no contact_type was provided")
+
+        if(contact.type not in PublicContact.ContactTypeChoice.values()):
+            raise ValueError(f"Invalid contact_type of '{contact.type}' for object {contact}. Must exist within PublicContact.ContactTypeChoice")
+    
+        postal_info = contact.postal_info
+        return PublicContact(
+            domain = self,
+            contact_type=contact.type,
+            registry_id=contact.id,
+            email=contact.email,
+            voice=contact.voice,
+            fax=contact.fax,
+            pw=contact.auth_info.pw or None,
+            name = postal_info.name or None,
+            org = postal_info.org or None,
+            # TODO - street is a Sequence[str]
+            #street = postal_info.street,
+            city = postal_info.addr.city or None,
+            pc = postal_info.addr.pc or None,
+            cc = postal_info.addr.cc or None,
+            sp = postal_info.addr.sp or None
+        )
+
+    def map_to_public_contact(self, contact):
+        """ Maps epp contact types to PublicContact. Can handle two types:
+        epp.DomainContact or epp.InfoContactResultData"""
+        if(isinstance(contact, epp.InfoContactResultData)):
+            return self.map_InfoContactResultData_to_PublicContact(contact)
+        # If contact is of type epp.DomainContact, 
+        # grab as much data as possible.
+        elif(isinstance(contact, epp.DomainContact)):
+            # Runs command.InfoDomain, as epp.DomainContact
+            # on its own doesn't return enough data.
+            try:
+                return self.map_DomainContact_to_PublicContact(contact)
+            except RegistryError as error:
+                logger.warning(f"Contact {contact} does not exist on the registry")
+                logger.warning(error)
+                return self.map_DomainContact_to_PublicContact(contact, only_map_domain_contact=True)
+        else:
+            raise ValueError("Contact is not of the correct type. Must be epp.DomainContact or epp.InfoContactResultData")
+        
+    
+    def _request_contact_info(self, contact: PublicContact):
+        try:
+            req = commands.InfoContact(id=contact.registry_id)
+            return registry.send(req, cleaned=True).res_data[0]
+        except RegistryError as error:
+            logger.error(
+                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",
+                contact.registry_id,
+                contact.contact_type,
+                error.code,
+                error,
+            )
+            raise error
+        
+    def generic_contact_getter(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact:
+        """ Abstracts the cache logic on EppLib contact items 
+        
+        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
+        for instance: PublicContact.ContactTypeChoices.SECURITY.
+
+        If you wanted to setup getter logic for Security, you would call: 
+        cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
+        or cache_contact_helper("security")
+        """
+        try:
+            contacts = self._get_property("contacts")
+        except KeyError as error:
+            logger.error("Contact does not exist")
+            raise error
+        else:
+            cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
+            if(cached_contact is None):
+                raise ValueError("No contact was found in cache or the registry")
+            # TODO - below line never executes with current logic
+            return cached_contact
+    
+    def get_default_security_contact(self):
+        """ Gets the default security contact. """
+        contact = PublicContact.get_default_security()
+        contact.domain = self
+        # if you invert the logic in get_contact_default
+        # such that the match statement calls from PublicContact,
+        # you can reduce these to one liners: 
+        # self.get_contact_default(PublicContact.ContactTypeChoices.SECURITY)
+        return contact
+    
+    def get_default_administrative_contact(self):
+        """ Gets the default administrative contact. """
+        contact = PublicContact.get_default_administrative()
+        contact.domain = self
+        return contact
+    
+    def get_default_technical_contact(self):
+        """ Gets the default administrative contact. """
+        contact = PublicContact.get_default_technical()
+        contact.domain = self
+        return contact
+    
+    def get_default_registrant_contact(self):
+        """ Gets the default administrative contact. """
+        contact = PublicContact.get_default_registrant()
+        contact.domain = self
+        return contact
+
+    def get_contact_default(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact:
+        """ Returns a default contact based off the contact_type_choice.
+        Used 
+
+        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
+        for instance: PublicContact.ContactTypeChoices.SECURITY.
+
+        If you wanted to get the default contact for Security, you would call: 
+        get_contact_default(PublicContact.ContactTypeChoices.SECURITY),
+        or get_contact_default("security")
+        """
+        choices = PublicContact.ContactTypeChoices
+        contact: PublicContact
+        match(contact_type_choice):
+            case choices.ADMINISTRATIVE:
+                contact = self.get_default_administrative_contact()
+            case choices.SECURITY: 
+                contact = self.get_default_security_contact()
+            case choices.TECHNICAL:
+                contact = self.get_default_technical_contact()
+            case choices.REGISTRANT:
+                contact = self.get_default_registrant_contact()
+        return contact
+
+    def grab_contact_in_keys(self, contacts, check_type, get_from_registry=True):
+        """ Grabs a contact object.
+        Returns None if nothing is found.
+        check_type compares contact["type"] == check_type.
+
+        For example, check_type = 'security'
+        
+        get_from_registry --> bool which specifies if
+        a InfoContact command should be send to the
+        registry when grabbing the object.
+        If it is set to false, we just grab from cache.
+        Otherwise, we grab from  the registry.
+        """
+        for contact in contacts:
+            if (
+                isinstance(contact, dict)
+                and "type" in contact.keys()
+                and "contact" in contact.keys()
+                and contact["type"] == check_type
+            ):
+                ##TODO - Test / Finish this implementation
+                if(get_from_registry):
+                    request = commands.InfoContact(id=contact.get("contact"))
+                    # TODO - Additional error checking
+                    # Does this have performance implications?
+                    # Expecting/sending a response for every object
+                    # seems potentially taxing
+                    contact_info = registry.send(request, cleaned=True)
+                    logger.debug(f"grab_contact_in_keys -> rest data is {contact_info.res_data[0]}")
+                    return self.map_to_public_contact(contact_info.res_data[0])
+
+                return contact["contact"]
+    
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
 
