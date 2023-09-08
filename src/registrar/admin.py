@@ -8,14 +8,33 @@ from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 from auditlog.models import LogEntry # type: ignore
 from auditlog.admin import LogEntryAdmin # type: ignore
-
+from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 
 class CustomLogEntryAdmin(LogEntryAdmin):
     # Overwrite the generated LogEntry admin class
+    # list_select_related = ["content_type", "actor"]
+    list_display = [
+        "created",
+        "custom_resource_url",
+        "action",
+        "msg_short",
+        "user_url",
+    ]
+    # search_fields = [
+    #     "content_type",
+    #     "object_repr",
+    #     "changes",
+    # ]
     
-    search_help_text = "Search by resource, changed field, or user."
+    def custom_resource_url(self, obj):
+        # Replace 'my_field' with the name of your field
+        return f"{obj.content_type} - {obj.object_repr}"  # Return the field value without a link
+    
+    custom_resource_url.short_description = 'Resource'
+    
+    search_help_text = "Search by resource, changes, or user."
     
     change_form_template = 'admin/change_form_no_submit.html'
     add_form_template = 'admin/change_form_no_submit.html'
