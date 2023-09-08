@@ -405,7 +405,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
                     messages.error(
                         request,
-                        "This action is not permitted, the domain "
+                        "This action is not permitted. The domain "
                         + "is already active.",
                     )
 

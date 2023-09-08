@@ -469,7 +469,7 @@ class TestDomainApplicationAdmin(TestCase):
             # Assert that the error message was called with the correct argument
             messages.error.assert_called_once_with(
                 request,
-                "This action is not permitted, the domain " + "is already active.",
+                "This action is not permitted. The domain " + "is already active.",
             )
 
     def test_side_effects_when_saving_approved_to_rejected(self):
@@ -545,7 +545,7 @@ class TestDomainApplicationAdmin(TestCase):
             # Assert that the error message was called with the correct argument
             messages.error.assert_called_once_with(
                 request,
-                "This action is not permitted, the domain " + "is already active.",
+                "This action is not permitted. The domain " + "is already active.",
             )
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
