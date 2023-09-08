@@ -29,7 +29,7 @@ __all__ = [
     "PublicContact",
     "User",
     "Website",
-    "TransitionDomain"
+    "TransitionDomain",
 ]
 
 auditlog.register(Contact)

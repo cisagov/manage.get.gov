@@ -2,8 +2,11 @@ from django.db import models
 
 from .utility.time_stamped_model import TimeStampedModel
 
+
 class TransitionDomain(TimeStampedModel):
-    """Transition Domain model stores information about the state of a domain upon transition between registry providers"""
+    """Transition Domain model stores information about the
+    state of a domain upon transition between registry
+    providers"""
 
     class StatusChoices(models.TextChoices):
         CREATED = "created", "Created"
@@ -30,13 +33,13 @@ class TransitionDomain(TimeStampedModel):
     )
     ignoreServerHold = models.BooleanField(
         null=False,
-        default=False, #--COMMENT: this was not specified in the ticket #921
+        default=False,
         verbose_name="ignore Server Hold",
         help_text="specifies whether to ignore server hold",
     )
     email_sent = models.BooleanField(
         null=False,
-        default=False, 
+        default=False,
         verbose_name="email sent",
         help_text="indicates whether email was sent",
     )
