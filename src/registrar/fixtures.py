@@ -77,6 +77,11 @@ class UserFixture:
             "first_name": "David",
             "last_name": "Kennedy",
         },
+        {
+            "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
+            "first_name": "Nicolle",
+            "last_name": "LeClair",
+        },
     ]
 
     STAFF = [
@@ -122,6 +127,12 @@ class UserFixture:
             "first_name": "Gaby-Analyst",
             "last_name": "DiSarli-Analyst",
             "email": "gaby@truss.works",
+        },
+        {
+            "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
+            "first_name": "Nicolle",
+            "last_name": "LeClair",
+            "email": "nicolle.leclair@ecstech.com", 
         },
     ]
 
