@@ -147,9 +147,9 @@ class DomainAdmin(ListHeaderAdmin):
     def response_change(self, request, obj):
         print(request.POST)
         ACTION_BUTTON = "_place_client_hold"
-        GET_SECURITY_EMAIL="_get_security_email"
-        SET_SECURITY_CONTACT="_set_security_contact"
-        MAKE_DOMAIN="_make_domain_in_registry"
+        GET_SECURITY_EMAIL = "_get_security_email"
+        SET_SECURITY_CONTACT = "_set_security_contact"
+        MAKE_DOMAIN = "_make_domain_in_registry"
         logger.info("in response")
         if ACTION_BUTTON in request.POST:
             logger.info("in action button")
@@ -168,40 +168,32 @@ class DomainAdmin(ListHeaderAdmin):
                     % obj.name,
                 )
             return HttpResponseRedirect(".")
-   
+
         if GET_SECURITY_EMAIL in request.POST:
             try:
-               security_email=obj.get_security_email()
-               
-               
+                security_email = obj.get_security_email()
+
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
-                self.message_user(request,
-                    (
-                        "The security email is %"
-                        ". Thanks!"
-                    )
-                    % security_email,
+                self.message_user(
+                    request,
+                    ("The security email is %" ". Thanks!") % security_email,
                 )
             return HttpResponseRedirect(".")
 
-           
         if SET_SECURITY_CONTACT in request.POST:
             try:
-               security_contact = obj.get_default_security_contact()
-               security_contact.email="ab@test.gov"
-               
-               obj.security_contact=security_contact
+                security_contact = obj.get_default_security_contact()
+                security_contact.email = "ab@test.gov"
+
+                obj.security_contact = security_contact
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
-                self.message_user(request,
-                    (
-                        "The security email is %"
-                        ". Thanks!"
-                    )
-                    % security_email,
+                self.message_user(
+                    request,
+                    ("The security email is %" ". Thanks!") % security_email,
                 )
         print("above make domain")
 
@@ -213,15 +205,13 @@ class DomainAdmin(ListHeaderAdmin):
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
-                self.message_user(request,
-                    (
-                        "Domain created with %"
-                        ". Thanks!"
-                    )
-                    % obj.name,
+                self.message_user(
+                    request,
+                    ("Domain created with %" ". Thanks!") % obj.name,
                 )
             return HttpResponseRedirect(".")
         return super().response_change(request, obj)
+
     # def response_change(self, request, obj):
     #     ACTION_BUTTON = "_get_security_email"
 
