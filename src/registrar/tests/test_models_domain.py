@@ -31,7 +31,7 @@ class MockEppLib(TestCase):
     mockDataInfoDomain = fakedEppObject(
         "fakepw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
-        contacts=["123"],
+        contacts=[common.DomainContact(contact="123", type="security")],
         hosts=["fake.host.com"],
     )
     infoDomainNoContact = fakedEppObject(
@@ -72,8 +72,10 @@ class MockEppLib(TestCase):
         self.mockSendPatch = patch("registrar.models.domain.registry.send")
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
-        
-    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
+
+    def _convertPublicContactToEpp(
+        self, contact: PublicContact, disclose_email=False, createContact=True
+    ):
         DF = common.DiscloseField
         fields = {DF.FAX, DF.VOICE, DF.ADDR}
 
@@ -120,12 +122,12 @@ class MockEppLib(TestCase):
             )
         else:
             return commands.UpdateContact(
-            id=contact.registry_id,
-            postal_info=pi,
-            email=contact.email,
-            voice=contact.voice,
-            fax=contact.fax,
-        )
+                id=contact.registry_id,
+                postal_info=pi,
+                email=contact.email,
+                voice=contact.voice,
+                fax=contact.fax,
+            )
 
     def tearDown(self):
         self.mockSendPatch.stop()
@@ -174,6 +176,7 @@ class TestDomainCache(MockEppLib):
         # send was only called once & not on the second getter call
         self.mockedSendFunction.assert_called_once()
 
+    # @skip("BROKEN by newest changes-fix in getter ticket")
     def test_cache_nested_elements(self):
         """Cache works correctly with the nested objects cache and hosts"""
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
@@ -276,8 +279,8 @@ class TestDomainCreation(TestCase):
         self.assertIn("ok", domain.status)
 
     def tearDown(self) -> None:
-        Domain.objects.delete()
-        # User.objects.delete()
+        Domain.objects.filter(name="igorville.gov").delete()
+        Domain.objects.all().delete()
 
 
 class TestRegistrantContacts(MockEppLib):
@@ -484,9 +487,11 @@ class TestRegistrantContacts(MockEppLib):
         new_contact = self.domain.get_default_security_contact()
         new_contact.registry_id = "fail"
         new_contact.email = ""
-        self.domain.security_contact=new_contact
+        self.domain.security_contact = new_contact
 
-        print("old contact %s  email is %s" % (str(old_contact), str(old_contact.email)))
+        print(
+            "old contact %s  email is %s" % (str(old_contact), str(old_contact.email))
+        )
         print("new contact %s " % new_contact)
         firstCreateContactCall = self._convertPublicContactToEpp(
             old_contact, disclose_email=True
@@ -497,9 +502,9 @@ class TestRegistrantContacts(MockEppLib):
                 common.DomainContact(contact=old_contact.registry_id, type="security")
             ],
         )
-        print( PublicContact.objects.filter(domain=self.domain))
+        print(PublicContact.objects.filter(domain=self.domain))
         print("just printed the objects for public contact!!")
-    
+
         assert (
             PublicContact.objects.filter(domain=self.domain).get().email
             == PublicContact.get_default_security().email
@@ -550,7 +555,6 @@ class TestRegistrantContacts(MockEppLib):
         print(expected_calls)
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
 
-
     def test_updates_security_email(self):
         """
         Scenario: Registrant replaces one valid security contact email with another
@@ -560,13 +564,13 @@ class TestRegistrantContacts(MockEppLib):
             Then Domain sends `commands.UpdateContact` to the registry
         """
         security_contact = self.domain.get_default_security_contact()
-        security_contact.email="originalUserEmail@gmail.com"
+        security_contact.email = "originalUserEmail@gmail.com"
         security_contact.registry_id = "fail"
         security_contact.save()
         expectedCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
-        print(expectedCreateCommand)
+
         expectedUpdateDomain = commands.UpdateDomain(
             name=self.domain.name,
             add=[
@@ -575,24 +579,28 @@ class TestRegistrantContacts(MockEppLib):
                 )
             ],
         )
-        security_contact.email="changedEmail@email.com"
+        security_contact.email = "changedEmail@email.com"
+        print("\n\n\n***********\n\n")
+        security_contact.save()
         expectedSecondCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
-        updateContact=self._convertPublicContactToEpp(security_contact,disclose_email=True,createContact=False)
+        updateContact = self._convertPublicContactToEpp(
+            security_contact, disclose_email=True, createContact=False
+        )
+        print("SECOND EXPECTED CREATE")
         print(expectedSecondCreateCommand)
-       
+
         print(self.mockedSendFunction.call_args_list)
 
         expected_calls = [
             call(expectedCreateCommand, cleaned=True),
             call(expectedUpdateDomain, cleaned=True),
-            call(expectedSecondCreateCommand,cleaned=True),
+            call(expectedSecondCreateCommand, cleaned=True),
             call(updateContact, cleaned=True),
         ]
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         assert PublicContact.objects.filter(domain=self.domain).count() == 1
-        
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):

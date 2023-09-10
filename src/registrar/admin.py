@@ -146,21 +146,18 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        print(request.POST)
         ACTION_BUTTON = "_place_client_hold"
         GET_SECURITY_EMAIL = "_get_security_email"
         SET_SECURITY_CONTACT = "_set_security_contact"
         MAKE_DOMAIN = "_make_domain_in_registry"
         MAKE_NAMESERVERS = "_make_nameservers"
-        GET_NAMESERVERS="_get_nameservers"
+        GET_NAMESERVERS = "_get_nameservers"
         GET_STATUS = "_get_status"
-        SET_CLIENT_HOLD="_set_client_hold"
-        REMOVE_CLIENT_HOLD="_rem_client_hold"
-        DELETE_DOMAIN="_delete_domain"
-        logger.info("in response")
+        SET_CLIENT_HOLD = "_set_client_hold"
+        REMOVE_CLIENT_HOLD = "_rem_client_hold"
+        DELETE_DOMAIN = "_delete_domain"
+
         if ACTION_BUTTON in request.POST:
-            logger.info("in action button")
-            print("in action button")
             try:
                 obj.place_client_hold()
             except Exception as err:
@@ -178,13 +175,17 @@ class DomainAdmin(ListHeaderAdmin):
 
         if GET_SECURITY_EMAIL in request.POST:
             try:
-                contacts=obj._get_property("contacts")
-                email=None
+                contacts = obj._get_property("contacts")
+                email = None
                 for contact in contacts:
-                    if ["type","email"] in contact.keys() and contact["type"]=="security":
-                        email=contact["email"]
+                    if ["type", "email"] in contact.keys() and contact[
+                        "type"
+                    ] == "security":
+                        email = contact["email"]
                 if email is None:
-                    raise ValueError("Security contact type is not available on this domain")
+                    raise ValueError(
+                        "Security contact type is not available on this domain"
+                    )
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
@@ -196,13 +197,17 @@ class DomainAdmin(ListHeaderAdmin):
 
         if SET_SECURITY_CONTACT in request.POST:
             try:
-                fake_email="manuallyEnteredEmail@test.gov"
-                if PublicContact.objects.filter(domain=obj, contact_type="security").exists():
-                    sec_contact=PublicContact.objects.filter(domain=obj, contact_type="security").get()
+                fake_email = "manuallyEnteredEmail@test.gov"
+                if PublicContact.objects.filter(
+                    domain=obj, contact_type="security"
+                ).exists():
+                    sec_contact = PublicContact.objects.filter(
+                        domain=obj, contact_type="security"
+                    ).get()
                 else:
-                    sec_contact=obj.get_default_security_contact()
-                
-                sec_contact.email=fake_email
+                    sec_contact = obj.get_default_security_contact()
+
+                sec_contact.email = fake_email
                 sec_contact.save()
 
             except Exception as err:
@@ -212,11 +217,8 @@ class DomainAdmin(ListHeaderAdmin):
                     request,
                     ("The security email is %" ". Thanks!") % fake_email,
                 )
-        print("above make domain")
 
         if MAKE_DOMAIN in request.POST:
-            print("in make domain")
-
             try:
                 obj._get_or_create_domain()
             except Exception as err:
@@ -228,14 +230,12 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
 
-        #make nameservers here
-        
-        if MAKE_NAMESERVERS in request.POST:
-            print("in make domain")
+        # make nameservers here
 
+        if MAKE_NAMESERVERS in request.POST:
             try:
-                hosts=[("ns1.example.com",None),("ns2.example.com",None) ]
-                obj.nameservers=hosts
+                hosts = [("ns1.example.com", None), ("ns2.example.com", None)]
+                obj.nameservers = hosts
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
@@ -245,10 +245,8 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
         if GET_NAMESERVERS in request.POST:
-            print("in make domain")
-
             try:
-                nameservers=obj.nameservers
+                nameservers = obj.nameservers
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
@@ -257,12 +255,10 @@ class DomainAdmin(ListHeaderAdmin):
                     ("Nameservers are %s" ". Thanks!") % nameservers,
                 )
             return HttpResponseRedirect(".")
-        
-        if GET_STATUS in request.POST:
-            print("in make domain")
 
+        if GET_STATUS in request.POST:
             try:
-                statuses=obj.statuses
+                statuses = obj.statuses
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
@@ -271,10 +267,8 @@ class DomainAdmin(ListHeaderAdmin):
                     ("Domain statuses are %s" ". Thanks!") % statuses,
                 )
             return HttpResponseRedirect(".")
-        
-        if SET_CLIENT_HOLD in request.POST:
-            print("in make domain")
 
+        if SET_CLIENT_HOLD in request.POST:
             try:
                 obj.clientHold()
                 obj.save()
@@ -286,10 +280,8 @@ class DomainAdmin(ListHeaderAdmin):
                     ("Domain %s is now in clientHold") % obj.name,
                 )
             return HttpResponseRedirect(".")
-        
-        if REMOVE_CLIENT_HOLD in request.POST:
-            print("in make domain")
 
+        if REMOVE_CLIENT_HOLD in request.POST:
             try:
                 obj.revertClientHold()
                 obj.save()
@@ -302,8 +294,6 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
         if DELETE_DOMAIN in request.POST:
-            print("in make domain")
-
             try:
                 obj.deleted()
                 obj.save()
@@ -316,7 +306,6 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
         return super().response_change(request, obj)
-
 
 
 class ContactAdmin(ListHeaderAdmin):

@@ -227,10 +227,10 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         try:
             hosts = self._get_property("hosts")
-        except KeyError as err:
+        except Exception as err:
             logger.info("Domain is missing nameservers")
             return None
-        
+
         hostList = []
         for host in hosts:
             logger.info(host)
@@ -260,10 +260,10 @@ class Domain(TimeStampedModel, DomainHelper):
         """Call _check_host first before using this function,
         This creates the host object in the registry
         doesn't add the created host to the domain
-        returns int response code"""
+        returns ErrorCode (int)"""
         logger.info("_create_host()->addresses is NONE")
-
-        if not addrs is None and addrs!=[]:
+        # TODO -      # [epp.Ip(addr="127.0.0.1"), epp.Ip(addr="0:0:0:0:0:0:0:1", ip="v6")]
+        if not addrs is None:
             logger.info("addresses is not None %s" % addrs)
             addresses = [epp.Ip(addr=addr) for addr in addrs]
             request = commands.CreateHost(name=host, addrs=addresses)
@@ -271,7 +271,7 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info("_create_host()-> address IS None")
 
             request = commands.CreateHost(name=host)
-        # [epp.Ip(addr="127.0.0.1"), epp.Ip(addr="0:0:0:0:0:0:0:1", ip="v6")]
+
         try:
             logger.info("_create_host()-> sending req as %s" % request)
             response = registry.send(request, cleaned=True)
@@ -287,7 +287,7 @@ class Domain(TimeStampedModel, DomainHelper):
         example: [(ns1.okay.gov, 127.0.0.1, others ips)]"""
         # TODO: call EPP to set this info.
         # if two nameservers change state to created, don't do it automatically
-        hostSuccessCount = 0
+
         if len(hosts) > 13:
             raise ValueError(
                 "Too many hosts provided, you may not have more than 13 nameservers."
@@ -303,10 +303,9 @@ class Domain(TimeStampedModel, DomainHelper):
             avail = self._check_host([host])
             if avail:
                 createdCode = self._create_host(host=host, addrs=addrs)
-                if createdCode == ErrorCode.OBJECT_EXISTS:
-                    hostSuccessCount += 1
-                    # update the object instead
-                elif createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
+
+                # update the domain obj
+                if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
                     # add host to domain
                     request = commands.UpdateDomain(
                         name=self.name, add=[epp.HostObjSet([host])]
@@ -314,16 +313,19 @@ class Domain(TimeStampedModel, DomainHelper):
 
                     try:
                         registry.send(request, cleaned=True)
-                        hostSuccessCount += 1
                     except RegistryError as e:
                         logger.error(
                             "Error adding nameserver, code was %s error was %s"
                             % (e.code, e)
                         )
 
-        if self.state == self.State.DNS_NEEDED and hostSuccessCount >= 2:
+        try:
             self.created()
             self.save()
+        except:
+            logger.info(
+                "nameserver setter checked for create state and it did not succeed"
+            )
         ##TODO - handle removed nameservers here will need to change the state go back to DNS_NEEDED
 
     @Cache
@@ -592,7 +594,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 # remove the old contact and add a new one
                 try:
                     self._update_domain_with_contact(contact=existing_contact, rem=True)
-                    print("deleting %s "%existing_contact)
+                    print("deleting %s " % existing_contact)
                     existing_contact.delete()
                     print("after deleting")
                     if isEmptySecurity:
@@ -633,6 +635,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 security_contact = self.get_default_security_contact()
                 security_contact.save()
         logger.info("done with contacts")
+
     @security_contact.setter  # type: ignore
     def security_contact(self, contact: PublicContact):
         """makes the contact in the registry,
@@ -677,26 +680,26 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("get_security_email-> getting the contact ")
         secContact = self.security_contact
         return secContact.email
-    
+
     def clientHoldStatus(self):
-        return epp.Status(state=self.Status.ON_HOLD, description="", lang="en") 
-    
+        return epp.Status(state=self.Status.ON_HOLD, description="", lang="en")
+
     def _place_client_hold(self):
         """This domain should not be active.
-        may raises RegistryError, should be caught or handled correctly by caller """
-        request=commands.UpdateDomain(name=self.name,add=[self.clientHoldStatus()])
+        may raises RegistryError, should be caught or handled correctly by caller"""
+        request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
         registry.send(request)
 
     def _remove_client_hold(self):
         """This domain is okay to be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
-        request=commands.UpdateDomain(name=self.name,rem=[self.clientHoldStatus() ])
+        request = commands.UpdateDomain(name=self.name, rem=[self.clientHoldStatus()])
         registry.send(request)
-    
+
     def _delete_domain(self):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
-        request=commands.DeleteDomain(name=self.name)
+        request = commands.DeleteDomain(name=self.name)
         registry.send(request)
 
     def __str__(self) -> str:
@@ -758,7 +761,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _get_or_create_domain(self):
         """Try to fetch info about this domain. Create it if it does not exist."""
         already_tried_to_create = False
-        exitEarly=False
+        exitEarly = False
         count = 0
         while not exitEarly and count < 3:
             try:
@@ -768,7 +771,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
                 req = commands.InfoDomain(name=self.name)
                 domainInfo = registry.send(req, cleaned=True).res_data[0]
-                exitEarly=True
+                exitEarly = True
                 return domainInfo
             except RegistryError as e:
                 count += 1
@@ -787,18 +790,19 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e)
                     logger.error(e.code)
                     raise e
-    def addRegistrant(self):
 
+    def addRegistrant(self):
         registrant = PublicContact.get_default_registrant()
         registrant.domain = self
         registrant.save()  ##calls the registrant_contact.setter
         logger.info("registrant is %s" % registrant)
         return registrant.registry_id
+
     @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
     def pendingCreate(self):
         logger.info("In make domain in registry ")
 
-        registrantID=self.addRegistrant()
+        registrantID = self.addRegistrant()
 
         # TODO-notes no chg item for registrant in the epplib should
 
@@ -856,7 +860,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("clientHold()-> inside clientHold")
         self._place_client_hold()
         # TODO -on the client hold ticket any additional error handling here
-    
+
     @transition(field="state", source=State.ON_HOLD, target=State.DNS_NEEDED)
     def revertClientHold(self):
         ##TODO - check to see if client hold is allowed should happen outside of this function
@@ -877,14 +881,18 @@ class Domain(TimeStampedModel, DomainHelper):
         target=State.READY,
     )
     def created(self):
+        nameserverList = self.nameservers
         logger.info("created()-> inside setting create")
+        if len(nameserverList) < 2 or len(nameserverList) > 13:
+            raise ValueError("Not ready to become created, cannot transition yet")
+        logger.info("able to transition to created state")
 
         # TODO - in nameservers ticket check if has everything for creation
-        #admin, tech and security
-        #2 or more (but less than 13) nameservers
-        #if any of the above is violated raise the user raise a human readable error
-        #not there is another ticket for error handling keep a todo here if 
-        #user friendly error portion is postponed
+        # admin, tech and security
+        # 2 or more (but less than 13) nameservers
+        # if any of the above is violated raise the user raise a human readable error
+        # not there is another ticket for error handling keep a todo here if
+        # user friendly error portion is postponed
 
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
@@ -1006,7 +1014,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _delete_host(self, host):
         raise NotImplementedError()
-    
+
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
@@ -1032,9 +1040,9 @@ class Domain(TimeStampedModel, DomainHelper):
             cleaned = {k: v for k, v in cache.items() if v is not ...}
             logger.info("_fetch_cache()-> cleaned is " + str(cleaned))
 
-            #statuses can just be a list no need to keep the epp object
+            # statuses can just be a list no need to keep the epp object
             if "statuses" in cleaned.keys():
-                cleaned["statuses"]=[status.state for status in cleaned["statuses"]]
+                cleaned["statuses"] = [status.state for status in cleaned["statuses"]]
             # get contact info, if there are any
             if (
                 # fetch_contacts and
@@ -1048,8 +1056,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     # just asked the registry for still exists --
                     # if not, that's a problem
 
-                    #TODO- discuss-should we check if contact is in public contacts
-                    #and add it if not- this is really to keep in mine the transisiton
+                    # TODO- discuss-should we check if contact is in public contacts
+                    # and add it if not- this is really to keep in mine the transisiton
                     req = commands.InfoContact(id=domainContact.contact)
                     data = registry.send(req, cleaned=True).res_data[0]
 
@@ -1059,7 +1067,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.info(data)
                     contact = {
                         "id": id,
-                        "type":domainContact.type,
+                        "type": domainContact.type,
                         "auth_info": getattr(data, "auth_info", ...),
                         "cr_date": getattr(data, "cr_date", ...),
                         "disclose": getattr(data, "disclose", ...),
@@ -1071,7 +1079,7 @@ class Domain(TimeStampedModel, DomainHelper):
                         "up_date": getattr(data, "up_date", ...),
                         "voice": getattr(data, "voice", ...),
                     }
-                    
+
                     cleaned["contacts"].append(
                         {k: v for k, v in contact.items() if v is not ...}
                     )
