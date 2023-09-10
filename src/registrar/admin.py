@@ -4,6 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
+from registrar.models.public_contact import PublicContact
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 
@@ -150,6 +151,12 @@ class DomainAdmin(ListHeaderAdmin):
         GET_SECURITY_EMAIL = "_get_security_email"
         SET_SECURITY_CONTACT = "_set_security_contact"
         MAKE_DOMAIN = "_make_domain_in_registry"
+        MAKE_NAMESERVERS = "_make_nameservers"
+        GET_NAMESERVERS="_get_nameservers"
+        GET_STATUS = "_get_status"
+        SET_CLIENT_HOLD="_set_client_hold"
+        REMOVE_CLIENT_HOLD="_rem_client_hold"
+        DELETE_DOMAIN="_delete_domain"
         logger.info("in response")
         if ACTION_BUTTON in request.POST:
             logger.info("in action button")
@@ -171,29 +178,39 @@ class DomainAdmin(ListHeaderAdmin):
 
         if GET_SECURITY_EMAIL in request.POST:
             try:
-                security_email = obj.get_security_email()
-
+                contacts=obj._get_property("contacts")
+                email=None
+                for contact in contacts:
+                    if ["type","email"] in contact.keys() and contact["type"]=="security":
+                        email=contact["email"]
+                if email is None:
+                    raise ValueError("Security contact type is not available on this domain")
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
                 self.message_user(
                     request,
-                    ("The security email is %" ". Thanks!") % security_email,
+                    ("The security email is %s" ". Thanks!") % email,
                 )
             return HttpResponseRedirect(".")
 
         if SET_SECURITY_CONTACT in request.POST:
             try:
-                security_contact = obj.get_default_security_contact()
-                security_contact.email = "ab@test.gov"
+                fake_email="manuallyEnteredEmail@test.gov"
+                if PublicContact.objects.filter(domain=obj, contact_type="security").exists():
+                    sec_contact=PublicContact.objects.filter(domain=obj, contact_type="security").get()
+                else:
+                    sec_contact=obj.get_default_security_contact()
+                
+                sec_contact.email=fake_email
+                sec_contact.save()
 
-                obj.security_contact = security_contact
             except Exception as err:
                 self.message_user(request, err, messages.ERROR)
             else:
                 self.message_user(
                     request,
-                    ("The security email is %" ". Thanks!") % security_email,
+                    ("The security email is %" ". Thanks!") % fake_email,
                 )
         print("above make domain")
 
@@ -207,31 +224,99 @@ class DomainAdmin(ListHeaderAdmin):
             else:
                 self.message_user(
                     request,
-                    ("Domain created with %" ". Thanks!") % obj.name,
+                    ("Domain created with %s" ". Thanks!") % obj.name,
+                )
+            return HttpResponseRedirect(".")
+
+        #make nameservers here
+        
+        if MAKE_NAMESERVERS in request.POST:
+            print("in make domain")
+
+            try:
+                hosts=[("ns1.example.com",None),("ns2.example.com",None) ]
+                obj.nameservers=hosts
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    ("Hosts set to be %s" ". Thanks!") % hosts,
+                )
+            return HttpResponseRedirect(".")
+        if GET_NAMESERVERS in request.POST:
+            print("in make domain")
+
+            try:
+                nameservers=obj.nameservers
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    ("Nameservers are %s" ". Thanks!") % nameservers,
+                )
+            return HttpResponseRedirect(".")
+        
+        if GET_STATUS in request.POST:
+            print("in make domain")
+
+            try:
+                statuses=obj.statuses
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    ("Domain statuses are %s" ". Thanks!") % statuses,
+                )
+            return HttpResponseRedirect(".")
+        
+        if SET_CLIENT_HOLD in request.POST:
+            print("in make domain")
+
+            try:
+                obj.clientHold()
+                obj.save()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    ("Domain %s is now in clientHold") % obj.name,
+                )
+            return HttpResponseRedirect(".")
+        
+        if REMOVE_CLIENT_HOLD in request.POST:
+            print("in make domain")
+
+            try:
+                obj.revertClientHold()
+                obj.save()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    ("Domain %s will now have client hold removed") % obj.name,
+                )
+            return HttpResponseRedirect(".")
+        if DELETE_DOMAIN in request.POST:
+            print("in make domain")
+
+            try:
+                obj.deleted()
+                obj.save()
+            except Exception as err:
+                self.message_user(request, err, messages.ERROR)
+            else:
+                self.message_user(
+                    request,
+                    ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
                 )
             return HttpResponseRedirect(".")
         return super().response_change(request, obj)
 
-    # def response_change(self, request, obj):
-    #     ACTION_BUTTON = "_get_security_email"
-
-    #     if ACTION_BUTTON in request.POST:
-    #         try:
-    #             obj.security
-    #         except Exception as err:
-    #             self.message_user(request, err, messages.ERROR)
-    #         else:
-    #             self.message_user(
-    #                 request,
-    #                 (
-    #                     "%s is in client hold. This domain is no longer accessible on"
-    #                     " the public internet."
-    #                 )
-    #                 % obj.name,
-    #             )
-    #         return HttpResponseRedirect(".")
-
-    #     return super().response_change(request, obj)
 
 
 class ContactAdmin(ListHeaderAdmin):

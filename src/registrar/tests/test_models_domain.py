@@ -63,7 +63,7 @@ class MockEppLib(TestCase):
             and self.mockedSendFunction.call_count == 3
         ):
             print("raising error")
-            print()
+
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         return MagicMock(res_data=[self.mockDataInfoHosts])
 

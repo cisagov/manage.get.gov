@@ -135,6 +135,10 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
         domain = self.get_object()
+        nameservers=domain.nameservers
+        if nameservers is None:
+            return []
+        
         return [{"server": name} for name, *ip in domain.nameservers]
 
     def get_success_url(self):
