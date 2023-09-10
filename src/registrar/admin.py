@@ -104,6 +104,36 @@ class MyUserAdmin(BaseUserAdmin):
 
     inlines = [UserContactInline]
 
+    list_display = (
+        "email",
+        "first_name",
+        "last_name",
+        "is_staff",
+        "is_superuser",
+        "status",
+    )
+
+    fieldsets = (
+        (
+            None,
+            {"fields": ("username", "password", "status")},
+        ),
+        ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
     def get_list_display(self, request):
         if not request.user.is_superuser:
             # Customize the list display for staff users
@@ -146,7 +176,7 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        ACTION_BUTTON = "_place_client_hold"
+
         GET_SECURITY_EMAIL = "_get_security_email"
         SET_SECURITY_CONTACT = "_set_security_contact"
         MAKE_DOMAIN = "_make_domain_in_registry"
@@ -157,7 +187,10 @@ class DomainAdmin(ListHeaderAdmin):
         REMOVE_CLIENT_HOLD = "_rem_client_hold"
         DELETE_DOMAIN = "_delete_domain"
 
-        if ACTION_BUTTON in request.POST:
+       
+        PLACE_HOLD = "_place_client_hold"
+        EDIT_DOMAIN = "_edit_domain"
+        if PLACE_HOLD in request.POST:
             try:
                 obj.place_client_hold()
             except Exception as err:
@@ -195,7 +228,7 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
 
-        if SET_SECURITY_CONTACT in request.POST:
+        elif SET_SECURITY_CONTACT in request.POST:
             try:
                 fake_email = "manuallyEnteredEmail@test.gov"
                 if PublicContact.objects.filter(
@@ -218,7 +251,7 @@ class DomainAdmin(ListHeaderAdmin):
                     ("The security email is %" ". Thanks!") % fake_email,
                 )
 
-        if MAKE_DOMAIN in request.POST:
+        elif MAKE_DOMAIN in request.POST:
             try:
                 obj._get_or_create_domain()
             except Exception as err:
@@ -230,9 +263,8 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
 
-        # make nameservers here
 
-        if MAKE_NAMESERVERS in request.POST:
+        elif MAKE_NAMESERVERS in request.POST:
             try:
                 hosts = [("ns1.example.com", None), ("ns2.example.com", None)]
                 obj.nameservers = hosts
@@ -244,7 +276,7 @@ class DomainAdmin(ListHeaderAdmin):
                     ("Hosts set to be %s" ". Thanks!") % hosts,
                 )
             return HttpResponseRedirect(".")
-        if GET_NAMESERVERS in request.POST:
+        elif GET_NAMESERVERS in request.POST:
             try:
                 nameservers = obj.nameservers
             except Exception as err:
@@ -256,7 +288,7 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
 
-        if GET_STATUS in request.POST:
+        elif GET_STATUS in request.POST:
             try:
                 statuses = obj.statuses
             except Exception as err:
@@ -268,7 +300,7 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
 
-        if SET_CLIENT_HOLD in request.POST:
+        elif SET_CLIENT_HOLD in request.POST:
             try:
                 obj.clientHold()
                 obj.save()
@@ -281,7 +313,7 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
 
-        if REMOVE_CLIENT_HOLD in request.POST:
+        elif REMOVE_CLIENT_HOLD in request.POST:
             try:
                 obj.revertClientHold()
                 obj.save()
@@ -293,7 +325,8 @@ class DomainAdmin(ListHeaderAdmin):
                     ("Domain %s will now have client hold removed") % obj.name,
                 )
             return HttpResponseRedirect(".")
-        if DELETE_DOMAIN in request.POST:
+        
+        elif DELETE_DOMAIN in request.POST:
             try:
                 obj.deleted()
                 obj.save()
@@ -305,7 +338,29 @@ class DomainAdmin(ListHeaderAdmin):
                     ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
                 )
             return HttpResponseRedirect(".")
+        elif EDIT_DOMAIN in request.POST:
+            # We want to know, globally, when an edit action occurs
+            request.session["analyst_action"] = "edit"
+            # Restricts this action to this domain (pk) only
+            request.session["analyst_action_location"] = obj.id
+            return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
         return super().response_change(request, obj)
+
+    def change_view(self, request, object_id):
+        # If the analyst was recently editing a domain page,
+        # delete any associated session values
+        if "analyst_action" in request.session:
+            del request.session["analyst_action"]
+            del request.session["analyst_action_location"]
+        return super().change_view(request, object_id)
+
+    def has_change_permission(self, request, obj=None):
+        # Fixes a bug wherein users which are only is_staff
+        # can access 'change' when GET,
+        # but cannot access this page when it is a request of type POST.
+        if request.user.is_staff:
+            return True
+        return super().has_change_permission(request, obj)
 
 
 class ContactAdmin(ListHeaderAdmin):
@@ -318,6 +373,10 @@ class ContactAdmin(ListHeaderAdmin):
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Customize the applications listing view."""
+
+    # Set multi-selects 'read-only' (hide selects and show data)
+    # based on user perms and application creator's status
+    # form = DomainApplicationForm
 
     # Columns
     list_display = [
@@ -392,7 +451,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     # Read only that we'll leverage for CISA Analysts
-    readonly_fields = [
+    analyst_readonly_fields = [
         "creator",
         "type_of_work",
         "more_organization_information",
@@ -410,49 +469,81 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        if change:  # Check if the application is being edited
-            # Get the original application from the database
-            original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+        if obj and obj.creator.status != models.User.RESTRICTED:
+            if change:  # Check if the application is being edited
+                # Get the original application from the database
+                original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-            if obj.status != original_obj.status:
-                if obj.status == models.DomainApplication.STARTED:
-                    # No conditions
-                    pass
-                elif obj.status == models.DomainApplication.SUBMITTED:
-                    # This is an fsm in model which will throw an error if the
-                    # transition condition is violated, so we roll back the
-                    # status to what it was before the admin user changed it and
-                    # let the fsm method set it. Same comment applies to
-                    # transition method calls below.
-                    obj.status = original_obj.status
-                    obj.submit()
-                elif obj.status == models.DomainApplication.IN_REVIEW:
-                    obj.status = original_obj.status
-                    obj.in_review()
-                elif obj.status == models.DomainApplication.ACTION_NEEDED:
-                    obj.status = original_obj.status
-                    obj.action_needed()
-                elif obj.status == models.DomainApplication.APPROVED:
-                    obj.status = original_obj.status
-                    obj.approve()
-                elif obj.status == models.DomainApplication.WITHDRAWN:
-                    obj.status = original_obj.status
-                    obj.withdraw()
-                elif obj.status == models.DomainApplication.REJECTED:
-                    obj.status = original_obj.status
-                    obj.reject()
-                else:
-                    logger.warning("Unknown status selected in django admin")
+                if obj.status != original_obj.status:
+                    status_method_mapping = {
+                        models.DomainApplication.STARTED: None,
+                        models.DomainApplication.SUBMITTED: obj.submit,
+                        models.DomainApplication.IN_REVIEW: obj.in_review,
+                        models.DomainApplication.ACTION_NEEDED: obj.action_needed,
+                        models.DomainApplication.APPROVED: obj.approve,
+                        models.DomainApplication.WITHDRAWN: obj.withdraw,
+                        models.DomainApplication.REJECTED: obj.reject,
+                        models.DomainApplication.INELIGIBLE: obj.reject_with_prejudice,
+                    }
+                    selected_method = status_method_mapping.get(obj.status)
+                    if selected_method is None:
+                        logger.warning("Unknown status selected in django admin")
+                    else:
+                        # This is an fsm in model which will throw an error if the
+                        # transition condition is violated, so we roll back the
+                        # status to what it was before the admin user changed it and
+                        # let the fsm method set it.
+                        obj.status = original_obj.status
+                        selected_method()
 
-        super().save_model(request, obj, form, change)
+            super().save_model(request, obj, form, change)
+        else:
+            # Clear the success message
+            messages.set_level(request, messages.ERROR)
+
+            messages.error(
+                request,
+                "This action is not permitted for applications "
+                + "with a restricted creator.",
+            )
 
     def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 2 conditions that determine which fields are read-only:
+        admin user permissions and the application creator's status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        # Check if the creator is restricted
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            # For fields like CharField, IntegerField, etc., the widget used is
+            # straightforward and the readonly_fields list can control their behavior
+            readonly_fields.extend([field.name for field in self.model._meta.fields])
+            # Add the multi-select fields to readonly_fields:
+            # Complex fields like ManyToManyField require special handling
+            readonly_fields.extend(
+                ["current_websites", "other_contacts", "alternative_domains"]
+            )
+
         if request.user.is_superuser:
-            # Superusers have full access, no fields are read-only
-            return []
+            return readonly_fields
         else:
-            # Regular users can only view the specified fields
-            return self.readonly_fields
+            readonly_fields.extend([field for field in self.analyst_readonly_fields])
+            return readonly_fields
+
+    def display_restricted_warning(self, request, obj):
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            messages.warning(
+                request,
+                "Cannot edit an application with a restricted creator.",
+            )
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        obj = self.get_object(request, object_id)
+        self.display_restricted_warning(request, obj)
+        return super().change_view(request, object_id, form_url, extra_context)
 
 
 admin.site.register(models.User, MyUserAdmin)

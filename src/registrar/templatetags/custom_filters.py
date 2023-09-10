@@ -40,3 +40,11 @@ def slice_after(value, substring):
         result = value[index + len(substring) :]
         return result
     return value
+
+
+@register.filter
+def contains_checkbox(html_list):
+    for html_string in html_list:
+        if re.search(r'<input[^>]*type="checkbox"', html_string):
+            return True
+    return False

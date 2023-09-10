@@ -63,7 +63,7 @@ class UserFixture:
             "last_name": "Adkinson",
         },
         {
-            "username": "bb21f687-c773-4df3-9243-111cfd4c0be4",
+            "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
             "first_name": "Paul",
             "last_name": "Kuykendall",
         },
@@ -71,6 +71,16 @@ class UserFixture:
             "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
             "first_name": "Rebecca",
             "last_name": "Hsieh",
+        },
+        {
+            "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
+            "first_name": "David",
+            "last_name": "Kennedy",
+        },
+        {
+            "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
+            "first_name": "Nicolle",
+            "last_name": "LeClair",
         },
     ]
 
@@ -87,6 +97,12 @@ class UserFixture:
             "last_name": "Alysia-Analyst",
         },
         {
+            "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
+            "first_name": "Katherine-Analyst",
+            "last_name": "Osos-Analyst",
+            "email": "kosos@truss.works",
+        },
+        {
             "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
             "first_name": "Zander-Analyst",
             "last_name": "Adkinson-Analyst",
@@ -100,6 +116,23 @@ class UserFixture:
             "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
             "first_name": "Rebecca-Analyst",
             "last_name": "Hsieh-Analyst",
+        },
+        {
+            "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
+            "first_name": "David-Analyst",
+            "last_name": "Kennedy-Analyst",
+        },
+        {
+            "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
+            "first_name": "Gaby-Analyst",
+            "last_name": "DiSarli-Analyst",
+            "email": "gaby@truss.works",
+        },
+        {
+            "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
+            "first_name": "Nicolle-Analyst",
+            "last_name": "LeClair",
+            "email": "nicolle.leclair@ecstech.com",
         },
     ]
 
@@ -247,6 +280,14 @@ class DomainApplicationFixture:
         {
             "status": "withdrawn",
             "organization_name": "Example - Withdrawn",
+        },
+        {
+            "status": "action needed",
+            "organization_name": "Example - Action Needed",
+        },
+        {
+            "status": "rejected",
+            "organization_name": "Example - Rejected",
         },
     ]
 
