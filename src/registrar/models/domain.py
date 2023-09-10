@@ -227,9 +227,16 @@ class Domain(TimeStampedModel, DomainHelper):
         Subordinate hosts (something.your-domain.gov) MUST have IP addresses,
         while non-subordinate hosts MUST NOT.
         """
-        # TODO: call EPP to get this info instead of returning fake data.
-        # MISSING FROM DISPLAY
+        hosts = self._get_property("hosts")
+        hostList = []
+        for host in hosts:
+            logger.info(host)
+            # TODO - this should actually have a second tuple value with the ip address
+            # ignored because uncertain if we will even have a way to display mult.
+            #  and adresses can be a list of mult address
+            hostList.append((host.name,))
 
+        print(hostList)
         return [
             ("ns1.example.com",),
             ("ns2.example.com",),
@@ -420,6 +427,8 @@ class Domain(TimeStampedModel, DomainHelper):
             # ticket for error handling in epp
 
     def _update_domain_with_contact(self, contact: PublicContact, rem=False):
+        # TODO - consider making this use both add and rem at the same time, separating it out may not be needed
+
         logger.info("received type %s " % contact.contact_type)
         domainContact = epp.DomainContact(
             contact=contact.registry_id, type=contact.contact_type
@@ -536,7 +545,7 @@ class Domain(TimeStampedModel, DomainHelper):
         )
         # make contact in registry, duplicate and errors handled there
         errorCode = self._make_contact_in_registry(contact)
-
+        print("error code %s" % errorCode)
         # if contact.contact_type==contact.ContactTypeChoices.REGISTRANT:
         #     logger.info("_set_singleton_contact()-> creating the registrant")
 
@@ -552,6 +561,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # if domain has registrant and type is registrant this will be true,
         # if type is anything else it should be in the contact list
         alreadyExistsInRegistry = errorCode == ErrorCode.OBJECT_EXISTS
+        print("already exists is %s" % alreadyExistsInRegistry)
         # if an error occured besides duplication, stop
         if (
             not alreadyExistsInRegistry
@@ -566,11 +576,16 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info(
                 "_set_singleton_contact()-> updating domain by removing old contact and adding new one"
             )
-            existing_contact = (
-                PublicContact.objects.exclude(registry_id=contact.registry_id)
-                .filter(domain=self, contact_type=contact.contact_type)
-                .get()
-            )
+            if isEmptySecurity:
+                existing_contact = PublicContact.objects.filter(
+                    domain=self, contact_type=contact.contact_type
+                ).get()
+            else:
+                existing_contact = (
+                    PublicContact.objects.exclude(registry_id=contact.registry_id)
+                    .filter(domain=self, contact_type=contact.contact_type)
+                    .get()
+                )
             if isRegistrant:
                 # send update domain only for registant contacts
                 existing_contact.delete()
@@ -579,14 +594,19 @@ class Domain(TimeStampedModel, DomainHelper):
                 # remove the old contact and add a new one
                 try:
                     self._update_domain_with_contact(contact=existing_contact, rem=True)
+                    print("deleting %s "%existing_contact)
                     existing_contact.delete()
-
+                    print("after deleting")
+                    if isEmptySecurity:
+                        # add new security
+                        self.get_default_security_contact().save()
                 except Exception as err:
                     logger.error(
                         "Raising error after removing and adding a new contact"
                     )
                     raise (err)
-
+        # TODO- should this switch to just creating a list of ones to remove and a list of ones to add?
+        # other option, check if they are really singleton, can remove them?
         # if just added to registry and not a registrant add contact to domain
         if not isEmptySecurity:
             if not alreadyExistsInRegistry and not isRegistrant:
@@ -594,8 +614,26 @@ class Domain(TimeStampedModel, DomainHelper):
                 self._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
+                current_contact = PublicContact.objects.filter(
+                    registry_id=contact.registry_id
+                ).get()
                 print("updating the contact itself")
-                self._update_epp_contact(contact=contact)
+                if current_contact.email != contact.email:
+                    self._update_epp_contact(contact=contact)
+        else:
+            logger.info("removing security contact and setting default again")
+            # get the current contact registry id for security
+            current_contact = PublicContact.objects.filter(
+                registry_id=contact.registry_id
+            ).get()
+            # don't let user delete the default without adding a new email
+            if current_contact.email != PublicContact.get_default_security().email:
+                # remove the contact
+                self._update_domain_with_contact(contact=current_contact, rem=True)
+                current_contact.delete()
+                # add new contact
+                security_contact = self.get_default_security_contact()
+                security_contact.save()
 
     @security_contact.setter  # type: ignore
     def security_contact(self, contact: PublicContact):
@@ -770,31 +808,30 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def addAllDefaults(self):
         security_contact = self.get_default_security_contact()
-        security_contact.domain = self
+        security_contact.save()
 
         technical_contact = PublicContact.get_default_technical()
         technical_contact.domain = self
+        technical_contact.save()
 
         administrative_contact = PublicContact.get_default_administrative()
         administrative_contact.domain = self
-
-        technical_contact.save()
         administrative_contact.save()
-        security_contact.save()
+
         print("security contact")
         print(security_contact)
 
-    def testSettingOtherContacts(self):
-        ##delete this funciton
-        logger.info("testSettingAllContacts")
-        technical_contact = PublicContact.get_default_technical()
-        technical_contact.domain = self
-        administrative_contact = PublicContact.get_default_administrative()
-        administrative_contact.domain = self
+    # def testSettingOtherContacts(self):
+    #     ##delete this funciton
+    #     logger.info("testSettingAllContacts")
+    #     technical_contact = PublicContact.get_default_technical()
+    #     technical_contact.domain = self
+    #     administrative_contact = PublicContact.get_default_administrative()
+    #     administrative_contact.domain = self
 
-        # security_contact.save()
-        technical_contact.save()
-        administrative_contact.save()
+    #     # security_contact.save()
+    #     technical_contact.save()
+    #     administrative_contact.save()
 
     @transition(field="state", source=State.PENDING_CREATE, target=State.CLIENT_HOLD)
     def clientHold(self):
@@ -827,14 +864,22 @@ class Domain(TimeStampedModel, DomainHelper):
         isSecurity = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
         fields = {DF.FAX, DF.VOICE, DF.ADDR}
+        print("can you see me ho")
+        logger.info("isSecurity %s" % isSecurity)
+        logger.info("contact email %s" % contact.email)
+        logger.info(
+            "contact email is default %s" % isSecurity
+            and contact.email == PublicContact.get_default_security().email
+        )
         if not isSecurity or (
             isSecurity and contact.email == PublicContact.get_default_security().email
         ):
             fields.add(DF.EMAIL)
-
+            print("added email, fields is  %s" % fields)
+        print("fields is now %s " % fields)
         return epp.Disclose(
             flag=False,
-            fields={DF.FAX, DF.VOICE, DF.ADDR},
+            fields=fields,
             types={DF.ADDR: "loc"},
         )
 
@@ -871,14 +916,16 @@ class Domain(TimeStampedModel, DomainHelper):
             auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
         )
         # security contacts should only show email addresses, for now
+        print("calling disclose fields")
         create.disclose = self._disclose_fields(contact=contact)
         try:
             logger.info("sending contact")
             registry.send(create, cleaned=True)
-
+            print("sendding successfully")
             return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
         except RegistryError as err:
             # don't throw an error if it is just saying this is a duplicate contact
+            print("threw error")
             if err.code != ErrorCode.OBJECT_EXISTS:
                 logger.error(
                     "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",
