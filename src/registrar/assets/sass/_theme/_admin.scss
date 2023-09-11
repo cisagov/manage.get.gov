@@ -140,11 +140,6 @@ h1, h2, h3 {
     font-weight: font-weight('bold');
 }
 
-table > caption > a {
-    font-weight: font-weight('bold');
-    text-transform: none;
-}
-
 .change-list {
     .usa-table--striped tbody tr:nth-child(odd) td,
     .usa-table--striped tbody tr:nth-child(odd) th,
@@ -169,4 +164,16 @@ table > caption > a {
 }
 .min-width-81 {
     min-width: 81px;
+}
+
+.primary-th {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    text-transform: none;
+    font-weight: font-weight('bold');
+    text-align: left;
+    background: var(--primary);
+    color: var(--header-link-color);
 }
