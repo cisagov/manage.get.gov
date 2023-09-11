@@ -301,9 +301,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # TODO: implement a check -- should be performant so it can be called for
         # any number of domains on a status page
         # this is NOT as simple as checking if Domain.Status.OK is in self.statuses
-
-        # NOTE: This was stubbed in all along for 852 and 811
-        return False
+        return self.state == Domain.State.CREATED
 
     def delete_request(self):
         """Delete from host. Possibly a duplicate of _delete_host?"""
