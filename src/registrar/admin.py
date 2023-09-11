@@ -264,7 +264,8 @@ class ContactAdmin(ListHeaderAdmin):
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
-    def contact(self, obj):
+    def contact(self, obj: models.Contact):
+        """ Duplicate the contact _str_"""
         if obj.first_name or obj.last_name:
             return obj.get_formatted_name()
         elif obj.email:
