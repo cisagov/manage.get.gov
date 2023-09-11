@@ -228,25 +228,27 @@ class ContactAdmin(ListHeaderAdmin):
 
 class DomainApplicationAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions"""
+
     class Meta:
         model = models.DomainApplication
-        fields = '__all__'
+        fields = "__all__"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        instance = kwargs.get('instance')
+        instance = kwargs.get("instance")
         if instance and instance.pk:
             current_state = instance.status
             transitions = get_available_FIELD_transitions(
-                instance, models.DomainApplication._meta.get_field('status'))
+                instance, models.DomainApplication._meta.get_field("status")
+            )
             # first option in status transitions is current state
             available_transitions = [(current_state, current_state)]
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target))
 
-            self.fields['status'].widget.choices = available_transitions
+            self.fields["status"].widget.choices = available_transitions
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
