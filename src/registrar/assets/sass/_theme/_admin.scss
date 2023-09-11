@@ -31,7 +31,7 @@ html[data-theme="light"] {
 
     // #{$theme-link-color} would interpolate to 'primary', so we use the source value instead
     --link-fg: #{$theme-color-primary};
-    --link-hover-color: #{$theme-color-primary-darker};
+    --link-hover-color: #{$theme-color-primary};
     // $theme-link-visited-color - violet-70v
     --link-selected-fg: #54278f;
 
