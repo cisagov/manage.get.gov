@@ -1,10 +1,12 @@
 from django.test import TestCase, RequestFactory, Client
+from django_fsm import transition
 from django.contrib.admin.sites import AdminSite
 from django.urls import reverse
 
 from registrar.admin import (
     DomainAdmin,
     DomainApplicationAdmin,
+    DomainApplicationAdminForm,
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
@@ -34,6 +36,20 @@ import boto3_mocking  # type: ignore
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class TestDomainApplicationAdminForm(TestCase):
+    def setUp(self):
+        # Create a test application with an initial state of started
+        self.application = completed_application()
+
+    def test_form_choices(self):
+        # Create a form instance with the test application
+        form = DomainApplicationAdminForm(instance=self.application)
+
+        # Verify that the form choices match the available transitions for the initial state
+        expected_choices = [('started', 'started'), ('submitted', 'submitted')] 
+        self.assertEqual(form.fields['status'].widget.choices, expected_choices)
 
 
 class TestDomainApplicationAdmin(TestCase):
