@@ -134,13 +134,7 @@ class MockEppLib(TestCase):
 
 
 class TestDomainCache(MockEppLib):
-    # def setUp(self):
-    #     #call setup from the mock epplib
-    #     super().setUp()
 
-    # def tearDown(self):
-    #     #call setup from the mock epplib
-    #     super().tearDown()
 
     def test_cache_sets_resets(self):
         """Cache should be set on getter and reset on setter calls"""
@@ -367,48 +361,11 @@ class TestRegistrantContacts(MockEppLib):
         #  self.domain.security_contact=expectedSecContact
         expectedSecContact.save()
 
-        # check create contact sent with email
-        # DF = common.DiscloseField
-        # di = common.Disclose(
-        #     flag=False, fields={DF.FAX, DF.VOICE, DF.ADDR, DF.EMAIL}, types={DF.ADDR: "loc"}
-        # )
-
-        # addr = common.ContactAddr(
-        #     street=[
-        #         expectedSecContact.street1,
-        #         expectedSecContact.street2,
-        #         expectedSecContact.street3,
-        #     ],
-        #     city=expectedSecContact.city,
-        #     pc=expectedSecContact.pc,
-        #     cc=expectedSecContact.cc,
-        #     sp=expectedSecContact.sp,
-        # )
-        # pi = common.PostalInfo(
-        #     name=expectedSecContact.name,
-        #     addr=addr,
-        #     org=expectedSecContact.org,
-        #     type="loc",
-        # )
-        # ai = common.ContactAuthInfo(pw="2fooBAR123fooBaz")
-
-        # no longer the default email it should be disclosed!!
+        # no longer the default email it should be disclosed
         expectedCreateCommand = self._convertPublicContactToEpp(
             expectedSecContact, disclose_email=True
         )
 
-        # commands.CreateContact(
-        #     id=expectedSecContact.registry_id,
-        #     postal_info=pi,
-        #     email=expectedSecContact.email,
-        #     voice=expectedSecContact.voice,
-        #     fax=expectedSecContact.fax,
-        #     auth_info=ai,
-        #     disclose=di,
-        #     vat=None,
-        #     ident=None,
-        #     notify_email=None,
-        # )
         expectedUpdateDomain = commands.UpdateDomain(
             name=self.domain.name,
             add=[
@@ -419,16 +376,12 @@ class TestRegistrantContacts(MockEppLib):
         )
 
         # check that send has triggered the create command for the contact
-        print("finishing")
-
-        print(PublicContact.objects.filter(domain=self.domain))
         receivedSecurityContact = PublicContact.objects.get(
             domain=self.domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
         )
 
-        print(self.mockedSendFunction.call_count)
-        print(self.mockedSendFunction.call_args_list)
-        # assert( self.mockedSendFunction.call_count == 3)
+
+
         assert receivedSecurityContact == expectedSecContact
         self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
         self.mockedSendFunction.assert_any_call(expectedUpdateDomain, cleaned=True)
@@ -447,11 +400,10 @@ class TestRegistrantContacts(MockEppLib):
 
         self.domain.security_contact = security_contact
 
-        print(self.mockedSendFunction.call_args_list)
         expectedCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=False
         )
-        print(expectedCreateCommand)
+
         expectedUpdateDomain = commands.UpdateDomain(
             name=self.domain.name,
             add=[
@@ -489,10 +441,6 @@ class TestRegistrantContacts(MockEppLib):
         new_contact.email = ""
         self.domain.security_contact = new_contact
 
-        print(
-            "old contact %s  email is %s" % (str(old_contact), str(old_contact.email))
-        )
-        print("new contact %s " % new_contact)
         firstCreateContactCall = self._convertPublicContactToEpp(
             old_contact, disclose_email=True
         )
@@ -502,9 +450,6 @@ class TestRegistrantContacts(MockEppLib):
                 common.DomainContact(contact=old_contact.registry_id, type="security")
             ],
         )
-        print(PublicContact.objects.filter(domain=self.domain))
-        print("just printed the objects for public contact!!")
-
         assert (
             PublicContact.objects.filter(domain=self.domain).get().email
             == PublicContact.get_default_security().email
@@ -520,9 +465,7 @@ class TestRegistrantContacts(MockEppLib):
             ],
         )
         args = self.mockedSendFunction.call_args_list
-        print("actualy args printing ******")
-        print(args)
-        print(len(args))
+
         defaultSecID = (
             PublicContact.objects.filter(domain=self.domain).get().registry_id
         )
@@ -544,15 +487,7 @@ class TestRegistrantContacts(MockEppLib):
             call(createDefaultContact, cleaned=True),
             call(updateDomainWDefault, cleaned=True),
         ]
-
-        args = self.mockedSendFunction.call_args_list
-        print("actualy args printing ******")
-        print(args)
-        print(len(args))
-
-        print(len(expected_calls))
-        print("\n\n\n expected calls now printing\n")
-        print(expected_calls)
+      
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
 
     def test_updates_security_email(self):
@@ -580,7 +515,6 @@ class TestRegistrantContacts(MockEppLib):
             ],
         )
         security_contact.email = "changedEmail@email.com"
-        print("\n\n\n***********\n\n")
         security_contact.save()
         expectedSecondCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
@@ -588,10 +522,7 @@ class TestRegistrantContacts(MockEppLib):
         updateContact = self._convertPublicContactToEpp(
             security_contact, disclose_email=True, createContact=False
         )
-        print("SECOND EXPECTED CREATE")
-        print(expectedSecondCreateCommand)
-
-        print(self.mockedSendFunction.call_args_list)
+       
 
         expected_calls = [
             call(expectedCreateCommand, cleaned=True),
