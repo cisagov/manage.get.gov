@@ -176,7 +176,6 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-
         GET_SECURITY_EMAIL = "_get_security_email"
         SET_SECURITY_CONTACT = "_set_security_contact"
         MAKE_DOMAIN = "_make_domain_in_registry"
@@ -187,7 +186,6 @@ class DomainAdmin(ListHeaderAdmin):
         REMOVE_CLIENT_HOLD = "_rem_client_hold"
         DELETE_DOMAIN = "_delete_domain"
 
-       
         PLACE_HOLD = "_place_client_hold"
         EDIT_DOMAIN = "_edit_domain"
         if PLACE_HOLD in request.POST:
@@ -263,7 +261,6 @@ class DomainAdmin(ListHeaderAdmin):
                 )
             return HttpResponseRedirect(".")
 
-
         elif MAKE_NAMESERVERS in request.POST:
             try:
                 hosts = [("ns1.example.com", None), ("ns2.example.com", None)]
@@ -325,7 +322,7 @@ class DomainAdmin(ListHeaderAdmin):
                     ("Domain %s will now have client hold removed") % obj.name,
                 )
             return HttpResponseRedirect(".")
-        
+
         elif DELETE_DOMAIN in request.POST:
             try:
                 obj.deleted()

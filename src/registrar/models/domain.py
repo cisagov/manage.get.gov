@@ -228,7 +228,7 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             hosts = self._get_property("hosts")
         except Exception as err:
-            #Don't throw error as this is normal for a new domain
+            # Don't throw error as this is normal for a new domain
             logger.info("Domain is missing nameservers")
             return None
 
@@ -282,8 +282,8 @@ class Domain(TimeStampedModel, DomainHelper):
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, 127.0.0.1, others ips)]"""
         # TODO: ticket #848 finish this implementation
-        #must delete nameservers as well or update
-        #ip version checking may need to be added in a different ticket
+        # must delete nameservers as well or update
+        # ip version checking may need to be added in a different ticket
 
         if len(hosts) > 13:
             raise ValueError(
@@ -347,7 +347,6 @@ class Domain(TimeStampedModel, DomainHelper):
         # some statuses cannot be set by the client at all
         raise NotImplementedError()
 
-    
     @Cache
     def registrant_contact(self) -> PublicContact:
         """Get or set the registrant for this domain."""
@@ -369,7 +368,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
-      
         logger.info("making admin contact")
         if contact.contact_type != contact.ContactTypeChoices.ADMINISTRATIVE:
             raise ValueError(
@@ -402,13 +400,15 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(
                 "Error updating contact, code was %s error was %s" % (e.code, e)
             )
-            #TODO - ticket 433 human readable error handling here
+            # TODO - ticket 433 human readable error handling here
 
     def _update_domain_with_contact(self, contact: PublicContact, rem=False):
         # TODO - consider making this use both add and rem at the same time, separating it out may not be needed
-        #good addition for ticket 850
+        # good addition for ticket 850
 
-        logger.info("_update_domain_with_contact() received type %s " % contact.contact_type)
+        logger.info(
+            "_update_domain_with_contact() received type %s " % contact.contact_type
+        )
         domainContact = epp.DomainContact(
             contact=contact.registry_id, type=contact.contact_type
         )
@@ -492,7 +492,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # TODO-error handling better here?
 
     def _set_singleton_contact(self, contact: PublicContact, expectedType: str):
-        """Sets the contacts by adding them to the registry as new contacts, 
+        """Sets the contacts by adding them to the registry as new contacts,
         updates the contact if it is already in epp,
         deletes any additional contacts of the matching type for this domain
         does not create the PublicContact object, this should be made beforehand
@@ -511,7 +511,7 @@ class Domain(TimeStampedModel, DomainHelper):
         )
 
         # get publicContact objects that have the matching domain and type but a different id
-        #like in highlander we there can only be one
+        # like in highlander we there can only be one
         hasOtherContact = (
             PublicContact.objects.exclude(registry_id=contact.registry_id)
             .filter(domain=self, contact_type=contact.contact_type)
@@ -521,7 +521,6 @@ class Domain(TimeStampedModel, DomainHelper):
         ##if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
         errorCode = self._make_contact_in_registry(contact)
-       
 
         # contact is already added to the domain, but something may have changed on it
         alreadyExistsInRegistry = errorCode == ErrorCode.OBJECT_EXISTS
@@ -530,9 +529,9 @@ class Domain(TimeStampedModel, DomainHelper):
             not alreadyExistsInRegistry
             and errorCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
         ):
-            #TODO- ticket #433 look here for error handling
+            # TODO- ticket #433 look here for error handling
             raise Exception("Unable to add contact to registry")
-        
+
         # contact doesn't exist on the domain yet
         logger.info("_set_singleton_contact()-> contact has been added to the registry")
 
@@ -568,7 +567,7 @@ class Domain(TimeStampedModel, DomainHelper):
                         "Raising error after removing and adding a new contact"
                     )
                     raise (err)
-                
+
         # TODO- This could switch to just creating a list of ones to remove and a list of ones to add
         # or Change it to add contacts before deleting the old ones
 
@@ -828,7 +827,8 @@ class Domain(TimeStampedModel, DomainHelper):
     )
     def ready(self):
         """Transition to the ready state
-        domain should have nameservers and all contacts and now should be considered live on a domain"""
+        domain should have nameservers and all contacts and now should be considered live on a domain
+        """
         # TODO - in nameservers tickets 848 and 562 check here if updates need to be made
         nameserverList = self.nameservers
         logger.info("Changing to ready state")
@@ -1007,7 +1007,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     cleaned["contacts"].append(
                         {k: v for k, v in contact.items() if v is not ...}
                     )
-
 
             # get nameserver info, if there are any
             if (
