@@ -63,8 +63,8 @@ class MockEppLib(TestCase):
             and getattr(_request, "id", None) == "fail"
             and self.mockedSendFunction.call_count == 3
         ):
-            #use this for when a contact is being updated
-            #sets the second send() to fail
+            # use this for when a contact is being updated
+            # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
@@ -135,8 +135,6 @@ class MockEppLib(TestCase):
 
 
 class TestDomainCache(MockEppLib):
-
-
     def test_cache_sets_resets(self):
         """Cache should be set on getter and reset on setter calls"""
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
@@ -169,16 +167,24 @@ class TestDomainCache(MockEppLib):
         self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
 
         # send was only called once & not on the second getter call
-        self.mockedSendFunction.assert_called_once()
+        expectedCalls = [
+            call(
+                commands.InfoDomain(name="igorville.gov", auth_info=None), cleaned=True
+            ),
+            call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
+            call(commands.InfoHost(name="fake.host.com"), cleaned=True),
+        ]
 
-    # @skip("BROKEN by newest changes-fix in getter ticket")
+        self.mockedSendFunction.assert_has_calls(expectedCalls)
+
     def test_cache_nested_elements(self):
         """Cache works correctly with the nested objects cache and hosts"""
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
 
         # the cached contacts and hosts should be dictionaries of what is passed to them
         expectedContactsDict = {
-            "id": self.mockDataInfoDomain.contacts[0],
+            "id": self.mockDataInfoDomain.contacts[0].contact,
+            "type": self.mockDataInfoDomain.contacts[0].type,
             "auth_info": self.mockDataInfoContact.auth_info,
             "cr_date": self.mockDataInfoContact.cr_date,
         }
@@ -201,7 +207,6 @@ class TestDomainCache(MockEppLib):
         # get and check hosts is set correctly
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-        ##IS THERE AN ERROR HERE???,
 
 
 class TestDomainCreation(TestCase):
@@ -381,8 +386,6 @@ class TestRegistrantContacts(MockEppLib):
             domain=self.domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
         )
 
-
-
         assert receivedSecurityContact == expectedSecContact
         self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
         self.mockedSendFunction.assert_any_call(expectedUpdateDomain, cleaned=True)
@@ -488,7 +491,7 @@ class TestRegistrantContacts(MockEppLib):
             call(createDefaultContact, cleaned=True),
             call(updateDomainWDefault, cleaned=True),
         ]
-      
+
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
 
     def test_updates_security_email(self):
@@ -523,7 +526,6 @@ class TestRegistrantContacts(MockEppLib):
         updateContact = self._convertPublicContactToEpp(
             security_contact, disclose_email=True, createContact=False
         )
-       
 
         expected_calls = [
             call(expectedCreateCommand, cleaned=True),

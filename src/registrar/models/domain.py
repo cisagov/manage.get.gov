@@ -443,37 +443,16 @@ class Domain(TimeStampedModel, DomainHelper):
         #   send the public default contact
         try:
             contacts = self._get_property("contacts")
-        except KeyError as err:
-            logger.info("Found a key error in security_contact get")
+            for contact in contacts:
+                if contact.type == PublicContact.ContactTypeChoices.SECURITY:
+                    return contact
+
+        except Exception as err:  # use better error handling
+            logger.info("Couldn't get contact")
             ## send public contact to the thingy
 
-            ##TODO - change to get or create in db?
-            default = self.get_default_security_contact()
-
-            # self._cache["contacts"]=[]
-            # self._cache["contacts"].append({"type":"security", "contact":default})
-            self.security_contact = default
-            return default
-        except Exception as e:
-            logger.error("found an error ")
-            logger.error(e)
-        else:
-            logger.info("Showing contacts")
-            for contact in contacts:
-                if (
-                    isinstance(contact, dict)
-                    and "type" in contact.keys()
-                    and "contact" in contact.keys()
-                    and contact["type"] == "security"
-                ):
-                    return contact["contact"]
-
-                ##TODO -get the security contact, requires changing the implemenation below and the parser from epplib
-                # request=InfoContact(securityID)
-                # contactInfo=...send(request)
-                # convert info to a PublicContact
-                # return the info in Public conta
-            # TODO - below line never executes with current logic
+            ##TODO - remove this! ideally it should return None, but error handling needs to be
+            # added on the security email page so that it can handle it being none
             return self.get_default_security_contact()
 
     def _add_registrant_to_existing_domain(self, contact: PublicContact):
