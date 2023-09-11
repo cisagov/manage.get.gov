@@ -31,12 +31,6 @@ class TransitionDomain(TimeStampedModel):
         verbose_name="Status",
         help_text="domain status during the transfer",
     )
-    ignoreServerHold = models.BooleanField(
-        null=False,
-        default=False,
-        verbose_name="ignore Server Hold",
-        help_text="specifies whether to ignore server hold",
-    )
     email_sent = models.BooleanField(
         null=False,
         default=False,
