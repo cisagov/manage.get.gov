@@ -1,5 +1,4 @@
 from django.test import TestCase, RequestFactory, Client
-from django_fsm import transition
 from django.contrib.admin.sites import AdminSite
 from django.urls import reverse
 
@@ -47,9 +46,9 @@ class TestDomainApplicationAdminForm(TestCase):
         # Create a form instance with the test application
         form = DomainApplicationAdminForm(instance=self.application)
 
-        # Verify that the form choices match the available transitions for the initial state
-        expected_choices = [('started', 'started'), ('submitted', 'submitted')] 
-        self.assertEqual(form.fields['status'].widget.choices, expected_choices)
+        # Verify that the form choices match the available transitions for started
+        expected_choices = [("started", "started"), ("submitted", "submitted")]
+        self.assertEqual(form.fields["status"].widget.choices, expected_choices)
 
 
 class TestDomainApplicationAdmin(TestCase):
