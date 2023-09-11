@@ -62,7 +62,7 @@ class Domain(TimeStampedModel, DomainHelper):
         SERVER_DELETE_PROHIBITED = "serverDeleteProhibited"
 
         # DNS delegation information MUST NOT be published for the object.
-        ON_HOLD = "clientHold"
+        CLIENT_HOLD = "clientHold"
         SERVER_HOLD = "serverHold"
 
         # Requests to renew the object MUST be rejected.
@@ -228,12 +228,12 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             hosts = self._get_property("hosts")
         except Exception as err:
+            #Don't throw error as this is normal for a new domain
             logger.info("Domain is missing nameservers")
             return None
 
         hostList = []
         for host in hosts:
-            logger.info(host)
             # TODO - this should actually have a second tuple value with the ip address
             # ignored because uncertain if we will even have a way to display mult.
             #  and adresses can be a list of mult address
@@ -261,15 +261,11 @@ class Domain(TimeStampedModel, DomainHelper):
         This creates the host object in the registry
         doesn't add the created host to the domain
         returns ErrorCode (int)"""
-        logger.info("_create_host()->addresses is NONE")
-        # TODO -      # [epp.Ip(addr="127.0.0.1"), epp.Ip(addr="0:0:0:0:0:0:0:1", ip="v6")]
+        logger.info("Creating host")
         if not addrs is None:
-            logger.info("addresses is not None %s" % addrs)
             addresses = [epp.Ip(addr=addr) for addr in addrs]
             request = commands.CreateHost(name=host, addrs=addresses)
         else:
-            logger.info("_create_host()-> address IS None")
-
             request = commands.CreateHost(name=host)
 
         try:
@@ -285,17 +281,17 @@ class Domain(TimeStampedModel, DomainHelper):
         """host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, 127.0.0.1, others ips)]"""
-        # TODO: call EPP to set this info.
-        # if two nameservers change state to created, don't do it automatically
+        # TODO: ticket #848 finish this implementation
+        #must delete nameservers as well or update
+        #ip version checking may need to be added in a different ticket
 
         if len(hosts) > 13:
             raise ValueError(
                 "Too many hosts provided, you may not have more than 13 nameservers."
             )
-        logger.info("hosts will follow")
+        logger.info("Setting nameservers")
         logger.info(hosts)
         for hostTuple in hosts:
-            print("hostTuple is %s" % str(hostTuple))
             host = hostTuple[0]
             addrs = None
             if len(hostTuple) > 1:
@@ -320,7 +316,7 @@ class Domain(TimeStampedModel, DomainHelper):
                         )
 
         try:
-            self.created()
+            self.ready()
             self.save()
         except:
             logger.info(
@@ -351,20 +347,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # some statuses cannot be set by the client at all
         raise NotImplementedError()
 
-    # ### implement get status which checks the status of the domain object on error it logs but goes with whatever the status is
-    #     def get_status(self):
-    #         try:
-    #             DomainInfoReq
-    #             response=send
-    #             response.statuses
-    #             for status in status:
-    #                 if status==serverhold and self.state!=serverhld
-    #                     transition to serverhold
-    #                 if status ==client & self.state!=clientHold:
-    #                     transition to clienthold
-    #         except:
-    #             logger
-    #         return self.state
+    
     @Cache
     def registrant_contact(self) -> PublicContact:
         """Get or set the registrant for this domain."""
@@ -373,7 +356,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @registrant_contact.setter  # type: ignore
     def registrant_contact(self, contact: PublicContact):
         """Registrant is set when a domain is created, so follow on additions will update the current registrant"""
-        ###incorrect should update an existing registrant
+
         logger.info("making registrant contact")
         self._set_singleton_contact(
             contact=contact, expectedType=contact.ContactTypeChoices.REGISTRANT
@@ -386,16 +369,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
-        # call CreateContact, if contact doesn't exist yet for domain
-        # call UpdateDomain with contact,
-        #  type options are[admin, billing, tech, security]
-        # use admin as type parameter for this contact
+      
         logger.info("making admin contact")
         if contact.contact_type != contact.ContactTypeChoices.ADMINISTRATIVE:
             raise ValueError(
                 "Cannot set a registrant contact with a different contact type"
             )
-        logger.info("administrative_contact()-> update domain with admin contact")
         self._make_contact_in_registry(contact=contact)
         self._update_domain_with_contact(contact, rem=False)
 
@@ -423,13 +402,13 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(
                 "Error updating contact, code was %s error was %s" % (e.code, e)
             )
-            # add more error handling here
-            # ticket for error handling in epp
+            #TODO - ticket 433 human readable error handling here
 
     def _update_domain_with_contact(self, contact: PublicContact, rem=False):
         # TODO - consider making this use both add and rem at the same time, separating it out may not be needed
+        #good addition for ticket 850
 
-        logger.info("received type %s " % contact.contact_type)
+        logger.info("_update_domain_with_contact() received type %s " % contact.contact_type)
         domainContact = epp.DomainContact(
             contact=contact.registry_id, type=contact.contact_type
         )
@@ -438,7 +417,6 @@ class Domain(TimeStampedModel, DomainHelper):
         if rem:
             updateDomain = commands.UpdateDomain(name=self.name, rem=[domainContact])
 
-        logger.info("Send updated")
         try:
             registry.send(updateDomain, cleaned=True)
         except RegistryError as e:
@@ -514,11 +492,12 @@ class Domain(TimeStampedModel, DomainHelper):
             # TODO-error handling better here?
 
     def _set_singleton_contact(self, contact: PublicContact, expectedType: str):
-        """"""
-        logger.info(
-            "_set_singleton_contact()-> contactype type being set: %s expected type is: %s"
-            % (contact, expectedType)
-        )
+        """Sets the contacts by adding them to the registry as new contacts, 
+        updates the contact if it is already in epp,
+        deletes any additional contacts of the matching type for this domain
+        does not create the PublicContact object, this should be made beforehand
+        (call save() on a public contact to trigger the contact setters which call this function)
+        Raises ValueError if expected type doesn't match the contact type"""
         if expectedType != contact.contact_type:
             raise ValueError(
                 "Cannot set a contact with a different contact type, expected type was %s"
@@ -531,43 +510,29 @@ class Domain(TimeStampedModel, DomainHelper):
             and contact.email == ""
         )
 
-        # get publicContact objects that have the matching domain and type but a different id, should be only one
+        # get publicContact objects that have the matching domain and type but a different id
+        #like in highlander we there can only be one
         hasOtherContact = (
             PublicContact.objects.exclude(registry_id=contact.registry_id)
             .filter(domain=self, contact_type=contact.contact_type)
             .exists()
         )
-        logger.info("has other contact %s" % hasOtherContact)
 
         ##if no record exists with this contact type
-        logger.info(
-            "_set_singleton_contact()-> adding contact that shouldn't exist already"
-        )
         # make contact in registry, duplicate and errors handled there
         errorCode = self._make_contact_in_registry(contact)
-        print("error code %s" % errorCode)
-        # if contact.contact_type==contact.ContactTypeChoices.REGISTRANT:
-        #     logger.info("_set_singleton_contact()-> creating the registrant")
+       
 
-        #     self._make_contact_in_registry(contact)
-        # else:
-        #     logger.info("_set_singleton_contact()-> updating domain with the new contact")
-
-        #     self._update_domain_with_contact(contact, rem=False)
-
-        # contact is already added to the domain, but something has changed on it
-
-        # TODO - check here if contact already exists on domain in registry
-        # if domain has registrant and type is registrant this will be true,
-        # if type is anything else it should be in the contact list
+        # contact is already added to the domain, but something may have changed on it
         alreadyExistsInRegistry = errorCode == ErrorCode.OBJECT_EXISTS
-        print("already exists is %s" % alreadyExistsInRegistry)
         # if an error occured besides duplication, stop
         if (
             not alreadyExistsInRegistry
             and errorCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
         ):
+            #TODO- ticket #433 look here for error handling
             raise Exception("Unable to add contact to registry")
+        
         # contact doesn't exist on the domain yet
         logger.info("_set_singleton_contact()-> contact has been added to the registry")
 
@@ -594,38 +559,39 @@ class Domain(TimeStampedModel, DomainHelper):
                 # remove the old contact and add a new one
                 try:
                     self._update_domain_with_contact(contact=existing_contact, rem=True)
-                    print("deleting %s " % existing_contact)
                     existing_contact.delete()
-                    print("after deleting")
                     if isEmptySecurity:
-                        # add new security
+                        # security is empty so set the default security object again
                         self.get_default_security_contact().save()
                 except Exception as err:
                     logger.error(
                         "Raising error after removing and adding a new contact"
                     )
                     raise (err)
-        # TODO- should this switch to just creating a list of ones to remove and a list of ones to add?
-        # other option, check if they are really singleton, can remove them?
-        # if just added to registry and not a registrant add contact to domain
+                
+        # TODO- This could switch to just creating a list of ones to remove and a list of ones to add
+        # or Change it to add contacts before deleting the old ones
+
+        # update domain with contact or update the contact itself
         if not isEmptySecurity:
             if not alreadyExistsInRegistry and not isRegistrant:
-                print("UPDATING domain with the contact")
                 self._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
                 current_contact = PublicContact.objects.filter(
                     registry_id=contact.registry_id
                 ).get()
-                print("updating the contact itself")
+
                 if current_contact.email != contact.email:
                     self._update_epp_contact(contact=contact)
         else:
             logger.info("removing security contact and setting default again")
+
             # get the current contact registry id for security
             current_contact = PublicContact.objects.filter(
                 registry_id=contact.registry_id
             ).get()
+
             # don't let user delete the default without adding a new email
             if current_contact.email != PublicContact.get_default_security().email:
                 # remove the contact
@@ -634,7 +600,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 # add new contact
                 security_contact = self.get_default_security_contact()
                 security_contact.save()
-        logger.info("done with contacts")
 
     @security_contact.setter  # type: ignore
     def security_contact(self, contact: PublicContact):
@@ -643,7 +608,6 @@ class Domain(TimeStampedModel, DomainHelper):
         from domain information (not domain application)
         and should have the security email from DomainApplication"""
         logger.info("making security contact in registry")
-
         self._set_singleton_contact(
             contact, expectedType=contact.ContactTypeChoices.SECURITY
         )
@@ -682,7 +646,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return secContact.email
 
     def clientHoldStatus(self):
-        return epp.Status(state=self.Status.ON_HOLD, description="", lang="en")
+        return epp.Status(state=self.Status.CLIENT_HOLD, description="", lang="en")
 
     def _place_client_hold(self):
         """This domain should not be active.
@@ -768,10 +732,7 @@ class Domain(TimeStampedModel, DomainHelper):
         count = 0
         while not exitEarly and count < 3:
             try:
-                logger.info(
-                    "_get_or_create_domain()-> getting info on the domain, should hit an error"
-                )
-
+                logger.info("Getting domain info from epp")
                 req = commands.InfoDomain(name=self.name)
                 domainInfo = registry.send(req, cleaned=True).res_data[0]
                 exitEarly = True
@@ -798,12 +759,11 @@ class Domain(TimeStampedModel, DomainHelper):
         registrant = PublicContact.get_default_registrant()
         registrant.domain = self
         registrant.save()  ##calls the registrant_contact.setter
-        logger.info("registrant is %s" % registrant)
         return registrant.registry_id
 
     @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
     def pendingCreate(self):
-        logger.info("In make domain in registry ")
+        logger.info("Changing to dns_needed")
 
         registrantID = self.addRegistrant()
 
@@ -814,20 +774,15 @@ class Domain(TimeStampedModel, DomainHelper):
             registrant=registrantID,
             auth_info=epp.DomainAuthInfo(pw="2fooBAR123fooBaz"),  # not a password
         )
-        logger.info("_get_or_create_domain()-> about to send domain request")
-        logger.info(req)
+
         try:
             response = registry.send(req, cleaned=True)
-            logger.info(response)
+
         except RegistryError as err:
             if err.code != ErrorCode.OBJECT_EXISTS:
                 raise err
 
-        print("making all defaults")
         self.addAllDefaults()
-        logger.info(
-            "_get_or_create_domain()-> registry received create for  " + self.name
-        )
 
     def addAllDefaults(self):
         security_contact = self.get_default_security_contact()
@@ -841,23 +796,9 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact.domain = self
         administrative_contact.save()
 
-        print("security contact")
-        print(security_contact)
-
-    # def testSettingOtherContacts(self):
-    #     ##delete this funciton
-    #     logger.info("testSettingAllContacts")
-    #     technical_contact = PublicContact.get_default_technical()
-    #     technical_contact.domain = self
-    #     administrative_contact = PublicContact.get_default_administrative()
-    #     administrative_contact.domain = self
-
-    #     # security_contact.save()
-    #     technical_contact.save()
-    #     administrative_contact.save()
-
     @transition(field="state", source=State.DNS_NEEDED, target=State.ON_HOLD)
     def clientHold(self):
+        """place a clienthold on a domain (no longer should resolve)"""
         ##TODO - check to see if client hold is allowed should happen outside of this function
         # (check prohibited statuses)
         logger.info("clientHold()-> inside clientHold")
@@ -866,6 +807,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @transition(field="state", source=State.ON_HOLD, target=State.DNS_NEEDED)
     def revertClientHold(self):
+        """undo a clienthold placed on a domain"""
         ##TODO - check to see if client hold is allowed should happen outside of this function
         # (check prohibited statuses)
         logger.info("clientHold()-> inside clientHold")
@@ -874,6 +816,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @transition(field="state", source=State.ON_HOLD, target=State.DELETED)
     def deleted(self):
+        """domain is deleted in epp but is saved in our database"""
         logger.info("pendingCreate()-> inside pending create")
         self._delete_domain()
         # TODO - delete ticket any additional error handling here
@@ -883,19 +826,15 @@ class Domain(TimeStampedModel, DomainHelper):
         source=[State.DNS_NEEDED],
         target=State.READY,
     )
-    def created(self):
+    def ready(self):
+        """Transition to the ready state
+        domain should have nameservers and all contacts and now should be considered live on a domain"""
+        # TODO - in nameservers tickets 848 and 562 check here if updates need to be made
         nameserverList = self.nameservers
-        logger.info("created()-> inside setting create")
+        logger.info("Changing to ready state")
         if len(nameserverList) < 2 or len(nameserverList) > 13:
             raise ValueError("Not ready to become created, cannot transition yet")
-        logger.info("able to transition to created state")
-
-        # TODO - in nameservers ticket check if has everything for creation
-        # admin, tech and security
-        # 2 or more (but less than 13) nameservers
-        # if any of the above is violated raise the user raise a human readable error
-        # not there is another ticket for error handling keep a todo here if
-        # user friendly error portion is postponed
+        logger.info("able to transition to ready state")
 
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
@@ -904,19 +843,11 @@ class Domain(TimeStampedModel, DomainHelper):
         isSecurity = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
         fields = {DF.FAX, DF.VOICE, DF.ADDR}
-        print("can you see me ho")
-        logger.info("isSecurity %s" % isSecurity)
-        logger.info("contact email %s" % contact.email)
-        logger.info(
-            "contact email is default %s" % isSecurity
-            and contact.email == PublicContact.get_default_security().email
-        )
+
         if not isSecurity or (
             isSecurity and contact.email == PublicContact.get_default_security().email
         ):
             fields.add(DF.EMAIL)
-            print("added email, fields is  %s" % fields)
-        print("fields is now %s " % fields)
         return epp.Disclose(
             flag=False,
             fields=fields,
@@ -944,9 +875,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _make_contact_in_registry(self, contact: PublicContact):
         """Create the contact in the registry, ignore duplicate contact errors
         returns int corresponding to ErrorCode values"""
-        logger.info(contact)
-        logger.info(contact.registry_id)
-        print("***CREATING THE CCONTACT")
+
         create = commands.CreateContact(
             id=contact.registry_id,
             postal_info=self._make_epp_contact_postal_info(contact=contact),
@@ -956,16 +885,12 @@ class Domain(TimeStampedModel, DomainHelper):
             auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
         )
         # security contacts should only show email addresses, for now
-        print("calling disclose fields")
         create.disclose = self._disclose_fields(contact=contact)
         try:
-            logger.info("sending contact")
             registry.send(create, cleaned=True)
-            print("sendding successfully")
             return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
         except RegistryError as err:
             # don't throw an error if it is just saying this is a duplicate contact
-            print("threw error")
             if err.code != ErrorCode.OBJECT_EXISTS:
                 logger.error(
                     "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",
@@ -1022,7 +947,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """Contact registry for info about a domain."""
         try:
             # get info from registry
-            logger.info("_fetch_cache()-> fetching from cache, should create domain")
             data = self._get_or_create_domain()
             # extract properties from response
             # (Ellipsis is used to mean "null")
@@ -1041,7 +965,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # remove null properties (to distinguish between "a value of None" and null)
             cleaned = {k: v for k, v in cache.items() if v is not ...}
-            logger.info("_fetch_cache()-> cleaned is " + str(cleaned))
 
             # statuses can just be a list no need to keep the epp object
             if "statuses" in cleaned.keys():
@@ -1066,8 +989,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
-                    logger.info("_fetch_cache()->contacts are ")
-                    logger.info(data)
                     contact = {
                         "id": id,
                         "type": domainContact.type,
@@ -1086,10 +1007,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     cleaned["contacts"].append(
                         {k: v for k, v in contact.items() if v is not ...}
                     )
-                    logger.info(
-                        "_fetch_cache()-> after getting contacts cleaned is "
-                        + str(cleaned)
-                    )
+
 
             # get nameserver info, if there are any
             if (
@@ -1121,7 +1039,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     )
 
             # replace the prior cache with new data
-            logger.info("cache at the end of fetch is %s" % str(cache))
             self._cache = cleaned
 
         except RegistryError as e:
