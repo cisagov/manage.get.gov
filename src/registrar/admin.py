@@ -200,6 +200,10 @@ class DomainAdmin(ListHeaderAdmin):
     def organization_type(self, obj):
         return obj.domain_info.organization_type
 
+    organization_type.admin_order_field = (  # type: ignore
+        "domain_info__organization_type"
+    )
+
     # Filters
     list_filter = ["domain_info__organization_type"]
 
@@ -265,7 +269,7 @@ class ContactAdmin(ListHeaderAdmin):
     # is not allowing a short_description attr on it
     # This gets around the linter limitation, for now.
     def contact(self, obj: models.Contact):
-        """ Duplicate the contact _str_"""
+        """Duplicate the contact _str_"""
         if obj.first_name or obj.last_name:
             return obj.get_formatted_name()
         elif obj.email:
@@ -274,6 +278,8 @@ class ContactAdmin(ListHeaderAdmin):
             return str(obj.pk)
         else:
             return ""
+
+    contact.admin_order_field = "first_name"  # type: ignore
 
 
 class WebsiteAdmin(ListHeaderAdmin):
