@@ -48,9 +48,10 @@ class MockEppLib(TestCase):
     )
 
     def mockSend(self, _request, cleaned):
-        """"""
-        print("in mock send patch is ")
-        print(_request)
+        """Mocks the registry.send function used inside of domain.py
+        registry is imported from epplibwrapper
+        returns objects that simulate what would be in a epp response
+        but only relevant pieces for tests"""
         if isinstance(_request, commands.InfoDomain):
             if getattr(_request, "name", None) == "security.gov":
                 return MagicMock(res_data=[self.infoDomainNoContact])
@@ -62,8 +63,8 @@ class MockEppLib(TestCase):
             and getattr(_request, "id", None) == "fail"
             and self.mockedSendFunction.call_count == 3
         ):
-            print("raising error")
-
+            #use this for when a contact is being updated
+            #sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         return MagicMock(res_data=[self.mockDataInfoHosts])
 

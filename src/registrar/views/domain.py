@@ -272,13 +272,12 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
 
         # Set the security email from the form
         new_email = form.cleaned_data.get("security_email", "")
+
         domain = self.get_object()
         contact = domain.security_contact
         contact.email = new_email
         contact.save()
 
-        ##update security email here
-        # call the setter
         messages.success(
             self.request, "The security email for this domain have been updated."
         )
