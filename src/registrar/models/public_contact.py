@@ -150,4 +150,8 @@ class PublicContact(TimeStampedModel):
         )
 
     def __str__(self):
-        return f"{self.name} <{self.email}> id: {self.registry_id} type: {self.contact_type}"
+        return (
+            f"{self.name} <{self.email}>"
+            "id: {self.registry_id} "
+            "type: {self.contact_type}"
+        )

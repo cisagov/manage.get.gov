@@ -12,7 +12,6 @@ from registrar.models import Domain  # add in DomainApplication, User,
 from unittest import skip
 from epplibwrapper import commands, common, RegistryError, ErrorCode
 from registrar.models.domain_application import DomainApplication
-from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
@@ -88,18 +87,19 @@ class MockEppLib(TestCase):
             fields=fields,
             types={DF.ADDR: "loc"},
         )
+
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(
-            street=[
-                contact.street1,
-                contact.street2,
-                contact.street3,
-            ],
+            [
+                getattr(contact, street)
+                for street in ["street1", "street2", "street3"]
+                if hasattr(contact, street)
+            ],  # type: ignore
             city=contact.city,
             pc=contact.pc,
             cc=contact.cc,
             sp=contact.sp,
-        )
+        )  # type: ignore
 
         pi = common.PostalInfo(
             name=contact.name,
@@ -107,11 +107,12 @@ class MockEppLib(TestCase):
             org=contact.org,
             type="loc",
         )
+
         ai = common.ContactAuthInfo(pw="2fooBAR123fooBaz")
         if createContact:
             return commands.CreateContact(
                 id=contact.registry_id,
-                postal_info=pi,
+                postal_info=pi,  # type: ignore
                 email=contact.email,
                 voice=contact.voice,
                 fax=contact.fax,
@@ -120,7 +121,7 @@ class MockEppLib(TestCase):
                 vat=None,
                 ident=None,
                 notify_email=None,
-            )
+            )  # type: ignore
         else:
             return commands.UpdateContact(
                 id=contact.registry_id,
@@ -315,14 +316,14 @@ class TestRegistrantContacts(MockEppLib):
 
         self.domain.pendingCreate()
 
-        assert self.mockedSendFunction.call_count == 8
-        assert PublicContact.objects.filter(domain=self.domain).count() == 4
-        assert (
+        self.assertEqual(self.mockedSendFunction.call_count, 8)
+        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 4)
+        self.assertEqual(
             PublicContact.objects.get(
                 domain=self.domain,
                 contact_type=PublicContact.ContactTypeChoices.SECURITY,
-            ).email
-            == expectedSecContact.email
+            ).email,
+            expectedSecContact.email,
         )
 
         id = PublicContact.objects.get(
@@ -356,7 +357,7 @@ class TestRegistrantContacts(MockEppLib):
                 created contact of type 'security'
         """
         # make a security contact that is a PublicContact
-        self.domain.pendingCreate()  ##make sure a security email already exists
+        self.domain.pendingCreate()  # make sure a security email already exists
         expectedSecContact = PublicContact.get_default_security()
         expectedSecContact.domain = self.domain
         expectedSecContact.email = "newEmail@fake.com"
@@ -386,7 +387,7 @@ class TestRegistrantContacts(MockEppLib):
             domain=self.domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
         )
 
-        assert receivedSecurityContact == expectedSecContact
+        self.assertEqual(receivedSecurityContact, expectedSecContact)
         self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
         self.mockedSendFunction.assert_any_call(expectedUpdateDomain, cleaned=True)
 
@@ -397,7 +398,7 @@ class TestRegistrantContacts(MockEppLib):
                 to the registry twice with identical data
             Then no errors are raised in Domain
         """
-        # self.domain.pendingCreate() ##make sure a security email already exists
+
         security_contact = self.domain.get_default_security_contact()
         security_contact.registry_id = "fail"
         security_contact.save()
@@ -422,7 +423,7 @@ class TestRegistrantContacts(MockEppLib):
             call(expectedUpdateDomain, cleaned=True),
         ]
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
-        assert PublicContact.objects.filter(domain=self.domain).count() == 1
+        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
 
     def test_user_deletes_security_email(self):
         """
@@ -454,9 +455,9 @@ class TestRegistrantContacts(MockEppLib):
                 common.DomainContact(contact=old_contact.registry_id, type="security")
             ],
         )
-        assert (
-            PublicContact.objects.filter(domain=self.domain).get().email
-            == PublicContact.get_default_security().email
+        self.assertEqual(
+            PublicContact.objects.filter(domain=self.domain).get().email,
+            PublicContact.get_default_security().email,
         )
         # this one triggers the fail
         secondCreateContact = self._convertPublicContactToEpp(
@@ -468,7 +469,6 @@ class TestRegistrantContacts(MockEppLib):
                 common.DomainContact(contact=old_contact.registry_id, type="security")
             ],
         )
-        args = self.mockedSendFunction.call_args_list
 
         defaultSecID = (
             PublicContact.objects.filter(domain=self.domain).get().registry_id
@@ -534,7 +534,7 @@ class TestRegistrantContacts(MockEppLib):
             call(updateContact, cleaned=True),
         ]
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
-        assert PublicContact.objects.filter(domain=self.domain).count() == 1
+        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):

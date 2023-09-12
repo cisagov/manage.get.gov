@@ -175,7 +175,7 @@ class DomainAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/domain_change_form.html"
     readonly_fields = ["state"]
 
-    def response_change(self, request, obj):
+    def response_change(self, request, obj):  # noqa
         GET_SECURITY_EMAIL = "_get_security_email"
         SET_SECURITY_CONTACT = "_set_security_contact"
         MAKE_DOMAIN = "_make_domain_in_registry"
@@ -246,7 +246,7 @@ class DomainAdmin(ListHeaderAdmin):
             else:
                 self.message_user(
                     request,
-                    ("The security email is %" ". Thanks!") % fake_email,
+                    "The security email is %s. Thanks!" % fake_email,
                 )
 
         elif MAKE_DOMAIN in request.POST:
