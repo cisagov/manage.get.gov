@@ -121,6 +121,15 @@ class Domain(TimeStampedModel, DomainHelper):
         # previously existed but has been deleted from the registry
         DELETED = "deleted"
 
+        # the state is indeterminate
+        UNKNOWN = "unknown"
+
+        # the ready state for a domain object
+        READY = "ready"
+
+        # when a domain is on hold
+        ONHOLD = "onhold"
+
     class Cache(property):
         """
         Python descriptor to turn class methods into properties.
@@ -639,12 +648,14 @@ class Domain(TimeStampedModel, DomainHelper):
     def clientHoldStatus(self):
         return epp.Status(state=self.Status.CLIENT_HOLD, description="", lang="en")
 
+    @transition(field="state", source=[State.READY], target=State.ONHOLD)
     def _place_client_hold(self):
         """This domain should not be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
         registry.send(request)
 
+    @transition(field="state", source=[State.ONHOLD], target=State.READY)
     def _remove_client_hold(self):
         """This domain is okay to be active.
         may raises RegistryError, should be caught or handled correctly by caller"""

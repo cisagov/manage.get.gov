@@ -175,173 +175,61 @@ class DomainAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/domain_change_form.html"
     readonly_fields = ["state"]
 
-    def response_change(self, request, obj):  # noqa
-        GET_SECURITY_EMAIL = "_get_security_email"
-        SET_SECURITY_CONTACT = "_set_security_contact"
-        MAKE_DOMAIN = "_make_domain_in_registry"
-        MAKE_NAMESERVERS = "_make_nameservers"
-        GET_NAMESERVERS = "_get_nameservers"
-        GET_STATUS = "_get_status"
-        SET_CLIENT_HOLD = "_set_client_hold"
-        REMOVE_CLIENT_HOLD = "_rem_client_hold"
-        DELETE_DOMAIN = "_delete_domain"
+    def response_change(self, request, obj):
+        # Create dictionary of action functions
+        ACTION_FUNCTIONS = {
+            "_place_client_hold": self.do_place_client_hold,
+            "_remove_client_hold": self.do_remove_client_hold,
+            "_edit_domain": self.do_edit_domain,
+            "_delete_domain": self.do_delete_domain,
+            "_get_status": self.do_get_status
+        }
 
-        PLACE_HOLD = "_place_client_hold"
-        EDIT_DOMAIN = "_edit_domain"
-        if PLACE_HOLD in request.POST:
-            try:
-                obj.place_client_hold()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    (
-                        "%s is in client hold. This domain is no longer accessible on"
-                        " the public internet."
-                    )
-                    % obj.name,
-                )
-            return HttpResponseRedirect(".")
+        # Check which action button was pressed and call the corresponding function
+        for action, function in ACTION_FUNCTIONS.items():
+            if action in request.POST:
+                return function(request, obj)
 
-        if GET_SECURITY_EMAIL in request.POST:
-            try:
-                contacts = obj._get_property("contacts")
-                email = None
-                for contact in contacts:
-                    if ["type", "email"] in contact.keys() and contact[
-                        "type"
-                    ] == "security":
-                        email = contact["email"]
-                if email is None:
-                    raise ValueError(
-                        "Security contact type is not available on this domain"
-                    )
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("The security email is %s" ". Thanks!") % email,
-                )
-            return HttpResponseRedirect(".")
-
-        elif SET_SECURITY_CONTACT in request.POST:
-            try:
-                fake_email = "manuallyEnteredEmail@test.gov"
-                if PublicContact.objects.filter(
-                    domain=obj, contact_type="security"
-                ).exists():
-                    sec_contact = PublicContact.objects.filter(
-                        domain=obj, contact_type="security"
-                    ).get()
-                else:
-                    sec_contact = obj.get_default_security_contact()
-
-                sec_contact.email = fake_email
-                sec_contact.save()
-
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    "The security email is %s. Thanks!" % fake_email,
-                )
-
-        elif MAKE_DOMAIN in request.POST:
-            try:
-                obj._get_or_create_domain()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("Domain created with %s" ". Thanks!") % obj.name,
-                )
-            return HttpResponseRedirect(".")
-
-        elif MAKE_NAMESERVERS in request.POST:
-            try:
-                hosts = [("ns1.example.com", None), ("ns2.example.com", None)]
-                obj.nameservers = hosts
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("Hosts set to be %s" ". Thanks!") % hosts,
-                )
-            return HttpResponseRedirect(".")
-        elif GET_NAMESERVERS in request.POST:
-            try:
-                nameservers = obj.nameservers
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("Nameservers are %s" ". Thanks!") % nameservers,
-                )
-            return HttpResponseRedirect(".")
-
-        elif GET_STATUS in request.POST:
-            try:
-                statuses = obj.statuses
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("Domain statuses are %s" ". Thanks!") % statuses,
-                )
-            return HttpResponseRedirect(".")
-
-        elif SET_CLIENT_HOLD in request.POST:
-            try:
-                obj.clientHold()
-                obj.save()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("Domain %s is now in clientHold") % obj.name,
-                )
-            return HttpResponseRedirect(".")
-
-        elif REMOVE_CLIENT_HOLD in request.POST:
-            try:
-                obj.revertClientHold()
-                obj.save()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("Domain %s will now have client hold removed") % obj.name,
-                )
-            return HttpResponseRedirect(".")
-
-        elif DELETE_DOMAIN in request.POST:
-            try:
-                obj.deleted()
-                obj.save()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
-                )
-            return HttpResponseRedirect(".")
-        elif EDIT_DOMAIN in request.POST:
-            # We want to know, globally, when an edit action occurs
-            request.session["analyst_action"] = "edit"
-            # Restricts this action to this domain (pk) only
-            request.session["analyst_action_location"] = obj.id
-            return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
+        # If no matching action button is found, return the super method
         return super().response_change(request, obj)
+
+    def do_place_client_hold(self, request, obj):
+        try:
+            obj.place_client_hold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                (
+                    "%s is in client hold. This domain is no longer accessible on"
+                    " the public internet."
+                )
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_remove_client_hold(self, request, obj):
+        try:
+            obj.revertClientHold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("%s is ready. This domain is accessible on the public internet.")
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_edit_domain(self, request, obj):
+        # We want to know, globally, when an edit action occurs
+        request.session["analyst_action"] = "edit"
+        # Restricts this action to this domain (pk) only
+        request.session["analyst_action_location"] = obj.id
+        return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
 
     def change_view(self, request, object_id):
         # If the analyst was recently editing a domain page,
@@ -554,3 +442,4 @@ admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, AuditedAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
+admin.site.register(models.TransitionDomain, AuditedAdmin)

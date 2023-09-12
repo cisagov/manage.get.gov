@@ -430,8 +430,14 @@ def create_user():
     return User.objects.create_user(
         username="staffuser",
         email="user@example.com",
+        is_staff=True,
         password=p,
     )
+
+
+def create_ready_domain():
+    domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)
+    return domain
 
 
 def completed_application(
