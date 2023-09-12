@@ -50,11 +50,11 @@ request = commands.InfoContact(id='sh8013')
 ```
 DF = common.DiscloseField
 di = common.Disclose(flag=False, fields={DF.FAX, DF.VOICE, DF.ADDR}, types={DF.ADDR: "loc"})
-addr = common.ContactAddr(street=['123 Example Dr.',None ,None], city='Dulles', pc='20166-6503', cc='US', sp='VA')
+addr = common.ContactAddr(street=['123 Example Dr.'], city='Dulles', pc='20166-6503', cc='US', sp='VA')
 pi = common.PostalInfo(name='John Doe', addr=addr, org="Example Inc.", type="loc")
 ai = common.ContactAuthInfo(pw='feedabee')
 
-request = commands.CreateContact(id='1234ab', postal_info=pi, email='jdoe@example.com', voice='+1.7035555555', fax='+1.7035555556', auth_info=ai, disclose=di, vat=None, ident=None, notify_email=None)
+request = commands.CreateContact(id='sh8013', postal_info=pi, email='jdoe@example.com', voice='+1.7035555555', fax='+1.7035555556', auth_info=ai, disclose=di, vat=None, ident=None, notify_email=None)
 ```
 
 ### Create a new domain
