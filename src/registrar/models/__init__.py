@@ -13,6 +13,7 @@ from .user_domain_role import UserDomainRole
 from .public_contact import PublicContact
 from .user import User
 from .website import Website
+from .transition_domain import TransitionDomain
 
 __all__ = [
     "Contact",
@@ -28,6 +29,7 @@ __all__ = [
     "PublicContact",
     "User",
     "Website",
+    "TransitionDomain",
 ]
 
 auditlog.register(Contact)
@@ -42,3 +44,4 @@ auditlog.register(UserDomainRole)
 auditlog.register(PublicContact)
 auditlog.register(User)
 auditlog.register(Website)
+auditlog.register(TransitionDomain)
