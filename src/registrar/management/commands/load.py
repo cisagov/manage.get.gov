@@ -13,11 +13,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # django-auditlog has some bugs with fixtures
         # https://github.com/jazzband/django-auditlog/issues/17
-        if settings.DEBUG:
-            with disable_auditlog():
-                UserFixture.load()
-                DomainApplicationFixture.load()
-                DomainFixture.load()
-                logger.info("All fixtures loaded.")
-        else:
-            logger.warn("Refusing to load fixture data in a non DEBUG env")
+        # if settings.DEBUG:
+        with disable_auditlog():
+            UserFixture.load()
+            DomainApplicationFixture.load()
+            DomainFixture.load()
+            logger.info("All fixtures loaded.")
+        # else:
+        #     logger.warn("Refusing to load fixture data in a non DEBUG env")
