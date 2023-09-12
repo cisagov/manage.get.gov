@@ -200,7 +200,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @expiration_date.setter  # type: ignore
     def expiration_date(self, ex_date: date):
-        raise NotImplementedError()
+        pass
 
     @Cache
     def password(self) -> str:
@@ -990,7 +990,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
                     contact = {
-                        "id": id,
+                        "id": domainContact.contact,
                         "type": domainContact.type,
                         "auth_info": getattr(data, "auth_info", ...),
                         "cr_date": getattr(data, "cr_date", ...),

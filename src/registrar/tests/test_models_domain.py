@@ -149,7 +149,7 @@ class TestDomainCache(MockEppLib):
         self.assertFalse("avail" in domain._cache.keys())
 
         # using a setter should clear the cache
-        domain.nameservers = [("", "")]
+        domain.expiration_date = datetime.date.today()
         self.assertEquals(domain._cache, {})
 
         # send should have been called only once
@@ -213,11 +213,11 @@ class TestDomainCache(MockEppLib):
 class TestDomainCreation(TestCase):
     """Rule: An approved domain application must result in a domain"""
 
-    # def setUp(self):
-    #     """
-    #     Background:
-    #         Given that a valid domain application exists
-    #     """
+    def setUp(self):
+        """
+        Background:
+            Given that a valid domain application exists
+        """
 
     def test_approved_application_creates_domain_locally(self):
         """
@@ -280,7 +280,6 @@ class TestDomainCreation(TestCase):
         self.assertIn("ok", domain.status)
 
     def tearDown(self) -> None:
-        Domain.objects.filter(name="igorville.gov").delete()
         Domain.objects.all().delete()
 
 
