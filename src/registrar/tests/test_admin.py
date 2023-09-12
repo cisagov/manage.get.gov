@@ -106,6 +106,20 @@ class TestDomainApplicationAdminForm(TestCase):
         expected_choices = [("started", "started"), ("submitted", "submitted")]
         self.assertEqual(form.fields["status"].widget.choices, expected_choices)
 
+    def test_form_choices_when_no_instance(self):
+        # Create a form instance without an instance
+        form = DomainApplicationAdminForm()
+
+        # Verify that the form choices show all choices when no instance is provided;
+        # this is necessary to show all choices when creating a new domain
+        # application in django admin;
+        # note that FSM ensures that no domain application exists with invalid status,
+        # so don't need to test for invalid status
+        self.assertEqual(
+            form.fields["status"].widget.choices,
+            DomainApplication._meta.get_field("status").choices,
+        )
+
 
 class TestDomainApplicationAdmin(TestCase):
     def setUp(self):

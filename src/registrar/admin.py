@@ -267,11 +267,13 @@ class DomainApplicationAdminForm(forms.ModelForm):
         instance = kwargs.get("instance")
         if instance and instance.pk:
             current_state = instance.status
+
+            # first option in status transitions is current state
+            available_transitions = [(current_state, current_state)]
+
             transitions = get_available_FIELD_transitions(
                 instance, models.DomainApplication._meta.get_field("status")
             )
-            # first option in status transitions is current state
-            available_transitions = [(current_state, current_state)]
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target))
