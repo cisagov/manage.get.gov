@@ -450,8 +450,11 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             contacts = self._get_property("contacts")
             for contact in contacts:
-                if contact.type == PublicContact.ContactTypeChoices.SECURITY:
-                    return contact
+                ##zander don't do this just to do the bare bones here
+                if "type" in contact.keys() and contact["type"] == PublicContact.ContactTypeChoices.SECURITY:
+                    tempContact= self.get_default_security_contact()
+                    tempContact.email=contact["email"]
+                    return tempContact
 
         except Exception as err:  # use better error handling
             logger.info("Couldn't get contact %s" % err)
@@ -989,6 +992,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
+                    ##convert this to use PublicContactInstead
                     contact = {
                         "id": domainContact.contact,
                         "type": domainContact.type,
@@ -1003,7 +1007,7 @@ class Domain(TimeStampedModel, DomainHelper):
                         "up_date": getattr(data, "up_date", ...),
                         "voice": getattr(data, "voice", ...),
                     }
-
+        
                     cleaned["contacts"].append(
                         {k: v for k, v in contact.items() if v is not ...}
                     )

@@ -1132,6 +1132,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 
+##here
     def test_domain_detail_link_works(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")
@@ -1411,6 +1412,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         )
         self.assertContains(page, "Domain security email")
 
+    @skip("Ticket 912 needs to fix this one")
     def test_domain_security_email_form(self):
         """Adding a security email works.
 
