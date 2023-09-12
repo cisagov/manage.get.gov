@@ -28,6 +28,7 @@ from .common import (
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
+from unittest import skip
 
 from django.conf import settings
 from unittest.mock import MagicMock
@@ -40,7 +41,6 @@ logger = logging.getLogger(__name__)
 class TestDomainAdmin(TestCase):
     def setUp(self):
         self.site = AdminSite()
-        self.factory = RequestFactory()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
@@ -82,6 +82,10 @@ class TestDomainAdmin(TestCase):
         self.assertContains(response, domain.name)
         self.assertContains(response, "Place hold")
         self.assertNotContains(response, "Remove hold")
+
+    @skip("Waiting on epp lib to implement")
+    def test_place_and_remove_hold_epp(self):
+        raise
 
     def tearDown(self):
         Domain.objects.all().delete()

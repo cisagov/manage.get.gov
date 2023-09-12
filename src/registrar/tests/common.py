@@ -427,14 +427,12 @@ def create_superuser():
 def create_user():
     User = get_user_model()
     p = "userpass"
-    staffuser = User.objects.create_user(
+    return User.objects.create_user(
         username="staffuser",
         email="user@example.com",
+        is_staff=True,
         password=p,
     )
-    staffuser.is_staff = True
-    staffuser.save()
-    return staffuser
 
 
 def create_ready_domain():
