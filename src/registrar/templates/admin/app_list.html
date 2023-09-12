@@ -4,14 +4,20 @@
   {% for app in app_list %}
     <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
       <table>
-        {# .gov override: remove link #}
-        <caption>
-          <span class="section">{{ app.name }}</span>
-        </caption>
-        {# end .gov override #}
 
         {# .gov override: add headers #}
         <thead>
+          <tr>
+            {% if show_changelinks %}
+              <th colspan="3" class="primary-th">
+                {{ app.name }}
+              </th>
+            {% else %}
+              <th colspan="2" class="primary-th">
+                {{ app.name }}
+              </th>
+            {% endif %}
+          </tr>
           <tr>
             <th scope="col">Model</th>
             <th><span class="display-inline-block min-width-25">Add</span></th>
