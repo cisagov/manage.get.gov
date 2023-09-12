@@ -193,6 +193,31 @@ class DomainAdmin(ListHeaderAdmin):
         # If no matching action button is found, return the super method
         return super().response_change(request, obj)
 
+    def do_delete_domain(self, request, obj):
+        try:
+            obj.deleted()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
+            )
+        return HttpResponseRedirect(".")
+    
+    def do_get_status(self, request, obj):
+        try:
+            statuses = obj.statuses
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain statuses are %s" ". Thanks!") % statuses,
+            )
+        return HttpResponseRedirect(".")
+
     def do_place_client_hold(self, request, obj):
         try:
             obj.place_client_hold()

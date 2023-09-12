@@ -121,12 +121,6 @@ class Domain(TimeStampedModel, DomainHelper):
         # previously existed but has been deleted from the registry
         DELETED = "deleted"
 
-        # the state is indeterminate
-        UNKNOWN = "unknown"
-
-        # the ready state for a domain object
-        READY = "ready"
-
         # when a domain is on hold
         ONHOLD = "onhold"
 
