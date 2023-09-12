@@ -31,7 +31,7 @@ html[data-theme="light"] {
 
     // #{$theme-link-color} would interpolate to 'primary', so we use the source value instead
     --link-fg: #{$theme-color-primary};
-    --link-hover-color: #{$theme-color-primary-darker};
+    --link-hover-color: #{$theme-color-primary};
     // $theme-link-visited-color - violet-70v
     --link-selected-fg: #54278f;
 
@@ -153,9 +153,12 @@ h1, h2, h3 {
     padding-top: 20px;
 }
 
-// 'Delete button' layout bug
-.submit-row a.deletelink {
+// Fix django admin button height bugs
+.submit-row a.deletelink,
+.delete-confirmation form .cancel-link,
+.submit-row a.closelink {
     height: auto!important;
+    font-size: 14px;
 }
 
 // Keep th from collapsing 

@@ -6,8 +6,34 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
+from auditlog.models import LogEntry  # type: ignore
+from auditlog.admin import LogEntryAdmin  # type: ignore
 
 logger = logging.getLogger(__name__)
+
+
+class CustomLogEntryAdmin(LogEntryAdmin):
+    """Overwrite the generated LogEntry admin class"""
+
+    list_display = [
+        "created",
+        "resource",
+        "action",
+        "msg_short",
+        "user_url",
+    ]
+
+    # We name the custom prop 'resource' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    def resource(self, obj):
+        # Return the field value without a link
+        return f"{obj.content_type} - {obj.object_repr}"
+
+    search_help_text = "Search by resource, changes, or user."
+
+    change_form_template = "admin/change_form_no_submit.html"
+    add_form_template = "admin/change_form_no_submit.html"
 
 
 class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
@@ -91,14 +117,12 @@ class ListHeaderAdmin(AuditedAdmin):
 
 
 class UserContactInline(admin.StackedInline):
-
     """Edit a user's profile on the user page."""
 
     model = models.Contact
 
 
 class MyUserAdmin(BaseUserAdmin):
-
     """Custom user admin class to use our inlines."""
 
     inlines = [UserContactInline]
@@ -152,22 +176,36 @@ class MyUserAdmin(BaseUserAdmin):
 
 
 class HostIPInline(admin.StackedInline):
-
     """Edit an ip address on the host page."""
 
     model = models.HostIP
 
 
 class MyHostAdmin(AuditedAdmin):
-
     """Custom host admin class to use our inlines."""
 
     inlines = [HostIPInline]
 
 
 class DomainAdmin(ListHeaderAdmin):
-
     """Custom domain admin class to add extra buttons."""
+
+    # Columns
+    list_display = [
+        "name",
+        "organization_type",
+        "state",
+    ]
+
+    def organization_type(self, obj):
+        return obj.domain_info.organization_type
+
+    organization_type.admin_order_field = (  # type: ignore
+        "domain_info__organization_type"
+    )
+
+    # Filters
+    list_filter = ["domain_info__organization_type"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
@@ -250,11 +288,100 @@ class ContactAdmin(ListHeaderAdmin):
 
     search_fields = ["email", "first_name", "last_name"]
     search_help_text = "Search by firstname, lastname or email."
+    list_display = [
+        "contact",
+        "email",
+    ]
+
+    # We name the custom prop 'contact' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    def contact(self, obj: models.Contact):
+        """Duplicate the contact _str_"""
+        if obj.first_name or obj.last_name:
+            return obj.get_formatted_name()
+        elif obj.email:
+            return obj.email
+        elif obj.pk:
+            return str(obj.pk)
+        else:
+            return ""
+
+    contact.admin_order_field = "first_name"  # type: ignore
+
+
+class WebsiteAdmin(ListHeaderAdmin):
+    """Custom website admin class."""
+
+    # Search
+    search_fields = [
+        "website",
+    ]
+    search_help_text = "Search by website."
+
+
+class UserDomainRoleAdmin(ListHeaderAdmin):
+    """Custom domain role admin class."""
+
+    # Columns
+    list_display = [
+        "user",
+        "domain",
+        "role",
+    ]
+
+    # Search
+    search_fields = [
+        "user__first_name",
+        "user__last_name",
+        "domain__name",
+        "role",
+    ]
+    search_help_text = "Search by user, domain, or role."
+
+
+class DomainInvitationAdmin(ListHeaderAdmin):
+    """Custom domain invitation admin class."""
+
+    # Columns
+    list_display = [
+        "email",
+        "domain",
+        "status",
+    ]
+
+    # Search
+    search_fields = [
+        "email",
+        "domain__name",
+    ]
+    search_help_text = "Search by email or domain."
+
+
+class DomainInformationAdmin(ListHeaderAdmin):
+    """Customize domain information admin class."""
+
+    # Columns
+    list_display = [
+        "domain",
+        "organization_type",
+        "created_at",
+        "submitter",
+    ]
+
+    # Filters
+    list_filter = ["organization_type"]
+
+    # Search
+    search_fields = [
+        "domain__name",
+    ]
+    search_help_text = "Search by domain."
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
 
-    """Customize the applications listing view."""
+    """Custom domain applications admin class."""
 
     # Set multi-selects 'read-only' (hide selects and show data)
     # based on user perms and application creator's status
@@ -428,14 +555,16 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
+admin.site.unregister(LogEntry)  # Unregister the default registration
+admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
-admin.site.register(models.UserDomainRole, AuditedAdmin)
+admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
-admin.site.register(models.DomainInvitation, AuditedAdmin)
-admin.site.register(models.DomainInformation, AuditedAdmin)
+admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
+admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
-admin.site.register(models.Website, AuditedAdmin)
+admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, AuditedAdmin)
