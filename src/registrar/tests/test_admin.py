@@ -11,11 +11,11 @@ from registrar.admin import (
     AuditedAdmin,
 )
 from registrar.models import (
+    Domain,
     DomainApplication,
     DomainInformation,
     User,
     DomainInvitation,
-    Domain,
 )
 from .common import (
     completed_application,
@@ -23,11 +23,13 @@ from .common import (
     mock_user,
     create_superuser,
     create_user,
+    create_ready_domain,
     multiple_unalphabetical_domain_objects,
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
+from unittest import skip
 
 from django.conf import settings
 from unittest.mock import MagicMock
@@ -35,6 +37,60 @@ import boto3_mocking  # type: ignore
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class TestDomainAdmin(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.admin = DomainAdmin(model=Domain, admin_site=self.site)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+        self.staffuser = create_user()
+
+    def test_place_and_remove_hold(self):
+        domain = create_ready_domain()
+
+        # get admin page and assert Place Hold button
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Place hold")
+        self.assertNotContains(response, "Remove hold")
+
+        # submit place_client_hold and assert Remove Hold button
+        response = self.client.post(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            {"_place_client_hold": "Place hold", "name": domain.name},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Remove hold")
+        self.assertNotContains(response, "Place hold")
+
+        # submit remove client hold and assert Place hold button
+        response = self.client.post(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            {"_remove_client_hold": "Remove hold", "name": domain.name},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Place hold")
+        self.assertNotContains(response, "Remove hold")
+
+    @skip("Waiting on epp lib to implement")
+    def test_place_and_remove_hold_epp(self):
+        raise
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        User.objects.all().delete()
 
 
 class TestDomainApplicationAdminForm(TestCase):

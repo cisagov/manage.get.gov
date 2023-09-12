@@ -177,30 +177,58 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        PLACE_HOLD = "_place_client_hold"
-        EDIT_DOMAIN = "_edit_domain"
-        if PLACE_HOLD in request.POST:
-            try:
-                obj.place_client_hold()
-            except Exception as err:
-                self.message_user(request, err, messages.ERROR)
-            else:
-                self.message_user(
-                    request,
-                    (
-                        "%s is in client hold. This domain is no longer accessible on"
-                        " the public internet."
-                    )
-                    % obj.name,
-                )
-            return HttpResponseRedirect(".")
-        elif EDIT_DOMAIN in request.POST:
-            # We want to know, globally, when an edit action occurs
-            request.session["analyst_action"] = "edit"
-            # Restricts this action to this domain (pk) only
-            request.session["analyst_action_location"] = obj.id
-            return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
+        # Create dictionary of action functions
+        ACTION_FUNCTIONS = {
+            "_place_client_hold": self.do_place_client_hold,
+            "_remove_client_hold": self.do_remove_client_hold,
+            "_edit_domain": self.do_edit_domain,
+        }
+
+        # Check which action button was pressed and call the corresponding function
+        for action, function in ACTION_FUNCTIONS.items():
+            if action in request.POST:
+                return function(request, obj)
+
+        # If no matching action button is found, return the super method
         return super().response_change(request, obj)
+
+    def do_place_client_hold(self, request, obj):
+        try:
+            obj.place_client_hold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                (
+                    "%s is in client hold. This domain is no longer accessible on"
+                    " the public internet."
+                )
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_remove_client_hold(self, request, obj):
+        try:
+            obj.remove_client_hold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("%s is ready. This domain is accessible on the public internet.")
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_edit_domain(self, request, obj):
+        # We want to know, globally, when an edit action occurs
+        request.session["analyst_action"] = "edit"
+        # Restricts this action to this domain (pk) only
+        request.session["analyst_action_location"] = obj.id
+        return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
 
     def change_view(self, request, object_id):
         # If the analyst was recently editing a domain page,
@@ -438,3 +466,4 @@ admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
+admin.site.register(models.TransitionDomain, AuditedAdmin)

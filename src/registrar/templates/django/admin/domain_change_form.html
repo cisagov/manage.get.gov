@@ -8,8 +8,12 @@
 
 {% block field_sets %}
     <div class="submit-row">
+        {% if original.state == original.State.READY %}
+          <input type="submit" value="Place hold" name="_place_client_hold">
+        {% elif original.state == original.State.ONHOLD %}
+          <input type="submit" value="Remove hold" name="_remove_client_hold">
+        {% endif %}
         <input id="manageDomainSubmitButton" type="submit" value="Manage Domain" name="_edit_domain">
-        <input type="submit" value="Place hold" name="_place_client_hold">
     </div>
     {{ block.super }}
 {% endblock %}
