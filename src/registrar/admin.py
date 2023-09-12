@@ -175,17 +175,19 @@ class DomainAdmin(ListHeaderAdmin):
     readonly_fields = ["state"]
 
     def response_change(self, request, obj):
-        ACTION_BUTTONS = {
-            "PLACE_HOLD": "_place_client_hold",
-            "REMOVE_HOLD": "_remove_client_hold",
-            "EDIT_DOMAIN": "_edit_domain",
+        # Create dictionary of action functions
+        ACTION_FUNCTIONS = {
+            "_place_client_hold": self.do_place_client_hold,
+            "_remove_client_hold": self.do_remove_client_hold,
+            "_edit_domain": self.do_edit_domain,
         }
-        if ACTION_BUTTONS["PLACE_HOLD"] in request.POST:
-            return self.do_place_client_hold(request, obj)
-        elif ACTION_BUTTONS["REMOVE_HOLD"] in request.POST:
-            return self.do_remove_client_hold(request, obj)
-        elif ACTION_BUTTONS["EDIT_DOMAIN"] in request.POST:
-            return self.do_edit_domain(request, obj)
+
+        # Check which action button was pressed and call the corresponding function
+        for action, function in ACTION_FUNCTIONS.items():
+            if action in request.POST:
+                return function(request, obj)
+
+        # If no matching action button is found, return the super method
         return super().response_change(request, obj)
 
     def do_place_client_hold(self, request, obj):
