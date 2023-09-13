@@ -134,10 +134,16 @@ class DomainInformation(TimeStampedModel):
         verbose_name="Urbanization (Puerto Rico only)",
     )
 
-    about_your_organization = models.TextField(
+    type_of_work = models.TextField(
         null=True,
         blank=True,
-        help_text="Information about your organization",
+        help_text="Type of work of the organization",
+    )
+
+    more_organization_information = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Further information about the government organization",
     )
 
     authorizing_official = models.ForeignKey(

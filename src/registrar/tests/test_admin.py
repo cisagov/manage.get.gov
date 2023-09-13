@@ -441,7 +441,8 @@ class TestDomainApplicationAdmin(TestCase):
             "state_territory",
             "zipcode",
             "urbanization",
-            "about_your_organization",
+            "type_of_work",
+            "more_organization_information",
             "authorizing_official",
             "approved_domain",
             "requested_domain",
@@ -465,7 +466,8 @@ class TestDomainApplicationAdmin(TestCase):
 
         expected_fields = [
             "creator",
-            "about_your_organization",
+            "type_of_work",
+            "more_organization_information",
             "address_line1",
             "address_line2",
             "zipcode",

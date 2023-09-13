@@ -10,9 +10,9 @@ Organization name and mailing address:
 {{ application.city }}, {{ application.state_territory }}
 {{ application.zipcode }}{% if application.urbanization  %}
 {{ application.urbanization }}{% endif %}{% endspaceless %}
-{% if application.about_your_organization %}{# if block makes one newline if it's false #}
-About your organization:
-{% spaceless %}{{ application.about_your_organization }}{% endspaceless %}
+{% if application.type_of_work %}{# if block makes one newline if it's false #}
+Type of work:
+{% spaceless %}{{ application.type_of_work }}{% endspaceless %}
 {% endif %}
 Authorizing official:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=application.authorizing_official %}{% endspaceless %}

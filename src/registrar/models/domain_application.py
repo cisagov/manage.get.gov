@@ -378,10 +378,16 @@ class DomainApplication(TimeStampedModel):
         help_text="Urbanization (Puerto Rico only)",
     )
 
-    about_your_organization = models.TextField(
+    type_of_work = models.TextField(
         null=True,
         blank=True,
-        help_text="Information about your organization",
+        help_text="Type of work of the organization",
+    )
+
+    more_organization_information = models.TextField(
+        null=True,
+        blank=True,
+        help_text="More information about your organization",
     )
 
     authorizing_official = models.ForeignKey(
@@ -647,7 +653,7 @@ class DomainApplication(TimeStampedModel):
         ]
         return bool(user_choice and user_choice not in excluded)
 
-    def show_about_your_organization(self) -> bool:
+    def show_type_of_work(self) -> bool:
         """Show this step if this is a special district or interstate."""
         user_choice = self.organization_type
         return user_choice in [
