@@ -4,7 +4,6 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
-from registrar.models.public_contact import PublicContact
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 from auditlog.models import LogEntry  # type: ignore
@@ -220,7 +219,7 @@ class DomainAdmin(ListHeaderAdmin):
             "_remove_client_hold": self.do_remove_client_hold,
             "_edit_domain": self.do_edit_domain,
             "_delete_domain": self.do_delete_domain,
-            "_get_status": self.do_get_status
+            "_get_status": self.do_get_status,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -243,7 +242,7 @@ class DomainAdmin(ListHeaderAdmin):
                 ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
             )
         return HttpResponseRedirect(".")
-    
+
     def do_get_status(self, request, obj):
         try:
             statuses = obj.statuses

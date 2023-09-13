@@ -116,13 +116,10 @@ class Domain(TimeStampedModel, DomainHelper):
         READY = "ready"
 
         # Registrar manually changed state to client hold
-        ON_HOLD = "client hold"
+        ON_HOLD = "on hold"
 
         # previously existed but has been deleted from the registry
         DELETED = "deleted"
-
-        # when a domain is on hold
-        ONHOLD = "onhold"
 
     class Cache(property):
         """
@@ -453,10 +450,13 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             contacts = self._get_property("contacts")
             for contact in contacts:
-                ##zander don't do this just to do the bare bones here
-                if "type" in contact.keys() and contact["type"] == PublicContact.ContactTypeChoices.SECURITY:
-                    tempContact= self.get_default_security_contact()
-                    tempContact.email=contact["email"]
+                # zander don't do this just to do the bare bones here
+                if (
+                    "type" in contact.keys()
+                    and contact["type"] == PublicContact.ContactTypeChoices.SECURITY
+                ):
+                    tempContact = self.get_default_security_contact()
+                    tempContact.email = contact["email"]
                     return tempContact
 
         except Exception as err:  # use better error handling
@@ -642,14 +642,12 @@ class Domain(TimeStampedModel, DomainHelper):
     def clientHoldStatus(self):
         return epp.Status(state=self.Status.CLIENT_HOLD, description="", lang="en")
 
-    @transition(field="state", source=[State.READY], target=State.ONHOLD)
     def _place_client_hold(self):
         """This domain should not be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
         registry.send(request)
 
-    @transition(field="state", source=[State.ONHOLD], target=State.READY)
     def _remove_client_hold(self):
         """This domain is okay to be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
@@ -793,7 +791,7 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact.save()
 
     @transition(field="state", source=State.DNS_NEEDED, target=State.ON_HOLD)
-    def clientHold(self):
+    def place_client_hold(self):
         """place a clienthold on a domain (no longer should resolve)"""
         # TODO - ensure all requirements for client hold are made here
         # (check prohibited statuses)
@@ -1012,7 +1010,7 @@ class Domain(TimeStampedModel, DomainHelper):
                         "up_date": getattr(data, "up_date", ...),
                         "voice": getattr(data, "voice", ...),
                     }
-        
+
                     cleaned["contacts"].append(
                         {k: v for k, v in contact.items() if v is not ...}
                     )
