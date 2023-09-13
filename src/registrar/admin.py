@@ -220,6 +220,8 @@ class DomainAdmin(ListHeaderAdmin):
             "_place_client_hold": self.do_place_client_hold,
             "_remove_client_hold": self.do_remove_client_hold,
             "_edit_domain": self.do_edit_domain,
+            "_delete_domain": self.do_delete_domain,
+            "_get_status": self.do_get_status,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -229,6 +231,31 @@ class DomainAdmin(ListHeaderAdmin):
 
         # If no matching action button is found, return the super method
         return super().response_change(request, obj)
+
+    def do_delete_domain(self, request, obj):
+        try:
+            obj.deleted()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_get_status(self, request, obj):
+        try:
+            statuses = obj.statuses
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain statuses are %s" ". Thanks!") % statuses,
+            )
+        return HttpResponseRedirect(".")
 
     def do_place_client_hold(self, request, obj):
         try:
@@ -249,7 +276,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     def do_remove_client_hold(self, request, obj):
         try:
-            obj.remove_client_hold()
+            obj.revert_client_hold()
             obj.save()
         except Exception as err:
             self.message_user(request, err, messages.ERROR)
@@ -600,5 +627,6 @@ admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
+admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, AuditedAdmin)
