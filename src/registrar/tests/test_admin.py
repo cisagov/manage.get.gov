@@ -120,6 +120,20 @@ class TestDomainApplicationAdminForm(TestCase):
             DomainApplication._meta.get_field("status").choices,
         )
 
+    def test_form_choices_when_ineligible(self):
+        # Create a form instance with a domain application with ineligible status
+        ineligible_application = DomainApplication(status="ineligible")
+
+        # Attempt to create a form with the ineligible application
+        # The form should not raise an error, but choices should be the
+        # full list of possible choices
+        form = DomainApplicationAdminForm(instance=ineligible_application)
+
+        self.assertEqual(
+            form.fields["status"].widget.choices,
+            DomainApplication._meta.get_field("status").choices,
+        )
+
 
 class TestDomainApplicationAdmin(TestCase):
     def setUp(self):

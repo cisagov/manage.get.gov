@@ -264,21 +264,25 @@ class DomainApplicationAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        instance = kwargs.get("instance")
-        if instance and instance.pk:
-            current_state = instance.status
+        application = kwargs.get("instance")
+        if application and application.pk:
+            current_state = application.status
 
             # first option in status transitions is current state
             available_transitions = [(current_state, current_state)]
 
             transitions = get_available_FIELD_transitions(
-                instance, models.DomainApplication._meta.get_field("status")
+                application, models.DomainApplication._meta.get_field("status")
             )
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target))
 
-            self.fields["status"].widget.choices = available_transitions
+            # only set the available transitions if the user is not restricted
+            # from editing the domain application; otherwise, the form will be
+            # readonly and the status field will not have a widget
+            if not application.creator.is_restricted():
+                self.fields["status"].widget.choices = available_transitions
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
