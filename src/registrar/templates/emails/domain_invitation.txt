@@ -1,9 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi {{ incoming-email-here }}.
-# We don't know their first name until they make an account, we only know their email
-# Stuck here because we only get their email from the form, so can't pull above?
+Hi.
 
-{{ contact-of-whoever-owns-usually-admin-or-maybe-security-contact }} has added you as a manager on {{ domain.name }}.
+{{ first_name }} has added you as a manager on {{ domain.name }}.
 
 YOU NEED A LOGIN.GOV ACCOUNT
 You’ll need a Login.gov account to manage your .gov domain. Login.gov provides a simple and secure process for signing into many government services with one account. If you don’t already have one, follow these steps to create your Login.gov account <https://login.gov/help/get-started/create-your-account/>. 
