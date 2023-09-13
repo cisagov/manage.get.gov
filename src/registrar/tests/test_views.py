@@ -1132,7 +1132,6 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 
-    ##here
     def test_domain_detail_link_works(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")

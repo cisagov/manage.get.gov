@@ -36,7 +36,6 @@ class PublicContact(TimeStampedModel):
                 case PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     self.domain.administrative_contact = self
                 case PublicContact.ContactTypeChoices.TECHNICAL:
-                    print("in technical of the public contact class")
                     self.domain.technical_contact = self
                 case PublicContact.ContactTypeChoices.SECURITY:
                     self.domain.security_contact = self

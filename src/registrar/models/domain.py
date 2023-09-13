@@ -96,7 +96,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # for human review or third-party action.  A transform command that
         # is processed, but whose requested action is pending, is noted with
         # response code 1001.
-        DNS_NEEDED = "pendingCreate"
+        PENDING_CREATE = "pendingCreate"
         PENDING_DELETE = "pendingDelete"
         PENDING_RENEW = "pendingRenew"
         PENDING_TRANSFER = "pendingTransfer"
@@ -230,6 +230,7 @@ class Domain(TimeStampedModel, DomainHelper):
             hosts = self._get_property("hosts")
         except Exception as err:
             # Don't throw error as this is normal for a new domain
+            # TODO - 433 error handling ticket should address this
             logger.info("Domain is missing nameservers %s" % err)
             return []
 
@@ -411,7 +412,8 @@ class Domain(TimeStampedModel, DomainHelper):
             # TODO - ticket 433 human readable error handling here
 
     def _update_domain_with_contact(self, contact: PublicContact, rem=False):
-        """adds or removes a contact from a domain"""
+        """adds or removes a contact from a domain
+        rem being true indicates the contact will be removed from registry"""
         logger.info(
             "_update_domain_with_contact() received type %s " % contact.contact_type
         )
@@ -468,8 +470,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return self.get_default_security_contact()
 
     def _add_registrant_to_existing_domain(self, contact: PublicContact):
-        self._update_epp_contact(contact=contact)
-
+        """Used to change the registrant contact on an existing domain"""
         updateDomain = commands.UpdateDomain(
             name=self.name, registrant=contact.registry_id
         )
@@ -489,6 +490,7 @@ class Domain(TimeStampedModel, DomainHelper):
         does not create the PublicContact object, this should be made beforehand
         (call save() on a public contact to trigger the contact setters
         which inturn call this function)
+        Will throw error if contact type is not the same as expectType
         Raises ValueError if expected type doesn't match the contact type"""
         if expectedType != contact.contact_type:
             raise ValueError(
@@ -533,16 +535,12 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info(
                 "_set_singleton_contact()-> updating domain, removing old contact"
             )
-            if isEmptySecurity:
-                existing_contact = PublicContact.objects.filter(
-                    domain=self, contact_type=contact.contact_type
-                ).get()
-            else:
-                existing_contact = (
-                    PublicContact.objects.exclude(registry_id=contact.registry_id)
-                    .filter(domain=self, contact_type=contact.contact_type)
-                    .get()
-                )
+
+            existing_contact = (
+                PublicContact.objects.exclude(registry_id=contact.registry_id)
+                .filter(domain=self, contact_type=contact.contact_type)
+                .get()
+            )
             if isRegistrant:
                 # send update domain only for registant contacts
                 existing_contact.delete()
@@ -552,9 +550,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 try:
                     self._update_domain_with_contact(contact=existing_contact, rem=True)
                     existing_contact.delete()
-                    if isEmptySecurity:
-                        # security is empty so set the default security object again
-                        self.get_default_security_contact().save()
                 except Exception as err:
                     logger.error(
                         "Raising error after removing and adding a new contact"
@@ -646,13 +641,13 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should not be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
-        registry.send(request)
+        registry.send(request, cleaned=True)
 
     def _remove_client_hold(self):
         """This domain is okay to be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, rem=[self.clientHoldStatus()])
-        registry.send(request)
+        registry.send(request, cleaned=True)
 
     def _delete_domain(self):
         """This domain should be deleted from the registry
@@ -790,7 +785,7 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact.domain = self
         administrative_contact.save()
 
-    @transition(field="state", source=State.DNS_NEEDED, target=State.ON_HOLD)
+    @transition(field="state", source=State.READY, target=State.ON_HOLD)
     def place_client_hold(self):
         """place a clienthold on a domain (no longer should resolve)"""
         # TODO - ensure all requirements for client hold are made here
@@ -799,8 +794,8 @@ class Domain(TimeStampedModel, DomainHelper):
         self._place_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=State.ON_HOLD, target=State.DNS_NEEDED)
-    def revertClientHold(self):
+    @transition(field="state", source=State.ON_HOLD, target=State.READY)
+    def revert_client_hold(self):
         """undo a clienthold placed on a domain"""
 
         logger.info("clientHold()-> inside clientHold")
@@ -830,6 +825,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         # TODO - in nameservers tickets 848 and 562
         #   check here if updates need to be made
+        # consider adding these checks as constraints
+        #  within the transistion itself
         nameserverList = self.nameservers
         logger.info("Changing to ready state")
         if len(nameserverList) < 2 or len(nameserverList) > 13:
@@ -995,7 +992,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
                     # extract properties from response
                     # (Ellipsis is used to mean "null")
-                    ##convert this to use PublicContactInstead
+                    # convert this to use PublicContactInstead
                     contact = {
                         "id": domainContact.contact,
                         "type": domainContact.type,

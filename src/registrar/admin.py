@@ -274,7 +274,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     def do_remove_client_hold(self, request, obj):
         try:
-            obj.revertClientHold()
+            obj.revert_client_hold()
             obj.save()
         except Exception as err:
             self.message_user(request, err, messages.ERROR)
