@@ -773,6 +773,9 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Contact does not exist")
             raise error
         else:
+            # TODO - is this even needed???????
+            print(f"generic_contact_getter -> contacts?? {contacts}")
+            # --> Map to public contact
             cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
             if(cached_contact is None):
                 raise ValueError("No contact was found in cache or the registry")
@@ -817,29 +820,14 @@ class Domain(TimeStampedModel, DomainHelper):
         Otherwise, we grab from  the registry.
         """
         for contact in contacts:
+            print(f"grab_contact_in_keys -> contact item {contact}")
+            print(f"grab_contact_in_keys -> isInstace {isinstance(contact, dict)}")
             if (
                 isinstance(contact, dict)
                 and "type" in contact.keys()
-                and "contact" in contact.keys()
                 and contact["type"] == check_type
             ):
-                # 
-                if(get_latest_from_registry):
-                    request = commands.InfoContact(id=contact.get("contact"))
-                    # TODO - Maybe have this return contact instead,
-                    # Then create a global timer which eventually returns
-                    # the requested content.... And updates it!
-                    contact_info = registry.send(request, cleaned=True)
-                    logger.debug(f"grab_contact_in_keys -> rest data is {contact_info.res_data[0]}")
-                    return self.map_to_public_contact(contact_info.res_data[0])
-
-                return contact["contact"]
-        
-        # If nothing is found in cache, then grab from registry
-        request = commands.InfoContact(id=contact.get("contact"))
-        contact_info = registry.send(request, cleaned=True)
-        logger.debug(f"grab_contact_in_keys -> rest data is {contact_info.res_data[0]}")
-        return self.map_to_public_contact(contact_info.res_data[0])
+                return contact
     
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
