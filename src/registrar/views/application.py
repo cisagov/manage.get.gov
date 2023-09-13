@@ -30,7 +30,7 @@ class Step(StrEnum):
     ORGANIZATION_FEDERAL = "organization_federal"
     ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
-    TYPE_OF_WORK = "type_of_work"
+    ABOUT_YOUR_ORGANIZATION = "about_your_organization"
     AUTHORIZING_OFFICIAL = "authorizing_official"
     CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
@@ -77,7 +77,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
         Step.ORGANIZATION_ELECTION: _("Election office"),
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
-        Step.TYPE_OF_WORK: _("Type of work"),
+        Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
         Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
         Step.CURRENT_SITES: _("Current website for your organization"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
@@ -100,7 +100,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.ORGANIZATION_ELECTION: lambda w: w.from_model(
             "show_organization_election", False
         ),
-        Step.TYPE_OF_WORK: lambda w: w.from_model("show_type_of_work", False),
+        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model(
+            "show_about_your_organization", False
+        ),
         Step.NO_OTHER_CONTACTS: lambda w: w.from_model(
             "show_no_other_contacts_rationale", False
         ),
@@ -373,9 +375,9 @@ class OrganizationContact(ApplicationWizard):
     forms = [forms.OrganizationContactForm]
 
 
-class TypeOfWork(ApplicationWizard):
-    template_name = "application_type_of_work.html"
-    forms = [forms.TypeOfWorkForm]
+class AboutYourOrganization(ApplicationWizard):
+    template_name = "application_about_your_organization.html"
+    forms = [forms.AboutYourOrganizationForm]
 
 
 class AuthorizingOfficial(ApplicationWizard):
