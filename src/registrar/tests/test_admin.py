@@ -89,9 +89,6 @@ class TestDomainAdmin(MockEppLib):
         raise
 
     def tearDown(self):
-        # DomainInformation.objects.all().delete()
-        # DomainApplication.objects.all().delete()
-        # Domain.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
 

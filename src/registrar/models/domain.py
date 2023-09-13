@@ -443,16 +443,9 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def security_contact(self) -> PublicContact:
         """Get or set the security contact for this domain."""
-
-        # get the contacts: call _get_property(contacts=True)
-        # if contacts exist and security contact is in the contact list
-        # return that contact
-        # else call the setter
-        #   send the public default contact
         try:
             contacts = self._get_property("contacts")
             for contact in contacts:
-                # zander don't do this just to do the bare bones here
                 if (
                     "type" in contact.keys()
                     and contact["type"] == PublicContact.ContactTypeChoices.SECURITY
@@ -464,7 +457,7 @@ class Domain(TimeStampedModel, DomainHelper):
         except Exception as err:  # use better error handling
             logger.info("Couldn't get contact %s" % err)
 
-            # TODO - remove this! ideally it should return None,
+            # TODO - remove this ideally it should return None,
             # but error handling needs to be
             # added on the security email page so that it can handle it being none
         return self.get_default_security_contact()
@@ -555,10 +548,6 @@ class Domain(TimeStampedModel, DomainHelper):
                         "Raising error after removing and adding a new contact"
                     )
                     raise (err)
-
-        # TODO- This could switch to just creating a
-        # list of ones to remove and a list of ones to add
-        # or Change it to add contacts before deleting the old ones
 
         # update domain with contact or update the contact itself
         if not isEmptySecurity:
@@ -756,8 +745,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         registrantID = self.addRegistrant()
 
-        # TODO-notes no chg item for registrant in the epplib should
-
         req = commands.CreateDomain(
             name=self.name,
             registrant=registrantID,
@@ -899,7 +886,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     err.code,
                     err,
                 )
-                # TODO - Error handling here
+                # TODO - 433 Error handling here
 
             else:
                 logger.warning(
