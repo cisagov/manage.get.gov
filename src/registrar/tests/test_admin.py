@@ -5,6 +5,7 @@ from django.urls import reverse
 from registrar.admin import (
     DomainAdmin,
     DomainApplicationAdmin,
+    DomainApplicationAdminForm,
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
@@ -24,6 +25,7 @@ from .common import (
     create_user,
     create_ready_domain,
     multiple_unalphabetical_domain_objects,
+    MockEppLib,
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
@@ -38,17 +40,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestDomainAdmin(TestCase):
+class TestDomainAdmin(MockEppLib):
     def setUp(self):
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
         self.staffuser = create_user()
+        super().setUp()
 
     def test_place_and_remove_hold(self):
         domain = create_ready_domain()
-
         # get admin page and assert Place Hold button
         p = "userpass"
         self.client.login(username="staffuser", password=p)
@@ -88,8 +90,50 @@ class TestDomainAdmin(TestCase):
         raise
 
     def tearDown(self):
-        Domain.objects.all().delete()
         User.objects.all().delete()
+        super().tearDown()
+
+
+class TestDomainApplicationAdminForm(TestCase):
+    def setUp(self):
+        # Create a test application with an initial state of started
+        self.application = completed_application()
+
+    def test_form_choices(self):
+        # Create a form instance with the test application
+        form = DomainApplicationAdminForm(instance=self.application)
+
+        # Verify that the form choices match the available transitions for started
+        expected_choices = [("started", "started"), ("submitted", "submitted")]
+        self.assertEqual(form.fields["status"].widget.choices, expected_choices)
+
+    def test_form_choices_when_no_instance(self):
+        # Create a form instance without an instance
+        form = DomainApplicationAdminForm()
+
+        # Verify that the form choices show all choices when no instance is provided;
+        # this is necessary to show all choices when creating a new domain
+        # application in django admin;
+        # note that FSM ensures that no domain application exists with invalid status,
+        # so don't need to test for invalid status
+        self.assertEqual(
+            form.fields["status"].widget.choices,
+            DomainApplication._meta.get_field("status").choices,
+        )
+
+    def test_form_choices_when_ineligible(self):
+        # Create a form instance with a domain application with ineligible status
+        ineligible_application = DomainApplication(status="ineligible")
+
+        # Attempt to create a form with the ineligible application
+        # The form should not raise an error, but choices should be the
+        # full list of possible choices
+        form = DomainApplicationAdminForm(instance=ineligible_application)
+
+        self.assertEqual(
+            form.fields["status"].widget.choices,
+            DomainApplication._meta.get_field("status").choices,
+        )
 
 
 class TestDomainApplicationAdmin(TestCase):
@@ -397,8 +441,7 @@ class TestDomainApplicationAdmin(TestCase):
             "state_territory",
             "zipcode",
             "urbanization",
-            "type_of_work",
-            "more_organization_information",
+            "about_your_organization",
             "authorizing_official",
             "approved_domain",
             "requested_domain",
@@ -422,8 +465,7 @@ class TestDomainApplicationAdmin(TestCase):
 
         expected_fields = [
             "creator",
-            "type_of_work",
-            "more_organization_information",
+            "about_your_organization",
             "address_line1",
             "address_line2",
             "zipcode",

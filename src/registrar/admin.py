@@ -1,4 +1,6 @@
 import logging
+from django import forms
+from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
@@ -218,6 +220,8 @@ class DomainAdmin(ListHeaderAdmin):
             "_place_client_hold": self.do_place_client_hold,
             "_remove_client_hold": self.do_remove_client_hold,
             "_edit_domain": self.do_edit_domain,
+            "_delete_domain": self.do_delete_domain,
+            "_get_status": self.do_get_status,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -227,6 +231,31 @@ class DomainAdmin(ListHeaderAdmin):
 
         # If no matching action button is found, return the super method
         return super().response_change(request, obj)
+
+    def do_delete_domain(self, request, obj):
+        try:
+            obj.deleted()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_get_status(self, request, obj):
+        try:
+            statuses = obj.statuses
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain statuses are %s" ". Thanks!") % statuses,
+            )
+        return HttpResponseRedirect(".")
 
     def do_place_client_hold(self, request, obj):
         try:
@@ -247,7 +276,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     def do_remove_client_hold(self, request, obj):
         try:
-            obj.remove_client_hold()
+            obj.revert_client_hold()
             obj.save()
         except Exception as err:
             self.message_user(request, err, messages.ERROR)
@@ -379,6 +408,37 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
 
+class DomainApplicationAdminForm(forms.ModelForm):
+    """Custom form to limit transitions to available transitions"""
+
+    class Meta:
+        model = models.DomainApplication
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        application = kwargs.get("instance")
+        if application and application.pk:
+            current_state = application.status
+
+            # first option in status transitions is current state
+            available_transitions = [(current_state, current_state)]
+
+            transitions = get_available_FIELD_transitions(
+                application, models.DomainApplication._meta.get_field("status")
+            )
+
+            for transition in transitions:
+                available_transitions.append((transition.target, transition.target))
+
+            # only set the available transitions if the user is not restricted
+            # from editing the domain application; otherwise, the form will be
+            # readonly and the status field will not have a widget
+            if not application.creator.is_restricted():
+                self.fields["status"].widget.choices = available_transitions
+
+
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
@@ -410,6 +470,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     # Detail view
+    form = DomainApplicationAdminForm
     fieldsets = [
         (None, {"fields": ["status", "investigator", "creator"]}),
         (
@@ -423,8 +484,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     "federal_agency",
                     "federal_type",
                     "is_election_board",
-                    "type_of_work",
-                    "more_organization_information",
+                    "about_your_organization",
                 ]
             },
         ),
@@ -462,8 +522,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
-        "type_of_work",
-        "more_organization_information",
+        "about_your_organization",
         "address_line1",
         "address_line2",
         "zipcode",
@@ -566,5 +625,6 @@ admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
+admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, AuditedAdmin)
