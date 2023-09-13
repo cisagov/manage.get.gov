@@ -63,7 +63,7 @@ class UserFixture:
             "last_name": "Adkinson",
         },
         {
-            "username": "bb21f687-c773-4df3-9243-111cfd4c0be4",
+            "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
             "first_name": "Paul",
             "last_name": "Kuykendall",
         },
@@ -76,6 +76,11 @@ class UserFixture:
             "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
             "first_name": "David",
             "last_name": "Kennedy",
+        },
+        {
+            "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
+            "first_name": "Nicolle",
+            "last_name": "LeClair",
         },
     ]
 
@@ -122,6 +127,12 @@ class UserFixture:
             "first_name": "Gaby-Analyst",
             "last_name": "DiSarli-Analyst",
             "email": "gaby@truss.works",
+        },
+        {
+            "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
+            "first_name": "Nicolle-Analyst",
+            "last_name": "LeClair-Analyst",
+            "email": "nicolle.leclair@ecstech.com",
         },
     ]
 

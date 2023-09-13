@@ -430,8 +430,14 @@ def create_user():
     return User.objects.create_user(
         username="staffuser",
         email="user@example.com",
+        is_staff=True,
         password=p,
     )
+
+
+def create_ready_domain():
+    domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)
+    return domain
 
 
 def completed_application(
@@ -518,3 +524,11 @@ def multiple_unalphabetical_domain_objects(
         application = mock.create_full_dummy_domain_object(domain_type, object_name)
         applications.append(application)
     return applications
+
+
+def generic_domain_object(domain_type, object_name):
+    """Returns a generic domain object of
+    domain_type 'application', 'information', or 'invitation'"""
+    mock = AuditedAdminMockData()
+    application = mock.create_full_dummy_domain_object(domain_type, object_name)
+    return application

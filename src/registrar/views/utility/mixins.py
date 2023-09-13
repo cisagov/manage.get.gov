@@ -2,7 +2,16 @@
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
-from registrar.models import UserDomainRole, DomainApplication, DomainInvitation
+from registrar.models import (
+    DomainApplication,
+    DomainInvitation,
+    DomainInformation,
+    UserDomainRole,
+)
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class PermissionsLoginMixin(PermissionRequiredMixin):
@@ -25,25 +34,78 @@ class DomainPermission(PermissionsLoginMixin):
         up from the domain's primary key in self.kwargs["pk"]
         """
 
-        # ticket 806
-        # if self.request.user is staff or admin and
-        # domain.application__status = 'approved' or 'rejected' or 'action needed'
-        #     return True
-
         if not self.request.user.is_authenticated:
             return False
 
-        # user needs to have a role on the domain
-        if not UserDomainRole.objects.filter(
-            user=self.request.user, domain__id=self.kwargs["pk"]
-        ).exists():
-            return False
-
-        # The user has an ineligible flag
         if self.request.user.is_restricted():
             return False
 
+        pk = self.kwargs["pk"]
+        # If pk is none then something went very wrong...
+        if pk is None:
+            raise ValueError("Primary key is None")
+
+        if self.can_access_other_user_domains(pk):
+            return True
+
+        # user needs to have a role on the domain
+        if not UserDomainRole.objects.filter(
+            user=self.request.user, domain__id=pk
+        ).exists():
+            return False
+
         # if we need to check more about the nature of role, do it here.
+        return True
+
+    def can_access_other_user_domains(self, pk):
+        """Checks to see if an authorized user (staff or superuser)
+        can access a domain that they did not create or was invited to.
+        """
+
+        # Check if the user is permissioned...
+        user_is_analyst_or_superuser = (
+            self.request.user.is_staff or self.request.user.is_superuser
+        )
+
+        if not user_is_analyst_or_superuser:
+            return False
+
+        # Check if the user is attempting a valid edit action.
+        # In other words, if the analyst/admin did not click
+        # the 'Manage Domain' button in /admin,
+        # then they cannot access this page.
+        session = self.request.session
+        can_do_action = (
+            "analyst_action" in session
+            and "analyst_action_location" in session
+            and session["analyst_action_location"] == pk
+        )
+
+        if not can_do_action:
+            return False
+
+        # Analysts may manage domains, when they are in these statuses:
+        valid_domain_statuses = [
+            DomainApplication.APPROVED,
+            DomainApplication.IN_REVIEW,
+            DomainApplication.REJECTED,
+            DomainApplication.ACTION_NEEDED,
+            # Edge case - some domains do not have
+            # a status or DomainInformation... aka a status of 'None'.
+            # It is necessary to access those to correct errors.
+            None,
+        ]
+
+        requested_domain = None
+        if DomainInformation.objects.filter(id=pk).exists():
+            requested_domain = DomainInformation.objects.get(id=pk)
+
+        if requested_domain.domain_application.status not in valid_domain_statuses:
+            return False
+
+        # Valid session keys exist,
+        # the user is permissioned,
+        # and it is in a valid status
         return True
 
 
