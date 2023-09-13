@@ -338,6 +338,8 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
                     context={
                         "domain_url": self._domain_abs_url(),
                         "domain": self.object,
+                        # "user": the original person or contact
+                        # "email": email of person we want to add
                     },
                 )
             except EmailSendingError:
