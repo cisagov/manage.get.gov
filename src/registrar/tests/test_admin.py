@@ -5,6 +5,7 @@ from django.urls import reverse
 from registrar.admin import (
     DomainAdmin,
     DomainApplicationAdmin,
+    DomainApplicationAdminForm,
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
@@ -90,6 +91,48 @@ class TestDomainAdmin(TestCase):
     def tearDown(self):
         Domain.objects.all().delete()
         User.objects.all().delete()
+
+
+class TestDomainApplicationAdminForm(TestCase):
+    def setUp(self):
+        # Create a test application with an initial state of started
+        self.application = completed_application()
+
+    def test_form_choices(self):
+        # Create a form instance with the test application
+        form = DomainApplicationAdminForm(instance=self.application)
+
+        # Verify that the form choices match the available transitions for started
+        expected_choices = [("started", "started"), ("submitted", "submitted")]
+        self.assertEqual(form.fields["status"].widget.choices, expected_choices)
+
+    def test_form_choices_when_no_instance(self):
+        # Create a form instance without an instance
+        form = DomainApplicationAdminForm()
+
+        # Verify that the form choices show all choices when no instance is provided;
+        # this is necessary to show all choices when creating a new domain
+        # application in django admin;
+        # note that FSM ensures that no domain application exists with invalid status,
+        # so don't need to test for invalid status
+        self.assertEqual(
+            form.fields["status"].widget.choices,
+            DomainApplication._meta.get_field("status").choices,
+        )
+
+    def test_form_choices_when_ineligible(self):
+        # Create a form instance with a domain application with ineligible status
+        ineligible_application = DomainApplication(status="ineligible")
+
+        # Attempt to create a form with the ineligible application
+        # The form should not raise an error, but choices should be the
+        # full list of possible choices
+        form = DomainApplicationAdminForm(instance=ineligible_application)
+
+        self.assertEqual(
+            form.fields["status"].widget.choices,
+            DomainApplication._meta.get_field("status").choices,
+        )
 
 
 class TestDomainApplicationAdmin(TestCase):
