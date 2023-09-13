@@ -320,7 +320,9 @@ class AboutYourOrganizationForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        error_messages={"required": ("Enter more information about your organization.")},
+        error_messages={
+            "required": ("Enter more information about your organization.")
+        },
     )
 
 
