@@ -114,12 +114,6 @@ class Domain(TimeStampedModel, DomainHelper):
         # the state is indeterminate
         UNKNOWN = "unknown"
 
-        # the ready state for a domain object
-        READY = "ready"
-
-        # when a domain is on hold
-        ONHOLD = "onhold"
-
     class Cache(property):
         """
         Python descriptor to turn class methods into properties.
@@ -317,17 +311,13 @@ class Domain(TimeStampedModel, DomainHelper):
         """Time to renew. Not implemented."""
         raise NotImplementedError()
 
-    @transition(field="state", source=[State.READY], target=State.ONHOLD)
     def place_client_hold(self):
         """This domain should not be active."""
-        # This method is changing the state of the domain in registrar
-        # TODO: implement EPP call
+        raise NotImplementedError("This is not implemented yet.")
 
-    @transition(field="state", source=[State.ONHOLD], target=State.READY)
     def remove_client_hold(self):
         """This domain is okay to be active."""
-        # This method is changing the state of the domain in registrar
-        # TODO: implement EPP call
+        raise NotImplementedError()
 
     def __str__(self) -> str:
         return self.name
@@ -482,10 +472,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """ Gets the default security contact. """
         contact = PublicContact.get_default_security()
         contact.domain = self
-        # if you invert the logic in get_contact_default
-        # such that the match statement calls from PublicContact,
-        # you can reduce these to one liners: 
-        # self.get_contact_default(PublicContact.ContactTypeChoices.SECURITY)
         return contact
     
     def get_default_administrative_contact(self):
@@ -504,30 +490,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """ Gets the default administrative contact. """
         contact = PublicContact.get_default_registrant()
         contact.domain = self
-        return contact
-
-    def get_contact_default(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact:
-        """ Returns a default contact based off the contact_type_choice.
-        Used 
-
-        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
-        for instance: PublicContact.ContactTypeChoices.SECURITY.
-
-        If you wanted to get the default contact for Security, you would call: 
-        get_contact_default(PublicContact.ContactTypeChoices.SECURITY),
-        or get_contact_default("security")
-        """
-        choices = PublicContact.ContactTypeChoices
-        contact: PublicContact
-        match(contact_type_choice):
-            case choices.ADMINISTRATIVE:
-                contact = self.get_default_administrative_contact()
-            case choices.SECURITY: 
-                contact = self.get_default_security_contact()
-            case choices.TECHNICAL:
-                contact = self.get_default_technical_contact()
-            case choices.REGISTRANT:
-                contact = self.get_default_registrant_contact()
         return contact
 
     def grab_contact_in_keys(self, contacts, check_type, get_from_registry=True):
