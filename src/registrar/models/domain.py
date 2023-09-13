@@ -823,7 +823,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 and "contact" in contact.keys()
                 and contact["type"] == check_type
             ):
-                ##TODO - Test / Finish this implementation
                 if(get_from_registry):
                     request = commands.InfoContact(id=contact.get("contact"))
                     # TODO - Additional error checking
