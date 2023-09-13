@@ -803,14 +803,14 @@ class Domain(TimeStampedModel, DomainHelper):
         contact.domain = self
         return contact
 
-    def grab_contact_in_keys(self, contacts, check_type, get_from_registry=True):
+    def grab_contact_in_keys(self, contacts, check_type, get_latest_from_registry=True):
         """ Grabs a contact object.
         Returns None if nothing is found.
         check_type compares contact["type"] == check_type.
 
         For example, check_type = 'security'
         
-        get_from_registry --> bool which specifies if
+        get_latest_from_registry --> bool which specifies if
         a InfoContact command should be send to the
         registry when grabbing the object.
         If it is set to false, we just grab from cache.
@@ -823,17 +823,23 @@ class Domain(TimeStampedModel, DomainHelper):
                 and "contact" in contact.keys()
                 and contact["type"] == check_type
             ):
-                if(get_from_registry):
+                # 
+                if(get_latest_from_registry):
                     request = commands.InfoContact(id=contact.get("contact"))
-                    # TODO - Additional error checking
-                    # Does this have performance implications?
-                    # Expecting/sending a response for every object
-                    # seems potentially taxing
+                    # TODO - Maybe have this return contact instead,
+                    # Then create a global timer which eventually returns
+                    # the requested content.... And updates it!
                     contact_info = registry.send(request, cleaned=True)
                     logger.debug(f"grab_contact_in_keys -> rest data is {contact_info.res_data[0]}")
                     return self.map_to_public_contact(contact_info.res_data[0])
 
                 return contact["contact"]
+        
+        # If nothing is found in cache, then grab from registry
+        request = commands.InfoContact(id=contact.get("contact"))
+        contact_info = registry.send(request, cleaned=True)
+        logger.debug(f"grab_contact_in_keys -> rest data is {contact_info.res_data[0]}")
+        return self.map_to_public_contact(contact_info.res_data[0])
     
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
