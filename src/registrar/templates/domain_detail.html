@@ -6,7 +6,7 @@
   <div class="margin-top-4 tablet:grid-col-10">
 
     {% url 'domain-nameservers' pk=domain.id as url %}
-    {% if domain.nameservers %} 
+    {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' edit_link=url %}
     {% else %}
       <h2 class="margin-top-neg-1"> DNS name servers </h2>

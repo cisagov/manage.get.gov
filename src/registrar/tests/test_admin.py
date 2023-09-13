@@ -25,6 +25,7 @@ from .common import (
     create_user,
     create_ready_domain,
     multiple_unalphabetical_domain_objects,
+    MockEppLib,
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
@@ -39,17 +40,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestDomainAdmin(TestCase):
+class TestDomainAdmin(MockEppLib):
     def setUp(self):
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
         self.staffuser = create_user()
+        super().setUp()
 
     def test_place_and_remove_hold(self):
         domain = create_ready_domain()
-
         # get admin page and assert Place Hold button
         p = "userpass"
         self.client.login(username="staffuser", password=p)
@@ -89,8 +90,8 @@ class TestDomainAdmin(TestCase):
         raise
 
     def tearDown(self):
-        Domain.objects.all().delete()
         User.objects.all().delete()
+        super().tearDown()
 
 
 class TestDomainApplicationAdminForm(TestCase):

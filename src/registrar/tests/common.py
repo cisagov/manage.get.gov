@@ -1,10 +1,12 @@
+import datetime
 import os
 import logging
 
 from contextlib import contextmanager
 import random
 from string import ascii_uppercase
-from unittest.mock import Mock
+from django.test import TestCase
+from unittest.mock import MagicMock, Mock, patch
 from typing import List, Dict
 
 from django.conf import settings
@@ -18,7 +20,14 @@ from registrar.models import (
     DomainInvitation,
     User,
     DomainInformation,
+    PublicContact,
     Domain,
+)
+from epplibwrapper import (
+    commands,
+    common,
+    RegistryError,
+    ErrorCode,
 )
 
 logger = logging.getLogger(__name__)
@@ -532,3 +541,121 @@ def generic_domain_object(domain_type, object_name):
     mock = AuditedAdminMockData()
     application = mock.create_full_dummy_domain_object(domain_type, object_name)
     return application
+
+
+class MockEppLib(TestCase):
+    class fakedEppObject(object):
+        """"""
+
+        def __init__(self, auth_info=..., cr_date=..., contacts=..., hosts=...):
+            self.auth_info = auth_info
+            self.cr_date = cr_date
+            self.contacts = contacts
+            self.hosts = hosts
+
+    mockDataInfoDomain = fakedEppObject(
+        "fakepw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[common.DomainContact(contact="123", type="security")],
+        hosts=["fake.host.com"],
+    )
+    infoDomainNoContact = fakedEppObject(
+        "security",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=["fake.host.com"],
+    )
+    mockDataInfoContact = fakedEppObject(
+        "anotherPw", cr_date=datetime.datetime(2023, 7, 25, 19, 45, 35)
+    )
+    mockDataInfoHosts = fakedEppObject(
+        "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
+    )
+
+    def mockSend(self, _request, cleaned):
+        """Mocks the registry.send function used inside of domain.py
+        registry is imported from epplibwrapper
+        returns objects that simulate what would be in a epp response
+        but only relevant pieces for tests"""
+        if isinstance(_request, commands.InfoDomain):
+            if getattr(_request, "name", None) == "security.gov":
+                return MagicMock(res_data=[self.infoDomainNoContact])
+            return MagicMock(res_data=[self.mockDataInfoDomain])
+        elif isinstance(_request, commands.InfoContact):
+            return MagicMock(res_data=[self.mockDataInfoContact])
+        elif (
+            isinstance(_request, commands.CreateContact)
+            and getattr(_request, "id", None) == "fail"
+            and self.mockedSendFunction.call_count == 3
+        ):
+            # use this for when a contact is being updated
+            # sets the second send() to fail
+            raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        return MagicMock(res_data=[self.mockDataInfoHosts])
+
+    def setUp(self):
+        """mock epp send function as this will fail locally"""
+        self.mockSendPatch = patch("registrar.models.domain.registry.send")
+        self.mockedSendFunction = self.mockSendPatch.start()
+        self.mockedSendFunction.side_effect = self.mockSend
+
+    def _convertPublicContactToEpp(
+        self, contact: PublicContact, disclose_email=False, createContact=True
+    ):
+        DF = common.DiscloseField
+        fields = {DF.FAX, DF.VOICE, DF.ADDR}
+
+        if not disclose_email:
+            fields.add(DF.EMAIL)
+
+        di = common.Disclose(
+            flag=False,
+            fields=fields,
+            types={DF.ADDR: "loc"},
+        )
+
+        # check docs here looks like we may have more than one address field but
+        addr = common.ContactAddr(
+            [
+                getattr(contact, street)
+                for street in ["street1", "street2", "street3"]
+                if hasattr(contact, street)
+            ],  # type: ignore
+            city=contact.city,
+            pc=contact.pc,
+            cc=contact.cc,
+            sp=contact.sp,
+        )  # type: ignore
+
+        pi = common.PostalInfo(
+            name=contact.name,
+            addr=addr,
+            org=contact.org,
+            type="loc",
+        )
+
+        ai = common.ContactAuthInfo(pw="2fooBAR123fooBaz")
+        if createContact:
+            return commands.CreateContact(
+                id=contact.registry_id,
+                postal_info=pi,  # type: ignore
+                email=contact.email,
+                voice=contact.voice,
+                fax=contact.fax,
+                auth_info=ai,
+                disclose=di,
+                vat=None,
+                ident=None,
+                notify_email=None,
+            )  # type: ignore
+        else:
+            return commands.UpdateContact(
+                id=contact.registry_id,
+                postal_info=pi,
+                email=contact.email,
+                voice=contact.voice,
+                fax=contact.fax,
+            )
+
+    def tearDown(self):
+        self.mockSendPatch.stop()
