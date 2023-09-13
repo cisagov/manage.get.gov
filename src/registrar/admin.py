@@ -1,4 +1,6 @@
 import logging
+from django import forms
+from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
@@ -379,6 +381,37 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
 
+class DomainApplicationAdminForm(forms.ModelForm):
+    """Custom form to limit transitions to available transitions"""
+
+    class Meta:
+        model = models.DomainApplication
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        application = kwargs.get("instance")
+        if application and application.pk:
+            current_state = application.status
+
+            # first option in status transitions is current state
+            available_transitions = [(current_state, current_state)]
+
+            transitions = get_available_FIELD_transitions(
+                application, models.DomainApplication._meta.get_field("status")
+            )
+
+            for transition in transitions:
+                available_transitions.append((transition.target, transition.target))
+
+            # only set the available transitions if the user is not restricted
+            # from editing the domain application; otherwise, the form will be
+            # readonly and the status field will not have a widget
+            if not application.creator.is_restricted():
+                self.fields["status"].widget.choices = available_transitions
+
+
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
@@ -410,6 +443,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     # Detail view
+    form = DomainApplicationAdminForm
     fieldsets = [
         (None, {"fields": ["status", "investigator", "creator"]}),
         (
