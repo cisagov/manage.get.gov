@@ -444,9 +444,124 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def security_contact(self) -> PublicContact:
         """Get or set the security contact for this domain."""
-        # TODO: replace this with a real implementation
         security = PublicContact.ContactTypeChoices.SECURITY
         return self.generic_contact_getter(security)
+    
+    def _add_registrant_to_existing_domain(self, contact: PublicContact):
+        """Used to change the registrant contact on an existing domain"""
+        updateDomain = commands.UpdateDomain(
+            name=self.name, registrant=contact.registry_id
+        )
+        try:
+            registry.send(updateDomain, cleaned=True)
+        except RegistryError as e:
+            logger.error(
+                "Error changing to new registrant error code is %s, error is %s"
+                % (e.code, e)
+            )
+            # TODO-error handling better here?
+
+    def _set_singleton_contact(self, contact: PublicContact, expectedType: str):  # noqa
+        """Sets the contacts by adding them to the registry as new contacts,
+        updates the contact if it is already in epp,
+        deletes any additional contacts of the matching type for this domain
+        does not create the PublicContact object, this should be made beforehand
+        (call save() on a public contact to trigger the contact setters
+        which inturn call this function)
+        Will throw error if contact type is not the same as expectType
+        Raises ValueError if expected type doesn't match the contact type"""
+        if expectedType != contact.contact_type:
+            raise ValueError(
+                "Cannot set a contact with a different contact type,"
+                " expected type was %s" % expectedType
+            )
+
+        isRegistrant = contact.contact_type == contact.ContactTypeChoices.REGISTRANT
+        isEmptySecurity = (
+            contact.contact_type == contact.ContactTypeChoices.SECURITY
+            and contact.email == ""
+        )
+
+        # get publicContact objects that have the matching
+        # domain and type but a different id
+        # like in highlander we there can only be one
+        hasOtherContact = (
+            PublicContact.objects.exclude(registry_id=contact.registry_id)
+            .filter(domain=self, contact_type=contact.contact_type)
+            .exists()
+        )
+
+        # if no record exists with this contact type
+        # make contact in registry, duplicate and errors handled there
+        errorCode = self._make_contact_in_registry(contact)
+
+        # contact is already added to the domain, but something may have changed on it
+        alreadyExistsInRegistry = errorCode == ErrorCode.OBJECT_EXISTS
+        # if an error occured besides duplication, stop
+        if (
+            not alreadyExistsInRegistry
+            and errorCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
+        ):
+            # TODO- ticket #433 look here for error handling
+            raise Exception("Unable to add contact to registry")
+
+        # contact doesn't exist on the domain yet
+        logger.info("_set_singleton_contact()-> contact has been added to the registry")
+
+        # if has conflicting contacts in our db remove them
+        if hasOtherContact:
+            logger.info(
+                "_set_singleton_contact()-> updating domain, removing old contact"
+            )
+
+            existing_contact = (
+                PublicContact.objects.exclude(registry_id=contact.registry_id)
+                .filter(domain=self, contact_type=contact.contact_type)
+                .get()
+            )
+            if isRegistrant:
+                # send update domain only for registant contacts
+                existing_contact.delete()
+                self._add_registrant_to_existing_domain(contact)
+            else:
+                # remove the old contact and add a new one
+                try:
+                    self._update_domain_with_contact(contact=existing_contact, rem=True)
+                    existing_contact.delete()
+                except Exception as err:
+                    logger.error(
+                        "Raising error after removing and adding a new contact"
+                    )
+                    raise (err)
+
+        # update domain with contact or update the contact itself
+        if not isEmptySecurity:
+            if not alreadyExistsInRegistry and not isRegistrant:
+                self._update_domain_with_contact(contact=contact, rem=False)
+            # if already exists just update
+            elif alreadyExistsInRegistry:
+                current_contact = PublicContact.objects.filter(
+                    registry_id=contact.registry_id
+                ).get()
+
+                if current_contact.email != contact.email:
+                    self._update_epp_contact(contact=contact)
+        else:
+            logger.info("removing security contact and setting default again")
+
+            # get the current contact registry id for security
+            current_contact = PublicContact.objects.filter(
+                registry_id=contact.registry_id
+            ).get()
+
+            # don't let user delete the default without adding a new email
+            if current_contact.email != PublicContact.get_default_security().email:
+                # remove the contact
+                self._update_domain_with_contact(contact=current_contact, rem=True)
+                current_contact.delete()
+                # add new contact
+                security_contact = self.get_default_security_contact()
+                security_contact.save()
 
     @security_contact.setter  # type: ignore
     def security_contact(self, contact: PublicContact):
