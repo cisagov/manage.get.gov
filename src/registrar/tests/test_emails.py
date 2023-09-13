@@ -48,7 +48,7 @@ class TestEmails(TestCase):
         self.assertIn("Testy2 Tester2", body)
         self.assertIn("Current website for your organization:", body)
         self.assertIn("city.com", body)
-        self.assertIn("About your organization:", body)
+        self.assertIn("Type of work:", body)
         self.assertIn("Anything else", body)
 
     @boto3_mocking.patching
@@ -126,26 +126,26 @@ class TestEmails(TestCase):
         self.assertRegex(body, r"city.gov\n\nPurpose of your domain:")
 
     @boto3_mocking.patching
-    def test_submission_confirmation_about_your_organization_spacing(self):
-        """Test line spacing with about your organization."""
-        application = completed_application(has_about_your_organization=True)
+    def test_submission_confirmation_type_of_work_spacing(self):
+        """Test line spacing with type of work."""
+        application = completed_application(has_type_of_work=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertIn("About your organization:", body)
+        self.assertIn("Type of work:", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"10002\n\nAbout your organization:")
+        self.assertRegex(body, r"10002\n\nType of work:")
 
     @boto3_mocking.patching
-    def test_submission_confirmation_no_about_your_organization_spacing(self):
-        """Test line spacing without about your organization."""
-        application = completed_application(has_about_your_organization=False)
+    def test_submission_confirmation_no_type_of_work_spacing(self):
+        """Test line spacing without type of work."""
+        application = completed_application(has_type_of_work=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertNotIn("About your organization:", body)
+        self.assertNotIn("Type of work:", body)
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"10002\n\nAuthorizing official:")
 

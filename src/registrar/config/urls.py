@@ -27,7 +27,7 @@ for step, view in [
     (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
     (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
     (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
-    (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
+    (Step.TYPE_OF_WORK, views.TypeOfWork),
     (Step.AUTHORIZING_OFFICIAL, views.AuthorizingOfficial),
     (Step.CURRENT_SITES, views.CurrentSites),
     (Step.DOTGOV_DOMAIN, views.DotgovDomain),

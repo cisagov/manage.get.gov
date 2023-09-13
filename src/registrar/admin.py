@@ -484,7 +484,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     "federal_agency",
                     "federal_type",
                     "is_election_board",
-                    "about_your_organization",
+                    "type_of_work",
+                    "more_organization_information",
                 ]
             },
         ),
@@ -522,7 +523,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
-        "about_your_organization",
+        "type_of_work",
+        "more_organization_information",
         "address_line1",
         "address_line2",
         "zipcode",
