@@ -450,20 +450,16 @@ class TestRegistrantContacts(MockEppLib):
 
     def test_contact_getters_cache(self):
         """
-        Scenario: A user is grabbing a domain, which is cached, that has multiple contact objects
+        Scenario: A user is grabbing a domain that has multiple contact objects
             When each contact is retrieved from cache
             Then the user retrieves the correct contact objects
         """
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
 
-        # the cached contacts and hosts should be dictionaries of what is passed to them
-        # expectedPublicContactDict = {'id': None, 'created_at': None, 'updated_at': None, 'contact_type': PublicContact.ContactTypeChoices.SECURITY, 'registry_id': 'freeman', 'domain_id': 2, 'name': 'Robert The Villain', 'org': 'Skim Milk', 'street1': 'Evil street1', 'street2': 'Evil street2', 'street3': 'evil street3', 'city': 'Cityofdoom', 'sp': 'sp', 'pc': 'pc', 'cc': 'cc', 'email': 'awful@skimmilk.com', 'voice': 'voice', 'fax': '+1-212-9876543', 'pw': 'fakepw'}
-
         security = PublicContact.get_default_security()
         security.email = "security@mail.gov"
         security.domain = domain
         security.save()
-        # expected_security_contact = PublicContact(**expectedPublicContactDict)
         expected_security_contact = security
         domain.security_contact = security
 
@@ -498,7 +494,7 @@ class TestRegistrantContacts(MockEppLib):
     @skip("not implemented yet")
     def test_contact_getters_registry(self):
         """
-        Scenario: A user is grabbing a domain, which does not exist in cache, that has multiple contact objects
+        Scenario: A user is grabbing a domain that has multiple contact objects
             When the domain is retrieved from cache
             Then the user retrieves the correct domain object
         """

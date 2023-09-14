@@ -20,7 +20,6 @@ from registrar.models import (
     User,
     UserDomainRole,
 )
-from registrar.models.public_contact import PublicContact
 
 from ..forms import (
     ContactForm,
@@ -251,10 +250,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         """The initial value for the form."""
         domain = self.get_object()
         initial = super().get_initial()
-        security_email = ""
-        if(domain.security_contact.email is not None):
-            security_email = domain.security_contact.email
-        initial["security_email"] = security_email
+        initial["security_email"] = domain.security_contact.email
         return initial
 
     def get_success_url(self):
@@ -278,13 +274,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         new_email = form.cleaned_data.get("security_email", "")
 
         domain = self.get_object()
-
-        contact: PublicContact 
-        if domain.security_contact is not None: 
-            contact = domain.security_contact
-        else: 
-            contact = domain.get_default_security_contact()
-
+        contact = domain.security_contact
         contact.email = new_email
         contact.save()
 

@@ -385,12 +385,6 @@ class Domain(TimeStampedModel, DomainHelper):
         self._make_contact_in_registry(contact=contact)
         self._update_domain_with_contact(contact, rem=False)
 
-    def get_default_security_contact(self):
-        logger.info("getting default sec contact")
-        contact = PublicContact.get_default_security()
-        contact.domain = self
-        return contact
-
     def _update_epp_contact(self, contact: PublicContact):
         """Sends UpdateContact to update the actual contact object,
         domain object remains unaffected
@@ -665,7 +659,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return None
 
         if contact_type is None:
-            raise ValueError(f"contact_type is None")
+            raise ValueError("contact_type is None")
 
         logger.debug(f"map_epp_contact_to_public_contact contact -> {contact}")
         logger.debug(f"What is the type? {type(contact)}")
@@ -677,7 +671,8 @@ class Domain(TimeStampedModel, DomainHelper):
         addr = postal_info.addr
         streets = {}
         if addr is not None and addr.street is not None:
-            # 'zips' two lists together. For instance, (('street1', 'some_value_here'), ('street2', 'some_value_here'))
+            # 'zips' two lists together. 
+            # For instance, (('street1', 'some_value_here'), ('street2', 'some_value_here'))
             # Dict then converts this to a useable kwarg which we can pass in
             streets = dict(
                 zip_longest(

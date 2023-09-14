@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import datetime
 import os
 import logging
@@ -634,8 +633,6 @@ class MockEppLib(TestCase):
                 return MagicMock(res_data=[self.InfoDomainWithContacts])
         elif isinstance(_request, commands.InfoContact):
             mocked_result = self.mockDataInfoContact
-            l = getattr(_request, "contact_type", None)
-            logger.debug(f"unuiquq {_request.__dict__}")
             if getattr(_request, "id", None) in PublicContact.ContactTypeChoices:
                 desired_type = getattr(_request, "id", None)
                 mocked_result = self.dummyInfoContactResultData(
