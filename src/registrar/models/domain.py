@@ -305,6 +305,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def delete_request(self):
         """Delete from host. Possibly a duplicate of _delete_host?"""
+        # TODO fix in ticket #901
         pass
 
     def transfer(self):
