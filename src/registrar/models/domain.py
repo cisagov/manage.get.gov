@@ -228,6 +228,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         try:
             hosts = self._get_property("hosts")
+            # PRINT THIS -- host response object?
         except Exception as err:
             # Don't throw error as this is normal for a new domain
             # TODO - 433 error handling ticket should address this
@@ -246,10 +247,13 @@ class Domain(TimeStampedModel, DomainHelper):
     def _check_host(self, hostnames: list[str]):
         """check if host is available, True if available
         returns boolean"""
+        # Double check this implementation is needed bc it's untested code
+        # Check if the IP address is available/real
         checkCommand = commands.CheckHost(hostnames)
         try:
             response = registry.send(checkCommand, cleaned=True)
             return response.res_data[0].avail
+            # there will be a .available property on object -- boolean 
         except RegistryError as err:
             logger.warning(
                 "Couldn't check hosts %s. Errorcode was %s, error was %s",
@@ -266,11 +270,14 @@ class Domain(TimeStampedModel, DomainHelper):
         returns ErrorCode (int)"""
         logger.info("Creating host")
         if addrs is not None:
+            # UNIT TEST: make sure to have 1 with ip address + 1 without
             addresses = [epp.Ip(addr=addr) for addr in addrs]
             request = commands.CreateHost(name=host, addrs=addresses)
         else:
+            # ip is a specification within the nameserver
             request = commands.CreateHost(name=host)
 
+        # if you talk to registry you MUST do try/except
         try:
             logger.info("_create_host()-> sending req as %s" % request)
             response = registry.send(request, cleaned=True)
@@ -288,24 +295,43 @@ class Domain(TimeStampedModel, DomainHelper):
         # must delete nameservers as well or update
         # ip version checking may need to be added in a different ticket
 
+        # We currently don't have IP address functionality
+        # We can have multiple IP addresses 
+        # If you have a dotgov, then you HAVE to have at least 1 IP address (can have multiple)
+        # Nameservers already have IP addresses, these IP addresses are additionals
+
         if len(hosts) > 13:
             raise ValueError(
                 "Too many hosts provided, you may not have more than 13 nameservers."
             )
         logger.info("Setting nameservers")
         logger.info(hosts)
+
+        # currenthosts = self.nameservers
+        # that way you have current hosts
+        
         for hostTuple in hosts:
-            host = hostTuple[0]
+            host = hostTuple[0].strip() # for removing empty string -- do we need strip? 
             addrs = None
             if len(hostTuple) > 1:
-                addrs = hostTuple[1:]
+                addrs = hostTuple[1:] # list of all the ip address 
+            # do we want to clean the addresses (strip it if not null?)
+            # is the host a .gov (do .split on the last item), isdotgov can be a boolean
+            # if you are dotgov and don't have an IP address then raise error
+            # TRY logger.info() or print()
             avail = self._check_host([host])
-            if avail:
-                createdCode = self._create_host(host=host, addrs=addrs)
 
+            if avail:
+                createdCode = self._create_host(host=host, addrs=addrs) # creates in registry
+                # DOUBLE CHECK: _create_host should handle duplicates?
                 # update the domain obj
+                # if createdCode == ErrorCode.OBJECT_EXISTS:
+                # duplication check if it's already on the domain -- self.nameservers
+                # Is it possible for a nameserver to exist and not be on a domain yet? (can one have duplicate name servers)
+                # NOTE TO ANSWER THIS ON SLACK
+                # if it isn't in the domain - set a flag so that createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
                 if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-                    # add host to domain
+                    # add host to domain (domain already created, just adding to it)
                     request = commands.UpdateDomain(
                         name=self.name, add=[epp.HostObjSet([host])]
                     )
@@ -319,6 +345,8 @@ class Domain(TimeStampedModel, DomainHelper):
                         )
 
         try:
+            # should we check for contacts?
+            # check if there are 2 or more name servers or 13 (inclusive)
             self.ready()
             self.save()
         except Exception as err:
@@ -714,7 +742,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 req = commands.InfoDomain(name=self.name)
                 domainInfo = registry.send(req, cleaned=True).res_data[0]
                 exitEarly = True
-                return domainInfo
+                return domainInfo 
             except RegistryError as e:
                 count += 1
 
@@ -805,6 +833,7 @@ class Domain(TimeStampedModel, DomainHelper):
         source=[State.DNS_NEEDED],
         target=State.READY,
     )
+    # 811 -- Rachid look at constraint on a transition, could just be a function
     def ready(self):
         """Transition to the ready state
         domain should have nameservers and all contacts
@@ -816,6 +845,7 @@ class Domain(TimeStampedModel, DomainHelper):
         #  within the transistion itself
         nameserverList = self.nameservers
         logger.info("Changing to ready state")
+        # TEST THIS -- assertValue or print (trigger this)
         if len(nameserverList) < 2 or len(nameserverList) > 13:
             raise ValueError("Not ready to become created, cannot transition yet")
         logger.info("able to transition to ready state")
@@ -928,6 +958,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 raise e
 
     def _update_or_create_host(self, host):
+        # maybe take out current code and put here
         raise NotImplementedError()
 
     def _delete_host(self, host):
