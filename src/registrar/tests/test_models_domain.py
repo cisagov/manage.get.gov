@@ -21,6 +21,9 @@ from epplibwrapper import (
     commands,
     common,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TestDomainCache(MockEppLib):
@@ -443,6 +446,66 @@ class TestRegistrantContacts(MockEppLib):
             When an error is returned from epplibwrapper
             Then a user-friendly error message is returned for displaying on the web
         """
+        raise
+
+    def test_contact_getters_cache(self):
+        """
+        Scenario: A user is grabbing a domain, which is cached, that has multiple contact objects
+            When each contact is retrieved from cache
+            Then the user retrieves the correct contact objects
+        """
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+        # the cached contacts and hosts should be dictionaries of what is passed to them
+        # expectedPublicContactDict = {'id': None, 'created_at': None, 'updated_at': None, 'contact_type': PublicContact.ContactTypeChoices.SECURITY, 'registry_id': 'freeman', 'domain_id': 2, 'name': 'Robert The Villain', 'org': 'Skim Milk', 'street1': 'Evil street1', 'street2': 'Evil street2', 'street3': 'evil street3', 'city': 'Cityofdoom', 'sp': 'sp', 'pc': 'pc', 'cc': 'cc', 'email': 'awful@skimmilk.com', 'voice': 'voice', 'fax': '+1-212-9876543', 'pw': 'fakepw'}
+
+        security = PublicContact.get_default_security()
+        security.email = "security@mail.gov"
+        security.domain = domain
+        security.save()
+        # expected_security_contact = PublicContact(**expectedPublicContactDict)
+        expected_security_contact = security
+        domain.security_contact = security
+
+        technical = PublicContact.get_default_technical()
+        technical.email = "technical@mail.gov"
+        technical.domain = domain
+        technical.save()
+        expected_technical_contact = technical
+        domain.technical_contact = technical
+
+        administrative = PublicContact.get_default_administrative()
+        administrative.email = "administrative@mail.gov"
+        administrative.domain = domain
+        administrative.save()
+        expected_administrative_contact = administrative
+        domain.administrative_contact = administrative
+
+        registrant = PublicContact.get_default_registrant()
+        registrant.email = "registrant@mail.gov"
+        registrant.domain = domain
+        registrant.save()
+        expected_registrant_contact = registrant
+        domain.registrant_contact = registrant
+
+        logger.debug(f"domain obj: {domain.security_contact.__dict__}")
+        logger.debug(f"expected: {expected_security_contact.__dict__}")
+        self.assertEqual(domain.security_contact, expected_security_contact)
+        self.assertEqual(domain.technical_contact, expected_technical_contact)
+        self.assertEqual(domain.administrative_contact, expected_administrative_contact)
+        self.assertEqual(domain.registrant_contact, expected_registrant_contact)
+
+    @skip("not implemented yet")
+    def test_contact_getters_registry(self):
+        """
+        Scenario: A user is grabbing a domain, which does not exist in cache, that has multiple contact objects
+            When the domain is retrieved from cache
+            Then the user retrieves the correct domain object
+        """
+        # Create something using infocontact for that domain
+        # Then just grab the domain object normally
+        # That 'something' doesn't exist on the local domain,
+        # so registry should be called
         raise
 
 

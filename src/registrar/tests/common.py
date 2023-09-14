@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import datetime
 import os
 import logging
@@ -26,6 +27,7 @@ from registrar.models import (
 from epplibwrapper import (
     commands,
     common,
+    info,
     RegistryError,
     ErrorCode,
 )
@@ -547,17 +549,65 @@ class MockEppLib(TestCase):
     class fakedEppObject(object):
         """"""
 
-        def __init__(self, auth_info=..., cr_date=..., contacts=..., hosts=...):
+        def __init__(
+            self, auth_info=..., cr_date=..., contacts=..., hosts=..., registrant=...
+        ):
             self.auth_info = auth_info
             self.cr_date = cr_date
             self.contacts = contacts
             self.hosts = hosts
+            self.registrant = registrant
+
+    def dummyInfoContactResultData(self, id, email, contact_type):
+        fake = info.InfoContactResultData(
+            id=id,
+            postal_info=common.PostalInfo(
+                name="Robert The Villain",
+                addr=common.ContactAddr(
+                    street=["street1", "street2", "street3"],
+                    city="city",
+                    pc="pc",
+                    cc="cc",
+                    sp="sp",
+                ),
+                org="Skim Milk",
+                type="type",
+            ),
+            voice="voice",
+            fax="+1-212-9876543",
+            email=email,
+            auth_info=common.ContactAuthInfo(pw="fakepw"),
+            roid=...,
+            statuses=[],
+            cl_id=...,
+            cr_id=...,
+            cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+            up_id=...,
+            up_date=...,
+            tr_date=...,
+            disclose=...,
+            vat=...,
+            ident=...,
+            notify_email=...,
+        )
+        return fake
 
     mockDataInfoDomain = fakedEppObject(
         "fakepw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[common.DomainContact(contact="123", type="security")],
         hosts=["fake.host.com"],
+    )
+    InfoDomainWithContacts = fakedEppObject(
+        "fakepw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[
+            common.DomainContact(contact="security", type="security"),
+            common.DomainContact(contact="admin", type="admin"),
+            common.DomainContact(contact="tech", type="tech"),
+        ],
+        hosts=["fake.host.com"],
+        registrant="registrant",
     )
     infoDomainNoContact = fakedEppObject(
         "security",
@@ -580,9 +630,19 @@ class MockEppLib(TestCase):
         if isinstance(_request, commands.InfoDomain):
             if getattr(_request, "name", None) == "security.gov":
                 return MagicMock(res_data=[self.infoDomainNoContact])
-            return MagicMock(res_data=[self.mockDataInfoDomain])
+            elif getattr(_request, "name", None) == "freeman.gov":
+                return MagicMock(res_data=[self.InfoDomainWithContacts])
         elif isinstance(_request, commands.InfoContact):
-            return MagicMock(res_data=[self.mockDataInfoContact])
+            mocked_result = self.mockDataInfoContact
+            l = getattr(_request, "contact_type", None)
+            logger.debug(f"unuiquq {_request.__dict__}")
+            if getattr(_request, "id", None) in PublicContact.ContactTypeChoices:
+                desired_type = getattr(_request, "id", None)
+                mocked_result = self.dummyInfoContactResultData(
+                    id=desired_type, email=f"{desired_type}@mail.gov"
+                )
+
+            return MagicMock(res_data=[mocked_result])
         elif (
             isinstance(_request, commands.CreateContact)
             and getattr(_request, "id", None) == "fail"
