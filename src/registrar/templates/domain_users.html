@@ -20,7 +20,7 @@
     <tbody>
       {% for permission in domain.permissions.all %}
       <tr>
-        <th scope="row" role="rowheader" data-sort-value="{{ user.email }}" data-label="Email">
+        <th scope="row" role="rowheader" data-sort-value="{{ permission.user.email }}" data-label="Email">
           {{ permission.user.email }}
         </th>
         <td data-label="Role">{{ permission.role|title }}</td>
@@ -57,7 +57,7 @@
       <tbody>
         {% for invitation in domain.invitations.all %}
         <tr>
-          <th scope="row" role="rowheader" data-sort-value="{{ user.email }}" data-label="Email">
+          <th scope="row" role="rowheader" data-sort-value="{{ invitation.user.email }}" data-label="Email">
             {{ invitation.email }}
           </th>
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>

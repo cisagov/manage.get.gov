@@ -252,7 +252,7 @@ class AuditedAdminMockData:
                 is_policy_acknowledged: boolean = True,
                 state_territory: str = "NY",
                 zipcode: str = "10002",
-                type_of_work: str = "e-Government",
+                about_your_organization: str = "e-Government",
                 anything_else: str = "There is more",
                 authorizing_official: Contact = self.dummy_contact(item_name, "authorizing_official"),
                 submitter: Contact = self.dummy_contact(item_name, "submitter"),
@@ -269,7 +269,7 @@ class AuditedAdminMockData:
             is_policy_acknowledged=True,
             state_territory="NY",
             zipcode="10002",
-            type_of_work="e-Government",
+            about_your_organization="e-Government",
             anything_else="There is more",
             authorizing_official=self.dummy_contact(item_name, "authorizing_official"),
             submitter=self.dummy_contact(item_name, "submitter"),
@@ -455,7 +455,7 @@ def completed_application(
     has_other_contacts=True,
     has_current_website=True,
     has_alternative_gov_domain=True,
-    has_type_of_work=True,
+    has_about_your_organization=True,
     has_anything_else=True,
     status=DomainApplication.STARTED,
     user=False,
@@ -503,8 +503,8 @@ def completed_application(
         creator=user,
         status=status,
     )
-    if has_type_of_work:
-        domain_application_kwargs["type_of_work"] = "e-Government"
+    if has_about_your_organization:
+        domain_application_kwargs["about_your_organization"] = "e-Government"
     if has_anything_else:
         domain_application_kwargs["anything_else"] = "There is more"
 
