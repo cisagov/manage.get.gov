@@ -11,6 +11,23 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterField(
+            model_name="domain",
+            name="state",
+            field=django_fsm.FSMField(
+                choices=[
+                    ("unknown", "Unknown"),
+                    ("dns needed", "Dns Needed"),
+                    ("ready", "Ready"),
+                    ("on hold", "On Hold"),
+                    ("deleted", "Deleted"),
+                ],
+                default="unknown",
+                help_text="Very basic info about the lifecycle of this domain object",
+                max_length=21,
+                protected=True,
+            ),
+        ),
         migrations.CreateModel(
             name="TransitionDomain",
             fields=[
@@ -87,23 +104,6 @@ class Migration(migrations.Migration):
             name="about_your_organization",
             field=models.TextField(
                 blank=True, help_text="Information about your organization", null=True
-            ),
-        ),
-        migrations.AlterField(
-            model_name="domain",
-            name="state",
-            field=django_fsm.FSMField(
-                choices=[
-                    ("unknown", "Unknown"),
-                    ("dns needed", "Dns Needed"),
-                    ("ready", "Ready"),
-                    ("on hold", "On Hold"),
-                    ("deleted", "Deleted"),
-                ],
-                default="unknown",
-                help_text="Very basic info about the lifecycle of this domain object",
-                max_length=21,
-                protected=True,
             ),
         ),
         migrations.AlterField(
