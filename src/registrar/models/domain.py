@@ -149,6 +149,7 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during set. Example: `domain.registrant = 'abc123'`."""
             super().__set__(obj, value)
             # always invalidate cache after sending updates to the registry
+            logger.debug("cache was invalidateds")
             obj._invalidate_cache()
 
         def __delete__(self, obj):
@@ -650,6 +651,13 @@ class Domain(TimeStampedModel, DomainHelper):
 
     # Q: I don't like this function name much,
     # what would be better here?
+    # Note for reviewers:
+    # This can likely be done without passing in
+    # contact_id and contact_type and instead embedding it inside of
+    # contact, but the tradeoff for that is that it unnecessarily complicates using this
+    # (as you'd have to create a custom dictionary), and type checking becomes weaker.
+    # I'm sure though that there is an easier alternative...
+    # TLDR: This doesn't look as pretty, but it makes using this function easier
     def map_epp_contact_to_public_contact(
         self, contact: eppInfo.InfoContactResultData, contact_id, contact_type
     ):
@@ -767,6 +775,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # The contact type 'registrant' is stored under a different property
             if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
                 desired_property = "registrant"
+            logger.debug(f"generic domain getter was called. Wanting contacts on {contact_type_choice}")
             contacts = self._get_property(desired_property)
             if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
                 contacts = [contacts]
@@ -873,6 +882,7 @@ class Domain(TimeStampedModel, DomainHelper):
         while not exitEarly and count < 3:
             try:
                 logger.info("Getting domain info from epp")
+                logger.debug(f"domain info name is... {self.__dict__}")
                 req = commands.InfoDomain(name=self.name)
                 domainInfo = registry.send(req, cleaned=True).res_data[0]
                 exitEarly = True
@@ -1195,6 +1205,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
+        logger.debug(f"cache was cleared! {self.__dict__}")
         self._cache = {}
 
     def _get_property(self, property):
@@ -1206,7 +1217,7 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
         if property in self._cache:
-            logger.debug("hit here also!!")
+            logger.debug(f"hit here also!! {property}")
             logger.debug(self._cache[property])
             return self._cache[property]
         else:

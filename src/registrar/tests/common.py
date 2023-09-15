@@ -557,7 +557,7 @@ class MockEppLib(TestCase):
             self.hosts = hosts
             self.registrant = registrant
 
-    def dummyInfoContactResultData(id, email):
+    def dummyInfoContactResultData(id, email, cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35), pw="thisisnotapassword"):
         fake = info.InfoContactResultData(
             id=id,
             postal_info=common.PostalInfo(
@@ -575,12 +575,12 @@ class MockEppLib(TestCase):
             voice="+1.8882820870",
             fax="+1-212-9876543",
             email=email,
-            auth_info=common.ContactAuthInfo(pw="thisisnotapassword"),
+            auth_info=common.ContactAuthInfo(pw=pw),
             roid=...,
             statuses=[],
             cl_id=...,
             cr_id=...,
-            cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+            cr_date=cr_date,
             up_id=...,
             up_date=...,
             tr_date=...,
@@ -596,8 +596,8 @@ class MockEppLib(TestCase):
     mockAdministrativeContact = dummyInfoContactResultData("administrativeContact", "admin@mail.gov")
     mockRegistrantContact = dummyInfoContactResultData("registrantContact", "registrant@mail.gov")
     mockDataInfoDomain = fakedEppObject(
-        "fakepw",
-        cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35),
+        "lastPw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[common.DomainContact(contact="123", type="security")],
         hosts=["fake.host.com"],
     )
@@ -618,11 +618,9 @@ class MockEppLib(TestCase):
         contacts=[],
         hosts=["fake.host.com"],
     )
-    mockDataInfoContact = fakedEppObject(
-        "anotherPw", cr_date=datetime.datetime(2023, 7, 25, 19, 45, 35)
-    )
+    mockDataInfoContact = dummyInfoContactResultData("123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw")
     mockDataInfoHosts = fakedEppObject(
-        "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
+        "lastPw", cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
     )
 
     def mockSend(self, _request, cleaned):
@@ -639,8 +637,6 @@ class MockEppLib(TestCase):
             # Default contact return
             mocked_result = self.mockDataInfoContact
             # For testing contact types...
-            l = getattr(_request, "id", None)
-            logger.debug(f"get l'd {l}")
             match getattr(_request, "id", None):
                 case "securityContact":
                     mocked_result = self.mockSecurityContact
