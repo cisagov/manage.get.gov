@@ -4,17 +4,30 @@
   {% for app in app_list %}
     <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
       <table>
-        <caption>
-          <a href="{{ app.app_url }}" class="section" title="{% blocktranslate with name=app.name %}Models in the {{ name }} application{% endblocktranslate %}">{{ app.name }}</a>
-        </caption>
 
-        {# .gov override #}
+        {# .gov override: add headers #}
+        {% if show_changelinks %}
+          <colgroup span="3"></colgroup>
+        {% else %}
+          <colgroup span="2"></colgroup>
+        {% endif %}
         <thead>
           <tr>
-            <th scope="col">Model</th>
-            <th><span class="display-inline-block min-width-25">Add</span></th>
             {% if show_changelinks %}
-                <th>
+              <th colspan="3" class="primary-th" scope="colgroup">
+                {{ app.name }}
+              </th>
+            {% else %}
+              <th colspan="2" class="primary-th" scope="colgroup">
+                {{ app.name }}
+              </th>
+            {% endif %}
+          </tr>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col"><span class="display-inline-block min-width-25">Add</span></th>
+            {% if show_changelinks %}
+                <th scope="col">
                   <span class="display-inline-block min-width-81">
                     {% translate 'View/Change' %}</th>
                   </span>

@@ -6,6 +6,15 @@
 {% block content %}
 <main id="main-content" class="grid-container">
   <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
+    <a href="{% url 'home' %}" class="breadcrumb__back">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+      <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+      </svg>
+  
+      <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+      Back to manage your domains
+      </p>
+    </a>
     <h1>Domain request for {{ domainapplication.requested_domain.name }}</h1>
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
@@ -68,12 +77,8 @@
       {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domainapplication  address='true' heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.type_of_work %}
-      {% include "includes/summary_item.html" with title='Type of work' value=domainapplication.type_of_work heading_level=heading_level %}
-    {% endif %}
-
-    {% if domainapplication.more_organization_information %}
-      {% include "includes/summary_item.html" with title='More information about your organization' value=domainapplication.more_organization_information heading_level=heading_level %}
+    {% if domainapplication.about_your_organization %}
+      {% include "includes/summary_item.html" with title='About your organization' value=domainapplication.about_your_organization heading_level=heading_level %}
     {% endif %}
 
     {% if domainapplication.authorizing_official %}
