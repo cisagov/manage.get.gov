@@ -488,13 +488,6 @@ class DomainApplicationAdminForm(forms.ModelForm):
                 self.fields["status"].widget.choices = available_transitions
 
 
-class DomainInformationAdmin(ListHeaderAdmin):
-    """Custom contact admin class to add search."""
-
-    search_fields = ["domain__name"]
-    search_help_text = "Search by domain name."
-
-
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
