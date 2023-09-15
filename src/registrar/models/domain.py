@@ -651,15 +651,25 @@ class Domain(TimeStampedModel, DomainHelper):
     # Q: I don't like this function name much,
     # what would be better here?
     def map_epp_contact_to_public_contact(
-        self, contact: eppInfo.InfoContactResultData, contact_type
+        self, contact: eppInfo.InfoContactResultData, contact_id, contact_type
     ):
-        """Maps the Epp contact representation to a PublicContact object"""
+        """Maps the Epp contact representation to a PublicContact object.
+
+        contact -> eppInfo.InfoContactResultData: The converted contact object
+
+        contact_id -> str: The given registry_id of the object (i.e "cheese@cia.gov")
+
+        contact_type -> str: The given contact type, (i.e. "tech" or "registrant")
+        """
 
         if contact is None:
             return None
 
         if contact_type is None:
             raise ValueError("contact_type is None")
+
+        if contact_id is None:
+            raise ValueError("contact_id is None")
 
         logger.debug(f"map_epp_contact_to_public_contact contact -> {contact}")
         logger.debug(f"What is the type? {type(contact)}")
@@ -671,7 +681,7 @@ class Domain(TimeStampedModel, DomainHelper):
         addr = postal_info.addr
         streets = {}
         if addr is not None and addr.street is not None:
-            # 'zips' two lists together. 
+            # 'zips' two lists together.
             # For instance, (('street1', 'some_value_here'), ('street2', 'some_value_here'))
             # Dict then converts this to a useable kwarg which we can pass in
             streets = dict(
@@ -685,7 +695,7 @@ class Domain(TimeStampedModel, DomainHelper):
         desired_contact = PublicContact(
             domain=self,
             contact_type=contact_type,
-            registry_id=contact.id,
+            registry_id=contact_id,
             email=contact.email,
             voice=contact.voice,
             fax=contact.fax,
@@ -698,8 +708,6 @@ class Domain(TimeStampedModel, DomainHelper):
             sp=addr.sp,
             **streets,
         )
-        logger.debug("lazy")
-        logger.debug(desired_contact.__dict__)
         return desired_contact
 
     def _request_contact_info(self, contact: PublicContact):
@@ -715,6 +723,32 @@ class Domain(TimeStampedModel, DomainHelper):
                 error,
             )
             raise error
+
+    def get_contact_default(
+        self, contact_type_choice: PublicContact.ContactTypeChoices
+    ) -> PublicContact:
+        """Returns a default contact based off the contact_type_choice.
+        Used
+
+        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
+        for instance: PublicContact.ContactTypeChoices.SECURITY.
+
+        If you wanted to get the default contact for Security, you would call:
+        get_contact_default(PublicContact.ContactTypeChoices.SECURITY),
+        or get_contact_default("security")
+        """
+        choices = PublicContact.ContactTypeChoices
+        contact: PublicContact
+        match (contact_type_choice):
+            case choices.ADMINISTRATIVE:
+                contact = self.get_default_administrative_contact()
+            case choices.SECURITY:
+                contact = self.get_default_security_contact()
+            case choices.TECHNICAL:
+                contact = self.get_default_technical_contact()
+            case choices.REGISTRANT:
+                contact = self.get_default_registrant_contact()
+        return contact
 
     def generic_contact_getter(
         self, contact_type_choice: PublicContact.ContactTypeChoices
@@ -734,9 +768,12 @@ class Domain(TimeStampedModel, DomainHelper):
             if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
                 desired_property = "registrant"
             contacts = self._get_property(desired_property)
+            if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
+                contacts = [contacts]
         except KeyError as error:
-            logger.error("Contact does not exist")
-            raise error
+            logger.warning("generic_contact_getter -> Contact does not exist")
+            logger.warning(error)
+            return self.get_contact_default(contact_type_choice)
         else:
             print(f"generic_contact_getter -> contacts?? {contacts}")
             # --> Map to public contact
@@ -745,9 +782,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 raise ValueError("No contact was found in cache or the registry")
 
             # Convert it from an EppLib object to PublicContact
-            return self.map_epp_contact_to_public_contact(
-                cached_contact, contact_type_choice
-            )
+            return cached_contact
 
     def get_default_security_contact(self):
         """Gets the default security contact."""
@@ -781,19 +816,17 @@ class Domain(TimeStampedModel, DomainHelper):
         For example, check_type = 'security'
         """
         for contact in contacts:
-            print(f"grab_contact_in_keys -> contact item {contact}")
+            print(f"grab_contact_in_keys -> contact item {contact.__dict__}")
             if (
-                isinstance(contact, dict)
-                and "id" in contact.keys()
-                and "type" in contact.keys()
-                and contact["type"] == check_type
+                isinstance(contact, PublicContact)
+                and contact.registry_id is not None
+                and contact.contact_type is not None
+                and contact.contact_type == check_type
             ):
-                item = PublicContact(
-                    registry_id=contact["id"],
-                    contact_type=contact["type"],
-                )
-                full_contact = self._request_contact_info(item)
-                return full_contact
+                return contact
+
+        # If the for loop didn't do a return,
+        # then we know that it doesn't exist within cache
 
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
@@ -1075,10 +1108,11 @@ class Domain(TimeStampedModel, DomainHelper):
                 "tr_date": getattr(data, "tr_date", ...),
                 "up_date": getattr(data, "up_date", ...),
             }
-
+            print(f"precleaned stuff {cache}")
             # remove null properties (to distinguish between "a value of None" and null)
             cleaned = {k: v for k, v in cache.items() if v is not ...}
-
+            l = getattr(data, "contacts", ...)
+            logger.debug(f"here are the contacts {l}")
             # statuses can just be a list no need to keep the epp object
             if "statuses" in cleaned.keys():
                 cleaned["statuses"] = [status.state for status in cleaned["statuses"]]
@@ -1090,7 +1124,12 @@ class Domain(TimeStampedModel, DomainHelper):
                         registry_id=cleaned["registrant"],
                         contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
                     )
-                    cleaned["registrant"] = self._request_contact_info(contact)
+                    # Grabs the expanded contact
+                    full_object = self._request_contact_info(contact)
+                    # Maps it to type PublicContact
+                    cleaned["registrant"] = self.map_epp_contact_to_public_contact(
+                        full_object, contact.registry_id, contact.contact_type
+                    )
                 except RegistryError:
                     cleaned["registrant"] = None
             # get contact info, if there are any
@@ -1100,6 +1139,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 and isinstance(cleaned["_contacts"], list)
                 and len(cleaned["_contacts"])
             ):
+                logger.debug("hit!")
                 cleaned["contacts"] = []
                 for domainContact in cleaned["_contacts"]:
                     # we do not use _get_or_create_* because we expect the object we
@@ -1111,26 +1151,10 @@ class Domain(TimeStampedModel, DomainHelper):
                     req = commands.InfoContact(id=domainContact.contact)
                     data = registry.send(req, cleaned=True).res_data[0]
 
-                    # extract properties from response
-                    # (Ellipsis is used to mean "null")
-                    # convert this to use PublicContactInstead
-                    contact = {
-                        "id": domainContact.contact,
-                        "type": domainContact.type,
-                        "auth_info": getattr(data, "auth_info", ...),
-                        "cr_date": getattr(data, "cr_date", ...),
-                        "disclose": getattr(data, "disclose", ...),
-                        "email": getattr(data, "email", ...),
-                        "fax": getattr(data, "fax", ...),
-                        "postal_info": getattr(data, "postal_info", ...),
-                        "statuses": getattr(data, "statuses", ...),
-                        "tr_date": getattr(data, "tr_date", ...),
-                        "up_date": getattr(data, "up_date", ...),
-                        "voice": getattr(data, "voice", ...),
-                    }
-
                     cleaned["contacts"].append(
-                        {k: v for k, v in contact.items() if v is not ...}
+                        self.map_epp_contact_to_public_contact(
+                            data, domainContact.contact, domainContact.type
+                        )
                     )
 
             # get nameserver info, if there are any
@@ -1182,6 +1206,8 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
         if property in self._cache:
+            logger.debug("hit here also!!")
+            logger.debug(self._cache[property])
             return self._cache[property]
         else:
             raise KeyError(

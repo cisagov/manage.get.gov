@@ -185,11 +185,13 @@ class TestDomainCreation(TestCase):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         Domain.objects.all().delete()
+        User.objects.all().delete()
+        DraftDomain.objects.all().delete()
 
 
 class TestRegistrantContacts(MockEppLib):
     """Rule: Registrants may modify their WHOIS data"""
-
+    
     def setUp(self):
         """
         Background:
@@ -201,6 +203,10 @@ class TestRegistrantContacts(MockEppLib):
 
     def tearDown(self):
         super().tearDown()
+        PublicContact.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        Domain.objects.all().delete()
         # self.contactMailingAddressPatch.stop()
         # self.createContactPatch.stop()
 
@@ -447,62 +453,116 @@ class TestRegistrantContacts(MockEppLib):
             Then a user-friendly error message is returned for displaying on the web
         """
         raise
-
+    
+    @skip("not implemented yet")
     def test_contact_getters_cache(self):
         """
         Scenario: A user is grabbing a domain that has multiple contact objects
             When each contact is retrieved from cache
             Then the user retrieves the correct contact objects
         """
-        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+    @skip("not implemented yet")
+    def test_epp_public_contact_mapper(self):
+        pass
 
+    def test_contact_getter_security(self):
+        domain_contacts, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+        self.maxDiff = None
         security = PublicContact.get_default_security()
         security.email = "security@mail.gov"
-        security.domain = domain
+        security.domain = domain_contacts
         security.save()
-        expected_security_contact = security
-        domain.security_contact = security
 
+        expected_security_contact = security
+
+        expected_security_contact = domain_contacts.map_epp_contact_to_public_contact(
+            self.mockSecurityContact, "securityContact", "security"
+        ) 
+        
+        domain_contacts.security_contact = security
+
+        contact_dict = domain_contacts.security_contact.__dict__
+        expected_dict = expected_security_contact.__dict__
+
+        contact_dict.pop('_state')
+        expected_dict.pop('_state')
+
+        self.assertEqual(contact_dict, expected_dict)
+    
+    def test_contact_getter_technical(self):
+        domain_contacts, _ = Domain.objects.get_or_create(name="freeman.gov")
+    
         technical = PublicContact.get_default_technical()
-        technical.email = "technical@mail.gov"
-        technical.domain = domain
+        technical.email = "tech@mail.gov"
+        technical.domain = domain_contacts
         technical.save()
-        expected_technical_contact = technical
-        domain.technical_contact = technical
+
+        expected_technical_contact = domain_contacts.map_epp_contact_to_public_contact(
+            self.mockTechnicalContact, "technicalContact", "tech"
+        ) 
+        
+        domain_contacts.technical_contact = technical
+
+        contact_dict = domain_contacts.technical_contact.__dict__
+        expected_dict = expected_technical_contact.__dict__
+
+        # There has to be a better way to do this.
+        # Since Cache creates a new object, it causes 
+        # a desync between each instance. Basically,
+        # these two objects will never be the same.
+        contact_dict.pop('_state')
+        expected_dict.pop('_state')
+
+        self.assertEqual(contact_dict, expected_dict)
+
+    def test_contact_getter_administrative(self):
+        self.maxDiff = None
+        domain_contacts, _ = Domain.objects.get_or_create(name="freeman.gov")
 
         administrative = PublicContact.get_default_administrative()
-        administrative.email = "administrative@mail.gov"
-        administrative.domain = domain
+        administrative.email = "admin@mail.gov"
+        administrative.domain = domain_contacts
         administrative.save()
-        expected_administrative_contact = administrative
-        domain.administrative_contact = administrative
+
+        expected_administrative_contact = domain_contacts.map_epp_contact_to_public_contact(
+            self.mockAdministrativeContact, "administrativeContact", "admin"
+        ) 
+        
+        domain_contacts.administrative_contact = administrative
+
+        contact_dict = domain_contacts.administrative_contact.__dict__
+        expected_dict = expected_administrative_contact.__dict__
+
+        contact_dict.pop('_state')
+        expected_dict.pop('_state')
+
+        self.assertEqual(contact_dict, expected_dict)
+    
+    def test_contact_getter_registrant(self):
+        domain_contacts, _ = Domain.objects.get_or_create(name="freeman.gov")
 
         registrant = PublicContact.get_default_registrant()
         registrant.email = "registrant@mail.gov"
-        registrant.domain = domain
+        registrant.domain = domain_contacts
         registrant.save()
+
         expected_registrant_contact = registrant
-        domain.registrant_contact = registrant
+        domain_contacts.registrant_contact = registrant
 
-        logger.debug(f"domain obj: {domain.security_contact.__dict__}")
-        logger.debug(f"expected: {expected_security_contact.__dict__}")
-        self.assertEqual(domain.security_contact, expected_security_contact)
-        self.assertEqual(domain.technical_contact, expected_technical_contact)
-        self.assertEqual(domain.administrative_contact, expected_administrative_contact)
-        self.assertEqual(domain.registrant_contact, expected_registrant_contact)
+        expected_registrant_contact = domain_contacts.map_epp_contact_to_public_contact(
+            self.mockRegistrantContact, "registrantContact", "registrant"
+        ) 
+        
+        domain_contacts.registrant_contact = registrant
 
-    @skip("not implemented yet")
-    def test_contact_getters_registry(self):
-        """
-        Scenario: A user is grabbing a domain that has multiple contact objects
-            When the domain is retrieved from cache
-            Then the user retrieves the correct domain object
-        """
-        # Create something using infocontact for that domain
-        # Then just grab the domain object normally
-        # That 'something' doesn't exist on the local domain,
-        # so registry should be called
-        raise
+        contact_dict = domain_contacts.registrant_contact.__dict__
+        expected_dict = expected_registrant_contact.__dict__
+
+        contact_dict.pop('_state')
+        expected_dict.pop('_state')
+
+        self.assertEqual(contact_dict, expected_dict)
 
 
 class TestRegistrantNameservers(TestCase):

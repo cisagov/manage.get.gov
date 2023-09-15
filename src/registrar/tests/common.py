@@ -557,25 +557,25 @@ class MockEppLib(TestCase):
             self.hosts = hosts
             self.registrant = registrant
 
-    def dummyInfoContactResultData(self, id, email, contact_type):
+    def dummyInfoContactResultData(id, email):
         fake = info.InfoContactResultData(
             id=id,
             postal_info=common.PostalInfo(
-                name="Robert The Villain",
+                name="Registry Customer Service",
                 addr=common.ContactAddr(
-                    street=["street1", "street2", "street3"],
-                    city="city",
-                    pc="pc",
-                    cc="cc",
-                    sp="sp",
+                    street=["4200 Wilson Blvd."],
+                    city="Arlington",
+                    pc="VA",
+                    cc="US",
+                    sp="22201",
                 ),
-                org="Skim Milk",
+                org="Cybersecurity and Infrastructure Security Agency",
                 type="type",
             ),
-            voice="voice",
+            voice="+1.8882820870",
             fax="+1-212-9876543",
             email=email,
-            auth_info=common.ContactAuthInfo(pw="fakepw"),
+            auth_info=common.ContactAuthInfo(pw="thisisnotapassword"),
             roid=...,
             statuses=[],
             cl_id=...,
@@ -591,9 +591,13 @@ class MockEppLib(TestCase):
         )
         return fake
 
+    mockSecurityContact = dummyInfoContactResultData("securityContact", "security@mail.gov")
+    mockTechnicalContact = dummyInfoContactResultData("technicalContact", "tech@mail.gov")
+    mockAdministrativeContact = dummyInfoContactResultData("administrativeContact", "admin@mail.gov")
+    mockRegistrantContact = dummyInfoContactResultData("registrantContact", "registrant@mail.gov")
     mockDataInfoDomain = fakedEppObject(
         "fakepw",
-        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35),
         contacts=[common.DomainContact(contact="123", type="security")],
         hosts=["fake.host.com"],
     )
@@ -601,12 +605,12 @@ class MockEppLib(TestCase):
         "fakepw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[
-            common.DomainContact(contact="security", type="security"),
-            common.DomainContact(contact="admin", type="admin"),
-            common.DomainContact(contact="tech", type="tech"),
+            common.DomainContact(contact="securityContact", type="security"),
+            common.DomainContact(contact="administrativeContact", type="admin"),
+            common.DomainContact(contact="technicalContact", type="tech"),
         ],
         hosts=["fake.host.com"],
-        registrant="registrant",
+        registrant="registrantContact",
     )
     infoDomainNoContact = fakedEppObject(
         "security",
@@ -632,12 +636,20 @@ class MockEppLib(TestCase):
             elif getattr(_request, "name", None) == "freeman.gov":
                 return MagicMock(res_data=[self.InfoDomainWithContacts])
         elif isinstance(_request, commands.InfoContact):
+            # Default contact return
             mocked_result = self.mockDataInfoContact
-            if getattr(_request, "id", None) in PublicContact.ContactTypeChoices:
-                desired_type = getattr(_request, "id", None)
-                mocked_result = self.dummyInfoContactResultData(
-                    id=desired_type, email=f"{desired_type}@mail.gov"
-                )
+            # For testing contact types...
+            l = getattr(_request, "id", None)
+            logger.debug(f"get l'd {l}")
+            match getattr(_request, "id", None):
+                case "securityContact":
+                    mocked_result = self.mockSecurityContact
+                case "technicalContact":
+                    mocked_result = self.mockTechnicalContact
+                case "administrativeContact":
+                    mocked_result = self.mockAdministrativeContact
+                case "registrantContact":
+                    mocked_result = self.mockRegistrantContact
 
             return MagicMock(res_data=[mocked_result])
         elif (
