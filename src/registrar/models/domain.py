@@ -610,6 +610,11 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         return self.state == self.State.READY
 
+    def delete_request(self):
+        """Delete from host. Possibly a duplicate of _delete_host?"""
+        # TODO fix in ticket #901
+        pass
+
     def transfer(self):
         """Going somewhere. Not implemented."""
         raise NotImplementedError()
@@ -662,9 +667,6 @@ class Domain(TimeStampedModel, DomainHelper):
         protected=True,  # cannot change state directly, particularly in Django admin
         help_text="Very basic info about the lifecycle of this domain object",
     )
-
-    def isActive(self):
-        return self.state == Domain.State.CREATED
 
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain

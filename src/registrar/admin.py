@@ -130,6 +130,7 @@ class MyUserAdmin(BaseUserAdmin):
     inlines = [UserContactInline]
 
     list_display = (
+        "username",
         "email",
         "first_name",
         "last_name",
@@ -159,10 +160,51 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    analyst_fieldsets = (
+        (
+            None,
+            {"fields": ("password", "status")},
+        ),
+        ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    analyst_readonly_fields = [
+        "password",
+        "Personal Info",
+        "first_name",
+        "last_name",
+        "email",
+        "Permissions",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "Important dates",
+        "last_login",
+        "date_joined",
+    ]
+
     def get_list_display(self, request):
         if not request.user.is_superuser:
             # Customize the list display for staff users
-            return ("email", "first_name", "last_name", "is_staff", "is_superuser")
+            return (
+                "email",
+                "first_name",
+                "last_name",
+                "is_staff",
+                "is_superuser",
+                "status",
+            )
 
         # Use the default list display for non-staff users
         return super().get_list_display(request)
@@ -171,10 +213,17 @@ class MyUserAdmin(BaseUserAdmin):
         if not request.user.is_superuser:
             # If the user doesn't have permission to change the model,
             # show a read-only fieldset
-            return ((None, {"fields": []}),)
+            return self.analyst_fieldsets
 
         # If the user has permission to change the model, show all fields
         return super().get_fieldsets(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ()  # No read-only fields for superusers
+        elif request.user.is_staff:
+            return self.analyst_readonly_fields  # Read-only fields for staff
+        return ()  # No read-only fields for other users
 
 
 class HostIPInline(admin.StackedInline):
@@ -472,7 +521,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Detail view
     form = DomainApplicationAdminForm
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator"]}),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
         (
             "Type of organization",
             {
@@ -542,29 +591,57 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 # Get the original application from the database
                 original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-                if obj.status != original_obj.status:
-                    status_method_mapping = {
-                        models.DomainApplication.STARTED: None,
-                        models.DomainApplication.SUBMITTED: obj.submit,
-                        models.DomainApplication.IN_REVIEW: obj.in_review,
-                        models.DomainApplication.ACTION_NEEDED: obj.action_needed,
-                        models.DomainApplication.APPROVED: obj.approve,
-                        models.DomainApplication.WITHDRAWN: obj.withdraw,
-                        models.DomainApplication.REJECTED: obj.reject,
-                        models.DomainApplication.INELIGIBLE: obj.reject_with_prejudice,
-                    }
-                    selected_method = status_method_mapping.get(obj.status)
-                    if selected_method is None:
-                        logger.warning("Unknown status selected in django admin")
-                    else:
-                        # This is an fsm in model which will throw an error if the
-                        # transition condition is violated, so we roll back the
-                        # status to what it was before the admin user changed it and
-                        # let the fsm method set it.
-                        obj.status = original_obj.status
-                        selected_method()
+                if (
+                    obj
+                    and original_obj.status == models.DomainApplication.APPROVED
+                    and (
+                        obj.status == models.DomainApplication.REJECTED
+                        or obj.status == models.DomainApplication.INELIGIBLE
+                    )
+                    and not obj.domain_is_not_active()
+                ):
+                    # If an admin tried to set an approved application to
+                    # rejected or ineligible and the related domain is already
+                    # active, shortcut the action and throw a friendly
+                    # error message. This action would still not go through
+                    # shortcut or not as the rules are duplicated on the model,
+                    # but the error would be an ugly Django error screen.
 
-            super().save_model(request, obj, form, change)
+                    # Clear the success message
+                    messages.set_level(request, messages.ERROR)
+
+                    messages.error(
+                        request,
+                        "This action is not permitted. The domain "
+                        + "is already active.",
+                    )
+
+                else:
+                    if obj.status != original_obj.status:
+                        status_method_mapping = {
+                            models.DomainApplication.STARTED: None,
+                            models.DomainApplication.SUBMITTED: obj.submit,
+                            models.DomainApplication.IN_REVIEW: obj.in_review,
+                            models.DomainApplication.ACTION_NEEDED: obj.action_needed,
+                            models.DomainApplication.APPROVED: obj.approve,
+                            models.DomainApplication.WITHDRAWN: obj.withdraw,
+                            models.DomainApplication.REJECTED: obj.reject,
+                            models.DomainApplication.INELIGIBLE: (
+                                obj.reject_with_prejudice
+                            ),
+                        }
+                        selected_method = status_method_mapping.get(obj.status)
+                        if selected_method is None:
+                            logger.warning("Unknown status selected in django admin")
+                        else:
+                            # This is an fsm in model which will throw an error if the
+                            # transition condition is violated, so we roll back the
+                            # status to what it was before the admin user changed it and
+                            # let the fsm method set it.
+                            obj.status = original_obj.status
+                            selected_method()
+
+                    super().save_model(request, obj, form, change)
         else:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
