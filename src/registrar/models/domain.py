@@ -341,7 +341,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if "statuses" not in self._cache:
             self._fetch_cache()
         if "statuses" not in self._cache:
-            raise Exception("Can't retreive status from domain info")
+            raise Exception("Can't retrieve status from domain info")
         else:
             return self._cache["statuses"]
 
