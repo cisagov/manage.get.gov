@@ -656,7 +656,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     # Q: I don't like this function name much,
     # what would be better here?
-    # Note for reviewers:
+    # Q2:
     # This can likely be done without passing in
     # contact_id and contact_type and instead embedding it inside of
     # contact, but the tradeoff for that is that it unnecessarily complicates using this
