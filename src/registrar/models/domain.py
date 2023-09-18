@@ -537,6 +537,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 self._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
+                old_contact = PublicContact.objects.filter(registry_id=contact.registry_id, contact_type=contact.contact_type).exclude(domain=self)
+                if(old_contact.count > 0){
+                    old_contact.delete()
+                }
                 current_contact = PublicContact.objects.filter(
                     registry_id=contact.registry_id
                 ).get()
