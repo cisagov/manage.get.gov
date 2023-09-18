@@ -523,6 +523,9 @@ STATIC_URL = "public/"
 # {% public_site_url subdir/path %} template tag
 GETGOV_PUBLIC_SITE_URL = env_getgov_public_site_url
 
+# Base URL of application
+BASE_URL = env_base_url
+
 # endregion
 # region: Registry----------------------------------------------------------###
 

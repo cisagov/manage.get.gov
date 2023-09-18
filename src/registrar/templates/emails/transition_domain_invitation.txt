@@ -1,0 +1,11 @@
+You have been invited to manage {% if domains|length > 1 %}multiple domains{% else %}the domain {{ domains.0.name }}{% endif %} on get.gov, 
+the registrar for .gov domain names.
+{%if domains|length > 1 %}
+To accept your invitation, go to each of the following urls:
+ {% for domain in domains %}
+  {{ domain.url }} (to manage {{ domain.name }})
+ {% endfor %}
+{% else %}
+To accept your invitation, go to <{{ domains.0.url }}>.
+{% endif %}
+You will need to log in with a Login.gov account using this email address.
