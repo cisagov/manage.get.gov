@@ -557,7 +557,12 @@ class MockEppLib(TestCase):
             self.hosts = hosts
             self.registrant = registrant
 
-    def dummyInfoContactResultData(id, email, cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35), pw="thisisnotapassword"):
+    def dummyInfoContactResultData(
+        id,
+        email,
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        pw="thisisnotapassword",
+    ):
         fake = info.InfoContactResultData(
             id=id,
             postal_info=common.PostalInfo(
@@ -591,10 +596,18 @@ class MockEppLib(TestCase):
         )
         return fake
 
-    mockSecurityContact = dummyInfoContactResultData("securityContact", "security@mail.gov")
-    mockTechnicalContact = dummyInfoContactResultData("technicalContact", "tech@mail.gov")
-    mockAdministrativeContact = dummyInfoContactResultData("administrativeContact", "admin@mail.gov")
-    mockRegistrantContact = dummyInfoContactResultData("registrantContact", "registrant@mail.gov")
+    mockSecurityContact = dummyInfoContactResultData(
+        "securityContact", "security@mail.gov"
+    )
+    mockTechnicalContact = dummyInfoContactResultData(
+        "technicalContact", "tech@mail.gov"
+    )
+    mockAdministrativeContact = dummyInfoContactResultData(
+        "administrativeContact", "admin@mail.gov"
+    )
+    mockRegistrantContact = dummyInfoContactResultData(
+        "registrantContact", "registrant@mail.gov"
+    )
     mockDataInfoDomain = fakedEppObject(
         "lastPw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
@@ -618,7 +631,9 @@ class MockEppLib(TestCase):
         contacts=[],
         hosts=["fake.host.com"],
     )
-    mockDataInfoContact = dummyInfoContactResultData("123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw")
+    mockDataInfoContact = dummyInfoContactResultData(
+        "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
+    )
     mockDataInfoHosts = fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
     )
@@ -633,6 +648,8 @@ class MockEppLib(TestCase):
                 return MagicMock(res_data=[self.infoDomainNoContact])
             elif getattr(_request, "name", None) == "freeman.gov":
                 return MagicMock(res_data=[self.InfoDomainWithContacts])
+            else:
+                return MagicMock(res_data=[self.mockDataInfoDomain])
         elif isinstance(_request, commands.InfoContact):
             # Default contact return
             mocked_result = self.mockDataInfoContact
@@ -646,6 +663,8 @@ class MockEppLib(TestCase):
                     mocked_result = self.mockAdministrativeContact
                 case "registrantContact":
                     mocked_result = self.mockRegistrantContact
+                case "123":
+                    mocked_result = self.mockDataInfoContact
 
             return MagicMock(res_data=[mocked_result])
         elif (

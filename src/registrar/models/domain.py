@@ -695,7 +695,8 @@ class Domain(TimeStampedModel, DomainHelper):
         streets = {}
         if addr is not None and addr.street is not None:
             # 'zips' two lists together.
-            # For instance, (('street1', 'some_value_here'), ('street2', 'some_value_here'))
+            # For instance, (('street1', 'some_value_here'),
+            # ('street2', 'some_value_here'))
             # Dict then converts this to a useable kwarg which we can pass in
             streets = dict(
                 zip_longest(
@@ -734,7 +735,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 contact.contact_type,
                 error.code,
                 error,
-            )
+            ) # noqa
             raise error
 
     def get_contact_default(
@@ -776,17 +777,18 @@ class Domain(TimeStampedModel, DomainHelper):
         or cache_contact_helper("security")
         """
         try:
+            # TODO - refactor
             desired_property = "contacts"
             # The contact type 'registrant' is stored under a different property
             if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
                 desired_property = "registrant"
-            logger.debug(f"generic domain getter was called. Wanting contacts on {contact_type_choice}")
             contacts = self._get_property(desired_property)
             if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
                 contacts = [contacts]
         except KeyError as error:
             logger.warning("generic_contact_getter -> Contact does not exist")
             logger.warning(error)
+            # Should we just raise an error instead?
             return self.get_contact_default(contact_type_choice)
         else:
             print(f"generic_contact_getter -> contacts?? {contacts}")
@@ -1123,38 +1125,27 @@ class Domain(TimeStampedModel, DomainHelper):
                 "tr_date": getattr(data, "tr_date", ...),
                 "up_date": getattr(data, "up_date", ...),
             }
-            print(f"precleaned stuff {cache}")
             # remove null properties (to distinguish between "a value of None" and null)
             cleaned = {k: v for k, v in cache.items() if v is not ...}
-            l = getattr(data, "contacts", ...)
-            logger.debug(f"here are the contacts {l}")
+
             # statuses can just be a list no need to keep the epp object
             if "statuses" in cleaned.keys():
                 cleaned["statuses"] = [status.state for status in cleaned["statuses"]]
 
             # Registrant should be of type PublicContact
             if "registrant" in cleaned.keys():
-                try:
-                    contact = PublicContact(
-                        registry_id=cleaned["registrant"],
-                        contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
-                    )
-                    # Grabs the expanded contact
-                    full_object = self._request_contact_info(contact)
-                    # Maps it to type PublicContact
-                    cleaned["registrant"] = self.map_epp_contact_to_public_contact(
-                        full_object, contact.registry_id, contact.contact_type
-                    )
-                except RegistryError:
-                    cleaned["registrant"] = None
-            # get contact info, if there are any
+                # For linter...
+                _ = cleaned["registrant"]
+                # Registrant, if it exists, should always exist in EppLib.
+                # If it doesn't, that is bad. We expect this to exist, always.
+                cleaned["registrant"] = self._registrant_to_public_contact(_)
+
             if (
                 # fetch_contacts and
-                "_contacts" in cleaned
+                "_contacts" in cleaned.keys()
                 and isinstance(cleaned["_contacts"], list)
-                and len(cleaned["_contacts"])
+                and len(cleaned["_contacts"]) > 0
             ):
-                logger.debug("hit!")
                 cleaned["contacts"] = []
                 for domainContact in cleaned["_contacts"]:
                     # we do not use _get_or_create_* because we expect the object we
@@ -1162,7 +1153,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     # if not, that's a problem
 
                     # TODO- discuss-should we check if contact is in public contacts
-                    # and add it if not- this is really to keep in mine the transisiton
+                    # and add it if not- this is really to keep in mind for the transition
                     req = commands.InfoContact(id=domainContact.contact)
                     data = registry.send(req, cleaned=True).res_data[0]
 
@@ -1183,30 +1174,62 @@ class Domain(TimeStampedModel, DomainHelper):
                 # no point in removing
                 cleaned["hosts"] = []
                 for name in cleaned["_hosts"]:
-                    # we do not use _get_or_create_* because we expect the object we
-                    # just asked the registry for still exists --
-                    # if not, that's a problem
-                    req = commands.InfoHost(name=name)
-                    data = registry.send(req, cleaned=True).res_data[0]
-                    # extract properties from response
-                    # (Ellipsis is used to mean "null")
-                    host = {
-                        "name": name,
-                        "addrs": getattr(data, "addrs", ...),
-                        "cr_date": getattr(data, "cr_date", ...),
-                        "statuses": getattr(data, "statuses", ...),
-                        "tr_date": getattr(data, "tr_date", ...),
-                        "up_date": getattr(data, "up_date", ...),
-                    }
-                    cleaned["hosts"].append(
-                        {k: v for k, v in host.items() if v is not ...}
-                    )
-
+                    # For reviewers - slight refactor here
+                    # as we may need this for future hosts tickets
+                    # (potential host mapper?).
+                    # Can remove if unnecessary
+                    cleaned["hosts"].append(self._get_host_as_dict(name))
             # replace the prior cache with new data
             self._cache = cleaned
 
         except RegistryError as e:
             logger.error(e)
+
+    def _registrant_to_public_contact(self, registry_id: str):
+        """ EPPLib returns the registrant as a string, 
+        which is the registrants associated registry_id. This function is used to
+        convert that id to a useable object by calling commands.InfoContact 
+        on that ID, then mapping that object to type PublicContact. """
+        contact = PublicContact(
+            registry_id=registry_id,
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+        )
+        # Grabs the expanded contact
+        full_object = self._request_contact_info(contact)
+        # Maps it to type PublicContact
+        return self.map_epp_contact_to_public_contact(
+            full_object, contact.registry_id, contact.contact_type
+        )
+
+    def _get_host_as_dict(self, host_name):
+        """Returns the result of commands.InfoHost as a dictionary
+
+        Returns the following, excluding null fields:
+        {
+            "name": name,
+            "addrs": addr,
+            "cr_date": cr_date,
+            "statuses": statuses,
+            "tr_date": tr_date,
+            "up_date": up_date,
+        }
+        """
+        # we do not use _get_or_create_* because we expect the object we
+        # just asked the registry for still exists --
+        # if not, that's a problem
+        req = commands.InfoHost(name=host_name)
+        data = registry.send(req, cleaned=True).res_data[0]
+        # extract properties from response
+        # (Ellipsis is used to mean "null")
+        host = {
+            "name": host_name,
+            "addrs": getattr(data, "addrs", ...),
+            "cr_date": getattr(data, "cr_date", ...),
+            "statuses": getattr(data, "statuses", ...),
+            "tr_date": getattr(data, "tr_date", ...),
+            "up_date": getattr(data, "up_date", ...),
+        }
+        return {k: v for k, v in host.items() if v is not ...}
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
