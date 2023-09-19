@@ -6,7 +6,6 @@ from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
-from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from api.views import DOMAIN_API_MESSAGES
