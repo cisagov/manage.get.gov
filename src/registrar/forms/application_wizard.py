@@ -192,7 +192,7 @@ class TribalGovernmentForm(RegistrarForm):
                     'domains. Use our <a href="{}">contact form</a> to '
                     "tell us more about your tribe and why you want a .gov "
                     "domain. We’ll review your information and get back "
-                    "to you.".format(public_site_url('contact'))
+                    "to you.".format(public_site_url("contact"))
                 ),
                 code="invalid",
             )
