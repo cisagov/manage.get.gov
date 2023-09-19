@@ -954,7 +954,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # remove null properties (to distinguish between "a value of None" and null)
             cleaned = {k: v for k, v in cache.items() if v is not ...}
-            print(f"cleaned {cleaned}")
+
             # statuses can just be a list no need to keep the epp object
             if "statuses" in cleaned.keys():
                 cleaned["statuses"] = [status.state for status in cleaned["statuses"]]

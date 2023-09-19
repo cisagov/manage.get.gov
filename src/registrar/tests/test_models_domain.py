@@ -180,10 +180,6 @@ class TestDomainStatuses(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="chicken-liver.gov")
         # trigger getter
         _ = domain.statuses
-        print("checkpoint 1")
-        print(domain._cache["statuses"])
-        print(domain._cache)
-
         status_list = [status.state for status in self.mockDataInfoDomain.statuses]
         self.assertEquals(domain._cache["statuses"], status_list)
 

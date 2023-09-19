@@ -607,7 +607,6 @@ class MockEppLib(TestCase):
 
     def setUp(self):
         """mock epp send function as this will fail locally"""
-        print("Set up EPP MOCK")
         self.mockSendPatch = patch("registrar.models.domain.registry.send")
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
@@ -671,5 +670,4 @@ class MockEppLib(TestCase):
             )
 
     def tearDown(self):
-        print("tear down EPP MOCK")
         self.mockSendPatch.stop()
