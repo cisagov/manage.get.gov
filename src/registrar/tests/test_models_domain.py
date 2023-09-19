@@ -43,16 +43,30 @@ class TestDomainCache(MockEppLib):
         # using a setter should clear the cache
         domain.expiration_date = datetime.date.today()
         self.assertEquals(domain._cache, {})
-
+        expectedCreateContact = self._convertPublicContactToEpp(domain.security_contact, False, createContact=True)
         # send should have been called only once
         self.mockedSendFunction.assert_has_calls(
             [
-                call(
-                    commands.InfoDomain(name="igorville.gov", auth_info=None),
-                    cleaned=True,
+                call(commands.InfoDomain(name='igorville.gov', auth_info=None), cleaned=True),
+                call(commands.InfoContact(id='123', auth_info=None), cleaned=True),
+                call(expectedCreateContact),
+                call(commands.UpdateDomain(
+                        name='igorville.gov',
+                        add=[
+                                common.DomainContact(
+                                    contact='123', 
+                                    type=PublicContact.ContactTypeChoices.SECURITY
+                                )
+                            ], 
+                        rem=[], 
+                        nsset=None, 
+                        keyset=None, 
+                        registrant=None, 
+                        auth_info=None
+                    ), 
+                    cleaned=True
                 ),
-                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
+                call(commands.InfoHost(name='fake.host.com'), cleaned=True)
             ]
         )
         # Clear the cache
@@ -95,9 +109,7 @@ class TestDomainCache(MockEppLib):
             common.DomainContact(contact="123", type="security"),
         ]
         expectedContactsList = [
-            domain.map_epp_contact_to_public_contact(
-                self.mockDataInfoContact, "123", "security"
-            )
+            domain.security_contact
         ]
         expectedHostsDict = {
             "name": self.mockDataInfoDomain.hosts[0],
@@ -449,9 +461,7 @@ class TestRegistrantContacts(MockEppLib):
         security_contact = self.domain.get_default_security_contact()
         security_contact.email = "originalUserEmail@gmail.com"
         security_contact.registry_id = "fail"
-        security_contact.domain = self.domain
-        self.domain.security_contact = security_contact
-
+        security_contact.save()
         expectedCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
@@ -464,22 +474,28 @@ class TestRegistrantContacts(MockEppLib):
                 )
             ],
         )
-        self.domain.security_contact.email = "changedEmail@email.com" 
-        #self.domain.security_contact.email = "changedEmail@email.com"
+        security_contact.email = "changedEmail@email.com"
+        security_contact.save()
         expectedSecondCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
         updateContact = self._convertPublicContactToEpp(
             security_contact, disclose_email=True, createContact=False
         )
-        self.domain.security_contact.email = "changedEmailAgain@email.com"
 
+        expected_calls = [
+            call(expectedCreateCommand, cleaned=True),
+            call(expectedUpdateDomain, cleaned=True),
+            call(expectedSecondCreateCommand, cleaned=True),
+            call(updateContact, cleaned=True),
+        ]
+        self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
         # Check if security_contact is what we expect...
         self.assertEqual(self.domain.security_contact.email, "changedEmailAgain@email.com")
         # If the item in PublicContact is as expected...
         current_item = PublicContact.objects.filter(domain=self.domain).get()
-        self.assertEqual(current_item.email, "changedEmailAgain@email.com")
+        self.assertEqual(current_item.email, "changedEmail@email.com")
 
         # Check if cache stored it correctly...
         self.assertEqual("contacts" in self.domain._cache)

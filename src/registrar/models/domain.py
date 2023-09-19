@@ -149,7 +149,6 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during set. Example: `domain.registrant = 'abc123'`."""
             super().__set__(obj, value)
             # always invalidate cache after sending updates to the registry
-            logger.debug("cache was invalidateds")
             obj._invalidate_cache()
 
         def __delete__(self, obj):
@@ -538,11 +537,14 @@ class Domain(TimeStampedModel, DomainHelper):
                 self._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
-                logger.debug(f"aaaa12 {contact.__dict__}")
-
-                current_contact = PublicContact.objects.filter(
+                filtered_contacts = PublicContact.objects.filter(
                     registry_id=contact.registry_id
-                ).get()
+                )
+                if(filtered_contacts.count() > 1):
+                    filtered_contacts.order_by('id').first().delete()
+                
+                current_contact = filtered_contacts.get()
+                logger.debug(f"current contact was accessed {current_contact}")
 
                 if current_contact.email != contact.email:
                     self._update_epp_contact(contact=contact)
@@ -716,7 +718,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     fillvalue=None,
                 )
             )
-        logger.debug(f"WHAT IS CONTACT {contact_id} {len(contact_id)}")
         desired_contact = PublicContact(
             domain=self,
             contact_type=contact_type,
@@ -735,7 +736,10 @@ class Domain(TimeStampedModel, DomainHelper):
         )
         # Saves to DB
         if(create_object):
-            desired_contact.save()
+            create = PublicContact.objects.filter(registry_id=contact_id, contact_type=contact_type, domain=self)
+            if(create.count() == 0):
+                desired_contact.save()
+                
         return desired_contact
 
     def _request_contact_info(self, contact: PublicContact):
@@ -803,7 +807,6 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.warning("generic_contact_getter -> Contact does not exist")
             logger.warning(error)
             # Should we just raise an error instead?
-            return self.get_contact_default(contact_type_choice)
         else:
             print(f"generic_contact_getter -> contacts?? {contacts}")
             # --> Map to public contact
@@ -1188,11 +1191,22 @@ class Domain(TimeStampedModel, DomainHelper):
                 # no point in removing
                 cleaned["hosts"] = []
                 for name in cleaned["_hosts"]:
-                    # For reviewers - slight refactor here
-                    # as we may need this for future hosts tickets
-                    # (potential host mapper?).
-                    # Can remove if unnecessary
-                    cleaned["hosts"].append(self._get_host_as_dict(name))
+                    # we do not use _get_or_create_* because we expect the object we
+                    # just asked the registry for still exists --
+                    # if not, that's a problem
+                    req = commands.InfoHost(name=name)
+                    data = registry.send(req, cleaned=True).res_data[0]
+                    # extract properties from response
+                    # (Ellipsis is used to mean "null")
+                    host = {
+                        "name": name,
+                        "addrs": getattr(data, "addrs", ...),
+                        "cr_date": getattr(data, "cr_date", ...),
+                        "statuses": getattr(data, "statuses", ...),
+                        "tr_date": getattr(data, "tr_date", ...),
+                        "up_date": getattr(data, "up_date", ...),
+                    }
+                    cleaned["hosts"].append({k: v for k, v in host.items() if v is not ...})
             # replace the prior cache with new data
             self._cache = cleaned
 
@@ -1215,36 +1229,6 @@ class Domain(TimeStampedModel, DomainHelper):
             full_object, contact.registry_id, contact.contact_type
         )
 
-    def _get_host_as_dict(self, host_name):
-        """Returns the result of commands.InfoHost as a dictionary
-
-        Returns the following, excluding null fields:
-        {
-            "name": name,
-            "addrs": addr,
-            "cr_date": cr_date,
-            "statuses": statuses,
-            "tr_date": tr_date,
-            "up_date": up_date,
-        }
-        """
-        # we do not use _get_or_create_* because we expect the object we
-        # just asked the registry for still exists --
-        # if not, that's a problem
-        req = commands.InfoHost(name=host_name)
-        data = registry.send(req, cleaned=True).res_data[0]
-        # extract properties from response
-        # (Ellipsis is used to mean "null")
-        host = {
-            "name": host_name,
-            "addrs": getattr(data, "addrs", ...),
-            "cr_date": getattr(data, "cr_date", ...),
-            "statuses": getattr(data, "statuses", ...),
-            "tr_date": getattr(data, "tr_date", ...),
-            "up_date": getattr(data, "up_date", ...),
-        }
-        return {k: v for k, v in host.items() if v is not ...}
-
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
         logger.debug(f"cache was cleared! {self.__dict__}")
@@ -1252,6 +1236,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
+        logger.info(f"_get_property() -> prop is... {property} prop in cache... {property not in self._cache} cache is {self._cache}")
         if property not in self._cache:
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
@@ -1259,7 +1244,6 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
         if property in self._cache:
-            logger.debug(f"hit here also!! {property}")
             logger.debug(self._cache[property])
             return self._cache[property]
         else:
