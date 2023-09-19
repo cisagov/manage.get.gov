@@ -31,7 +31,7 @@ Finally, you'll need to craft a request and send it.
 
 ```
 request = ...
-response = registry.send(request)
+response = registry.send(request, cleaned=True)
 ```
 
 Note that you'll need to attest that the data you are sending has been sanitized to remove malicious or invalid strings. Use `send(..., cleaned=True)` to do that.

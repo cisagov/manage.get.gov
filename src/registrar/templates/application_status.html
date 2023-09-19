@@ -77,12 +77,8 @@
       {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domainapplication  address='true' heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.type_of_work %}
-      {% include "includes/summary_item.html" with title='Type of work' value=domainapplication.type_of_work heading_level=heading_level %}
-    {% endif %}
-
-    {% if domainapplication.more_organization_information %}
-      {% include "includes/summary_item.html" with title='More information about your organization' value=domainapplication.more_organization_information heading_level=heading_level %}
+    {% if domainapplication.about_your_organization %}
+      {% include "includes/summary_item.html" with title='About your organization' value=domainapplication.about_your_organization heading_level=heading_level %}
     {% endif %}
 
     {% if domainapplication.authorizing_official %}

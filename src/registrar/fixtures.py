@@ -159,7 +159,7 @@ class UserFixture:
             "model": "draftdomain",
             "permissions": ["change_draftdomain"],
         },
-        {"app_label": "registrar", "model": "user", "permissions": ["view_user"]},
+        {"app_label": "registrar", "model": "user", "permissions": ["change_user"]},
     ]
 
     @classmethod
