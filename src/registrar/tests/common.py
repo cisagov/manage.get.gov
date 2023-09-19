@@ -570,9 +570,9 @@ class MockEppLib(TestCase):
                 addr=common.ContactAddr(
                     street=["4200 Wilson Blvd."],
                     city="Arlington",
-                    pc="VA",
+                    pc="22201",
                     cc="US",
-                    sp="22201",
+                    sp="VA",
                 ),
                 org="Cybersecurity and Infrastructure Security Agency",
                 type="type",
@@ -603,27 +603,27 @@ class MockEppLib(TestCase):
         "technicalContact", "tech@mail.gov"
     )
     mockAdministrativeContact = dummyInfoContactResultData(
-        "administrativeContact", "admin@mail.gov"
+        "adminContact", "admin@mail.gov"
     )
     mockRegistrantContact = dummyInfoContactResultData(
-        "registrantContact", "registrant@mail.gov"
+        "regContact", "registrant@mail.gov"
     )
     mockDataInfoDomain = fakedEppObject(
         "lastPw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
-        contacts=[common.DomainContact(contact="123", type="security")],
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.host.com"],
     )
     InfoDomainWithContacts = fakedEppObject(
         "fakepw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[
-            common.DomainContact(contact="securityContact", type="security"),
-            common.DomainContact(contact="administrativeContact", type="admin"),
-            common.DomainContact(contact="technicalContact", type="tech"),
+            common.DomainContact(contact="securityContact", type=PublicContact.ContactTypeChoices.SECURITY),
+            common.DomainContact(contact="technicalContact", type=PublicContact.ContactTypeChoices.TECHNICAL),
+            common.DomainContact(contact="adminContact", type=PublicContact.ContactTypeChoices.ADMINISTRATIVE),
         ],
         hosts=["fake.host.com"],
-        registrant="registrantContact",
+        registrant="regContact",
     )
     infoDomainNoContact = fakedEppObject(
         "security",
@@ -659,9 +659,9 @@ class MockEppLib(TestCase):
                     mocked_result = self.mockSecurityContact
                 case "technicalContact":
                     mocked_result = self.mockTechnicalContact
-                case "administrativeContact":
+                case "adminContact":
                     mocked_result = self.mockAdministrativeContact
-                case "registrantContact":
+                case "regContact":
                     mocked_result = self.mockRegistrantContact
                 case "123":
                     mocked_result = self.mockDataInfoContact

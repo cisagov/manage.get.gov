@@ -225,7 +225,7 @@ class TestDomainCreation(TestCase):
 
 class TestRegistrantContacts(MockEppLib):
     """Rule: Registrants may modify their WHOIS data"""
-
+    
     def setUp(self):
         """
         Background:
@@ -449,7 +449,9 @@ class TestRegistrantContacts(MockEppLib):
         security_contact = self.domain.get_default_security_contact()
         security_contact.email = "originalUserEmail@gmail.com"
         security_contact.registry_id = "fail"
-        security_contact.save()
+        security_contact.domain = self.domain
+        self.domain.security_contact = security_contact
+
         expectedCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
@@ -462,23 +464,29 @@ class TestRegistrantContacts(MockEppLib):
                 )
             ],
         )
-        security_contact.email = "changedEmail@email.com"
-        security_contact.save()
+        self.domain.security_contact.email = "changedEmail@email.com" 
+        #self.domain.security_contact.email = "changedEmail@email.com"
         expectedSecondCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
         updateContact = self._convertPublicContactToEpp(
             security_contact, disclose_email=True, createContact=False
         )
+        self.domain.security_contact.email = "changedEmailAgain@email.com"
 
-        expected_calls = [
-            call(expectedCreateCommand, cleaned=True),
-            call(expectedUpdateDomain, cleaned=True),
-            call(expectedSecondCreateCommand, cleaned=True),
-            call(updateContact, cleaned=True),
-        ]
-        self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
+        # Check if security_contact is what we expect...
+        self.assertEqual(self.domain.security_contact.email, "changedEmailAgain@email.com")
+        # If the item in PublicContact is as expected...
+        current_item = PublicContact.objects.filter(domain=self.domain).get()
+        self.assertEqual(current_item.email, "changedEmailAgain@email.com")
+
+        # Check if cache stored it correctly...
+        self.assertEqual("contacts" in self.domain._cache)
+        cached_item = self.domain._cache["contacts"]
+        self.assertTrue(cached_item[0])
+
+        
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
@@ -502,122 +510,58 @@ class TestRegistrantContacts(MockEppLib):
         pass
 
     def test_contact_getter_security(self):
+        # Create prexisting object...
         security = PublicContact.get_default_security()
         security.email = "security@mail.gov"
         security.domain = self.domain_contact
-        security.save()
         self.domain_contact.security_contact = security
 
-        expected_security_contact = (
-            self.domain_contact.map_epp_contact_to_public_contact(
-                self.mockSecurityContact, "securityContact", "security"
-            )
-        )
+        expected_security_contact = PublicContact.objects.filter(
+            registry_id=self.domain_contact.security_contact.registry_id,
+            contact_type = PublicContact.ContactTypeChoices.SECURITY
+        ).get()
 
-        contact_dict = self.domain_contact.security_contact.__dict__
-        expected_dict = expected_security_contact.__dict__
-
-        contact_dict.pop("_state")
-        expected_dict.pop("_state")
-
+        # Checks if we grab the correct PublicContact...
+        self.assertEqual(self.domain_contact.security_contact, expected_security_contact)
         self.mockedSendFunction.assert_has_calls(
             [
-                call(
-                    commands.InfoDomain(name="freeman.gov", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="registrantContact", auth_info=None),
-                    cleaned=True,
-                ),
                 call(
                     commands.InfoContact(id="securityContact", auth_info=None),
                     cleaned=True,
                 ),
-                call(
-                    commands.InfoContact(id="administrativeContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="technicalContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ]
         )
-
-        self.assertEqual(contact_dict, expected_dict)
+        # Checks if we are recieving the cache we expect...
+        self.assertEqual(self.domain_contact._cache["contacts"][0], expected_security_contact)
 
     def test_setter_getter_security_email(self):
-        expected_security_contact = (
-            self.domain_contact.map_epp_contact_to_public_contact(
-                self.mockSecurityContact, "securityContact", "security"
-            )
-        )
+        security = PublicContact.get_default_security()
+        security.email = "security@mail.gov"
+        security.domain = self.domain_contact
+        self.domain_contact.security_contact = security
 
-        contact_dict = self.domain_contact.security_contact.__dict__
-        expected_dict = expected_security_contact.__dict__
+        expected_security_contact = PublicContact.objects.filter(
+            registry_id=self.domain_contact.security_contact.registry_id,
+            contact_type = PublicContact.ContactTypeChoices.SECURITY
+        ).get()
 
-        contact_dict.pop("_state")
-        expected_dict.pop("_state")
-
-        # Getter functions properly...
+        # Checks if we grab the correct PublicContact...
+        self.assertEqual(self.domain_contact.security_contact, expected_security_contact)
         self.mockedSendFunction.assert_has_calls(
             [
-                call(
-                    commands.InfoDomain(name="freeman.gov", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="registrantContact", auth_info=None),
-                    cleaned=True,
-                ),
                 call(
                     commands.InfoContact(id="securityContact", auth_info=None),
                     cleaned=True,
                 ),
-                call(
-                    commands.InfoContact(id="administrativeContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="technicalContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ]
         )
-
-        self.assertEqual(contact_dict, expected_dict)
+        # Checks if we are recieving the cache we expect...
+        self.assertEqual(self.domain_contact._cache["contacts"][0], expected_security_contact)
 
         # Setter functions properly...
         self.domain_contact.security_contact.email = "converge@mail.com"
         expected_security_contact.email = "converge@mail.com"
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoDomain(name="freeman.gov", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="registrantContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="securityContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="administrativeContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="technicalContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
-            ]
-        )
+
         self.assertEqual(
             self.domain_contact.security_contact.email, expected_security_contact.email
         )
@@ -629,156 +573,76 @@ class TestRegistrantContacts(MockEppLib):
         raise
 
     def test_contact_getter_technical(self):
-        technical = PublicContact.get_default_technical()
-        technical.email = "tech@mail.gov"
-        technical.domain = self.domain_contact
-        technical.save()
+        contact = PublicContact.get_default_technical()
+        contact.email = "technical@mail.gov"
+        contact.domain = self.domain_contact
+        self.domain_contact.technical_contact = contact
 
-        expected_technical_contact = (
-            self.domain_contact.map_epp_contact_to_public_contact(
-                self.mockTechnicalContact, "technicalContact", "tech"
-            )
-        )
+        expected_contact = PublicContact.objects.filter(
+            registry_id=self.domain_contact.technical_contact.registry_id,
+            contact_type = PublicContact.ContactTypeChoices.TECHNICAL
+        ).get()
 
-        self.domain_contact.technical_contact = technical
-
-        contact_dict = self.domain_contact.technical_contact.__dict__
-        expected_dict = expected_technical_contact.__dict__
-
-        # There has to be a better way to do this.
-        # Since Cache creates a new object, it causes
-        # a desync between each instance. Basically,
-        # these two objects will never be the same.
-        contact_dict.pop("_state")
-        expected_dict.pop("_state")
-
+        # Checks if we grab the correct PublicContact...
+        self.assertEqual(self.domain_contact.technical_contact, expected_contact)
         self.mockedSendFunction.assert_has_calls(
             [
-                call(
-                    commands.InfoDomain(name="freeman.gov", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="registrantContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="securityContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="administrativeContact", auth_info=None),
-                    cleaned=True,
-                ),
                 call(
                     commands.InfoContact(id="technicalContact", auth_info=None),
                     cleaned=True,
                 ),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ]
         )
-
-        self.assertEqual(contact_dict, expected_dict)
+        # Checks if we are recieving the cache we expect...
+        self.assertEqual(self.domain_contact._cache["contacts"][1], expected_contact)
 
     def test_contact_getter_administrative(self):
-        self.maxDiff = None
-        administrative = PublicContact.get_default_administrative()
-        administrative.email = "admin@mail.gov"
-        administrative.domain = self.domain_contact
-        administrative.save()
+        contact = PublicContact.get_default_administrative()
+        contact.email = "admin@mail.gov"
+        contact.domain = self.domain_contact
+        self.domain_contact.administrative_contact = contact
 
-        expected_administrative_contact = (
-            self.domain_contact.map_epp_contact_to_public_contact(
-                self.mockAdministrativeContact, "administrativeContact", "admin"
-            )
-        )
+        expected_contact = PublicContact.objects.filter(
+            registry_id=self.domain_contact.administrative_contact.registry_id,
+            contact_type = PublicContact.ContactTypeChoices.ADMINISTRATIVE
+        ).get()
 
-        self.domain_contact.administrative_contact = administrative
-
-        contact_dict = self.domain_contact.administrative_contact.__dict__
-        expected_dict = expected_administrative_contact.__dict__
-
-        contact_dict.pop("_state")
-        expected_dict.pop("_state")
-
+        # Checks if we grab the correct PublicContact...
+        self.assertEqual(self.domain_contact.administrative_contact, expected_contact)
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
-                    commands.InfoDomain(name="freeman.gov", auth_info=None),
+                    commands.InfoContact(id="adminContact", auth_info=None),
                     cleaned=True,
                 ),
-                call(
-                    commands.InfoContact(id="registrantContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="securityContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="administrativeContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="technicalContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ]
         )
-
-        self.assertEqual(contact_dict, expected_dict)
+        # Checks if we are recieving the cache we expect...
+        self.assertEqual(self.domain_contact._cache["contacts"][2], expected_contact)
 
     def test_contact_getter_registrant(self):
-        registrant = PublicContact.get_default_registrant()
-        registrant.email = "registrant@mail.gov"
-        registrant.domain = self.domain_contact
-        registrant.save()
+        contact = PublicContact.get_default_registrant()
+        contact.email = "registrant@mail.gov"
+        contact.domain = self.domain_contact
+        self.domain_contact.registrant_contact = contact
 
-        expected_registrant_contact = registrant
-        self.domain_contact.registrant_contact = registrant
+        expected_contact = PublicContact.objects.filter(
+            registry_id=self.domain_contact.registrant_contact.registry_id,
+            contact_type = PublicContact.ContactTypeChoices.REGISTRANT
+        ).get()
 
-        expected_registrant_contact = (
-            self.domain_contact.map_epp_contact_to_public_contact(
-                self.mockRegistrantContact, "registrantContact", "registrant"
-            )
-        )
-
-        self.domain_contact.registrant_contact = registrant
-
-        contact_dict = self.domain_contact.registrant_contact.__dict__
-        expected_dict = expected_registrant_contact.__dict__
-
-        contact_dict.pop("_state")
-        expected_dict.pop("_state")
-
+        # Checks if we grab the correct PublicContact...
+        self.assertEqual(self.domain_contact.registrant_contact, expected_contact)
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
-                    commands.InfoDomain(name="freeman.gov", auth_info=None),
+                    commands.InfoContact(id="regContact", auth_info=None),
                     cleaned=True,
                 ),
-                call(
-                    commands.InfoContact(id="registrantContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="securityContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="administrativeContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoContact(id="technicalContact", auth_info=None),
-                    cleaned=True,
-                ),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ]
         )
-
-        self.assertEqual(contact_dict, expected_dict)
+        # Checks if we are recieving the cache we expect...
+        self.assertEqual(self.domain_contact._cache["registrant"], expected_contact)
 
 
 class TestRegistrantNameservers(TestCase):

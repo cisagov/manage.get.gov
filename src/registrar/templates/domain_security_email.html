@@ -21,7 +21,7 @@
     <button
       type="submit"
       class="usa-button"
-    >Add security email</button>
+    >{% if domain.security_email is None %}Add security email{% else %}Save{% endif %}</button>
   </form>
 
 {% endblock %}  {# domain_content #}

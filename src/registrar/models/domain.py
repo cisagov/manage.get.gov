@@ -516,6 +516,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 .filter(domain=self, contact_type=contact.contact_type)
                 .get()
             )
+            logger.info(f"_set_singleton_contact() -> existing contact is... {existing_contact.__dict__}")
             if isRegistrant:
                 # send update domain only for registant contacts
                 existing_contact.delete()
@@ -537,9 +538,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 self._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
-                old_contact = PublicContact.objects.filter(registry_id=contact.registry_id, contact_type=contact.contact_type).exclude(domain=self)
-                if(old_contact.count() > 0):
-                    old_contact.delete()
+                logger.debug(f"aaaa12 {contact.__dict__}")
+
                 current_contact = PublicContact.objects.filter(
                     registry_id=contact.registry_id
                 ).get()
@@ -667,7 +667,7 @@ class Domain(TimeStampedModel, DomainHelper):
     # I'm sure though that there is an easier alternative...
     # TLDR: This doesn't look as pretty, but it makes using this function easier
     def map_epp_contact_to_public_contact(
-        self, contact: eppInfo.InfoContactResultData, contact_id, contact_type
+        self, contact: eppInfo.InfoContactResultData, contact_id, contact_type, create_object=True
     ):
         """Maps the Epp contact representation to a PublicContact object.
 
@@ -676,6 +676,8 @@ class Domain(TimeStampedModel, DomainHelper):
         contact_id -> str: The given registry_id of the object (i.e "cheese@cia.gov")
 
         contact_type -> str: The given contact type, (i.e. "tech" or "registrant")
+
+        create_object -> bool: Flag for if this object is saved or not
         """
 
         if contact is None:
@@ -686,6 +688,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         if contact_id is None:
             raise ValueError("contact_id is None")
+        
+        if len(contact_id) > 16 or len(contact_id) < 1:
+            raise ValueError(
+                "contact_id is of invalid length. "
+                f"Cannot exceed 16 characters, got {contact_id} with a length of {len(contact_id)}"
+            )
 
         logger.debug(f"map_epp_contact_to_public_contact contact -> {contact}")
         logger.debug(f"What is the type? {type(contact)}")
@@ -708,7 +716,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     fillvalue=None,
                 )
             )
-
+        logger.debug(f"WHAT IS CONTACT {contact_id} {len(contact_id)}")
         desired_contact = PublicContact(
             domain=self,
             contact_type=contact_type,
@@ -725,6 +733,9 @@ class Domain(TimeStampedModel, DomainHelper):
             sp=addr.sp,
             **streets,
         )
+        # Saves to DB
+        if(create_object):
+            desired_contact.save()
         return desired_contact
 
     def _request_contact_info(self, contact: PublicContact):
