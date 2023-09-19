@@ -547,7 +547,14 @@ class MockEppLib(TestCase):
     class fakedEppObject(object):
         """"""
 
-        def __init__(self, auth_info=..., cr_date=..., contacts=..., hosts=..., statuses=...,):
+        def __init__(
+            self,
+            auth_info=...,
+            cr_date=...,
+            contacts=...,
+            hosts=...,
+            statuses=...,
+        ):
             self.auth_info = auth_info
             self.cr_date = cr_date
             self.contacts = contacts
@@ -559,7 +566,10 @@ class MockEppLib(TestCase):
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[common.DomainContact(contact="123", type="security")],
         hosts=["fake.host.com"],
-        statuses=[common.Status(state='serverTransferProhibited', description=None, lang='en'), common.Status(state='inactive', description=None, lang='en')],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
     )
     infoDomainNoContact = fakedEppObject(
         "security",
@@ -597,6 +607,7 @@ class MockEppLib(TestCase):
 
     def setUp(self):
         """mock epp send function as this will fail locally"""
+        print("Set up EPP MOCK")
         self.mockSendPatch = patch("registrar.models.domain.registry.send")
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
@@ -660,4 +671,5 @@ class MockEppLib(TestCase):
             )
 
     def tearDown(self):
+        print("tear down EPP MOCK")
         self.mockSendPatch.stop()

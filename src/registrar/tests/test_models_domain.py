@@ -5,7 +5,7 @@ This file tests the various ways in which the registrar interacts with the regis
 """
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from unittest.mock import patch, call
+from unittest.mock import call
 import datetime
 from registrar.models import Domain
 
@@ -52,7 +52,7 @@ class TestDomainCache(MockEppLib):
                 call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
                 call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
-            any_order=False  # Ensure calls are in the specified order
+            any_order=False,  # Ensure calls are in the specified order
         )
 
     def test_cache_used_when_avail(self):
@@ -109,15 +109,13 @@ class TestDomainCache(MockEppLib):
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
 
+    def tearDown(self) -> None:
+        Domain.objects.all().delete()
+        super().tearDown()
 
-class TestDomainCreation(TestCase):
+
+class TestDomainCreation(MockEppLib):
     """Rule: An approved domain application must result in a domain"""
-
-    def setUp(self):
-        """
-        Background:
-            Given that a valid domain application exists
-        """
 
     def test_approved_application_creates_domain_locally(self):
         """
@@ -126,8 +124,6 @@ class TestDomainCreation(TestCase):
             Then a Domain exists in the database with the same `name`
             But a domain object does not exist in the registry
         """
-        patcher = patch("registrar.models.domain.Domain._get_or_create_domain")
-        mocked_domain_creation = patcher.start()
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(
@@ -140,7 +136,7 @@ class TestDomainCreation(TestCase):
         # should hav information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(domain)
-        mocked_domain_creation.assert_not_called()
+        self.mockedSendFunction.assert_not_called()
 
     @skip("not implemented yet")
     def test_accessing_domain_properties_creates_domain_in_registry(self):
@@ -175,32 +171,39 @@ class TestDomainCreation(TestCase):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         Domain.objects.all().delete()
+        super().tearDown()
 
 
 class TestDomainStatuses(MockEppLib):
-    
     def test_get_status(self):
         """Getter returns statuses"""
-        domain, _ = Domain.objects.get_or_create(name="igorville2.gov")
+        domain, _ = Domain.objects.get_or_create(name="chicken-liver.gov")
+        # trigger getter
         _ = domain.statuses
+        print("checkpoint 1")
+        print(domain._cache["statuses"])
+        print(domain._cache)
+
         status_list = [status.state for status in self.mockDataInfoDomain.statuses]
         self.assertEquals(domain._cache["statuses"], status_list)
-        
-        #  print(self.mockedSendFunction.call_args_list)
-        
+
         # Called in _fetch_cache
         self.mockedSendFunction.assert_has_calls(
             [
-                call(commands.InfoDomain(name='igorville2.gov', auth_info=None), cleaned=True),
-                call(commands.InfoContact(id='123', auth_info=None), cleaned=True),
-                call(commands.InfoHost(name='fake.host.com'), cleaned=True)
+                call(
+                    commands.InfoDomain(name="chicken-liver.gov", auth_info=None),
+                    cleaned=True,
+                ),
+                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
+                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
-            any_order=False  # Ensure calls are in the specified order
+            any_order=False,  # Ensure calls are in the specified order
         )
-        
+
     def tearDown(self) -> None:
         Domain.objects.all().delete()
-    
+        super().tearDown()
+
 
 class TestRegistrantContacts(MockEppLib):
     """Rule: Registrants may modify their WHOIS data"""
