@@ -333,8 +333,6 @@ class DomainInformationAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by domain."
 
-    # TODO: on merging with 446, replace type_of_work with
-    # about_your_organization and remove more_organization_information
     fieldsets = [
         (None, {"fields": ["creator", "domain_application"]}),
         (
@@ -348,8 +346,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
                     "federal_agency",
                     "federal_type",
                     "is_election_board",
-                    "type_of_work",
-                    "more_organization_information",
+                    "about_your_organization",
                 ]
             },
         ),
