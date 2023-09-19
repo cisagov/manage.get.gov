@@ -780,6 +780,13 @@ class DomainAdmin(ListHeaderAdmin):
         return super().has_change_permission(request, obj)
 
 
+class DraftDomainAdmin(ListHeaderAdmin):
+    """Custom draft domain admin class."""
+
+    search_fields = ["name"]
+    search_help_text = "Search by draft domain name."
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
@@ -788,7 +795,7 @@ admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
-admin.site.register(models.DraftDomain, ListHeaderAdmin)
+admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
