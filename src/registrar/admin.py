@@ -702,7 +702,7 @@ class DomainAdmin(ListHeaderAdmin):
 
         # If no matching action button is found, return the super method
         return super().response_change(request, obj)
-    
+
     def do_delete_domain(self, request, obj):
         try:
             obj.deleted()
