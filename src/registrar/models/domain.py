@@ -336,14 +336,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
         A domain's status indicates various properties. See Domain.Status.
         """
-        # implementation note: the Status object from EPP stores the string in
-        # a dataclass property `state`, not to be confused with the `state` field here
         if "statuses" not in self._cache:
-            self._fetch_cache()
-        if "statuses" not in self._cache:
-            raise Exception("Can't retrieve status from domain info")
-        else:
-            return self._cache["statuses"]
+            try:
+                return self._get_property("statuses")
+            except KeyError:
+                logger.error("Can't retrieve status from domain info")
 
     @statuses.setter  # type: ignore
     def statuses(self, statuses: list[str]):

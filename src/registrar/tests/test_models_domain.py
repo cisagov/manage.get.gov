@@ -34,6 +34,8 @@ class TestDomainCache(MockEppLib):
         # (see InfoDomainResult)
         self.assertEquals(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
         self.assertEquals(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+        status_list = [status.state for status in self.mockDataInfoDomain.statuses]
+        self.assertEquals(domain._cache["statuses"], status_list)
         self.assertFalse("avail" in domain._cache.keys())
 
         # using a setter should clear the cache
@@ -49,7 +51,8 @@ class TestDomainCache(MockEppLib):
                 ),
                 call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
                 call(commands.InfoHost(name="fake.host.com"), cleaned=True),
-            ]
+            ],
+            any_order=False  # Ensure calls are in the specified order
         )
 
     def test_cache_used_when_avail(self):
@@ -168,21 +171,36 @@ class TestDomainCreation(TestCase):
         with self.assertRaisesRegex(IntegrityError, "name"):
             Domain.objects.create(name="igorville.gov")
 
-    @skip("cannot activate a domain without mock registry")
-    def test_get_status(self):
-        """Returns proper status based on `state`."""
-        domain = Domain.objects.create(name="igorville.gov")
-        domain.save()
-        self.assertEqual(None, domain.status)
-        domain.activate()
-        domain.save()
-        self.assertIn("ok", domain.status)
-
     def tearDown(self) -> None:
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         Domain.objects.all().delete()
 
+
+class TestDomainStatuses(MockEppLib):
+    
+    def test_get_status(self):
+        """Getter returns statuses"""
+        domain, _ = Domain.objects.get_or_create(name="igorville2.gov")
+        _ = domain.statuses
+        status_list = [status.state for status in self.mockDataInfoDomain.statuses]
+        self.assertEquals(domain._cache["statuses"], status_list)
+        
+        #  print(self.mockedSendFunction.call_args_list)
+        
+        # Called in _fetch_cache
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(commands.InfoDomain(name='igorville2.gov', auth_info=None), cleaned=True),
+                call(commands.InfoContact(id='123', auth_info=None), cleaned=True),
+                call(commands.InfoHost(name='fake.host.com'), cleaned=True)
+            ],
+            any_order=False  # Ensure calls are in the specified order
+        )
+        
+    def tearDown(self) -> None:
+        Domain.objects.all().delete()
+    
 
 class TestRegistrantContacts(MockEppLib):
     """Rule: Registrants may modify their WHOIS data"""
