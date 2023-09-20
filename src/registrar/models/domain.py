@@ -1,6 +1,7 @@
 from itertools import zip_longest
 import logging
-
+from queue import Queue
+from threading import Thread
 from datetime import date
 from string import digits
 from django_fsm import FSMField, transition  # type: ignore
@@ -21,6 +22,7 @@ from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
+
 
 logger = logging.getLogger(__name__)
 
@@ -530,6 +532,13 @@ class Domain(TimeStampedModel, DomainHelper):
                         "Raising error after removing and adding a new contact"
                     )
                     raise (err)
+        elif alreadyExistsInRegistry:
+            filtered_contacts = PublicContact.objects.filter(
+                registry_id=contact.registry_id
+            )
+
+            if(filtered_contacts.count() > 1):
+                filtered_contacts.order_by('id').first().delete()
 
         # update domain with contact or update the contact itself
         if not isEmptySecurity:
@@ -537,12 +546,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 self._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
-                filtered_contacts = PublicContact.objects.filter(
-                    registry_id=contact.registry_id
-                )
-                if(filtered_contacts.count() > 1):
-                    filtered_contacts.order_by('id').first().delete()
-                
                 current_contact = filtered_contacts.get()
                 logger.debug(f"current contact was accessed {current_contact}")
 
@@ -698,7 +701,6 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
         logger.debug(f"map_epp_contact_to_public_contact contact -> {contact}")
-        logger.debug(f"What is the type? {type(contact)}")
         if not isinstance(contact, eppInfo.InfoContactResultData):
             raise ValueError("Contact must be of type InfoContactResultData")
 
@@ -794,28 +796,47 @@ class Domain(TimeStampedModel, DomainHelper):
         cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
         or cache_contact_helper("security")
         """
+        items = PublicContact.objects.filter(domain=self, contact_type=contact_type_choice)
+        if(items.count() > 1):
+            raise ValueError(f"Multiple contacts exist for {contact_type_choice}")
+        
+        # Grab the first item in an array of size 1.
+        # We use this instead of .get() as we can expect
+        # values of 'None' occasionally (such as when an object
+        # only exists on the registry)
+        current_contact = items.first()
+        # If we have an item in our DB, 
+        # and if contacts hasn't been cleared (meaning data was set)...
+        if(current_contact is not None):
+            if("contacts" not in self._cache):
+                logger.info("Contact was not found in cache but was found in DB")
+            return current_contact
+
         try:
-            # TODO - refactor
+            # registrant_contact(s) are an edge case. They exist on
+            # the "registrant" property as opposed to contacts.
             desired_property = "contacts"
-            # The contact type 'registrant' is stored under a different property
             if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
                 desired_property = "registrant"
+
+            # If it for some reason doesn't exist in our local DB,
+            # but exists in our cache, grab that
+            if(self._cache and desired_property in self._cache):          
+                return self.grab_contact_in_keys(self._cache[desired_property], contact_type_choice)
+
+            # Finally, if all else fails, grab from the registry
             contacts = self._get_property(desired_property)
-            if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
-                contacts = [contacts]
-        except KeyError as error:
-            logger.warning("generic_contact_getter -> Contact does not exist")
-            logger.warning(error)
-            # Should we just raise an error instead?
-        else:
-            print(f"generic_contact_getter -> contacts?? {contacts}")
-            # --> Map to public contact
+
+            # Grab from cache after its been created
             cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
             if cached_contact is None:
                 raise ValueError("No contact was found in cache or the registry")
 
-            # Convert it from an EppLib object to PublicContact
             return cached_contact
+        except RegistryError as error:
+            # Q: Should we be raising an error instead?
+            logger.error(error)
+            return None
 
     def get_default_security_contact(self):
         """Gets the default security contact."""
@@ -848,14 +869,28 @@ class Domain(TimeStampedModel, DomainHelper):
 
         For example, check_type = 'security'
         """
+        # Registrant doesn't exist as an array
+        if(check_type == PublicContact.ContactTypeChoices.REGISTRANT):
+            if (
+                isinstance(contacts, PublicContact)
+                and contacts.contact_type is not None
+                and contacts.contact_type == check_type
+            ):
+                if(contacts.registry_id is None):
+                    raise ValueError("registry_id cannot be None")
+                return contacts
+            else:
+                raise ValueError("Invalid contact object for registrant_contact")
+
         for contact in contacts:
             print(f"grab_contact_in_keys -> contact item {contact.__dict__}")
             if (
                 isinstance(contact, PublicContact)
-                and contact.registry_id is not None
                 and contact.contact_type is not None
                 and contact.contact_type == check_type
             ):
+                if(contact.registry_id is None):
+                    raise ValueError("registry_id cannot be None")
                 return contact
 
         # If the for loop didn't do a return,
@@ -1151,11 +1186,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # Registrant should be of type PublicContact
             if "registrant" in cleaned.keys():
-                # For linter...
-                _ = cleaned["registrant"]
                 # Registrant, if it exists, should always exist in EppLib.
-                # If it doesn't, that is bad. We expect this to exist, always.
-                cleaned["registrant"] = self._registrant_to_public_contact(_)
+                # If it doesn't, that is bad. We expect this to exist
+                cleaned["registrant"] = self._registrant_to_public_contact(cleaned["registrant"])
 
             if (
                 # fetch_contacts and

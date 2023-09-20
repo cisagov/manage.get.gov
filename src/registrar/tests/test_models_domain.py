@@ -492,15 +492,16 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
         # Check if security_contact is what we expect...
-        self.assertEqual(self.domain.security_contact.email, "changedEmailAgain@email.com")
+        self.assertEqual(self.domain.security_contact.email, "changedEmail@email.com")
+        self.assertEqual(self.domain.security_contact, security_contact)
         # If the item in PublicContact is as expected...
         current_item = PublicContact.objects.filter(domain=self.domain).get()
         self.assertEqual(current_item.email, "changedEmail@email.com")
 
         # Check if cache stored it correctly...
-        self.assertEqual("contacts" in self.domain._cache)
+        self.assertTrue("contacts" in self.domain._cache)
         cached_item = self.domain._cache["contacts"]
-        self.assertTrue(cached_item[0])
+        self.assertTrue(cached_item[0] == current_item)
 
         
 
@@ -593,7 +594,7 @@ class TestRegistrantContacts(MockEppLib):
         contact.email = "technical@mail.gov"
         contact.domain = self.domain_contact
         self.domain_contact.technical_contact = contact
-
+        logger.debug(f"here is the reason {self.domain_contact.technical_contact}")
         expected_contact = PublicContact.objects.filter(
             registry_id=self.domain_contact.technical_contact.registry_id,
             contact_type = PublicContact.ContactTypeChoices.TECHNICAL
