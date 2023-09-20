@@ -1,7 +1,5 @@
 from itertools import zip_longest
 import logging
-from queue import Queue
-from threading import Thread
 from datetime import date
 from string import digits
 from django_fsm import FSMField, transition  # type: ignore
@@ -533,6 +531,9 @@ class Domain(TimeStampedModel, DomainHelper):
                     )
                     raise (err)
         elif alreadyExistsInRegistry:
+            # If this item already exists in the registry,
+            # but doesn't have other contacts, we want to
+            # delete the old value
             filtered_contacts = PublicContact.objects.filter(
                 registry_id=contact.registry_id
             )
@@ -739,7 +740,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # Saves to DB
         if(create_object):
             create = PublicContact.objects.filter(registry_id=contact_id, contact_type=contact_type, domain=self)
-            if(create.count() == 0):
+            if(create.count() == 0 and contact_type != PublicContact.ContactTypeChoices.REGISTRANT):
                 desired_contact.save()
                 
         return desired_contact
