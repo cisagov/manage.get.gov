@@ -74,7 +74,6 @@ class Command(BaseCommand):
             # an error getting the domain, skip this domain and add it to
             # domains_with_errors
             try:
-                domain = Domain.objects.get(name=transition_domain.domain_name)
                 # if prior username does not match current username
                 if (
                     not email_context["email"]
@@ -86,9 +85,7 @@ class Command(BaseCommand):
                         self.emails_to_send.append(copy.deepcopy(email_context))
                     email_context["domains"] = []
                 email_context["email"] = transition_domain.username
-                email_context["domains"].append(
-                    transition_domain.domain_name
-                )
+                email_context["domains"].append(transition_domain.domain_name)
             except Exception as err:
                 # error condition if domain not in database
                 self.domains_with_errors.append(
