@@ -548,17 +548,29 @@ class MockEppLib(TestCase):
     class fakedEppObject(object):
         """"""
 
-        def __init__(self, auth_info=..., cr_date=..., contacts=..., hosts=...):
+        def __init__(
+            self,
+            auth_info=...,
+            cr_date=...,
+            contacts=...,
+            hosts=...,
+            statuses=...,
+        ):
             self.auth_info = auth_info
             self.cr_date = cr_date
             self.contacts = contacts
             self.hosts = hosts
+            self.statuses = statuses
 
     mockDataInfoDomain = fakedEppObject(
         "fakepw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[common.DomainContact(contact="123", type="security")],
         hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
     )
     infoDomainNoContact = fakedEppObject(
         "security",

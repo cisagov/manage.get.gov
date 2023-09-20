@@ -332,24 +332,23 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def statuses(self) -> list[str]:
         """
-        Get or set the domain `status` elements from the registry.
+        Get the domain `status` elements from the registry.
 
         A domain's status indicates various properties. See Domain.Status.
         """
-        # implementation note: the Status object from EPP stores the string in
-        # a dataclass property `state`, not to be confused with the `state` field here
-        if "statuses" not in self._cache:
-            self._fetch_cache()
-        if "statuses" not in self._cache:
-            raise Exception("Can't retreive status from domain info")
-        else:
-            return self._cache["statuses"]
+        try:
+            return self._get_property("statuses")
+        except KeyError:
+            logger.error("Can't retrieve status from domain info")
+            return []
 
     @statuses.setter  # type: ignore
     def statuses(self, statuses: list[str]):
-        # TODO: there are a long list of rules in the RFC about which statuses
-        # can be combined; check that here and raise errors for invalid combinations -
-        # some statuses cannot be set by the client at all
+        """
+        We will not implement this. Statuses are set by the registry
+        when we run delete and client hold, and these are the only statuses
+        we will be triggering.
+        """
         raise NotImplementedError()
 
     @Cache
@@ -610,6 +609,11 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         return self.state == self.State.READY
 
+    def delete_request(self):
+        """Delete from host. Possibly a duplicate of _delete_host?"""
+        # TODO fix in ticket #901
+        pass
+
     def transfer(self):
         """Going somewhere. Not implemented."""
         raise NotImplementedError()
@@ -662,9 +666,6 @@ class Domain(TimeStampedModel, DomainHelper):
         protected=True,  # cannot change state directly, particularly in Django admin
         help_text="Very basic info about the lifecycle of this domain object",
     )
-
-    def isActive(self):
-        return self.state == Domain.State.CREATED
 
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
