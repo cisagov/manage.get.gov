@@ -332,7 +332,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def statuses(self) -> list[str]:
         """
-        Get or set the domain `status` elements from the registry.
+        Get the domain `status` elements from the registry.
 
         A domain's status indicates various properties. See Domain.Status.
         """
@@ -344,9 +344,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @statuses.setter  # type: ignore
     def statuses(self, statuses: list[str]):
-        # TODO: there are a long list of rules in the RFC about which statuses
-        # can be combined; check that here and raise errors for invalid combinations -
-        # some statuses cannot be set by the client at all
+        """
+        We will not implement this. Statuses are set by the registry
+        when we run delete and client hold, and these are the only statuses
+        we will be triggering.
+        """
         raise NotImplementedError()
 
     @Cache
