@@ -23,8 +23,8 @@ class PublicContact(TimeStampedModel):
         """These are the types of contacts accepted by the registry."""
 
         REGISTRANT = "registrant", "Registrant"
-        ADMINISTRATIVE = "administrative", "Administrative"
-        TECHNICAL = "technical", "Technical"
+        ADMINISTRATIVE = "admin", "Administrative"
+        TECHNICAL = "tech", "Technical"
         SECURITY = "security", "Security"
 
     def save(self, *args, **kwargs):
@@ -149,4 +149,8 @@ class PublicContact(TimeStampedModel):
         )
 
     def __str__(self):
-        return f"{self.name} <{self.email}>"
+        return (
+            f"{self.name} <{self.email}>"
+            f"id: {self.registry_id} "
+            f"type: {self.contact_type}"
+        )
