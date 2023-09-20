@@ -3,14 +3,18 @@ from django.db import models
 from .utility.time_stamped_model import TimeStampedModel
 
 
+class StatusChoices(models.TextChoices):
+    CREATED = "created", "Created"
+    HOLD = "hold", "Hold"
+
+
 class TransitionDomain(TimeStampedModel):
     """Transition Domain model stores information about the
     state of a domain upon transition between registry
     providers"""
 
-    class StatusChoices(models.TextChoices):
-        CREATED = "created", "Created"
-        HOLD = "hold", "Hold"
+    CREATED = "created", "Created"
+    HOLD = "hold", "Hold"
 
     username = models.TextField(
         null=False,
@@ -27,7 +31,10 @@ class TransitionDomain(TimeStampedModel):
         max_length=255,
         null=False,
         blank=True,
-        choices=StatusChoices.choices,
+        choices=[
+            (CREATED),
+            (HOLD),
+        ],
         verbose_name="Status",
         help_text="domain status during the transfer",
     )
