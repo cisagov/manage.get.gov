@@ -3,9 +3,7 @@
 import logging
 import copy
 
-from django.conf import settings
 from django.core.management import BaseCommand
-from django.urls import reverse
 from registrar.models import TransitionDomain, Domain
 from ...utility.email import send_templated_email, EmailSendingError
 from typing import List
@@ -89,11 +87,7 @@ class Command(BaseCommand):
                     email_context["domains"] = []
                 email_context["email"] = transition_domain.username
                 email_context["domains"].append(
-                    {
-                        "name": transition_domain.domain_name,
-                        "url": settings.BASE_URL
-                        + reverse("domain", kwargs={"pk": domain.id}),
-                    }
+                    transition_domain.domain_name
                 )
             except Exception as err:
                 # error condition if domain not in database
@@ -128,12 +122,12 @@ class Command(BaseCommand):
             # success message is logged
             logger.info(
                 f"email sent successfully to {email_data['email']} for "
-                f"{[domain['name'] for domain in email_data['domains']]}"
+                f"{[domain for domain in email_data['domains']]}"
             )
         except EmailSendingError as err:
             logger.error(
                 f"email did not send successfully to {email_data['email']} "
-                f"for {[domain['name'] for domain in email_data['domains']]}"
+                f"for {[domain for domain in email_data['domains']]}"
                 f": {err}"
             )
             # if email failed to send, set error in domains_with_errors for each

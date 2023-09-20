@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi.
 
-You have been added as a manager on {% if domains|length > 1 %}multiple domains (listed below){% else %}{{ domains.0.name }}{% endif %}.
+You have been added as a manager on {% if domains|length > 1 %}multiple domains (listed below){% else %}{{ domains.0 }}{% endif %}.
 
 YOU NEED A LOGIN.GOV ACCOUNT
 You’ll need a Login.gov account to manage your .gov domain{% if domains|length > 1 %}s{% endif %}. Login.gov provides a simple and secure process for signing into many government services with one account. If you don’t already have one, follow these steps to create your Login.gov account <https://login.gov/help/get-started/create-your-account/>. 
@@ -10,11 +10,11 @@ DOMAIN MANAGEMENT
 As a .gov domain manager you can add or update information about your domain{% if domains|length > 1 %}s{% endif %}. You’ll also serve as a contact for your .gov domain{% if domains|length > 1 %}s{% endif %}. Please keep your contact information updated. Learn more about domain management <https://get.gov/help/>.
 {% if domains|length > 1 %}
 DOMAINS
-{% for domain in domains %} {{ domain.name }}
+{% for domain in domains %} {{ domain }}
 {% endfor %}{% else %}
 {% endif %}
 SOMETHING WRONG?
-If you’re not affiliated with {{ domain.name }} or think you received this message in error, contact the .gov team <https://get.gov/help/#contact-us>. 
+If you’re not affiliated with {{ domain }} or think you received this message in error, contact the .gov team <https://get.gov/help/#contact-us>. 
 
 
 THANK YOU
