@@ -42,7 +42,7 @@ class Command(BaseCommand):
     def handle(self, **options):
         """Process the objects in TransitionDomain."""
 
-        logger.debug("checking domains and preparing emails")
+        logger.info("checking domains and preparing emails")
         # Get all TransitionDomain objects
         self.transition_domains = TransitionDomain.objects.filter(
             email_sent=False,
@@ -51,15 +51,15 @@ class Command(BaseCommand):
         self.build_emails_to_send_array()
 
         if options["send_emails"]:
-            logger.debug("about to send emails")
+            logger.info("about to send emails")
             self.send_emails()
-            logger.debug("done sending emails")
+            logger.info("done sending emails")
 
             self.update_domains_as_sent()
 
-            logger.debug("done sending emails and updating transition_domains")
+            logger.info("done sending emails and updating transition_domains")
         else:
-            logger.debug("not sending emails")
+            logger.info("not sending emails")
 
     def build_emails_to_send_array(self):
         """this method sends emails to distinct usernames"""
@@ -104,13 +104,16 @@ class Command(BaseCommand):
                     f"error retrieving domain {transition_domain.domain_name}: {err}"
                 )
         # if there are at least one more transition domains than errors,
-        # then send one more
+        # then append one more item
         if len(self.transition_domains) > len(self.domains_with_errors):
             self.emails_to_send.append(email_context)
 
     def send_emails(self):
-        for email_data in self.emails_to_send:
-            self.send_email(email_data)
+        if len(self.emails_to_send) > 0:
+            for email_data in self.emails_to_send:
+                self.send_email(email_data)
+        else:
+            logger.info("no emails to send")
 
     def send_email(self, email_data):
         try:
@@ -122,8 +125,8 @@ class Command(BaseCommand):
                     "domains": email_data["domains"],
                 },
             )
-            # if log level set to debug, success message is logged
-            logger.debug(
+            # success message is logged
+            logger.info(
                 f"email sent successfully to {email_data['email']} for "
                 f"{[domain['name'] for domain in email_data['domains']]}"
             )

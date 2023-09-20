@@ -29,16 +29,21 @@ class Command(BaseCommand):
         )
 
     def handle(self, **options):
-        """Delete existing TransitionDomains.  Generate test ones."""
+        """Delete existing TransitionDomains.  Generate test ones.
+        expects options[emails]; emails will be assigned to transition
+        domains at the time of creation"""
 
         # split options[emails] into an array of test emails
         test_emails = options["emails"].split(",")
 
-        # setting up test data
-        self.delete_test_transition_domains()
-        self.load_test_transition_domains(test_emails)
+        if len(test_emails) > 0:
+            # set up test data
+            self.delete_test_transition_domains()
+            self.load_test_transition_domains(test_emails)
+        else:
+            logger.error("list of emails for testing is required")
 
-    def load_test_transition_domains(self, test_emails):
+    def load_test_transition_domains(self, test_emails: list):
         """Load test transition domains"""
 
         # counter for test_emails index

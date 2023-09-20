@@ -1,1 +1,1 @@
-You are invited to manage {% if domains|length > 1 %}multiple domains{% else %}{{ domains.0 }}{% endif %} on get.gov
+You've been added to a .gov domain
