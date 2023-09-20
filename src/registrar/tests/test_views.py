@@ -1198,12 +1198,9 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        # Create an application
-        application = completed_application(
-            status=DomainApplication.APPROVED, user=self.user, name=self.domain.name
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain
         )
-        application.approved_domain = self.domain
-        application.save()
 
         add_page = self.app.get(
             reverse("domain-users-add", kwargs={"pk": self.domain.id})
@@ -1226,12 +1223,9 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        # Create an application
-        application = completed_application(
-            status=DomainApplication.APPROVED, user=self.user, name=self.domain.name
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain
         )
-        application.approved_domain = self.domain
-        application.save()
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1286,12 +1280,9 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
             reverse("domain-users-add", kwargs={"pk": self.domain.id})
         )
 
-        # Create an application
-        application = completed_application(
-            status=DomainApplication.APPROVED, user=self.user, name=self.domain.name
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain
         )
-        application.approved_domain = self.domain
-        application.save()
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = EMAIL
