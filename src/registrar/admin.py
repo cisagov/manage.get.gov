@@ -130,6 +130,7 @@ class MyUserAdmin(BaseUserAdmin):
     inlines = [UserContactInline]
 
     list_display = (
+        "username",
         "email",
         "first_name",
         "last_name",
@@ -159,10 +160,51 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    analyst_fieldsets = (
+        (
+            None,
+            {"fields": ("password", "status")},
+        ),
+        ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    analyst_readonly_fields = [
+        "password",
+        "Personal Info",
+        "first_name",
+        "last_name",
+        "email",
+        "Permissions",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "Important dates",
+        "last_login",
+        "date_joined",
+    ]
+
     def get_list_display(self, request):
         if not request.user.is_superuser:
             # Customize the list display for staff users
-            return ("email", "first_name", "last_name", "is_staff", "is_superuser")
+            return (
+                "email",
+                "first_name",
+                "last_name",
+                "is_staff",
+                "is_superuser",
+                "status",
+            )
 
         # Use the default list display for non-staff users
         return super().get_list_display(request)
@@ -171,10 +213,17 @@ class MyUserAdmin(BaseUserAdmin):
         if not request.user.is_superuser:
             # If the user doesn't have permission to change the model,
             # show a read-only fieldset
-            return ((None, {"fields": []}),)
+            return self.analyst_fieldsets
 
         # If the user has permission to change the model, show all fields
         return super().get_fieldsets(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ()  # No read-only fields for superusers
+        elif request.user.is_staff:
+            return self.analyst_readonly_fields  # Read-only fields for staff
+        return ()  # No read-only fields for other users
 
 
 class HostIPInline(admin.StackedInline):
@@ -187,102 +236,6 @@ class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
 
     inlines = [HostIPInline]
-
-
-class DomainAdmin(ListHeaderAdmin):
-    """Custom domain admin class to add extra buttons."""
-
-    # Columns
-    list_display = [
-        "name",
-        "organization_type",
-        "state",
-    ]
-
-    def organization_type(self, obj):
-        return obj.domain_info.organization_type
-
-    organization_type.admin_order_field = (  # type: ignore
-        "domain_info__organization_type"
-    )
-
-    # Filters
-    list_filter = ["domain_info__organization_type"]
-
-    search_fields = ["name"]
-    search_help_text = "Search by domain name."
-    change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ["state"]
-
-    def response_change(self, request, obj):
-        # Create dictionary of action functions
-        ACTION_FUNCTIONS = {
-            "_place_client_hold": self.do_place_client_hold,
-            "_remove_client_hold": self.do_remove_client_hold,
-            "_edit_domain": self.do_edit_domain,
-        }
-
-        # Check which action button was pressed and call the corresponding function
-        for action, function in ACTION_FUNCTIONS.items():
-            if action in request.POST:
-                return function(request, obj)
-
-        # If no matching action button is found, return the super method
-        return super().response_change(request, obj)
-
-    def do_place_client_hold(self, request, obj):
-        try:
-            obj.place_client_hold()
-            obj.save()
-        except Exception as err:
-            self.message_user(request, err, messages.ERROR)
-        else:
-            self.message_user(
-                request,
-                (
-                    "%s is in client hold. This domain is no longer accessible on"
-                    " the public internet."
-                )
-                % obj.name,
-            )
-        return HttpResponseRedirect(".")
-
-    def do_remove_client_hold(self, request, obj):
-        try:
-            obj.remove_client_hold()
-            obj.save()
-        except Exception as err:
-            self.message_user(request, err, messages.ERROR)
-        else:
-            self.message_user(
-                request,
-                ("%s is ready. This domain is accessible on the public internet.")
-                % obj.name,
-            )
-        return HttpResponseRedirect(".")
-
-    def do_edit_domain(self, request, obj):
-        # We want to know, globally, when an edit action occurs
-        request.session["analyst_action"] = "edit"
-        # Restricts this action to this domain (pk) only
-        request.session["analyst_action_location"] = obj.id
-        return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
-
-    def change_view(self, request, object_id):
-        # If the analyst was recently editing a domain page,
-        # delete any associated session values
-        if "analyst_action" in request.session:
-            del request.session["analyst_action"]
-            del request.session["analyst_action_location"]
-        return super().change_view(request, object_id)
-
-    def has_change_permission(self, request, obj=None):
-        # Fixes a bug wherein users which are only is_staff
-        # can access 'change' when GET,
-        # but cannot access this page when it is a request of type POST.
-        if request.user.is_staff:
-            return True
-        return super().has_change_permission(request, obj)
 
 
 class ContactAdmin(ListHeaderAdmin):
@@ -380,6 +333,81 @@ class DomainInformationAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by domain."
 
+    fieldsets = [
+        (None, {"fields": ["creator", "domain_application"]}),
+        (
+            "Type of organization",
+            {
+                "fields": [
+                    "organization_type",
+                    "federally_recognized_tribe",
+                    "state_recognized_tribe",
+                    "tribe_name",
+                    "federal_agency",
+                    "federal_type",
+                    "is_election_board",
+                    "about_your_organization",
+                ]
+            },
+        ),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "organization_name",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "state_territory",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
+        ("Authorizing official", {"fields": ["authorizing_official"]}),
+        (".gov domain", {"fields": ["domain"]}),
+        ("Your contact information", {"fields": ["submitter"]}),
+        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
+        (
+            "No other employees from your organization?",
+            {"fields": ["no_other_contacts_rationale"]},
+        ),
+        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        (
+            "Requirements for operating .gov domains",
+            {"fields": ["is_policy_acknowledged"]},
+        ),
+    ]
+
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = [
+        "creator",
+        "type_of_work",
+        "more_organization_information",
+        "address_line1",
+        "address_line2",
+        "zipcode",
+        "domain",
+        "submitter",
+        "no_other_contacts_rationale",
+        "anything_else",
+        "is_policy_acknowledged",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 1 conditions that determine which fields are read-only:
+        admin user permissions.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.is_superuser:
+            return readonly_fields
+        else:
+            readonly_fields.extend([field for field in self.analyst_readonly_fields])
+            return readonly_fields
+
 
 class DomainApplicationAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions"""
@@ -416,10 +444,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
 
-    # Set multi-selects 'read-only' (hide selects and show data)
-    # based on user perms and application creator's status
-    # form = DomainApplicationForm
-
     # Columns
     list_display = [
         "requested_domain",
@@ -445,7 +469,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Detail view
     form = DomainApplicationAdminForm
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator"]}),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
         (
             "Type of organization",
             {
@@ -457,8 +481,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     "federal_agency",
                     "federal_type",
                     "is_election_board",
-                    "type_of_work",
-                    "more_organization_information",
+                    "about_your_organization",
                 ]
             },
         ),
@@ -496,8 +519,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "creator",
-        "type_of_work",
-        "more_organization_information",
+        "about_your_organization",
         "address_line1",
         "address_line2",
         "zipcode",
@@ -517,29 +539,57 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 # Get the original application from the database
                 original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-                if obj.status != original_obj.status:
-                    status_method_mapping = {
-                        models.DomainApplication.STARTED: None,
-                        models.DomainApplication.SUBMITTED: obj.submit,
-                        models.DomainApplication.IN_REVIEW: obj.in_review,
-                        models.DomainApplication.ACTION_NEEDED: obj.action_needed,
-                        models.DomainApplication.APPROVED: obj.approve,
-                        models.DomainApplication.WITHDRAWN: obj.withdraw,
-                        models.DomainApplication.REJECTED: obj.reject,
-                        models.DomainApplication.INELIGIBLE: obj.reject_with_prejudice,
-                    }
-                    selected_method = status_method_mapping.get(obj.status)
-                    if selected_method is None:
-                        logger.warning("Unknown status selected in django admin")
-                    else:
-                        # This is an fsm in model which will throw an error if the
-                        # transition condition is violated, so we roll back the
-                        # status to what it was before the admin user changed it and
-                        # let the fsm method set it.
-                        obj.status = original_obj.status
-                        selected_method()
+                if (
+                    obj
+                    and original_obj.status == models.DomainApplication.APPROVED
+                    and (
+                        obj.status == models.DomainApplication.REJECTED
+                        or obj.status == models.DomainApplication.INELIGIBLE
+                    )
+                    and not obj.domain_is_not_active()
+                ):
+                    # If an admin tried to set an approved application to
+                    # rejected or ineligible and the related domain is already
+                    # active, shortcut the action and throw a friendly
+                    # error message. This action would still not go through
+                    # shortcut or not as the rules are duplicated on the model,
+                    # but the error would be an ugly Django error screen.
 
-            super().save_model(request, obj, form, change)
+                    # Clear the success message
+                    messages.set_level(request, messages.ERROR)
+
+                    messages.error(
+                        request,
+                        "This action is not permitted. The domain "
+                        + "is already active.",
+                    )
+
+                else:
+                    if obj.status != original_obj.status:
+                        status_method_mapping = {
+                            models.DomainApplication.STARTED: None,
+                            models.DomainApplication.SUBMITTED: obj.submit,
+                            models.DomainApplication.IN_REVIEW: obj.in_review,
+                            models.DomainApplication.ACTION_NEEDED: obj.action_needed,
+                            models.DomainApplication.APPROVED: obj.approve,
+                            models.DomainApplication.WITHDRAWN: obj.withdraw,
+                            models.DomainApplication.REJECTED: obj.reject,
+                            models.DomainApplication.INELIGIBLE: (
+                                obj.reject_with_prejudice
+                            ),
+                        }
+                        selected_method = status_method_mapping.get(obj.status)
+                        if selected_method is None:
+                            logger.warning("Unknown status selected in django admin")
+                        else:
+                            # This is an fsm in model which will throw an error if the
+                            # transition condition is violated, so we roll back the
+                            # status to what it was before the admin user changed it and
+                            # let the fsm method set it.
+                            obj.status = original_obj.status
+                            selected_method()
+
+                    super().save_model(request, obj, form, change)
         else:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
@@ -589,6 +639,154 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
+class DomainInformationInline(admin.StackedInline):
+    """Edit a domain information on the domain page.
+    We had issues inheriting from both StackedInline
+    and the source DomainInformationAdmin since these
+    classes conflict, so we'll just pull what we need
+    from DomainInformationAdmin"""
+
+    model = models.DomainInformation
+
+    fieldsets = DomainInformationAdmin.fieldsets
+    analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
+
+    def get_readonly_fields(self, request, obj=None):
+        return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
+
+
+class DomainAdmin(ListHeaderAdmin):
+    """Custom domain admin class to add extra buttons."""
+
+    inlines = [DomainInformationInline]
+
+    # Columns
+    list_display = [
+        "name",
+        "organization_type",
+        "state",
+    ]
+
+    def organization_type(self, obj):
+        return obj.domain_info.organization_type
+
+    organization_type.admin_order_field = (  # type: ignore
+        "domain_info__organization_type"
+    )
+
+    # Filters
+    list_filter = ["domain_info__organization_type", "state"]
+
+    search_fields = ["name"]
+    search_help_text = "Search by domain name."
+    change_form_template = "django/admin/domain_change_form.html"
+    readonly_fields = ["state"]
+
+    def response_change(self, request, obj):
+        # Create dictionary of action functions
+        ACTION_FUNCTIONS = {
+            "_place_client_hold": self.do_place_client_hold,
+            "_remove_client_hold": self.do_remove_client_hold,
+            "_edit_domain": self.do_edit_domain,
+            "_delete_domain": self.do_delete_domain,
+            "_get_status": self.do_get_status,
+        }
+
+        # Check which action button was pressed and call the corresponding function
+        for action, function in ACTION_FUNCTIONS.items():
+            if action in request.POST:
+                return function(request, obj)
+
+        # If no matching action button is found, return the super method
+        return super().response_change(request, obj)
+
+    def do_delete_domain(self, request, obj):
+        try:
+            obj.deleted()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_get_status(self, request, obj):
+        try:
+            statuses = obj.statuses
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("Domain statuses are %s" ". Thanks!") % statuses,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_place_client_hold(self, request, obj):
+        try:
+            obj.place_client_hold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                (
+                    "%s is in client hold. This domain is no longer accessible on"
+                    " the public internet."
+                )
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_remove_client_hold(self, request, obj):
+        try:
+            obj.revert_client_hold()
+            obj.save()
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            self.message_user(
+                request,
+                ("%s is ready. This domain is accessible on the public internet.")
+                % obj.name,
+            )
+        return HttpResponseRedirect(".")
+
+    def do_edit_domain(self, request, obj):
+        # We want to know, globally, when an edit action occurs
+        request.session["analyst_action"] = "edit"
+        # Restricts this action to this domain (pk) only
+        request.session["analyst_action_location"] = obj.id
+        return HttpResponseRedirect(reverse("domain", args=(obj.id,)))
+
+    def change_view(self, request, object_id):
+        # If the analyst was recently editing a domain page,
+        # delete any associated session values
+        if "analyst_action" in request.session:
+            del request.session["analyst_action"]
+            del request.session["analyst_action_location"]
+        return super().change_view(request, object_id)
+
+    def has_change_permission(self, request, obj=None):
+        # Fixes a bug wherein users which are only is_staff
+        # can access 'change' when GET,
+        # but cannot access this page when it is a request of type POST.
+        if request.user.is_staff:
+            return True
+        return super().has_change_permission(request, obj)
+
+
+class DraftDomainAdmin(ListHeaderAdmin):
+    """Custom draft domain admin class."""
+
+    search_fields = ["name"]
+    search_help_text = "Search by draft domain name."
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
@@ -597,8 +795,10 @@ admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
+admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
+admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, AuditedAdmin)

@@ -6,12 +6,12 @@ from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
-from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from api.views import DOMAIN_API_MESSAGES
 
 from registrar.models import Contact, DomainApplication, DraftDomain, Domain
+from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility import errors
 
 logger = logging.getLogger(__name__)
@@ -181,7 +181,6 @@ class TribalGovernmentForm(RegistrarForm):
             self.cleaned_data["federally_recognized_tribe"]
             or self.cleaned_data["state_recognized_tribe"]
         ):
-            todo_url = reverse("todo")
             raise forms.ValidationError(
                 # no sec because we are using it to include an internal URL
                 # into a link. There should be no user-facing input in the
@@ -190,10 +189,10 @@ class TribalGovernmentForm(RegistrarForm):
                     "You can’t complete this application yet. "
                     "Only tribes recognized by the U.S. federal government "
                     "or by a U.S. state government are eligible for .gov "
-                    'domains. Please use our <a href="{}">contact form</a> to '
+                    'domains. Use our <a href="{}">contact form</a> to '
                     "tell us more about your tribe and why you want a .gov "
                     "domain. We’ll review your information and get back "
-                    "to you.".format(todo_url)
+                    "to you.".format(public_site_url("contact"))
                 ),
                 code="invalid",
             )
@@ -310,28 +309,9 @@ class OrganizationContactForm(RegistrarForm):
         return federal_agency
 
 
-class TypeOfWorkForm(RegistrarForm):
-    type_of_work = forms.CharField(
-        # label has to end in a space to get the label_suffix to show
-        label="What type of work does your organization do? ",
-        widget=forms.Textarea(),
-        validators=[
-            MaxLengthValidator(
-                1000,
-                message="Response must be less than 1000 characters.",
-            )
-        ],
-        error_messages={"required": "Enter the type of work your organization does."},
-    )
-
-    more_organization_information = forms.CharField(
-        # label has to end in a space to get the label_suffix to show
-        label=(
-            "Describe how your organization is a government organization that is"
-            " independent of a state government. Include links to authorizing"
-            " legislation, applicable bylaws or charter, or other documentation to"
-            " support your claims. "
-        ),
+class AboutYourOrganizationForm(RegistrarForm):
+    about_your_organization = forms.CharField(
+        label="About your organization",
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(
@@ -340,9 +320,7 @@ class TypeOfWorkForm(RegistrarForm):
             )
         ],
         error_messages={
-            "required": (
-                "Describe how your organization is independent of a state government."
-            )
+            "required": ("Enter more information about your organization.")
         },
     )
 
