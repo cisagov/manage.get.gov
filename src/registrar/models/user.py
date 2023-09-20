@@ -45,7 +45,7 @@ class User(AbstractUser):
     def __str__(self):
         # this info is pulled from Login.gov
         if self.first_name or self.last_name:
-            return f"{self.first_name or ''} {self.last_name or ''}"
+            return f"{self.first_name or ''} {self.last_name or ''} {self.email or ''}"
         elif self.email:
             return self.email
         else:
