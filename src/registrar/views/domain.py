@@ -18,7 +18,6 @@ from registrar.models import (
     Domain,
     DomainInformation,
     DomainInvitation,
-    DomainApplication,
     User,
     UserDomainRole,
 )
