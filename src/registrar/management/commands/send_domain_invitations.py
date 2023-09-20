@@ -4,7 +4,7 @@ import logging
 import copy
 
 from django.core.management import BaseCommand
-from registrar.models import TransitionDomain, Domain
+from registrar.models import TransitionDomain
 from ...utility.email import send_templated_email, EmailSendingError
 from typing import List
 
