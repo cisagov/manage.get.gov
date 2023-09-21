@@ -3,6 +3,7 @@ from django import forms
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
@@ -195,7 +196,7 @@ class MyUserAdmin(BaseUserAdmin):
     ]
 
     def get_list_display(self, request):
-        if not request.user.is_superuser:
+        if request.user.groups.filter(name='cisa_analysts_group').exists():
             # Customize the list display for staff users
             return (
                 "email",
@@ -210,7 +211,7 @@ class MyUserAdmin(BaseUserAdmin):
         return super().get_list_display(request)
 
     def get_fieldsets(self, request, obj=None):
-        if not request.user.is_superuser:
+        if request.user.groups.filter(name='cisa_analysts_group').exists():
             # If the user doesn't have permission to change the model,
             # show a read-only fieldset
             return self.analyst_fieldsets
@@ -219,10 +220,8 @@ class MyUserAdmin(BaseUserAdmin):
         return super().get_fieldsets(request, obj)
 
     def get_readonly_fields(self, request, obj=None):
-        if request.user.is_superuser:
-            return ()  # No read-only fields for superusers
-        elif request.user.is_staff:
-            return self.analyst_readonly_fields  # Read-only fields for staff
+        if request.user.groups.filter(name='cisa_analysts_group').exists():
+            return self.analyst_readonly_fields  # Read-only fields for analysts
         return ()  # No read-only fields for other users
 
 
@@ -402,7 +401,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
         readonly_fields = list(self.readonly_fields)
 
-        if request.user.is_superuser:
+        if request.user.groups.filter(name='full_access_group').exists():
             return readonly_fields
         else:
             readonly_fields.extend([field for field in self.analyst_readonly_fields])
@@ -620,7 +619,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 ["current_websites", "other_contacts", "alternative_domains"]
             )
 
-        if request.user.is_superuser:
+        if request.user.groups.filter(name='full_access_group').exists():
             return readonly_fields
         else:
             readonly_fields.extend([field for field in self.analyst_readonly_fields])
@@ -790,6 +789,10 @@ class DraftDomainAdmin(ListHeaderAdmin):
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
+# Unregister the built-in Group model
+admin.site.unregister(Group)
+# Register UserGroup
+admin.site.register(models.UserGroup)
 admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)

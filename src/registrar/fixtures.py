@@ -4,6 +4,7 @@ from faker import Faker
 
 from registrar.models import (
     User,
+    UserGroup,
     DomainApplication,
     DraftDomain,
     Contact,
@@ -32,56 +33,56 @@ class UserFixture:
             "first_name": "Rachid",
             "last_name": "Mrad",
         },
-        {
-            "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
-            "first_name": "Alysia",
-            "last_name": "Broddrick",
-        },
-        {
-            "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
-            "first_name": "Katherine",
-            "last_name": "Osos",
-        },
-        {
-            "username": "70488e0a-e937-4894-a28c-16f5949effd4",
-            "first_name": "Gaby",
-            "last_name": "DiSarli",
-        },
-        {
-            "username": "83c2b6dd-20a2-4cac-bb40-e22a72d2955c",
-            "first_name": "Cameron",
-            "last_name": "Dixon",
-        },
-        {
-            "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
-            "first_name": "Ryan",
-            "last_name": "Brooks",
-        },
-        {
-            "username": "30001ee7-0467-4df2-8db2-786e79606060",
-            "first_name": "Zander",
-            "last_name": "Adkinson",
-        },
-        {
-            "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
-            "first_name": "Paul",
-            "last_name": "Kuykendall",
-        },
-        {
-            "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
-            "first_name": "Rebecca",
-            "last_name": "Hsieh",
-        },
-        {
-            "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
-            "first_name": "David",
-            "last_name": "Kennedy",
-        },
-        {
-            "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
-            "first_name": "Nicolle",
-            "last_name": "LeClair",
-        },
+        # {
+        #     "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
+        #     "first_name": "Alysia",
+        #     "last_name": "Broddrick",
+        # },
+        # {
+        #     "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
+        #     "first_name": "Katherine",
+        #     "last_name": "Osos",
+        # },
+        # {
+        #     "username": "70488e0a-e937-4894-a28c-16f5949effd4",
+        #     "first_name": "Gaby",
+        #     "last_name": "DiSarli",
+        # },
+        # {
+        #     "username": "83c2b6dd-20a2-4cac-bb40-e22a72d2955c",
+        #     "first_name": "Cameron",
+        #     "last_name": "Dixon",
+        # },
+        # {
+        #     "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
+        #     "first_name": "Ryan",
+        #     "last_name": "Brooks",
+        # },
+        # {
+        #     "username": "30001ee7-0467-4df2-8db2-786e79606060",
+        #     "first_name": "Zander",
+        #     "last_name": "Adkinson",
+        # },
+        # {
+        #     "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
+        #     "first_name": "Paul",
+        #     "last_name": "Kuykendall",
+        # },
+        # {
+        #     "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
+        #     "first_name": "Rebecca",
+        #     "last_name": "Hsieh",
+        # },
+        # {
+        #     "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
+        #     "first_name": "David",
+        #     "last_name": "Kennedy",
+        # },
+        # {
+        #     "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
+        #     "first_name": "Nicolle",
+        #     "last_name": "LeClair",
+        # },
     ]
 
     STAFF = [
@@ -91,52 +92,52 @@ class UserFixture:
             "last_name": "Mrad-Analyst",
             "email": "rachid.mrad@gmail.com",
         },
-        {
-            "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
-            "first_name": "Alysia-Analyst",
-            "last_name": "Alysia-Analyst",
-        },
-        {
-            "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
-            "first_name": "Katherine-Analyst",
-            "last_name": "Osos-Analyst",
-            "email": "kosos@truss.works",
-        },
-        {
-            "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
-            "first_name": "Zander-Analyst",
-            "last_name": "Adkinson-Analyst",
-        },
-        {
-            "username": "57ab5847-7789-49fe-a2f9-21d38076d699",
-            "first_name": "Paul-Analyst",
-            "last_name": "Kuykendall-Analyst",
-        },
-        {
-            "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
-            "first_name": "Rebecca-Analyst",
-            "last_name": "Hsieh-Analyst",
-        },
-        {
-            "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
-            "first_name": "David-Analyst",
-            "last_name": "Kennedy-Analyst",
-        },
-        {
-            "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
-            "first_name": "Gaby-Analyst",
-            "last_name": "DiSarli-Analyst",
-            "email": "gaby@truss.works",
-        },
-        {
-            "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
-            "first_name": "Nicolle-Analyst",
-            "last_name": "LeClair-Analyst",
-            "email": "nicolle.leclair@ecstech.com",
-        },
+        # {
+        #     "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
+        #     "first_name": "Alysia-Analyst",
+        #     "last_name": "Alysia-Analyst",
+        # },
+        # {
+        #     "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
+        #     "first_name": "Katherine-Analyst",
+        #     "last_name": "Osos-Analyst",
+        #     "email": "kosos@truss.works",
+        # },
+        # {
+        #     "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
+        #     "first_name": "Zander-Analyst",
+        #     "last_name": "Adkinson-Analyst",
+        # },
+        # {
+        #     "username": "57ab5847-7789-49fe-a2f9-21d38076d699",
+        #     "first_name": "Paul-Analyst",
+        #     "last_name": "Kuykendall-Analyst",
+        # },
+        # {
+        #     "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
+        #     "first_name": "Rebecca-Analyst",
+        #     "last_name": "Hsieh-Analyst",
+        # },
+        # {
+        #     "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
+        #     "first_name": "David-Analyst",
+        #     "last_name": "Kennedy-Analyst",
+        # },
+        # {
+        #     "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
+        #     "first_name": "Gaby-Analyst",
+        #     "last_name": "DiSarli-Analyst",
+        #     "email": "gaby@truss.works",
+        # },
+        # {
+        #     "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
+        #     "first_name": "Nicolle-Analyst",
+        #     "last_name": "LeClair-Analyst",
+        #     "email": "nicolle.leclair@ecstech.com",
+        # },
     ]
 
-    STAFF_PERMISSIONS = [
+    CISA_ANALYST_GROUP_PERMISSIONS = [
         {
             "app_label": "auditlog",
             "model": "logentry",
@@ -164,19 +165,89 @@ class UserFixture:
 
     @classmethod
     def load(cls):
+        logger.info("Going to load %s groups" % str(len(cls.ADMINS)))
+        try:
+            cisa_analysts_group, cisa_analysts_group_created = UserGroup.objects.get_or_create(
+                name="cisa_analysts_group",
+            )
+            full_access_group, full_access_group_created = UserGroup.objects.get_or_create(
+                name="full_access_group",
+            )
+        except Exception as e:
+                logger.warning(e)
+        
+        if cisa_analysts_group_created:
+            for permission in cls.CISA_ANALYST_GROUP_PERMISSIONS:
+                try:
+                    app_label = permission["app_label"]
+                    model_name = permission["model"]
+                    permissions = permission["permissions"]
+
+                    # Retrieve the content type for the app and model
+                    content_type = ContentType.objects.get(
+                        app_label=app_label, model=model_name
+                    )
+
+                    # Retrieve the permissions based on their codenames
+                    permissions = Permission.objects.filter(
+                        content_type=content_type, codename__in=permissions
+                    )
+
+                    # Assign the permissions to the group
+                    cisa_analysts_group.permissions.add(*permissions)
+
+                    # Convert the permissions QuerySet to a list of codenames
+                    permission_list = list(
+                        permissions.values_list("codename", flat=True)
+                    )
+
+                    logger.debug(
+                        app_label
+                        + " | "
+                        + model_name
+                        + " | "
+                        + ", ".join(permission_list)
+                        + " added to group "
+                        + cisa_analysts_group.name
+                    )
+
+                    cisa_analysts_group.save()
+                    logger.debug("CISA Analyt permissions added to group " + cisa_analysts_group.name)
+                except Exception as e:
+                    logger.warning(e)
+            else:
+                logger.warning(cisa_analysts_group.name + " was not created successfully.")
+        
+        if full_access_group_created:
+            try:
+                # Get all available permissions
+                all_permissions = Permission.objects.all()
+                
+                # Assign all permissions to the group
+                full_access_group.permissions.add(*all_permissions)
+                
+                full_access_group.save()
+                logger.debug("All permissions added to group " + full_access_group.name)
+            except Exception as e:
+                logger.warning(e) 
+        else:
+            logger.warning(full_access_group.name + " was not created successfully.")
+        logger.info("%s groups loaded." % str(len(cls.ADMINS)))
+        
         logger.info("Going to load %s superusers" % str(len(cls.ADMINS)))
         for admin in cls.ADMINS:
             try:
                 user, _ = User.objects.get_or_create(
                     username=admin["username"],
                 )
-                user.is_superuser = True
+                user.is_superuser = False
                 user.first_name = admin["first_name"]
                 user.last_name = admin["last_name"]
                 if "email" in admin.keys():
                     user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
+                user.groups.add(full_access_group)
                 user.save()
                 logger.debug("User object created for %s" % admin["first_name"])
             except Exception as e:
@@ -196,40 +267,7 @@ class UserFixture:
                     user.email = admin["email"]
                 user.is_staff = True
                 user.is_active = True
-
-                for permission in cls.STAFF_PERMISSIONS:
-                    app_label = permission["app_label"]
-                    model_name = permission["model"]
-                    permissions = permission["permissions"]
-
-                    # Retrieve the content type for the app and model
-                    content_type = ContentType.objects.get(
-                        app_label=app_label, model=model_name
-                    )
-
-                    # Retrieve the permissions based on their codenames
-                    permissions = Permission.objects.filter(
-                        content_type=content_type, codename__in=permissions
-                    )
-
-                    # Assign the permissions to the user
-                    user.user_permissions.add(*permissions)
-
-                    # Convert the permissions QuerySet to a list of codenames
-                    permission_list = list(
-                        permissions.values_list("codename", flat=True)
-                    )
-
-                    logger.debug(
-                        app_label
-                        + " | "
-                        + model_name
-                        + " | "
-                        + ", ".join(permission_list)
-                        + " added for user "
-                        + staff["first_name"]
-                    )
-
+                user.groups.add(cisa_analysts_group)
                 user.save()
                 logger.debug("User object created for %s" % staff["first_name"])
             except Exception as e:
