@@ -337,7 +337,10 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
         else:
             # created a new invitation in the database, so send an email
             domaininfo = DomainInformation.objects.filter(domain=self.object)
-            full_name = domaininfo.first().creator
+            first = domaininfo.first().creator.first_name
+            last = domaininfo.first().creator.last_name
+            full_name = f"{first} {last}"
+
             try:
                 send_templated_email(
                     "emails/domain_invitation.txt",
