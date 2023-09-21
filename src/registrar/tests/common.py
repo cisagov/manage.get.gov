@@ -554,12 +554,14 @@ class MockEppLib(TestCase):
             contacts=...,
             hosts=...,
             statuses=...,
+            avail=...,
         ):
             self.auth_info = auth_info
             self.cr_date = cr_date
             self.contacts = contacts
             self.hosts = hosts
             self.statuses = statuses
+            self.avail = avail
 
     mockDataInfoDomain = fakedEppObject(
         "fakepw",
@@ -583,6 +585,9 @@ class MockEppLib(TestCase):
     mockDataInfoHosts = fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
     )
+    mockDataCheckHosts = fakedEppObject(
+        "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35), avail=True,
+    )
 
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
@@ -603,6 +608,10 @@ class MockEppLib(TestCase):
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        elif (isinstance(_request, commands.CheckHost)):
+            return MagicMock(res_data=[self.mockDataCheckHosts])
+        elif (isinstance(_request, commands.CreateHost)):
+            return MagicMock(res_data=[self.mockDataCheckHosts], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):

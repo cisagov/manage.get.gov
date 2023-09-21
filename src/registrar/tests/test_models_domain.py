@@ -523,7 +523,7 @@ class TestRegistrantContacts(MockEppLib):
         raise
 
 
-class TestRegistrantNameservers(TestCase):
+class TestRegistrantNameservers(MockEppLib):
     """Rule: Registrants may modify their nameservers"""
 
     def setUp(self):
@@ -532,9 +532,9 @@ class TestRegistrantNameservers(TestCase):
             Given the registrant is logged in
             And the registrant is the admin on a domain
         """
-        pass
+        super().setUp()
+        self.domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.DNS_NEEDED)
 
-    @skip("not implemented yet")
     def test_user_adds_one_nameserver(self):
         """
         Scenario: Registrant adds a single nameserver
@@ -544,7 +544,28 @@ class TestRegistrantNameservers(TestCase):
                 to the registry
             And `domain.is_active` returns False
         """
-        raise
+
+        # set 1 nameserver
+        nameserver = "ns1.my-nameserver.com"
+        self.domain.nameservers = [(nameserver,)]  
+
+        # when you create a host, you also have to update at same time
+        created_host = commands.CreateHost(nameserver)
+        update_domain_with_created = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host.name])])
+
+        # checking if commands were sent (commands have to be sent in order)
+        expectedCalls = [
+            call(
+                commands.CheckHost([created_host.name]), cleaned=True
+            ),
+            call(created_host, cleaned=True),
+            call(update_domain_with_created, cleaned=True),
+        ]
+
+        self.mockedSendFunction.assert_has_calls(expectedCalls)
+
+        # check that status is still NOT READY
+        self.assertFalse(self.domain.is_active())
 
     @skip("not implemented yet")
     def test_user_adds_two_nameservers(self):

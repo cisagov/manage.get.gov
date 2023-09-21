@@ -309,7 +309,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # currenthosts = self.nameservers
         # that way you have current hosts
-        
+        count = 0
         for hostTuple in hosts:
             host = hostTuple[0].strip() # for removing empty string -- do we need strip? 
             addrs = None
@@ -320,7 +320,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # if you are dotgov and don't have an IP address then raise error
             # TRY logger.info() or print()
             avail = self._check_host([host])
-
+            
             if avail:
                 createdCode = self._create_host(host=host, addrs=addrs) # creates in registry
                 # DOUBLE CHECK: _create_host should handle duplicates?
@@ -328,8 +328,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 # if createdCode == ErrorCode.OBJECT_EXISTS:
                 # duplication check if it's already on the domain -- self.nameservers
                 # Is it possible for a nameserver to exist and not be on a domain yet? (can one have duplicate name servers)
-                # NOTE TO ANSWER THIS ON SLACK
-                # if it isn't in the domain - set a flag so that createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
+
+                # TODO: There could be an error here???
+                count += 1
+                # host can be used by multiple domains
                 if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
                     # add host to domain (domain already created, just adding to it)
                     request = commands.UpdateDomain(
@@ -338,17 +340,19 @@ class Domain(TimeStampedModel, DomainHelper):
 
                     try:
                         registry.send(request, cleaned=True)
+                        # count += 1
                     except RegistryError as e:
                         logger.error(
                             "Error adding nameserver, code was %s error was %s"
                             % (e.code, e)
                         )
+                # elif createdCode == ErrorCode.OBJECT_EXISTS:
+                    # count += 1
 
         try:
-            # should we check for contacts?
-            # check if there are 2 or more name servers or 13 (inclusive)
-            self.ready()
-            self.save()
+            if len(count) >= 2 or len(count) <= 13:
+                self.ready()
+                self.save()
         except Exception as err:
             logger.info(
                 "nameserver setter checked for create state "
@@ -847,8 +851,8 @@ class Domain(TimeStampedModel, DomainHelper):
         nameserverList = self.nameservers
         logger.info("Changing to ready state")
         # TEST THIS -- assertValue or print (trigger this)
-        if len(nameserverList) < 2 or len(nameserverList) > 13:
-            raise ValueError("Not ready to become created, cannot transition yet")
+        # if len(nameserverList) < 2 or len(nameserverList) > 13:
+        #     raise ValueError("Not ready to become created, cannot transition yet")
         logger.info("able to transition to ready state")
 
     def _disclose_fields(self, contact: PublicContact):
