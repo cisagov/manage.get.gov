@@ -145,10 +145,20 @@ class UserFixture:
         {"app_label": "registrar", "model": "contact", "permissions": ["view_contact"]},
         {
             "app_label": "registrar",
+            "model": "domaininformation",
+            "permissions": ["change_domaininformation"],
+        },
+        {
+            "app_label": "registrar",
             "model": "domainapplication",
             "permissions": ["change_domainapplication"],
         },
         {"app_label": "registrar", "model": "domain", "permissions": ["view_domain"]},
+        {
+            "app_label": "registrar",
+            "model": "draftdomain",
+            "permissions": ["change_draftdomain"],
+        },
         {"app_label": "registrar", "model": "user", "permissions": ["change_user"]},
     ]
 
