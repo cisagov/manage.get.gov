@@ -822,7 +822,10 @@ class Domain(TimeStampedModel, DomainHelper):
             # TODO - Should we sync with EppLib in this event?
             # map_epp_contact_to_public_contact will grab any changes
             # made in the setter, 
-            logger.info("Contact was not found in cache but was found in DB")
+            logger.info(
+                "Contact was not found in cache but was found in DB."
+                "Was this item added recently?"
+            )
             return current_contact
 
         try:
