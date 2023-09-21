@@ -7,7 +7,7 @@ applications:
   instances: 1
   memory: 512M
   stack: cflinuxfs4
-  timeout: 180
+  timeout: 280
   command: ./run.sh
   health-check-type: http
   health-check-http-endpoint: /health
