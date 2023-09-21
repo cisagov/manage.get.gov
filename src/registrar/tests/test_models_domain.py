@@ -28,7 +28,9 @@ logger = logging.getLogger(__name__)
 
 class TestDomainCache(MockEppLib):
     def tearDown(self):
+        Domain.objects.all().delete()
         PublicContact.objects.all().delete()
+        super().tearDown()
     def test_cache_sets_resets(self):
         """Cache should be set on getter and reset on setter calls"""
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
@@ -40,6 +42,8 @@ class TestDomainCache(MockEppLib):
         # (see InfoDomainResult)
         self.assertEquals(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
         self.assertEquals(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+        status_list = [status.state for status in self.mockDataInfoDomain.statuses]
+        self.assertEquals(domain._cache["statuses"], status_list)
         self.assertFalse("avail" in domain._cache.keys())
 
         # using a setter should clear the cache
@@ -54,7 +58,8 @@ class TestDomainCache(MockEppLib):
                 call(expectedCreateContact, cleaned=True),
                 call(commands.UpdateDomain(name='igorville.gov', add=[common.DomainContact(contact='123', type=PublicContact.ContactTypeChoices.SECURITY)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
                 call(commands.InfoHost(name='fake.host.com'), cleaned=True)
-            ]
+            ],
+            any_order=False,  # Ensure calls are in the specified order
         )
         # Clear the cache
         domain._invalidate_cache()
@@ -182,14 +187,8 @@ class TestDomainCache(MockEppLib):
         self.assertTrue(in_db_once.count() == 1)
 
 
-class TestDomainCreation(TestCase):
+class TestDomainCreation(MockEppLib):
     """Rule: An approved domain application must result in a domain"""
-
-    def setUp(self):
-        """
-        Background:
-            Given that a valid domain application exists
-        """
 
     def test_approved_application_creates_domain_locally(self):
         """
@@ -198,8 +197,6 @@ class TestDomainCreation(TestCase):
             Then a Domain exists in the database with the same `name`
             But a domain object does not exist in the registry
         """
-        patcher = patch("registrar.models.domain.Domain._get_or_create_domain")
-        mocked_domain_creation = patcher.start()
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(
@@ -212,20 +209,47 @@ class TestDomainCreation(TestCase):
         # should hav information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(domain)
-        mocked_domain_creation.assert_not_called()
+        self.mockedSendFunction.assert_not_called()
         patcher.stop()
 
-    @skip("not implemented yet")
     def test_accessing_domain_properties_creates_domain_in_registry(self):
         """
         Scenario: A registrant checks the status of a newly approved domain
             Given that no domain object exists in the registry
             When a property is accessed
             Then Domain sends `commands.CreateDomain` to the registry
-            And `domain.state` is set to `CREATED`
+            And `domain.state` is set to `UNKNOWN`
             And `domain.is_active()` returns False
         """
-        raise
+        domain = Domain.objects.create(name="beef-tongue.gov")
+        # trigger getter
+        _ = domain.statuses
+
+        # contacts = PublicContact.objects.filter(domain=domain,
+        # type=PublicContact.ContactTypeChoices.REGISTRANT).get()
+
+        # Called in _fetch_cache
+        self.mockedSendFunction.assert_has_calls(
+            [
+                # TODO: due to complexity of the test, will return to it in
+                # a future ticket
+                # call(
+                #     commands.CreateDomain(name="beef-tongue.gov",
+                #     id=contact.registry_id, auth_info=None),
+                #     cleaned=True,
+                # ),
+                call(
+                    commands.InfoDomain(name="beef-tongue.gov", auth_info=None),
+                    cleaned=True,
+                ),
+                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
+                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
+            ],
+            any_order=False,  # Ensure calls are in the specified order
+        )
+
+        self.assertEqual(domain.state, Domain.State.UNKNOWN)
+        self.assertEqual(domain.is_active(), False)
 
     @skip("assertion broken with mock addition")
     def test_empty_domain_creation(self):
@@ -244,22 +268,73 @@ class TestDomainCreation(TestCase):
         with self.assertRaisesRegex(IntegrityError, "name"):
             Domain.objects.create(name="igorville.gov")
 
-    @skip("cannot activate a domain without mock registry")
-    def test_get_status(self):
-        """Returns proper status based on `state`."""
-        domain = Domain.objects.create(name="igorville.gov")
-        domain.save()
-        self.assertEqual(None, domain.status)
-        domain.activate()
-        domain.save()
-        self.assertIn("ok", domain.status)
-
     def tearDown(self) -> None:
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
         DraftDomain.objects.all().delete()
+        super().tearDown()
+
+
+class TestDomainStatuses(MockEppLib):
+    """Domain statuses are set by the registry"""
+
+    def test_get_status(self):
+        """Domain 'statuses' getter returns statuses by calling epp"""
+        domain, _ = Domain.objects.get_or_create(name="chicken-liver.gov")
+        # trigger getter
+        _ = domain.statuses
+        status_list = [status.state for status in self.mockDataInfoDomain.statuses]
+        self.assertEquals(domain._cache["statuses"], status_list)
+
+        # Called in _fetch_cache
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.InfoDomain(name="chicken-liver.gov", auth_info=None),
+                    cleaned=True,
+                ),
+                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
+                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
+            ],
+            any_order=False,  # Ensure calls are in the specified order
+        )
+
+    def test_get_status_returns_empty_list_when_value_error(self):
+        """Domain 'statuses' getter returns an empty list
+        when value error"""
+        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov")
+
+        def side_effect(self):
+            raise KeyError
+
+        patcher = patch("registrar.models.domain.Domain._get_property")
+        mocked_get = patcher.start()
+        mocked_get.side_effect = side_effect
+
+        # trigger getter
+        _ = domain.statuses
+
+        with self.assertRaises(KeyError):
+            _ = domain._cache["statuses"]
+        self.assertEquals(_, [])
+
+        patcher.stop()
+
+    @skip("not implemented yet")
+    def test_place_client_hold_sets_status(self):
+        """Domain 'place_client_hold' method causes the registry to change statuses"""
+        raise
+
+    @skip("not implemented yet")
+    def test_revert_client_hold_sets_status(self):
+        """Domain 'revert_client_hold' method causes the registry to change statuses"""
+        raise
+
+    def tearDown(self) -> None:
+        Domain.objects.all().delete()
+        super().tearDown()
 
 
 class TestRegistrantContacts(MockEppLib):

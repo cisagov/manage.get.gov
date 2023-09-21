@@ -549,12 +549,20 @@ class MockEppLib(TestCase):
         """"""
 
         def __init__(
-            self, auth_info=..., cr_date=..., contacts=..., hosts=..., registrant=...
+            
+            self,
+            auth_info=...,
+            cr_date=...,
+            contacts=...,
+            hosts=...,
+            statuses=...,
+            registrant=...
         ):
             self.auth_info = auth_info
             self.cr_date = cr_date
             self.contacts = contacts
             self.hosts = hosts
+            self.statuses = statuses
             self.registrant = registrant
 
     def dummyInfoContactResultData(
@@ -623,6 +631,10 @@ class MockEppLib(TestCase):
             common.DomainContact(contact="adminContact", type=PublicContact.ContactTypeChoices.ADMINISTRATIVE),
         ],
         hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
         registrant="regContact",
     )
     infoDomainNoContact = fakedEppObject(
