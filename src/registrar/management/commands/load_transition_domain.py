@@ -42,8 +42,28 @@ class Command(BaseCommand):
         domain_statuses_filename,
         **options
     ):
+        
         """Load the data files and create the DomainInvitations."""
         sep = options.get("sep")
+
+        debug_MaxEntriesToParse = 10
+
+        class termColors:
+            HEADER = '\033[95m'
+            OKBLUE = '\033[94m'
+            OKCYAN = '\033[96m'
+            OKGREEN = '\033[92m'
+            WARNING = '\033[93m'
+            FAIL = '\033[91m'
+            ENDC = '\033[0m'
+            BOLD = '\033[1m'
+            UNDERLINE = '\033[4m'
+        if __debug__:
+            print(termColors.WARNING)
+            print("----------DEBUG MODE ON----------")
+            print(f"Parsing of entries will be limited to {debug_MaxEntriesToParse} lines per file.")
+            print("Detailed print statements activated.")
+            print(termColors.ENDC)
 
         # STEP 1:
         # Create mapping of domain name -> status
@@ -57,7 +77,6 @@ class Command(BaseCommand):
                 # print("adding "+domainName+", "+domainStatus)
                 domain_status_dictionary[domainName] = domainStatus
         logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
-        print(domain_status_dictionary)
 
         # STEP 2:
         # Create mapping of userId -> emails NOTE: is this one to many??
@@ -148,32 +167,44 @@ class Command(BaseCommand):
                 )
                 '''
 
-                newOrExistingEntry = None
                 try:
-                    newOrExistingEntry = TransitionDomain.objects.get(
+                    existingEntry = TransitionDomain.objects.get(
                     username=userEmail, 
                     domain_name=domainName
                     )
-                    print("Updating entry: ", newOrExistingEntry)
-                    print("     Status: ", newOrExistingEntry.status, " > ",domainStatus)
-                    newOrExistingEntry.status = domainStatus
-                    print("     Email Sent: ", newOrExistingEntry.email_sent, " > ", emailSent)
-                    newOrExistingEntry.email_sent = emailSent
-                    newOrExistingEntry.save()
+
+                    # DEBUG:
+                    if __debug__:
+                        print(termColors.WARNING)
+                        print("Updating entry: ", existingEntry)
+                        print("     Status: ", existingEntry.status, " > ",domainStatus)
+                        print("     Email Sent: ", existingEntry.email_sent, " > ", emailSent)
+
+                    existingEntry.status = domainStatus
+                    existingEntry.email_sent = emailSent
+                    existingEntry.save()
                 except TransitionDomain.DoesNotExist:
                     # no matching entry, make one
-                    newOrExistingEntry = TransitionDomain(
+                    newEntry = TransitionDomain(
                         username=userEmail, 
                         domain_name=domainName,
                         status = domainStatus,
                         email_sent = emailSent
                     )
-                    print("Adding entry ",total_new_entries,": ", newOrExistingEntry)
-                    to_create.append(newOrExistingEntry)
+                    to_create.append(newEntry)
+
+                    # DEBUG:
+                    if __debug__:
+                        print("Adding entry ",total_new_entries,": ", newEntry)
+                    
                 total_new_entries += 1
-                if total_new_entries > 10:
-                    print("DONE")
-                    break
+                
+                # DEBUG:
+                if __debug__:
+                    if total_new_entries > debug_MaxEntriesToParse:
+                        print("----BREAK----")
+                        print(termColors.ENDC)
+                        break
 
         logger.info("Creating %d transition domain entries", len(to_create))
         TransitionDomain.objects.bulk_create(to_create)
