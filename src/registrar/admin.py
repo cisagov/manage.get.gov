@@ -130,6 +130,7 @@ class MyUserAdmin(BaseUserAdmin):
     inlines = [UserContactInline]
 
     list_display = (
+        "username",
         "email",
         "first_name",
         "last_name",
@@ -159,10 +160,51 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    analyst_fieldsets = (
+        (
+            None,
+            {"fields": ("password", "status")},
+        ),
+        ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                )
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    analyst_readonly_fields = [
+        "password",
+        "Personal Info",
+        "first_name",
+        "last_name",
+        "email",
+        "Permissions",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "Important dates",
+        "last_login",
+        "date_joined",
+    ]
+
     def get_list_display(self, request):
         if not request.user.is_superuser:
             # Customize the list display for staff users
-            return ("email", "first_name", "last_name", "is_staff", "is_superuser")
+            return (
+                "email",
+                "first_name",
+                "last_name",
+                "is_staff",
+                "is_superuser",
+                "status",
+            )
 
         # Use the default list display for non-staff users
         return super().get_list_display(request)
@@ -171,10 +213,17 @@ class MyUserAdmin(BaseUserAdmin):
         if not request.user.is_superuser:
             # If the user doesn't have permission to change the model,
             # show a read-only fieldset
-            return ((None, {"fields": []}),)
+            return self.analyst_fieldsets
 
         # If the user has permission to change the model, show all fields
         return super().get_fieldsets(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ()  # No read-only fields for superusers
+        elif request.user.is_staff:
+            return self.analyst_readonly_fields  # Read-only fields for staff
+        return ()  # No read-only fields for other users
 
 
 class HostIPInline(admin.StackedInline):
@@ -189,8 +238,427 @@ class MyHostAdmin(AuditedAdmin):
     inlines = [HostIPInline]
 
 
+class ContactAdmin(ListHeaderAdmin):
+    """Custom contact admin class to add search."""
+
+    search_fields = ["email", "first_name", "last_name"]
+    search_help_text = "Search by firstname, lastname or email."
+    list_display = [
+        "contact",
+        "email",
+    ]
+
+    # We name the custom prop 'contact' because linter
+    # is not allowing a short_description attr on it
+    # This gets around the linter limitation, for now.
+    def contact(self, obj: models.Contact):
+        """Duplicate the contact _str_"""
+        if obj.first_name or obj.last_name:
+            return obj.get_formatted_name()
+        elif obj.email:
+            return obj.email
+        elif obj.pk:
+            return str(obj.pk)
+        else:
+            return ""
+
+    contact.admin_order_field = "first_name"  # type: ignore
+
+
+class WebsiteAdmin(ListHeaderAdmin):
+    """Custom website admin class."""
+
+    # Search
+    search_fields = [
+        "website",
+    ]
+    search_help_text = "Search by website."
+
+
+class UserDomainRoleAdmin(ListHeaderAdmin):
+    """Custom domain role admin class."""
+
+    # Columns
+    list_display = [
+        "user",
+        "domain",
+        "role",
+    ]
+
+    # Search
+    search_fields = [
+        "user__first_name",
+        "user__last_name",
+        "domain__name",
+        "role",
+    ]
+    search_help_text = "Search by user, domain, or role."
+
+
+class DomainInvitationAdmin(ListHeaderAdmin):
+    """Custom domain invitation admin class."""
+
+    # Columns
+    list_display = [
+        "email",
+        "domain",
+        "status",
+    ]
+
+    # Search
+    search_fields = [
+        "email",
+        "domain__name",
+    ]
+    search_help_text = "Search by email or domain."
+
+
+class DomainInformationAdmin(ListHeaderAdmin):
+    """Customize domain information admin class."""
+
+    # Columns
+    list_display = [
+        "domain",
+        "organization_type",
+        "created_at",
+        "submitter",
+    ]
+
+    # Filters
+    list_filter = ["organization_type"]
+
+    # Search
+    search_fields = [
+        "domain__name",
+    ]
+    search_help_text = "Search by domain."
+
+    fieldsets = [
+        (None, {"fields": ["creator", "domain_application"]}),
+        (
+            "Type of organization",
+            {
+                "fields": [
+                    "organization_type",
+                    "federally_recognized_tribe",
+                    "state_recognized_tribe",
+                    "tribe_name",
+                    "federal_agency",
+                    "federal_type",
+                    "is_election_board",
+                    "about_your_organization",
+                ]
+            },
+        ),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "organization_name",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "state_territory",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
+        ("Authorizing official", {"fields": ["authorizing_official"]}),
+        (".gov domain", {"fields": ["domain"]}),
+        ("Your contact information", {"fields": ["submitter"]}),
+        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
+        (
+            "No other employees from your organization?",
+            {"fields": ["no_other_contacts_rationale"]},
+        ),
+        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        (
+            "Requirements for operating .gov domains",
+            {"fields": ["is_policy_acknowledged"]},
+        ),
+    ]
+
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = [
+        "creator",
+        "type_of_work",
+        "more_organization_information",
+        "address_line1",
+        "address_line2",
+        "zipcode",
+        "domain",
+        "submitter",
+        "no_other_contacts_rationale",
+        "anything_else",
+        "is_policy_acknowledged",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 1 conditions that determine which fields are read-only:
+        admin user permissions.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.is_superuser:
+            return readonly_fields
+        else:
+            readonly_fields.extend([field for field in self.analyst_readonly_fields])
+            return readonly_fields
+
+
+class DomainApplicationAdminForm(forms.ModelForm):
+    """Custom form to limit transitions to available transitions"""
+
+    class Meta:
+        model = models.DomainApplication
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        application = kwargs.get("instance")
+        if application and application.pk:
+            current_state = application.status
+
+            # first option in status transitions is current state
+            available_transitions = [(current_state, current_state)]
+
+            transitions = get_available_FIELD_transitions(
+                application, models.DomainApplication._meta.get_field("status")
+            )
+
+            for transition in transitions:
+                available_transitions.append((transition.target, transition.target))
+
+            # only set the available transitions if the user is not restricted
+            # from editing the domain application; otherwise, the form will be
+            # readonly and the status field will not have a widget
+            if not application.creator.is_restricted():
+                self.fields["status"].widget.choices = available_transitions
+
+
+class DomainApplicationAdmin(ListHeaderAdmin):
+
+    """Custom domain applications admin class."""
+
+    # Columns
+    list_display = [
+        "requested_domain",
+        "status",
+        "organization_type",
+        "created_at",
+        "submitter",
+        "investigator",
+    ]
+
+    # Filters
+    list_filter = ("status", "organization_type", "investigator")
+
+    # Search
+    search_fields = [
+        "requested_domain__name",
+        "submitter__email",
+        "submitter__first_name",
+        "submitter__last_name",
+    ]
+    search_help_text = "Search by domain or submitter."
+
+    # Detail view
+    form = DomainApplicationAdminForm
+    fieldsets = [
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
+        (
+            "Type of organization",
+            {
+                "fields": [
+                    "organization_type",
+                    "federally_recognized_tribe",
+                    "state_recognized_tribe",
+                    "tribe_name",
+                    "federal_agency",
+                    "federal_type",
+                    "is_election_board",
+                    "about_your_organization",
+                ]
+            },
+        ),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "organization_name",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "state_territory",
+                    "zipcode",
+                    "urbanization",
+                ]
+            },
+        ),
+        ("Authorizing official", {"fields": ["authorizing_official"]}),
+        ("Current websites", {"fields": ["current_websites"]}),
+        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        ("Purpose of your domain", {"fields": ["purpose"]}),
+        ("Your contact information", {"fields": ["submitter"]}),
+        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
+        (
+            "No other employees from your organization?",
+            {"fields": ["no_other_contacts_rationale"]},
+        ),
+        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        (
+            "Requirements for operating .gov domains",
+            {"fields": ["is_policy_acknowledged"]},
+        ),
+    ]
+
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = [
+        "creator",
+        "about_your_organization",
+        "address_line1",
+        "address_line2",
+        "zipcode",
+        "requested_domain",
+        "alternative_domains",
+        "purpose",
+        "submitter",
+        "no_other_contacts_rationale",
+        "anything_else",
+        "is_policy_acknowledged",
+    ]
+
+    # Trigger action when a fieldset is changed
+    def save_model(self, request, obj, form, change):
+        if obj and obj.creator.status != models.User.RESTRICTED:
+            if change:  # Check if the application is being edited
+                # Get the original application from the database
+                original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+
+                if (
+                    obj
+                    and original_obj.status == models.DomainApplication.APPROVED
+                    and (
+                        obj.status == models.DomainApplication.REJECTED
+                        or obj.status == models.DomainApplication.INELIGIBLE
+                    )
+                    and not obj.domain_is_not_active()
+                ):
+                    # If an admin tried to set an approved application to
+                    # rejected or ineligible and the related domain is already
+                    # active, shortcut the action and throw a friendly
+                    # error message. This action would still not go through
+                    # shortcut or not as the rules are duplicated on the model,
+                    # but the error would be an ugly Django error screen.
+
+                    # Clear the success message
+                    messages.set_level(request, messages.ERROR)
+
+                    messages.error(
+                        request,
+                        "This action is not permitted. The domain "
+                        + "is already active.",
+                    )
+
+                else:
+                    if obj.status != original_obj.status:
+                        status_method_mapping = {
+                            models.DomainApplication.STARTED: None,
+                            models.DomainApplication.SUBMITTED: obj.submit,
+                            models.DomainApplication.IN_REVIEW: obj.in_review,
+                            models.DomainApplication.ACTION_NEEDED: obj.action_needed,
+                            models.DomainApplication.APPROVED: obj.approve,
+                            models.DomainApplication.WITHDRAWN: obj.withdraw,
+                            models.DomainApplication.REJECTED: obj.reject,
+                            models.DomainApplication.INELIGIBLE: (
+                                obj.reject_with_prejudice
+                            ),
+                        }
+                        selected_method = status_method_mapping.get(obj.status)
+                        if selected_method is None:
+                            logger.warning("Unknown status selected in django admin")
+                        else:
+                            # This is an fsm in model which will throw an error if the
+                            # transition condition is violated, so we roll back the
+                            # status to what it was before the admin user changed it and
+                            # let the fsm method set it.
+                            obj.status = original_obj.status
+                            selected_method()
+
+                    super().save_model(request, obj, form, change)
+        else:
+            # Clear the success message
+            messages.set_level(request, messages.ERROR)
+
+            messages.error(
+                request,
+                "This action is not permitted for applications "
+                + "with a restricted creator.",
+            )
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 2 conditions that determine which fields are read-only:
+        admin user permissions and the application creator's status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+
+        readonly_fields = list(self.readonly_fields)
+
+        # Check if the creator is restricted
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            # For fields like CharField, IntegerField, etc., the widget used is
+            # straightforward and the readonly_fields list can control their behavior
+            readonly_fields.extend([field.name for field in self.model._meta.fields])
+            # Add the multi-select fields to readonly_fields:
+            # Complex fields like ManyToManyField require special handling
+            readonly_fields.extend(
+                ["current_websites", "other_contacts", "alternative_domains"]
+            )
+
+        if request.user.is_superuser:
+            return readonly_fields
+        else:
+            readonly_fields.extend([field for field in self.analyst_readonly_fields])
+            return readonly_fields
+
+    def display_restricted_warning(self, request, obj):
+        if obj and obj.creator.status == models.User.RESTRICTED:
+            messages.warning(
+                request,
+                "Cannot edit an application with a restricted creator.",
+            )
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        obj = self.get_object(request, object_id)
+        self.display_restricted_warning(request, obj)
+        return super().change_view(request, object_id, form_url, extra_context)
+
+
+class DomainInformationInline(admin.StackedInline):
+    """Edit a domain information on the domain page.
+    We had issues inheriting from both StackedInline
+    and the source DomainInformationAdmin since these
+    classes conflict, so we'll just pull what we need
+    from DomainInformationAdmin"""
+
+    model = models.DomainInformation
+
+    fieldsets = DomainInformationAdmin.fieldsets
+    analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
+
+    def get_readonly_fields(self, request, obj=None):
+        return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
+
+
 class DomainAdmin(ListHeaderAdmin):
     """Custom domain admin class to add extra buttons."""
+
+    inlines = [DomainInformationInline]
 
     # Columns
     list_display = [
@@ -207,7 +675,7 @@ class DomainAdmin(ListHeaderAdmin):
     )
 
     # Filters
-    list_filter = ["domain_info__organization_type"]
+    list_filter = ["domain_info__organization_type", "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
@@ -312,306 +780,11 @@ class DomainAdmin(ListHeaderAdmin):
         return super().has_change_permission(request, obj)
 
 
-class ContactAdmin(ListHeaderAdmin):
-    """Custom contact admin class to add search."""
+class DraftDomainAdmin(ListHeaderAdmin):
+    """Custom draft domain admin class."""
 
-    search_fields = ["email", "first_name", "last_name"]
-    search_help_text = "Search by firstname, lastname or email."
-    list_display = [
-        "contact",
-        "email",
-    ]
-
-    # We name the custom prop 'contact' because linter
-    # is not allowing a short_description attr on it
-    # This gets around the linter limitation, for now.
-    def contact(self, obj: models.Contact):
-        """Duplicate the contact _str_"""
-        if obj.first_name or obj.last_name:
-            return obj.get_formatted_name()
-        elif obj.email:
-            return obj.email
-        elif obj.pk:
-            return str(obj.pk)
-        else:
-            return ""
-
-    contact.admin_order_field = "first_name"  # type: ignore
-
-
-class WebsiteAdmin(ListHeaderAdmin):
-    """Custom website admin class."""
-
-    # Search
-    search_fields = [
-        "website",
-    ]
-    search_help_text = "Search by website."
-
-
-class UserDomainRoleAdmin(ListHeaderAdmin):
-    """Custom domain role admin class."""
-
-    # Columns
-    list_display = [
-        "user",
-        "domain",
-        "role",
-    ]
-
-    # Search
-    search_fields = [
-        "user__first_name",
-        "user__last_name",
-        "domain__name",
-        "role",
-    ]
-    search_help_text = "Search by user, domain, or role."
-
-
-class DomainInvitationAdmin(ListHeaderAdmin):
-    """Custom domain invitation admin class."""
-
-    # Columns
-    list_display = [
-        "email",
-        "domain",
-        "status",
-    ]
-
-    # Search
-    search_fields = [
-        "email",
-        "domain__name",
-    ]
-    search_help_text = "Search by email or domain."
-
-
-class DomainInformationAdmin(ListHeaderAdmin):
-    """Customize domain information admin class."""
-
-    # Columns
-    list_display = [
-        "domain",
-        "organization_type",
-        "created_at",
-        "submitter",
-    ]
-
-    # Filters
-    list_filter = ["organization_type"]
-
-    # Search
-    search_fields = [
-        "domain__name",
-    ]
-    search_help_text = "Search by domain."
-
-
-class DomainApplicationAdminForm(forms.ModelForm):
-    """Custom form to limit transitions to available transitions"""
-
-    class Meta:
-        model = models.DomainApplication
-        fields = "__all__"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
-
-            # first option in status transitions is current state
-            available_transitions = [(current_state, current_state)]
-
-            transitions = get_available_FIELD_transitions(
-                application, models.DomainApplication._meta.get_field("status")
-            )
-
-            for transition in transitions:
-                available_transitions.append((transition.target, transition.target))
-
-            # only set the available transitions if the user is not restricted
-            # from editing the domain application; otherwise, the form will be
-            # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
-                self.fields["status"].widget.choices = available_transitions
-
-
-class DomainApplicationAdmin(ListHeaderAdmin):
-
-    """Custom domain applications admin class."""
-
-    # Set multi-selects 'read-only' (hide selects and show data)
-    # based on user perms and application creator's status
-    # form = DomainApplicationForm
-
-    # Columns
-    list_display = [
-        "requested_domain",
-        "status",
-        "organization_type",
-        "created_at",
-        "submitter",
-        "investigator",
-    ]
-
-    # Filters
-    list_filter = ("status", "organization_type", "investigator")
-
-    # Search
-    search_fields = [
-        "requested_domain__name",
-        "submitter__email",
-        "submitter__first_name",
-        "submitter__last_name",
-    ]
-    search_help_text = "Search by domain or submitter."
-
-    # Detail view
-    form = DomainApplicationAdminForm
-    fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator"]}),
-        (
-            "Type of organization",
-            {
-                "fields": [
-                    "organization_type",
-                    "federally_recognized_tribe",
-                    "state_recognized_tribe",
-                    "tribe_name",
-                    "federal_agency",
-                    "federal_type",
-                    "is_election_board",
-                    "about_your_organization",
-                ]
-            },
-        ),
-        (
-            "Organization name and mailing address",
-            {
-                "fields": [
-                    "organization_name",
-                    "address_line1",
-                    "address_line2",
-                    "city",
-                    "state_territory",
-                    "zipcode",
-                    "urbanization",
-                ]
-            },
-        ),
-        ("Authorizing official", {"fields": ["authorizing_official"]}),
-        ("Current websites", {"fields": ["current_websites"]}),
-        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        ("Purpose of your domain", {"fields": ["purpose"]}),
-        ("Your contact information", {"fields": ["submitter"]}),
-        ("Other employees from your organization?", {"fields": ["other_contacts"]}),
-        (
-            "No other employees from your organization?",
-            {"fields": ["no_other_contacts_rationale"]},
-        ),
-        ("Anything else we should know?", {"fields": ["anything_else"]}),
-        (
-            "Requirements for operating .gov domains",
-            {"fields": ["is_policy_acknowledged"]},
-        ),
-    ]
-
-    # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields = [
-        "creator",
-        "about_your_organization",
-        "address_line1",
-        "address_line2",
-        "zipcode",
-        "requested_domain",
-        "alternative_domains",
-        "purpose",
-        "submitter",
-        "no_other_contacts_rationale",
-        "anything_else",
-        "is_policy_acknowledged",
-    ]
-
-    # Trigger action when a fieldset is changed
-    def save_model(self, request, obj, form, change):
-        if obj and obj.creator.status != models.User.RESTRICTED:
-            if change:  # Check if the application is being edited
-                # Get the original application from the database
-                original_obj = models.DomainApplication.objects.get(pk=obj.pk)
-
-                if obj.status != original_obj.status:
-                    status_method_mapping = {
-                        models.DomainApplication.STARTED: None,
-                        models.DomainApplication.SUBMITTED: obj.submit,
-                        models.DomainApplication.IN_REVIEW: obj.in_review,
-                        models.DomainApplication.ACTION_NEEDED: obj.action_needed,
-                        models.DomainApplication.APPROVED: obj.approve,
-                        models.DomainApplication.WITHDRAWN: obj.withdraw,
-                        models.DomainApplication.REJECTED: obj.reject,
-                        models.DomainApplication.INELIGIBLE: obj.reject_with_prejudice,
-                    }
-                    selected_method = status_method_mapping.get(obj.status)
-                    if selected_method is None:
-                        logger.warning("Unknown status selected in django admin")
-                    else:
-                        # This is an fsm in model which will throw an error if the
-                        # transition condition is violated, so we roll back the
-                        # status to what it was before the admin user changed it and
-                        # let the fsm method set it.
-                        obj.status = original_obj.status
-                        selected_method()
-
-            super().save_model(request, obj, form, change)
-        else:
-            # Clear the success message
-            messages.set_level(request, messages.ERROR)
-
-            messages.error(
-                request,
-                "This action is not permitted for applications "
-                + "with a restricted creator.",
-            )
-
-    def get_readonly_fields(self, request, obj=None):
-        """Set the read-only state on form elements.
-        We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the application creator's status, so
-        we'll use the baseline readonly_fields and extend it as needed.
-        """
-
-        readonly_fields = list(self.readonly_fields)
-
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
-            # For fields like CharField, IntegerField, etc., the widget used is
-            # straightforward and the readonly_fields list can control their behavior
-            readonly_fields.extend([field.name for field in self.model._meta.fields])
-            # Add the multi-select fields to readonly_fields:
-            # Complex fields like ManyToManyField require special handling
-            readonly_fields.extend(
-                ["current_websites", "other_contacts", "alternative_domains"]
-            )
-
-        if request.user.is_superuser:
-            return readonly_fields
-        else:
-            readonly_fields.extend([field for field in self.analyst_readonly_fields])
-            return readonly_fields
-
-    def display_restricted_warning(self, request, obj):
-        if obj and obj.creator.status == models.User.RESTRICTED:
-            messages.warning(
-                request,
-                "Cannot edit an application with a restricted creator.",
-            )
-
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        obj = self.get_object(request, object_id)
-        self.display_restricted_warning(request, obj)
-        return super().change_view(request, object_id, form_url, extra_context)
+    search_fields = ["name"]
+    search_help_text = "Search by draft domain name."
 
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
@@ -622,6 +795,7 @@ admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
+admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
