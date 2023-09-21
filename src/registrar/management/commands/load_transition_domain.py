@@ -45,55 +45,30 @@ class Command(BaseCommand):
         """Load the data files and create the DomainInvitations."""
         sep = options.get("sep")
 
-        """
-        # Create mapping of userId -> domain names
-        # We open the domain file first and hold it in memory.
-        # There are three contacts per domain, so there should be at
-        # most 3*N different contacts here.
-        contact_domains = defaultdict(list)  # each contact has a list of domains
-        logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
-        with open(domain_contacts_filename, "r") as domain_contacts_file:
-            for row in csv.reader(domain_contacts_file, delimiter=sep):
-                # fields are just domain, userid, role
-                # lowercase the domain names now
-                contact_domains[row[1]].append(row[0].lower())
-        logger.info("Loaded domains for %d contacts", len(contact_domains))
-
-        # STEP 1:  
-        # Create mapping of domain name -> userId 
-        domains_contact = defaultdict(list)  # each contact has a list of domains
-        logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
-        with open(domain_contacts_filename, "r") as domain_contacts_file:
-            for row in csv.reader(domain_contacts_file, delimiter=sep):
-                # fields are just domain, userid, role
-                # lowercase the domain names now --NOTE: is there a reason why we do this??
-                domainName = row[0].lower()
-                userId = row[1]
-                domains_contact[domainName].append(userId)
-        logger.info("Loaded domains for %d contacts", len(domains_contact))
-        """
-
         # STEP 1:
         # Create mapping of domain name -> status
-        domain_status = defaultdict()  # NOTE: how to determine "most recent" status?
+        # TODO: figure out latest status
+        domain_status_dictionary = defaultdict(str)  # NOTE: how to determine "most recent" status?
         logger.info("Reading domain statuses data file %s", domain_statuses_filename)
         with open(domain_statuses_filename, "r") as domain_statuses_file:
             for row in csv.reader(domain_statuses_file, delimiter=sep):
                 domainName = row[0].lower()
-                domainStatus = row[1]
-                domain_status[domainName] = domainStatus
-        logger.info("Loaded statuses for %d domains", len(domain_status))
+                domainStatus = row[1].lower()
+                # print("adding "+domainName+", "+domainStatus)
+                domain_status_dictionary[domainName] = domainStatus
+        logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
+        print(domain_status_dictionary)
 
         # STEP 2:
         # Create mapping of userId -> emails NOTE: is this one to many??
-        user_emails = defaultdict(list)  # each contact has a list of e-mails
+        user_emails_dictionary = defaultdict(list)  # each contact has a list of e-mails
         logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
         with open(contacts_filename, "r") as contacts_file:
             for row in csv.reader(contacts_file, delimiter=sep):
                 userId = row[0]
                 user_email = row[6]
-                user_emails[userId].append(user_email)
-        logger.info("Loaded emails for %d users", len(user_emails))
+                user_emails_dictionary[userId].append(user_email)
+        logger.info("Loaded emails for %d users", len(user_emails_dictionary))
 
         # STEP 3:
         # TODO:  Need to add logic for conflicting domain status entries
@@ -104,22 +79,26 @@ class Command(BaseCommand):
 
         # keep track of statuses that don't match our available status values
         outlier_statuses = set
+        total_outlier_statuses = 0
 
         # keep track of domains that have no known status
         domains_without_status = set
+        total_domains_without_status = 0
 
         # keep track of users that have no e-mails
         users_without_email = set
+        total_users_without_email = 0
 
         # keep track of domains we UPDATED (instead of ones we added)
         total_updated_domain_entries = 0
+        total_new_entries = 0
 
         logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
         with open(domain_contacts_filename, "r") as domain_contacts_file:
             for row in csv.reader(domain_contacts_file, delimiter=sep):
                 # fields are just domain, userid, role
                 # lowercase the domain names
-                domainName = row[0]
+                domainName = row[0].lower()
                 userId = row[1]
 
                 domainStatus = TransitionDomain.StatusChoices.CREATED
@@ -127,38 +106,75 @@ class Command(BaseCommand):
                 emailSent = False
                 # TODO: how to know if e-mail was sent?
 
-                if domainName not in domain_status:
+                if domainName not in domain_status_dictionary:
                     # this domain has no status...default to "Create"
-                    domains_without_status.add(domainName)
+                    # domains_without_status.add(domainName)
+                    # print("No status found for domain: "+domainName)
+                    total_domains_without_status += 1
                 else:
-                    originalStatus = domain_status[domainName]
+                    originalStatus = domain_status_dictionary[domainName]
+                    # print(originalStatus)
                     if originalStatus in TransitionDomain.StatusChoices.values:
+                        # print("YAY")
                         domainStatus = originalStatus
                     else:
                         # default all other statuses to "Create"
-                        outlier_statuses.add(originalStatus)
+                        # outlier_statuses.add(originalStatus)
+                        # print("Unknown status: "+originalStatus)
+                        total_outlier_statuses += 1
 
-                if userId not in user_emails:
+                if userId not in user_emails_dictionary:
                     # this user has no e-mail...this should never happen
-                    users_without_email.add(userId)
-                    break
+                    # users_without_email.add(userId)
+                    # print("no e-mail found for user: "+userId)
+                    total_users_without_email += 1
+                else:
+                    userEmail = user_emails_dictionary[userId]
 
                 # Check to see if this domain-user pairing already exists so we don't add duplicates
-                existingEntry = TransitionDomain.objects.get(
-                    username=userEmail, domain_name=domainName
+                '''
+                newOrExistingEntry, isNew = TransitionDomain.objects.get_or_create(
+                    username=userEmail, 
+                    domain_name=domainName
                 )
-                if existingEntry:
-                    existingEntry.status = domainStatus
+                if isNew:
                     total_updated_domain_entries += 1
                 else:
-                    to_create.append(
-                        TransitionDomain(
-                            username=userEmail,
-                            domain_name=domainName,
-                            status=domainStatus,
-                            email_sent=emailSent,
-                        )
+                    total_new_entries += 1
+                newOrExistingEntry.status = domainStatus
+                newOrExistingEntry.email_sent = emailSent
+                to_create.append(
+                    newOrExistingEntry
+                )
+                '''
+
+                newOrExistingEntry = None
+                try:
+                    newOrExistingEntry = TransitionDomain.objects.get(
+                    username=userEmail, 
+                    domain_name=domainName
                     )
+                    print("Updating entry: ", newOrExistingEntry)
+                    print("     Status: ", newOrExistingEntry.status, " > ",domainStatus)
+                    newOrExistingEntry.status = domainStatus
+                    print("     Email Sent: ", newOrExistingEntry.email_sent, " > ", emailSent)
+                    newOrExistingEntry.email_sent = emailSent
+                    newOrExistingEntry.save()
+                except TransitionDomain.DoesNotExist:
+                    # no matching entry, make one
+                    newOrExistingEntry = TransitionDomain(
+                        username=userEmail, 
+                        domain_name=domainName,
+                        status = domainStatus,
+                        email_sent = emailSent
+                    )
+                    print("Adding entry ",total_new_entries,": ", newOrExistingEntry)
+                    to_create.append(newOrExistingEntry)
+                total_new_entries += 1
+                if total_new_entries > 10:
+                    print("DONE")
+                    break
+
         logger.info("Creating %d transition domain entries", len(to_create))
         TransitionDomain.objects.bulk_create(to_create)
 
@@ -167,9 +183,9 @@ class Command(BaseCommand):
             updated %d transition domain entries,
             found %d users without email,
             found %d unique statuses that do not map to existing status values""",
-            len(to_create),
+            total_new_entries,
             total_updated_domain_entries,
-            len(users_without_email),
-            len(outlier_statuses),
+            total_users_without_email,
+            total_outlier_statuses,
         )
         # TODO: add more info to logger?
