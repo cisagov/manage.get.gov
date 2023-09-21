@@ -530,16 +530,6 @@ class Domain(TimeStampedModel, DomainHelper):
                         "Raising error after removing and adding a new contact"
                     )
                     raise (err)
-        elif alreadyExistsInRegistry:
-            # If this item already exists in the registry,
-            # but doesn't have other contacts, we want to
-            # delete the old value
-            filtered_contacts = PublicContact.objects.filter(
-                registry_id=contact.registry_id
-            )
-
-            if(filtered_contacts.count() > 1):
-                filtered_contacts.order_by('id').first().delete()
 
         # update domain with contact or update the contact itself
         if not isEmptySecurity:
@@ -547,7 +537,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 self._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
-                current_contact = filtered_contacts.get()
+                current_contact = PublicContact.objects.filter(
+                    registry_id=contact.registry_id
+                ).get()
                 logger.debug(f"current contact was accessed {current_contact}")
 
                 if current_contact.email != contact.email:
@@ -737,14 +729,21 @@ class Domain(TimeStampedModel, DomainHelper):
             sp=addr.sp,
             **streets,
         )
+        db_contact = PublicContact.objects.filter(registry_id=contact_id, contact_type=contact_type, domain=self)
         # Saves to DB
-        if(create_object):
-            create = PublicContact.objects.filter(registry_id=contact_id, contact_type=contact_type, domain=self)
-            if(create.count() == 0 and contact_type != PublicContact.ContactTypeChoices.REGISTRANT):
-                desired_contact.save()
-                
-        return desired_contact
+        if(create_object and db_contact.count() == 0):
+            desired_contact.save()
+            logger.debug(f"Created a new PublicContact: {desired_contact}")
+            return desired_contact
 
+        if(db_contact.count() == 1):
+            #if(desired_contact != db_contact):
+                #current = desired_contact
+            return db_contact.get()
+        # If it doesn't exist and we don't
+        # want to create it...
+        return desired_contact
+                
     def _request_contact_info(self, contact: PublicContact):
         try:
             req = commands.InfoContact(id=contact.registry_id)
@@ -797,6 +796,17 @@ class Domain(TimeStampedModel, DomainHelper):
         cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
         or cache_contact_helper("security")
         """
+        # registrant_contact(s) are an edge case. They exist on
+        # the "registrant" property as opposed to contacts.
+        desired_property = "contacts"
+        if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
+            desired_property = "registrant"
+
+        # If it exists in our cache, grab that
+        if(self._cache and desired_property in self._cache):          
+            return self.grab_contact_in_keys(self._cache[desired_property], contact_type_choice)
+        
+        # If not, check in our DB
         items = PublicContact.objects.filter(domain=self, contact_type=contact_type_choice)
         if(items.count() > 1):
             raise ValueError(f"Multiple contacts exist for {contact_type_choice}")
@@ -809,22 +819,13 @@ class Domain(TimeStampedModel, DomainHelper):
         # If we have an item in our DB, 
         # and if contacts hasn't been cleared (meaning data was set)...
         if(current_contact is not None):
-            if("contacts" not in self._cache):
-                logger.info("Contact was not found in cache but was found in DB")
+            # TODO - Should we sync with EppLib in this event?
+            # map_epp_contact_to_public_contact will grab any changes
+            # made in the setter, 
+            logger.info("Contact was not found in cache but was found in DB")
             return current_contact
 
         try:
-            # registrant_contact(s) are an edge case. They exist on
-            # the "registrant" property as opposed to contacts.
-            desired_property = "contacts"
-            if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
-                desired_property = "registrant"
-
-            # If it for some reason doesn't exist in our local DB,
-            # but exists in our cache, grab that
-            if(self._cache and desired_property in self._cache):          
-                return self.grab_contact_in_keys(self._cache[desired_property], contact_type_choice)
-
             # Finally, if all else fails, grab from the registry
             contacts = self._get_property(desired_property)
 
