@@ -634,7 +634,11 @@ class TestAnalystClientHold(TestCase):
             Given the analyst is logged in
             And a domain exists in the registry
         """
-        pass
+        super().setUp()
+        self.domain, _ = Domain.objects.get_or_create(name="security.gov")
+
+    def tearDown(self):
+        super().tearDown()
 
     @skip("not implemented yet")
     def test_analyst_places_client_hold(self):

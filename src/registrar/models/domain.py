@@ -635,13 +635,29 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should not be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
-        registry.send(request, cleaned=True)
+        try:
+            registry.send(request, cleaned=True)
+            self._invalidate_cache()
+        except RegistryError as err:
+            # if registry error occurs, log the error, and raise it as well
+            logger.error(
+                f"registry error placing client hold: {err}"
+            )
+            raise (err)
 
     def _remove_client_hold(self):
         """This domain is okay to be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, rem=[self.clientHoldStatus()])
-        registry.send(request, cleaned=True)
+        try:
+            registry.send(request, cleaned=True)
+            self._invalidate_cache()
+        except RegistryError as err:
+            # if registry error occurs, log the error, and raise it as well
+            logger.error(
+                f"registry error removing client hold: {err}"
+            )
+            raise (err)
 
     def _delete_domain(self):
         """This domain should be deleted from the registry

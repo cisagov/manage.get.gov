@@ -67,6 +67,9 @@ class RegistryError(Exception):
     def should_retry(self):
         return self.code == ErrorCode.COMMAND_FAILED
 
+    def is_session_error(self):
+        return self.code is not None and (self.code >= 2501 and self.code <= 2502)
+    
     def is_server_error(self):
         return self.code is not None and (self.code >= 2400 and self.code <= 2500)
 
