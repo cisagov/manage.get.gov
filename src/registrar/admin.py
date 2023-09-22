@@ -653,7 +653,7 @@ class TransitionDomainAdmin(ListHeaderAdmin):
     search_fields = ["username", "domain_name"]
     search_help_text = "Search by user or domain name."
 
-    
+
 class DomainInformationInline(admin.StackedInline):
     """Edit a domain information on the domain page.
     We had issues inheriting from both StackedInline
