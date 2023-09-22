@@ -702,7 +702,7 @@ class TestRegistrantDNSSEC(TestCase):
         raise
 
 
-class TestAnalystClientHold(TestCase):
+class TestAnalystClientHold(MockEppLib):
     """Rule: Analysts may suspend or restore a domain by using client hold"""
 
     def setUp(self):
@@ -712,19 +712,65 @@ class TestAnalystClientHold(TestCase):
             And a domain exists in the registry
         """
         super().setUp()
-        self.domain, _ = Domain.objects.get_or_create(name="security.gov")
+        # for the tests, need a domain in the ready state
+        self.domain, _ = Domain.objects.get_or_create(
+            name="fake.gov",
+            state=Domain.State.READY
+        )
+        # for the tests, need a domain in the on_hold state
+        self.domain_on_hold, _ = Domain.objects.get_or_create(
+            name="fake-on-hold.gov",
+            state=Domain.State.ON_HOLD
+        )
 
     def tearDown(self):
+        Domain.objects.all().delete()
         super().tearDown()
 
-    @skip("not implemented yet")
+    # def test_get_status(self):
+    #     """Domain 'statuses' getter returns statuses by calling epp"""
+    #     domain, _ = Domain.objects.get_or_create(name="chicken-liver.gov")
+    #     # trigger getter
+    #     _ = domain.statuses
+    #     status_list = [status.state for status in self.mockDataInfoDomain.statuses]
+    #     self.assertEquals(domain._cache["statuses"], status_list)
+
+    #     # Called in _fetch_cache
+    #     self.mockedSendFunction.assert_has_calls(
+    #         [
+    #             call(
+    #                 commands.InfoDomain(name="chicken-liver.gov", auth_info=None),
+    #                 cleaned=True,
+    #             ),
+    #             call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
+    #             call(commands.InfoHost(name="fake.host.com"), cleaned=True),
+    #         ],
+    #         any_order=False,  # Ensure calls are in the specified order
+    #     )
+
     def test_analyst_places_client_hold(self):
         """
         Scenario: Analyst takes a domain off the internet
             When `domain.place_client_hold()` is called
             Then `CLIENT_HOLD` is added to the domain's statuses
         """
-        raise
+        self.domain.place_client_hold()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        add=[common.Status(state=Domain.Status.CLIENT_HOLD, description='', lang='en')],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertEquals(self.domain.state, Domain.State.ON_HOLD)
 
     @skip("not implemented yet")
     def test_analyst_places_client_hold_idempotent(self):
@@ -736,7 +782,6 @@ class TestAnalystClientHold(TestCase):
         """
         raise
 
-    @skip("not implemented yet")
     def test_analyst_removes_client_hold(self):
         """
         Scenario: Analyst restores a suspended domain
@@ -744,7 +789,23 @@ class TestAnalystClientHold(TestCase):
             When `domain.remove_client_hold()` is called
             Then `CLIENT_HOLD` is no longer in the domain's statuses
         """
-        raise
+        self.domain_on_hold.revert_client_hold()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake-on-hold.gov",
+                        rem=[common.Status(state=Domain.Status.CLIENT_HOLD, description='', lang='en')],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertEquals(self.domain_on_hold.state, Domain.State.READY)
 
     @skip("not implemented yet")
     def test_analyst_removes_client_hold_idempotent(self):

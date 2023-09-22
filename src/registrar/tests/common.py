@@ -596,6 +596,12 @@ class MockEppLib(TestCase):
         elif isinstance(_request, commands.InfoContact):
             return MagicMock(res_data=[self.mockDataInfoContact])
         elif (
+            isinstance(_request, commands.UpdateDomain)
+            and getattr(_request, "name", "fake-on-hold.gov")
+            and getattr(_request, "add", [common.Status(state=Domain.Status.CLIENT_HOLD, description='', lang='en')])
+        ):
+            raise RegistryError(code=ErrorCode.)
+        elif (
             isinstance(_request, commands.CreateContact)
             and getattr(_request, "id", None) == "fail"
             and self.mockedSendFunction.call_count == 3
