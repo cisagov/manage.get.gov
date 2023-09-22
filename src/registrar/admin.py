@@ -691,6 +691,21 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
+class TransitionDomainAdmin(ListHeaderAdmin):
+    """Custom transition domain admin class."""
+
+    # Columns
+    list_display = [
+        "username",
+        "domain_name",
+        "status",
+        "email_sent",
+    ]
+
+    search_fields = ["username", "domain_name"]
+    search_help_text = "Search by user or domain name."
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
@@ -704,4 +719,4 @@ admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
-admin.site.register(models.TransitionDomain, AuditedAdmin)
+admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
