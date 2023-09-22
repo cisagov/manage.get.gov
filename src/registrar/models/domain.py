@@ -349,7 +349,7 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             print("COUNT IS ")
             print(count)
-            if len(count) >= 2 or len(count) <= 13:
+            if count >= 2 and count <= 13:
                 self.ready()
                 self.save()
         except Exception as err:

@@ -603,10 +603,12 @@ class TestRegistrantNameservers(MockEppLib):
             call(update_domain_with_created2, cleaned=True),
         ]
 
+        print("self.mockedSendFunction.call_args_list is ")
+        print(self.mockedSendFunction.call_args_list)
+
         self.mockedSendFunction.assert_has_calls(expectedCalls)
 
         # check that status is READY
-        # TO-FIX: This is currently failing because we are not incrementing count?
         self.assertTrue(self.domain.is_active())
 
     def test_user_adds_too_many_nameservers(self):
@@ -632,145 +634,18 @@ class TestRegistrantNameservers(MockEppLib):
         nameserver12 = "ns1.cats-are-superior12.com"
         nameserver13 = "ns1.cats-are-superior13.com"
         nameserver14 = "ns1.cats-are-superior14.com"
-
-        self.domain.nameservers = [(nameserver1,), (nameserver2,), (nameserver3,), (nameserver4,), 
-        (nameserver5,), (nameserver6,), (nameserver7,), (nameserver8,), (nameserver9), (nameserver10,),
-        (nameserver11,), (nameserver12,), (nameserver13,), (nameserver14,)]  
-
-        # when you create a host, you also have to update at same time
-        created_host1 = commands.CreateHost(nameserver1)
-        update_domain_with_created1 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host1.name])])
-
-        created_host2 = commands.CreateHost(nameserver2)
-        update_domain_with_created2 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host2.name])])
-
-        created_host3 = commands.CreateHost(nameserver3)
-        update_domain_with_created3 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host3.name])])
-
-        created_host4 = commands.CreateHost(nameserver4)
-        update_domain_with_created4 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host4.name])])
-
-        created_host5 = commands.CreateHost(nameserver5)
-        update_domain_with_created5 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host5.name])])
-
-        created_host6 = commands.CreateHost(nameserver6)
-        update_domain_with_created6 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host6.name])])
-
-        created_host7 = commands.CreateHost(nameserver7)
-        update_domain_with_created7 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host7.name])])
-
-        created_host8 = commands.CreateHost(nameserver8)
-        update_domain_with_created8 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host8.name])])
-
-        created_host9 = commands.CreateHost(nameserver9)
-        update_domain_with_created9 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host5.name])])
-
-        created_host10 = commands.CreateHost(nameserver10)
-        update_domain_with_created10 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host10.name])])
         
-        created_host11 = commands.CreateHost(nameserver11)
-        update_domain_with_created11 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host11.name])])
-
-        created_host12 = commands.CreateHost(nameserver12)
-        update_domain_with_created12 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host12.name])])
-    
-        created_host13 = commands.CreateHost(nameserver13)
-        update_domain_with_created13 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host13.name])])
-   
-        created_host14 = commands.CreateHost(nameserver14)
-        update_domain_with_created14 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host14.name])])
-
-        # checking if commands were sent (commands have to be sent in order)
-        expectedCalls = [
-            call(
-                commands.CheckHost([created_host1.name]), cleaned=True
-            ),
-            call(created_host1, cleaned=True),
-            call(update_domain_with_created1, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host2.name]), cleaned=True
-            ),
-            call(created_host2, cleaned=True),
-            call(update_domain_with_created2, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host3.name]), cleaned=True
-            ),
-            call(created_host3, cleaned=True),
-            call(update_domain_with_created3, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host4.name]), cleaned=True
-            ),
-            call(created_host4, cleaned=True),
-            call(update_domain_with_created4, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host5.name]), cleaned=True
-            ),
-            call(created_host5, cleaned=True),
-            call(update_domain_with_created5, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host6.name]), cleaned=True
-            ),
-            call(created_host6, cleaned=True),
-            call(update_domain_with_created6, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host7.name]), cleaned=True
-            ),
-            call(created_host7, cleaned=True),
-            call(update_domain_with_created7, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host8.name]), cleaned=True
-            ),
-            call(created_host8, cleaned=True),
-            call(update_domain_with_created8, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host9.name]), cleaned=True
-            ),
-            call(created_host9, cleaned=True),
-            call(update_domain_with_created9, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host10.name]), cleaned=True
-            ),
-            call(created_host10, cleaned=True),
-            call(update_domain_with_created10, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host11.name]), cleaned=True
-            ),
-            call(created_host11, cleaned=True),
-            call(update_domain_with_created11, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host12.name]), cleaned=True
-            ),
-            call(created_host12, cleaned=True),
-            call(update_domain_with_created12, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host13.name]), cleaned=True
-            ),
-            call(created_host13, cleaned=True),
-            call(update_domain_with_created13, cleaned=True),
-
-            call(
-                commands.CheckHost([created_host14.name]), cleaned=True
-            ),
-            call(created_host14, cleaned=True),
-            call(update_domain_with_created14, cleaned=True),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls)
+        def _get_14_nameservers():
+            self.domain.nameservers = [(nameserver1,), (nameserver2,), (nameserver3,), (nameserver4,), 
+        (nameserver5,), (nameserver6,), (nameserver7,), (nameserver8,), (nameserver9), (nameserver10,),
+        (nameserver11,), (nameserver12,), (nameserver13,), (nameserver14,)]
+            print("!! Hello I am in _get_14_nameservers!")
 
         # TO-FIX: This is borked because it hits the error as soon as we set up 14
-        self.assertRaises(ValueError, namservers)
+        self.assertRaises(ValueError, _get_14_nameservers)
+        print("self.mockedSendFunction.call_args_list is ")
+        print(self.mockedSendFunction.call_args_list)
+        self.assertEqual(self.mockedSendFunction.call_count, 0)
 
     @skip("not implemented yet")
     def test_user_removes_some_nameservers(self):
