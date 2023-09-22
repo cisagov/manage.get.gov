@@ -275,9 +275,6 @@ class TestDomainStatuses(MockEppLib):
         _ = domain.statuses
         status_list = [status.state for status in self.mockDataInfoDomain.statuses]
         self.assertEquals(domain._cache["statuses"], status_list)
-        expectedCreateContact = self._convertPublicContactToEpp(
-            domain.security_contact, True, createContact=True
-        )
         # Called in _fetch_cache
         self.mockedSendFunction.assert_has_calls(
             [

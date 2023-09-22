@@ -514,9 +514,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 .filter(domain=self, contact_type=contact.contact_type)
                 .get()
             )
-            logger.info(
-                f"_set_singleton_contact() -> existing contact is... {existing_contact.__dict__}"
-            )
+
             if isRegistrant:
                 # send update domain only for registant contacts
                 existing_contact.delete()
@@ -695,7 +693,8 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(contact_id) > 16 or len(contact_id) < 1:
             raise ValueError(
                 "contact_id is of invalid length. "
-                f"Cannot exceed 16 characters, got {contact_id} with a length of {len(contact_id)}"
+                "Cannot exceed 16 characters, "
+                f"got {contact_id} with a length of {len(contact_id)}"
             )
 
         logger.debug(f"map_epp_contact_to_public_contact contact -> {contact}")
@@ -755,12 +754,12 @@ class Domain(TimeStampedModel, DomainHelper):
             return registry.send(req, cleaned=True).res_data[0]
         except RegistryError as error:
             logger.error(
-                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",
+                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s", # noqa
                 contact.registry_id,
                 contact.contact_type,
                 error.code,
                 error,
-            )  # noqa
+            ) 
             raise error
 
     def get_contact_default(
@@ -814,7 +813,10 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(error)
             return None
         else:
-            # Grab from cache after its been created
+            # Grab from cache
+            if(self._cache and desired_property in self._cache):          
+                return self.grab_contact_in_keys(self._cache[desired_property], contact_type_choice)
+
             cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
             if cached_contact is None:
                 raise ValueError("No contact was found in cache or the registry")
@@ -1188,7 +1190,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     # if not, that's a problem
 
                     # TODO- discuss-should we check if contact is in public contacts
-                    # and add it if not- this is really to keep in mind for the transition
+                    # and add it if not-
+                    # this is really to keep in mind for the transition
                     req = commands.InfoContact(id=domainContact.contact)
                     data = registry.send(req, cleaned=True).res_data[0]
 
@@ -1256,9 +1259,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
-        logger.info(
-            f"_get_property() -> prop is... {property} prop in cache... {property not in self._cache} cache is {self._cache}"
-        )
         if property not in self._cache:
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
