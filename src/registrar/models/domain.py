@@ -228,18 +228,19 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         try:
             hosts = self._get_property("hosts")
-            # PRINT THIS -- host response object?
+            print("HOST IS ")
+            print(hosts)
         except Exception as err:
-            # Don't throw error as this is normal for a new domain
-            # TODO - 433 error handling ticket should address this
+            # TODO-848: Check/add to error handling ticket if it's not addressed
+            # (Don't throw error as this is normal for a new domain?)
             logger.info("Domain is missing nameservers %s" % err)
             return []
 
         hostList = []
         for host in hosts:
-            # TODO - this should actually have a second tuple value with the ip address
+            # TODO-848: This should actually have a second tuple value with the ip address
             # ignored because uncertain if we will even have a way to display mult.
-            #  and adresses can be a list of mult address
+            # and adresses can be a list of mult address
             hostList.append((host["name"],))
 
         return hostList
@@ -247,13 +248,12 @@ class Domain(TimeStampedModel, DomainHelper):
     def _check_host(self, hostnames: list[str]):
         """check if host is available, True if available
         returns boolean"""
-        # Double check this implementation is needed bc it's untested code
+        # TODO-848: Double check this implementation is needed bc it's untested code
         # Check if the IP address is available/real
         checkCommand = commands.CheckHost(hostnames)
         try:
             response = registry.send(checkCommand, cleaned=True)
             return response.res_data[0].avail
-            # there will be a .available property on object -- boolean 
         except RegistryError as err:
             logger.warning(
                 "Couldn't check hosts %s. Errorcode was %s, error was %s",
@@ -270,14 +270,14 @@ class Domain(TimeStampedModel, DomainHelper):
         returns ErrorCode (int)"""
         logger.info("Creating host")
         if addrs is not None:
-            # UNIT TEST: make sure to have 1 with ip address + 1 without
+            # TODO-848: Make sure to have 1 with ip address + 1 without
             addresses = [epp.Ip(addr=addr) for addr in addrs]
             request = commands.CreateHost(name=host, addrs=addresses)
         else:
-            # ip is a specification within the nameserver
+            # NOTE-848: ip is a specification within the nameserver
             request = commands.CreateHost(name=host)
 
-        # if you talk to registry you MUST do try/except
+        # NOTE-848: if you talk to registry you MUST do try/except
         try:
             logger.info("_create_host()-> sending req as %s" % request)
             response = registry.send(request, cleaned=True)
@@ -291,9 +291,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, 127.0.0.1, others ips)]"""
-        # TODO: ticket #848 finish this implementation
-        # must delete nameservers as well or update
-        # ip version checking may need to be added in a different ticket
+        # TODO-848: Finish this implementation of delete + update nameserver
+        # TODO-848: ip version checking may need to be added in a different ticket
 
         # We currently don't have IP address functionality
         # We can have multiple IP addresses 
@@ -315,25 +314,23 @@ class Domain(TimeStampedModel, DomainHelper):
             addrs = None
             if len(hostTuple) > 1:
                 addrs = hostTuple[1:] # list of all the ip address 
-            # do we want to clean the addresses (strip it if not null?)
-            # is the host a .gov (do .split on the last item), isdotgov can be a boolean
-            # if you are dotgov and don't have an IP address then raise error
-            # TRY logger.info() or print()
+            # TODO-848: Do we want to clean the addresses (strip it if not null?)
+            # TODO-848: Check if the host a .gov (do .split on the last item), isdotgov can be a boolean function
+            # TODO-848: if you are dotgov and don't have an IP address then raise error
+            # NOTE-848: TRY logger.info() or print()
             avail = self._check_host([host])
             
             if avail:
-                createdCode = self._create_host(host=host, addrs=addrs) # creates in registry
-                # DOUBLE CHECK: _create_host should handle duplicates?
-                # update the domain obj
-                # if createdCode == ErrorCode.OBJECT_EXISTS:
-                # duplication check if it's already on the domain -- self.nameservers
-                # Is it possible for a nameserver to exist and not be on a domain yet? (can one have duplicate name servers)
+                # TODO-848: Go through code flow to figure out why count is not incrementing
 
-                # TODO: There could be an error here???
+                createdCode = self._create_host(host=host, addrs=addrs) # creates in registry
+                # TODO-848: Double check if _create_host should handle duplicates + update domain obj?
+                # NOTE-848: if createdCode == ErrorCode.OBJECT_EXISTS: --> self.nameservers
+
                 count += 1
-                # host can be used by multiple domains
+                # NOTE-848: Host can be used by multiple domains
                 if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-                    # add host to domain (domain already created, just adding to it)
+                    # NOTE-848: Add host to domain (domain already created, just adding to it)
                     request = commands.UpdateDomain(
                         name=self.name, add=[epp.HostObjSet([host])]
                     )
@@ -350,6 +347,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     # count += 1
 
         try:
+            print("COUNT IS ")
+            print(count)
             if len(count) >= 2 or len(count) <= 13:
                 self.ready()
                 self.save()
@@ -358,8 +357,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 "nameserver setter checked for create state "
                 "and it did not succeed. Error: %s" % err
             )
-        # TODO - handle removed nameservers here will need to change the state
-        #   then go back to DNS_NEEDED
+        # TODO-848: Handle removed nameservers here, will need to change the state then go back to DNS_NEEDED
 
     @Cache
     def statuses(self) -> list[str]:
@@ -967,6 +965,10 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     def _delete_host(self, host):
+        # if len(nameserver_list) < 2:
+        # change from READY to DNS_NEEDED state
+
+        # Check host to nameserver list, and then use delete command?
         raise NotImplementedError()
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
