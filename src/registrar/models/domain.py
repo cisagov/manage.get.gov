@@ -514,7 +514,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 .filter(domain=self, contact_type=contact.contact_type)
                 .get()
             )
-            logger.info(f"_set_singleton_contact() -> existing contact is... {existing_contact.__dict__}")
+            logger.info(
+                f"_set_singleton_contact() -> existing contact is... {existing_contact.__dict__}"
+            )
             if isRegistrant:
                 # send update domain only for registant contacts
                 existing_contact.delete()
@@ -664,7 +666,11 @@ class Domain(TimeStampedModel, DomainHelper):
     # I'm sure though that there is an easier alternative...
     # TLDR: This doesn't look as pretty, but it makes using this function easier
     def map_epp_contact_to_public_contact(
-        self, contact: eppInfo.InfoContactResultData, contact_id, contact_type, create_object=True
+        self,
+        contact: eppInfo.InfoContactResultData,
+        contact_id,
+        contact_type,
+        create_object=True,
     ):
         """Maps the Epp contact representation to a PublicContact object.
 
@@ -685,7 +691,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         if contact_id is None:
             raise ValueError("contact_id is None")
-        
+
         if len(contact_id) > 16 or len(contact_id) < 1:
             raise ValueError(
                 "contact_id is of invalid length. "
@@ -728,18 +734,21 @@ class Domain(TimeStampedModel, DomainHelper):
             sp=addr.sp,
             **streets,
         )
-        db_contact = PublicContact.objects.filter(registry_id=contact_id, contact_type=contact_type, domain=self)
+        db_contact = PublicContact.objects.filter(
+            registry_id=contact_id, contact_type=contact_type, domain=self
+        )
         # Saves to DB
-        if(create_object and db_contact.count() == 0):
+        if create_object and db_contact.count() == 0:
+            # Doesn't run custom save logic, just saves to DB
             desired_contact.save(skip_epp_save=True)
             logger.debug(f"Created a new PublicContact: {desired_contact}")
             return desired_contact
 
-        if(db_contact.count() == 1):
+        if db_contact.count() == 1:
             return db_contact.get()
 
         return desired_contact
-                
+
     def _request_contact_info(self, contact: PublicContact):
         try:
             req = commands.InfoContact(id=contact.registry_id)
@@ -751,7 +760,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 contact.contact_type,
                 error.code,
                 error,
-            ) # noqa
+            )  # noqa
             raise error
 
     def get_contact_default(
@@ -844,13 +853,13 @@ class Domain(TimeStampedModel, DomainHelper):
         For example, check_type = 'security'
         """
         # Registrant doesn't exist as an array
-        if(check_type == PublicContact.ContactTypeChoices.REGISTRANT):
+        if check_type == PublicContact.ContactTypeChoices.REGISTRANT:
             if (
                 isinstance(contacts, PublicContact)
                 and contacts.contact_type is not None
                 and contacts.contact_type == check_type
             ):
-                if(contacts.registry_id is None):
+                if contacts.registry_id is None:
                     raise ValueError("registry_id cannot be None")
                 return contacts
             else:
@@ -863,7 +872,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 and contact.contact_type is not None
                 and contact.contact_type == check_type
             ):
-                if(contact.registry_id is None):
+                if contact.registry_id is None:
                     raise ValueError("registry_id cannot be None")
                 return contact
 
@@ -1162,7 +1171,9 @@ class Domain(TimeStampedModel, DomainHelper):
             if "registrant" in cleaned.keys():
                 # Registrant, if it exists, should always exist in EppLib.
                 # If it doesn't, that is bad. We expect this to exist
-                cleaned["registrant"] = self._registrant_to_public_contact(cleaned["registrant"])
+                cleaned["registrant"] = self._registrant_to_public_contact(
+                    cleaned["registrant"]
+                )
 
             if (
                 # fetch_contacts and
@@ -1213,7 +1224,9 @@ class Domain(TimeStampedModel, DomainHelper):
                         "tr_date": getattr(data, "tr_date", ...),
                         "up_date": getattr(data, "up_date", ...),
                     }
-                    cleaned["hosts"].append({k: v for k, v in host.items() if v is not ...})
+                    cleaned["hosts"].append(
+                        {k: v for k, v in host.items() if v is not ...}
+                    )
             # replace the prior cache with new data
             self._cache = cleaned
 
@@ -1221,10 +1234,10 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(e)
 
     def _registrant_to_public_contact(self, registry_id: str):
-        """ EPPLib returns the registrant as a string, 
+        """EPPLib returns the registrant as a string,
         which is the registrants associated registry_id. This function is used to
-        convert that id to a useable object by calling commands.InfoContact 
-        on that ID, then mapping that object to type PublicContact. """
+        convert that id to a useable object by calling commands.InfoContact
+        on that ID, then mapping that object to type PublicContact."""
         contact = PublicContact(
             registry_id=registry_id,
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
@@ -1243,7 +1256,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
-        logger.info(f"_get_property() -> prop is... {property} prop in cache... {property not in self._cache} cache is {self._cache}")
+        logger.info(
+            f"_get_property() -> prop is... {property} prop in cache... {property not in self._cache} cache is {self._cache}"
+        )
         if property not in self._cache:
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),

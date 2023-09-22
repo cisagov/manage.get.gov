@@ -21,7 +21,7 @@
     <button
       type="submit"
       class="usa-button"
-    >{% if domain.security_email is None or domain.security_email.email == 'testdotgov@cisa.dhs.gov'%}Add security email{% else %}Save{% endif %}</button>
+    >{% if domain.security_contact is None or domain.security_contact.email == 'dotgov@cisa.dhs.gov'%}Add security email{% else %}Save{% endif %}</button>
   </form>
 
 {% endblock %}  {# domain_content #}

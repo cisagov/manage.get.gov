@@ -549,14 +549,13 @@ class MockEppLib(TestCase):
         """"""
 
         def __init__(
-            
             self,
             auth_info=...,
             cr_date=...,
             contacts=...,
             hosts=...,
             statuses=...,
-            registrant=...
+            registrant=...,
         ):
             self.auth_info = auth_info
             self.cr_date = cr_date
@@ -619,7 +618,11 @@ class MockEppLib(TestCase):
     mockDataInfoDomain = fakedEppObject(
         "lastPw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
-        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        contacts=[
+            common.DomainContact(
+                contact="123", type=PublicContact.ContactTypeChoices.SECURITY
+            )
+        ],
         hosts=["fake.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
@@ -630,9 +633,18 @@ class MockEppLib(TestCase):
         "fakepw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[
-            common.DomainContact(contact="securityContact", type=PublicContact.ContactTypeChoices.SECURITY),
-            common.DomainContact(contact="technicalContact", type=PublicContact.ContactTypeChoices.TECHNICAL),
-            common.DomainContact(contact="adminContact", type=PublicContact.ContactTypeChoices.ADMINISTRATIVE),
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
         ],
         hosts=["fake.host.com"],
         statuses=[
