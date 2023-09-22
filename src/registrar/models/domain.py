@@ -786,7 +786,7 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact.save()
 
     @transition(
-        field="state", source=[State.UNKNOWN, State.READY, State.ON_HOLD], target=State.ON_HOLD
+        field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD
     )
     def place_client_hold(self):
         """place a clienthold on a domain (no longer should resolve)"""
