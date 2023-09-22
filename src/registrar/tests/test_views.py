@@ -1128,7 +1128,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 self.assertEqual(response.status_code, 403)
 
 
-@skip("This produces a lot of noise with the RBAC revision")
 class TestDomainDetail(TestWithDomainPermissions, WebTest):
     def setUp(self):
         super().setUp()
