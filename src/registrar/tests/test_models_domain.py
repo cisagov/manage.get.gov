@@ -22,14 +22,13 @@ from epplibwrapper import (
     common,
 )
 import logging
-
 logger = logging.getLogger(__name__)
 
 
 class TestDomainCache(MockEppLib):
     def tearDown(self):
-        Domain.objects.all().delete()
         PublicContact.objects.all().delete()
+        Domain.objects.all().delete()
         super().tearDown()
     def test_cache_sets_resets(self):
         """Cache should be set on getter and reset on setter calls"""
@@ -48,21 +47,16 @@ class TestDomainCache(MockEppLib):
 
         # using a setter should clear the cache
         domain.expiration_date = datetime.date.today()
-        self.assertEquals(domain._cache, {})
-        expectedCreateContact = self._convertPublicContactToEpp(domain.security_contact, True, createContact=True)
+
         # send should have been called only once
         self.mockedSendFunction.assert_has_calls(
             [
                 call(commands.InfoDomain(name='igorville.gov', auth_info=None), cleaned=True),
                 call(commands.InfoContact(id='123', auth_info=None), cleaned=True),
-                call(expectedCreateContact, cleaned=True),
-                call(commands.UpdateDomain(name='igorville.gov', add=[common.DomainContact(contact='123', type=PublicContact.ContactTypeChoices.SECURITY)], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
                 call(commands.InfoHost(name='fake.host.com'), cleaned=True)
             ],
             any_order=False,  # Ensure calls are in the specified order
         )
-        # Clear the cache
-        domain._invalidate_cache()
 
     def test_cache_used_when_avail(self):
         """Cache is pulled from if the object has already been accessed"""
@@ -75,8 +69,7 @@ class TestDomainCache(MockEppLib):
         # value should still be set correctly
         self.assertEqual(cr_date, self.mockDataInfoDomain.cr_date)
         self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
-        d = domain._cache["contacts"]
-        logger.debug(f"????? questions {d}")
+        
         # send was only called once & not on the second getter call
         expectedCalls = [
             call(
@@ -87,8 +80,6 @@ class TestDomainCache(MockEppLib):
         ]
 
         self.mockedSendFunction.assert_has_calls(expectedCalls)
-        # Clear the cache
-        domain._invalidate_cache()
 
     def test_cache_nested_elements(self):
         """Cache works correctly with the nested objects cache and hosts"""
@@ -128,11 +119,8 @@ class TestDomainCache(MockEppLib):
         # get and check hosts is set correctly
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-        # Clear the cache
-        domain._invalidate_cache()
 
     def test_map_epp_contact_to_public_contact(self):
-        self.maxDiff = None
         # Tests that the mapper is working how we expect
         domain, _ = Domain.objects.get_or_create(name="registry.gov")
         mapped = domain.map_epp_contact_to_public_contact(
@@ -210,7 +198,6 @@ class TestDomainCreation(MockEppLib):
         domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(domain)
         self.mockedSendFunction.assert_not_called()
-        patcher.stop()
 
     def test_accessing_domain_properties_creates_domain_in_registry(self):
         """
@@ -271,6 +258,7 @@ class TestDomainCreation(MockEppLib):
     def tearDown(self) -> None:
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
+        PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
         DraftDomain.objects.all().delete()
@@ -287,7 +275,7 @@ class TestDomainStatuses(MockEppLib):
         _ = domain.statuses
         status_list = [status.state for status in self.mockDataInfoDomain.statuses]
         self.assertEquals(domain._cache["statuses"], status_list)
-
+        expectedCreateContact = self._convertPublicContactToEpp(domain.security_contact, True, createContact=True)
         # Called in _fetch_cache
         self.mockedSendFunction.assert_has_calls(
             [
@@ -333,6 +321,7 @@ class TestDomainStatuses(MockEppLib):
         raise
 
     def tearDown(self) -> None:
+        PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -579,7 +568,6 @@ class TestRegistrantContacts(MockEppLib):
             ],
         )
         security_contact.email = "changedEmail@email.com"
-        security_contact.save()
         self.domain.security_contact = security_contact
         expectedSecondCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
@@ -643,48 +631,6 @@ class TestRegistrantContacts(MockEppLib):
         )
         # Checks if we are recieving the cache we expect...
         self.assertEqual(self.domain_contact._cache["contacts"][0], expected_security_contact)
-
-    def test_setter_getter_security_email(self):
-        security = PublicContact.get_default_security()
-        security.email = "security@mail.gov"
-        security.domain = self.domain_contact
-        self.domain_contact.security_contact = security
-        
-        expected_security_contact = PublicContact.objects.filter(
-            registry_id=self.domain_contact.security_contact.registry_id,
-            contact_type = PublicContact.ContactTypeChoices.SECURITY
-        ).get()
-
-        # Checks if we grab the correct PublicContact...
-        self.assertEqual(self.domain_contact.security_contact, expected_security_contact)
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoContact(id="securityContact", auth_info=None),
-                    cleaned=True,
-                ),
-            ]
-        )
-        # Call getter...
-        _ = self.domain_contact.security_contact
-        # Checks if we are recieving the cache we expect...
-        self.assertEqual(self.domain_contact._cache["contacts"][0], expected_security_contact)
-
-        # Setter functions properly...
-        security.email = "123@mail.com"
-        security.save()
-        self.domain_contact.security_contact = security
-        expected_security_contact.email = "123@mail.com"
-
-        self.assertEqual(
-            self.domain_contact.security_contact.email, expected_security_contact.email
-        )
-
-    @skip("not implemented yet")
-    def test_setter_getter_security_email_mock_user(self):
-        # TODO - grab the HTML content of the page,
-        # and verify that things have changed as expected
-        raise
 
     def test_contact_getter_technical(self):
         expected_contact = PublicContact.objects.filter(

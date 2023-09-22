@@ -731,16 +731,13 @@ class Domain(TimeStampedModel, DomainHelper):
         db_contact = PublicContact.objects.filter(registry_id=contact_id, contact_type=contact_type, domain=self)
         # Saves to DB
         if(create_object and db_contact.count() == 0):
-            desired_contact.save()
+            desired_contact.save(skip_epp_save=True)
             logger.debug(f"Created a new PublicContact: {desired_contact}")
             return desired_contact
 
         if(db_contact.count() == 1):
-            #if(desired_contact != db_contact):
-                #current = desired_contact
             return db_contact.get()
-        # If it doesn't exist and we don't
-        # want to create it...
+
         return desired_contact
                 
     def _request_contact_info(self, contact: PublicContact):
@@ -801,46 +798,19 @@ class Domain(TimeStampedModel, DomainHelper):
         if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
             desired_property = "registrant"
 
-        # If it exists in our cache, grab that
-        if(self._cache and desired_property in self._cache):          
-            return self.grab_contact_in_keys(self._cache[desired_property], contact_type_choice)
-        
-        # If not, check in our DB
-        items = PublicContact.objects.filter(domain=self, contact_type=contact_type_choice)
-        if(items.count() > 1):
-            raise ValueError(f"Multiple contacts exist for {contact_type_choice}")
-        
-        # Grab the first item in an array of size 1.
-        # We use this instead of .get() as we can expect
-        # values of 'None' occasionally (such as when an object
-        # only exists on the registry)
-        current_contact = items.first()
-        # If we have an item in our DB, 
-        # and if contacts hasn't been cleared (meaning data was set)...
-        if(current_contact is not None):
-            # TODO - Should we sync with EppLib in this event?
-            # map_epp_contact_to_public_contact will grab any changes
-            # made in the setter, 
-            logger.info(
-                "Contact was not found in cache but was found in DB."
-                "Was this item added recently?"
-            )
-            return current_contact
-
         try:
-            # Finally, if all else fails, grab from the registry
             contacts = self._get_property(desired_property)
-
+        except KeyError as error:
+            # Q: Should we be raising an error instead?
+            logger.error(error)
+            return None
+        else:
             # Grab from cache after its been created
             cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
             if cached_contact is None:
                 raise ValueError("No contact was found in cache or the registry")
 
             return cached_contact
-        except RegistryError as error:
-            # Q: Should we be raising an error instead?
-            logger.error(error)
-            return None
 
     def get_default_security_contact(self):
         """Gets the default security contact."""

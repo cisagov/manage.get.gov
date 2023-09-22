@@ -621,6 +621,10 @@ class MockEppLib(TestCase):
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
     )
     InfoDomainWithContacts = fakedEppObject(
         "fakepw",
