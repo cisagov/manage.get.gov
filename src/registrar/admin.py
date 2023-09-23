@@ -673,6 +673,8 @@ class DomainInformationInline(admin.StackedInline):
 class DomainAdmin(ListHeaderAdmin):
     """Custom domain admin class to add extra buttons."""
 
+    inlines = [DomainInformationInline]
+    
     # Columns
     list_display = [
         "name",
@@ -688,7 +690,7 @@ class DomainAdmin(ListHeaderAdmin):
     )
 
     # Filters
-    list_filter = ["domain_info__organization_type"]
+    list_filter = ["domain_info__organization_type", "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
