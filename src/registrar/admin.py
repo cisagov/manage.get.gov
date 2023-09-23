@@ -674,7 +674,7 @@ class DomainAdmin(ListHeaderAdmin):
     """Custom domain admin class to add extra buttons."""
 
     inlines = [DomainInformationInline]
-    
+
     # Columns
     list_display = [
         "name",
