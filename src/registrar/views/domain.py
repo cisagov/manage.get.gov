@@ -145,10 +145,8 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
             initial_data.extend({"server": name} for name, *ip in nameservers)
 
         # Ensure at least 3 fields, filled or empty
-        if not initial_data:
-            initial_data.extend([{}, {}])
-        elif len(initial_data) == 1:
-            initial_data.extend({})
+        while len(initial_data) < 2:
+            initial_data.append({})
 
         return initial_data
 
