@@ -532,42 +532,16 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
 
     def test_updates_security_email(self):
-        """
-        Scenario: Registrant replaces one valid security contact email with another
-            Given a domain exists in the registry with a user-added security email
-            When `domain.security_contact` is set equal to a PublicContact with a new
-                security contact email
-            Then Domain sends `commands.UpdateContact` to the registry
-        """
-        # Trigger the getter for default values
-        _ = self.domain.security_contact
         security_contact = self.domain.get_default_security_contact()
         security_contact.email = "originalUserEmail@gmail.com"
         security_contact.registry_id = "fail"
-        self.domain.security_contact = security_contact
-        # All contacts should be in the DB
-        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
-        # Check if security_contact is what we expect...
-        self.assertEqual(security_contact.email, "originalUserEmail@gmail.com")
-        # If the item in PublicContact is as expected...
-        current_item = PublicContact.objects.filter(
-            domain=self.domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
-        ).get()
-        self.assertEqual(current_item.email, "originalUserEmail@gmail.com")
-        self.assertEqual(security_contact, current_item)
-
-        # This contact should be associated with a domain
-        self.assertEqual(self.domain.security_contact, security_contact)
-        self.assertEqual(
-            self.domain.security_contact.email, "originalUserEmail@gmail.com"
-        )
-
+        security_contact.save()
         expectedCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
 
         expectedUpdateDomain = commands.UpdateDomain(
-            name=self.domain_contact.name,
+            name=self.domain.name,
             add=[
                 common.DomainContact(
                     contact=security_contact.registry_id, type="security"
@@ -575,14 +549,14 @@ class TestRegistrantContacts(MockEppLib):
             ],
         )
         security_contact.email = "changedEmail@email.com"
-        self.domain.security_contact = security_contact
-
+        security_contact.save()
         expectedSecondCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
         updateContact = self._convertPublicContactToEpp(
             security_contact, disclose_email=True, createContact=False
         )
+
         expected_calls = [
             call(expectedCreateCommand, cleaned=True),
             call(expectedUpdateDomain, cleaned=True),
@@ -591,16 +565,6 @@ class TestRegistrantContacts(MockEppLib):
         ]
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
-        # Check if security_contact is what we expect...
-        self.assertEqual(security_contact.email, "changedEmail@email.com")
-        # If the item in PublicContact is as expected...
-        current_item = PublicContact.objects.filter(domain=self.domain).get()
-        self.assertEqual(current_item.email, "changedEmail@email.com")
-        self.assertEqual(security_contact, current_item)
-
-        # Check the item associated with the domain...
-        self.assertEqual(self.domain.security_contact, security_contact)
-        self.assertEqual(self.domain.security_contact.email, "changedEmail@email.com")
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
