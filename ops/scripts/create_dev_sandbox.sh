@@ -89,6 +89,7 @@ cd src/
 ./build.sh
 cd ..
 cf push getgov-$1 -f ops/manifests/manifest-$1.yaml
+
 read -p "Please provide the email of the space developer: " -r
 cf set-space-role $REPLY cisa-dotgov $1 SpaceDeveloper
 
