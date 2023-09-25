@@ -16,6 +16,7 @@ from django.views.generic.edit import FormMixin
 
 from registrar.models import (
     Domain,
+    DomainInformation,
     DomainInvitation,
     User,
     UserDomainRole,
@@ -335,6 +336,11 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
             )
         else:
             # created a new invitation in the database, so send an email
+            domaininfo = DomainInformation.objects.filter(domain=self.object)
+            first = domaininfo.first().creator.first_name
+            last = domaininfo.first().creator.last_name
+            full_name = f"{first} {last}"
+
             try:
                 send_templated_email(
                     "emails/domain_invitation.txt",
@@ -343,6 +349,7 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
                     context={
                         "domain_url": self._domain_abs_url(),
                         "domain": self.object,
+                        "full_name": full_name,
                     },
                 )
             except EmailSendingError:
