@@ -5,6 +5,28 @@
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
 
+    <div
+        class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2{% if domain.state == 'unknown' or domain.state == 'dns needed'%} dotgov-status-box--action-need{% endif %}" 
+        role="region"
+        aria-labelledby="summary-box-key-information"
+    >
+      <div class="usa-summary-box__body">
+        <p class="usa-summary-box__heading font-sans-md margin-bottom-0" 
+          id="summary-box-key-information"
+        > 
+          <span class="text-bold text-primary-darker">
+            Status:
+          </span>
+            {% if domain.state == "unknown" or domain.state == 'dns needed'%}
+              DNS Needed
+            {% else %}
+                {{ domain.state|title }}
+            {% endif %}
+        </p>
+      </div>
+    </div>
+    <br>
+
     {% url 'domain-nameservers' pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' value=domain.nameservers list='true' edit_link=url %}

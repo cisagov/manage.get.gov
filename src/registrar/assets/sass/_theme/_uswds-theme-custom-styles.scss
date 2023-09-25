@@ -399,6 +399,11 @@ a.usa-button--unstyled:visited {
   border-color: color('accent-cool-lighter');
 }
 
+.dotgov-status-box--action-need {
+  background-color: color('warning-lighter'); 
+  border-color: color('warning');
+}
+
 #wrapper {
   padding-top: units(3);
   padding-bottom: units(6) * 2 ; //Workaround because USWDS units jump from 10 to 15
