@@ -250,7 +250,10 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         """The initial value for the form."""
         domain = self.get_object()
         initial = super().get_initial()
-        if(domain.security_contact.email == "dotgov@cisa.dhs.gov"):
+        if (
+            domain.security_contact is None or
+            domain.security_contact.email == "dotgov@cisa.dhs.gov"
+        ):
             initial["security_email"] = None
             return initial
         initial["security_email"] = domain.security_contact.email

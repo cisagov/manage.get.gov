@@ -717,34 +717,23 @@ class Domain(TimeStampedModel, DomainHelper):
                     fillvalue=None,
                 )
             )
+
         desired_contact = PublicContact(
             domain=self,
             contact_type=contact_type,
             registry_id=contact_id,
-            email=contact.email,
-            voice=contact.voice,
+            email=contact.email or "",
+            voice=contact.voice or "",
             fax=contact.fax,
-            pw=auth_info.pw,
-            name=postal_info.name,
+            pw=auth_info.pw or "",
+            name=postal_info.name or "",
             org=postal_info.org,
-            city=addr.city,
-            pc=addr.pc,
-            cc=addr.cc,
-            sp=addr.sp,
+            city=addr.city or "",
+            pc=addr.pc or "",
+            cc=addr.cc or "",
+            sp=addr.sp or "",
             **streets,
         )
-        db_contact = PublicContact.objects.filter(
-            registry_id=contact_id, contact_type=contact_type, domain=self
-        )
-        # Saves to DB
-        if create_object and db_contact.count() == 0:
-            # Doesn't run custom save logic, just saves to DB
-            desired_contact.save(skip_epp_save=True)
-            logger.debug(f"Created a new PublicContact: {desired_contact}")
-            return desired_contact
-
-        if db_contact.count() == 1:
-            return db_contact.get()
 
         return desired_contact
 
@@ -754,39 +743,13 @@ class Domain(TimeStampedModel, DomainHelper):
             return registry.send(req, cleaned=True).res_data[0]
         except RegistryError as error:
             logger.error(
-                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s", # noqa
+                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
                 contact.registry_id,
                 contact.contact_type,
                 error.code,
                 error,
-            ) 
+            )
             raise error
-
-    def get_contact_default(
-        self, contact_type_choice: PublicContact.ContactTypeChoices
-    ) -> PublicContact:
-        """Returns a default contact based off the contact_type_choice.
-        Used
-
-        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
-        for instance: PublicContact.ContactTypeChoices.SECURITY.
-
-        If you wanted to get the default contact for Security, you would call:
-        get_contact_default(PublicContact.ContactTypeChoices.SECURITY),
-        or get_contact_default("security")
-        """
-        choices = PublicContact.ContactTypeChoices
-        contact: PublicContact
-        match (contact_type_choice):
-            case choices.ADMINISTRATIVE:
-                contact = self.get_default_administrative_contact()
-            case choices.SECURITY:
-                contact = self.get_default_security_contact()
-            case choices.TECHNICAL:
-                contact = self.get_default_technical_contact()
-            case choices.REGISTRANT:
-                contact = self.get_default_registrant_contact()
-        return contact
 
     def generic_contact_getter(
         self, contact_type_choice: PublicContact.ContactTypeChoices
@@ -798,7 +761,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
         If you wanted to setup getter logic for Security, you would call:
         cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
-        or cache_contact_helper("security")
+        or cache_contact_helper("security").
+
+        Note: Registrant is handled slightly differently internally,
+        but the output will be the same.
         """
         # registrant_contact(s) are an edge case. They exist on
         # the "registrant" property as opposed to contacts.
@@ -810,13 +776,10 @@ class Domain(TimeStampedModel, DomainHelper):
             contacts = self._get_property(desired_property)
         except KeyError as error:
             # Q: Should we be raising an error instead?
-            logger.error(error)
+            logger.error(f"Could not find {contact_type_choice}: {error}")
             return None
         else:
             # Grab from cache
-            if(self._cache and desired_property in self._cache):          
-                return self.grab_contact_in_keys(self._cache[desired_property], contact_type_choice)
-
             cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
             if cached_contact is None:
                 raise ValueError("No contact was found in cache or the registry")
@@ -880,6 +843,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # If the for loop didn't do a return,
         # then we know that it doesn't exist within cache
+        logger.info(
+            f"Requested contact {contact.registry_id} " "Does not exist in cache."
+        )
+        return None
 
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
@@ -1195,10 +1162,14 @@ class Domain(TimeStampedModel, DomainHelper):
                     req = commands.InfoContact(id=domainContact.contact)
                     data = registry.send(req, cleaned=True).res_data[0]
 
+                    # Map the object we recieved from EPP to a PublicContact
+                    mapped_object = self.map_epp_contact_to_public_contact(
+                        data, domainContact.contact, domainContact.type
+                    )
+
+                    # Find/create it in the DB, then add it to the list
                     cleaned["contacts"].append(
-                        self.map_epp_contact_to_public_contact(
-                            data, domainContact.contact, domainContact.type
-                        )
+                        self._get_or_create_public_contact(mapped_object)
                     )
 
             # get nameserver info, if there are any
@@ -1236,6 +1207,48 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error(e)
 
+    def _get_or_create_public_contact(self, public_contact: PublicContact):
+        """Tries to find a PublicContact object in our DB.
+        If it can't, it'll create it."""
+        db_contact = PublicContact.objects.filter(
+            registry_id=public_contact.registry_id,
+            contact_type=public_contact.contact_type,
+            domain=self,
+        )
+
+        # Raise an error if we find duplicates.
+        # This should not occur...
+        if db_contact.count() > 1:
+            raise Exception(
+                f"Multiple contacts found for {public_contact.contact_type}"
+            )
+
+        if db_contact.count() == 1:
+            existing_contact = db_contact.get()
+            # Does the item we're grabbing match
+            # what we have in our DB?
+            # If not, we likely have a duplicate.
+            if (
+                existing_contact.email != public_contact.email
+                or existing_contact.registry_id != public_contact.registry_id
+            ):
+                raise ValueError(
+                    "Requested PublicContact is out of sync "
+                    "with DB. Potential duplicate?"
+                )
+
+            # If it already exists, we can
+            # assume that the DB instance was updated
+            # during set, so we should just use that.
+            return existing_contact
+
+        # Saves to DB if it doesn't exist already.
+        # Doesn't run custom save logic, just saves to DB
+        public_contact.save(skip_epp_save=True)
+        logger.debug(f"Created a new PublicContact: {public_contact}")
+        # Append the item we just created
+        return public_contact
+
     def _registrant_to_public_contact(self, registry_id: str):
         """EPPLib returns the registrant as a string,
         which is the registrants associated registry_id. This function is used to
@@ -1248,9 +1261,10 @@ class Domain(TimeStampedModel, DomainHelper):
         # Grabs the expanded contact
         full_object = self._request_contact_info(contact)
         # Maps it to type PublicContact
-        return self.map_epp_contact_to_public_contact(
+        mapped_object = self.map_epp_contact_to_public_contact(
             full_object, contact.registry_id, contact.contact_type
         )
+        return self._get_or_create_public_contact(mapped_object)
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""

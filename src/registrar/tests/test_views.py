@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .common import completed_application
+from .common import MockEppLib, completed_application
 
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -1128,7 +1128,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 self.assertEqual(response.status_code, 403)
 
 
-class TestDomainDetail(TestWithDomainPermissions, WebTest):
+class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
@@ -1405,6 +1405,17 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
             reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
         )
         self.assertContains(page, "Testy")
+
+    def test_domain_security_email_no_security_contact(self):
+        """Loads a domain with no defined security email.
+        We should not show the default."""
+        page = self.client.get(
+            reverse("domain-security-email", kwargs={"pk": self.domain.id})
+        )
+
+        # Loads correctly
+        self.assertContains(page, "Domain security email")
+        self.assertNotContains(page, "dotgov@cisa.dhs.gov")
 
     def test_domain_security_email(self):
         """Can load domain's security email page."""

@@ -129,7 +129,6 @@ class TestDomainCache(MockEppLib):
         )
 
         expected_contact = PublicContact(
-            id=4,
             domain=domain,
             contact_type=PublicContact.ContactTypeChoices.SECURITY,
             registry_id="123",
@@ -145,34 +144,24 @@ class TestDomainCache(MockEppLib):
             sp="VA",
             street1="4200 Wilson Blvd.",
         )
-        # Match when these both were updated/created
-        expected_contact.updated_at = mapped.updated_at
-        expected_contact.created_at = mapped.created_at
-        # Mapped object is what we expect
-        self.assertEqual(mapped, expected_contact)
 
+        # Test purposes only, since we're comparing
+        # two duplicate objects. We would expect
+        # these not to have the same state.
+        expected_contact._state = mapped._state
+
+        # Mapped object is what we expect
+        self.assertEqual(mapped.__dict__, expected_contact.__dict__)
+
+        # The mapped object should correctly translate to a DB
+        # object. If not, something else went wrong.
+        db_object = domain._get_or_create_public_contact(mapped)
         in_db = PublicContact.objects.filter(
             registry_id=domain.security_contact.registry_id,
             contact_type=PublicContact.ContactTypeChoices.SECURITY,
         ).get()
         # DB Object is the same as the mapped object
-        self.assertEqual(mapped, in_db)
-
-        mapped_second = domain.map_epp_contact_to_public_contact(
-            self.mockDataInfoContact,
-            self.mockDataInfoContact.id,
-            PublicContact.ContactTypeChoices.SECURITY,
-        )
-
-        in_db_once = PublicContact.objects.filter(
-            registry_id=domain.security_contact.registry_id,
-            contact_type=PublicContact.ContactTypeChoices.SECURITY,
-        )
-        self.assertEqual(mapped_second, in_db)
-        # If mapper is called a second time,
-        # it just grabs existing data rather than
-        # a new object
-        self.assertTrue(in_db_once.count() == 1)
+        self.assertEqual(db_object, in_db)
 
 
 class TestDomainCreation(MockEppLib):
@@ -344,6 +333,8 @@ class TestRegistrantContacts(MockEppLib):
         super().tearDown()
         self.domain._invalidate_cache()
         self.domain_contact._invalidate_cache()
+        PublicContact.objects.all().delete()
+        Domain.objects.all().delete()
         # self.contactMailingAddressPatch.stop()
         # self.createContactPatch.stop()
 
@@ -548,17 +539,35 @@ class TestRegistrantContacts(MockEppLib):
                 security contact email
             Then Domain sends `commands.UpdateContact` to the registry
         """
+        # Trigger the getter for default values
+        _ = self.domain.security_contact
         security_contact = self.domain.get_default_security_contact()
         security_contact.email = "originalUserEmail@gmail.com"
         security_contact.registry_id = "fail"
         self.domain.security_contact = security_contact
+        # All contacts should be in the DB
+        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
+        # Check if security_contact is what we expect...
+        self.assertEqual(security_contact.email, "originalUserEmail@gmail.com")
+        # If the item in PublicContact is as expected...
+        current_item = PublicContact.objects.filter(
+            domain=self.domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
+        ).get()
+        self.assertEqual(current_item.email, "originalUserEmail@gmail.com")
+        self.assertEqual(security_contact, current_item)
+
+        # This contact should be associated with a domain
+        self.assertEqual(self.domain.security_contact, security_contact)
+        self.assertEqual(
+            self.domain.security_contact.email, "originalUserEmail@gmail.com"
+        )
 
         expectedCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
 
         expectedUpdateDomain = commands.UpdateDomain(
-            name=self.domain.name,
+            name=self.domain_contact.name,
             add=[
                 common.DomainContact(
                     contact=security_contact.registry_id, type="security"
@@ -567,6 +576,7 @@ class TestRegistrantContacts(MockEppLib):
         )
         security_contact.email = "changedEmail@email.com"
         self.domain.security_contact = security_contact
+
         expectedSecondCreateCommand = self._convertPublicContactToEpp(
             security_contact, disclose_email=True
         )
@@ -582,11 +592,15 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
         # Check if security_contact is what we expect...
-        self.assertEqual(self.domain.security_contact.email, "changedEmail@email.com")
-        self.assertEqual(self.domain.security_contact, security_contact)
+        self.assertEqual(security_contact.email, "changedEmail@email.com")
         # If the item in PublicContact is as expected...
         current_item = PublicContact.objects.filter(domain=self.domain).get()
         self.assertEqual(current_item.email, "changedEmail@email.com")
+        self.assertEqual(security_contact, current_item)
+
+        # Check the item associated with the domain...
+        self.assertEqual(self.domain.security_contact, security_contact)
+        self.assertEqual(self.domain.security_contact.email, "changedEmail@email.com")
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
@@ -610,16 +624,26 @@ class TestRegistrantContacts(MockEppLib):
         pass
 
     def test_contact_getter_security(self):
+        self.maxDiff = None
         # Create prexisting object...
-        expected_security_contact = PublicContact.objects.filter(
+        expected_contact = self.domain.map_epp_contact_to_public_contact(
+            self.mockSecurityContact,
+            contact_id="securityContact",
+            contact_type=PublicContact.ContactTypeChoices.SECURITY,
+        )
+
+        # Checks if we grabbed the correct PublicContact...
+        self.assertEqual(
+            self.domain_contact.security_contact.email, expected_contact.email
+        )
+
+        expected_contact_db = PublicContact.objects.filter(
             registry_id=self.domain_contact.security_contact.registry_id,
             contact_type=PublicContact.ContactTypeChoices.SECURITY,
         ).get()
 
-        # Checks if we grab the correct PublicContact...
-        self.assertEqual(
-            self.domain_contact.security_contact, expected_security_contact
-        )
+        self.assertEqual(self.domain_contact.security_contact, expected_contact_db)
+
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
@@ -629,18 +653,27 @@ class TestRegistrantContacts(MockEppLib):
             ]
         )
         # Checks if we are recieving the cache we expect...
-        self.assertEqual(
-            self.domain_contact._cache["contacts"][0], expected_security_contact
-        )
+        self.assertEqual(self.domain_contact._cache["contacts"][0], expected_contact_db)
 
     def test_contact_getter_technical(self):
-        expected_contact = PublicContact.objects.filter(
+        expected_contact = self.domain.map_epp_contact_to_public_contact(
+            self.mockTechnicalContact,
+            contact_id="technicalContact",
+            contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
+        )
+
+        self.assertEqual(
+            self.domain_contact.technical_contact.email, expected_contact.email
+        )
+
+        # Checks if we grab the correct PublicContact...
+        expected_contact_db = PublicContact.objects.filter(
             registry_id=self.domain_contact.technical_contact.registry_id,
             contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
         ).get()
 
         # Checks if we grab the correct PublicContact...
-        self.assertEqual(self.domain_contact.technical_contact, expected_contact)
+        self.assertEqual(self.domain_contact.technical_contact, expected_contact_db)
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
@@ -650,16 +683,28 @@ class TestRegistrantContacts(MockEppLib):
             ]
         )
         # Checks if we are recieving the cache we expect...
-        self.assertEqual(self.domain_contact._cache["contacts"][1], expected_contact)
+        self.assertEqual(self.domain_contact._cache["contacts"][1], expected_contact_db)
 
     def test_contact_getter_administrative(self):
-        expected_contact = PublicContact.objects.filter(
+        expected_contact = self.domain.map_epp_contact_to_public_contact(
+            self.mockAdministrativeContact,
+            contact_id="adminContact",
+            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+        )
+
+        self.assertEqual(
+            self.domain_contact.administrative_contact.email, expected_contact.email
+        )
+
+        expected_contact_db = PublicContact.objects.filter(
             registry_id=self.domain_contact.administrative_contact.registry_id,
             contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
         ).get()
 
         # Checks if we grab the correct PublicContact...
-        self.assertEqual(self.domain_contact.administrative_contact, expected_contact)
+        self.assertEqual(
+            self.domain_contact.administrative_contact, expected_contact_db
+        )
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
@@ -669,16 +714,26 @@ class TestRegistrantContacts(MockEppLib):
             ]
         )
         # Checks if we are recieving the cache we expect...
-        self.assertEqual(self.domain_contact._cache["contacts"][2], expected_contact)
+        self.assertEqual(self.domain_contact._cache["contacts"][2], expected_contact_db)
 
     def test_contact_getter_registrant(self):
-        expected_contact = PublicContact.objects.filter(
+        expected_contact = self.domain.map_epp_contact_to_public_contact(
+            self.mockRegistrantContact,
+            contact_id="regContact",
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+        )
+
+        self.assertEqual(
+            self.domain_contact.registrant_contact.email, expected_contact.email
+        )
+
+        expected_contact_db = PublicContact.objects.filter(
             registry_id=self.domain_contact.registrant_contact.registry_id,
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
         ).get()
 
         # Checks if we grab the correct PublicContact...
-        self.assertEqual(self.domain_contact.registrant_contact, expected_contact)
+        self.assertEqual(self.domain_contact.registrant_contact, expected_contact_db)
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
@@ -688,7 +743,7 @@ class TestRegistrantContacts(MockEppLib):
             ]
         )
         # Checks if we are recieving the cache we expect...
-        self.assertEqual(self.domain_contact._cache["registrant"], expected_contact)
+        self.assertEqual(self.domain_contact._cache["registrant"], expected_contact_db)
 
 
 class TestRegistrantNameservers(TestCase):

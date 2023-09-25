@@ -564,57 +564,46 @@ class MockEppLib(TestCase):
             self.statuses = statuses
             self.registrant = registrant
 
-    def dummyInfoContactResultData(
-        id,
-        email,
-        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
-        pw="thisisnotapassword",
-    ):
-        fake = info.InfoContactResultData(
-            id=id,
-            postal_info=common.PostalInfo(
-                name="Registry Customer Service",
-                addr=common.ContactAddr(
-                    street=["4200 Wilson Blvd."],
-                    city="Arlington",
-                    pc="22201",
-                    cc="US",
-                    sp="VA",
+        def dummyInfoContactResultData(
+            self,
+            id,
+            email,
+            cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+            pw="thisisnotapassword",
+        ):
+            fake = info.InfoContactResultData(
+                id=id,
+                postal_info=common.PostalInfo(
+                    name="Registry Customer Service",
+                    addr=common.ContactAddr(
+                        street=["4200 Wilson Blvd."],
+                        city="Arlington",
+                        pc="22201",
+                        cc="US",
+                        sp="VA",
+                    ),
+                    org="Cybersecurity and Infrastructure Security Agency",
+                    type="type",
                 ),
-                org="Cybersecurity and Infrastructure Security Agency",
-                type="type",
-            ),
-            voice="+1.8882820870",
-            fax="+1-212-9876543",
-            email=email,
-            auth_info=common.ContactAuthInfo(pw=pw),
-            roid=...,
-            statuses=[],
-            cl_id=...,
-            cr_id=...,
-            cr_date=cr_date,
-            up_id=...,
-            up_date=...,
-            tr_date=...,
-            disclose=...,
-            vat=...,
-            ident=...,
-            notify_email=...,
-        )
-        return fake
+                voice="+1.8882820870",
+                fax="+1-212-9876543",
+                email=email,
+                auth_info=common.ContactAuthInfo(pw=pw),
+                roid=...,
+                statuses=[],
+                cl_id=...,
+                cr_id=...,
+                cr_date=cr_date,
+                up_id=...,
+                up_date=...,
+                tr_date=...,
+                disclose=...,
+                vat=...,
+                ident=...,
+                notify_email=...,
+            )
+            return fake
 
-    mockSecurityContact = dummyInfoContactResultData(
-        "securityContact", "security@mail.gov"
-    )
-    mockTechnicalContact = dummyInfoContactResultData(
-        "technicalContact", "tech@mail.gov"
-    )
-    mockAdministrativeContact = dummyInfoContactResultData(
-        "adminContact", "admin@mail.gov"
-    )
-    mockRegistrantContact = dummyInfoContactResultData(
-        "regContact", "registrant@mail.gov"
-    )
     mockDataInfoDomain = fakedEppObject(
         "lastPw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
@@ -628,6 +617,9 @@ class MockEppLib(TestCase):
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
+    )
+    mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
+        "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
     )
     InfoDomainWithContacts = fakedEppObject(
         "fakepw",
@@ -653,15 +645,27 @@ class MockEppLib(TestCase):
         ],
         registrant="regContact",
     )
+
+    mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData(
+        "securityContact", "security@mail.gov"
+    )
+    mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
+        "technicalContact", "tech@mail.gov"
+    )
+    mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData(
+        "adminContact", "admin@mail.gov"
+    )
+    mockRegistrantContact = InfoDomainWithContacts.dummyInfoContactResultData(
+        "regContact", "registrant@mail.gov"
+    )
+
     infoDomainNoContact = fakedEppObject(
         "security",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[],
         hosts=["fake.host.com"],
     )
-    mockDataInfoContact = dummyInfoContactResultData(
-        "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
-    )
+
     mockDataInfoHosts = fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
     )
