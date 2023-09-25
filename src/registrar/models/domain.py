@@ -241,27 +241,28 @@ class Domain(TimeStampedModel, DomainHelper):
             # TODO-848: This should actually have a second tuple value with the ip address
             # ignored because uncertain if we will even have a way to display mult.
             # and adresses can be a list of mult address
+            
             hostList.append((host["name"],))
 
         return hostList
 
-    def _check_host(self, hostnames: list[str]):
-        """check if host is available, True if available
-        returns boolean"""
-        # TODO-848: Double check this implementation is needed bc it's untested code
-        # Check if the IP address is available/real
-        checkCommand = commands.CheckHost(hostnames)
-        try:
-            response = registry.send(checkCommand, cleaned=True)
-            return response.res_data[0].avail
-        except RegistryError as err:
-            logger.warning(
-                "Couldn't check hosts %s. Errorcode was %s, error was %s",
-                hostnames,
-                err.code,
-                err,
-            )
-            return False
+    # def _check_host(self, hostnames: list[str]):
+    #     """check if host is available, True if available
+    #     returns boolean"""
+    #     # TODO-848: Double check this implementation is needed bc it's untested code
+    #     # Check if the IP address is available/real
+    #     checkCommand = commands.CheckHost(hostnames)
+    #     try:
+    #         response = registry.send(checkCommand, cleaned=True)
+    #         return response.res_data[0].avail
+    #     except RegistryError as err:
+    #         logger.warning(
+    #             "Couldn't check hosts %s. Errorcode was %s, error was %s",
+    #             hostnames,
+    #             err.code,
+    #             err,
+    #         )
+    #         return False
 
     def _create_host(self, host, addrs):
         """Call _check_host first before using this function,
@@ -285,6 +286,35 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             return e.code
+    def getNameserverChanges(self, hosts:list[tuple[str]]):
+        """ 
+        calls self.nameserver, it should pull from cache but may result
+        in an epp call
+        returns tuple of four values as follows: 
+        deleted_values:
+        updated_values: 
+        new_values:
+        oldNameservers:"""
+        oldNameservers=self.nameservers
+  
+        previousHostDict = {tup[0]: tup[1:] for tup in oldNameservers}
+        newHostDict = {tup[0]: tup[1:] for tup in hosts}
+
+        deleted_values = []
+        updated_values = []
+        new_values = []
+
+        for key in previousHostDict:
+            if key not in newHostDict:
+                deleted_values.append(previousHostDict[key])
+            elif newHostDict[key] != previousHostDict[key]:
+                updated_values.append(newHostDict[key])
+
+        for key in newHostDict:
+            if key not in previousHostDict:
+                new_values.append(newHostDict[key])
+        
+        return (deleted_values,updated_values,new_values, oldNameservers)
 
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str]]):
@@ -306,46 +336,44 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Setting nameservers")
         logger.info(hosts)
 
-        # currenthosts = self.nameservers
-        # that way you have current hosts
+        #get the changes made by user and old nameserver values
+        deleted_values,updated_values,new_values, oldNameservers=self.getNameserverChanges(hosts=hosts)
+    
         count = 0
         for hostTuple in hosts:
-            host = hostTuple[0].strip() # for removing empty string -- do we need strip? 
             addrs = None
+            host=hostTuple[0]
             if len(hostTuple) > 1:
                 addrs = hostTuple[1:] # list of all the ip address 
-            # TODO-848: Do we want to clean the addresses (strip it if not null?)
+
             # TODO-848: Check if the host a .gov (do .split on the last item), isdotgov can be a boolean function
             # TODO-848: if you are dotgov and don't have an IP address then raise error
             # NOTE-848: TRY logger.info() or print()
-            avail = self._check_host([host])
             
-            if avail:
-                # TODO-848: Go through code flow to figure out why count is not incrementing
 
-                createdCode = self._create_host(host=host, addrs=addrs) # creates in registry
-                # TODO-848: Double check if _create_host should handle duplicates + update domain obj?
-                # NOTE-848: if createdCode == ErrorCode.OBJECT_EXISTS: --> self.nameservers
+            createdCode = self._create_host(host=host, addrs=addrs) # creates in registry
+            # TODO-848: Double check if _create_host should handle duplicates + update domain obj?
+            # NOTE-848: if createdCode == ErrorCode.OBJECT_EXISTS: --> self.nameservers
 
-                count += 1
-                # NOTE-848: Host can be used by multiple domains
-                if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-                    # NOTE-848: Add host to domain (domain already created, just adding to it)
-                    request = commands.UpdateDomain(
-                        name=self.name, add=[epp.HostObjSet([host])]
+            count += 1
+            # NOTE-848: Host can be used by multiple domains
+            if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
+                # NOTE-848: Add host to domain (domain already created, just adding to it)
+                request = commands.UpdateDomain(
+                    name=self.name, add=[epp.HostObjSet([host])]
+                )
+
+                try:
+                    registry.send(request, cleaned=True)
+                    # count += 1
+                except RegistryError as e:
+                    logger.error(
+                        "Error adding nameserver, code was %s error was %s"
+                        % (e.code, e)
                     )
-
-                    try:
-                        registry.send(request, cleaned=True)
-                        # count += 1
-                    except RegistryError as e:
-                        logger.error(
-                            "Error adding nameserver, code was %s error was %s"
-                            % (e.code, e)
-                        )
                 # elif createdCode == ErrorCode.OBJECT_EXISTS:
                     # count += 1
-
+            # unchangedValuesCount=len(oldNameservers)-len(deleted_values)+addedNameservers
         try:
             print("COUNT IS ")
             print(count)

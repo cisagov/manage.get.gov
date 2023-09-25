@@ -534,7 +534,22 @@ class TestRegistrantNameservers(MockEppLib):
         """
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.DNS_NEEDED)
-
+    def test_get_nameserver_changes(self):
+        self.domain._cache["hosts"]=[{
+                        "name": "ns1.example.com",
+                        "addrs": None
+                    },
+                    {"name": "ns2.example.com",
+                        "addrs": ["1.2.3"]
+                    },
+                    {"name": "ns3.example.com",
+                        "addrs": None
+                    }
+        ]
+        newChanges=[("ns1.example.com",),("ns3.example.com",["1.2.4"]),("ns4.example.com",)]
+        retTuple=self.domain.getNameserverChanges(newChanges)
+        print(retTuple)
+        
     def test_user_adds_one_nameserver(self):
         """
         Scenario: Registrant adds a single nameserver
@@ -555,9 +570,6 @@ class TestRegistrantNameservers(MockEppLib):
 
         # checking if commands were sent (commands have to be sent in order)
         expectedCalls = [
-            call(
-                commands.CheckHost([created_host.name]), cleaned=True
-            ),
             call(created_host, cleaned=True),
             call(update_domain_with_created, cleaned=True),
         ]
@@ -591,14 +603,8 @@ class TestRegistrantNameservers(MockEppLib):
 
         # checking if commands were sent (commands have to be sent in order)
         expectedCalls = [
-            call(
-                commands.CheckHost([created_host1.name]), cleaned=True
-            ),
             call(created_host1, cleaned=True),
             call(update_domain_with_created1, cleaned=True),
-            call(
-                commands.CheckHost([created_host2.name]), cleaned=True
-            ),
             call(created_host2, cleaned=True),
             call(update_domain_with_created2, cleaned=True),
         ]
@@ -639,12 +645,8 @@ class TestRegistrantNameservers(MockEppLib):
             self.domain.nameservers = [(nameserver1,), (nameserver2,), (nameserver3,), (nameserver4,), 
         (nameserver5,), (nameserver6,), (nameserver7,), (nameserver8,), (nameserver9), (nameserver10,),
         (nameserver11,), (nameserver12,), (nameserver13,), (nameserver14,)]
-            print("!! Hello I am in _get_14_nameservers!")
 
-        # TO-FIX: This is borked because it hits the error as soon as we set up 14
         self.assertRaises(ValueError, _get_14_nameservers)
-        print("self.mockedSendFunction.call_args_list is ")
-        print(self.mockedSendFunction.call_args_list)
         self.assertEqual(self.mockedSendFunction.call_count, 0)
 
     @skip("not implemented yet")
