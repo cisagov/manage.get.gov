@@ -1079,6 +1079,7 @@ class TestWithDomainPermissions(TestWithUser):
             self.domain_information.delete()
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
+            DomainApplication.objects.all().delete()
             self.domain.delete()
             self.role.delete()
         except ValueError:  # pass if already deleted
@@ -1197,6 +1198,10 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain
+        )
+
         add_page = self.app.get(
             reverse("domain-users-add", kwargs={"pk": self.domain.id})
         )
@@ -1217,6 +1222,10 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain
+        )
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1270,6 +1279,11 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         add_page = self.app.get(
             reverse("domain-users-add", kwargs={"pk": self.domain.id})
         )
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain
+        )
+
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = EMAIL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
