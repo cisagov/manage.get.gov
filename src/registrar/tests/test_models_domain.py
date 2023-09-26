@@ -534,6 +534,7 @@ class TestRegistrantNameservers(MockEppLib):
         """
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.DNS_NEEDED)
+
     def test_get_nameserver_changes(self):
         self.domain._cache["hosts"]=[{
                         "name": "ns1.example.com",
@@ -543,27 +544,16 @@ class TestRegistrantNameservers(MockEppLib):
                         "addrs": ["1.2.3"]
                     },
                     {"name": "ns3.example.com",
-                        "addrs": None
+                        "addrs": ["1.2.3"]
                     }
         ]
         newChanges=[("ns1.example.com",),("ns3.example.com",["1.2.4"]),("ns4.example.com",)]
         deleted_values,updated_values,new_values, oldNameservers=self.domain.getNameserverChanges(newChanges)
-        # print(f"deleted: {deleted_values}\n")
-        # print(f"updated_values: {updated_values}\n") 
-        # print(f"new_values: {new_values}\n")
-        # print(f"oldNameservers: {oldNameservers}\n") 
-        # print("CHANGE")
-        # print(self.domain._convert_list_to_dict(newChanges))
 
-        # Q: This is asserting that 1.2.3 was deleted vs updated -- is this ok or a bug
         self.assertEqual(deleted_values, [('ns2.example.com', ['1.2.3'])])
-        self.assertTrue(updated_values, [('ns3.example.com', ['1.2.4'])])
-        self.assertTrue(new_values, {'ns4.example.com'})
-        self.assertTrue(oldNameservers, [('ns1.example.com', None), ('ns2.example.com', ['1.2.3']), ('ns3.example.com', None)])
-        #expecting:
-        #   updated_values==1 -- which is "ns3.example.com"
-        #   newvalues==1 -- which is "ns4.example.com"
-        #   deleted==1 --which is "ns2.example.com"
+        self.assertEqual(updated_values, [('ns3.example.com', ['1.2.4'])])
+        self.assertEqual(new_values, {'ns4.example.com'})
+        self.assertEqual(oldNameservers, [('ns1.example.com', None), ('ns2.example.com', ['1.2.3']), ('ns3.example.com', ['1.2.3'])])
 
 
     def test_user_adds_one_nameserver(self):
