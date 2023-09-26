@@ -695,7 +695,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 f"got {contact_id} with a length of {len(contact_id)}"
             )
 
-        logger.debug(f"map_epp_contact_to_public_contact contact -> {contact}")
         if not isinstance(contact, eppInfo.InfoContactResultData):
             raise ValueError("Contact must be of type InfoContactResultData")
 
