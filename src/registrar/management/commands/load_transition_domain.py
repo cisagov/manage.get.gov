@@ -181,7 +181,7 @@ class Command(BaseCommand):
                 new_entry_domainName = row[0].lower()
                 userId = row[1]
 
-                new_entry_status = TransitionDomain.StatusChoices.CREATED
+                new_entry_status = TransitionDomain.StatusChoices.READY
                 new_entry_email = ""
                 new_entry_emailSent = False
                 # TODO: how to know if e-mail was sent?
@@ -383,8 +383,8 @@ transtion_domain table for domain:
             "hold": TransitionDomain.StatusChoices.HOLD,
             "serverhold": TransitionDomain.StatusChoices.HOLD,
             "clienthold": TransitionDomain.StatusChoices.HOLD,
-            "created": TransitionDomain.StatusChoices.CREATED,
-            "ok": TransitionDomain.StatusChoices.CREATED,
+            "created": TransitionDomain.StatusChoices.READY,
+            "ok": TransitionDomain.StatusChoices.READY,
         }
         return status_maps[status_to_map]
 

@@ -4,7 +4,7 @@ from .utility.time_stamped_model import TimeStampedModel
 
 
 class StatusChoices(models.TextChoices):
-    CREATED = "created", "Created"
+    READY = "ready", "Ready"
     HOLD = "hold", "Hold"
 
 
@@ -30,7 +30,7 @@ class TransitionDomain(TimeStampedModel):
         max_length=255,
         null=False,
         blank=True,
-        default=StatusChoices.CREATED,
+        default=StatusChoices.READY,
         choices=StatusChoices.choices,
         verbose_name="Status",
         help_text="domain status during the transfer",
