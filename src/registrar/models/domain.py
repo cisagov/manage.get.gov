@@ -241,8 +241,8 @@ class Domain(TimeStampedModel, DomainHelper):
             # TODO-848: This should actually have a second tuple value with the ip address
             # ignored because uncertain if we will even have a way to display mult.
             # and adresses can be a list of mult address
-            
-            hostList.append((host["name"],))
+
+            hostList.append((host["name"],host["addrs"]))
 
         return hostList
 
@@ -298,22 +298,36 @@ class Domain(TimeStampedModel, DomainHelper):
         oldNameservers=self.nameservers
   
         previousHostDict = {tup[0]: tup[1:] for tup in oldNameservers}
-        newHostDict = {tup[0]: tup[1:] for tup in hosts}
-
+        print(previousHostDict)
+        #when slicing the tuple at tup[1:] it is causing it to be a tuple instead of a list
+        newHostDict = {tup[0]: tup[1:] for tup in hosts} #TODO-when slicing for addresses it should be a list or None
+        print(f" new host dict {newHostDict}")
         deleted_values = []
         updated_values = []
         new_values = []
 
-        for key in previousHostDict:
-            if key not in newHostDict:
-                deleted_values.append(previousHostDict[key])
-            elif newHostDict[key] != previousHostDict[key]:
-                updated_values.append(newHostDict[key])
+        for prevHost in previousHostDict:
+            addrs=previousHostDict[prevHost]
+            # get deleted values-which are values in previous nameserver list
+            # but are not in the list of new host values
+            if prevHost not in newHostDict:
+                deleted_values.append((prevHost,addrs))
+            #if the host exists in both, check if the addresses changed
+            else:
+                print(f"value in newHostDict[prevHost]{newHostDict[prevHost]}")
+                print(f"prevhost {prevHost}")
+                #not right updated_values: [(), (['1.2.4'],)]
 
-        for key in newHostDict:
-            if key not in previousHostDict:
-                new_values.append(newHostDict[key])
+                if newHostDict[prevHost] != addrs: 
+                    updated_values.append((prevHost,newHostDict[prevHost]))
+
         
+        #new value is one that is not in the previous dict
+        # for key in newHostDict:
+        #     if key not in previousHostDict:
+        #         new_values.append(newHostDict[key])
+            
+        new_values=set(newHostDict)-set(previousHostDict)
         return (deleted_values,updated_values,new_values, oldNameservers)
 
     @nameservers.setter  # type: ignore

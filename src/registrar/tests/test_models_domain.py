@@ -547,9 +547,17 @@ class TestRegistrantNameservers(MockEppLib):
                     }
         ]
         newChanges=[("ns1.example.com",),("ns3.example.com",["1.2.4"]),("ns4.example.com",)]
-        retTuple=self.domain.getNameserverChanges(newChanges)
-        print(retTuple)
-        
+        deleted_values,updated_values,new_values, oldNameservers=self.domain.getNameserverChanges(newChanges)
+        print(f"deleted: {deleted_values}\n")
+        print(f"updated_values: {updated_values}\n") #has an extra, why?
+        print(f"new_values: {new_values}\n")# good
+        print(f"oldNameservers: {oldNameservers}\n") #good
+        #expecting:
+        #   updated_values==1 -- which is "ns3.example.com"
+        #   newvalues==1 -- which is "ns4.example.com"
+        #   deleted==1 --which is "ns2.example.com"
+
+        # self.assertTrue()
     def test_user_adds_one_nameserver(self):
         """
         Scenario: Registrant adds a single nameserver
