@@ -286,6 +286,15 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             return e.code
+    def _convert_list_to_dict(self, listToConvert: list[tuple[str]]):
+        newDict={}
+        for tup in listToConvert:
+            if len(tup) == 1:
+                newDict[tup[0]] = None
+            else:
+                newDict[tup[0]] = tup[1]
+        return newDict
+    
     def getNameserverChanges(self, hosts:list[tuple[str]]):
         """ 
         calls self.nameserver, it should pull from cache but may result
@@ -296,11 +305,11 @@ class Domain(TimeStampedModel, DomainHelper):
         new_values:
         oldNameservers:"""
         oldNameservers=self.nameservers
-  
-        previousHostDict = {tup[0]: tup[1:] for tup in oldNameservers}
-        print(previousHostDict)
-        #when slicing the tuple at tup[1:] it is causing it to be a tuple instead of a list
-        newHostDict = {tup[0]: tup[1:] for tup in hosts} #TODO-when slicing for addresses it should be a list or None
+
+        previousHostDict =  self._convert_list_to_dict(oldNameservers)
+        print("previousHostDict {previousHostDict}")
+
+        newHostDict = self._convert_list_to_dict(hosts)
         print(f" new host dict {newHostDict}")
         deleted_values = []
         updated_values = []
@@ -320,12 +329,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
                 if newHostDict[prevHost] != addrs: 
                     updated_values.append((prevHost,newHostDict[prevHost]))
-
-        
-        #new value is one that is not in the previous dict
-        # for key in newHostDict:
-        #     if key not in previousHostDict:
-        #         new_values.append(newHostDict[key])
             
         new_values=set(newHostDict)-set(previousHostDict)
         return (deleted_values,updated_values,new_values, oldNameservers)
