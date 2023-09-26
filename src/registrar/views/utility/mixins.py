@@ -9,6 +9,8 @@ from registrar.models import (
     UserDomainRole,
 )
 import logging
+from registrar.models.domain import Domain
+from registrar.models.draft_domain import DraftDomain
 
 
 logger = logging.getLogger(__name__)
@@ -96,17 +98,84 @@ class DomainPermission(PermissionsLoginMixin):
             None,
         ]
 
-        requested_domain = None
+        wanted_domain = None
         if DomainInformation.objects.filter(id=pk).exists():
-            requested_domain = DomainInformation.objects.get(id=pk)
+            wanted_domain = DomainInformation.objects.get(id=pk)
 
-        if requested_domain.domain_application.status not in valid_domain_statuses:
+        # Create a default domain application if it doesn't exist...
+        if (
+            Domain.objects.filter(id=pk).exists()
+            and wanted_domain.domain_application is None
+        ):
+            self.add_barebones_application_to_domain(
+                Domain.objects.get(id=pk), wanted_domain
+            )
+
+        if wanted_domain.domain_application.status not in valid_domain_statuses:
             return False
 
         # Valid session keys exist,
         # the user is permissioned,
         # and it is in a valid status
         return True
+
+    def add_barebones_application_to_domain(self, current_domain, domain_info):
+        """Tries to either add a default or existing
+        DomainApplication object to a DomainInformation object"""
+
+        # --- Handle DomainInformation --- #
+        # Does DomainInformation exist? If not, create one.
+        # Otherwise, grab existing
+        if Domain.objects.filter(id=pk).exists():
+            if not DomainInformation.objects.filter(domain=current_domain).exists():
+                domain_info = DomainInformation(
+                    creator=self.request.user, domain=current_domain
+                )
+            else:
+                domain_info = DomainInformation.objects.get(domain=current_domain)
+
+        if domain_info.domain_application is not None:
+            raise ValueError("DomainApplication already exists")
+
+        # --- Handle DraftDomain --- #
+        # Do we already have an existing DraftDomain?
+        _draft_domains = DraftDomain.objects.filter(name=domain_info.domain.name)
+        if _draft_domains.count() > 1:
+            raise Exception("Multiple DraftDomain objects exist")
+
+        # Create or grab existing DraftDomain object
+        _requested_domain: DraftDomain
+        if _draft_domains.count() == 0:
+            _requested_domain = DraftDomain(name=domain_info.domain.name)
+            _requested_domain.save()
+        else:
+            _requested_domain = _draft_domains.get()
+
+        # --- Handle DomainApplication --- #
+        # Do we already have an existing DomainApplication?
+        existing_application = DomainApplication.objects.filter(
+            approved_domain=domain_info.domain,
+            requested_domain=_requested_domain,
+            creator=domain_info.creator
+        )
+        if existing_application.count() > 1:
+            raise Exception("Multiple DomainApplication objects exist")
+
+        # Create or grab existing DomainApplication
+        desired_application: DomainApplication
+        if existing_application.count() == 0:
+            desired_application = DomainApplication(
+                approved_domain=domain_info.domain,
+                creator=domain_info.creator,
+                status=DomainApplication.ACTION_NEEDED,
+            )
+            desired_application.save()
+        elif existing_application.count() == 1:
+            desired_application = existing_application.get()
+
+        # --- Add to DomainInformation --- #
+        domain_info.domain_application = desired_application
+        domain_info.save()
 
 
 class DomainApplicationPermission(PermissionsLoginMixin):
