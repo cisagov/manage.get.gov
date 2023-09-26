@@ -96,7 +96,7 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-    def handle(
+    def handle(  # noqa: C901
         self,
         domain_contacts_filename,
         contacts_filename,
@@ -109,95 +109,66 @@ class Command(BaseCommand):
         if options.get("resetTable"):
             confirmReset = query_yes_no(
                 f"""
-            {termColors.FAIL}
-            WARNING: Resetting the table will permanently delete all the data!  
-            Are you sure you want to continue?{termColors.ENDC}"""
+                {termColors.FAIL}
+                WARNING: Resetting the table will permanently delete all
+                the data!
+                Are you sure you want to continue?{termColors.ENDC}"""
             )
             if confirmReset:
                 logger.info(
-                f"""{termColors.WARNING}
+                    f"""{termColors.WARNING}
                 ----------Clearing Table Data----------
                 (please wait)
                 {termColors.ENDC}"""
                 )
                 TransitionDomain.objects.all().delete()
 
-        debugOn = options.get("debug")
-        debug_MaxEntriesToParse = int(
+        debug_on = options.get("debug")
+        debug_max_entries_to_parse = int(
             options.get("limitParse")
         )  # set to 0 to parse all entries
 
-        if debugOn:
-            logger.info(
-            f"""{termColors.OKCYAN}
-            ----------DEBUG MODE ON----------
-            Detailed print statements activated.
-            {termColors.ENDC}
-            """
-            )
-        if debug_MaxEntriesToParse > 0:
-            logger.info(
-            f"""{termColors.OKCYAN}
-            ----------LIMITER ON----------
-            Parsing of entries will be limited to {debug_MaxEntriesToParse} lines per file.")
-            Detailed print statements activated.
-            {termColors.ENDC}
-            """
-            )
+        self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
 
         # STEP 1:
         # Create mapping of domain name -> status
-        # TODO: figure out latest status
-        domain_status_dictionary = defaultdict(
-            str
-        )  # NOTE: how to determine "most recent" status?
-        logger.info("Reading domain statuses data file %s", domain_statuses_filename)
-        with open(domain_statuses_filename, "r") as domain_statuses_file:
-            for row in csv.reader(domain_statuses_file, delimiter=sep):
-                domainName = row[0].lower()
-                domainStatus = row[1].lower()
-                # print("adding "+domainName+", "+domainStatus)
-                domain_status_dictionary[domainName] = domainStatus
-        logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
+        domain_status_dictionary = self.get_domain_user_dict(
+            domain_statuses_filename, sep
+        )
 
         # STEP 2:
-        # Create mapping of userId -> emails NOTE: is this one to many??
-        user_emails_dictionary = defaultdict(list)  # each contact has a list of e-mails
-        logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
-        with open(contacts_filename, "r") as contacts_file:
-            for row in csv.reader(contacts_file, delimiter=sep):
-                userId = row[0]
-                user_email = row[6]
-                user_emails_dictionary[userId].append(user_email)
-        logger.info("Loaded emails for %d users", len(user_emails_dictionary))
+        # Create mapping of userId  -> email
+        user_emails_dictionary = self.get_user_emails_dict(contacts_filename, sep)
 
         # STEP 3:
-        # TODO:  Need to add logic for conflicting domain status entries
+        # TODO:  Need to add logic for conflicting domain status
+        # entries
         # (which should not exist, but might)
-        # TODO: log statuses found that don't map to the ones we have (count occurences)
+        # TODO: log statuses found that don't map to the ones
+        # we have (count occurences)
 
         to_create = []
 
-        # keep track of statuses that don't match our available status values
+        # keep track of statuses that don't match our available
+        # status values
         outlier_statuses = []
-        total_outlier_statuses = 0
 
         # keep track of domains that have no known status
         domains_without_status = []
-        total_domains_without_status = 0
 
         # keep track of users that have no e-mails
         users_without_email = []
-        total_users_without_email = 0
 
-        # keep track of dupliucations..
+        # keep track of duplications..
         duplicate_domains = []
         duplicate_domain_user_combos = []
 
-        # keep track of domains we UPDATED (instead of ones we added)
+        # keep track of domains we ADD or UPDATE
         total_updated_domain_entries = 0
-
         total_new_entries = 0
+
+        # if we are limiting our parse (for testing purposes, keep
+        # track of total rows parsed)
         total_rows_parsed = 0
 
         logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
@@ -207,124 +178,114 @@ class Command(BaseCommand):
 
                 # fields are just domain, userid, role
                 # lowercase the domain names
-                domainName = row[0].lower()
+                new_entry_domainName = row[0].lower()
                 userId = row[1]
 
-                domainStatus = TransitionDomain.StatusChoices.CREATED
-                userEmail = ""
-                emailSent = False
+                new_entry_status = TransitionDomain.StatusChoices.CREATED
+                new_entry_email = ""
+                new_entry_emailSent = False
                 # TODO: how to know if e-mail was sent?
 
-                if domainName not in domain_status_dictionary:
+                if new_entry_domainName not in domain_status_dictionary:
                     # this domain has no status...default to "Create"
-                    if domainName not in domains_without_status:
-                        domains_without_status.append(domainName)
-                    total_domains_without_status += 1
+                    if new_entry_domainName not in domains_without_status:
+                        domains_without_status.append(new_entry_domainName)
                 else:
-                    originalStatus = domain_status_dictionary[domainName]
+                    original_status = domain_status_dictionary[new_entry_domainName]
                     # print(originalStatus)
-                    if originalStatus in TransitionDomain.StatusChoices.values:
-                        # This status maps directly to our available status options
-                        domainStatus = originalStatus
+                    mapped_status = self.get_mapped_status(original_status)
+                    if mapped_status is None:
+                        logger.info("Unknown status: " + original_status)
+                        outlier_statuses.append(original_status)
                     else:
-                        # Map all other status as follows;
-                        # "serverHold” fields will map to hold clientHold to hold
-                        # and any ok state should map to Ready.
-                        # Check if there are any statuses that are not
-                        # serverhold, client hold or OK in the original data set.
-                        if (
-                            originalStatus.lower() == "serverhold"
-                            or originalStatus.lower() == "clienthold"
-                        ):
-                            domainStatus = TransitionDomain.StatusChoices.HOLD
-                        elif originalStatus.lower() != "ok":
-                            if originalStatus not in outlier_statuses:
-                                outlier_statuses.append(originalStatus)
-                            logger.info("Unknown status: " + originalStatus)
-                            total_outlier_statuses += 1
+                        new_entry_status = mapped_status
 
                 if userId not in user_emails_dictionary:
                     # this user has no e-mail...this should never happen
-                    # users_without_email.add(userId)
-                    # print("no e-mail found for user: "+userId)
-                    total_users_without_email += 1
+                    if userId not in users_without_email:
+                        users_without_email.append(userId)
                 else:
-                    userEmail = user_emails_dictionary[userId]
+                    new_entry_email = user_emails_dictionary[userId]
 
-                # Check for duplicate data in the file we are parsing so we do not add duplicates
-                # NOTE: Currently, we allow duplicate domains, but not duplicate domain-user pairs.
-                # However, track duplicate domains for now, since we are still deciding on whether
+                # Check for duplicate data in the file we are
+                # parsing so we do not add duplicates
+                # NOTE: Currently, we allow duplicate domains,
+                # but not duplicate domain-user pairs.
+                # However, track duplicate domains for now,
+                # since we are still deciding on whether
                 # to make this field unique or not. ~10/25/2023
                 tempEntry_domain = next(
-                    (x for x in to_create if x.domain_name == domainName), None
+                    (x for x in to_create if x.domain_name == new_entry_domainName),
+                    None,
                 )
                 tempEntry_domainUserPair = next(
                     (
                         x
                         for x in to_create
-                        if x.username == userEmail and x.domain_name == domainName
+                        if x.username == new_entry_email
+                        and x.domain_name == new_entry_domainName
                     ),
                     None,
                 )
                 if tempEntry_domain is not None:
-                    if debugOn:
+                    if debug_on:
                         logger.info(
-                        f"{termColors.WARNING} DUPLICATE Verisign entries found for domain: {domainName} {termColors.ENDC}"
+                            f"{termColors.WARNING} DUPLICATE Verisign entries found for domain: {new_entry_domainName} {termColors.ENDC}"  # noqa
                         )
-                    if domainName not in duplicate_domains:
-                        duplicate_domains.append(domainName)
-                if tempEntry_domainUserPair != None:
-                    if debugOn:
+                    if new_entry_domainName not in duplicate_domains:
+                        duplicate_domains.append(new_entry_domainName)
+                if tempEntry_domainUserPair is not None:
+                    if debug_on:
                         logger.info(
-                        f"""
-{termColors.WARNING} 
-DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.WARNING}: 
-{domainName} - {user_email} {termColors.ENDC}"""
+                            f"""{termColors.WARNING} DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.WARNING}:  
+                            {new_entry_domainName} - {new_entry_email} {termColors.ENDC}"""  # noqa
                         )
                     if tempEntry_domainUserPair not in duplicate_domain_user_combos:
                         duplicate_domain_user_combos.append(tempEntry_domainUserPair)
                 else:
                     try:
                         existingEntry = TransitionDomain.objects.get(
-                            username=userEmail, domain_name=domainName
+                            username=new_entry_email, domain_name=new_entry_domainName
                         )
 
-                        if existingEntry.status != domainStatus:
+                        if existingEntry.status != new_entry_status:
                             # DEBUG:
-                            if debugOn:
+                            if debug_on:
                                 logger.info(
-                                    f"""{termColors.OKCYAN} 
-                                    Updating entry: {existingEntry}
-                                    Status: {existingEntry.status} > {domainStatus}
-                                    Email Sent: {existingEntry.email_sent} > {emailSent}
-                                    {termColors.ENDC}"""
+                                    f"""{termColors.OKCYAN}
+    Updating entry: {existingEntry}
+    Status: {existingEntry.status} > {new_entry_status}
+    Email Sent: {existingEntry.email_sent} > {new_entry_emailSent}
+    {termColors.ENDC}"""
                                 )
 
-                            existingEntry.status = domainStatus
+                            existingEntry.status = new_entry_status
 
-                        existingEntry.email_sent = emailSent
+                        existingEntry.email_sent = new_entry_emailSent
                         existingEntry.save()
                     except TransitionDomain.DoesNotExist:
                         # no matching entry, make one
                         newEntry = TransitionDomain(
-                            username=userEmail,
-                            domain_name=domainName,
-                            status=domainStatus,
-                            email_sent=emailSent,
+                            username=new_entry_email,
+                            domain_name=new_entry_domainName,
+                            status=new_entry_status,
+                            email_sent=new_entry_emailSent,
                         )
                         to_create.append(newEntry)
                         total_new_entries += 1
 
                         # DEBUG:
-                        if debugOn:
+                        if debug_on:
                             logger.info(
-                            f"{termColors.OKCYAN} Adding entry {total_new_entries}: {newEntry} {termColors.ENDC}"
+                                f"{termColors.OKCYAN} Adding entry {total_new_entries}: {newEntry} {termColors.ENDC}"  # noqa
                             )
                     except TransitionDomain.MultipleObjectsReturned:
                         logger.info(
                             f"""
 {termColors.FAIL}
-!!! ERROR: duplicate entries exist in the transtion_domain table for domain: {domainName}
+!!! ERROR: duplicate entries exist in the
+transtion_domain table for domain:
+{new_entry_domainName}
 ----------TERMINATING----------"""
                         )
                         import sys
@@ -332,14 +293,14 @@ DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYe
                         sys.exit()
 
                 # DEBUG:
-                if debugOn or debug_MaxEntriesToParse > 0:
+                if debug_on or debug_max_entries_to_parse > 0:
                     if (
-                        total_rows_parsed > debug_MaxEntriesToParse
-                        and debug_MaxEntriesToParse != 0
+                        total_rows_parsed > debug_max_entries_to_parse
+                        and debug_max_entries_to_parse != 0
                     ):
                         logger.info(
                             f"""{termColors.WARNING}
-                            ----BREAK----
+                            ----PARSE LIMIT REACHED.  HALTING PARSER.----
                             {termColors.ENDC}
                             """
                         )
@@ -351,15 +312,88 @@ DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYe
             f"""{termColors.OKGREEN}
 
         ============= FINISHED ===============
-        Created {total_new_entries} transition domain entries, 
+        Created {total_new_entries} transition domain entries,
         updated {total_updated_domain_entries} transition domain entries
         {termColors.ENDC}
         """
         )
 
-        # Print a summary of findings (duplicate entries, missing data..etc.)
+        # Print a summary of findings (duplicate entries,
+        # missing data..etc.)
+        self.print_summary_duplications(
+            duplicate_domain_user_combos, duplicate_domains, users_without_email
+        )
+        self.print_summary_status_findings(domains_without_status, outlier_statuses)
+
+    def print_debug_mode_statements(self, debug_on, debug_max_entries_to_parse):
+        if debug_on:
+            logger.info(
+                f"""{termColors.OKCYAN}
+            ----------DEBUG MODE ON----------
+            Detailed print statements activated.
+            {termColors.ENDC}
+            """
+            )
+        if debug_max_entries_to_parse > 0:
+            logger.info(
+                f"""{termColors.OKCYAN}
+            ----------LIMITER ON----------
+            Parsing of entries will be limited to
+            {debug_max_entries_to_parse} lines per file.")
+            Detailed print statements activated.
+            {termColors.ENDC}
+            """
+            )
+
+    def get_domain_user_dict(self, domain_statuses_filename, sep):
+        """Creates a mapping of domain name -> status"""
+        # TODO: figure out latest status
+        domain_status_dictionary = defaultdict(str)
+        # NOTE: how to determine "most recent" status?
+        logger.info("Reading domain statuses data file %s", domain_statuses_filename)
+        with open(domain_statuses_filename, "r") as domain_statuses_file:  # noqa
+            for row in csv.reader(domain_statuses_file, delimiter=sep):
+                domainName = row[0].lower()
+                domainStatus = row[1].lower()
+                # print("adding "+domainName+", "+domainStatus)
+                domain_status_dictionary[domainName] = domainStatus
+        logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
+        return domain_status_dictionary
+
+    def get_user_emails_dict(self, contacts_filename, sep):
+        """Creates mapping of userId -> emails"""
+        # NOTE: is this one to many??
+        user_emails_dictionary = defaultdict(list)
+        logger.info("Reading domain-contacts data file %s", contacts_filename)
+        with open(contacts_filename, "r") as contacts_file:
+            for row in csv.reader(contacts_file, delimiter=sep):
+                userId = row[0]
+                user_email = row[6]
+                user_emails_dictionary[userId].append(user_email)
+        logger.info("Loaded emails for %d users", len(user_emails_dictionary))
+        return user_emails_dictionary
+
+    def get_mapped_status(self, status_to_map):
+        # Map statuses as follows;
+        # "serverHold” fields will map to hold clientHold to hold
+        # and any ok state should map to Ready.
+        # Check if there are any statuses that are not
+        # serverhold, client hold or OK in the original data set.
+        status_maps = {
+            "hold": TransitionDomain.StatusChoices.HOLD,
+            "serverhold": TransitionDomain.StatusChoices.HOLD,
+            "clienthold": TransitionDomain.StatusChoices.HOLD,
+            "created": TransitionDomain.StatusChoices.CREATED,
+            "ok": TransitionDomain.StatusChoices.CREATED,
+        }
+        return status_maps[status_to_map]
+
+    def print_summary_duplications(
+        self, duplicate_domain_user_combos, duplicate_domains, users_without_email
+    ):
         totalDupDomainUserPairs = len(duplicate_domain_user_combos)
         totalDupDomains = len(duplicate_domains)
+        total_users_without_email = len(users_without_email)
         if total_users_without_email > 0:
             logger.warning(
                 "No e-mails found for users: {}".format(
@@ -375,40 +409,55 @@ DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYe
             )
             logger.warning(
                 f"""{termColors.WARNING}
-                            
-                ----DUPLICATES FOUND-----
 
-                {totalDupDomainUserPairs} DOMAIN - USER pairs were NOT unique in the supplied data files;
+                    ----DUPLICATES FOUND-----
 
-                {temp_dupPairsAsString}
+                    {totalDupDomainUserPairs} DOMAIN - USER pairs
+                    were NOT unique in the supplied data files;
 
-                {totalDupDomains} DOMAINS were NOT unique in the supplied data files;
+                    {temp_dupPairsAsString}
 
-                {temp_dupDomainsAsString}
-                {termColors.ENDC}"""
+                    {totalDupDomains} DOMAINS were NOT unique in
+                    the supplied data files;
+
+                    {temp_dupDomainsAsString}
+                    {termColors.ENDC}"""
             )
+
+    def print_summary_status_findings(self, domains_without_status, outlier_statuses):
+        total_domains_without_status = len(domains_without_status)
+        total_outlier_statuses = len(outlier_statuses)
         if total_domains_without_status > 0:
             temp_arrayToString = "{}".format(
                 ", ".join(map(str, domains_without_status))
             )
             logger.warning(
                 f"""{termColors.WARNING}
-                           
-            ----Found {total_domains_without_status} domains without a status (defaulted to READY)-----
 
-            {temp_arrayToString}
-            {termColors.ENDC}"""
+                --------------------------------------------
+                Found {total_domains_without_status} domains
+                without a status (defaulted to READY)
+                ---------------------------------------------
+
+                {temp_arrayToString}
+                {termColors.ENDC}"""
             )
 
         if total_outlier_statuses > 0:
-            temp_arrayToString = "{}".format(", ".join(map(str, outlier_statuses)))
+            temp_arrayToString = "{}".format(
+                ", ".join(map(str, outlier_statuses))
+            )  # noqa
             logger.warning(
                 f"""{termColors.WARNING}
-                           
-            ----Found {total_outlier_statuses} unaccounted for statuses-----
 
-            No mappings found for the following statuses (defaulted to Ready): 
-            
-            {temp_arrayToString}
-            {termColors.ENDC}"""
+                --------------------------------------------
+                Found {total_outlier_statuses} unaccounted
+                for statuses-
+                --------------------------------------------
+
+                No mappings found for the following statuses
+                (defaulted to Ready):
+
+                {temp_arrayToString}
+                {termColors.ENDC}"""
             )
