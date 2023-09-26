@@ -48,6 +48,7 @@ class TestDomainCache(MockEppLib):
 
         # using a setter should clear the cache
         domain.expiration_date = datetime.date.today()
+        self.assertEquals(domain._cache, {})
 
         # send should have been called only once
         self.mockedSendFunction.assert_has_calls(
@@ -97,7 +98,7 @@ class TestDomainCache(MockEppLib):
         expectedContactsList = [domain.security_contact]
         expectedHostsDict = {
             "name": self.mockDataInfoDomain.hosts[0],
-            "cr_date": self.mockDataInfoDomain.cr_date,
+            "cr_date": self.mockDataInfoHosts.cr_date,
         }
 
         # this can be changed when the getter for contacts is implemented
@@ -112,7 +113,6 @@ class TestDomainCache(MockEppLib):
         # The contact list should not contain what is sent by the registry by default,
         # as _fetch_cache will transform the type to PublicContact
         self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
-
         self.assertEqual(domain._cache["contacts"], expectedContactsList)
 
         # get and check hosts is set correctly
@@ -574,18 +574,6 @@ class TestRegistrantContacts(MockEppLib):
             Then a user-friendly error message is returned for displaying on the web
         """
         raise
-
-    @skip("not implemented yet")
-    def test_contact_getters_cache(self):
-        """
-        Scenario: A user is grabbing a domain that has multiple contact objects
-            When each contact is retrieved from cache
-            Then the user retrieves the correct contact objects
-        """
-
-    @skip("not implemented yet")
-    def test_epp_public_contact_mapper(self):
-        pass
 
     def test_contact_getter_security(self):
         self.maxDiff = None

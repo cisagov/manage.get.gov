@@ -21,7 +21,6 @@ from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -539,7 +538,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 current_contact = PublicContact.objects.filter(
                     registry_id=contact.registry_id
                 ).get()
-                logger.debug(f"current contact was accessed {current_contact}")
 
                 if current_contact.email != contact.email:
                     self._update_epp_contact(contact=contact)
@@ -751,7 +749,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def generic_contact_getter(
         self, contact_type_choice: PublicContact.ContactTypeChoices
-    ) -> PublicContact:
+    ) -> PublicContact | None:
         """Abstracts the cache logic on EppLib contact items
 
         contact_type_choice is a literal in PublicContact.ContactTypeChoices,
@@ -773,8 +771,9 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             contacts = self._get_property(desired_property)
         except KeyError as error:
+           # Q: Should we be raising an error instead?
             logger.error(f"Could not find {contact_type_choice}: {error}")
-            raise error
+            return None
         else:
             # Grab from cache
             cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
@@ -841,7 +840,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # If the for loop didn't do a return,
         # then we know that it doesn't exist within cache
         logger.info(
-            f"Requested contact {contact.registry_id} " "Does not exist in cache."
+            f"Requested contact {contact.registry_id} does not exist in cache."
         )
         return None
 
@@ -890,7 +889,6 @@ class Domain(TimeStampedModel, DomainHelper):
         while not exitEarly and count < 3:
             try:
                 logger.info("Getting domain info from epp")
-                logger.debug(f"domain info name is... {self.__dict__}")
                 req = commands.InfoDomain(name=self.name)
                 domainInfo = registry.send(req, cleaned=True).res_data[0]
                 exitEarly = True
@@ -1242,7 +1240,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # Saves to DB if it doesn't exist already.
         # Doesn't run custom save logic, just saves to DB
         public_contact.save(skip_epp_save=True)
-        logger.debug(f"Created a new PublicContact: {public_contact}")
+        logger.info(f"Created a new PublicContact: {public_contact}")
         # Append the item we just created
         return public_contact
 
@@ -1265,7 +1263,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
-        logger.debug(f"cache was cleared! {self.__dict__}")
         self._cache = {}
 
     def _get_property(self, property):
@@ -1277,7 +1274,6 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
         if property in self._cache:
-            logger.debug(self._cache[property])
             return self._cache[property]
         else:
             raise KeyError(
