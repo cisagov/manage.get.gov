@@ -6,7 +6,7 @@
   <div class="margin-top-4 tablet:grid-col-10">
 
     <div
-        class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2{% if domain.state == 'unknown' or domain.state == 'dns needed'%} dotgov-status-box--action-need{% endif %}" 
+        class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED%} dotgov-status-box--action-need{% endif %}"
         role="region"
         aria-labelledby="summary-box-key-information"
     >
@@ -17,7 +17,7 @@
           <span class="text-bold text-primary-darker">
             Status:
           </span>
-            {% if domain.state == "unknown" or domain.state == 'dns needed'%}
+            {% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED%}
               DNS Needed
             {% else %}
                 {{ domain.state|title }}

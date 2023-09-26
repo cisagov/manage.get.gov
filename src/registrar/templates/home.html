@@ -47,28 +47,21 @@
           </td>
           <td>
             <a href="{% url "domain" pk=domain.pk %}">
+              <svg
+                class="usa-icon"
+                aria-hidden="true"
+                focusable="false"
+                role="img"
+                width="24"
+              >
               {% if domain.state == "deleted" or domain.state == "on hold" %}
-                <svg
-                  class="usa-icon"
-                  aria-hidden="true"
-                  focusable="false"
-                  role="img"
-                  width="24"
-                >
-                  <use xlink:href="{%static 'img/sprite.svg'%}#visibility"></use>
-                </svg>
-                  View <span class="usa-sr-only">{{ domain.name }}</span>
+                <use xlink:href="{%static 'img/sprite.svg'%}#visibility"></use>
+              </svg>
+                View <span class="usa-sr-only">{{ domain.name }}</span>
               {% else %}
-                <svg
-                  class="usa-icon"
-                  aria-hidden="true"
-                  focusable="false"
-                  role="img"
-                  width="24"
-                >
-                  <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
-                </svg>
-                  Manage <span class="usa-sr-only">{{ domain.name }}</span>
+                <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
+              </svg>
+                Manage <span class="usa-sr-only">{{ domain.name }}</span>
               {% endif %}
             </a>
           </td>
