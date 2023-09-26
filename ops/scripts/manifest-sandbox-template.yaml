@@ -11,7 +11,6 @@ applications:
   command: ./run.sh
   health-check-type: http
   health-check-http-endpoint: /health
-  health-check-invocation-timeout: 30
   env:
     # Send stdout and stderr straight to the terminal without buffering
     PYTHONUNBUFFERED: yup

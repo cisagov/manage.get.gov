@@ -704,20 +704,17 @@ class Domain(TimeStampedModel, DomainHelper):
         auth_info = contact.auth_info
         postal_info = contact.postal_info
         addr = postal_info.addr
-        streets = {}
-        if addr is not None and addr.street is not None:
-            # 'zips' two lists together.
-            # For instance, (('street1', 'some_value_here'),
-            # ('street2', 'some_value_here'))
-            # Dict then converts this to a useable kwarg which we can pass in
-            streets = dict(
-                zip_longest(
-                    ["street1", "street2", "street3"],
-                    addr.street,
-                    fillvalue=None,
-                )
+        # 'zips' two lists together.
+        # For instance, (('street1', 'some_value_here'),
+        # ('street2', 'some_value_here'))
+        # Dict then converts this to a useable kwarg which we can pass in
+        streets = dict(
+            zip_longest(
+                ["street1", "street2", "street3"],
+                addr.street if addr is not None else [],
+                fillvalue=None,
             )
-
+        )
         desired_contact = PublicContact(
             domain=self,
             contact_type=contact_type,
@@ -725,13 +722,14 @@ class Domain(TimeStampedModel, DomainHelper):
             email=contact.email or "",
             voice=contact.voice or "",
             fax=contact.fax,
-            pw=auth_info.pw or "",
             name=postal_info.name or "",
             org=postal_info.org,
-            city=addr.city or "",
-            pc=addr.pc or "",
-            cc=addr.cc or "",
-            sp=addr.sp or "",
+            # For linter - default to "" instead of None
+            pw=getattr(auth_info, 'pw', ""),
+            city=getattr(addr, 'city', ""),
+            pc=getattr(addr, 'pc', ""),
+            cc=getattr(addr, 'cc', ""),
+            sp=getattr(addr, 'sp', ""),
             **streets,
         )
 
@@ -753,7 +751,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def generic_contact_getter(
         self, contact_type_choice: PublicContact.ContactTypeChoices
-    ) -> PublicContact:
+    ) -> PublicContact | None:
         """Abstracts the cache logic on EppLib contact items
 
         contact_type_choice is a literal in PublicContact.ContactTypeChoices,
