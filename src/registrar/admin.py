@@ -753,6 +753,12 @@ class DomainAdmin(ListHeaderAdmin):
                     "Error placing the hold with the registry: {err}",
                     messages.ERROR,
                 )
+            elif err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
+                    messages.ERROR,
+                )
             else:
                 # all other type error messages, display the error
                 self.message_user(request, err, messages.ERROR)
