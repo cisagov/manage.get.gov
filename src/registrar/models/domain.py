@@ -634,13 +634,25 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should not be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
-        registry.send(request, cleaned=True)
+        try:
+            registry.send(request, cleaned=True)
+            self._invalidate_cache()
+        except RegistryError as err:
+            # if registry error occurs, log the error, and raise it as well
+            logger.error(f"registry error placing client hold: {err}")
+            raise (err)
 
     def _remove_client_hold(self):
         """This domain is okay to be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.UpdateDomain(name=self.name, rem=[self.clientHoldStatus()])
-        registry.send(request, cleaned=True)
+        try:
+            registry.send(request, cleaned=True)
+            self._invalidate_cache()
+        except RegistryError as err:
+            # if registry error occurs, log the error, and raise it as well
+            logger.error(f"registry error removing client hold: {err}")
+            raise (err)
 
     def _delete_domain(self):
         """This domain should be deleted from the registry
@@ -773,7 +785,9 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact.domain = self
         administrative_contact.save()
 
-    @transition(field="state", source=State.READY, target=State.ON_HOLD)
+    @transition(
+        field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD
+    )
     def place_client_hold(self):
         """place a clienthold on a domain (no longer should resolve)"""
         # TODO - ensure all requirements for client hold are made here
@@ -782,7 +796,7 @@ class Domain(TimeStampedModel, DomainHelper):
         self._place_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=State.ON_HOLD, target=State.READY)
+    @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
     def revert_client_hold(self):
         """undo a clienthold placed on a domain"""
 
