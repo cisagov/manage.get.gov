@@ -745,7 +745,23 @@ class DomainAdmin(ListHeaderAdmin):
             obj.place_client_hold()
             obj.save()
         except Exception as err:
-            self.message_user(request, err, messages.ERROR)
+            # if error is an error from the registry, display useful
+            # and readable error
+            if err.code:
+                self.message_user(
+                    request,
+                    f"Error placing the hold with the registry: {err}",
+                    messages.ERROR,
+                )
+            elif err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
+                    messages.ERROR,
+                )
+            else:
+                # all other type error messages, display the error
+                self.message_user(request, err, messages.ERROR)
         else:
             self.message_user(
                 request,
@@ -762,7 +778,23 @@ class DomainAdmin(ListHeaderAdmin):
             obj.revert_client_hold()
             obj.save()
         except Exception as err:
-            self.message_user(request, err, messages.ERROR)
+            # if error is an error from the registry, display useful
+            # and readable error
+            if err.code:
+                self.message_user(
+                    request,
+                    f"Error removing the hold in the registry: {err}",
+                    messages.ERROR,
+                )
+            elif err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
+                    messages.ERROR,
+                )
+            else:
+                # all other type error messages, display the error
+                self.message_user(request, err, messages.ERROR)
         else:
             self.message_user(
                 request,
