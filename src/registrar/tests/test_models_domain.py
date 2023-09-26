@@ -291,7 +291,7 @@ class TestRegistrantContacts(MockEppLib):
         expectedSecContact = PublicContact.get_default_security()
         expectedSecContact.domain = self.domain
 
-        self.domain.pendingCreate()
+        self.domain.dns_needed_from_unknown()
 
         self.assertEqual(self.mockedSendFunction.call_count, 8)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 4)
@@ -334,7 +334,7 @@ class TestRegistrantContacts(MockEppLib):
                 created contact of type 'security'
         """
         # make a security contact that is a PublicContact
-        self.domain.pendingCreate()  # make sure a security email already exists
+        self.domain.dns_needed_from_unknown()  # make sure a security email already exists
         expectedSecContact = PublicContact.get_default_security()
         expectedSecContact.domain = self.domain
         expectedSecContact.email = "newEmail@fake.com"
@@ -553,8 +553,7 @@ class TestRegistrantNameservers(MockEppLib):
         self.assertEqual(deleted_values, [('ns2.example.com', ['1.2.3'])])
         self.assertEqual(updated_values, [('ns3.example.com', ['1.2.4'])])
         self.assertEqual(new_values, {'ns4.example.com'})
-        self.assertEqual(oldNameservers, [('ns1.example.com', None), ('ns2.example.com', ['1.2.3']), ('ns3.example.com', ['1.2.3'])])
-
+        self.assertEqual(oldNameservers, {'ns1.example.com': None, 'ns2.example.com': ['1.2.3'], 'ns3.example.com': ['1.2.3']})
 
     def test_user_adds_one_nameserver(self):
         """

@@ -282,6 +282,7 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             return e.code
+
     def _convert_list_to_dict(self, listToConvert: list[tuple[str]]):
         newDict={}
         for tup in listToConvert:
@@ -298,7 +299,7 @@ class Domain(TimeStampedModel, DomainHelper):
         returns tuple of four values as follows: 
         deleted_values:
         updated_values: 
-        new_values:
+        new_values: dict
         oldNameservers:"""
         oldNameservers=self.nameservers
 
@@ -319,9 +320,11 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 if newHostDict[prevHost] != addrs: 
                     updated_values.append((prevHost,newHostDict[prevHost]))
-            
-        new_values=set(newHostDict)-set(previousHostDict)
-        return (deleted_values,updated_values,new_values, oldNameservers)
+
+        new_values=set(newHostDict)-set(previousHostDict) #returns actually a set
+
+        final_new_values = dict.fromkeys(new_values, None)
+        return (deleted_values,updated_values,final_new_values, previousHostDict)
 
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str]]):
@@ -344,54 +347,65 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info(hosts)
 
         #get the changes made by user and old nameserver values
-        deleted_values,updated_values,new_values, oldNameservers=self.getNameserverChanges(hosts=hosts)
-    
-        count = 0
-        for hostTuple in hosts:
-            addrs = None
-            host=hostTuple[0]
-            if len(hostTuple) > 1:
-                addrs = hostTuple[1:] # list of all the ip address 
+        deleted_values, updated_values, new_values, oldNameservers=self.getNameserverChanges(hosts=hosts)
+        successDeletedCount = 0 
+        successCreatedCount = 0
 
-            # TODO-848: Check if the host a .gov (do .split on the last item), isdotgov can be a boolean function
-            # TODO-848: if you are dotgov and don't have an IP address then raise error
-            # NOTE-848: TRY logger.info() or print()
-            
+        for hostTuple in deleted_values:
+            deleted_response_code = self._delete_host(hostTuple[0])
+            if deleted_response_code == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
+                successDeletedCount += 1 
 
-            createdCode = self._create_host(host=host, addrs=addrs) # creates in registry
+        for hostTuple in updated_values:
+            updated_response_code = self._updated_host(hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0]))
+
+        for key, value in new_values.items():
+            print("HELLO THERE KEY, VALUE PAIR")
+            print(key)
+            print(value)
+            createdCode = self._create_host(host=key, addrs=value) # creates in registry
             # TODO-848: Double check if _create_host should handle duplicates + update domain obj?
             # NOTE-848: if createdCode == ErrorCode.OBJECT_EXISTS: --> self.nameservers
 
-            count += 1
             # NOTE-848: Host can be used by multiple domains
-            if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-                # NOTE-848: Add host to domain (domain already created, just adding to it)
+            if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY or createdCode == ErrorCode.OBJECT_EXISTS:
                 request = commands.UpdateDomain(
-                    name=self.name, add=[epp.HostObjSet([host])]
+                    name=self.name, add=[epp.HostObjSet([key])]
                 )
-
                 try:
                     registry.send(request, cleaned=True)
-                    # count += 1
+                    successCreatedCount += 1
                 except RegistryError as e:
                     logger.error(
                         "Error adding nameserver, code was %s error was %s"
                         % (e.code, e)
                     )
-                # elif createdCode == ErrorCode.OBJECT_EXISTS:
-                    # count += 1
-            # unchangedValuesCount=len(oldNameservers)-len(deleted_values)+addedNameservers
-        try:
-            print("COUNT IS ")
-            print(count)
-            if count >= 2 and count <= 13:
+
+        successTotalNameservers = len(oldNameservers) - successDeletedCount+ successCreatedCount
+
+
+        print("SUCCESSTOTALNAMESERVERS IS ")
+        print(successTotalNameservers)
+        if successTotalNameservers < 2:
+            try:
+                print("DNS_NEEDED: We have less than 2 nameservers")
+                self.dns_needed()
+                self.save()
+            except Exception as err:
+                logger.info(
+                    "nameserver setter checked for dns_needed state "
+                    "and it did not succeed. Error: %s" % err
+                )                
+        elif successTotalNameservers >= 2 and successTotalNameservers <= 13:
+            try:
+                print("READY/SAVE: We are in happy path where btwen 2 and 13 inclusive ns")
                 self.ready()
                 self.save()
-        except Exception as err:
-            logger.info(
-                "nameserver setter checked for create state "
-                "and it did not succeed. Error: %s" % err
-            )
+            except Exception as err:
+                logger.info(
+                    "nameserver setter checked for create state "
+                    "and it did not succeed. Error: %s" % err
+                )
         # TODO-848: Handle removed nameservers here, will need to change the state then go back to DNS_NEEDED
 
     @Cache
@@ -792,7 +806,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                     # avoid infinite loop
                     already_tried_to_create = True
-                    self.pendingCreate()
+                    self.dns_needed_from_unknown()
                     self.save()
                 else:
                     logger.error(e)
@@ -806,7 +820,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return registrant.registry_id
 
     @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
-    def pendingCreate(self):
+    def dns_needed_from_unknown(self):
         logger.info("Changing to dns_needed")
 
         registrantID = self.addRegistrant()
@@ -862,31 +876,44 @@ class Domain(TimeStampedModel, DomainHelper):
         #  a child host is being used by
         # another .gov domains.  The host must be first removed
         # and/or renamed before the parent domain may be deleted.
-        logger.info("pendingCreate()-> inside pending create")
+        logger.info("dns_needed_from_unknown()-> inside pending create")
         self._delete_domain()
         # TODO - delete ticket any additional error handling here
+
+    def is_dns_needed(self):
+        self._invalidate_cache()
+        nameserverList = self.nameservers
+        return len(nameserverList) < 2
 
     @transition(
         field="state",
         source=[State.DNS_NEEDED],
         target=State.READY,
+        conditions=[lambda x : not is_dns_needed]
     )
-    # 811 -- Rachid look at constraint on a transition, could just be a function
     def ready(self):
         """Transition to the ready state
         domain should have nameservers and all contacts
         and now should be considered live on a domain
         """
-        # TODO - in nameservers tickets 848 and 562
-        #   check here if updates need to be made
-        # consider adding these checks as constraints
-        #  within the transistion itself
-        nameserverList = self.nameservers
         logger.info("Changing to ready state")
-        # TEST THIS -- assertValue or print (trigger this)
-        # if len(nameserverList) < 2 or len(nameserverList) > 13:
-        #     raise ValueError("Not ready to become created, cannot transition yet")
         logger.info("able to transition to ready state")
+
+    @transition(
+        field="state",
+        source=[State.READY],
+        target=State.DNS_NEEDED,
+        conditions=[is_dns_needed]
+    )
+    def dns_needed(self):
+        """Transition to the DNS_NEEDED state
+        domain should NOT have nameservers but 
+        SHOULD have all contacts
+        Going to check nameservers and will 
+        result in an EPP call 
+        """
+        logger.info("Changing to DNS_NEEDED state")
+        logger.info("able to transition to DNS_NEEDED state")
 
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
@@ -995,17 +1022,43 @@ class Domain(TimeStampedModel, DomainHelper):
 
                 raise e
 
-    def _update_or_create_host(self, host):
-        # maybe take out current code and put here
-        raise NotImplementedError()
+    # TODO: Need to implement this
+    def is_ipv6(self, ip: str):
+        return True
 
-    def _delete_host(self, host):
-        # if len(nameserver_list) < 2:
-        # change from READY to DNS_NEEDED state
+    def _convert_ips(self, ip_list: list[str]):
+        edited_ip_list = []
+        for ip_addr in ip_list:
+            if is_ipv6:
+                edited_ip_list.append(command.Ip(addr=ip_addr, ip="v6"))
+            else: # default ip addr is v4
+                edited_ip_list.append(command.Ip(addr=ip_addr))
+        return edited_ip_list
 
-        # Check host to nameserver list, and then use delete command?
-        raise NotImplementedError()
+    def _update_host(self, nameserver: str, ip_list: list[str], old_ip_list: list[str]):
+        try:
 
+            if len(ip_list) == 0:
+                return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
+   
+            request = commands.UpdateHost(name=nameserver, add=self._convert_ips(ip_list), rem=self._convert_ips(old_ip_list))
+            response = registry.send(request, cleaned=True)
+            logger.info("_update_host()-> sending req as %s" % request)
+            return response.code
+        except RegistryError as e:
+            logger.error("Error _delete_host, code was %s error was %s" % (e.code, e))
+            return e.code
+
+    def _delete_host(self, nameserver: str):
+        try:
+            request = commands.DeleteHost(name=nameserver)
+            response = registry.send(request, cleaned=True)
+            logger.info("_delete_host()-> sending req as %s" % request)
+            return response.code
+        except RegistryError as e:
+            logger.error("Error _delete_host, code was %s error was %s" % (e.code, e))
+            return e.code
+            
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:

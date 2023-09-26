@@ -555,6 +555,7 @@ class MockEppLib(TestCase):
             hosts=...,
             statuses=...,
             avail=...,
+            addrs=...,
         ):
             self.auth_info = auth_info
             self.cr_date = cr_date
@@ -562,6 +563,7 @@ class MockEppLib(TestCase):
             self.hosts = hosts
             self.statuses = statuses
             self.avail = avail #use for CheckDomain
+            self.addrs = addrs
 
     mockDataInfoDomain = fakedEppObject(
         "fakepw",
@@ -583,7 +585,7 @@ class MockEppLib(TestCase):
         "anotherPw", cr_date=datetime.datetime(2023, 7, 25, 19, 45, 35)
     )
     mockDataInfoHosts = fakedEppObject(
-        "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
+        "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35), addrs=["1.2.3", "2.3.4"]
     )
     mockDataCreateHost  =fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
