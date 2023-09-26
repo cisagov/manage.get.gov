@@ -750,7 +750,7 @@ class DomainAdmin(ListHeaderAdmin):
             if err.code:
                 self.message_user(
                     request,
-                    "Error placing the hold with the registry: {err}",
+                    f"Error placing the hold with the registry: {err}",
                     messages.ERROR,
                 )
             elif err.is_connection_error():
@@ -783,7 +783,13 @@ class DomainAdmin(ListHeaderAdmin):
             if err.code:
                 self.message_user(
                     request,
-                    "Error removing the hold in the registry: {err}",
+                    f"Error removing the hold in the registry: {err}",
+                    messages.ERROR,
+                )
+            elif err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
                     messages.ERROR,
                 )
             else:
