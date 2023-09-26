@@ -238,10 +238,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         hostList = []
         for host in hosts:
-            # TODO-848: This should actually have a second tuple value with the ip address
-            # ignored because uncertain if we will even have a way to display mult.
-            # and adresses can be a list of mult address
-
             hostList.append((host["name"],host["addrs"]))
 
         return hostList
@@ -307,10 +303,8 @@ class Domain(TimeStampedModel, DomainHelper):
         oldNameservers=self.nameservers
 
         previousHostDict =  self._convert_list_to_dict(oldNameservers)
-        print("previousHostDict {previousHostDict}")
 
         newHostDict = self._convert_list_to_dict(hosts)
-        print(f" new host dict {newHostDict}")
         deleted_values = []
         updated_values = []
         new_values = []
@@ -323,10 +317,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 deleted_values.append((prevHost,addrs))
             #if the host exists in both, check if the addresses changed
             else:
-                print(f"value in newHostDict[prevHost]{newHostDict[prevHost]}")
-                print(f"prevhost {prevHost}")
-                #not right updated_values: [(), (['1.2.4'],)]
-
                 if newHostDict[prevHost] != addrs: 
                     updated_values.append((prevHost,newHostDict[prevHost]))
             
