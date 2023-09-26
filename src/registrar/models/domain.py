@@ -725,11 +725,11 @@ class Domain(TimeStampedModel, DomainHelper):
             name=postal_info.name or "",
             org=postal_info.org,
             # For linter - default to "" instead of None
-            pw=getattr(auth_info, 'pw', ""),
-            city=getattr(addr, 'city', ""),
-            pc=getattr(addr, 'pc', ""),
-            cc=getattr(addr, 'cc', ""),
-            sp=getattr(addr, 'sp', ""),
+            pw=getattr(auth_info, "pw", ""),
+            city=getattr(addr, "city", ""),
+            pc=getattr(addr, "pc", ""),
+            cc=getattr(addr, "cc", ""),
+            sp=getattr(addr, "sp", ""),
             **streets,
         )
 
@@ -751,7 +751,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def generic_contact_getter(
         self, contact_type_choice: PublicContact.ContactTypeChoices
-    ) -> PublicContact | None:
+    ) -> PublicContact:
         """Abstracts the cache logic on EppLib contact items
 
         contact_type_choice is a literal in PublicContact.ContactTypeChoices,
@@ -773,9 +773,8 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             contacts = self._get_property(desired_property)
         except KeyError as error:
-            # Q: Should we be raising an error instead?
             logger.error(f"Could not find {contact_type_choice}: {error}")
-            return None
+            raise error
         else:
             # Grab from cache
             cached_contact = self.grab_contact_in_keys(contacts, contact_type_choice)
