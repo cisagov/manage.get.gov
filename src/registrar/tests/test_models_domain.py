@@ -940,39 +940,95 @@ class TestAnalystLock(TestCase):
         raise
 
 
-class TestAnalystDelete(TestCase):
+class TestAnalystDelete(MockEppLib):
     """Rule: Analysts may delete a domain"""
-
     def setUp(self):
-        """
-        Background:
-            Given the analyst is logged in
-            And a domain exists in the registry
-        """
-        pass
+            """
+            Background:
+                Given the analyst is logged in
+                And a domain exists in the registry
+            """
+            super().setUp()
+            self.domain, _ = Domain.objects.get_or_create(
+                name="fake.gov", state=Domain.State.READY
+            )
+            self.domain_on_hold, _ = Domain.objects.get_or_create(
+                name="fake-on-hold.gov", state=Domain.State.ON_HOLD
+            )
 
-    @skip("not implemented yet")
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
     def test_analyst_deletes_domain(self):
         """
         Scenario: Analyst permanently deletes a domain
-            When `domain.delete()` is called
+            When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
         """
-        raise
+        # Put the domain in client hold
+        self.domain.place_client_hold()
+        # Delete it...
+        self.domain.deletedInEpp()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
+        # Domain itself should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.DELETED)
 
-    @skip("not implemented yet")
     def test_analyst_deletes_domain_idempotent(self):
         """
         Scenario: Analyst tries to delete an already deleted domain
             Given `state` is already `DELETED`
-            When `domain.delete()` is called
+            When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And Domain returns normally (without error)
         """
-        raise
+        # Put the domain in client hold
+        self.domain.place_client_hold()
+        # Delete it...
+        self.domain.deletedInEpp()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
+        # Domain itself should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.DELETED)
 
-    @skip("not implemented yet")
+        # Delete it again - monitoring for errors
+        try:
+            self.domain.deletedInEpp()
+        except Exception as err:
+            self.fail("deletedInEpp() threw an error")
+            raise err
+        
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
+        # Domain itself should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.DELETED)
+
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
@@ -980,4 +1036,44 @@ class TestAnalystDelete(TestCase):
             Then a user-friendly error message is returned for displaying on the web
             And `state` is not set to `DELETED`
         """
-        raise
+        domain, _ = Domain.objects.get_or_create(
+                name="fail.gov", state=Domain.State.ON_HOLD
+        )
+        # Put the domain in client hold
+        domain.place_client_hold()
+        # Delete it...
+
+        with self.assertRaises(RegistryError) as err:
+            domain.deletedInEpp()
+            self.assertTrue(
+                err.is_client_error() 
+                and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION
+            )
+        # TODO - check UI for error
+        # Domain itself should not be deleted
+        self.assertNotEqual(domain, None)
+        # State should not have changed
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
+
+    @skip("not implemented yet")
+    def test_deletion_ready_fsm_failure(self):
+        """
+        Scenario: Domain deletion is unsuccessful due to FSM rules
+            Given state is 'ready'
+            When `domain.deletedInEpp()` is called
+            Then a user-friendly error message is returned for displaying on the web
+            And `state` is not set to `DELETED`
+        """
+        self.domain.deletedInEpp()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov", auth_info=None),
+                    cleaned=True,
+                )
+            ]
+        )
+        # Domain should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, "DELETED")

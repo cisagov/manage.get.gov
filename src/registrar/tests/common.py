@@ -604,6 +604,13 @@ class MockEppLib(TestCase):
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        elif (
+            isinstance(_request, commands.DeleteDomain)
+            and getattr(_request, "name", None) == "fail.gov"
+        ):
+            raise RegistryError(
+                code=ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION
+            )
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):

@@ -6,11 +6,12 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
+from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
-
+from django_fsm import TransitionNotAllowed # type: ignore
 logger = logging.getLogger(__name__)
 
 
@@ -717,10 +718,46 @@ class DomainAdmin(ListHeaderAdmin):
 
     def do_delete_domain(self, request, obj):
         try:
-            obj.deleted()
+            obj.deletedInEpp()
             obj.save()
-        except Exception as err:
+        except RegistryError as err:
+            if err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
+                    messages.ERROR,
+                )
+            elif err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION:
+                self.message_user(
+                    request,
+                    "Error deleting this Domain: " 
+                    f"Cannot delete Domain when in status {obj.status}",
+                    messages.ERROR,
+                )
+            elif err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
+                self.message_user(
+                    request,
+                    "Error deleting this Domain: " 
+                    f" This subdomain is being used as a hostname on another domain",
+                    messages.ERROR,
+                )
+            elif err.code:
+                self.message_user(
+                    request,
+                    f"Error deleting this Domain: {err}",
+                    messages.ERROR,
+                )
+            else:
+                # all other type error messages, display the error
+                self.message_user(request, err, messages.ERROR)
+        except ValueError as err:
             self.message_user(request, err, messages.ERROR)
+        except TransitionNotAllowed
+            self.message_user(
+                request,
+                f"Error deleting this Domain: {err}",
+                messages.ERROR,
+            )
         else:
             self.message_user(
                 request,

@@ -598,7 +598,11 @@ class DomainApplication(TimeStampedModel):
             "emails/domain_request_withdrawn.txt",
             "emails/domain_request_withdrawn_subject.txt",
         )
-
+    
+    # TODO
+    #def delete(self, *args, **kwargs):
+        #super().delete(*args, **kwargs)
+    
     @transition(
         field="status",
         source=[IN_REVIEW, APPROVED],
@@ -612,7 +616,7 @@ class DomainApplication(TimeStampedModel):
         (will cascade), and send an email notification."""
 
         if self.status == self.APPROVED:
-            self.approved_domain.delete_request()
+            self.approved_domain.deletedInEpp()
             self.approved_domain.delete()
             self.approved_domain = None
 

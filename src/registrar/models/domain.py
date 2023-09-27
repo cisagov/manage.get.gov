@@ -609,11 +609,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         return self.state == self.State.READY
 
-    def delete_request(self):
-        """Delete from host. Possibly a duplicate of _delete_host?"""
-        # TODO fix in ticket #901
-        pass
-
     def transfer(self):
         """Going somewhere. Not implemented."""
         raise NotImplementedError()
@@ -658,7 +653,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.DeleteDomain(name=self.name)
-        registry.send(request)
+        response = registry.send(request, cleaned=True)
+        return response
 
     def __str__(self) -> str:
         return self.name
@@ -773,6 +769,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self.addAllDefaults()
 
+
+
     def addAllDefaults(self):
         security_contact = self.get_default_security_contact()
         security_contact.save()
@@ -805,15 +803,34 @@ class Domain(TimeStampedModel, DomainHelper):
         # TODO -on the client hold ticket any additional error handling here
 
     @transition(field="state", source=State.ON_HOLD, target=State.DELETED)
-    def deleted(self):
-        """domain is deleted in epp but is saved in our database"""
-        # TODO Domains may not be deleted if:
-        #  a child host is being used by
-        # another .gov domains.  The host must be first removed
-        # and/or renamed before the parent domain may be deleted.
-        logger.info("pendingCreate()-> inside pending create")
-        self._delete_domain()
-        # TODO - delete ticket any additional error handling here
+    def deletedInEpp(self):
+        """domain is deleted in epp but is saved in our database.
+        Returns the request_code"""
+        valid_delete_states = [
+            self.State.ON_HOLD,
+            self.State.DNS_NEEDED
+        ]
+        # Check that the domain contacts a valid status
+        if (self.state not in valid_delete_states):
+            raise ValueError(
+                f"Invalid domain state of {self.state}. Cannot delete."
+            )
+
+        try:
+            logger.info("deletedInEpp()-> inside _delete_domain")
+            self._delete_domain()
+        except RegistryError as err:
+            logger.error(
+                f"Could not delete domain. Registry returned error: {err}"
+            )
+            raise err
+        except Exception as err:
+            logger.error(
+                f"Could not delete domain. An unspecified error occured: {err}"
+            )
+            raise err
+        else:
+            self._invalidate_cache()
 
     @transition(
         field="state",
