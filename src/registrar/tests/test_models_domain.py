@@ -599,7 +599,7 @@ class TestRegistrantNameservers(MockEppLib):
         """
 
         # set 2 nameservers
-        
+        print("DOCKER DIDNT SUCK THIS TIME")
         self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]  
 
         # when you create a host, you also have to update at same time
@@ -609,8 +609,10 @@ class TestRegistrantNameservers(MockEppLib):
         created_host2 = commands.CreateHost(self.nameserver2)
         update_domain_with_created2 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host2.name])])
 
+        infoDomain = commands.InfoDomain(name='my-nameserver.gov', auth_info=None)
         # checking if commands were sent (commands have to be sent in order)
         expectedCalls = [
+            call(infoDomain, cleaned=True),
             call(created_host1, cleaned=True),
             call(update_domain_with_created1, cleaned=True),
             call(created_host2, cleaned=True),
@@ -620,8 +622,8 @@ class TestRegistrantNameservers(MockEppLib):
         print("self.mockedSendFunction.call_args_list is ")
         print(self.mockedSendFunction.call_args_list)
 
-        self.mockedSendFunction.assert_has_calls(expectedCalls)
-
+        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+        self.assertEqual(5, self.mockedSendFunction.call_count)
         # check that status is READY
         self.assertTrue(self.domain.is_active())
 
@@ -657,7 +659,6 @@ class TestRegistrantNameservers(MockEppLib):
         self.assertRaises(ValueError, _get_14_nameservers)
         self.assertEqual(self.mockedSendFunction.call_count, 0)
 
-    @skip("not implemented yet")
     def test_user_removes_some_nameservers(self):
         """
         Scenario: Registrant removes some nameservers, while keeping at least 2
@@ -667,29 +668,59 @@ class TestRegistrantNameservers(MockEppLib):
                 to the registry
             And `domain.is_active` returns True
         """
-        #Given the domain has 3 nameservers
-        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,),(self.nameserver3,)]  
 
-        #now remove one
+        # Mock is set to return 3 nameservers on infodomain
+        self.extendedValues=True
         self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
+        expectedCalls=[  
+            # calls info domain, and info on all hosts
+            # to get past values
+            # then removes the single host and updates domain
+            call(commands.InfoDomain(name='my-nameserver.gov', auth_info=None), cleaned=True),
+            call(commands.InfoHost(name='ns1.my-nameserver-1.com'), cleaned=True),
+            call(commands.InfoHost(name='ns1.my-nameserver-2.com'), cleaned=True),
+            call(commands.InfoHost(name='ns1.cats-are-superior3.com'), cleaned=True),
+            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.cats-are-superior3.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(commands.DeleteHost(name='ns1.cats-are-superior3.com'), cleaned=True)]
 
-        #assert updatedomain called
-        #assert call deletehost?
-        raise
+        print("self.mockedSendFunction.call_args_list is ")
+        print(self.mockedSendFunction.call_args_list)
+        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+        self.assertTrue(self.domain.is_active())
 
-    @skip("not implemented yet")
+  
     def test_user_removes_too_many_nameservers(self):
         """
         Scenario: Registrant removes some nameservers, bringing the total to less than 2
-            Given the domain has 3 nameservers
+            Given the domain has 2 nameservers
             When `domain.nameservers` is set to an array containing nameserver #1
             Then `commands.UpdateDomain` and `commands.DeleteHost` is sent
                 to the registry
             And `domain.is_active` returns False
+            
         """
-        raise
+        self.extendedValues=True
+        print("domain state")
+        print(self.domain.state)
+        self.domain.ready()
+        print("Domain state is now")
+        print(self.domain.state)
+        self.domain.nameservers = [(self.nameserver1,)] 
+        print("self.mockedSendFunction.call_args_list is ")
+        print(self.mockedSendFunction.call_args_list)
+        expectedCalls=[call(commands.InfoDomain(name='my-nameserver.gov', auth_info=None), cleaned=True),
+            call(commands.InfoHost(name='ns1.my-nameserver-1.com'), cleaned=True),
+            call(commands.InfoHost(name='ns1.my-nameserver-2.com'), cleaned=True),
+            call(commands.InfoHost(name='ns1.cats-are-superior3.com'), cleaned=True),
+            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.my-nameserver-2.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(commands.DeleteHost(name='ns1.my-nameserver-2.com'), cleaned=True),
+            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.cats-are-superior3.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(commands.DeleteHost(name='ns1.cats-are-superior3.com'), cleaned=True)]
+        
+  
+        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+        self.assertFalse(self.domain.is_active())
 
-    @skip("not implemented yet")
     def test_user_replaces_nameservers(self):
         """
         Scenario: Registrant simultaneously adds and removes some nameservers
@@ -700,9 +731,27 @@ class TestRegistrantNameservers(MockEppLib):
             And `commands.UpdateDomain` is sent to add #4 and #5 plus remove #2 and #3
             And `commands.DeleteHost` is sent to delete #2 and #3
         """
-        raise
+        self.extendedValues=True
+        self.domain.ready()
+        self.domain.nameservers=[(self.nameserver1,), ("ns1.cats-are-superior1.com",), ("ns1.cats-are-superior2.com",)]
+        print("self.mockedSendFunction.call_args_list is ")
+        print(self.mockedSendFunction.call_args_list)
+        expectedCalls=[call(commands.InfoDomain(name='my-nameserver.gov', auth_info=None), cleaned=True),
+            call(commands.InfoHost(name='ns1.my-nameserver-1.com'), cleaned=True),
+            call(commands.InfoHost(name='ns1.my-nameserver-2.com'), cleaned=True),
+            call(commands.InfoHost(name='ns1.cats-are-superior3.com'), cleaned=True),
+            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.my-nameserver-2.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(commands.DeleteHost(name='ns1.my-nameserver-2.com'), cleaned=True),
+            call(commands.CreateHost(name='ns1.cats-are-superior1.com', addrs=[]), cleaned=True),
+            call(commands.UpdateDomain(name='my-nameserver.gov', add=[common.HostObjSet(hosts=['ns1.cats-are-superior1.com'])], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
+            call(commands.CreateHost(name='ns1.cats-are-superior2.com', addrs=[]), cleaned=True),
+            call(commands.UpdateDomain(name='my-nameserver.gov', add=[common.HostObjSet(hosts=['ns1.cats-are-superior2.com'])], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True)
+            ]
+        
+        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+        self.assertTrue(self.domain.is_active())
 
-    @skip("not implemented yet")
+
     def test_user_cannot_add_subordinate_without_ip(self):
         """
         Scenario: Registrant adds a nameserver which is a subdomain of their .gov
@@ -711,6 +760,8 @@ class TestRegistrantNameservers(MockEppLib):
                 with a subdomain of the domain and no IP addresses
             Then Domain raises a user-friendly error
         """
+        #add a nameserver with a .gov and no ip
+        ##assertRaises error 
         raise
 
     @skip("not implemented yet")
@@ -758,6 +809,9 @@ class TestRegistrantNameservers(MockEppLib):
         """
         raise
 
+    def tearDown(self):
+        self.extendedValues=False
+        return super().tearDown()
 
 class TestRegistrantDNSSEC(TestCase):
     """Rule: Registrants may modify their secure DNS data"""

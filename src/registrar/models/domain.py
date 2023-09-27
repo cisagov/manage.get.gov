@@ -292,6 +292,15 @@ class Domain(TimeStampedModel, DomainHelper):
                 newDict[tup[0]] = tup[1]
         return newDict
     
+    def isDotGov(self, nameserver):
+        return nameserver.find(".gov")!=-1
+    
+    def checkHostIPCombo(self, nameserver:str, ip:list):
+        if ( self.isDotGov(nameserver) and (ip is None or
+            ip==[]) ):
+            raise ValueError("Nameserver %s needs to have an ip address", nameserver)
+        return None
+
     def getNameserverChanges(self, hosts:list[tuple[str]]):
         """ 
         calls self.nameserver, it should pull from cache but may result
@@ -316,16 +325,25 @@ class Domain(TimeStampedModel, DomainHelper):
             # but are not in the list of new host values
             if prevHost not in newHostDict:
                 deleted_values.append((prevHost,addrs))
-            #if the host exists in both, check if the addresses changed
+            # if the host exists in both, check if the addresses changed
             else:
                 #TODO - host is being updated when previous was None and new is an empty list
-                #add check here
-                if newHostDict[prevHost] != addrs: 
+                # add check here
+                if (newHostDict[prevHost] != addrs 
+                    and newHostDict[prevHost] is not None): 
+                    # could raise error here if new value is empty and is a dotgov
+                    self.checkHostIPCombo(nameserver=prevHost, ip=newHostDict[prevHost])
                     updated_values.append((prevHost,newHostDict[prevHost]))
 
         new_values=set(newHostDict)-set(previousHostDict) #returns actually a set
 
         final_new_values = dict.fromkeys(new_values, None)
+        # loop in final new values to check for .gov and missing addresses
+        for nameserver, ip in final_new_values.items():
+            # check the new values for missing IPs
+            # raise error if missing
+            self.checkHostIPCombo(nameserver=nameserver,ip=ip)
+                
         return (deleted_values,updated_values,final_new_values, previousHostDict)
 
     @nameservers.setter  # type: ignore
@@ -333,7 +351,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, 127.0.0.1, others ips)]"""
-        # TODO-848: Finish this implementation of delete + update nameserver
+    
         # TODO-848: ip version checking may need to be added in a different ticket
 
         # We currently don't have IP address functionality
@@ -906,16 +924,29 @@ class Domain(TimeStampedModel, DomainHelper):
         self._delete_domain()
         # TODO - delete ticket any additional error handling here
 
-    def is_dns_needed(self):
-        self._invalidate_cache()
-        nameserverList = self.nameservers
-        return len(nameserverList) < 2
+    # def is_dns_needed(self):
+    #     """Commented out and kept in the codebase
+    #     as this call should be made, but adds
+    #     a lot of processing time
+    #     when EPP calling is made more efficient
+    #     this should be added back in
 
+    #     The goal is to double check that 
+    #     the nameservers we set are in fact
+    #     on the registry
+    #     """
+    #     self._invalidate_cache()
+    #     nameserverList = self.nameservers
+    #     return len(nameserverList) < 2
+    
+    # def dns_not_needed(self):
+    #     return not self.is_dns_needed()
+    
     @transition(
         field="state",
         source=[State.DNS_NEEDED],
         target=State.READY,
-        conditions=[lambda x : not is_dns_needed]
+        # conditions=[dns_not_needed]
     )
     def ready(self):
         """Transition to the ready state
@@ -929,7 +960,7 @@ class Domain(TimeStampedModel, DomainHelper):
         field="state",
         source=[State.READY],
         target=State.DNS_NEEDED,
-        conditions=[is_dns_needed]
+        # conditions=[is_dns_needed]
     )
     def dns_needed(self):
         """Transition to the DNS_NEEDED state
@@ -1054,17 +1085,21 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _convert_ips(self, ip_list: list[str]):
         edited_ip_list = []
+        if ip_list is None:
+            return []
+        
         for ip_addr in ip_list:
             if self.is_ipv6():
                 edited_ip_list.append(epp.Ip(addr=ip_addr, ip="v6"))
             else: # default ip addr is v4
                 edited_ip_list.append(epp.Ip(addr=ip_addr))
+
         return edited_ip_list
 
     def _update_host(self, nameserver: str, ip_list: list[str], old_ip_list: list[str]):
         try:
 
-            if len(ip_list) == 0:
+            if ip_list is None or len(ip_list) == 0 and isinstance(old_ip_list,list) and len(old_ip_list)!=0 :
                 return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
    
             request = commands.UpdateHost(name=nameserver, add=self._convert_ips(ip_list), rem=self._convert_ips(old_ip_list))

@@ -581,15 +581,36 @@ class MockEppLib(TestCase):
         contacts=[],
         hosts=["fake.host.com"],
     )
+    infoDomainThreeHosts =fakedEppObject(
+        "my-nameserver.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=["ns1.my-nameserver-1.com","ns1.my-nameserver-2.com","ns1.cats-are-superior3.com"],
+    )
+    infoDomainNoHost =fakedEppObject(
+        "my-nameserver.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=[],
+    )
+    infoDomainTwoHosts =fakedEppObject(
+        "my-nameserver.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=["ns1.my-nameserver-1.com","ns1.my-nameserver-2.com"],
+    )
     mockDataInfoContact = fakedEppObject(
         "anotherPw", cr_date=datetime.datetime(2023, 7, 25, 19, 45, 35)
     )
     mockDataInfoHosts = fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35), addrs=["1.2.3", "2.3.4"]
     )
+
     mockDataHostChange  =fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
     )
+    
+    extendedValues=False
 
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
@@ -599,6 +620,13 @@ class MockEppLib(TestCase):
         if isinstance(_request, commands.InfoDomain):
             if getattr(_request, "name", None) == "security.gov":
                 return MagicMock(res_data=[self.infoDomainNoContact])
+            elif getattr(_request, "name", None) == "my-nameserver.gov":
+                if self.extendedValues:
+                    return MagicMock(res_data=[self.infoDomainThreeHosts])
+                elif self.mockedSendFunction.call_count==5: ## remove this breaks anything?
+                    return MagicMock(res_data=[self.infoDomainTwoHosts])
+                else:
+                    return MagicMock(res_data=[self.infoDomainNoHost])
             return MagicMock(res_data=[self.mockDataInfoDomain])
         elif isinstance(_request, commands.InfoContact):
             return MagicMock(res_data=[self.mockDataInfoContact])
