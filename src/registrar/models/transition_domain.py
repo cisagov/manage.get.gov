@@ -13,8 +13,6 @@ class TransitionDomain(TimeStampedModel):
     state of a domain upon transition between registry
     providers"""
 
-    StatusChoices = StatusChoices
-
     username = models.TextField(
         null=False,
         blank=False,
