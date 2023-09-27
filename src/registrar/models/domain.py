@@ -353,7 +353,7 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     @Cache
-    def registrant_contact(self) -> PublicContact:
+    def registrant_contact(self) -> PublicContact | None:
         registrant = PublicContact.ContactTypeChoices.REGISTRANT
         return self.generic_contact_getter(registrant)
 
@@ -368,7 +368,7 @@ class Domain(TimeStampedModel, DomainHelper):
         )
 
     @Cache
-    def administrative_contact(self) -> PublicContact:
+    def administrative_contact(self) -> PublicContact | None:
         """Get or set the admin contact for this domain."""
         admin = PublicContact.ContactTypeChoices.ADMINISTRATIVE
         return self.generic_contact_getter(admin)
@@ -436,7 +436,7 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
     @Cache
-    def security_contact(self) -> PublicContact:
+    def security_contact(self) -> PublicContact | None:
         """Get or set the security contact for this domain."""
         security = PublicContact.ContactTypeChoices.SECURITY
         return self.generic_contact_getter(security)
@@ -570,7 +570,7 @@ class Domain(TimeStampedModel, DomainHelper):
         )
 
     @Cache
-    def technical_contact(self) -> PublicContact:
+    def technical_contact(self) -> PublicContact | None:
         """Get or set the tech contact for this domain."""
         tech = PublicContact.ContactTypeChoices.TECHNICAL
         return self.generic_contact_getter(tech)
@@ -652,21 +652,12 @@ class Domain(TimeStampedModel, DomainHelper):
     def isActive(self):
         return self.state == Domain.State.CREATED
 
-    # Q: I don't like this function name much,
-    # what would be better here?
-    # Q2:
-    # This can likely be done without passing in
-    # contact_id and contact_type and instead embedding it inside of
-    # contact, but the tradeoff for that is that it unnecessarily complicates using this
-    # (as you'd have to create a custom dictionary), and type checking becomes weaker.
-    # I'm sure though that there is an easier alternative...
-    # TLDR: This doesn't look as pretty, but it makes using this function easier
+
     def map_epp_contact_to_public_contact(
         self,
         contact: eppInfo.InfoContactResultData,
         contact_id,
-        contact_type,
-        create_object=True,
+        contact_type
     ):
         """Maps the Epp contact representation to a PublicContact object.
 
@@ -675,8 +666,6 @@ class Domain(TimeStampedModel, DomainHelper):
         contact_id -> str: The given registry_id of the object (i.e "cheese@cia.gov")
 
         contact_type -> str: The given contact type, (i.e. "tech" or "registrant")
-
-        create_object -> bool: Flag for if this object is saved or not
         """
 
         if contact is None:
@@ -708,10 +697,11 @@ class Domain(TimeStampedModel, DomainHelper):
         streets = dict(
             zip_longest(
                 ["street1", "street2", "street3"],
-                addr.street if addr is not None else [],
+                addr.street if addr is not None else [""],
                 fillvalue=None,
             )
         )
+
         desired_contact = PublicContact(
             domain=self,
             contact_type=contact_type,
@@ -770,7 +760,7 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             contacts = self._get_property(desired_property)
         except KeyError as error:
-           # Q: Should we be raising an error instead?
+            # Q: Should we be raising an error instead?
             logger.error(f"Could not find {contact_type_choice}: {error}")
             return None
         else:
@@ -805,19 +795,19 @@ class Domain(TimeStampedModel, DomainHelper):
         contact.domain = self
         return contact
 
-    def grab_contact_in_keys(self, contacts, check_type):
+    def grab_contact_in_keys(self, contacts, contact_type):
         """Grabs a contact object.
         Returns None if nothing is found.
-        check_type compares contact["type"] == check_type.
+        contact_type compares contact.contact_type == contact_type.
 
-        For example, check_type = 'security'
+        For example, contact_type = 'security'
         """
         # Registrant doesn't exist as an array
-        if check_type == PublicContact.ContactTypeChoices.REGISTRANT:
+        if contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
             if (
                 isinstance(contacts, PublicContact)
                 and contacts.contact_type is not None
-                and contacts.contact_type == check_type
+                and contacts.contact_type == contact_type
             ):
                 if contacts.registry_id is None:
                     raise ValueError("registry_id cannot be None")
@@ -826,11 +816,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 raise ValueError("Invalid contact object for registrant_contact")
 
         for contact in contacts:
-            print(f"grab_contact_in_keys -> contact item {contact.__dict__}")
             if (
                 isinstance(contact, PublicContact)
                 and contact.contact_type is not None
-                and contact.contact_type == check_type
+                and contact.contact_type == contact_type
             ):
                 if contact.registry_id is None:
                     raise ValueError("registry_id cannot be None")
@@ -1072,10 +1061,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
-
         try:
             return self._request_contact_info(contact)
-
         except RegistryError as e:
             if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                 logger.info(
@@ -1132,8 +1119,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # Registrant should be of type PublicContact
             if "registrant" in cleaned.keys():
-                # Registrant, if it exists, should always exist in EppLib.
-                # If it doesn't, that is bad. We expect this to exist
                 cleaned["registrant"] = self._registrant_to_public_contact(
                     cleaned["registrant"]
                 )

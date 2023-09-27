@@ -1,5 +1,5 @@
 from unittest import skip
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock, ANY, patch
 
 from django.conf import settings
 from django.test import Client, TestCase
@@ -1406,9 +1406,35 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         )
         self.assertContains(page, "Testy")
 
+    def test_domain_security_email_existing_security_contact(self):
+        """Can load domain's security email page."""
+        self.mockSendPatch = patch("registrar.models.domain.registry.send")
+        self.mockedSendFunction = self.mockSendPatch.start()
+        self.mockedSendFunction.side_effect = self.mockSend
+
+        domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+        # Add current user to this domain
+        _ = UserDomainRole(
+            user=self.user,
+            domain = domain_contact,
+            role = "admin"
+        ).save()
+        page = self.client.get(
+            reverse("domain-security-email", kwargs={"pk": domain_contact.id})
+        )
+
+        # Loads correctly
+        self.assertContains(page, "Domain security email")
+        self.assertContains(page, "security@mail.gov")
+        self.mockSendPatch.stop()
+
     def test_domain_security_email_no_security_contact(self):
         """Loads a domain with no defined security email.
         We should not show the default."""
+        self.mockSendPatch = patch("registrar.models.domain.registry.send")
+        self.mockedSendFunction = self.mockSendPatch.start()
+        self.mockedSendFunction.side_effect = self.mockSend
+        
         page = self.client.get(
             reverse("domain-security-email", kwargs={"pk": self.domain.id})
         )
@@ -1416,6 +1442,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         # Loads correctly
         self.assertContains(page, "Domain security email")
         self.assertNotContains(page, "dotgov@cisa.dhs.gov")
+        self.mockSendPatch.stop()
 
     def test_domain_security_email(self):
         """Can load domain's security email page."""
