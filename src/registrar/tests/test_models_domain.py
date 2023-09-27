@@ -20,6 +20,8 @@ from .common import MockEppLib
 from epplibwrapper import (
     commands,
     common,
+    RegistryError,
+    ErrorCode,
 )
 
 
@@ -702,7 +704,7 @@ class TestRegistrantDNSSEC(TestCase):
         raise
 
 
-class TestAnalystClientHold(TestCase):
+class TestAnalystClientHold(MockEppLib):
     """Rule: Analysts may suspend or restore a domain by using client hold"""
 
     def setUp(self):
@@ -711,18 +713,50 @@ class TestAnalystClientHold(TestCase):
             Given the analyst is logged in
             And a domain exists in the registry
         """
-        pass
+        super().setUp()
+        # for the tests, need a domain in the ready state
+        self.domain, _ = Domain.objects.get_or_create(
+            name="fake.gov", state=Domain.State.READY
+        )
+        # for the tests, need a domain in the on_hold state
+        self.domain_on_hold, _ = Domain.objects.get_or_create(
+            name="fake-on-hold.gov", state=Domain.State.ON_HOLD
+        )
 
-    @skip("not implemented yet")
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
     def test_analyst_places_client_hold(self):
         """
         Scenario: Analyst takes a domain off the internet
             When `domain.place_client_hold()` is called
             Then `CLIENT_HOLD` is added to the domain's statuses
         """
-        raise
+        self.domain.place_client_hold()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        add=[
+                            common.Status(
+                                state=Domain.Status.CLIENT_HOLD,
+                                description="",
+                                lang="en",
+                            )
+                        ],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertEquals(self.domain.state, Domain.State.ON_HOLD)
 
-    @skip("not implemented yet")
     def test_analyst_places_client_hold_idempotent(self):
         """
         Scenario: Analyst tries to place client hold twice
@@ -730,9 +764,30 @@ class TestAnalystClientHold(TestCase):
             When `domain.place_client_hold()` is called
             Then Domain returns normally (without error)
         """
-        raise
+        self.domain_on_hold.place_client_hold()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake-on-hold.gov",
+                        add=[
+                            common.Status(
+                                state=Domain.Status.CLIENT_HOLD,
+                                description="",
+                                lang="en",
+                            )
+                        ],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertEquals(self.domain_on_hold.state, Domain.State.ON_HOLD)
 
-    @skip("not implemented yet")
     def test_analyst_removes_client_hold(self):
         """
         Scenario: Analyst restores a suspended domain
@@ -740,9 +795,30 @@ class TestAnalystClientHold(TestCase):
             When `domain.remove_client_hold()` is called
             Then `CLIENT_HOLD` is no longer in the domain's statuses
         """
-        raise
+        self.domain_on_hold.revert_client_hold()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake-on-hold.gov",
+                        rem=[
+                            common.Status(
+                                state=Domain.Status.CLIENT_HOLD,
+                                description="",
+                                lang="en",
+                            )
+                        ],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertEquals(self.domain_on_hold.state, Domain.State.READY)
 
-    @skip("not implemented yet")
     def test_analyst_removes_client_hold_idempotent(self):
         """
         Scenario: Analyst tries to remove client hold twice
@@ -750,16 +826,54 @@ class TestAnalystClientHold(TestCase):
             When `domain.remove_client_hold()` is called
             Then Domain returns normally (without error)
         """
-        raise
+        self.domain.revert_client_hold()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        rem=[
+                            common.Status(
+                                state=Domain.Status.CLIENT_HOLD,
+                                description="",
+                                lang="en",
+                            )
+                        ],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertEquals(self.domain.state, Domain.State.READY)
 
-    @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
         """
         Scenario: An update to place or remove client hold is unsuccessful
             When an error is returned from epplibwrapper
             Then a user-friendly error message is returned for displaying on the web
         """
-        raise
+
+        def side_effect(_request, cleaned):
+            raise RegistryError(code=ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        # if RegistryError is raised, admin formats user-friendly
+        # error message if error is_client_error, is_session_error, or
+        # is_server_error; so test for those conditions
+        with self.assertRaises(RegistryError) as err:
+            self.domain.place_client_hold()
+            self.assertTrue(
+                err.is_client_error() or err.is_session_error() or err.is_server_error()
+            )
+
+        patcher.stop()
 
 
 class TestAnalystLock(TestCase):
