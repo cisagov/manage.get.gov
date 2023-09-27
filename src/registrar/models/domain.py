@@ -351,7 +351,20 @@ class Domain(TimeStampedModel, DomainHelper):
         successDeletedCount = 0 
         successCreatedCount = 0
 
+        print("deleted_values")
+        print(deleted_values)
+        print("updated_values")
+        print(updated_values)
+        print("new_values")
+        print(new_values)
+        print("oldNameservers")
+        print(oldNameservers)
+
+
         for hostTuple in deleted_values:
+            print("hostTuple in deleted_values")
+            print(hostTuple)
+            print(deleted_values)
             deleted_response_code = self._delete_host(hostTuple[0])
             if deleted_response_code == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
                 successDeletedCount += 1 
@@ -381,7 +394,17 @@ class Domain(TimeStampedModel, DomainHelper):
                         % (e.code, e)
                     )
 
+        print("")
         successTotalNameservers = len(oldNameservers) - successDeletedCount+ successCreatedCount
+        
+        print("len(oldNameservers) IS ")
+        print(len(oldNameservers))
+        print("successDeletedCount IS ")
+        print(successDeletedCount)
+        print("successCreatedCount IS ")
+        print(successCreatedCount)
+
+
 
 
         print("SUCCESSTOTALNAMESERVERS IS ")
