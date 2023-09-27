@@ -587,7 +587,7 @@ class MockEppLib(TestCase):
     mockDataInfoHosts = fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35), addrs=["1.2.3", "2.3.4"]
     )
-    mockDataCreateHost  =fakedEppObject(
+    mockDataHostChange  =fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
     )
 
@@ -611,7 +611,11 @@ class MockEppLib(TestCase):
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         elif (isinstance(_request, commands.CreateHost)):
-            return MagicMock(res_data=[self.mockDataCreateHost], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
+            return MagicMock(res_data=[self.mockDataHostChange], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
+        elif (isinstance(_request, commands.UpdateHost)):
+            return MagicMock(res_data=[self.mockDataHostChange], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
+        elif (isinstance(_request, commands.DeleteHost)):
+            return MagicMock(res_data=[self.mockDataHostChange], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):

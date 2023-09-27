@@ -533,6 +533,10 @@ class TestRegistrantNameservers(MockEppLib):
             And the registrant is the admin on a domain
         """
         super().setUp()
+        self.nameserver1 = "ns1.my-nameserver-1.com"
+        self.nameserver2 = "ns1.my-nameserver-2.com"
+        self.nameserver3 = "ns1.cats-are-superior3.com"
+
         self.domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.DNS_NEEDED)
 
     def test_get_nameserver_changes(self):
@@ -549,10 +553,10 @@ class TestRegistrantNameservers(MockEppLib):
         ]
         newChanges=[("ns1.example.com",),("ns3.example.com",["1.2.4"]),("ns4.example.com",)]
         deleted_values,updated_values,new_values, oldNameservers=self.domain.getNameserverChanges(newChanges)
-
+        print(oldNameservers)
         self.assertEqual(deleted_values, [('ns2.example.com', ['1.2.3'])])
         self.assertEqual(updated_values, [('ns3.example.com', ['1.2.4'])])
-        self.assertEqual(new_values, {'ns4.example.com'})
+        self.assertEqual(new_values, {'ns4.example.com':None})
         self.assertEqual(oldNameservers, {'ns1.example.com': None, 'ns2.example.com': ['1.2.3'], 'ns3.example.com': ['1.2.3']})
 
     def test_user_adds_one_nameserver(self):
@@ -595,15 +599,14 @@ class TestRegistrantNameservers(MockEppLib):
         """
 
         # set 2 nameservers
-        nameserver1 = "ns1.my-nameserver-1.com"
-        nameserver2 = "ns1.my-nameserver-2.com"
-        self.domain.nameservers = [(nameserver1,), (nameserver2,)]  
+        
+        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]  
 
         # when you create a host, you also have to update at same time
-        created_host1 = commands.CreateHost(nameserver1)
+        created_host1 = commands.CreateHost(self.nameserver1)
         update_domain_with_created1 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host1.name])])
 
-        created_host2 = commands.CreateHost(nameserver2)
+        created_host2 = commands.CreateHost(self.nameserver2)
         update_domain_with_created2 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host2.name])])
 
         # checking if commands were sent (commands have to be sent in order)
@@ -664,6 +667,14 @@ class TestRegistrantNameservers(MockEppLib):
                 to the registry
             And `domain.is_active` returns True
         """
+        #Given the domain has 3 nameservers
+        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,),(self.nameserver3,)]  
+
+        #now remove one
+        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
+
+        #assert updatedomain called
+        #assert call deletehost?
         raise
 
     @skip("not implemented yet")

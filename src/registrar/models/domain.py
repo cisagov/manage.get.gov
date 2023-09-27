@@ -318,6 +318,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 deleted_values.append((prevHost,addrs))
             #if the host exists in both, check if the addresses changed
             else:
+                #TODO - host is being updated when previous was None and new is an empty list
+                #add check here
                 if newHostDict[prevHost] != addrs: 
                     updated_values.append((prevHost,newHostDict[prevHost]))
 
@@ -370,8 +372,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 successDeletedCount += 1 
 
         for hostTuple in updated_values:
-            updated_response_code = self._updated_host(hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0]))
-
+            updated_response_code = self._update_host(hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0]))
+            if updated_response_code not in [ ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY, ErrorCode.OBJECT_EXISTS]:
+                logger.warning("Could not update host %s. Error code was: %s " % (hostTuple[0], updated_response_code))
         for key, value in new_values.items():
             print("HELLO THERE KEY, VALUE PAIR")
             print(key)
@@ -1052,10 +1055,10 @@ class Domain(TimeStampedModel, DomainHelper):
     def _convert_ips(self, ip_list: list[str]):
         edited_ip_list = []
         for ip_addr in ip_list:
-            if is_ipv6:
-                edited_ip_list.append(command.Ip(addr=ip_addr, ip="v6"))
+            if self.is_ipv6():
+                edited_ip_list.append(epp.Ip(addr=ip_addr, ip="v6"))
             else: # default ip addr is v4
-                edited_ip_list.append(command.Ip(addr=ip_addr))
+                edited_ip_list.append(epp.Ip(addr=ip_addr))
         return edited_ip_list
 
     def _update_host(self, nameserver: str, ip_list: list[str], old_ip_list: list[str]):
@@ -1074,13 +1077,23 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _delete_host(self, nameserver: str):
         try:
-            request = commands.DeleteHost(name=nameserver)
-            response = registry.send(request, cleaned=True)
-            logger.info("_delete_host()-> sending req as %s" % request)
+            updateReq = commands.UpdateDomain(
+                    name=self.name, rem=[epp.HostObjSet([nameserver])]
+                )
+            response=registry.send(updateReq, cleaned=True)
+        
+            logger.info("_delete_host()-> sending update domain req as %s" % updateReq)
+            
+            deleteHostReq = commands.DeleteHost(name=nameserver)
+            response = registry.send(deleteHostReq, cleaned=True)
+            logger.info("_delete_host()-> sending delete host req as %s" % deleteHostReq)
             return response.code
         except RegistryError as e:
-            logger.error("Error _delete_host, code was %s error was %s" % (e.code, e))
-            return e.code
+            if e.code==ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
+                logger.info("Did not remove host %s because it is in use on another domain." % nameserver)
+            else:
+                logger.error("Error _delete_host, code was %s error was %s" % (e.code, e))
+                return e.code
             
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
