@@ -990,7 +990,7 @@ class TestAnalystDelete(MockEppLib):
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
-            When an error is returned from epplibwrapper
+            When a subdomain exists
             Then a client error is returned of code 2305
             And `state` is not set to `DELETED`
         """
