@@ -10,6 +10,7 @@ from epplibwrapper import (
     CLIENT as registry,
     commands,
     common as epp,
+    extensions,
     RegistryError,
     ErrorCode,
 )
@@ -278,6 +279,36 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             return e.code
+
+    @Cache
+    def dnssecdata(self) -> extensions.DNSSECExtension:
+        return self._get_property("dnssecdata")
+
+    @dnssecdata.setter
+    def dnssecdata(
+        self,
+        _dnssecdata: extensions.DNSSECExtension
+    ):
+        updateParams = {
+            "maxSigLife": _dnssecdata.maxSigLife,
+            "dsData": _dnssecdata.dsData,
+            "keyData": _dnssecdata.keyData,
+            "remAllDsKeyData": True,
+        }
+        request = commands.UpdateDomain(
+            name=self.name
+        )
+        extension = commands.UpdateDomainDNSSECExtension(**updateParams)
+        request.add_extension(extension)
+
+        try:
+            registry.send(request, cleaned=True)
+        except RegistryError as e:
+            logger.error(
+                "Error adding DNSSEC, code was %s error was %s"
+                % (e.code, e)
+            )
+            raise e
 
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str]]):
@@ -725,9 +756,9 @@ class Domain(TimeStampedModel, DomainHelper):
             try:
                 logger.info("Getting domain info from epp")
                 req = commands.InfoDomain(name=self.name)
-                domainInfo = registry.send(req, cleaned=True).res_data[0]
+                domainInfoResponse = registry.send(req, cleaned=True)
                 exitEarly = True
-                return domainInfo
+                return domainInfoResponse
             except RegistryError as e:
                 count += 1
 
@@ -952,7 +983,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """Contact registry for info about a domain."""
         try:
             # get info from registry
-            data = self._get_or_create_domain()
+            dataResponse = self._get_or_create_domain()
+            data = dataResponse.res_data[0]
             # extract properties from response
             # (Ellipsis is used to mean "null")
             cache = {
@@ -974,6 +1006,16 @@ class Domain(TimeStampedModel, DomainHelper):
             # statuses can just be a list no need to keep the epp object
             if "statuses" in cleaned.keys():
                 cleaned["statuses"] = [status.state for status in cleaned["statuses"]]
+
+            # get extensions info, if there is any
+            # DNSSECExtension is one possible extension, make sure to handle
+            # only DNSSECExtension and not other type extensions
+            extensions = dataResponse.extensions
+            cleaned["dnssecdata"] = None
+            for extension in extensions:
+                if isinstance(extension,extensions.DNSSECExtension):
+                    cleaned["dnssecdata"] = extension
+
             # get contact info, if there are any
             if (
                 # fetch_contacts and
