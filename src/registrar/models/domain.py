@@ -653,8 +653,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.DeleteDomain(name=self.name)
-        response = registry.send(request, cleaned=True)
-        return response
+        registry.send(request, cleaned=True)
 
     def __str__(self) -> str:
         return self.name

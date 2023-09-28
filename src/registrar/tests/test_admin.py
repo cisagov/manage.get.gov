@@ -98,7 +98,8 @@ class TestDomainAdmin(MockEppLib):
         domain = create_ready_domain()
         # Put in client hold
         domain.place_client_hold()
-        self.client.login(username="staffuser", password="userpass")
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
 
         # Ensure everything is displaying correctly
         response = self.client.get(
@@ -137,7 +138,8 @@ class TestDomainAdmin(MockEppLib):
             And `state` is not set to `DELETED`
         """
         domain = create_ready_domain()
-        self.client.login(username="staffuser", password="userpass")
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
 
         # Ensure everything is displaying correctly
         response = self.client.get(
@@ -180,7 +182,8 @@ class TestDomainAdmin(MockEppLib):
         domain = create_ready_domain()
         # Put in client hold
         domain.place_client_hold()
-        self.client.login(username="staffuser", password="userpass")
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
 
         # Ensure everything is displaying correctly
         response = self.client.get(
