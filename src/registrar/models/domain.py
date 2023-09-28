@@ -652,12 +652,8 @@ class Domain(TimeStampedModel, DomainHelper):
     def isActive(self):
         return self.state == Domain.State.CREATED
 
-
     def map_epp_contact_to_public_contact(
-        self,
-        contact: eppInfo.InfoContactResultData,
-        contact_id,
-        contact_type
+        self, contact: eppInfo.InfoContactResultData, contact_id, contact_type
     ):
         """Maps the Epp contact representation to a PublicContact object.
 
@@ -827,9 +823,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # If the for loop didn't do a return,
         # then we know that it doesn't exist within cache
-        logger.info(
-            f"Requested contact {contact.registry_id} does not exist in cache."
-        )
+        logger.info(f"Requested contact {contact.registry_id} does not exist in cache.")
         return None
 
     # ForeignKey on UserDomainRole creates a "permissions" member for

@@ -1414,11 +1414,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
 
         domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
         # Add current user to this domain
-        _ = UserDomainRole(
-            user=self.user,
-            domain = domain_contact,
-            role = "admin"
-        ).save()
+        _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
         page = self.client.get(
             reverse("domain-security-email", kwargs={"pk": domain_contact.id})
         )
@@ -1434,7 +1430,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         self.mockSendPatch = patch("registrar.models.domain.registry.send")
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
-        
+
         page = self.client.get(
             reverse("domain-security-email", kwargs={"pk": self.domain.id})
         )
@@ -1454,7 +1450,6 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
     @skip("Ticket 912 needs to fix this one")
     def test_domain_security_email_form(self):
         """Adding a security email works.
-
         Uses self.app WebTest because we need to interact with forms.
         """
         security_email_page = self.app.get(
