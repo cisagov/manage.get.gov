@@ -117,14 +117,14 @@ class TestDomainAdmin(MockEppLib):
         )
         request.user = self.client
 
-        with patch('django.contrib.messages.add_message') as mock_add_message:
+        with patch("django.contrib.messages.add_message") as mock_add_message:
             self.admin.do_delete_domain(request, domain)
             mock_add_message.assert_called_once_with(
                 request,
                 messages.INFO,
                 "Domain city.gov has been deleted. Thanks!",
-                extra_tags='',
-                fail_silently=False
+                extra_tags="",
+                fail_silently=False,
             )
 
         self.assertEqual(domain.state, Domain.State.DELETED)
@@ -156,18 +156,19 @@ class TestDomainAdmin(MockEppLib):
         )
         request.user = self.client
 
-        with patch('django.contrib.messages.add_message') as mock_add_message:
+        with patch("django.contrib.messages.add_message") as mock_add_message:
             self.admin.do_delete_domain(request, domain)
             mock_add_message.assert_called_once_with(
                 request,
                 messages.ERROR,
-                "Error deleting this Domain: Can't switch from state 'ready' to 'deleted'",
-                extra_tags='',
-                fail_silently=False
+                "Error deleting this Domain: "
+                "Can't switch from state 'ready' to 'deleted'",
+                extra_tags="",
+                fail_silently=False,
             )
 
         self.assertEqual(domain.state, Domain.State.READY)
-    
+
     def test_analyst_deletes_domain_idempotent(self):
         """
         Scenario: Analyst tries to delete an already deleted domain
@@ -199,14 +200,14 @@ class TestDomainAdmin(MockEppLib):
         request.user = self.client
 
         # Delete it once
-        with patch('django.contrib.messages.add_message') as mock_add_message:
+        with patch("django.contrib.messages.add_message") as mock_add_message:
             self.admin.do_delete_domain(request, domain)
             mock_add_message.assert_called_once_with(
                 request,
                 messages.INFO,
                 "Domain city.gov has been deleted. Thanks!",
-                extra_tags='',
-                fail_silently=False
+                extra_tags="",
+                fail_silently=False,
             )
 
         self.assertEqual(domain.state, Domain.State.DELETED)
@@ -220,14 +221,14 @@ class TestDomainAdmin(MockEppLib):
         )
         request.user = self.client
 
-        with patch('django.contrib.messages.add_message') as mock_add_message:
+        with patch("django.contrib.messages.add_message") as mock_add_message:
             self.admin.do_delete_domain(request, domain)
             mock_add_message.assert_called_once_with(
                 request,
                 messages.INFO,
                 "This domain is already deleted",
-                extra_tags='',
-                fail_silently=False
+                extra_tags="",
+                fail_silently=False,
             )
 
         self.assertEqual(domain.state, Domain.State.DELETED)

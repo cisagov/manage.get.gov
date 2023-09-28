@@ -12,7 +12,7 @@ from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
-from django_fsm import TransitionNotAllowed # type: ignore
+from django_fsm import TransitionNotAllowed  # type: ignore
 logger = logging.getLogger(__name__)
 
 
@@ -729,9 +729,9 @@ class DomainAdmin(ListHeaderAdmin):
         except RegistryError as err:
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
-                ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: 
+                ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION:
                     f"Cannot delete Domain when in status {obj.status}",
-                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: 
+                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
                     "This subdomain is being used as a hostname on another domain"
             }
 
@@ -739,12 +739,16 @@ class DomainAdmin(ListHeaderAdmin):
             if not err.is_connection_error():
                 # If nothing is found, will default to returned err
                 message = error_messages.get(err.code, err)
-            self.message_user(request, f"Error deleting this Domain: {message}", messages.ERROR)
-        except TransitionNotAllowed as err:
+            self.message_user(
+                request,
+                f"Error deleting this Domain: {message}",
+                messages.ERROR
+            )
+        except TransitionNotAllowed:
             if obj.state == Domain.State.DELETED:
                 self.message_user(
                     request,
-                    f"This domain is already deleted",
+                    "This domain is already deleted",
                     messages.INFO,
                 )
             else:

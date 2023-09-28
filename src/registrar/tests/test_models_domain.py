@@ -16,7 +16,7 @@ from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from .common import MockEppLib
-from django_fsm import TransitionNotAllowed # type: ignore
+from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
     commands,
     common,
@@ -942,19 +942,20 @@ class TestAnalystLock(TestCase):
 
 class TestAnalystDelete(MockEppLib):
     """Rule: Analysts may delete a domain"""
+
     def setUp(self):
-            """
-            Background:
-                Given the analyst is logged in
-                And a domain exists in the registry
-            """
-            super().setUp()
-            self.domain, _ = Domain.objects.get_or_create(
-                name="fake.gov", state=Domain.State.READY
-            )
-            self.domain_on_hold, _ = Domain.objects.get_or_create(
-                name="fake-on-hold.gov", state=Domain.State.ON_HOLD
-            )
+        """
+        Background:
+            Given the analyst is logged in
+            And a domain exists in the registry
+        """
+        super().setUp()
+        self.domain, _ = Domain.objects.get_or_create(
+            name="fake.gov", state=Domain.State.READY
+        )
+        self.domain_on_hold, _ = Domain.objects.get_or_create(
+            name="fake-on-hold.gov", state=Domain.State.ON_HOLD
+        )
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -995,7 +996,7 @@ class TestAnalystDelete(MockEppLib):
         """
         # Desired domain
         domain, _ = Domain.objects.get_or_create(
-                name="failDelete.gov", state=Domain.State.ON_HOLD
+            name="failDelete.gov", state=Domain.State.ON_HOLD
         )
         # Put the domain in client hold
         domain.place_client_hold()
@@ -1004,7 +1005,7 @@ class TestAnalystDelete(MockEppLib):
         with self.assertRaises(RegistryError) as err:
             domain.deletedInEpp()
             self.assertTrue(
-                err.is_client_error() 
+                err.is_client_error()
                 and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
             )
         self.mockedSendFunction.assert_has_calls(
@@ -1034,7 +1035,7 @@ class TestAnalystDelete(MockEppLib):
         with self.assertRaises(TransitionNotAllowed) as err:
             self.domain.deletedInEpp()
             self.assertTrue(
-                err.is_client_error() 
+                err.is_client_error()
                 and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION
             )
         # Domain should not be deleted

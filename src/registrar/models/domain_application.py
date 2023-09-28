@@ -598,11 +598,7 @@ class DomainApplication(TimeStampedModel):
             "emails/domain_request_withdrawn.txt",
             "emails/domain_request_withdrawn_subject.txt",
         )
-    
-    # TODO
-    #def delete(self, *args, **kwargs):
-        #super().delete(*args, **kwargs)
-    
+
     @transition(
         field="status",
         source=[IN_REVIEW, APPROVED],
