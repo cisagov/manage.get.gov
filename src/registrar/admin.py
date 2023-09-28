@@ -161,6 +161,9 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    # Hide Username (uuid), Groups and Permissions
+    # Q: Now that we're using Groups and Permissions,
+    # do we expose those to analysts to view?
     analyst_fieldsets = (
         (
             None,
@@ -180,6 +183,8 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    # NOT all fields are readonly for admin, otherwise we would have
+    # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
         "password",
         "Personal Info",
@@ -196,33 +201,36 @@ class MyUserAdmin(BaseUserAdmin):
     ]
 
     def get_list_display(self, request):
-        if request.user.groups.filter(name='cisa_analysts_group').exists():
-            # Customize the list display for staff users
-            return (
-                "email",
-                "first_name",
-                "last_name",
-                "is_staff",
-                "is_superuser",
-                "status",
-            )
-
-        # Use the default list display for non-staff users
-        return super().get_list_display(request)
+        # The full_access_permission perm will load onto the full_access_group
+        # which is equivalent to superuser. The other group we use to manage
+        # perms is cisa_analysts_group. cisa_analysts_group will never contain
+        # full_access_permission
+        if request.user.has_perm('registrar.full_access_permission'):
+            # Use the default list display for all access users
+            return super().get_list_display(request)
+        
+        # Customize the list display for analysts
+        return (
+            "email",
+            "first_name",
+            "last_name",
+            "is_staff",
+            "is_superuser",
+            "status",
+        )
 
     def get_fieldsets(self, request, obj=None):
-        if request.user.groups.filter(name='cisa_analysts_group').exists():
-            # If the user doesn't have permission to change the model,
-            # show a read-only fieldset
-            return self.analyst_fieldsets
-
-        # If the user has permission to change the model, show all fields
-        return super().get_fieldsets(request, obj)
+        if request.user.has_perm('registrar.full_access_permission'):
+            # Show all fields for all access users
+            return super().get_fieldsets(request, obj)
+        
+        # show analyst_fieldsets for analysts
+        return self.analyst_fieldsets
 
     def get_readonly_fields(self, request, obj=None):
-        if request.user.groups.filter(name='cisa_analysts_group').exists():
-            return self.analyst_readonly_fields  # Read-only fields for analysts
-        return ()  # No read-only fields for other users
+        if request.user.has_perm('registrar.full_access_permission'):
+            return ()  # No read-only fields for all access users
+        return self.analyst_readonly_fields  # Read-only fields for analysts
 
 
 class HostIPInline(admin.StackedInline):
@@ -401,7 +409,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
         readonly_fields = list(self.readonly_fields)
 
-        if request.user.groups.filter(name='full_access_group').exists():
+        if request.user.has_perm('registrar.full_access_permission'):
             return readonly_fields
         else:
             readonly_fields.extend([field for field in self.analyst_readonly_fields])
@@ -619,7 +627,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 ["current_websites", "other_contacts", "alternative_domains"]
             )
 
-        if request.user.groups.filter(name='full_access_group').exists():
+        if request.user.has_perm('registrar.full_access_permission'):
             return readonly_fields
         else:
             readonly_fields.extend([field for field in self.analyst_readonly_fields])

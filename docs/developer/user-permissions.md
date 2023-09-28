@@ -48,3 +48,7 @@ future, as we add additional roles that our product vision calls for
 (read-only? editing only some information?), we need to add conditional
 behavior in the permission mixin, or additional mixins that more clearly
 express what is allowed for those new roles.
+
+# Admin User Permissions
+
+Refre to [Django Admin Roles](../django-admin/roles.md)
