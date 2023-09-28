@@ -562,7 +562,7 @@ class MockEppLib(TestCase):
             self.contacts = contacts
             self.hosts = hosts
             self.statuses = statuses
-            self.avail = avail #use for CheckDomain
+            self.avail = avail  # use for CheckDomain
             self.addrs = addrs
 
     mockDataInfoDomain = fakedEppObject(
@@ -581,36 +581,52 @@ class MockEppLib(TestCase):
         contacts=[],
         hosts=["fake.host.com"],
     )
-    infoDomainThreeHosts =fakedEppObject(
+    infoDomainThreeHosts = fakedEppObject(
         "my-nameserver.gov",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[],
-        hosts=["ns1.my-nameserver-1.com","ns1.my-nameserver-2.com","ns1.cats-are-superior3.com"],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+        ],
     )
-    infoDomainNoHost =fakedEppObject(
+    infoDomainNoHost = fakedEppObject(
         "my-nameserver.gov",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[],
         hosts=[],
     )
-    infoDomainTwoHosts =fakedEppObject(
+    infoDomainTwoHosts = fakedEppObject(
         "my-nameserver.gov",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[],
-        hosts=["ns1.my-nameserver-1.com","ns1.my-nameserver-2.com"],
+        hosts=["ns1.my-nameserver-1.com", "ns1.my-nameserver-2.com"],
     )
     mockDataInfoContact = fakedEppObject(
         "anotherPw", cr_date=datetime.datetime(2023, 7, 25, 19, 45, 35)
     )
     mockDataInfoHosts = fakedEppObject(
-        "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35), addrs=["1.2.3", "2.3.4"]
+        "lastPw",
+        cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35),
+        addrs=["1.2.3", "2.3.4"],
     )
 
-    mockDataHostChange  =fakedEppObject(
+    mockDataHostChange = fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
     )
-    
-    extendedValues=False
+    infoDomainHasIP = fakedEppObject(
+        "nameserverwithip.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=[
+            "ns1.nameserverwithip.gov",
+            "ns2.nameserverwithip.gov",
+            "ns3.nameserverwithip.gov",
+        ],
+    )
+
+    extendedValues = False
 
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
@@ -623,10 +639,14 @@ class MockEppLib(TestCase):
             elif getattr(_request, "name", None) == "my-nameserver.gov":
                 if self.extendedValues:
                     return MagicMock(res_data=[self.infoDomainThreeHosts])
-                elif self.mockedSendFunction.call_count==5: ## remove this breaks anything?
+                elif (
+                    self.mockedSendFunction.call_count == 5
+                ):  ## remove this breaks anything?
                     return MagicMock(res_data=[self.infoDomainTwoHosts])
                 else:
                     return MagicMock(res_data=[self.infoDomainNoHost])
+            elif getattr(_request, "name", None) == "nameserverwithip.gov":
+                return MagicMock(res_data=[self.infoDomainHasIP])
             return MagicMock(res_data=[self.mockDataInfoDomain])
         elif isinstance(_request, commands.InfoContact):
             return MagicMock(res_data=[self.mockDataInfoContact])
@@ -638,12 +658,21 @@ class MockEppLib(TestCase):
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
-        elif (isinstance(_request, commands.CreateHost)):
-            return MagicMock(res_data=[self.mockDataHostChange], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
-        elif (isinstance(_request, commands.UpdateHost)):
-            return MagicMock(res_data=[self.mockDataHostChange], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
-        elif (isinstance(_request, commands.DeleteHost)):
-            return MagicMock(res_data=[self.mockDataHostChange], code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY)
+        elif isinstance(_request, commands.CreateHost):
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif isinstance(_request, commands.UpdateHost):
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif isinstance(_request, commands.DeleteHost):
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):

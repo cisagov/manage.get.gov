@@ -537,27 +537,39 @@ class TestRegistrantNameservers(MockEppLib):
         self.nameserver2 = "ns1.my-nameserver-2.com"
         self.nameserver3 = "ns1.cats-are-superior3.com"
 
-        self.domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.DNS_NEEDED)
+        self.domain, _ = Domain.objects.get_or_create(
+            name="my-nameserver.gov", state=Domain.State.DNS_NEEDED
+        )
 
     def test_get_nameserver_changes(self):
-        self.domain._cache["hosts"]=[{
-                        "name": "ns1.example.com",
-                        "addrs": None
-                    },
-                    {"name": "ns2.example.com",
-                        "addrs": ["1.2.3"]
-                    },
-                    {"name": "ns3.example.com",
-                        "addrs": ["1.2.3"]
-                    }
+        self.domain._cache["hosts"] = [
+            {"name": "ns1.example.com", "addrs": None},
+            {"name": "ns2.example.com", "addrs": ["1.2.3"]},
+            {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3"]},
         ]
-        newChanges=[("ns1.example.com",),("ns3.example.com",["1.2.4"]),("ns4.example.com",)]
-        deleted_values,updated_values,new_values, oldNameservers=self.domain.getNameserverChanges(newChanges)
+        newChanges = [
+            ("ns1.example.com",),
+            ("ns3.my-nameserver.gov", ["1.2.4"]),
+            ("ns4.example.com",),
+        ]
+        (
+            deleted_values,
+            updated_values,
+            new_values,
+            oldNameservers,
+        ) = self.domain.getNameserverChanges(newChanges)
         print(oldNameservers)
-        self.assertEqual(deleted_values, [('ns2.example.com', ['1.2.3'])])
-        self.assertEqual(updated_values, [('ns3.example.com', ['1.2.4'])])
-        self.assertEqual(new_values, {'ns4.example.com':None})
-        self.assertEqual(oldNameservers, {'ns1.example.com': None, 'ns2.example.com': ['1.2.3'], 'ns3.example.com': ['1.2.3']})
+        self.assertEqual(deleted_values, [("ns2.example.com", ["1.2.3"])])
+        self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4"])])
+        self.assertEqual(new_values, {"ns4.example.com": None})
+        self.assertEqual(
+            oldNameservers,
+            {
+                "ns1.example.com": None,
+                "ns2.example.com": ["1.2.3"],
+                "ns3.my-nameserver.gov": ["1.2.3"],
+            },
+        )
 
     def test_user_adds_one_nameserver(self):
         """
@@ -571,11 +583,13 @@ class TestRegistrantNameservers(MockEppLib):
 
         # set 1 nameserver
         nameserver = "ns1.my-nameserver.com"
-        self.domain.nameservers = [(nameserver,)]  
+        self.domain.nameservers = [(nameserver,)]
 
         # when you create a host, you also have to update at same time
         created_host = commands.CreateHost(nameserver)
-        update_domain_with_created = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host.name])])
+        update_domain_with_created = commands.UpdateDomain(
+            name=self.domain.name, add=[common.HostObjSet([created_host.name])]
+        )
 
         # checking if commands were sent (commands have to be sent in order)
         expectedCalls = [
@@ -600,16 +614,20 @@ class TestRegistrantNameservers(MockEppLib):
 
         # set 2 nameservers
         print("DOCKER DIDNT SUCK THIS TIME")
-        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]  
+        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
 
         # when you create a host, you also have to update at same time
         created_host1 = commands.CreateHost(self.nameserver1)
-        update_domain_with_created1 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host1.name])])
+        update_domain_with_created1 = commands.UpdateDomain(
+            name=self.domain.name, add=[common.HostObjSet([created_host1.name])]
+        )
 
         created_host2 = commands.CreateHost(self.nameserver2)
-        update_domain_with_created2 = commands.UpdateDomain(name=self.domain.name, add=[common.HostObjSet([created_host2.name])])
+        update_domain_with_created2 = commands.UpdateDomain(
+            name=self.domain.name, add=[common.HostObjSet([created_host2.name])]
+        )
 
-        infoDomain = commands.InfoDomain(name='my-nameserver.gov', auth_info=None)
+        infoDomain = commands.InfoDomain(name="my-nameserver.gov", auth_info=None)
         # checking if commands were sent (commands have to be sent in order)
         expectedCalls = [
             call(infoDomain, cleaned=True),
@@ -618,9 +636,6 @@ class TestRegistrantNameservers(MockEppLib):
             call(created_host2, cleaned=True),
             call(update_domain_with_created2, cleaned=True),
         ]
-
-        print("self.mockedSendFunction.call_args_list is ")
-        print(self.mockedSendFunction.call_args_list)
 
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
         self.assertEqual(5, self.mockedSendFunction.call_count)
@@ -650,11 +665,24 @@ class TestRegistrantNameservers(MockEppLib):
         nameserver12 = "ns1.cats-are-superior12.com"
         nameserver13 = "ns1.cats-are-superior13.com"
         nameserver14 = "ns1.cats-are-superior14.com"
-        
+
         def _get_14_nameservers():
-            self.domain.nameservers = [(nameserver1,), (nameserver2,), (nameserver3,), (nameserver4,), 
-        (nameserver5,), (nameserver6,), (nameserver7,), (nameserver8,), (nameserver9), (nameserver10,),
-        (nameserver11,), (nameserver12,), (nameserver13,), (nameserver14,)]
+            self.domain.nameservers = [
+                (nameserver1,),
+                (nameserver2,),
+                (nameserver3,),
+                (nameserver4,),
+                (nameserver5,),
+                (nameserver6,),
+                (nameserver7,),
+                (nameserver8,),
+                (nameserver9),
+                (nameserver10,),
+                (nameserver11,),
+                (nameserver12,),
+                (nameserver13,),
+                (nameserver14,),
+            ]
 
         self.assertRaises(ValueError, _get_14_nameservers)
         self.assertEqual(self.mockedSendFunction.call_count, 0)
@@ -670,25 +698,37 @@ class TestRegistrantNameservers(MockEppLib):
         """
 
         # Mock is set to return 3 nameservers on infodomain
-        self.extendedValues=True
+        self.extendedValues = True
         self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
-        expectedCalls=[  
+        expectedCalls = [
             # calls info domain, and info on all hosts
             # to get past values
             # then removes the single host and updates domain
-            call(commands.InfoDomain(name='my-nameserver.gov', auth_info=None), cleaned=True),
-            call(commands.InfoHost(name='ns1.my-nameserver-1.com'), cleaned=True),
-            call(commands.InfoHost(name='ns1.my-nameserver-2.com'), cleaned=True),
-            call(commands.InfoHost(name='ns1.cats-are-superior3.com'), cleaned=True),
-            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.cats-are-superior3.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-            call(commands.DeleteHost(name='ns1.cats-are-superior3.com'), cleaned=True)]
+            call(
+                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                cleaned=True,
+            ),
+            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            call(
+                commands.UpdateDomain(
+                    name="my-nameserver.gov",
+                    add=[],
+                    rem=[common.HostObjSet(hosts=["ns1.cats-are-superior3.com"])],
+                    nsset=None,
+                    keyset=None,
+                    registrant=None,
+                    auth_info=None,
+                ),
+                cleaned=True,
+            ),
+            call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+        ]
 
-        print("self.mockedSendFunction.call_args_list is ")
-        print(self.mockedSendFunction.call_args_list)
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
         self.assertTrue(self.domain.is_active())
 
-  
     def test_user_removes_too_many_nameservers(self):
         """
         Scenario: Registrant removes some nameservers, bringing the total to less than 2
@@ -697,27 +737,51 @@ class TestRegistrantNameservers(MockEppLib):
             Then `commands.UpdateDomain` and `commands.DeleteHost` is sent
                 to the registry
             And `domain.is_active` returns False
-            
+
         """
-        self.extendedValues=True
+        self.extendedValues = True
         print("domain state")
         print(self.domain.state)
         self.domain.ready()
         print("Domain state is now")
         print(self.domain.state)
-        self.domain.nameservers = [(self.nameserver1,)] 
-        print("self.mockedSendFunction.call_args_list is ")
-        print(self.mockedSendFunction.call_args_list)
-        expectedCalls=[call(commands.InfoDomain(name='my-nameserver.gov', auth_info=None), cleaned=True),
-            call(commands.InfoHost(name='ns1.my-nameserver-1.com'), cleaned=True),
-            call(commands.InfoHost(name='ns1.my-nameserver-2.com'), cleaned=True),
-            call(commands.InfoHost(name='ns1.cats-are-superior3.com'), cleaned=True),
-            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.my-nameserver-2.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-            call(commands.DeleteHost(name='ns1.my-nameserver-2.com'), cleaned=True),
-            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.cats-are-superior3.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-            call(commands.DeleteHost(name='ns1.cats-are-superior3.com'), cleaned=True)]
-        
-  
+        self.domain.nameservers = [(self.nameserver1,)]
+        expectedCalls = [
+            call(
+                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                cleaned=True,
+            ),
+            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            call(
+                commands.UpdateDomain(
+                    name="my-nameserver.gov",
+                    add=[],
+                    rem=[common.HostObjSet(hosts=["ns1.my-nameserver-2.com"])],
+                    nsset=None,
+                    keyset=None,
+                    registrant=None,
+                    auth_info=None,
+                ),
+                cleaned=True,
+            ),
+            call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(
+                commands.UpdateDomain(
+                    name="my-nameserver.gov",
+                    add=[],
+                    rem=[common.HostObjSet(hosts=["ns1.cats-are-superior3.com"])],
+                    nsset=None,
+                    keyset=None,
+                    registrant=None,
+                    auth_info=None,
+                ),
+                cleaned=True,
+            ),
+            call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+        ]
+
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
         self.assertFalse(self.domain.is_active())
 
@@ -731,26 +795,71 @@ class TestRegistrantNameservers(MockEppLib):
             And `commands.UpdateDomain` is sent to add #4 and #5 plus remove #2 and #3
             And `commands.DeleteHost` is sent to delete #2 and #3
         """
-        self.extendedValues=True
+        self.extendedValues = True
         self.domain.ready()
-        self.domain.nameservers=[(self.nameserver1,), ("ns1.cats-are-superior1.com",), ("ns1.cats-are-superior2.com",)]
-        print("self.mockedSendFunction.call_args_list is ")
-        print(self.mockedSendFunction.call_args_list)
-        expectedCalls=[call(commands.InfoDomain(name='my-nameserver.gov', auth_info=None), cleaned=True),
-            call(commands.InfoHost(name='ns1.my-nameserver-1.com'), cleaned=True),
-            call(commands.InfoHost(name='ns1.my-nameserver-2.com'), cleaned=True),
-            call(commands.InfoHost(name='ns1.cats-are-superior3.com'), cleaned=True),
-            call(commands.UpdateDomain(name='my-nameserver.gov', add=[], rem=[common.HostObjSet(hosts=['ns1.my-nameserver-2.com'])], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-            call(commands.DeleteHost(name='ns1.my-nameserver-2.com'), cleaned=True),
-            call(commands.CreateHost(name='ns1.cats-are-superior1.com', addrs=[]), cleaned=True),
-            call(commands.UpdateDomain(name='my-nameserver.gov', add=[common.HostObjSet(hosts=['ns1.cats-are-superior1.com'])], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True),
-            call(commands.CreateHost(name='ns1.cats-are-superior2.com', addrs=[]), cleaned=True),
-            call(commands.UpdateDomain(name='my-nameserver.gov', add=[common.HostObjSet(hosts=['ns1.cats-are-superior2.com'])], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None), cleaned=True)
-            ]
-        
+        self.domain.nameservers = [
+            (self.nameserver1,),
+            ("ns1.cats-are-superior1.com",),
+            ("ns1.cats-are-superior2.com",),
+        ]
+
+        expectedCalls = [
+            call(
+                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                cleaned=True,
+            ),
+            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            call(
+                commands.UpdateDomain(
+                    name="my-nameserver.gov",
+                    add=[],
+                    rem=[common.HostObjSet(hosts=["ns1.my-nameserver-2.com"])],
+                    nsset=None,
+                    keyset=None,
+                    registrant=None,
+                    auth_info=None,
+                ),
+                cleaned=True,
+            ),
+            call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(
+                commands.CreateHost(name="ns1.cats-are-superior1.com", addrs=[]),
+                cleaned=True,
+            ),
+            call(
+                commands.UpdateDomain(
+                    name="my-nameserver.gov",
+                    add=[common.HostObjSet(hosts=["ns1.cats-are-superior1.com"])],
+                    rem=[],
+                    nsset=None,
+                    keyset=None,
+                    registrant=None,
+                    auth_info=None,
+                ),
+                cleaned=True,
+            ),
+            call(
+                commands.CreateHost(name="ns1.cats-are-superior2.com", addrs=[]),
+                cleaned=True,
+            ),
+            call(
+                commands.UpdateDomain(
+                    name="my-nameserver.gov",
+                    add=[common.HostObjSet(hosts=["ns1.cats-are-superior2.com"])],
+                    rem=[],
+                    nsset=None,
+                    keyset=None,
+                    registrant=None,
+                    auth_info=None,
+                ),
+                cleaned=True,
+            ),
+        ]
+
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
         self.assertTrue(self.domain.is_active())
-
 
     def test_user_cannot_add_subordinate_without_ip(self):
         """
@@ -760,11 +869,12 @@ class TestRegistrantNameservers(MockEppLib):
                 with a subdomain of the domain and no IP addresses
             Then Domain raises a user-friendly error
         """
-        #add a nameserver with a .gov and no ip
-        ##assertRaises error 
-        raise
 
-    @skip("not implemented yet")
+        dotgovnameserver = "my-nameserver.gov"
+
+        with self.assertRaises(ValueError):
+            self.domain.nameservers = [(dotgovnameserver,)]
+
     def test_user_updates_ips(self):
         """
         Scenario: Registrant changes IP addresses for a nameserver
@@ -774,9 +884,49 @@ class TestRegistrantNameservers(MockEppLib):
                 with a different IP address(es)
             Then `commands.UpdateHost` is sent to the registry
         """
-        raise
+        domain, _ = Domain.objects.get_or_create(
+            name="nameserverwithip.gov", state=Domain.State.READY
+        )
+        domain.nameservers = [
+            ("ns1.nameserverwithip.gov", ["2.3.4", "1.2.3"]),
+            ("ns2.nameserverwithip.gov", ["1.2.3", "2.3.4", "3.4.5"]),
+            ("ns3.nameserverwithip.gov", ["2.3.4"]),
+        ]
 
-    @skip("not implemented yet")
+        # print("self.mockedSendFunction.call_args_list is ")
+        # print(self.mockedSendFunction.call_args_list)
+
+        expectedCalls = [
+            call(
+                commands.InfoDomain(name="nameserverwithip.gov", auth_info=None),
+                cleaned=True,
+            ),
+            call(commands.InfoHost(name="ns1.nameserverwithip.gov"), cleaned=True),
+            call(commands.InfoHost(name="ns2.nameserverwithip.gov"), cleaned=True),
+            call(commands.InfoHost(name="ns3.nameserverwithip.gov"), cleaned=True),
+            call(
+                commands.UpdateHost(
+                    name="ns2.nameserverwithip.gov",
+                    add=[common.Ip(addr="3.4.5", ip="v6")],
+                    rem=[],
+                    chg=None,
+                ),
+                cleaned=True,
+            ),
+            call(
+                commands.UpdateHost(
+                    name="ns3.nameserverwithip.gov",
+                    add=[],
+                    rem=[common.Ip(addr="1.2.3", ip="v6")],
+                    chg=None,
+                ),
+                cleaned=True,
+            ),
+        ]
+
+        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+        self.assertTrue(domain.is_active())
+
     def test_user_cannot_add_non_subordinate_with_ip(self):
         """
         Scenario: Registrant adds a nameserver which is NOT a subdomain of their .gov
@@ -785,7 +935,10 @@ class TestRegistrantNameservers(MockEppLib):
                 which is not a subdomain of the domain and has IP addresses
             Then Domain raises a user-friendly error
         """
-        raise
+        dotgovnameserver = "mynameserverdotgov.gov"
+
+        with self.assertRaises(ValueError):
+            self.domain.nameservers = [(dotgovnameserver, ["1.2.3"])]
 
     @skip("not implemented yet")
     def test_nameservers_are_idempotent(self):
@@ -810,8 +963,9 @@ class TestRegistrantNameservers(MockEppLib):
         raise
 
     def tearDown(self):
-        self.extendedValues=False
+        self.extendedValues = False
         return super().tearDown()
+
 
 class TestRegistrantDNSSEC(TestCase):
     """Rule: Registrants may modify their secure DNS data"""

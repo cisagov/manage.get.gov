@@ -228,8 +228,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         try:
             hosts = self._get_property("hosts")
-            print("HOST IS ")
-            print(hosts)
         except Exception as err:
             # TODO-848: Check/add to error handling ticket if it's not addressed
             # (Don't throw error as this is normal for a new domain?)
@@ -238,7 +236,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         hostList = []
         for host in hosts:
-            hostList.append((host["name"],host["addrs"]))
+            hostList.append((host["name"], host["addrs"]))
 
         return hostList
 
@@ -267,14 +265,11 @@ class Domain(TimeStampedModel, DomainHelper):
         returns ErrorCode (int)"""
         logger.info("Creating host")
         if addrs is not None:
-            # TODO-848: Make sure to have 1 with ip address + 1 without
             addresses = [epp.Ip(addr=addr) for addr in addrs]
             request = commands.CreateHost(name=host, addrs=addresses)
         else:
-            # NOTE-848: ip is a specification within the nameserver
             request = commands.CreateHost(name=host)
 
-        # NOTE-848: if you talk to registry you MUST do try/except
         try:
             logger.info("_create_host()-> sending req as %s" % request)
             response = registry.send(request, cleaned=True)
@@ -284,35 +279,41 @@ class Domain(TimeStampedModel, DomainHelper):
             return e.code
 
     def _convert_list_to_dict(self, listToConvert: list[tuple[str]]):
-        newDict={}
+        newDict = {}
+
+        # TODO-848: If duplicated nameserver names, throw error
         for tup in listToConvert:
             if len(tup) == 1:
                 newDict[tup[0]] = None
             else:
                 newDict[tup[0]] = tup[1]
         return newDict
-    
-    def isDotGov(self, nameserver):
-        return nameserver.find(".gov")!=-1
-    
-    def checkHostIPCombo(self, nameserver:str, ip:list):
-        if ( self.isDotGov(nameserver) and (ip is None or
-            ip==[]) ):
-            raise ValueError("Nameserver %s needs to have an ip address", nameserver)
+
+    def isSubdomain(self, nameserver):
+        return nameserver.find(self.name) != -1
+
+    def checkHostIPCombo(self, nameserver: str, ip: list):
+        if self.isSubdomain(nameserver) and (ip is None or ip == []):
+            raise ValueError("Nameserver %s needs to have an ip address" % nameserver)
+        elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
+            raise ValueError(
+                "Nameserver %s cannot be linked "
+                "because %s is not a subdomain" % (nameserver, ip)
+            )
         return None
 
-    def getNameserverChanges(self, hosts:list[tuple[str]]):
-        """ 
+    def getNameserverChanges(self, hosts: list[tuple[str]]):
+        """
         calls self.nameserver, it should pull from cache but may result
         in an epp call
-        returns tuple of four values as follows: 
+        returns tuple of four values as follows:
         deleted_values:
-        updated_values: 
+        updated_values:
         new_values: dict
         oldNameservers:"""
-        oldNameservers=self.nameservers
+        oldNameservers = self.nameservers
 
-        previousHostDict =  self._convert_list_to_dict(oldNameservers)
+        previousHostDict = self._convert_list_to_dict(oldNameservers)
 
         newHostDict = self._convert_list_to_dict(hosts)
         deleted_values = []
@@ -320,44 +321,39 @@ class Domain(TimeStampedModel, DomainHelper):
         new_values = []
 
         for prevHost in previousHostDict:
-            addrs=previousHostDict[prevHost]
+            addrs = previousHostDict[prevHost]
             # get deleted values-which are values in previous nameserver list
             # but are not in the list of new host values
             if prevHost not in newHostDict:
-                deleted_values.append((prevHost,addrs))
+                deleted_values.append((prevHost, addrs))
             # if the host exists in both, check if the addresses changed
             else:
-                #TODO - host is being updated when previous was None and new is an empty list
+                # TODO - host is being updated when previous was None and new is an empty list
                 # add check here
-                if (newHostDict[prevHost] != addrs 
-                    and newHostDict[prevHost] is not None): 
-                    # could raise error here if new value is empty and is a dotgov
+                if newHostDict[prevHost] is not None and set(
+                    newHostDict[prevHost]
+                ) != set(addrs):
                     self.checkHostIPCombo(nameserver=prevHost, ip=newHostDict[prevHost])
-                    updated_values.append((prevHost,newHostDict[prevHost]))
+                    updated_values.append((prevHost, newHostDict[prevHost]))
 
-        new_values=set(newHostDict)-set(previousHostDict) #returns actually a set
+        new_values = {
+            key: newHostDict.get(key)
+            for key in newHostDict
+            if key not in previousHostDict
+        }
 
-        final_new_values = dict.fromkeys(new_values, None)
-        # loop in final new values to check for .gov and missing addresses
-        for nameserver, ip in final_new_values.items():
-            # check the new values for missing IPs
-            # raise error if missing
-            self.checkHostIPCombo(nameserver=nameserver,ip=ip)
-                
-        return (deleted_values,updated_values,final_new_values, previousHostDict)
+        for nameserver, ip in new_values.items():
+            self.checkHostIPCombo(nameserver=nameserver, ip=ip)
+
+        return (deleted_values, updated_values, new_values, previousHostDict)
 
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str]]):
         """host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, 127.0.0.1, others ips)]"""
-    
-        # TODO-848: ip version checking may need to be added in a different ticket
 
-        # We currently don't have IP address functionality
-        # We can have multiple IP addresses 
-        # If you have a dotgov, then you HAVE to have at least 1 IP address (can have multiple)
-        # Nameservers already have IP addresses, these IP addresses are additionals
+        # TODO-848: ip version checking may need to be added in a different ticket
 
         if len(hosts) > 13:
             raise ValueError(
@@ -366,9 +362,14 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Setting nameservers")
         logger.info(hosts)
 
-        #get the changes made by user and old nameserver values
-        deleted_values, updated_values, new_values, oldNameservers=self.getNameserverChanges(hosts=hosts)
-        successDeletedCount = 0 
+        # get the changes made by user and old nameserver values
+        (
+            deleted_values,
+            updated_values,
+            new_values,
+            oldNameservers,
+        ) = self.getNameserverChanges(hosts=hosts)
+        successDeletedCount = 0
         successCreatedCount = 0
 
         print("deleted_values")
@@ -380,29 +381,31 @@ class Domain(TimeStampedModel, DomainHelper):
         print("oldNameservers")
         print(oldNameservers)
 
-
         for hostTuple in deleted_values:
-            print("hostTuple in deleted_values")
-            print(hostTuple)
-            print(deleted_values)
             deleted_response_code = self._delete_host(hostTuple[0])
             if deleted_response_code == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-                successDeletedCount += 1 
+                successDeletedCount += 1
 
         for hostTuple in updated_values:
-            updated_response_code = self._update_host(hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0]))
-            if updated_response_code not in [ ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY, ErrorCode.OBJECT_EXISTS]:
-                logger.warning("Could not update host %s. Error code was: %s " % (hostTuple[0], updated_response_code))
+            updated_response_code = self._update_host(
+                hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0])
+            )
+            if updated_response_code not in [
+                ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                ErrorCode.OBJECT_EXISTS,
+            ]:
+                logger.warning(
+                    "Could not update host %s. Error code was: %s "
+                    % (hostTuple[0], updated_response_code)
+                )
         for key, value in new_values.items():
-            print("HELLO THERE KEY, VALUE PAIR")
-            print(key)
-            print(value)
-            createdCode = self._create_host(host=key, addrs=value) # creates in registry
-            # TODO-848: Double check if _create_host should handle duplicates + update domain obj?
-            # NOTE-848: if createdCode == ErrorCode.OBJECT_EXISTS: --> self.nameservers
-
-            # NOTE-848: Host can be used by multiple domains
-            if createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY or createdCode == ErrorCode.OBJECT_EXISTS:
+            createdCode = self._create_host(
+                host=key, addrs=value
+            )  # creates in registry
+            if (
+                createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
+                or createdCode == ErrorCode.OBJECT_EXISTS
+            ):
                 request = commands.UpdateDomain(
                     name=self.name, add=[epp.HostObjSet([key])]
                 )
@@ -415,18 +418,16 @@ class Domain(TimeStampedModel, DomainHelper):
                         % (e.code, e)
                     )
 
-        print("")
-        successTotalNameservers = len(oldNameservers) - successDeletedCount+ successCreatedCount
-        
+        successTotalNameservers = (
+            len(oldNameservers) - successDeletedCount + successCreatedCount
+        )
+
         print("len(oldNameservers) IS ")
         print(len(oldNameservers))
         print("successDeletedCount IS ")
         print(successDeletedCount)
         print("successCreatedCount IS ")
         print(successCreatedCount)
-
-
-
 
         print("SUCCESSTOTALNAMESERVERS IS ")
         print(successTotalNameservers)
@@ -438,17 +439,19 @@ class Domain(TimeStampedModel, DomainHelper):
             except Exception as err:
                 logger.info(
                     "nameserver setter checked for dns_needed state "
-                    "and it did not succeed. Error: %s" % err
-                )                
+                    "and it did not succeed. Warning: %s" % err
+                )
         elif successTotalNameservers >= 2 and successTotalNameservers <= 13:
             try:
-                print("READY/SAVE: We are in happy path where btwen 2 and 13 inclusive ns")
+                print(
+                    "READY/SAVE: We are in happy path where btwen 2 and 13 inclusive ns"
+                )
                 self.ready()
                 self.save()
             except Exception as err:
                 logger.info(
                     "nameserver setter checked for create state "
-                    "and it did not succeed. Error: %s" % err
+                    "and it did not succeed. Warning: %s" % err
                 )
         # TODO-848: Handle removed nameservers here, will need to change the state then go back to DNS_NEEDED
 
@@ -838,7 +841,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 req = commands.InfoDomain(name=self.name)
                 domainInfo = registry.send(req, cleaned=True).res_data[0]
                 exitEarly = True
-                return domainInfo 
+                return domainInfo
             except RegistryError as e:
                 count += 1
 
@@ -931,17 +934,17 @@ class Domain(TimeStampedModel, DomainHelper):
     #     when EPP calling is made more efficient
     #     this should be added back in
 
-    #     The goal is to double check that 
+    #     The goal is to double check that
     #     the nameservers we set are in fact
     #     on the registry
     #     """
     #     self._invalidate_cache()
     #     nameserverList = self.nameservers
     #     return len(nameserverList) < 2
-    
+
     # def dns_not_needed(self):
     #     return not self.is_dns_needed()
-    
+
     @transition(
         field="state",
         source=[State.DNS_NEEDED],
@@ -964,10 +967,10 @@ class Domain(TimeStampedModel, DomainHelper):
     )
     def dns_needed(self):
         """Transition to the DNS_NEEDED state
-        domain should NOT have nameservers but 
+        domain should NOT have nameservers but
         SHOULD have all contacts
-        Going to check nameservers and will 
-        result in an EPP call 
+        Going to check nameservers and will
+        result in an EPP call
         """
         logger.info("Changing to DNS_NEEDED state")
         logger.info("able to transition to DNS_NEEDED state")
@@ -1087,22 +1090,33 @@ class Domain(TimeStampedModel, DomainHelper):
         edited_ip_list = []
         if ip_list is None:
             return []
-        
+
         for ip_addr in ip_list:
-            if self.is_ipv6():
+            if self.is_ipv6(ip_addr):
                 edited_ip_list.append(epp.Ip(addr=ip_addr, ip="v6"))
-            else: # default ip addr is v4
+            else:  # default ip addr is v4
                 edited_ip_list.append(epp.Ip(addr=ip_addr))
 
         return edited_ip_list
 
     def _update_host(self, nameserver: str, ip_list: list[str], old_ip_list: list[str]):
         try:
-
-            if ip_list is None or len(ip_list) == 0 and isinstance(old_ip_list,list) and len(old_ip_list)!=0 :
+            if (
+                ip_list is None
+                or len(ip_list) == 0
+                and isinstance(old_ip_list, list)
+                and len(old_ip_list) != 0
+            ):
                 return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
-   
-            request = commands.UpdateHost(name=nameserver, add=self._convert_ips(ip_list), rem=self._convert_ips(old_ip_list))
+
+            added_ip_list = set(ip_list) - set(old_ip_list)
+            removed_ip_list = set(old_ip_list) - set(ip_list)
+
+            request = commands.UpdateHost(
+                name=nameserver,
+                add=self._convert_ips(list(added_ip_list)),
+                rem=self._convert_ips(list(removed_ip_list)),
+            )
             response = registry.send(request, cleaned=True)
             logger.info("_update_host()-> sending req as %s" % request)
             return response.code
@@ -1113,23 +1127,30 @@ class Domain(TimeStampedModel, DomainHelper):
     def _delete_host(self, nameserver: str):
         try:
             updateReq = commands.UpdateDomain(
-                    name=self.name, rem=[epp.HostObjSet([nameserver])]
-                )
-            response=registry.send(updateReq, cleaned=True)
-        
+                name=self.name, rem=[epp.HostObjSet([nameserver])]
+            )
+            response = registry.send(updateReq, cleaned=True)
+
             logger.info("_delete_host()-> sending update domain req as %s" % updateReq)
-            
+
             deleteHostReq = commands.DeleteHost(name=nameserver)
             response = registry.send(deleteHostReq, cleaned=True)
-            logger.info("_delete_host()-> sending delete host req as %s" % deleteHostReq)
+            logger.info(
+                "_delete_host()-> sending delete host req as %s" % deleteHostReq
+            )
             return response.code
         except RegistryError as e:
-            if e.code==ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
-                logger.info("Did not remove host %s because it is in use on another domain." % nameserver)
+            if e.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
+                logger.info(
+                    "Did not remove host %s because it is in use on another domain."
+                    % nameserver
+                )
             else:
-                logger.error("Error _delete_host, code was %s error was %s" % (e.code, e))
+                logger.error(
+                    "Error _delete_host, code was %s error was %s" % (e.code, e)
+                )
                 return e.code
-            
+
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
