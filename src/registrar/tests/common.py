@@ -606,11 +606,14 @@ class MockEppLib(TestCase):
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         elif (
             isinstance(_request, commands.DeleteDomain)
-            and getattr(_request, "name", None) == "fail.gov"
+            and getattr(_request, "name", None) == "failDelete.gov"
         ):
-            raise RegistryError(
-                code=ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION
-            )
+            name = getattr(_request, "name", None)
+            fake_nameserver = "ns1.failDelete.gov"
+            if name in fake_nameserver:
+                raise RegistryError(
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+                )
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):

@@ -2,7 +2,7 @@ import logging
 
 from datetime import date
 from string import digits
-from django_fsm import FSMField, transition  # type: ignore
+from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
 
@@ -802,26 +802,25 @@ class Domain(TimeStampedModel, DomainHelper):
         self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=State.ON_HOLD, target=State.DELETED)
+    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
     def deletedInEpp(self):
-        """domain is deleted in epp but is saved in our database.
-        Returns the request_code"""
-        valid_delete_states = [
-            self.State.ON_HOLD,
-            self.State.DNS_NEEDED
-        ]
-        # Check that the domain contacts a valid status
-        if (self.state not in valid_delete_states):
-            raise ValueError(
-                f"Invalid domain state of {self.state}. Cannot delete."
-            )
-
+        """Domain is deleted in epp but is saved in our database.
+        Error handling should be provided by the caller."""
+        # While we want to log errors, we want to preserve
+        # that information when this function is called.
+        # Human-readable errors are introduced at the admin.py level,
+        # as doing everything here would reduce reliablity.
         try:
             logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_domain()
         except RegistryError as err:
             logger.error(
                 f"Could not delete domain. Registry returned error: {err}"
+            )
+            raise err
+        except TransitionNotAllowed as err:
+            logger.error(
+                "Could not delete domain. FSM failure: {err}"
             )
             raise err
         except Exception as err:

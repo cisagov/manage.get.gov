@@ -7,6 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
+from registrar.models.domain import Domain
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 from auditlog.models import LogEntry  # type: ignore
@@ -717,51 +718,47 @@ class DomainAdmin(ListHeaderAdmin):
         return super().response_change(request, obj)
 
     def do_delete_domain(self, request, obj):
+        if not isinstance(obj, Domain):
+            # Could be problematic if the type is similar,
+            # but not the same (same field/func names) so we err out.
+            # We do not want to accidentally delete records.
+            raise ValueError("Object is not of type Domain")
         try:
             obj.deletedInEpp()
             obj.save()
         except RegistryError as err:
-            if err.is_connection_error():
-                self.message_user(
-                    request,
-                    "Error connecting to the registry",
-                    messages.ERROR,
-                )
-            elif err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION:
-                self.message_user(
-                    request,
-                    "Error deleting this Domain: " 
+            # Human-readable mappings of ErrorCodes. Can be expanded.
+            error_messages = {
+                ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: 
                     f"Cannot delete Domain when in status {obj.status}",
-                    messages.ERROR,
-                )
-            elif err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
+                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: 
+                    "This subdomain is being used as a hostname on another domain"
+            }
+
+            message = "Cannot connect to the registry"
+            if not err.is_connection_error():
+                # If nothing is found, will default to returned err
+                message = error_messages.get(err.code, err)
+            self.message_user(request, f"Error deleting this Domain: {message}", messages.ERROR)
+        except TransitionNotAllowed as err:
+            if obj.state == Domain.State.DELETED:
                 self.message_user(
                     request,
-                    "Error deleting this Domain: " 
-                    f" This subdomain is being used as a hostname on another domain",
-                    messages.ERROR,
-                )
-            elif err.code:
-                self.message_user(
-                    request,
-                    f"Error deleting this Domain: {err}",
-                    messages.ERROR,
+                    f"This domain is already deleted",
+                    messages.INFO,
                 )
             else:
-                # all other type error messages, display the error
-                self.message_user(request, err, messages.ERROR)
-        except ValueError as err:
-            self.message_user(request, err, messages.ERROR)
-        except TransitionNotAllowed
-            self.message_user(
-                request,
-                f"Error deleting this Domain: {err}",
-                messages.ERROR,
-            )
+                self.message_user(
+                    request,
+                    "Error deleting this Domain: "
+                    f"Can't switch from state '{obj.state}' to 'deleted'"
+                    ,
+                    messages.ERROR,
+                )
         else:
             self.message_user(
                 request,
-                ("Domain %s Should now be deleted " ". Thanks!") % obj.name,
+                ("Domain %s has been deleted. Thanks!") % obj.name,
             )
         return HttpResponseRedirect(".")
 
