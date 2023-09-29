@@ -142,9 +142,9 @@ class MyUserAdmin(BaseUserAdmin):
     # Let's define First group
     # (which should in theory be the ONLY group)
     def group(self, obj):
-        if f"{obj.groups.first()}" == "full_access_group":
+        if obj.groups.filter(name="full_access_group").exists():
             return "Super User"
-        elif f"{obj.groups.first()}" == "cisa_analysts_group":
+        elif obj.groups.filter(name="cisa_analysts_group").exists():
             return "Analyst"
         return ""
 
