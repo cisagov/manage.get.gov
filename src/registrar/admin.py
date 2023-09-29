@@ -135,10 +135,13 @@ class MyUserAdmin(BaseUserAdmin):
         "email",
         "first_name",
         "last_name",
-        "is_staff",
-        "is_superuser",
+        "first_group",
         "status",
     )
+    
+    # First group (which should by theory be the only group)
+    def first_group(self, obj):
+        return f"{obj.groups.first()}"
 
     fieldsets = (
         (
@@ -175,8 +178,7 @@ class MyUserAdmin(BaseUserAdmin):
             {
                 "fields": (
                     "is_active",
-                    "is_staff",
-                    "is_superuser",
+                    "groups",
                 )
             },
         ),
@@ -195,6 +197,7 @@ class MyUserAdmin(BaseUserAdmin):
         "is_active",
         "is_staff",
         "is_superuser",
+        "groups",
         "Important dates",
         "last_login",
         "date_joined",
