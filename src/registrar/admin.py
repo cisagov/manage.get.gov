@@ -728,14 +728,14 @@ class DomainAdmin(ListHeaderAdmin):
             obj.deletedInEpp()
             obj.save()
         except RegistryError as err:
-            # To get past the linter..
-            l1 = f"Cannot delete Domain when in status {obj.status}"
-            l2 = "This subdomain is being used as a hostname on another domain"
+            # Using variables to get past the linter
+            message1 = f"Cannot delete Domain when in status {obj.status}"
+            message2 = "This subdomain is being used as a hostname on another domain"
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
                 # noqa on these items as black wants to reformat to an invalid length
-                ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: l1,
-                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: l2,
+                ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: message1,
+                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: message2,
             }
 
             message = "Cannot connect to the registry"
@@ -756,7 +756,8 @@ class DomainAdmin(ListHeaderAdmin):
                 self.message_user(
                     request,
                     "Error deleting this Domain: "
-                    f"Can't switch from state '{obj.state}' to 'deleted'",
+                    f"Can't switch from state '{obj.state}' to 'deleted'"
+                    ", must be either 'dns_needed' or 'on_hold'",
                     messages.ERROR,
                 )
         except Exception:
