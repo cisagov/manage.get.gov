@@ -732,7 +732,7 @@ class DomainAdmin(ListHeaderAdmin):
                 ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION:
                     f"Cannot delete Domain when in status {obj.status}",
                 ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
-                    "This subdomain is being used as a hostname on another domain"
+                    "This subdomain is being used as a hostname on another domain",
             }
 
             message = "Cannot connect to the registry"
@@ -740,9 +740,7 @@ class DomainAdmin(ListHeaderAdmin):
                 # If nothing is found, will default to returned err
                 message = error_messages.get(err.code, err)
             self.message_user(
-                request,
-                f"Error deleting this Domain: {message}",
-                messages.ERROR
+                request, f"Error deleting this Domain: {message}", messages.ERROR
             )
         except TransitionNotAllowed:
             if obj.state == Domain.State.DELETED:
@@ -755,15 +753,21 @@ class DomainAdmin(ListHeaderAdmin):
                 self.message_user(
                     request,
                     "Error deleting this Domain: "
-                    f"Can't switch from state '{obj.state}' to 'deleted'"
-                    ,
+                    f"Can't switch from state '{obj.state}' to 'deleted'",
                     messages.ERROR,
                 )
+        except Exception:
+            self.message_user(
+                request,
+                "Could not delete: An unspecified error occured",
+                messages.ERROR,
+            )
         else:
             self.message_user(
                 request,
                 ("Domain %s has been deleted. Thanks!") % obj.name,
             )
+
         return HttpResponseRedirect(".")
 
     def do_get_status(self, request, obj):
