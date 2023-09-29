@@ -544,15 +544,64 @@ class TestRegistrantNameservers(MockEppLib):
             name="my-nameserver.gov", state=Domain.State.DNS_NEEDED
         )
 
-    def test_get_nameserver_changes(self):
+    def test_get_nameserver_changes_success_deleted_vals(self):
+        # Testing only deleting and no other changes
         self.domain._cache["hosts"] = [
             {"name": "ns1.example.com", "addrs": None},
             {"name": "ns2.example.com", "addrs": ["1.2.3"]},
-            {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3"]},
         ]
         newChanges = [
             ("ns1.example.com",),
+        ]
+        (
+            deleted_values,
+            updated_values,
+            new_values,
+            oldNameservers,
+        ) = self.domain.getNameserverChanges(newChanges)
+
+        self.assertEqual(deleted_values, [("ns2.example.com", ["1.2.3"])])
+        self.assertEqual(updated_values, [])
+        self.assertEqual(new_values, {})
+        self.assertEqual(
+            oldNameservers,
+            {
+            'ns1.example.com': None, 'ns2.example.com': ['1.2.3']
+            },
+        )
+
+    def test_get_nameserver_changes_success_updated_vals(self):
+        # Testing only updating no other changes
+        self.domain._cache["hosts"] = [
+            {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3"]},
+        ]
+        newChanges = [
             ("ns3.my-nameserver.gov", ["1.2.4"]),
+        ]
+        (
+            deleted_values,
+            updated_values,
+            new_values,
+            oldNameservers,
+        ) = self.domain.getNameserverChanges(newChanges)
+
+        self.assertEqual(deleted_values, [])
+        self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4"])])
+        self.assertEqual(new_values, {})
+        self.assertEqual(
+            oldNameservers,
+            {
+            "ns3.my-nameserver.gov": ["1.2.3"]
+            },
+        )
+
+    def test_get_nameserver_changes_success_new_vals(self):
+        # Testing only creating no other changes
+        self.domain._cache["hosts"] = [
+            {"name": "ns1.example.com", "addrs": None},
+        ]
+        newChanges = [
+            ("ns1.example.com",),
             ("ns4.example.com",),
         ]
         (
@@ -561,15 +610,19 @@ class TestRegistrantNameservers(MockEppLib):
             new_values,
             oldNameservers,
         ) = self.domain.getNameserverChanges(newChanges)
-        self.assertEqual(deleted_values, [("ns2.example.com", ["1.2.3"])])
-        self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4"])])
+
+
+        print("deleted vals is ", deleted_values)
+        print("updated vals is ", updated_values)
+        print("new vals is ", new_values)
+        print("old nameserver is ", oldNameservers)
+        self.assertEqual(deleted_values, [])
+        self.assertEqual(updated_values, [])
         self.assertEqual(new_values, {"ns4.example.com": None})
         self.assertEqual(
             oldNameservers,
             {
                 "ns1.example.com": None,
-                "ns2.example.com": ["1.2.3"],
-                "ns3.my-nameserver.gov": ["1.2.3"],
             },
         )
 
@@ -601,7 +654,8 @@ class TestRegistrantNameservers(MockEppLib):
 
         self.mockedSendFunction.assert_has_calls(expectedCalls)
 
-        # check that status is still NOT READY
+        # check that status is still NOT READY 
+        # as you have less than 2 nameservers
         self.assertFalse(self.domain.is_active())
 
     def test_user_adds_two_nameservers(self):

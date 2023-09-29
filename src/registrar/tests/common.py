@@ -631,8 +631,10 @@ class MockEppLib(TestCase):
             "ns2.nameserverwithip.gov",
             "ns3.nameserverwithip.gov",
         ],
+        addrs=["1.2.3", "2.3.4"],
     )
 
+    # TODO-848: Fix naming 
     extendedValues = False
 
     # TODO-848: Rename later - was getting complex err

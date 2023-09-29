@@ -294,11 +294,12 @@ class Domain(TimeStampedModel, DomainHelper):
         return newDict
 
     def isSubdomain(self, nameserver):
-        return nameserver.find(self.name) != -1
+        return self.name in nameserver
 
     def checkHostIPCombo(self, nameserver: str, ip: list):
         if self.isSubdomain(nameserver) and (ip is None or ip == []):
-            raise ValueError("Nameserver %s needs to have an ip address" % nameserver)
+            raise ValueError("Nameserver %s needs to have an "
+                "ip address because it is a subdomain" % nameserver)
         elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
             raise ValueError(
                 "Nameserver %s cannot be linked "
@@ -306,15 +307,15 @@ class Domain(TimeStampedModel, DomainHelper):
             )
         return None
 
-    def getNameserverChanges(self, hosts: list[tuple[str]]):
+    def getNameserverChanges(self, hosts: list[tuple[str]]) -> tuple[list, list, dict, list]:
         """
         calls self.nameserver, it should pull from cache but may result
         in an epp call
         returns tuple of four values as follows:
-        deleted_values:
-        updated_values:
+        deleted_values: list
+        updated_values: list
         new_values: dict
-        oldNameservers:"""
+        oldNameservers: list"""
         oldNameservers = self.nameservers
 
         previousHostDict = self._convert_list_to_dict(oldNameservers)
@@ -417,7 +418,7 @@ class Domain(TimeStampedModel, DomainHelper):
             oldNameservers,
         ) = self.getNameserverChanges(hosts=hosts)
 
-        # TODO-848: Fix name here
+        # TODO-848: Fix name
         successTotalNameservers = self._loop_through(
             deleted_values, updated_values, new_values, oldNameservers
         )
@@ -1103,9 +1104,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 and len(old_ip_list) != 0
             ):
                 return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
-
-            added_ip_list = set(ip_list) - set(old_ip_list)
-            removed_ip_list = set(old_ip_list) - set(ip_list)
+                
+            added_ip_list = set(ip_list).difference(old_ip_list)
+            removed_ip_list = set(old_ip_list).difference(ip_list)
 
             request = commands.UpdateHost(
                 name=nameserver,
