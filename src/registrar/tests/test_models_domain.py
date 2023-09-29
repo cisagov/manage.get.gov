@@ -21,6 +21,7 @@ from epplibwrapper import (
     commands,
     common,
     RegistryError,
+    ErrorCode,
 )
 
 
