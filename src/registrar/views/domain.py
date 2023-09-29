@@ -372,7 +372,6 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
         requested_email = form.cleaned_data["email"]
         # look up a user with that email
         try:
-            l# Will remove - to push to my sandbox
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
