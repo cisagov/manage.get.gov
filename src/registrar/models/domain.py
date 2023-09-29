@@ -284,30 +284,21 @@ class Domain(TimeStampedModel, DomainHelper):
     def dnssecdata(self) -> extensions.DNSSECExtension:
         return self._get_property("dnssecdata")
 
-    @dnssecdata.setter
-    def dnssecdata(
-        self,
-        _dnssecdata: extensions.DNSSECExtension
-    ):
+    @dnssecdata.setter  # type: ignore
+    def dnssecdata(self, _dnssecdata: extensions.DNSSECExtension):
         updateParams = {
-            "maxSigLife": _dnssecdata.maxSigLife,
-            "dsData": _dnssecdata.dsData,
-            "keyData": _dnssecdata.keyData,
+            "maxSigLife": _dnssecdata.get("maxSigLife", None),
+            "dsData": _dnssecdata.get("dsData", None),
+            "keyData": _dnssecdata.get("keyData", None),
             "remAllDsKeyData": True,
         }
-        request = commands.UpdateDomain(
-            name=self.name
-        )
+        request = commands.UpdateDomain(name=self.name)
         extension = commands.UpdateDomainDNSSECExtension(**updateParams)
         request.add_extension(extension)
-
         try:
             registry.send(request, cleaned=True)
         except RegistryError as e:
-            logger.error(
-                "Error adding DNSSEC, code was %s error was %s"
-                % (e.code, e)
-            )
+            logger.error("Error adding DNSSEC, code was %s error was %s" % (e.code, e))
             raise e
 
     @nameservers.setter  # type: ignore
@@ -1010,10 +1001,10 @@ class Domain(TimeStampedModel, DomainHelper):
             # get extensions info, if there is any
             # DNSSECExtension is one possible extension, make sure to handle
             # only DNSSECExtension and not other type extensions
-            extensions = dataResponse.extensions
+            returned_extensions = dataResponse.extensions
             cleaned["dnssecdata"] = None
-            for extension in extensions:
-                if isinstance(extension,extensions.DNSSECExtension):
+            for extension in returned_extensions:
+                if isinstance(extension, extensions.DNSSECExtension):
                     cleaned["dnssecdata"] = extension
 
             # get contact info, if there are any
