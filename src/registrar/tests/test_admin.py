@@ -18,7 +18,6 @@ from registrar.models import (
     DomainInformation,
     User,
     DomainInvitation,
-    UserGroup,
 )
 from .common import (
     completed_application,
