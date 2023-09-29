@@ -837,11 +837,12 @@ class DomainAdmin(ListHeaderAdmin):
         # Fixes a bug wherein users which are only is_staff
         # can access 'change' when GET,
         # but cannot access this page when it is a request of type POST.
-        if request.user.has_perm(
-            "registrar.full_access_permission"
-        ) or request.user.has_perm(
-            "registrar.analyst_access_permission"
-        ) or request.user.is_staff:
+        # if request.user.has_perm(
+        #     "registrar.full_access_permission"
+        # ) or request.user.has_perm(
+        #     "registrar.analyst_access_permission"
+        # ):
+        if request.user.is_staff:
             return True
         return super().has_change_permission(request, obj)
 
