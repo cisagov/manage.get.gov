@@ -13,6 +13,7 @@ from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -729,10 +730,9 @@ class DomainAdmin(ListHeaderAdmin):
         except RegistryError as err:
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
-                ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION:
-                    f"Cannot delete Domain when in status {obj.status}",
-                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
-                    "This subdomain is being used as a hostname on another domain",
+                # noqa on these items as black wants to reformat to an invalid length
+                ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: f"Cannot delete Domain when in status {obj.status}", # noqa
+                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: "This subdomain is being used as a hostname on another domain", # noqa
             }
 
             message = "Cannot connect to the registry"

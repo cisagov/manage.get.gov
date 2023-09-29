@@ -6,6 +6,7 @@ import logging
 from django.apps import apps
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
+from registrar.models.domain import Domain
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -610,9 +611,11 @@ class DomainApplication(TimeStampedModel):
 
         As side effects this will delete the domain and domain_information
         (will cascade), and send an email notification."""
-
         if self.status == self.APPROVED:
-            self.approved_domain.deletedInEpp()
+            domain_state = self.approved_domain.state
+            # Only reject if it exists on EPP
+            if domain_state != Domain.State.UNKNOWN:
+                self.approved_domain.deletedInEpp()
             self.approved_domain.delete()
             self.approved_domain = None
 
@@ -638,7 +641,10 @@ class DomainApplication(TimeStampedModel):
         and domain_information (will cascade) when they exist."""
 
         if self.status == self.APPROVED:
-            self.approved_domain.delete_request()
+            domain_state = self.approved_domain.state
+            # Only reject if it exists on EPP
+            if domain_state != Domain.State.UNKNOWN:
+                self.approved_domain.deletedInEpp()
             self.approved_domain.delete()
             self.approved_domain = None
 

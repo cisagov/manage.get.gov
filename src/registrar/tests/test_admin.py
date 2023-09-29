@@ -287,8 +287,9 @@ class TestDomainApplicationAdminForm(TestCase):
         )
 
 
-class TestDomainApplicationAdmin(TestCase):
+class TestDomainApplicationAdmin(MockEppLib):
     def setUp(self):
+        super().setUp()
         self.site = AdminSite()
         self.factory = RequestFactory()
         self.admin = DomainApplicationAdmin(
@@ -839,6 +840,7 @@ class TestDomainApplicationAdmin(TestCase):
             domain_information.refresh_from_db()
 
     def tearDown(self):
+        super().tearDown()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
