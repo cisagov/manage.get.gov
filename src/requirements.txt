@@ -22,7 +22,7 @@ django-phonenumber-field[phonenumberslite]==7.1.0
 django-widget-tweaks==1.4.12
 environs[django]==9.5.0
 faker==18.10.0
-git+https://github.com/cisagov/epplib.git@62966d4d48dadd657ec97e8383437ce77b626a1b#egg=fred-epplib
+git+https://github.com/cisagov/epplib.git@d56d183f1664f34c40ca9716a3a9a345f0ef561c#egg=fred-epplib
 furl==2.1.3
 future==0.18.3 ; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'
 gunicorn==20.1.0
