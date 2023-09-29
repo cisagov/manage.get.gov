@@ -164,7 +164,8 @@ class TestDomainAdmin(MockEppLib):
                 request,
                 messages.ERROR,
                 "Error deleting this Domain: "
-                "Can't switch from state 'ready' to 'deleted'",
+                "Can't switch from state 'ready' to 'deleted'"
+                ", must be either 'dns_needed' or 'on_hold'",
                 extra_tags="",
                 fail_silently=False,
             )
