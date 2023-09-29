@@ -205,10 +205,10 @@ class MyUserAdmin(BaseUserAdmin):
         # which is equivalent to superuser. The other group we use to manage
         # perms is cisa_analysts_group. cisa_analysts_group will never contain
         # full_access_permission
-        if request.user.has_perm('registrar.full_access_permission'):
+        if request.user.has_perm("registrar.full_access_permission"):
             # Use the default list display for all access users
             return super().get_list_display(request)
-        
+
         # Customize the list display for analysts
         return (
             "email",
@@ -220,17 +220,23 @@ class MyUserAdmin(BaseUserAdmin):
         )
 
     def get_fieldsets(self, request, obj=None):
-        if request.user.has_perm('registrar.full_access_permission'):
+        if request.user.has_perm("registrar.full_access_permission"):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
-        
-        # show analyst_fieldsets for analysts
-        return self.analyst_fieldsets
+        elif request.user.has_perm("registrar.analyst_access_permission"):
+            # show analyst_fieldsets for analysts
+            return self.analyst_fieldsets
+        else:
+            # any admin user should belong to either full_access_group
+            # or cisa_analyst_group
+            return []
 
     def get_readonly_fields(self, request, obj=None):
-        if request.user.has_perm('registrar.full_access_permission'):
+        if request.user.has_perm("registrar.full_access_permission"):
             return ()  # No read-only fields for all access users
-        return self.analyst_readonly_fields  # Read-only fields for analysts
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        return self.analyst_readonly_fields
 
 
 class HostIPInline(admin.StackedInline):
@@ -409,11 +415,12 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
         readonly_fields = list(self.readonly_fields)
 
-        if request.user.has_perm('registrar.full_access_permission'):
+        if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
-        else:
-            readonly_fields.extend([field for field in self.analyst_readonly_fields])
-            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields  # Read-only fields for analysts
 
 
 class DomainApplicationAdminForm(forms.ModelForm):
@@ -627,11 +634,12 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 ["current_websites", "other_contacts", "alternative_domains"]
             )
 
-        if request.user.has_perm('registrar.full_access_permission'):
+        if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
-        else:
-            readonly_fields.extend([field for field in self.analyst_readonly_fields])
-            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
 
     def display_restricted_warning(self, request, obj):
         if obj and obj.creator.status == models.User.RESTRICTED:
@@ -702,7 +710,7 @@ class DomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    readonly_fields = ["state"]
+    # readonly_fields = ["state"]
 
     def response_change(self, request, obj):
         # Create dictionary of action functions

@@ -81,8 +81,9 @@ class User(AbstractUser):
                 logger.warn(
                     "Failed to retrieve invitation %s", invitation, exc_info=True
                 )
-                
+
     class Meta:
         permissions = [
+            ("analyst_access_permission", "Analyst Access Permission"),
             ("full_access_permission", "Full Access Permission"),
         ]

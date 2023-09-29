@@ -675,7 +675,7 @@ class Domain(TimeStampedModel, DomainHelper):
         max_length=21,
         choices=State.choices,
         default=State.UNKNOWN,
-        protected=True,  # cannot change state directly, particularly in Django admin
+        protected=False,  # cannot change state directly, particularly in Django admin
         help_text="Very basic info about the lifecycle of this domain object",
     )
 

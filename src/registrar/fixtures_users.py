@@ -128,7 +128,7 @@ class UserFixture:
             "email": "nicolle.leclair@ecstech.com",
         },
     ]
-    
+
     def load_users(cls, users, group_name):
         logger.info(f"Going to load {len(users)} users in group {group_name}")
         for user_data in users:
@@ -153,4 +153,3 @@ class UserFixture:
     def load(cls):
         cls.load_users(cls, cls.ADMINS, "full_access_group")
         cls.load_users(cls, cls.STAFF, "cisa_analysts_group")
-
