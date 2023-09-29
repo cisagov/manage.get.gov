@@ -729,7 +729,7 @@ class DomainAdmin(ListHeaderAdmin):
             obj.save()
         except RegistryError as err:
             # Using variables to get past the linter
-            message1 = f"Cannot delete Domain when in status {obj.status}"
+            message1 = f"Cannot delete Domain when in state {obj.state}"
             message2 = "This subdomain is being used as a hostname on another domain"
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
