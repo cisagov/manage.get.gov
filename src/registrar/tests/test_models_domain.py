@@ -5,7 +5,7 @@ This file tests the various ways in which the registrar interacts with the regis
 """
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from unittest.mock import patch, call
+from unittest.mock import MagicMock, patch, call
 import datetime
 from registrar.models import Domain
 
@@ -20,6 +20,7 @@ from .common import MockEppLib
 from epplibwrapper import (
     commands,
     common,
+    responses,
     RegistryError,
     ErrorCode,
 )
@@ -261,6 +262,115 @@ class TestDomainStatuses(MockEppLib):
     def tearDown(self) -> None:
         Domain.objects.all().delete()
         super().tearDown()
+
+
+class TestDomainAvailable(MockEppLib):
+    """Test Domain.available"""
+
+    # No SetUp or tearDown necessary for these tests
+
+    def test_domain_available(self):
+        """
+        Scenario: Testing whether an available domain is available
+            Should return True
+
+            Mock response to mimic EPP Response
+            Validate CheckDomain command is called
+            Validate response given mock
+        """
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[
+                    responses.check.CheckDomainResultData(name='available.gov', avail=True, reason=None)
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        available = Domain.available("available.gov")
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.CheckDomain(
+                        [
+                            "available.gov"
+                        ],
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertTrue(available)
+        patcher.stop()
+
+    def test_domain_unavailable(self):
+        """
+        Scenario: Testing whether an unavailable domain is available
+            Should return False
+
+            Mock response to mimic EPP Response
+            Validate CheckDomain command is called
+            Validate response given mock
+        """
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[
+                    responses.check.CheckDomainResultData(
+                        name='unavailable.gov',
+                        avail=False,
+                        reason="In Use"
+                    )
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        available = Domain.available("unavailable.gov")
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.CheckDomain(
+                        [
+                            "unavailable.gov"
+                        ],
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertFalse(available)
+        patcher.stop()
+
+    def test_domain_available_with_value_error(self):
+        """
+        Scenario: Testing whether an invalid domain is available
+            Should throw ValueError
+
+            Validate ValueError is raised
+        """
+        with self.assertRaises(ValueError):
+            Domain.available("invalid-string")
+
+    def test_domain_available_unsuccessful(self):
+        """
+        Scenario: Testing behavior when registry raises a RegistryError
+        
+            Validate RegistryError is raised
+        """
+        def side_effect(_request, cleaned):
+            raise RegistryError(code=ErrorCode.COMMAND_SYNTAX_ERROR)
+        
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        with self.assertRaises(RegistryError) as err:
+            Domain.available("raises-error.gov")
+        patcher.stop()
 
 
 class TestRegistrantContacts(MockEppLib):
