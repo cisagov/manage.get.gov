@@ -10,10 +10,13 @@
 
 from django.db import migrations
 from registrar.models import UserGroup
+from typing import Any
 
-def create_groups():
-    UserGroup.create_cisa_analyst_group()
-    UserGroup.create_full_access_group()
+# For linting: RunPython expects a function reference,
+# so let's give it one
+def create_groups(apps, schema_editor) -> Any:
+    UserGroup.create_cisa_analyst_group(apps, schema_editor)
+    UserGroup.create_full_access_group(apps, schema_editor)
 
 
 class Migration(migrations.Migration):
@@ -23,7 +26,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(
-            create_groups,  # noqa
+            create_groups,
             reverse_code=migrations.RunPython.noop,
             atomic=True,
         ),

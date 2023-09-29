@@ -710,7 +710,7 @@ class DomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    # readonly_fields = ["state"]
+    readonly_fields = ["state"]
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
