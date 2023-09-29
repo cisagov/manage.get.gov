@@ -786,7 +786,7 @@ class MyUserAdminTest(TestCase):
             "email",
             "first_name",
             "last_name",
-            "first_group",
+            "group",
             "status",
         )
 

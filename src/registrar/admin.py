@@ -135,13 +135,18 @@ class MyUserAdmin(BaseUserAdmin):
         "email",
         "first_name",
         "last_name",
-        "first_group",
+        "group",
         "status",
     )
 
-    # First group (which should in theory be the ONLY group)
-    def first_group(self, obj):
-        return f"{obj.groups.first()}"
+    # Let's define First group
+    # (which should in theory be the ONLY group)
+    def group(self, obj):
+        if f"{obj.groups.first()}" == "full_access_group":
+            return "Super User"
+        elif f"{obj.groups.first()}" == "cisa_analysts_group":
+            return "Analyst"
+        return ""
 
     fieldsets = (
         (
@@ -215,7 +220,7 @@ class MyUserAdmin(BaseUserAdmin):
             "email",
             "first_name",
             "last_name",
-            "first_group",
+            "group",
             "status",
         )
 
