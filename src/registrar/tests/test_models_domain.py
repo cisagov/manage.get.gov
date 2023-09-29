@@ -278,10 +278,13 @@ class TestDomainAvailable(MockEppLib):
             Validate CheckDomain command is called
             Validate response given mock
         """
+
         def side_effect(_request, cleaned):
             return MagicMock(
                 res_data=[
-                    responses.check.CheckDomainResultData(name='available.gov', avail=True, reason=None)
+                    responses.check.CheckDomainResultData(
+                        name="available.gov", avail=True, reason=None
+                    )
                 ],
             )
 
@@ -294,9 +297,7 @@ class TestDomainAvailable(MockEppLib):
             [
                 call(
                     commands.CheckDomain(
-                        [
-                            "available.gov"
-                        ],
+                        ["available.gov"],
                     ),
                     cleaned=True,
                 )
@@ -314,13 +315,12 @@ class TestDomainAvailable(MockEppLib):
             Validate CheckDomain command is called
             Validate response given mock
         """
+
         def side_effect(_request, cleaned):
             return MagicMock(
                 res_data=[
                     responses.check.CheckDomainResultData(
-                        name='unavailable.gov',
-                        avail=False,
-                        reason="In Use"
+                        name="unavailable.gov", avail=False, reason="In Use"
                     )
                 ],
             )
@@ -334,9 +334,7 @@ class TestDomainAvailable(MockEppLib):
             [
                 call(
                     commands.CheckDomain(
-                        [
-                            "unavailable.gov"
-                        ],
+                        ["unavailable.gov"],
                     ),
                     cleaned=True,
                 )
@@ -358,17 +356,18 @@ class TestDomainAvailable(MockEppLib):
     def test_domain_available_unsuccessful(self):
         """
         Scenario: Testing behavior when registry raises a RegistryError
-        
+
             Validate RegistryError is raised
         """
+
         def side_effect(_request, cleaned):
             raise RegistryError(code=ErrorCode.COMMAND_SYNTAX_ERROR)
-        
+
         patcher = patch("registrar.models.domain.registry.send")
         mocked_send = patcher.start()
         mocked_send.side_effect = side_effect
 
-        with self.assertRaises(RegistryError) as err:
+        with self.assertRaises(RegistryError):
             Domain.available("raises-error.gov")
         patcher.stop()
 
