@@ -234,6 +234,10 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info("Domain is missing nameservers %s" % err)
             return []
 
+        # TODO-848: Fix the output
+        # ('ns1.therealslimhsiehdy.com',)
+        # ('ns2.therealslimhsiehdy.com',)
+        # ('ns3.therealslimhsiehdy.com',)
         hostList = []
         for host in hosts:
             hostList.append((host["name"], host["addrs"]))
@@ -328,7 +332,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 deleted_values.append((prevHost, addrs))
             # if the host exists in both, check if the addresses changed
             else:
-                # TODO - host is being updated when previous was None and new is an empty list
+                # TODO - host is being updated when previous was None+new is empty list
                 # add check here
                 if newHostDict[prevHost] is not None and set(
                     newHostDict[prevHost]
@@ -346,6 +350,49 @@ class Domain(TimeStampedModel, DomainHelper):
             self.checkHostIPCombo(nameserver=nameserver, ip=ip)
 
         return (deleted_values, updated_values, new_values, previousHostDict)
+
+    # TODO-848: Rename later - was getting complex err
+    def _loop_through(self, deleted_values, updated_values, new_values, oldNameservers):
+        successDeletedCount = 0
+        successCreatedCount = 0
+        for hostTuple in deleted_values:
+            deleted_response_code = self._delete_host(hostTuple[0])
+            if deleted_response_code == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
+                successDeletedCount += 1
+
+        for hostTuple in updated_values:
+            updated_response_code = self._update_host(
+                hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0])
+            )
+            if updated_response_code not in [
+                ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                ErrorCode.OBJECT_EXISTS,
+            ]:
+                logger.warning(
+                    "Could not update host %s. Error code was: %s "
+                    % (hostTuple[0], updated_response_code)
+                )
+
+        for key, value in new_values.items():
+            createdCode = self._create_host(
+                host=key, addrs=value
+            )  # creates in registry
+            if (
+                createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
+                or createdCode == ErrorCode.OBJECT_EXISTS
+            ):
+                request = commands.UpdateDomain(
+                    name=self.name, add=[epp.HostObjSet([key])]
+                )
+                try:
+                    registry.send(request, cleaned=True)
+                    successCreatedCount += 1
+                except RegistryError as e:
+                    logger.error(
+                        "Error adding nameserver, code was %s error was %s"
+                        % (e.code, e)
+                    )
+        return len(oldNameservers) - successDeletedCount + successCreatedCount
 
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str]]):
@@ -369,68 +416,15 @@ class Domain(TimeStampedModel, DomainHelper):
             new_values,
             oldNameservers,
         ) = self.getNameserverChanges(hosts=hosts)
-        successDeletedCount = 0
-        successCreatedCount = 0
 
-        print("deleted_values")
-        print(deleted_values)
-        print("updated_values")
-        print(updated_values)
-        print("new_values")
-        print(new_values)
-        print("oldNameservers")
-        print(oldNameservers)
-
-        for hostTuple in deleted_values:
-            deleted_response_code = self._delete_host(hostTuple[0])
-            if deleted_response_code == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-                successDeletedCount += 1
-
-        for hostTuple in updated_values:
-            updated_response_code = self._update_host(
-                hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0])
-            )
-            if updated_response_code not in [
-                ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-                ErrorCode.OBJECT_EXISTS,
-            ]:
-                logger.warning(
-                    "Could not update host %s. Error code was: %s "
-                    % (hostTuple[0], updated_response_code)
-                )
-        for key, value in new_values.items():
-            createdCode = self._create_host(
-                host=key, addrs=value
-            )  # creates in registry
-            if (
-                createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
-                or createdCode == ErrorCode.OBJECT_EXISTS
-            ):
-                request = commands.UpdateDomain(
-                    name=self.name, add=[epp.HostObjSet([key])]
-                )
-                try:
-                    registry.send(request, cleaned=True)
-                    successCreatedCount += 1
-                except RegistryError as e:
-                    logger.error(
-                        "Error adding nameserver, code was %s error was %s"
-                        % (e.code, e)
-                    )
-
-        successTotalNameservers = (
-            len(oldNameservers) - successDeletedCount + successCreatedCount
+        # TODO-848: Fix name here
+        successTotalNameservers = self._loop_through(
+            deleted_values, updated_values, new_values, oldNameservers
         )
 
-        print("len(oldNameservers) IS ")
-        print(len(oldNameservers))
-        print("successDeletedCount IS ")
-        print(successDeletedCount)
-        print("successCreatedCount IS ")
-        print(successCreatedCount)
+        # print("SUCCESSTOTALNAMESERVERS IS ")
+        # print(successTotalNameservers)
 
-        print("SUCCESSTOTALNAMESERVERS IS ")
-        print(successTotalNameservers)
         if successTotalNameservers < 2:
             try:
                 print("DNS_NEEDED: We have less than 2 nameservers")
@@ -453,7 +447,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     "nameserver setter checked for create state "
                     "and it did not succeed. Warning: %s" % err
                 )
-        # TODO-848: Handle removed nameservers here, will need to change the state then go back to DNS_NEEDED
+        # TODO-848: Handle removed nameservers here,
+        # will need to change the state then go back to DNS_NEEDED
 
     @Cache
     def statuses(self) -> list[str]:

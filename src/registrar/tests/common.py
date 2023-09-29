@@ -581,6 +581,13 @@ class MockEppLib(TestCase):
         contacts=[],
         hosts=["fake.host.com"],
     )
+    # infoDomainUpdateFail = fakedEppObject(
+    #     "security",
+    #     cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+    #     contacts=[],
+    #     hosts=["ns1.failednameserver.gov"],
+    #     addrs=["1.2.3"],
+    # )
     infoDomainThreeHosts = fakedEppObject(
         "my-nameserver.gov",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
@@ -628,26 +635,31 @@ class MockEppLib(TestCase):
 
     extendedValues = False
 
+    # TODO-848: Rename later - was getting complex err
+    def _getattrshelper(self, _request):
+        if getattr(_request, "name", None) == "security.gov":
+            return MagicMock(res_data=[self.infoDomainNoContact])
+        elif getattr(_request, "name", None) == "my-nameserver.gov":
+            if self.extendedValues:
+                return MagicMock(res_data=[self.infoDomainThreeHosts])
+            elif self.mockedSendFunction.call_count == 5:
+                return MagicMock(res_data=[self.infoDomainTwoHosts])
+            else:
+                return MagicMock(res_data=[self.infoDomainNoHost])
+        elif getattr(_request, "name", None) == "nameserverwithip.gov":
+            return MagicMock(res_data=[self.infoDomainHasIP])
+        # elif getattr(_request, "name", None) == "failednameserver.gov":
+        #     return MagicMock(res_data=[self.infoDomainUpdateFail])
+        # return MagicMock(res_data=[self.mockDataInfoDomain])
+
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
         registry is imported from epplibwrapper
         returns objects that simulate what would be in a epp response
         but only relevant pieces for tests"""
         if isinstance(_request, commands.InfoDomain):
-            if getattr(_request, "name", None) == "security.gov":
-                return MagicMock(res_data=[self.infoDomainNoContact])
-            elif getattr(_request, "name", None) == "my-nameserver.gov":
-                if self.extendedValues:
-                    return MagicMock(res_data=[self.infoDomainThreeHosts])
-                elif (
-                    self.mockedSendFunction.call_count == 5
-                ):  ## remove this breaks anything?
-                    return MagicMock(res_data=[self.infoDomainTwoHosts])
-                else:
-                    return MagicMock(res_data=[self.infoDomainNoHost])
-            elif getattr(_request, "name", None) == "nameserverwithip.gov":
-                return MagicMock(res_data=[self.infoDomainHasIP])
-            return MagicMock(res_data=[self.mockDataInfoDomain])
+            # TODO-848: Fix name here
+            return self._getattrshelper(_request)
         elif isinstance(_request, commands.InfoContact):
             return MagicMock(res_data=[self.mockDataInfoContact])
         elif (
@@ -663,7 +675,9 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-        elif isinstance(_request, commands.UpdateHost):
+            # elif isinstance(_request, commands.UpdateHost):
+            #     if getattr(_request, "name", None) == "ns1.failednameserver.gov":
+            #         raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
             return MagicMock(
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,

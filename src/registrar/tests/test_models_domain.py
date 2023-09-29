@@ -20,6 +20,7 @@ from .common import MockEppLib
 from epplibwrapper import (
     commands,
     common,
+    RegistryError,
 )
 
 
@@ -334,7 +335,8 @@ class TestRegistrantContacts(MockEppLib):
                 created contact of type 'security'
         """
         # make a security contact that is a PublicContact
-        self.domain.dns_needed_from_unknown()  # make sure a security email already exists
+        # make sure a security email already exists
+        self.domain.dns_needed_from_unknown()
         expectedSecContact = PublicContact.get_default_security()
         expectedSecContact.domain = self.domain
         expectedSecContact.email = "newEmail@fake.com"
@@ -558,7 +560,6 @@ class TestRegistrantNameservers(MockEppLib):
             new_values,
             oldNameservers,
         ) = self.domain.getNameserverChanges(newChanges)
-        print(oldNameservers)
         self.assertEqual(deleted_values, [("ns2.example.com", ["1.2.3"])])
         self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4"])])
         self.assertEqual(new_values, {"ns4.example.com": None})
@@ -613,7 +614,6 @@ class TestRegistrantNameservers(MockEppLib):
         """
 
         # set 2 nameservers
-        print("DOCKER DIDNT SUCK THIS TIME")
         self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
 
         # when you create a host, you also have to update at same time
@@ -740,11 +740,7 @@ class TestRegistrantNameservers(MockEppLib):
 
         """
         self.extendedValues = True
-        print("domain state")
-        print(self.domain.state)
         self.domain.ready()
-        print("Domain state is now")
-        print(self.domain.state)
         self.domain.nameservers = [(self.nameserver1,)]
         expectedCalls = [
             call(
@@ -893,9 +889,6 @@ class TestRegistrantNameservers(MockEppLib):
             ("ns3.nameserverwithip.gov", ["2.3.4"]),
         ]
 
-        # print("self.mockedSendFunction.call_args_list is ")
-        # print(self.mockedSendFunction.call_args_list)
-
         expectedCalls = [
             call(
                 commands.InfoDomain(name="nameserverwithip.gov", auth_info=None),
@@ -940,7 +933,6 @@ class TestRegistrantNameservers(MockEppLib):
         with self.assertRaises(ValueError):
             self.domain.nameservers = [(dotgovnameserver, ["1.2.3"])]
 
-    @skip("not implemented yet")
     def test_nameservers_are_idempotent(self):
         """
         Scenario: Registrant adds a set of nameservers twice, due to a UI glitch
@@ -951,6 +943,31 @@ class TestRegistrantNameservers(MockEppLib):
         # implementation note: this requires seeing what happens when these are actually
         # sent like this, and then implementing appropriate mocks for any errors the
         # registry normally sends in this case
+
+        self.extendedValues = True
+
+        # Checking that it doesn't create or update even if out of order
+        self.domain.nameservers = [
+            (self.nameserver3,),
+            (self.nameserver1,),
+            (self.nameserver2,),
+        ]
+
+        expectedCalls = [
+            call(
+                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                cleaned=True,
+            ),
+            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+        ]
+
+        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+        self.assertEqual(self.mockedSendFunction.call_count, 4)
+
+    @skip("not implemented yet")
+    def test_caching_issue(self):
         raise
 
     @skip("not implemented yet")
@@ -959,8 +976,21 @@ class TestRegistrantNameservers(MockEppLib):
         Scenario: An update to the nameservers is unsuccessful
             When an error is returned from epplibwrapper
             Then a user-friendly error message is returned for displaying on the web
+
+        Note: TODO 433 -- we will perform correct error handling and complete
+        this ticket. We want to raise an error for update/create/delete, but
+        don't want to lose user info (and exit out too early)
         """
-        raise
+
+        domain, _ = Domain.objects.get_or_create(
+            name="failednameserver.gov", state=Domain.State.READY
+        )
+
+        with self.assertRaises(RegistryError):
+            domain.nameservers = [("ns1.failednameserver.gov", ["4.5.6"])]
+
+        # print("self.mockedSendFunction.call_args_list is ")
+        # print(self.mockedSendFunction.call_args_list)
 
     def tearDown(self):
         self.extendedValues = False
