@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .common import MockEppLib, completed_application
+from .common import MockEppLib, completed_application  # type: ignore
 
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore

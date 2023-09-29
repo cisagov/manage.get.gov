@@ -714,7 +714,7 @@ class Domain(TimeStampedModel, DomainHelper):
             cc=getattr(addr, "cc", ""),
             sp=getattr(addr, "sp", ""),
             **streets,
-        ) # type: ignore
+        )  # type: ignore
 
         return desired_contact
 
