@@ -192,8 +192,8 @@ class UserFixture:
                 user.is_superuser = False
                 user.first_name = staff["first_name"]
                 user.last_name = staff["last_name"]
-                if "email" in admin.keys():
-                    user.email = admin["email"]
+                if "email" in staff.keys():
+                    user.email = staff["email"]
                 user.is_staff = True
                 user.is_active = True
 

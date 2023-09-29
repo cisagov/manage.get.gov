@@ -315,7 +315,6 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
-
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
@@ -377,7 +376,7 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
 
     def form_valid(self, form):
         """Add the specified user on this domain."""
-        requested_email = form.cleaned_data["email"]
+        requested_email = form.cleaned_data.get("email", "")
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
