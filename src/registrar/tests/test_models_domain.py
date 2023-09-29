@@ -611,11 +611,6 @@ class TestRegistrantNameservers(MockEppLib):
             oldNameservers,
         ) = self.domain.getNameserverChanges(newChanges)
 
-
-        print("deleted vals is ", deleted_values)
-        print("updated vals is ", updated_values)
-        print("new vals is ", new_values)
-        print("old nameserver is ", oldNameservers)
         self.assertEqual(deleted_values, [])
         self.assertEqual(updated_values, [])
         self.assertEqual(new_values, {"ns4.example.com": None})
