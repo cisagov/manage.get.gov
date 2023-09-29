@@ -12,6 +12,7 @@ from django.db import migrations
 from registrar.models import UserGroup
 from typing import Any
 
+
 # For linting: RunPython expects a function reference,
 # so let's give it one
 def create_groups(apps, schema_editor) -> Any:
