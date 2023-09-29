@@ -53,8 +53,6 @@ class TestDomainCache(MockEppLib):
                     commands.InfoDomain(name="igorville.gov", auth_info=None),
                     cleaned=True,
                 ),
-                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
             any_order=False,  # Ensure calls are in the specified order
         )
@@ -76,8 +74,6 @@ class TestDomainCache(MockEppLib):
             call(
                 commands.InfoDomain(name="igorville.gov", auth_info=None), cleaned=True
             ),
-            call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-            call(commands.InfoHost(name="fake.host.com"), cleaned=True),
         ]
 
         self.mockedSendFunction.assert_has_calls(expectedCalls)
@@ -112,6 +108,19 @@ class TestDomainCache(MockEppLib):
         # get and check hosts is set correctly
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+        self.assertEqual(domain._cache["contacts"], [expectedContactsDict])
+
+        # invalidate cache
+        domain._cache = {}
+
+        # get host
+        domain._get_property("hosts")
+        self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+
+        # get contacts
+        domain._get_property("contacts")
+        self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+        self.assertEqual(domain._cache["contacts"], [expectedContactsDict])
 
     def tearDown(self) -> None:
         Domain.objects.all().delete()
@@ -172,8 +181,6 @@ class TestDomainCreation(MockEppLib):
                     commands.InfoDomain(name="beef-tongue.gov", auth_info=None),
                     cleaned=True,
                 ),
-                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
             any_order=False,  # Ensure calls are in the specified order
         )
@@ -223,8 +230,6 @@ class TestDomainStatuses(MockEppLib):
                     commands.InfoDomain(name="chicken-liver.gov", auth_info=None),
                     cleaned=True,
                 ),
-                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
             any_order=False,  # Ensure calls are in the specified order
         )
