@@ -1,4 +1,5 @@
 import logging
+import ipaddress
 
 from datetime import date
 from string import digits
@@ -298,8 +299,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def checkHostIPCombo(self, nameserver: str, ip: list):
         if self.isSubdomain(nameserver) and (ip is None or ip == []):
-            raise ValueError("Nameserver %s needs to have an "
-                "ip address because it is a subdomain" % nameserver)
+            raise ValueError(
+                "Nameserver %s needs to have an "
+                "ip address because it is a subdomain" % nameserver
+            )
         elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
             raise ValueError(
                 "Nameserver %s cannot be linked "
@@ -307,7 +310,22 @@ class Domain(TimeStampedModel, DomainHelper):
             )
         return None
 
-    def getNameserverChanges(self, hosts: list[tuple[str]]) -> tuple[list, list, dict, list]:
+    # TODO-848: We are checking for valid ip address format
+    # Need to use before checkHostIPCombo, or discuss where best fit
+    # And confirm if AddressValueError is best choice of error to raise
+    # def _valid_ip_addr(self):
+    #     if ipaddress.IPv6Address(ip) or ipaddress.IPv4Address(ip):
+    #         return True
+    #     else:
+    #         # We will need to import this error
+    #         raise AddressValueError(
+    #             "IP Address is in an invalid format."
+    #         )
+    #         return None
+
+    def getNameserverChanges(
+        self, hosts: list[tuple[str]]
+    ) -> tuple[list, list, dict, list]:
         """
         calls self.nameserver, it should pull from cache but may result
         in an epp call
@@ -1078,9 +1096,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
                 raise e
 
-    # TODO: Need to implement this
     def is_ipv6(self, ip: str):
-        return True
+        ip_addr = ipaddress.ip_address(ip)
+        return ip_addr.version == 6
 
     def _convert_ips(self, ip_list: list[str]):
         edited_ip_list = []
@@ -1104,7 +1122,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 and len(old_ip_list) != 0
             ):
                 return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
-                
+
             added_ip_list = set(ip_list).difference(old_ip_list)
             removed_ip_list = set(old_ip_list).difference(ip_list)
 

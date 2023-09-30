@@ -565,9 +565,7 @@ class TestRegistrantNameservers(MockEppLib):
         self.assertEqual(new_values, {})
         self.assertEqual(
             oldNameservers,
-            {
-            'ns1.example.com': None, 'ns2.example.com': ['1.2.3']
-            },
+            {"ns1.example.com": None, "ns2.example.com": ["1.2.3"]},
         )
 
     def test_get_nameserver_changes_success_updated_vals(self):
@@ -590,9 +588,7 @@ class TestRegistrantNameservers(MockEppLib):
         self.assertEqual(new_values, {})
         self.assertEqual(
             oldNameservers,
-            {
-            "ns3.my-nameserver.gov": ["1.2.3"]
-            },
+            {"ns3.my-nameserver.gov": ["1.2.3"]},
         )
 
     def test_get_nameserver_changes_success_new_vals(self):
@@ -635,7 +631,7 @@ class TestRegistrantNameservers(MockEppLib):
         nameserver = "ns1.my-nameserver.com"
         self.domain.nameservers = [(nameserver,)]
 
-        # when you create a host, you also have to update at same time
+        # when we create a host, we should've updated at the same time
         created_host = commands.CreateHost(nameserver)
         update_domain_with_created = commands.UpdateDomain(
             name=self.domain.name, add=[common.HostObjSet([created_host.name])]
@@ -649,7 +645,7 @@ class TestRegistrantNameservers(MockEppLib):
 
         self.mockedSendFunction.assert_has_calls(expectedCalls)
 
-        # check that status is still NOT READY 
+        # check that status is still NOT READY
         # as you have less than 2 nameservers
         self.assertFalse(self.domain.is_active())
 
@@ -934,9 +930,12 @@ class TestRegistrantNameservers(MockEppLib):
             name="nameserverwithip.gov", state=Domain.State.READY
         )
         domain.nameservers = [
-            ("ns1.nameserverwithip.gov", ["2.3.4", "1.2.3"]),
-            ("ns2.nameserverwithip.gov", ["1.2.3", "2.3.4", "3.4.5"]),
-            ("ns3.nameserverwithip.gov", ["2.3.4"]),
+            ("ns1.nameserverwithip.gov", ["2.3.4.5", "1.2.3.4"]),
+            (
+                "ns2.nameserverwithip.gov",
+                ["1.2.3.4", "2.3.4.5", "2001:0db8:85a3:0000:0000:8a2e:0370:7334"],
+            ),
+            ("ns3.nameserverwithip.gov", ["2.3.4.5"]),
         ]
 
         expectedCalls = [
@@ -950,7 +949,11 @@ class TestRegistrantNameservers(MockEppLib):
             call(
                 commands.UpdateHost(
                     name="ns2.nameserverwithip.gov",
-                    add=[common.Ip(addr="3.4.5", ip="v6")],
+                    add=[
+                        common.Ip(
+                            addr="2001:0db8:85a3:0000:0000:8a2e:0370:7334", ip="v6"
+                        )
+                    ],
                     rem=[],
                     chg=None,
                 ),
@@ -960,7 +963,7 @@ class TestRegistrantNameservers(MockEppLib):
                 commands.UpdateHost(
                     name="ns3.nameserverwithip.gov",
                     add=[],
-                    rem=[common.Ip(addr="1.2.3", ip="v6")],
+                    rem=[common.Ip(addr="1.2.3.4", ip=None)],
                     chg=None,
                 ),
                 cleaned=True,

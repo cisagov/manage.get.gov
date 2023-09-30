@@ -616,7 +616,7 @@ class MockEppLib(TestCase):
     mockDataInfoHosts = fakedEppObject(
         "lastPw",
         cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35),
-        addrs=["1.2.3", "2.3.4"],
+        addrs=["1.2.3.4", "2.3.4.5"],
     )
 
     mockDataHostChange = fakedEppObject(
@@ -631,10 +631,10 @@ class MockEppLib(TestCase):
             "ns2.nameserverwithip.gov",
             "ns3.nameserverwithip.gov",
         ],
-        addrs=["1.2.3", "2.3.4"],
+        addrs=["1.2.3.4", "2.3.4.5"],
     )
 
-    # TODO-848: Fix naming 
+    # TODO-848: Fix naming
     extendedValues = False
 
     # TODO-848: Rename later - was getting complex err
