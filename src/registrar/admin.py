@@ -844,9 +844,7 @@ class DomainAdmin(ListHeaderAdmin):
         # but cannot access this page when it is a request of type POST.
         if request.user.has_perm(
             "registrar.full_access_permission"
-        ) or request.user.has_perm(
-            "registrar.analyst_access_permission"
-        ):
+        ) or request.user.has_perm("registrar.analyst_access_permission"):
             return True
         return super().has_change_permission(request, obj)
 
