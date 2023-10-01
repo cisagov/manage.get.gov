@@ -980,10 +980,13 @@ class TestAnalystDelete(MockEppLib):
                 )
             ]
         )
+
         # Domain itself should not be deleted
         self.assertNotEqual(self.domain, None)
+
         # Domain should have the right state
         self.assertEqual(self.domain.state, Domain.State.DELETED)
+
         # Cache should be invalidated
         self.assertEqual(self.domain._cache, {})
 
@@ -1001,7 +1004,7 @@ class TestAnalystDelete(MockEppLib):
         # Put the domain in client hold
         domain.place_client_hold()
 
-        # Delete it...
+        # Delete it
         with self.assertRaises(RegistryError) as err:
             domain.deletedInEpp()
             self.assertTrue(
@@ -1016,7 +1019,7 @@ class TestAnalystDelete(MockEppLib):
                 )
             ]
         )
-        # TODO - check UI for error
+
         # Domain itself should not be deleted
         self.assertNotEqual(domain, None)
         # State should not have changed
