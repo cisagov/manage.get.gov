@@ -1025,46 +1025,6 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(nameserverList) < 2 or len(nameserverList) > 13:
             raise ValueError("Not ready to become created, cannot transition yet")
         logger.info("able to transition to ready state")
-
-    def _fetch_contacts(self, contact_data):
-        """Fetch contact info."""
-        contacts = []
-        for domainContact in contact_data:
-            req = commands.InfoContact(id=domainContact.contact)
-            data = registry.send(req, cleaned=True).res_data[0]
-            contact = {
-                "id": domainContact.contact,
-                "type": domainContact.type,
-                "auth_info": getattr(data, "auth_info", ...),
-                "cr_date": getattr(data, "cr_date", ...),
-                "disclose": getattr(data, "disclose", ...),
-                "email": getattr(data, "email", ...),
-                "fax": getattr(data, "fax", ...),
-                "postal_info": getattr(data, "postal_info", ...),
-                "statuses": getattr(data, "statuses", ...),
-                "tr_date": getattr(data, "tr_date", ...),
-                "up_date": getattr(data, "up_date", ...),
-                "voice": getattr(data, "voice", ...),
-            }
-            contacts.append({k: v for k, v in contact.items() if v is not ...})
-        return contacts
-
-    def _fetch_hosts(self, host_data):
-        """Fetch host info."""
-        hosts = []
-        for name in host_data:
-            req = commands.InfoHost(name=name)
-            data = registry.send(req, cleaned=True).res_data[0]
-            host = {
-                "name": name,
-                "addrs": getattr(data, "addrs", ...),
-                "cr_date": getattr(data, "cr_date", ...),
-                "statuses": getattr(data, "statuses", ...),
-                "tr_date": getattr(data, "tr_date", ...),
-                "up_date": getattr(data, "up_date", ...),
-            }
-            hosts.append({k: v for k, v in host.items() if v is not ...})
-        return hosts
     
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
@@ -1141,6 +1101,29 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
             return err.code
 
+    def _fetch_contacts(self, contact_data):
+        """Fetch contact info."""
+        contacts = []
+        for domainContact in contact_data:
+            req = commands.InfoContact(id=domainContact.contact)
+            data = registry.send(req, cleaned=True).res_data[0]
+            contact = {
+                "id": domainContact.contact,
+                "type": domainContact.type,
+                "auth_info": getattr(data, "auth_info", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "disclose": getattr(data, "disclose", ...),
+                "email": getattr(data, "email", ...),
+                "fax": getattr(data, "fax", ...),
+                "postal_info": getattr(data, "postal_info", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+                "voice": getattr(data, "voice", ...),
+            }
+            contacts.append({k: v for k, v in contact.items() if v is not ...})
+        return contacts
+
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
         try:
@@ -1166,6 +1149,23 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
 
                 raise e
+    
+    def _fetch_hosts(self, host_data):
+        """Fetch host info."""
+        hosts = []
+        for name in host_data:
+            req = commands.InfoHost(name=name)
+            data = registry.send(req, cleaned=True).res_data[0]
+            host = {
+                "name": name,
+                "addrs": getattr(data, "addrs", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+            }
+            hosts.append({k: v for k, v in host.items() if v is not ...})
+        return hosts
 
     def _update_or_create_host(self, host):
         raise NotImplementedError()
@@ -1242,33 +1242,17 @@ class Domain(TimeStampedModel, DomainHelper):
 
             # get nameserver info, if there are any
             if (
-                # fetch_hosts and
-                "_hosts" in cleaned
+                fetch_hosts
+                and "_hosts" in cleaned
                 and isinstance(cleaned["_hosts"], list)
                 and len(cleaned["_hosts"])
             ):
-                # TODO- add elif in cache set it to be the old cache value
-                # no point in removing
-                cleaned["hosts"] = []
-                for name in cleaned["_hosts"]:
-                    # we do not use _get_or_create_* because we expect the object we
-                    # just asked the registry for still exists --
-                    # if not, that's a problem
-                    req = commands.InfoHost(name=name)
-                    data = registry.send(req, cleaned=True).res_data[0]
-                    # extract properties from response
-                    # (Ellipsis is used to mean "null")
-                    host = {
-                        "name": name,
-                        "addrs": getattr(data, "addrs", ...),
-                        "cr_date": getattr(data, "cr_date", ...),
-                        "statuses": getattr(data, "statuses", ...),
-                        "tr_date": getattr(data, "tr_date", ...),
-                        "up_date": getattr(data, "up_date", ...),
-                    }
-                    cleaned["hosts"].append(
-                        {k: v for k, v in host.items() if v is not ...}
-                    )
+                cleaned["hosts"] = self._fetch_hosts(cleaned["_hosts"])
+                # We're only getting hosts, so retain the old
+                # contacts that existed in cache (if they existed)
+                # and pass them along.
+                if old_cache_contacts is not None:
+                    cleaned["contacts"] = old_cache_contacts
             # replace the prior cache with new data
             self._cache = cleaned
 
