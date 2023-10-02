@@ -282,7 +282,13 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @Cache
     def dnssecdata(self) -> extensions.DNSSECExtension:
-        return self._get_property("dnssecdata")
+        try:
+            return self._get_property("dnssecdata")
+        except Exception as err:
+            # Don't throw error as this is normal for a new domain
+            # TODO - 433 error handling ticket should address this
+            logger.info("Domain does not have dnssec data defined %s" % err)
+            return None
 
     @dnssecdata.setter  # type: ignore
     def dnssecdata(self, _dnssecdata: extensions.DNSSECExtension):

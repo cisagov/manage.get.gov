@@ -235,7 +235,7 @@ class DomainDNSSECView(DomainPermissionView):
     template_name = "domain_dnssec.html"
 
 
-class DomainDsdataView(DomainPermissionView):
+class DomainDsdataView(DomainPermissionView, FormMixin):
 
     """Domain DNSSEC ds data editing view."""
 
@@ -248,18 +248,20 @@ class DomainDsdataView(DomainPermissionView):
         dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
         initial_data = []
         
-        if dnssecdata.keyData is not None:
-            # TODO: Throw an error
-            pass
+        if dnssecdata is not None:
 
-        if dnssecdata.dsData is not None:
-            # Add existing nameservers as initial data
-            # TODO: create context for each element in the record
-            # key_tag
-            # algorithm
-            # digest_type
-            # digest
-            initial_data.extend({"dsrecord": record} for record in dnssecdata.dsData)
+            if dnssecdata.keyData is not None:
+                # TODO: Throw an error
+                pass
+
+            if dnssecdata.dsData is not None:
+                # Add existing nameservers as initial data
+                # TODO: create context for each element in the record
+                # key_tag
+                # algorithm
+                # digest_type
+                # digest
+                initial_data.extend({"key_tag": record.keyTag, "algorithm": record.alg, "digest_type": record.digestType, "digest": record.digest} for record in dnssecdata.dsData)
 
         return initial_data
 
