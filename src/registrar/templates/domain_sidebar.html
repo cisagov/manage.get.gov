@@ -13,7 +13,7 @@
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'dns' pk=domain.id as url %}
+        {% url 'domain-dns' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
@@ -21,7 +21,7 @@
         </a>
         <ul class="usa-sidenav__sublist">
           <li class="usa-sidenav__item">
-            {% url 'domain-nameservers' pk=domain.id as url %} 
+            {% url 'domain-dns-nameservers' pk=domain.id as url %} 
             <a href="{{ url }}"
               {% if request.path == url %}class="usa-current"{% endif %}
             >
@@ -30,7 +30,7 @@
           </li>
 
           <li class="usa-sidenav__item">
-            {% url 'domain-subdomains' pk=domain.id as url %}
+            {% url 'domain-dns-subdomains' pk=domain.id as url %}
             <a href="{{ url }}"
               {% if request.path == url %}class="usa-current"{% endif %}
             >
@@ -39,7 +39,7 @@
           </li>
 
           <li class="usa-sidenav__item">
-            {% url 'domain-dnssec' pk=domain.id as url %}
+            {% url 'domain-dns-dnssec' pk=domain.id as url %}
             <a href="{{ url }}"
               {% if request.path == url %}class="usa-current"{% endif %}
             >
@@ -47,7 +47,7 @@
             </a>
             <ul class="usa-sidenav__sublist">
               <li class="usa-sidenav__item">
-                {% url 'domain-dsdata' pk=domain.id as url %}
+                {% url 'domain-dns-dnssec-dsdata' pk=domain.id as url %}
                 <a href="{{ url }}"
                   {% if request.path == url %}class="usa-current"{% endif %}
                 >
@@ -56,7 +56,7 @@
               </li>
 
               <li class="usa-sidenav__item">
-                {% url 'domain-keydata' pk=domain.id as url %}
+                {% url 'domain-dns-dnssec-keydata' pk=domain.id as url %}
                 <a href="{{ url }}"
                   {% if request.path == url %}class="usa-current"{% endif %}
                 >

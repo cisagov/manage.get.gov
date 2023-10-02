@@ -83,32 +83,32 @@ urlpatterns = [
     path(
         "domain/<int:pk>/dns",
         views.DomainDNSView.as_view(),
-        name="dns",
+        name="domain-dns",
     ),
     path(
-        "domain/<int:pk>/nameservers",
+        "domain/<int:pk>/dns/nameservers",
         views.DomainNameserversView.as_view(),
-        name="domain-nameservers",
+        name="domain-dns-nameservers",
     ),
     path(
-        "domain/<int:pk>/subdomains",
+        "domain/<int:pk>/dns/subdomains",
         views.DomainSubdomainsView.as_view(),
-        name="domain-subdomains",
+        name="domain-dns-subdomains",
     ),
     path(
-        "domain/<int:pk>/dnssec",
+        "domain/<int:pk>/dns/dnssec",
         views.DomainDNSSECView.as_view(),
-        name="domain-dnssec",
+        name="domain-dns-dnssec",
     ),
     path(
-        "domain/<int:pk>/dsdata",
+        "domain/<int:pk>/dns/dnssec/dsdata",
         views.DomainDsdataView.as_view(),
-        name="domain-dsdata",
+        name="domain-dns-dnssec-dsdata",
     ),
     path(
-        "domain/<int:pk>/keydata",
+        "domain/<int:pk>/dns/dnssec/keydata",
         views.DomainKeydataView.as_view(),
-        name="domain-keydata",
+        name="domain-dns-dnssec-keydata",
     ),
     path(
         "domain/<int:pk>/your-contact-information",
