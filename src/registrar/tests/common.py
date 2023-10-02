@@ -709,6 +709,16 @@ class MockEppLib(TestCase):
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        elif (
+            isinstance(_request, commands.DeleteDomain)
+            and getattr(_request, "name", None) == "failDelete.gov"
+        ):
+            name = getattr(_request, "name", None)
+            fake_nameserver = "ns1.failDelete.gov"
+            if name in fake_nameserver:
+                raise RegistryError(
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+                )
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):

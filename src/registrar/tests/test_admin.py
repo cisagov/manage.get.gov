@@ -49,6 +49,7 @@ class TestDomainAdmin(MockEppLib):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
         self.staffuser = create_user()
+        self.factory = RequestFactory()
         super().setUp()
 
     def test_place_and_remove_hold(self):
@@ -86,6 +87,155 @@ class TestDomainAdmin(MockEppLib):
         self.assertContains(response, domain.name)
         self.assertContains(response, "Place hold")
         self.assertNotContains(response, "Remove hold")
+
+    def test_deletion_is_successful(self):
+        """
+        Scenario: Domain deletion is unsuccessful
+            When the domain is deleted
+            Then a user-friendly success message is returned for displaying on the web
+            And `state` is et to `DELETED`
+        """
+        domain = create_ready_domain()
+        # Put in client hold
+        domain.place_client_hold()
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+
+        # Ensure everything is displaying correctly
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Delete Domain in Registry")
+
+        # Test the info dialog
+        request = self.factory.post(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            {"_delete_domain": "Delete Domain in Registry", "name": domain.name},
+            follow=True,
+        )
+        request.user = self.client
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            self.admin.do_delete_domain(request, domain)
+            mock_add_message.assert_called_once_with(
+                request,
+                messages.INFO,
+                "Domain city.gov has been deleted. Thanks!",
+                extra_tags="",
+                fail_silently=False,
+            )
+
+        self.assertEqual(domain.state, Domain.State.DELETED)
+
+    def test_deletion_ready_fsm_failure(self):
+        """
+        Scenario: Domain deletion is unsuccessful
+            When an error is returned from epplibwrapper
+            Then a user-friendly error message is returned for displaying on the web
+            And `state` is not set to `DELETED`
+        """
+        domain = create_ready_domain()
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+
+        # Ensure everything is displaying correctly
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Delete Domain in Registry")
+
+        # Test the error
+        request = self.factory.post(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            {"_delete_domain": "Delete Domain in Registry", "name": domain.name},
+            follow=True,
+        )
+        request.user = self.client
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            self.admin.do_delete_domain(request, domain)
+            mock_add_message.assert_called_once_with(
+                request,
+                messages.ERROR,
+                "Error deleting this Domain: "
+                "Can't switch from state 'ready' to 'deleted'"
+                ", must be either 'dns_needed' or 'on_hold'",
+                extra_tags="",
+                fail_silently=False,
+            )
+
+        self.assertEqual(domain.state, Domain.State.READY)
+
+    def test_analyst_deletes_domain_idempotent(self):
+        """
+        Scenario: Analyst tries to delete an already deleted domain
+            Given `state` is already `DELETED`
+            When `domain.deletedInEpp()` is called
+            Then `commands.DeleteDomain` is sent to the registry
+            And Domain returns normally without an error dialog
+        """
+        domain = create_ready_domain()
+        # Put in client hold
+        domain.place_client_hold()
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+
+        # Ensure everything is displaying correctly
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Delete Domain in Registry")
+
+        # Test the info dialog
+        request = self.factory.post(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            {"_delete_domain": "Delete Domain in Registry", "name": domain.name},
+            follow=True,
+        )
+        request.user = self.client
+
+        # Delete it once
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            self.admin.do_delete_domain(request, domain)
+            mock_add_message.assert_called_once_with(
+                request,
+                messages.INFO,
+                "Domain city.gov has been deleted. Thanks!",
+                extra_tags="",
+                fail_silently=False,
+            )
+
+        self.assertEqual(domain.state, Domain.State.DELETED)
+
+        # Try to delete it again
+        # Test the info dialog
+        request = self.factory.post(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            {"_delete_domain": "Delete Domain in Registry", "name": domain.name},
+            follow=True,
+        )
+        request.user = self.client
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            self.admin.do_delete_domain(request, domain)
+            mock_add_message.assert_called_once_with(
+                request,
+                messages.INFO,
+                "This domain is already deleted",
+                extra_tags="",
+                fail_silently=False,
+            )
+
+        self.assertEqual(domain.state, Domain.State.DELETED)
 
     @skip("Waiting on epp lib to implement")
     def test_place_and_remove_hold_epp(self):
@@ -138,8 +288,9 @@ class TestDomainApplicationAdminForm(TestCase):
         )
 
 
-class TestDomainApplicationAdmin(TestCase):
+class TestDomainApplicationAdmin(MockEppLib):
     def setUp(self):
+        super().setUp()
         self.site = AdminSite()
         self.factory = RequestFactory()
         self.admin = DomainApplicationAdmin(
@@ -690,6 +841,7 @@ class TestDomainApplicationAdmin(TestCase):
             domain_information.refresh_from_db()
 
     def tearDown(self):
+        super().tearDown()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()

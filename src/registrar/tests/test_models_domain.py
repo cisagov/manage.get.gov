@@ -16,7 +16,7 @@ from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from .common import MockEppLib
-
+from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
     commands,
     common,
@@ -1255,7 +1255,7 @@ class TestAnalystLock(TestCase):
         raise
 
 
-class TestAnalystDelete(TestCase):
+class TestAnalystDelete(MockEppLib):
     """Rule: Analysts may delete a domain"""
 
     def setUp(self):
@@ -1264,35 +1264,99 @@ class TestAnalystDelete(TestCase):
             Given the analyst is logged in
             And a domain exists in the registry
         """
-        pass
+        super().setUp()
+        self.domain, _ = Domain.objects.get_or_create(
+            name="fake.gov", state=Domain.State.READY
+        )
+        self.domain_on_hold, _ = Domain.objects.get_or_create(
+            name="fake-on-hold.gov", state=Domain.State.ON_HOLD
+        )
 
-    @skip("not implemented yet")
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
     def test_analyst_deletes_domain(self):
         """
         Scenario: Analyst permanently deletes a domain
-            When `domain.delete()` is called
+            When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
         """
-        raise
+        # Put the domain in client hold
+        self.domain.place_client_hold()
+        # Delete it...
+        self.domain.deletedInEpp()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
 
-    @skip("not implemented yet")
-    def test_analyst_deletes_domain_idempotent(self):
-        """
-        Scenario: Analyst tries to delete an already deleted domain
-            Given `state` is already `DELETED`
-            When `domain.delete()` is called
-            Then `commands.DeleteDomain` is sent to the registry
-            And Domain returns normally (without error)
-        """
-        raise
+        # Domain itself should not be deleted
+        self.assertNotEqual(self.domain, None)
 
-    @skip("not implemented yet")
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.DELETED)
+
+        # Cache should be invalidated
+        self.assertEqual(self.domain._cache, {})
+
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
-            When an error is returned from epplibwrapper
-            Then a user-friendly error message is returned for displaying on the web
+            When a subdomain exists
+            Then a client error is returned of code 2305
             And `state` is not set to `DELETED`
         """
-        raise
+        # Desired domain
+        domain, _ = Domain.objects.get_or_create(
+            name="failDelete.gov", state=Domain.State.ON_HOLD
+        )
+        # Put the domain in client hold
+        domain.place_client_hold()
+
+        # Delete it
+        with self.assertRaises(RegistryError) as err:
+            domain.deletedInEpp()
+            self.assertTrue(
+                err.is_client_error()
+                and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+            )
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="failDelete.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
+
+        # Domain itself should not be deleted
+        self.assertNotEqual(domain, None)
+        # State should not have changed
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
+
+    def test_deletion_ready_fsm_failure(self):
+        """
+        Scenario: Domain deletion is unsuccessful due to FSM rules
+            Given state is 'ready'
+            When `domain.deletedInEpp()` is called
+            and domain is of `state` is `READY`
+            Then an FSM error is returned
+            And `state` is not set to `DELETED`
+        """
+        self.assertEqual(self.domain.state, Domain.State.READY)
+        with self.assertRaises(TransitionNotAllowed) as err:
+            self.domain.deletedInEpp()
+            self.assertTrue(
+                err.is_client_error()
+                and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION
+            )
+        # Domain should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.READY)
