@@ -29,6 +29,7 @@ from ..forms import (
     DomainSecurityEmailForm,
     NameserverFormset,
     DomainDsdataFormset,
+    DomainDsdataForm,
 )
 
 from epplibwrapper import (
@@ -241,6 +242,7 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
     template_name = "domain_dsdata.html"
     form_class = DomainDsdataFormset
+    
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
@@ -256,13 +258,12 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
             if dnssecdata.dsData is not None:
                 # Add existing nameservers as initial data
-                # TODO: create context for each element in the record
-                # key_tag
-                # algorithm
-                # digest_type
-                # digest
                 initial_data.extend({"key_tag": record.keyTag, "algorithm": record.alg, "digest_type": record.digestType, "digest": record.digest} for record in dnssecdata.dsData)
 
+        # form = DomainDsdataForm()
+        # delete_checkbox = form.fields['delete']
+        # initial_data.extend({delete_checkbox: delete_checkbox})
+        
         return initial_data
 
     def get_success_url(self):

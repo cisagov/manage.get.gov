@@ -209,6 +209,11 @@ class DomainDsdataForm(forms.Form):
         #     )
         # ],
     )
+    
+    delete = forms.BooleanField(
+        required=False,
+        label="Delete",
+    )
 
     # TODO: Conditional DS Key Data fields
     

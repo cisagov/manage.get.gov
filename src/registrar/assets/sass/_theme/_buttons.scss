@@ -1,0 +1,73 @@
+@use "uswds-core" as *;
+
+/* Make "placeholder" links visually obvious */
+a[href$="todo"]::after {
+  background-color: yellow;
+  color: color(blue-80v);
+  content: " [link TBD]";
+  font-style: italic;
+}
+  
+a.breadcrumb__back {
+  display:flex;
+  align-items: center;
+  margin-bottom: units(2.5);
+  &:visited {
+    color: color('primary');
+  }
+  
+  @include at-media('tablet') {
+    //align to top of sidebar
+    margin-top: units(-0.5);
+  }
+}
+
+a.withdraw {
+  background-color: color('error');
+}
+  
+a.withdraw_outline,
+a.withdraw_outline:visited {
+  box-shadow: inset 0 0 0 2px color('error');
+  color: color('error');
+}
+  
+a.withdraw_outline:hover,
+a.withdraw_outline:focus {
+  box-shadow: inset 0 0 0 2px color('error-dark');
+  color: color('error-dark');
+}
+  
+a.withdraw_outline:active {
+  box-shadow: inset 0 0 0 2px color('error-darker');
+  color: color('error-darker');
+}
+
+a.withdraw:hover,
+a.withdraw:focus {
+  background-color: color('error-dark');
+}
+  
+a.withdraw:active {
+  background-color: color('error-darker');
+}
+
+.usa-button--unstyled .usa-icon {
+  vertical-align: bottom;
+}
+
+a.usa-button--unstyled:visited {
+  color: color('primary');
+}
+  
+.dotgov-button--green {
+  background-color: color('success-dark');
+
+  &:hover {
+    background-color: color('success-darker');
+  }
+
+  &:active {
+    background-color: color('green-80v');
+  }
+}

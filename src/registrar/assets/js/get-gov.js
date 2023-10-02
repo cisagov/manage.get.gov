@@ -236,14 +236,15 @@ function handleValidationClick(e) {
  * Only does something on a single page, but it should be fast enough to run
  * it everywhere.
  */
-(function prepareForms() {
+(function prepareNameserverForms() {
   let serverForm = document.querySelectorAll(".server-form")
   let container = document.querySelector("#form-container")
   let addButton = document.querySelector("#add-form")
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
 
   let formNum = serverForm.length-1
-  addButton.addEventListener('click', addForm)
+  if (addButton)
+    addButton.addEventListener('click', addForm)
 
   function addForm(e){
       let newForm = serverForm[2].cloneNode(true)
@@ -255,6 +256,41 @@ function handleValidationClick(e) {
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`)
       newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Name server ${formNum+1}`)
       newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`)
+      container.insertBefore(newForm, addButton)
+      newForm.querySelector("input").value = ""
+
+      totalForms.setAttribute('value', `${formNum+1}`)
+  }
+})();
+
+
+/**
+ * An IIFE that attaches a click handler for our dynamic DNSSEC forms
+ *
+ */
+(function prepareDNSSECForms() {
+  let serverForm2 = document.querySelectorAll(".ds-record")
+  let container = document.querySelector("#form-container")
+  let addButton = document.querySelector("#add-form2")
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+
+  let formNum = serverForm2.length-1
+  if (addButton) {
+    console.log('add button exists')
+    addButton.addEventListener('click', addForm)
+  }
+
+  function addForm(e){
+      console.log('add button clicked' + serverForm2)
+      let newForm = serverForm2[0].cloneNode(true)
+      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g')
+      let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g')
+      // let formExampleRegex = RegExp(`ns(\\d){1}`, 'g')
+
+      formNum++
+      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`)
+      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data Record ${formNum+1}`)
+      // newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`)
       container.insertBefore(newForm, addButton)
       newForm.querySelector("input").value = ""
 

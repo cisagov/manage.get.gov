@@ -1,0 +1,11 @@
+@use "uswds-core" as *;
+
+fieldset {
+    border: solid 1px color('base-lighter');
+    padding: units(3);
+}
+
+fieldset legend {
+    font-weight: font-weight('bold');
+    color: color('primary')
+}

@@ -6,4 +6,5 @@ from .domain import (
     DomainOrgNameAddressForm,
     ContactForm,
     DomainDsdataFormset,
+    DomainDsdataForm,
 )

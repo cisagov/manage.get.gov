@@ -9,28 +9,42 @@
 
   {% include "includes/required_fields.html" %}
 
-  <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+  <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
 
     {% for form in formset %}
-    <div class="server-form">
-    {% with attr_required=True %}
-      {% input_with_errors form.key_tag %}
-    {% endwith %}
-    {% with attr_required=True %}
-      {% input_with_errors form.algorithm %}
-    {% endwith %}
-    {% with attr_required=True %}
-      {% input_with_errors form.digest_type %}
-    {% endwith %}
-    {% with attr_required=True %}
-      {% input_with_errors form.digest %}
-    {% endwith %}
-    </div>
+    <fieldset class="ds-record">
+
+      <legend>DS Data record {{forloop.counter}}</legend>
+
+      <div class="grid-row grid-gap-2">
+        <div class="tablet:grid-col-4">
+          {% with attr_required=True %}
+            {% input_with_errors form.key_tag %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-4">
+          {% with attr_required=True %}
+            {% input_with_errors form.algorithm %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-4">
+          {% with attr_required=True %}
+            {% input_with_errors form.digest_type %}
+          {% endwith %}
+        </div>
+      </div>
+      {% with attr_required=True %}
+        {% input_with_errors form.digest %}
+      {% endwith %}
+
+      {% comment %} {% input_with_errors form.delete_checkbox %} {% endcomment %}
+
+    </fieldset>
     {% endfor %}
 
-    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-form">
+    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-form2">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add new record</span>

@@ -1,0 +1,24 @@
+@use "uswds-core" as *;
+
+// Finer grained letterspacing adjustments
+$letter-space--xs: .0125em;
+
+p,
+address, 
+.usa-list li { 
+  @include typeset('sans', 'sm', 5); 
+  max-width: measure(5);
+}
+
+h1 {
+  @include typeset('sans', '2xl', 2);
+  margin: 0 0 units(2);
+  color: color('primary-darker');
+}
+
+h2 {
+  font-weight: font-weight('semibold');
+  line-height: line-height('heading', 3);
+  margin: units(4) 0 units(1);
+  color: color('primary-darker');
+}
