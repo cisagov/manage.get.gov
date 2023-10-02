@@ -290,12 +290,18 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         """The formset is valid, perform something with it."""
 
         # Set the nameservers from the formset
-        dnssecdata = []
+        dnssecdata = {"dsData":[]}
+
         for form in formset:
             try:
                 # TODO: build the right list of dicts to be passed
-                dsrecord = (form.cleaned_data["dsrecord"],)
-                dnssecdata.append(dsrecord)
+                dsrecord = {
+                    "keyTag": form.cleaned_data["key_tag"],
+                    "alg": form.cleaned_data["algorithm"],
+                    "digestType": form.cleaned_data["digest_type"],
+                    "digest": form.cleaned_data["digest"],
+                }
+                dnssecdata["dsData"].append(common.DSData(**dsrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass
