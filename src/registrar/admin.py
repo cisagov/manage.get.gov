@@ -723,9 +723,7 @@ class DomainAdmin(ListHeaderAdmin):
             # Could be problematic if the type is similar,
             # but not the same (same field/func names).
             # We do not want to accidentally delete records.
-            self.message_user(
-                request, "Object is not of type Domain", messages.ERROR
-            )
+            self.message_user(request, "Object is not of type Domain", messages.ERROR)
             return
 
         try:
