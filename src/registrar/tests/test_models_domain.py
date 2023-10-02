@@ -90,6 +90,7 @@ class TestDomainCache(MockEppLib):
         }
         expectedHostsDict = {
             "name": self.mockDataInfoDomain.hosts[0],
+            "addrs":self.mockDataInfoHosts.addrs,
             "cr_date": self.mockDataInfoHosts.cr_date,
         }
 

@@ -638,8 +638,7 @@ class MockEppLib(TestCase):
     # TODO-848: Fix naming
     extendedValues = False
 
-    # TODO-848: Rename later - was getting complex err
-    def _getattrshelper(self, _request):
+    def _getattrInfoDomain(self, _request):
         if getattr(_request, "name", None) == "security.gov":
             return MagicMock(res_data=[self.infoDomainNoContact])
         elif getattr(_request, "name", None) == "my-nameserver.gov":
@@ -653,7 +652,7 @@ class MockEppLib(TestCase):
             return MagicMock(res_data=[self.infoDomainHasIP])
         # elif getattr(_request, "name", None) == "failednameserver.gov":
         #     return MagicMock(res_data=[self.infoDomainUpdateFail])
-        # return MagicMock(res_data=[self.mockDataInfoDomain])
+        return MagicMock(res_data=[self.mockDataInfoDomain])
 
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
@@ -661,8 +660,7 @@ class MockEppLib(TestCase):
         returns objects that simulate what would be in a epp response
         but only relevant pieces for tests"""
         if isinstance(_request, commands.InfoDomain):
-            # TODO-848: Fix name here
-            return self._getattrshelper(_request)
+            return self._getattrInfoDomain(_request)
         elif isinstance(_request, commands.InfoContact):
             return MagicMock(res_data=[self.mockDataInfoContact])
         elif (
