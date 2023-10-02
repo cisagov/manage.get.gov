@@ -2,7 +2,7 @@ import logging
 
 from datetime import date
 from string import digits
-from django_fsm import FSMField, transition  # type: ignore
+from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
 
@@ -609,11 +609,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         return self.state == self.State.READY
 
-    def delete_request(self):
-        """Delete from host. Possibly a duplicate of _delete_host?"""
-        # TODO fix in ticket #901
-        pass
-
     def transfer(self):
         """Going somewhere. Not implemented."""
         raise NotImplementedError()
@@ -658,7 +653,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.DeleteDomain(name=self.name)
-        registry.send(request)
+        registry.send(request, cleaned=True)
 
     def __str__(self) -> str:
         return self.name
@@ -804,16 +799,32 @@ class Domain(TimeStampedModel, DomainHelper):
         self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=State.ON_HOLD, target=State.DELETED)
-    def deleted(self):
-        """domain is deleted in epp but is saved in our database"""
-        # TODO Domains may not be deleted if:
-        #  a child host is being used by
-        # another .gov domains.  The host must be first removed
-        # and/or renamed before the parent domain may be deleted.
-        logger.info("pendingCreate()-> inside pending create")
-        self._delete_domain()
-        # TODO - delete ticket any additional error handling here
+    @transition(
+        field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED
+    )
+    def deletedInEpp(self):
+        """Domain is deleted in epp but is saved in our database.
+        Error handling should be provided by the caller."""
+        # While we want to log errors, we want to preserve
+        # that information when this function is called.
+        # Human-readable errors are introduced at the admin.py level,
+        # as doing everything here would reduce reliablity.
+        try:
+            logger.info("deletedInEpp()-> inside _delete_domain")
+            self._delete_domain()
+        except RegistryError as err:
+            logger.error(f"Could not delete domain. Registry returned error: {err}")
+            raise err
+        except TransitionNotAllowed as err:
+            logger.error("Could not delete domain. FSM failure: {err}")
+            raise err
+        except Exception as err:
+            logger.error(
+                f"Could not delete domain. An unspecified error occured: {err}"
+            )
+            raise err
+        else:
+            self._invalidate_cache()
 
     @transition(
         field="state",
@@ -974,81 +985,84 @@ class Domain(TimeStampedModel, DomainHelper):
             # statuses can just be a list no need to keep the epp object
             if "statuses" in cleaned.keys():
                 cleaned["statuses"] = [status.state for status in cleaned["statuses"]]
+
+            # Capture and store old hosts and contacts from cache if they exist
+            old_cache_hosts = self._cache.get("hosts")
+            old_cache_contacts = self._cache.get("contacts")
+
             # get contact info, if there are any
             if (
-                # fetch_contacts and
-                "_contacts" in cleaned
+                fetch_contacts
+                and "_contacts" in cleaned
                 and isinstance(cleaned["_contacts"], list)
                 and len(cleaned["_contacts"])
             ):
-                cleaned["contacts"] = []
-                for domainContact in cleaned["_contacts"]:
-                    # we do not use _get_or_create_* because we expect the object we
-                    # just asked the registry for still exists --
-                    # if not, that's a problem
-
-                    # TODO- discuss-should we check if contact is in public contacts
-                    # and add it if not- this is really to keep in mine the transisiton
-                    req = commands.InfoContact(id=domainContact.contact)
-                    data = registry.send(req, cleaned=True).res_data[0]
-
-                    # extract properties from response
-                    # (Ellipsis is used to mean "null")
-                    # convert this to use PublicContactInstead
-                    contact = {
-                        "id": domainContact.contact,
-                        "type": domainContact.type,
-                        "auth_info": getattr(data, "auth_info", ...),
-                        "cr_date": getattr(data, "cr_date", ...),
-                        "disclose": getattr(data, "disclose", ...),
-                        "email": getattr(data, "email", ...),
-                        "fax": getattr(data, "fax", ...),
-                        "postal_info": getattr(data, "postal_info", ...),
-                        "statuses": getattr(data, "statuses", ...),
-                        "tr_date": getattr(data, "tr_date", ...),
-                        "up_date": getattr(data, "up_date", ...),
-                        "voice": getattr(data, "voice", ...),
-                    }
-
-                    cleaned["contacts"].append(
-                        {k: v for k, v in contact.items() if v is not ...}
-                    )
+                cleaned["contacts"] = self._fetch_contacts(cleaned["_contacts"])
+                # We're only getting contacts, so retain the old
+                # hosts that existed in cache (if they existed)
+                # and pass them along.
+                if old_cache_hosts is not None:
+                    cleaned["hosts"] = old_cache_hosts
 
             # get nameserver info, if there are any
             if (
-                # fetch_hosts and
-                "_hosts" in cleaned
+                fetch_hosts
+                and "_hosts" in cleaned
                 and isinstance(cleaned["_hosts"], list)
                 and len(cleaned["_hosts"])
             ):
-                # TODO- add elif in cache set it to be the old cache value
-                # no point in removing
-                cleaned["hosts"] = []
-                for name in cleaned["_hosts"]:
-                    # we do not use _get_or_create_* because we expect the object we
-                    # just asked the registry for still exists --
-                    # if not, that's a problem
-                    req = commands.InfoHost(name=name)
-                    data = registry.send(req, cleaned=True).res_data[0]
-                    # extract properties from response
-                    # (Ellipsis is used to mean "null")
-                    host = {
-                        "name": name,
-                        "addrs": getattr(data, "addrs", ...),
-                        "cr_date": getattr(data, "cr_date", ...),
-                        "statuses": getattr(data, "statuses", ...),
-                        "tr_date": getattr(data, "tr_date", ...),
-                        "up_date": getattr(data, "up_date", ...),
-                    }
-                    cleaned["hosts"].append(
-                        {k: v for k, v in host.items() if v is not ...}
-                    )
+                cleaned["hosts"] = self._fetch_hosts(cleaned["_hosts"])
+                # We're only getting hosts, so retain the old
+                # contacts that existed in cache (if they existed)
+                # and pass them along.
+                if old_cache_contacts is not None:
+                    cleaned["contacts"] = old_cache_contacts
 
             # replace the prior cache with new data
             self._cache = cleaned
 
         except RegistryError as e:
             logger.error(e)
+
+    def _fetch_contacts(self, contact_data):
+        """Fetch contact info."""
+        contacts = []
+        for domainContact in contact_data:
+            req = commands.InfoContact(id=domainContact.contact)
+            data = registry.send(req, cleaned=True).res_data[0]
+            contact = {
+                "id": domainContact.contact,
+                "type": domainContact.type,
+                "auth_info": getattr(data, "auth_info", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "disclose": getattr(data, "disclose", ...),
+                "email": getattr(data, "email", ...),
+                "fax": getattr(data, "fax", ...),
+                "postal_info": getattr(data, "postal_info", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+                "voice": getattr(data, "voice", ...),
+            }
+            contacts.append({k: v for k, v in contact.items() if v is not ...})
+        return contacts
+
+    def _fetch_hosts(self, host_data):
+        """Fetch host info."""
+        hosts = []
+        for name in host_data:
+            req = commands.InfoHost(name=name)
+            data = registry.send(req, cleaned=True).res_data[0]
+            host = {
+                "name": name,
+                "addrs": getattr(data, "addrs", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+            }
+            hosts.append({k: v for k, v in host.items() if v is not ...})
+        return hosts
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""

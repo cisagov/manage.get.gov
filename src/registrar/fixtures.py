@@ -82,6 +82,11 @@ class UserFixture:
             "first_name": "Nicolle",
             "last_name": "LeClair",
         },
+        {
+            "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
+            "first_name": "Erin",
+            "last_name": "Song",
+        },
     ]
 
     STAFF = [
@@ -133,6 +138,12 @@ class UserFixture:
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
             "email": "nicolle.leclair@ecstech.com",
+        },
+        {
+            "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
+            "first_name": "Erin-Analyst",
+            "last_name": "Song-Analyst",
+            "email": "erin.song+1@gsa.gov",
         },
     ]
 
