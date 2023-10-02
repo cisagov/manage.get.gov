@@ -370,7 +370,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @Cache
     def administrative_contact(self) -> PublicContact | None:
-        """Get or set the admin contact for this domain."""
+        """Get the admin contact for this domain."""
         admin = PublicContact.ContactTypeChoices.ADMINISTRATIVE
         return self.generic_contact_getter(admin)
 
