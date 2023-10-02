@@ -1005,7 +1005,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("pendingCreate()-> inside pending create")
         self._delete_domain()
         # TODO - delete ticket any additional error handling here
-    
+
     @transition(
         field="state",
         source=[State.DNS_NEEDED],
@@ -1025,7 +1025,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(nameserverList) < 2 or len(nameserverList) > 13:
             raise ValueError("Not ready to become created, cannot transition yet")
         logger.info("able to transition to ready state")
-    
+
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
@@ -1149,7 +1149,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
 
                 raise e
-    
+
     def _fetch_hosts(self, host_data):
         """Fetch host info."""
         hosts = []
