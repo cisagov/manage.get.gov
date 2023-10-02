@@ -19,7 +19,7 @@
         >
             DNS
         </a>
-        <ul class="usa--sidenav__sublist">
+        <ul class="usa-sidenav__sublist">
           <li class="usa-sidenav__item">
             {% url 'domain-nameservers' pk=domain.id as url %} 
             <a href="{{ url }}"
@@ -45,7 +45,7 @@
             >
                 DNSSEC
             </a>
-            <ul class="usa--sidenav__sublist">
+            <ul class="usa-sidenav__sublist">
               <li class="usa-sidenav__item">
                 {% url 'domain-dsdata' pk=domain.id as url %}
                 <a href="{{ url }}"
