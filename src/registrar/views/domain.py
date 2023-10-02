@@ -128,6 +128,13 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
         return super().form_valid(form)
 
 
+class DomainDNSView(DomainPermissionView):
+
+    """DNS Information View."""
+
+    template_name = "domain_dns.html"
+
+
 class DomainNameserversView(DomainPermissionView, FormMixin):
 
     """Domain nameserver editing view."""
@@ -205,6 +212,13 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 
         # superclass has the redirect
         return super().form_valid(formset)
+
+
+class DomainDNSSECView(DomainPermissionView):
+
+    """Domain DNSSEC editing view."""
+
+    template_name = "domain_dnssec.html"
 
 
 class DomainYourContactInformationView(DomainPermissionView, FormMixin):

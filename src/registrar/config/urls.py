@@ -81,9 +81,19 @@ urlpatterns = [
     path("domain/<int:pk>", views.DomainView.as_view(), name="domain"),
     path("domain/<int:pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
     path(
+        "domain/<int:pk>/dns",
+        views.DomainDNSView.as_view(),
+        name="dns",
+    ),
+    path(
         "domain/<int:pk>/nameservers",
         views.DomainNameserversView.as_view(),
         name="domain-nameservers",
+    ),
+    path(
+        "domain/<int:pk>/dnssec",
+        views.DomainDNSSECView.as_view(),
+        name="domain-dnssec",
     ),
     path(
         "domain/<int:pk>/your-contact-information",

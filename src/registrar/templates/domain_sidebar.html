@@ -13,12 +13,31 @@
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'domain-nameservers' pk=domain.id as url %} 
+        {% url 'dns' pk=domain.id as url %}
         <a href="{{ url }}"
           {% if request.path == url %}class="usa-current"{% endif %}
         >
-            DNS name servers
+            DNS
         </a>
+        <ul class="usa--sidenav__sublist">
+          <li class="usa-sidenav__item">
+            {% url 'domain-nameservers' pk=domain.id as url %} 
+            <a href="{{ url }}"
+              {% if request.path == url %}class="usa-current"{% endif %}
+            >
+                DNS name servers
+            </a>
+          </li>
+
+          <li class="usa-sidenav__item">
+            {% url 'domain-dnssec' pk=domain.id as url %}
+            <a href="{{ url }}"
+              {% if request.path == url %}class="usa-current"{% endif %}
+            >
+                DNSSEC
+            </a>
+          </li>
+        </ul>
       </li>
 
       <li class="usa-sidenav__item">

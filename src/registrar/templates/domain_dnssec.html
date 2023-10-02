@@ -1,0 +1,12 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers url_helpers %}
+
+{% block title %}DNSSEC | {{ domain.name }} | {% endblock %}
+
+{% block domain_content %}
+
+  <h1>DNSSEC</h1>
+
+  <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your website, they can be certain that it's connecting to the correct server, preventing potential hijacking or tampering with your domain's records. <a href="unknownref">Read more about DNSSEC and why it is important.</a></a></p>
+
+{% endblock %}  {# domain_content #}

@@ -1,0 +1,22 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers url_helpers %}
+
+{% block title %}DNS | {{ domain.name }} | {% endblock %}
+
+{% block domain_content %}
+
+  <h1>DNS</h1>
+
+  <p>The Domain Name System (DNS) is the internet service that translates your domain name into an IP address. Before your .gov domain can be used, you'll need to connect it to your DNS hosting service and provide us with your name server information.</p>
+
+  <p>You can enter your name services, as well as other DNS-related information, in the following sections:</p>
+
+  {% url 'domain-nameservers' pk=domain.id as url %}
+  <p><a href="{{ url }}">DNS name servers</a></p>
+
+  <p><a href=>Subdomain records</a></p>
+
+  {% url 'domain-dnssec' pk=domain.id as url %}
+  <p><a href="{{ url }}">DNSSEC</a></p>
+
+{% endblock %}  {# domain_content #}
