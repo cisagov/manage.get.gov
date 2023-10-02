@@ -235,33 +235,12 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info("Domain is missing nameservers %s" % err)
             return []
 
-        # TODO-848: Fix the output
-        # ('ns1.therealslimhsiehdy.com',)
-        # ('ns2.therealslimhsiehdy.com',)
-        # ('ns3.therealslimhsiehdy.com',)
+        # TODO-687 fix this return value
         hostList = []
         for host in hosts:
             hostList.append((host["name"], host["addrs"]))
 
         return hostList
-
-    # def _check_host(self, hostnames: list[str]):
-    #     """check if host is available, True if available
-    #     returns boolean"""
-    #     # TODO-848: Double check this implementation is needed bc it's untested code
-    #     # Check if the IP address is available/real
-    #     checkCommand = commands.CheckHost(hostnames)
-    #     try:
-    #         response = registry.send(checkCommand, cleaned=True)
-    #         return response.res_data[0].avail
-    #     except RegistryError as err:
-    #         logger.warning(
-    #             "Couldn't check hosts %s. Errorcode was %s, error was %s",
-    #             hostnames,
-    #             err.code,
-    #             err,
-    #         )
-    #         return False
 
     def _create_host(self, host, addrs):
         """Call _check_host first before using this function,
