@@ -121,7 +121,7 @@ class TestDomainCache(MockEppLib):
         # get and check hosts is set correctly
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-
+        self.assertEqual(domain._cache["contacts"], expectedContactsDict)
         # invalidate cache
         domain._cache = {}
 
@@ -662,6 +662,13 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
 
     def test_updates_security_email(self):
+        """
+        Scenario: Registrant replaces one valid security contact email with another
+            Given a domain exists in the registry with a user-added security email
+            When `domain.security_contact` is set equal to a PublicContact with a new
+                security contact email
+            Then Domain sends `commands.UpdateContact` to the registry
+        """
         security_contact = self.domain.get_default_security_contact()
         security_contact.email = "originalUserEmail@gmail.com"
         security_contact.registry_id = "fail"
