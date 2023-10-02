@@ -228,6 +228,20 @@ class DomainDNSSECView(DomainPermissionView):
     template_name = "domain_dnssec.html"
 
 
+class DomainDsdataView(DomainPermissionView):
+
+    """Domain DNSSEC ds data editing view."""
+
+    template_name = "domain_dsdata.html"
+
+
+class DomainKeydataView(DomainPermissionView):
+
+    """Domain DNSSEC key data editing view."""
+
+    template_name = "domain_keydata.html"
+
+
 class DomainYourContactInformationView(DomainPermissionView, FormMixin):
 
     """Domain your contact information editing view."""

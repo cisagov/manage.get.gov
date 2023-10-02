@@ -7,6 +7,8 @@ from .domain import (
     DomainNameserversView,
     DomainSubdomainsView,
     DomainDNSSECView,
+    DomainDsdataView,
+    DomainKeydataView,
     DomainYourContactInformationView,
     DomainSecurityEmailView,
     DomainUsersView,

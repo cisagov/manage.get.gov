@@ -101,6 +101,16 @@ urlpatterns = [
         name="domain-dnssec",
     ),
     path(
+        "domain/<int:pk>/dsdata",
+        views.DomainDsdataView.as_view(),
+        name="domain-dsdata",
+    ),
+    path(
+        "domain/<int:pk>/keydata",
+        views.DomainKeydataView.as_view(),
+        name="domain-keydata",
+    ),
+    path(
         "domain/<int:pk>/your-contact-information",
         views.DomainYourContactInformationView.as_view(),
         name="domain-your-contact-information",

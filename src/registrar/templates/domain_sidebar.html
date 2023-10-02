@@ -37,6 +37,7 @@
                 Subdomain records
             </a>
           </li>
+
           <li class="usa-sidenav__item">
             {% url 'domain-dnssec' pk=domain.id as url %}
             <a href="{{ url }}"
@@ -44,6 +45,25 @@
             >
                 DNSSEC
             </a>
+            <ul class="usa--sidenav__sublist">
+              <li class="usa-sidenav__item">
+                {% url 'domain-dsdata' pk=domain.id as url %}
+                <a href="{{ url }}"
+                  {% if request.path == url %}class="usa-current"{% endif %}
+                >
+                    DS Data
+                </a>
+              </li>
+
+              <li class="usa-sidenav__item">
+                {% url 'domain-keydata' pk=domain.id as url %}
+                <a href="{{ url }}"
+                  {% if request.path == url %}class="usa-current"{% endif %}
+                >
+                    DS Key Data
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
       </li>
