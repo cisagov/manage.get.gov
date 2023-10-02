@@ -45,6 +45,7 @@ try:
     from .client import CLIENT, commands
     from .errors import RegistryError, ErrorCode
     from epplib.models import common
+    from epplib import responses
 except ImportError:
     pass
 
@@ -52,6 +53,7 @@ __all__ = [
     "CLIENT",
     "commands",
     "common",
+    "responses",
     "ErrorCode",
     "RegistryError",
 ]
