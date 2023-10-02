@@ -141,24 +141,29 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
 
 
-class DomainDNSSECDSDataForm(forms.Form):
+class DomainDsdataForm(forms.Form):
 
     """Form for adding or editing a security email to a domain."""
     
     # Q: What are the options?
     ALGORITHM_CHOICES = [
-        ("ECC Ghost", "ECC Ghost"),
+        (1, "ERSA/MD5 [RSAMD5]"),
+        (2 , "Diffie-Hellman [DH]"),
+        (3 ,"DSA/SHA-1 [DSA]"),
+        (5 ,"RSA/SHA-1 [RSASHA1]"),
     ]
     # Q: What are the options?
     DIGEST_TYPE_CHOICES = [
-        ("SHA-256", "SHA-256"),
+        (0, "Reserved"),
+        (1, "SHA-256"),
     ]
     
-    has_ds_key_data = forms.TypedChoiceField(
-        required=True,
-        label="DS Data record type",
-        choices=[(False, "DS Data"), (True, "DS Data with Key Data")],
-    )
+    # TODO: ds key data
+    # has_ds_key_data = forms.TypedChoiceField(
+    #     required=True,
+    #     label="DS Data record type",
+    #     choices=[(False, "DS Data"), (True, "DS Data with Key Data")],
+    # )
 
     key_tag = forms.IntegerField(
         required=True,
@@ -172,20 +177,21 @@ class DomainDNSSECDSDataForm(forms.Form):
     )
 
     algorithm = forms.TypedChoiceField(
+        required=True,
         label="Algorithm",
-        choices=[("", "--Select--")] + ALGORITHM_CHOICES,
+        choices=[(-1, "--Select--")] + ALGORITHM_CHOICES,
         # Q: Is this even needed or is a required=True sufficient?
-        error_messages={
-            "required": (
-                "You must select an Algorithm"
-            )
-        },
+        # error_messages={
+        #     "required": (
+        #         "You must select an Algorithm"
+        #     )
+        # },
     )
     # Q: Is ChoiceFiled right? Or do we need to data types other than strings
     # (TypedChoiceField)
     digest_type = forms.TypedChoiceField(
         label="Digest Type",
-        choices=[("", "--Select--")] + DIGEST_TYPE_CHOICES,
+        choices=[(-1, "--Select--")] + DIGEST_TYPE_CHOICES,
         # Q: Is this even needed or is a required=True sufficient?
         error_messages={
             "required": (
@@ -193,12 +199,28 @@ class DomainDNSSECDSDataForm(forms.Form):
             )
         },
     )
-    digest = forms.CharField(label="Digest")
+    digest = forms.CharField(
+        required=True,
+        label="Digest",
+        # validators=[
+        #     RegexValidator(
+        #         "^[0-9]{5}(?:-[0-9]{4})?$|^$",
+        #         message="Accepted range 0-65535.",
+        #     )
+        # ],
+    )
 
-    # Conditional DS Key Data fields
+    # TODO: Conditional DS Key Data fields
+    
     
 
-DNSSECDSDataFormset = formset_factory(
-    DomainDNSSECDSDataForm,
+DomainDsdataFormset = formset_factory(
+    DomainDsdataForm,
     extra=1,
 )
+
+
+# TODO:
+# class DomainKeyDataForm(forms.Form):
+    
+#     """"""

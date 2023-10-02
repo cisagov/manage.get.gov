@@ -28,7 +28,14 @@ from ..forms import (
     DomainAddUserForm,
     DomainSecurityEmailForm,
     NameserverFormset,
+    DomainDsdataFormset,
 )
+
+from epplibwrapper import (
+    common,
+    extensions,
+)
+
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
 
@@ -233,6 +240,73 @@ class DomainDsdataView(DomainPermissionView):
     """Domain DNSSEC ds data editing view."""
 
     template_name = "domain_dsdata.html"
+    form_class = DomainDsdataFormset
+
+    def get_initial(self):
+        """The initial value for the form (which is a formset here)."""
+        domain = self.get_object()
+        dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
+        initial_data = []
+        
+        if dnssecdata.keyData is not None:
+            # TODO: Throw an error
+            pass
+
+        if dnssecdata.dsData is not None:
+            # Add existing nameservers as initial data
+            # TODO: create context for each element in the record
+            # key_tag
+            # algorithm
+            # digest_type
+            # digest
+            initial_data.extend({"dsrecord": record} for record in dnssecdata.dsData)
+
+        return initial_data
+
+    def get_success_url(self):
+        """Redirect to the DS Data page for the domain."""
+        return reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        """Adjust context from FormMixin for formsets."""
+        context = super().get_context_data(**kwargs)
+        # use "formset" instead of "form" for the key
+        context["formset"] = context.pop("form")
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Formset submission posts to this view."""
+        self.object = self.get_object()
+        formset = self.get_form()
+
+        if formset.is_valid():
+            return self.form_valid(formset)
+        else:
+            return self.form_invalid(formset)
+
+    def form_valid(self, formset):
+        """The formset is valid, perform something with it."""
+
+        # Set the nameservers from the formset
+        dnssecdata = []
+        for form in formset:
+            try:
+                # TODO: build the right list of dicts to be passed
+                dsrecord = (form.cleaned_data["dsrecord"],)
+                dnssecdata.append(dsrecord)
+            except KeyError:
+                # no server information in this field, skip it
+                pass
+        domain = self.get_object()
+        domain.dnssecdata = dnssecdata
+
+        messages.success(
+            self.request, "The DS Data records for this domain have been updated."
+        )
+
+        # superclass has the redirect
+        return super().form_valid(formset)
+
 
 
 class DomainKeydataView(DomainPermissionView):
