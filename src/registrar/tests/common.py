@@ -458,6 +458,7 @@ def completed_application(
     has_anything_else=True,
     status=DomainApplication.STARTED,
     user=False,
+    name="city.gov",
 ):
     """A completed domain application."""
     if not user:
@@ -469,7 +470,7 @@ def completed_application(
         email="testy@town.com",
         phone="(555) 555 5555",
     )
-    domain, _ = DraftDomain.objects.get_or_create(name="city.gov")
+    domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
     you, _ = Contact.objects.get_or_create(
