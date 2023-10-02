@@ -352,16 +352,17 @@ class Domain(TimeStampedModel, DomainHelper):
 
         return (deleted_values, updated_values, new_values, previousHostDict)
 
-    def _update_delete_create_hosts(
-        self, deleted_values, updated_values, new_values, oldNameservers
-    ):
+    def _deleted_host_values(self, deleted_values) -> int:
         successDeletedCount = 0
-        successCreatedCount = 0
+
         for hostTuple in deleted_values:
             deleted_response_code = self._delete_host(hostTuple[0])
             if deleted_response_code == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
                 successDeletedCount += 1
 
+        return successDeletedCount
+
+    def _update_host_values(self, updated_values, oldNameservers):
         for hostTuple in updated_values:
             updated_response_code = self._update_host(
                 hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0])
@@ -375,6 +376,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     % (hostTuple[0], updated_response_code)
                 )
 
+    def _new_host_values(self, new_values) -> int:
+        successCreatedCount = 0
         for key, value in new_values.items():
             createdCode = self._create_host(
                 host=key, addrs=value
@@ -394,7 +397,24 @@ class Domain(TimeStampedModel, DomainHelper):
                         "Error adding nameserver, code was %s error was %s"
                         % (e.code, e)
                     )
-        return len(oldNameservers) - successDeletedCount + successCreatedCount
+        return successCreatedCount
+
+    # def _update_delete_create_hosts(
+    #     self, deleted_values, updated_values, new_values, oldNameservers
+    # ):
+
+    # for hostTuple in updated_values:
+    #     updated_response_code = self._update_host(
+    #         hostTuple[0], hostTuple[1], oldNameservers.get(hostTuple[0])
+    #     )
+    #     if updated_response_code not in [
+    #         ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+    #         ErrorCode.OBJECT_EXISTS,
+    #     ]:
+    #         logger.warning(
+    #             "Could not update host %s. Error code was: %s "
+    #             % (hostTuple[0], updated_response_code)
+    #         )
 
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str, list]]):
@@ -417,9 +437,19 @@ class Domain(TimeStampedModel, DomainHelper):
             oldNameservers,
         ) = self.getNameserverChanges(hosts=hosts)
 
-        successTotalNameservers = self._update_delete_create_hosts(
-            deleted_values, updated_values, new_values, oldNameservers
+        successDeletedCount = self._deleted_host_values(deleted_values)  # returns value
+        _ = self._update_host_values(
+            updated_values, oldNameservers
+        )  # returns nothing, just need to be run and errors
+        successCreatedCount = self._new_host_values(new_values)
+
+        successTotalNameservers = (
+            len(oldNameservers) - successDeletedCount + successCreatedCount
         )
+
+        # successTotalNameservers = self._update_delete_create_hosts(
+        #     deleted_values, updated_values, new_values, oldNameservers
+        # )
 
         if successTotalNameservers < 2:
             try:

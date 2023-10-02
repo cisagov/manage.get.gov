@@ -663,7 +663,7 @@ class TestRegistrantNameservers(MockEppLib):
         # Testing only deleting and no other changes
         self.domain._cache["hosts"] = [
             {"name": "ns1.example.com", "addrs": None},
-            {"name": "ns2.example.com", "addrs": ["1.2.3"]},
+            {"name": "ns2.example.com", "addrs": ["1.2.3.4"]},
         ]
         newChanges = [
             ("ns1.example.com",),
@@ -675,21 +675,21 @@ class TestRegistrantNameservers(MockEppLib):
             oldNameservers,
         ) = self.domain.getNameserverChanges(newChanges)
 
-        self.assertEqual(deleted_values, [("ns2.example.com", ["1.2.3"])])
+        self.assertEqual(deleted_values, [("ns2.example.com", ["1.2.3.4"])])
         self.assertEqual(updated_values, [])
         self.assertEqual(new_values, {})
         self.assertEqual(
             oldNameservers,
-            {"ns1.example.com": None, "ns2.example.com": ["1.2.3"]},
+            {"ns1.example.com": None, "ns2.example.com": ["1.2.3.4"]},
         )
 
     def test_get_nameserver_changes_success_updated_vals(self):
         # Testing only updating no other changes
         self.domain._cache["hosts"] = [
-            {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3"]},
+            {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3.4"]},
         ]
         newChanges = [
-            ("ns3.my-nameserver.gov", ["1.2.4"]),
+            ("ns3.my-nameserver.gov", ["1.2.4.5"]),
         ]
         (
             deleted_values,
@@ -699,11 +699,11 @@ class TestRegistrantNameservers(MockEppLib):
         ) = self.domain.getNameserverChanges(newChanges)
 
         self.assertEqual(deleted_values, [])
-        self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4"])])
+        self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4.5"])])
         self.assertEqual(new_values, {})
         self.assertEqual(
             oldNameservers,
-            {"ns3.my-nameserver.gov": ["1.2.3"]},
+            {"ns3.my-nameserver.gov": ["1.2.3.4"]},
         )
 
     def test_get_nameserver_changes_success_new_vals(self):
