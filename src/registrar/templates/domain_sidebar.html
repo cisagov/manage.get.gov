@@ -14,10 +14,8 @@
 
       <li class="usa-sidenav__item">
         {% url 'domain-dns' pk=domain.id as url %}
-        <a href="{{ url }}"
-          {% if request.path == url %}class="usa-current"{% endif %}
-        >
-            DNS
+        <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}>
+          DNS
         </a>
         <ul class="usa-sidenav__sublist">
           <li class="usa-sidenav__item">
@@ -41,7 +39,7 @@
           <li class="usa-sidenav__item">
             {% url 'domain-dns-dnssec' pk=domain.id as url %}
             <a href="{{ url }}"
-              {% if request.path == url %}class="usa-current"{% endif %}
+              {% if request.path|startswith:url %}class="usa-current"{% endif %}
             >
                 DNSSEC
             </a>
