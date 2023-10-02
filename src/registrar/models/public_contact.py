@@ -149,6 +149,10 @@ class PublicContact(TimeStampedModel):
             pw="thisisnotapassword",
         )
 
+    @classmethod
+    def get_max_id_length(cls):
+        return cls._meta.get_field("registry_id").max_length
+
     def __str__(self):
         return (
             f"{self.name} <{self.email}>"

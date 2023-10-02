@@ -683,9 +683,9 @@ class MockEppLib(TestCase):
             else:
                 return MagicMock(res_data=[self.mockDataInfoDomain])
         elif isinstance(_request, commands.InfoContact):
-            # Default contact return
-            mocked_result = self.mockDataInfoContact
-            # For testing contact types...
+            mocked_result: info.InfoContactResultData
+
+            # For testing contact types
             match getattr(_request, "id", None):
                 case "securityContact":
                     mocked_result = self.mockSecurityContact
@@ -695,7 +695,8 @@ class MockEppLib(TestCase):
                     mocked_result = self.mockAdministrativeContact
                 case "regContact":
                     mocked_result = self.mockRegistrantContact
-                case "123":
+                case _:
+                    # Default contact return
                     mocked_result = self.mockDataInfoContact
 
             return MagicMock(res_data=[mocked_result])
