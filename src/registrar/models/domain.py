@@ -1005,7 +1005,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("pendingCreate()-> inside pending create")
         self._delete_domain()
         # TODO - delete ticket any additional error handling here
-
+    
     @transition(
         field="state",
         source=[State.DNS_NEEDED],
@@ -1026,6 +1026,46 @@ class Domain(TimeStampedModel, DomainHelper):
             raise ValueError("Not ready to become created, cannot transition yet")
         logger.info("able to transition to ready state")
 
+    def _fetch_contacts(self, contact_data):
+        """Fetch contact info."""
+        contacts = []
+        for domainContact in contact_data:
+            req = commands.InfoContact(id=domainContact.contact)
+            data = registry.send(req, cleaned=True).res_data[0]
+            contact = {
+                "id": domainContact.contact,
+                "type": domainContact.type,
+                "auth_info": getattr(data, "auth_info", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "disclose": getattr(data, "disclose", ...),
+                "email": getattr(data, "email", ...),
+                "fax": getattr(data, "fax", ...),
+                "postal_info": getattr(data, "postal_info", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+                "voice": getattr(data, "voice", ...),
+            }
+            contacts.append({k: v for k, v in contact.items() if v is not ...})
+        return contacts
+
+    def _fetch_hosts(self, host_data):
+        """Fetch host info."""
+        hosts = []
+        for name in host_data:
+            req = commands.InfoHost(name=name)
+            data = registry.send(req, cleaned=True).res_data[0]
+            host = {
+                "name": name,
+                "addrs": getattr(data, "addrs", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+            }
+            hosts.append({k: v for k, v in host.items() if v is not ...})
+        return hosts
+    
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
@@ -1170,6 +1210,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 and isinstance(cleaned["_contacts"], list)
                 and len(cleaned["_contacts"]) > 0
             ):
+                #cleaned["contacts"] = self._fetch_contacts(cleaned["_contacts"])
+
                 choices = PublicContact.ContactTypeChoices
                 # We expect that all these fields get populated,
                 # so we can create these early, rather than waiting.
@@ -1191,6 +1233,12 @@ class Domain(TimeStampedModel, DomainHelper):
                     in_db = self._get_or_create_public_contact(mapped_object)
 
                     cleaned["contacts"][in_db.contact_type] = in_db.registry_id
+
+                # We're only getting contacts, so retain the old
+                # hosts that existed in cache (if they existed)
+                # and pass them along.
+                if old_cache_hosts is not None:
+                    cleaned["hosts"] = old_cache_hosts
 
             # get nameserver info, if there are any
             if (

@@ -94,7 +94,7 @@ class TestDomainCache(MockEppLib):
         expectedUnfurledContactsList = [
             common.DomainContact(contact="123", type="security"),
         ]
-        expectedContactsList = {
+        expectedContactsDict = {
             PublicContact.ContactTypeChoices.ADMINISTRATIVE: None,
             PublicContact.ContactTypeChoices.SECURITY: "123",
             PublicContact.ContactTypeChoices.TECHNICAL: None,
@@ -116,12 +116,11 @@ class TestDomainCache(MockEppLib):
         # The contact list should not contain what is sent by the registry by default,
         # as _fetch_cache will transform the type to PublicContact
         self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
-        self.assertEqual(domain._cache["contacts"], expectedContactsList)
+        self.assertEqual(domain._cache["contacts"], expectedContactsDict)
 
         # get and check hosts is set correctly
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-        self.assertEqual(domain._cache["contacts"], [expectedContactsDict])
 
         # invalidate cache
         domain._cache = {}
@@ -133,7 +132,7 @@ class TestDomainCache(MockEppLib):
         # get contacts
         domain._get_property("contacts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-        self.assertEqual(domain._cache["contacts"], [expectedContactsDict])
+        self.assertEqual(domain._cache["contacts"], expectedContactsDict)
 
     def test_map_epp_contact_to_public_contact(self):
         # Tests that the mapper is working how we expect
