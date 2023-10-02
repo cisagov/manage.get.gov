@@ -1210,8 +1210,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 and isinstance(cleaned["_contacts"], list)
                 and len(cleaned["_contacts"]) > 0
             ):
-                #cleaned["contacts"] = self._fetch_contacts(cleaned["_contacts"])
-
                 choices = PublicContact.ContactTypeChoices
                 # We expect that all these fields get populated,
                 # so we can create these early, rather than waiting.
@@ -1231,7 +1229,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
                     # Find/create it in the DB
                     in_db = self._get_or_create_public_contact(mapped_object)
-
                     cleaned["contacts"][in_db.contact_type] = in_db.registry_id
 
                 # We're only getting contacts, so retain the old

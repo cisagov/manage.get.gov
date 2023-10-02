@@ -25,7 +25,6 @@ from registrar.models import (
 from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
-from .common import MockEppLib
 
 
 class TestViews(TestCase):
