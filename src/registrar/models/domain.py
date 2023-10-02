@@ -705,7 +705,10 @@ class Domain(TimeStampedModel, DomainHelper):
         auth_info = contact.auth_info
         postal_info = contact.postal_info
         addr = postal_info.addr
-        streets = self._convert_streets_to_dict(addr.street)
+        streets = None
+        if addr is not None:
+            streets = addr.street
+        streets_kwargs = self._convert_streets_to_dict(streets)
         desired_contact = PublicContact(
             domain=self,
             contact_type=contact_type,
@@ -721,7 +724,7 @@ class Domain(TimeStampedModel, DomainHelper):
             pc=getattr(addr, "pc", ""),
             cc=getattr(addr, "cc", ""),
             sp=getattr(addr, "sp", ""),
-            **streets,
+            **streets_kwargs,
         )  # type: ignore
 
         return desired_contact
