@@ -214,6 +214,13 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         return super().form_valid(formset)
 
 
+class DomainSubdomainsView(DomainPermissionView):
+
+    """Domain subdomains editing view."""
+
+    template_name = "domain_subdomains.html"
+
+
 class DomainDNSSECView(DomainPermissionView):
 
     """Domain DNSSEC editing view."""

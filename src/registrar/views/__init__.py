@@ -5,6 +5,7 @@ from .domain import (
     DomainOrgNameAddressView,
     DomainDNSView,
     DomainNameserversView,
+    DomainSubdomainsView,
     DomainDNSSECView,
     DomainYourContactInformationView,
     DomainSecurityEmailView,

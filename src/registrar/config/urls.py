@@ -91,6 +91,11 @@ urlpatterns = [
         name="domain-nameservers",
     ),
     path(
+        "domain/<int:pk>/subdomains",
+        views.DomainSubdomainsView.as_view(),
+        name="domain-subdomains",
+    ),
+    path(
         "domain/<int:pk>/dnssec",
         views.DomainDNSSECView.as_view(),
         name="domain-dnssec",
