@@ -139,10 +139,17 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         """The initial value for the form (which is a formset here)."""
         domain = self.get_object()
         nameservers = domain.nameservers
-        if nameservers is None:
-            return []
+        initial_data = []
 
-        return [{"server": name} for name, *ip in domain.nameservers]
+        if nameservers is not None:
+            # Add existing nameservers as initial data
+            initial_data.extend({"server": name} for name, *ip in nameservers)
+
+        # Ensure at least 3 fields, filled or empty
+        while len(initial_data) < 2:
+            initial_data.append({})
+
+        return initial_data
 
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""
@@ -158,6 +165,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
     def get_form(self, **kwargs):
         """Override the labels and required fields every time we get a formset."""
         formset = super().get_form(**kwargs)
+
         for i, form in enumerate(formset):
             form.fields["server"].label += f" {i+1}"
             if i < 2:
