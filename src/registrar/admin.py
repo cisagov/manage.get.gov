@@ -639,6 +639,21 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
+class TransitionDomainAdmin(ListHeaderAdmin):
+    """Custom transition domain admin class."""
+
+    # Columns
+    list_display = [
+        "username",
+        "domain_name",
+        "status",
+        "email_sent",
+    ]
+
+    search_fields = ["username", "domain_name"]
+    search_help_text = "Search by user or domain name."
+
+
 class DomainInformationInline(admin.StackedInline):
     """Edit a domain information on the domain page.
     We had issues inheriting from both StackedInline
@@ -730,7 +745,23 @@ class DomainAdmin(ListHeaderAdmin):
             obj.place_client_hold()
             obj.save()
         except Exception as err:
-            self.message_user(request, err, messages.ERROR)
+            # if error is an error from the registry, display useful
+            # and readable error
+            if err.code:
+                self.message_user(
+                    request,
+                    f"Error placing the hold with the registry: {err}",
+                    messages.ERROR,
+                )
+            elif err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
+                    messages.ERROR,
+                )
+            else:
+                # all other type error messages, display the error
+                self.message_user(request, err, messages.ERROR)
         else:
             self.message_user(
                 request,
@@ -747,7 +778,23 @@ class DomainAdmin(ListHeaderAdmin):
             obj.revert_client_hold()
             obj.save()
         except Exception as err:
-            self.message_user(request, err, messages.ERROR)
+            # if error is an error from the registry, display useful
+            # and readable error
+            if err.code:
+                self.message_user(
+                    request,
+                    f"Error removing the hold in the registry: {err}",
+                    messages.ERROR,
+                )
+            elif err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
+                    messages.ERROR,
+                )
+            else:
+                # all other type error messages, display the error
+                self.message_user(request, err, messages.ERROR)
         else:
             self.message_user(
                 request,
@@ -801,4 +848,4 @@ admin.site.register(models.Nameserver, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
-admin.site.register(models.TransitionDomain, AuditedAdmin)
+admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
