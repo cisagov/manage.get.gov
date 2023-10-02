@@ -721,9 +721,13 @@ class DomainAdmin(ListHeaderAdmin):
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):
             # Could be problematic if the type is similar,
-            # but not the same (same field/func names) so we err out.
+            # but not the same (same field/func names).
             # We do not want to accidentally delete records.
-            raise ValueError("Object is not of type Domain")
+            self.message_user(
+                request, "Object is not of type Domain", messages.ERROR
+            )
+            return
+
         try:
             obj.deletedInEpp()
             obj.save()
