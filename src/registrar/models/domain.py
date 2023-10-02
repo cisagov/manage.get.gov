@@ -6,7 +6,7 @@ from string import digits
 from django_fsm import FSMField, transition  # type: ignore
 
 from django.db import models
-
+from typing import Any
 from epplibwrapper import (
     CLIENT as registry,
     commands,
@@ -216,13 +216,13 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     @Cache
-    def nameservers(self) -> list[tuple[str]]:
+    def nameservers(self) -> list[tuple[str, list]]:
         """
         Get or set a complete list of nameservers for this domain.
 
         Hosts are provided as a list of tuples, e.g.
 
-            [("ns1.example.com",), ("ns1.example.gov", "0.0.0.0")]
+            [("ns1.example.com",), ("ns1.example.gov", ["0.0.0.0"])]
 
         Subordinate hosts (something.your-domain.gov) MUST have IP addresses,
         while non-subordinate hosts MUST NOT.
@@ -283,14 +283,14 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             return e.code
 
-    def _convert_list_to_dict(self, listToConvert: list[tuple[str]]):
-        newDict = {}
+    def _convert_list_to_dict(self, listToConvert: list[tuple[str, list]]):
+        newDict: dict[str, Any] = {}
 
         # TODO-848: If duplicated nameserver names, throw error
         for tup in listToConvert:
             if len(tup) == 1:
                 newDict[tup[0]] = None
-            else:
+            elif len(tup) == 2:
                 newDict[tup[0]] = tup[1]
         return newDict
 
@@ -301,31 +301,32 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.isSubdomain(nameserver) and (ip is None or ip == []):
             raise ValueError(
                 "Nameserver %s needs to have an "
-                "ip address because it is a subdomain" % nameserver
+                "IP address because it is a subdomain" % nameserver
             )
         elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
             raise ValueError(
                 "Nameserver %s cannot be linked "
                 "because %s is not a subdomain" % (nameserver, ip)
             )
+        elif ip is not None and ip != []:
+            for addr in ip:
+                if not self._valid_ip_addr(addr):
+                    raise ValueError(
+                        "Nameserver %s has an invalid IP address: %s" % (nameserver, ip)
+                    )
         return None
 
-    # TODO-848: We are checking for valid ip address format
-    # Need to use before checkHostIPCombo, or discuss where best fit
-    # And confirm if AddressValueError is best choice of error to raise
-    # def _valid_ip_addr(self):
-    #     if ipaddress.IPv6Address(ip) or ipaddress.IPv4Address(ip):
-    #         return True
-    #     else:
-    #         # We will need to import this error
-    #         raise AddressValueError(
-    #             "IP Address is in an invalid format."
-    #         )
-    #         return None
+    def _valid_ip_addr(self, ip):
+        try:
+            ip = ipaddress.ip_address(ip)
+            return ip.version == 6 or ip.version == 4
+
+        except ValueError:
+            return False
 
     def getNameserverChanges(
-        self, hosts: list[tuple[str]]
-    ) -> tuple[list, list, dict, list]:
+        self, hosts: list[tuple[str, list]]
+    ) -> tuple[list, list, dict, dict]:
         """
         calls self.nameserver, it should pull from cache but may result
         in an epp call
@@ -333,15 +334,17 @@ class Domain(TimeStampedModel, DomainHelper):
         deleted_values: list
         updated_values: list
         new_values: dict
-        oldNameservers: list"""
+        prevHostDict: dict"""
+
         oldNameservers = self.nameservers
 
         previousHostDict = self._convert_list_to_dict(oldNameservers)
 
         newHostDict = self._convert_list_to_dict(hosts)
         deleted_values = []
+        # TODO-currently a list of tuples, why not dict? for consistency
         updated_values = []
-        new_values = []
+        new_values = {}
 
         for prevHost in previousHostDict:
             addrs = previousHostDict[prevHost]
@@ -370,8 +373,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         return (deleted_values, updated_values, new_values, previousHostDict)
 
-    # TODO-848: Rename later - was getting complex err
-    def _loop_through(self, deleted_values, updated_values, new_values, oldNameservers):
+    def _update_delete_create_hosts(
+        self, deleted_values, updated_values, new_values, oldNameservers
+    ):
         successDeletedCount = 0
         successCreatedCount = 0
         for hostTuple in deleted_values:
@@ -414,12 +418,10 @@ class Domain(TimeStampedModel, DomainHelper):
         return len(oldNameservers) - successDeletedCount + successCreatedCount
 
     @nameservers.setter  # type: ignore
-    def nameservers(self, hosts: list[tuple[str]]):
+    def nameservers(self, hosts: list[tuple[str, list]]):
         """host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
-        example: [(ns1.okay.gov, 127.0.0.1, others ips)]"""
-
-        # TODO-848: ip version checking may need to be added in a different ticket
+        example: [(ns1.okay.gov, [127.0.0.1, others ips])]"""
 
         if len(hosts) > 13:
             raise ValueError(
@@ -436,13 +438,9 @@ class Domain(TimeStampedModel, DomainHelper):
             oldNameservers,
         ) = self.getNameserverChanges(hosts=hosts)
 
-        # TODO-848: Fix name
-        successTotalNameservers = self._loop_through(
+        successTotalNameservers = self._update_delete_create_hosts(
             deleted_values, updated_values, new_values, oldNameservers
         )
-
-        # print("SUCCESSTOTALNAMESERVERS IS ")
-        # print(successTotalNameservers)
 
         if successTotalNameservers < 2:
             try:

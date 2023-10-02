@@ -90,7 +90,7 @@ class TestDomainCache(MockEppLib):
         }
         expectedHostsDict = {
             "name": self.mockDataInfoDomain.hosts[0],
-            "addrs":self.mockDataInfoHosts.addrs,
+            "addrs": self.mockDataInfoHosts.addrs,
             "cr_date": self.mockDataInfoHosts.cr_date,
         }
 
@@ -146,7 +146,7 @@ class TestDomainCreation(MockEppLib):
         application.status = DomainApplication.SUBMITTED
         # transition to approve state
         application.approve()
-        # should hav information present for this domain
+        # should have information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(domain)
         self.mockedSendFunction.assert_not_called()
