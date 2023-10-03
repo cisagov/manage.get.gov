@@ -255,6 +255,8 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
                 self.domain.save()
             elif 'cancel' in request.POST:
                 self.domain.dnssec_enabled = False
+                self.domain.dnssec_ds_confirmed = False
+                self.domain.dnssec_key_confirmed = False
                 self.domain.save()                
             elif 'disable_dnssec' in request.POST:
                 try:
@@ -266,6 +268,8 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
                         self.request, errmsg
                     )
                 self.domain.dnssec_enabled = False
+                self.domain.dnssec_ds_confirmed = False
+                self.domain.dnssec_key_confirmed = False
                 self.domain.save()
         
         return self.form_valid(form)
@@ -313,6 +317,12 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         self.object = self.get_object()
         formset = self.get_form()
 
+        if 'confirm-ds' in request.POST:
+            self.object.dnssec_ds_confirmed = True
+            self.object.dnssec_key_confirmed = False
+            self.object.save()
+            return super().form_valid(formset)
+                
         if formset.is_valid():
             return self.form_valid(formset)
         else:
@@ -397,6 +407,12 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
         """Formset submission posts to this view."""
         self.object = self.get_object()
         formset = self.get_form()
+        
+        if 'confirm-key' in request.POST:
+            self.object.dnssec_key_confirmed = True
+            self.object.dnssec_ds_confirmed = False
+            self.object.save()
+            return super().form_valid(formset)
 
         if formset.is_valid():
             return self.form_valid(formset)

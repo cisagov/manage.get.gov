@@ -9,7 +9,7 @@
 
   <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your website, they can be certain that it's connecting to the correct server, preventing potential hijacking or tampering with your domain's records. <a href="https://www.icann.org/resources/pages/dnssec-what-is-it-why-important-2019-03-05-en">Read more about DNSSEC and why it is important.</a></p>
 
-  <form class="usa-form usa-form--extra-large" method="post">
+  <form class="usa-form usa-form--large" method="post">
     {% csrf_token %}
     {% if not domain.dnssec_enabled %}
     <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">

@@ -292,7 +292,46 @@ function handleValidationClick(e) {
       newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data Record ${formNum+1}`)
       // newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`)
       container.insertBefore(newForm, addButton)
-      newForm.querySelector("input").value = ""
+
+      let inputs = newForm.querySelectorAll("input");
+
+        // Reset the values of each input to blank
+        inputs.forEach((input) => {
+          input.classList.remove("usa-input--error");
+          if (input.type === "text" || input.type === "number" || input.type === "password") {
+            input.value = ""; // Set the value to an empty string
+            
+          } else if (input.type === "checkbox" || input.type === "radio") {
+            input.checked = false; // Uncheck checkboxes and radios
+          }
+        });
+
+        let selects = newForm.querySelectorAll("select");
+
+        selects.forEach((select) => {
+          select.classList.remove("usa-input--error");
+          select.selectedIndex = 0; // Set the value to an empty string
+        });
+
+
+        let labels = newForm.querySelectorAll("label");
+        labels.forEach((label) => {
+          label.classList.remove("usa-label--error");
+        });
+
+
+        let usaFormGroups = newForm.querySelectorAll(".usa-form-group");
+        usaFormGroups.forEach((usaFormGroup) => {
+          usaFormGroup.classList.remove("usa-form-group--error");
+        });
+
+        let usaErrorMessages = newForm.querySelectorAll(".usa-error-message");
+        usaErrorMessages.forEach((usaErrorMessage) => {
+          let parentDiv = usaErrorMessage.closest('div');
+          if (parentDiv) {
+            parentDiv.remove(); // Remove the parent div if it exists
+          }
+        });
 
       totalForms.setAttribute('value', `${formNum+1}`)
   }

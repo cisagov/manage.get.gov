@@ -16,6 +16,16 @@
       </p>
     </div>
   </div>
+  {% elif not domain.dnssec_ds_confirmed %}
+    <p>In order to enable DNSSEC and add DS records, you must first configure it with your DNS hosting service. Your configuration will determine whether you need to add DS Data or Key Data. Contact your DNS hosting provider if you are unsure which record type to add.</p>
+    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+      {% csrf_token %}
+      <button
+        type="submit"
+        class="usa-button"
+        name="confirm-ds"
+        >Add DS Data record</button>
+    </form>
   {% else %}
   {% include "includes/required_fields.html" %}
 
