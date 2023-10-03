@@ -1466,7 +1466,6 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         )
         self.assertContains(page, "Domain security email")
 
-    @skip("Ticket 912 needs to fix this one")
     def test_domain_security_email_form(self):
         """Adding a security email works.
         Uses self.app WebTest because we need to interact with forms.

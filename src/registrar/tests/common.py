@@ -606,7 +606,7 @@ class MockEppLib(TestCase):
             return fake
 
     mockDataInfoDomain = fakedEppObject(
-        "lastPw",
+        "fakePw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
         contacts=[
             common.DomainContact(

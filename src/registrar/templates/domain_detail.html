@@ -46,7 +46,7 @@
     {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Security email' value=domain.security_email edit_link=url %}
+    {% include "includes/summary_item.html" with title='Security email' value=domain.get_security_email() edit_link=url %}
 
     {% url 'domain-users' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='User management' users='true' list=True value=domain.permissions.all edit_link=url %}

@@ -14,7 +14,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from registrar.models.utility.contact_error import ContactError
+from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
@@ -676,10 +676,10 @@ class Domain(TimeStampedModel, DomainHelper):
             return None
 
         if contact_type is None:
-            raise ContactError("contact_type is None")
+            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
 
         if contact_id is None:
-            raise ContactError("contact_id is None")
+            raise ContactError(code=ContactErrorCodes.CONTACT_ID_NONE)
 
         # Since contact_id is registry_id,
         # check that its the right length
@@ -727,13 +727,25 @@ class Domain(TimeStampedModel, DomainHelper):
     def _convert_streets_to_dict(self, streets):
         """
         Converts EPPLibs street representation
-        to PublicContacts
+        to PublicContacts.
+
+        Args:
+            streets (Sequence[str]): Streets from EPPLib.
+
+        Returns:
+            dict: {
+                "street1": str or "",
+
+                "street2": str or None,
+
+                "street3": str or None,
+            }
 
         EPPLib returns 'street' as an sequence of strings.
         Meanwhile, PublicContact has this split into three
         seperate properties: street1, street2, street3.
 
-        Handles this disparity
+        Handles this disparity.
         """
         # 'zips' two lists together.
         # For instance, (('street1', 'some_value_here'),
@@ -1117,26 +1129,27 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _fetch_contacts(self, contact_data):
         """Fetch contact info."""
-        contacts = []
+        choices = PublicContact.ContactTypeChoices
+        # We expect that all these fields get populated,
+        # so we can create these early, rather than waiting.
+        contacts_dict = {
+            choices.ADMINISTRATIVE: None,
+            choices.SECURITY: None,
+            choices.TECHNICAL: None,
+        }
         for domainContact in contact_data:
             req = commands.InfoContact(id=domainContact.contact)
             data = registry.send(req, cleaned=True).res_data[0]
-            contact = {
-                "id": domainContact.contact,
-                "type": domainContact.type,
-                "auth_info": getattr(data, "auth_info", ...),
-                "cr_date": getattr(data, "cr_date", ...),
-                "disclose": getattr(data, "disclose", ...),
-                "email": getattr(data, "email", ...),
-                "fax": getattr(data, "fax", ...),
-                "postal_info": getattr(data, "postal_info", ...),
-                "statuses": getattr(data, "statuses", ...),
-                "tr_date": getattr(data, "tr_date", ...),
-                "up_date": getattr(data, "up_date", ...),
-                "voice": getattr(data, "voice", ...),
-            }
-            contacts.append({k: v for k, v in contact.items() if v is not ...})
-        return contacts
+
+            # Map the object we recieved from EPP to a PublicContact
+            mapped_object = self.map_epp_contact_to_public_contact(
+                data, domainContact.contact, domainContact.type
+            )
+
+            # Find/create it in the DB
+            in_db = self._get_or_create_public_contact(mapped_object)
+            contacts_dict[in_db.contact_type] = in_db.registry_id
+        return contacts_dict
 
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
@@ -1224,27 +1237,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 and isinstance(cleaned["_contacts"], list)
                 and len(cleaned["_contacts"]) > 0
             ):
-                choices = PublicContact.ContactTypeChoices
-                # We expect that all these fields get populated,
-                # so we can create these early, rather than waiting.
-                cleaned["contacts"] = {
-                    choices.ADMINISTRATIVE: None,
-                    choices.SECURITY: None,
-                    choices.TECHNICAL: None,
-                }
-                for domainContact in cleaned["_contacts"]:
-                    req = commands.InfoContact(id=domainContact.contact)
-                    data = registry.send(req, cleaned=True).res_data[0]
-
-                    # Map the object we recieved from EPP to a PublicContact
-                    mapped_object = self.map_epp_contact_to_public_contact(
-                        data, domainContact.contact, domainContact.type
-                    )
-
-                    # Find/create it in the DB
-                    in_db = self._get_or_create_public_contact(mapped_object)
-                    cleaned["contacts"][in_db.contact_type] = in_db.registry_id
-
+                cleaned["contacts"] = self._fetch_contacts(cleaned["_contacts"])
                 # We're only getting contacts, so retain the old
                 # hosts that existed in cache (if they existed)
                 # and pass them along.
