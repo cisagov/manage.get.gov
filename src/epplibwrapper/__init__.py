@@ -48,6 +48,7 @@ try:
     from .errors import RegistryError, ErrorCode
     from epplib.models import common
     from epplib.responses import extensions
+    from epplib import responses
 except ImportError:
     pass
 
@@ -56,6 +57,7 @@ __all__ = [
     "commands",
     "common",
     "extensions",
+    "responses",
     "ErrorCode",
     "RegistryError",
 ]
