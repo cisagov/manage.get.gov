@@ -239,7 +239,7 @@ function handleValidationClick(e) {
 (function prepareNameserverForms() {
   let serverForm = document.querySelectorAll(".server-form")
   let container = document.querySelector("#form-container")
-  let addButton = document.querySelector("#add-form")
+  let addButton = document.querySelector("#add-nameserver-form")
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
 
   let formNum = serverForm.length-1
@@ -263,26 +263,43 @@ function handleValidationClick(e) {
   }
 })();
 
+function prepareDeleteButtons() {
+  let serverForm2 = document.querySelectorAll(".ds-record")
+  let deleteButtons = document.querySelectorAll(".delete-record")
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+
+  let formNum = serverForm2.length-1
+  // Loop through each delete button and attach the click event listener
+  deleteButtons.forEach((deleteButton) => {
+    deleteButton.addEventListener('click', removeForm);
+  });
+
+  function removeForm(e){
+    console.log('lets delete stuff')
+    let formToRemove = e.target.closest(".ds-record")
+    formToRemove.remove()
+    formNum--
+    totalForms.setAttribute('value', `${formNum+1}`)
+  }
+}
 
 /**
  * An IIFE that attaches a click handler for our dynamic DNSSEC forms
  *
  */
 (function prepareDNSSECForms() {
-  let serverForm2 = document.querySelectorAll(".ds-record")
+  let serverForm = document.querySelectorAll(".ds-record")
   let container = document.querySelector("#form-container")
-  let addButton = document.querySelector("#add-form2")
+  let addButton = document.querySelector("#add-ds-form")
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
 
-  let formNum = serverForm2.length-1
+  let formNum = serverForm.length-1
   if (addButton) {
-    console.log('add button exists')
     addButton.addEventListener('click', addForm)
   }
 
   function addForm(e){
-      console.log('add button clicked' + serverForm2)
-      let newForm = serverForm2[0].cloneNode(true)
+      let newForm = serverForm[0].cloneNode(true)
       let formNumberRegex = RegExp(`form-(\\d){1}-`,'g')
       let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g')
 
@@ -328,5 +345,35 @@ function handleValidationClick(e) {
       });
 
       totalForms.setAttribute('value', `${formNum+1}`)
+
+      prepareDeleteButtons()
+  }
+})();
+
+
+/**
+ * An IIFE that attaches a click handler on the record delete button
+ *
+ */
+(function doPrepareDeleteButtons() {
+  prepareDeleteButtons()
+})();
+
+/**
+ * An IIFE that attaches a click handler on form cancel buttons
+ *
+ */
+(function prepareCancelButtons() {
+  const cancelButton = document.querySelector('.btn-cancel');
+
+  if (cancelButton) {
+      cancelButton.addEventListener('click', () => {
+          // Option 1: Reset the form
+          const form = document.querySelector('form');
+          form.reset();
+
+          // Option 2: Redirect to another page (e.g., the homepage)
+          // window.location.href = '/';
+      });
   }
 })();

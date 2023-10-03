@@ -62,8 +62,8 @@
 
       <div class="grid-row">
         <div class="grid-col">
-          {% with attr_required=True %}
-            {% input_with_errors form.pub_key add_group_class="usa-form-group--unstyled-error" %}
+          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
+            {% input_with_errors form.pub_key %}
           {% endwith %}
         </div>
       </div>
@@ -73,16 +73,27 @@
           {% comment %} {% with add_group_class="float-right-tablet" %}
             {% input_with_errors form.delete %}
           {% endwith %} {% endcomment %}
+          <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+            </svg><span class="margin-left-05">Delete</span>
+          </button>
         </div>
       </div>
 
     </fieldset>
     {% endfor %}
 
-    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-form2">
+    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-ds-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add new record</span>
+    </button>
+
+    <button
+          type="button"
+          class="usa-button usa-button--outline btn-cancel"
+      >Cancel
     </button>
 
     <button
