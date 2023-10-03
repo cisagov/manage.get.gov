@@ -634,6 +634,15 @@ class MockEppLib(TestCase):
         ],
         addrs=["1.2.3.4", "2.3.4.5"],
     )
+    infoDomainCheckHostIPCombo = fakedEppObject(
+        "nameserversubdomain.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=[
+            "ns1.nameserversubdomain.gov",
+            "ns2.nameserversubdomain.gov",
+        ],
+    )
 
     # TODO-848: Fix naming
     extendedValues = False
@@ -650,6 +659,8 @@ class MockEppLib(TestCase):
                 return MagicMock(res_data=[self.infoDomainNoHost])
         elif getattr(_request, "name", None) == "nameserverwithip.gov":
             return MagicMock(res_data=[self.infoDomainHasIP])
+        elif getattr(_request, "name", None) == "namerserversubdomain.gov":
+            return MagicMock(res_data=[self.infoDomainCheckHostIPCombo])
         # elif getattr(_request, "name", None) == "failednameserver.gov":
         #     return MagicMock(res_data=[self.infoDomainUpdateFail])
         return MagicMock(res_data=[self.mockDataInfoDomain])

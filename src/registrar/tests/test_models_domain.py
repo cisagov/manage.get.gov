@@ -1134,6 +1134,40 @@ class TestRegistrantNameservers(MockEppLib):
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
         self.assertEqual(self.mockedSendFunction.call_count, 4)
 
+    def test_is_subdomain_with_no_ip(self):
+        domain, _ = Domain.objects.get_or_create(
+            name="nameserversubdomain.gov", state=Domain.State.READY
+        )
+
+        with self.assertRaises(ValueError):
+            domain.nameservers = [
+                ("ns1.nameserversubdomain.gov",),
+                ("ns2.nameserversubdomain.gov",),
+            ]
+
+    @skip("not implemented yet")
+    def test_not_subdomain_but_has_ip(self):
+        # TO FIX - Logic
+        # domain, _ = Domain.objects.get_or_create(
+        #     name="nameserversubdomain.gov", state=Domain.State.READY
+        # )
+
+        # with self.assertRaises(ValueError):
+        #     domain.nameservers = [("ns1.cats-da-best.gov", ["1.2.3.4"]),
+        #     ("ns2.cats-da-best.gov", ["2.3.4.5"]),]
+        raise
+
+    def test_is_subdomain_but_ip_addr_not_valid(self):
+        domain, _ = Domain.objects.get_or_create(
+            name="nameserversubdomain.gov", state=Domain.State.READY
+        )
+
+        with self.assertRaises(ValueError):
+            domain.nameservers = [
+                ("ns1.nameserversubdomain.gov", ["1.2.3"]),
+                ("ns2.nameserversubdomain.gov", ["2.3.4"]),
+            ]
+
     @skip("not implemented yet")
     def test_caching_issue(self):
         raise
