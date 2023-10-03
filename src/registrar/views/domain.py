@@ -41,9 +41,6 @@ class DomainView(DomainPermissionView):
     """Domain detail overview page."""
 
     template_name = "domain_detail.html"
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["security_email"] = self.get_object().get_security_email()
 
 class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
     """Organization name and mailing address view"""

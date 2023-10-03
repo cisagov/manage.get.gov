@@ -603,10 +603,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def get_security_email(self):
         logger.info("get_security_email-> getting the contact ")
         secContact = self.security_contact
-        if secContact is not None:
-            return secContact.email
-        else: 
-            return None
+        return secContact.email
 
     def clientHoldStatus(self):
         return epp.Status(state=self.Status.CLIENT_HOLD, description="", lang="en")
