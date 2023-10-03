@@ -1145,17 +1145,16 @@ class TestRegistrantNameservers(MockEppLib):
                 ("ns2.nameserversubdomain.gov",),
             ]
 
-    @skip("not implemented yet")
     def test_not_subdomain_but_has_ip(self):
-        # TO FIX - Logic
-        # domain, _ = Domain.objects.get_or_create(
-        #     name="nameserversubdomain.gov", state=Domain.State.READY
-        # )
+        domain, _ = Domain.objects.get_or_create(
+            name="nameserversubdomain.gov", state=Domain.State.READY
+        )
 
-        # with self.assertRaises(ValueError):
-        #     domain.nameservers = [("ns1.cats-da-best.gov", ["1.2.3.4"]),
-        #     ("ns2.cats-da-best.gov", ["2.3.4.5"]),]
-        raise
+        with self.assertRaises(ValueError):
+            domain.nameservers = [
+                ("ns1.cats-da-best.gov", ["1.2.3.4"]),
+                ("ns2.cats-da-best.gov", ["2.3.4.5"]),
+            ]
 
     def test_is_subdomain_but_ip_addr_not_valid(self):
         domain, _ = Domain.objects.get_or_create(
