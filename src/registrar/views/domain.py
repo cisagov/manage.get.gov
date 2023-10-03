@@ -172,7 +172,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""
-        return reverse("domain-nameservers", kwargs={"pk": self.object.pk})
+        return reverse("domain-dns-nameservers", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
         """Adjust context from FormMixin for formsets."""
