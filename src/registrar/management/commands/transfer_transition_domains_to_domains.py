@@ -5,6 +5,7 @@ import logging
 import argparse
 
 from collections import defaultdict
+from django_fsm import TransitionNotAllowed # type: ignore
 
 from django.core.management import BaseCommand
 
@@ -64,6 +65,8 @@ class Command(BaseCommand):
         to_create = []
         # domains we UPDATED
         updated_domain_entries = []
+        # domains we SKIPPED
+        skipped_domain_entries = []
         # if we are limiting our parse (for testing purposes, keep
         # track of total rows parsed)
         total_rows_parsed = 0
@@ -81,20 +84,32 @@ Beginning Data Transfer
 
             # Check for existing domain entry
             try:
+                # DEBUG:
+                if debug_on:
+                    logger.info(f"""{termColors.WARNING}
+Processing Transition Domain: {transition_domain_name}, {transition_domain_status}{termColors.ENDC}""")
+
                 # for existing entry, update the status to the transition domain status
                 existingEntry = Domain.objects.get(
                     name=transition_domain_name
                 )
-                if transition_domain_status is TransitionDomain.StatusChoices.HOLD:
-                    existingEntry.place_client_hold()
-                else:
-                    existingEntry._remove_client_hold()
-                updated_domain_entries.append(existingEntry)
-
+                current_state = existingEntry.state
+                
                 # DEBUG:
                 if debug_on:
                     logger.info(f"""{termColors.WARNING}
-                    Updated Domain: {existingEntry}""")
+    > Found existing domain entry for: {transition_domain_name}, {current_state}{termColors.ENDC}""")
+                if transition_domain_status != current_state:
+                    if transition_domain_status == TransitionDomain.StatusChoices.ON_HOLD:
+                        existingEntry.place_client_hold(ignoreEPP=True)
+                    else:
+                        existingEntry.revert_client_hold(ignoreEPP=True)
+                    existingEntry.save()
+                    updated_domain_entries.append(existingEntry)
+                    # DEBUG:
+                    if debug_on:
+                        logger.info(f"""{termColors.WARNING}
+    >> Updated {transition_domain_name} state from '{current_state}' to '{existingEntry.state}{termColors.ENDC}'""")
             except Domain.DoesNotExist:
                 # no matching entry, make one
                 newEntry = Domain(
@@ -119,6 +134,15 @@ Domain table for domain:
                         )
                 import sys
                 sys.exit()
+            except TransitionNotAllowed as err:
+                skipped_domain_entries.append(transition_domain_name)
+                logger.info(
+                    f"""{termColors.FAIL}
+Unable to change state for {transition_domain_name}
+    TRANSITION NOT ALLOWED error message (internal):
+    {err}
+    ----------SKIPPING----------"""
+                        )
 
             # DEBUG:
             if debug_on or debug_max_entries_to_parse > 0:
@@ -145,6 +169,15 @@ f"""{termColors.OKGREEN}
 ============= FINISHED ===============
 Created {total_new_entries} transition domain entries,
 updated {total_updated_domain_entries} transition domain entries
+{termColors.ENDC}
+"""
+)
+        if len(skipped_domain_entries) > 0:
+            logger.info(
+f"""{termColors.FAIL}
+
+============= SKIPPED DOMAINS (ERRORS) ===============
+{skipped_domain_entries}
 {termColors.ENDC}
 """
 )
