@@ -141,6 +141,11 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
 
 
+class DomainDnssecForm(forms.Form):
+
+    """Form for enabling and disabling dnssec"""
+
+
 class DomainDsdataForm(forms.Form):
 
     """Form for adding or editing a security email to a domain."""

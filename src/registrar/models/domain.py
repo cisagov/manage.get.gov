@@ -707,6 +707,11 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text="Very basic info about the lifecycle of this domain object",
     )
 
+    dnssec_enabled = models.BooleanField(
+        default=False,
+        help_text="Boolean indicating if dnssec is enabled",
+    )
+
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
 

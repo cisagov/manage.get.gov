@@ -9,4 +9,42 @@
 
   <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your website, they can be certain that it's connecting to the correct server, preventing potential hijacking or tampering with your domain's records. <a href="https://www.icann.org/resources/pages/dnssec-what-is-it-why-important-2019-03-05-en">Read more about DNSSEC and why it is important.</a></p>
 
+  <form class="usa-form usa-form--extra-large" method="post">
+    {% csrf_token %}
+    {% if not domain.dnssec_enabled %}
+    <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
+      <div class="usa-alert__body">
+      It is strongly recommended that you do not enable this unless you fully understand DNSSEC and know how to set it up properly. If you make a mistake, it could cause your domain name to stop working.
+      </div>
+    </div>
+    <button
+        type="submit"
+        class="usa-button"
+        name="enable_dnssec"
+    >Enable DNSSEC</button>
+    {% elif domain.dnssecdata is None %}
+    <h2> Add DS Records </h2>
+    <p>In order to enable DNSSEC and add Delegation Signer (DS) records, you must first configure it with your DNS hosting service. Your configuration will determine whether you need to add DS Data or Key Data. Contact your DNS hosting provider if you are unsure which record type to add.</p>
+    <p>
+      <a href="{% url 'domain-dns-dnssec-dsdata' pk=domain.id %}" class="usa-button usa-button--outline">Add DS Data</a>
+      <a href="{% url 'domain-dns-dnssec-dsdata' pk=domain.id %}" class="usa-button usa-button--outline">Add DS Data</a>
+      <button
+        type="submit"
+        class="usa-button"
+        name="disable_dnssec"
+    >Cancel</button>
+    </p>
+    {% else %}
+    <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
+      <div class="usa-alert__body">
+      In order to fully disable DNSSEC on your domain, you will need to work with your DNS provider to remove your DNSSEC-related records from your zone.
+      </div>
+    </div>
+    <button
+        type="submit"
+        class="usa-button"
+        name="disable_dnssec"
+    >Disable DNSSEC</button>
+    {% endif %}
+  </form>
 {% endblock %}  {# domain_content #}

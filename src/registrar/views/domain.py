@@ -28,6 +28,7 @@ from ..forms import (
     DomainAddUserForm,
     DomainSecurityEmailForm,
     NameserverFormset,
+    DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
 )
@@ -229,11 +230,32 @@ class DomainSubdomainsView(DomainPermissionView):
     template_name = "domain_subdomains.html"
 
 
-class DomainDNSSECView(DomainPermissionView):
+class DomainDNSSECView(DomainPermissionView, FormMixin):
 
     """Domain DNSSEC editing view."""
 
     template_name = "domain_dnssec.html"
+    form_class = DomainDnssecForm
+
+    def get_success_url(self):
+        """Redirect to the DNSSEC page for the domain."""
+        return reverse("domain-dns-dnssec", kwargs={"pk": self.domain.pk})
+
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view.
+        """
+        self.domain = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            if 'enable_dnssec' in request.POST:
+                self.domain.dnssec_enabled = True
+                self.domain.save()
+            elif 'disable_dnssec' in request.POST:
+                self.domain.dnssecdata = {}
+                self.domain.dnssec_enabled = False
+                self.domain.save()
+        
+        return self.form_valid(form)
 
 
 class DomainDsdataView(DomainPermissionView, FormMixin):

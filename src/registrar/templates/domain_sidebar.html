@@ -43,6 +43,7 @@
             >
                 DNSSEC
             </a>
+            {% if domain.dnssec_enabled %}
             <ul class="usa-sidenav__sublist">
               <li class="usa-sidenav__item">
                 {% url 'domain-dns-dnssec-dsdata' pk=domain.id as url %}
@@ -62,6 +63,7 @@
                 </a>
               </li>
             </ul>
+            {% endif %}
           </li>
         </ul>
       </li>
