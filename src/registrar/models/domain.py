@@ -688,14 +688,10 @@ class Domain(TimeStampedModel, DomainHelper):
             contact_id_length > PublicContact.get_max_id_length()
             or contact_id_length < 1
         ):
-            raise ContactError(
-                "contact_id is of invalid length. "
-                "Cannot exceed 16 characters, "
-                f"got {contact_id} with a length of {contact_id_length}"
-            )
+            raise ContactError(code=ContactErrorCodes.CONTACT_ID_INVALID_LENGTH)
 
         if not isinstance(contact, eppInfo.InfoContactResultData):
-            raise ContactError("Contact must be of type InfoContactResultData")
+            raise ContactError(code=ContactErrorCodes.CONTACT_INVALID_TYPE)
 
         auth_info = contact.auth_info
         postal_info = contact.postal_info
@@ -805,7 +801,7 @@ class Domain(TimeStampedModel, DomainHelper):
             cached_contact = self.get_contact_in_keys(contacts, contact_type_choice)
             if cached_contact is None:
                 # TODO - #1103
-                raise ContactError("No contact was found in cache or the registry")
+                raise ContactError(code=ContactErrorCodes.CONTACT_NOT_FOUND)
 
             return cached_contact
 
