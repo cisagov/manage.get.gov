@@ -3,9 +3,10 @@ Feature being tested: Registry Integration
 
 This file tests the various ways in which the registrar interacts with the registry.
 """
+from typing import Mapping, Any
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from unittest.mock import patch, call
+from unittest.mock import MagicMock, patch, call
 import datetime
 from registrar.models import Domain
 
@@ -16,10 +17,12 @@ from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from .common import MockEppLib
-
+from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
     commands,
     common,
+    extensions,
+    responses,
     RegistryError,
     ErrorCode,
 )
@@ -51,8 +54,6 @@ class TestDomainCache(MockEppLib):
                     commands.InfoDomain(name="igorville.gov", auth_info=None),
                     cleaned=True,
                 ),
-                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
             any_order=False,  # Ensure calls are in the specified order
         )
@@ -74,8 +75,6 @@ class TestDomainCache(MockEppLib):
             call(
                 commands.InfoDomain(name="igorville.gov", auth_info=None), cleaned=True
             ),
-            call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-            call(commands.InfoHost(name="fake.host.com"), cleaned=True),
         ]
 
         self.mockedSendFunction.assert_has_calls(expectedCalls)
@@ -110,6 +109,19 @@ class TestDomainCache(MockEppLib):
         # get and check hosts is set correctly
         domain._get_property("hosts")
         self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+        self.assertEqual(domain._cache["contacts"], [expectedContactsDict])
+
+        # invalidate cache
+        domain._cache = {}
+
+        # get host
+        domain._get_property("hosts")
+        self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+
+        # get contacts
+        domain._get_property("contacts")
+        self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+        self.assertEqual(domain._cache["contacts"], [expectedContactsDict])
 
     def tearDown(self) -> None:
         Domain.objects.all().delete()
@@ -170,8 +182,6 @@ class TestDomainCreation(MockEppLib):
                     commands.InfoDomain(name="beef-tongue.gov", auth_info=None),
                     cleaned=True,
                 ),
-                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
             any_order=False,  # Ensure calls are in the specified order
         )
@@ -221,8 +231,6 @@ class TestDomainStatuses(MockEppLib):
                     commands.InfoDomain(name="chicken-liver.gov", auth_info=None),
                     cleaned=True,
                 ),
-                call(commands.InfoContact(id="123", auth_info=None), cleaned=True),
-                call(commands.InfoHost(name="fake.host.com"), cleaned=True),
             ],
             any_order=False,  # Ensure calls are in the specified order
         )
@@ -261,6 +269,114 @@ class TestDomainStatuses(MockEppLib):
     def tearDown(self) -> None:
         Domain.objects.all().delete()
         super().tearDown()
+
+
+class TestDomainAvailable(MockEppLib):
+    """Test Domain.available"""
+
+    # No SetUp or tearDown necessary for these tests
+
+    def test_domain_available(self):
+        """
+        Scenario: Testing whether an available domain is available
+            Should return True
+
+            Mock response to mimic EPP Response
+            Validate CheckDomain command is called
+            Validate response given mock
+        """
+
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[
+                    responses.check.CheckDomainResultData(
+                        name="available.gov", avail=True, reason=None
+                    )
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        available = Domain.available("available.gov")
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.CheckDomain(
+                        ["available.gov"],
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertTrue(available)
+        patcher.stop()
+
+    def test_domain_unavailable(self):
+        """
+        Scenario: Testing whether an unavailable domain is available
+            Should return False
+
+            Mock response to mimic EPP Response
+            Validate CheckDomain command is called
+            Validate response given mock
+        """
+
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[
+                    responses.check.CheckDomainResultData(
+                        name="unavailable.gov", avail=False, reason="In Use"
+                    )
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        available = Domain.available("unavailable.gov")
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.CheckDomain(
+                        ["unavailable.gov"],
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
+        self.assertFalse(available)
+        patcher.stop()
+
+    def test_domain_available_with_value_error(self):
+        """
+        Scenario: Testing whether an invalid domain is available
+            Should throw ValueError
+
+            Validate ValueError is raised
+        """
+        with self.assertRaises(ValueError):
+            Domain.available("invalid-string")
+
+    def test_domain_available_unsuccessful(self):
+        """
+        Scenario: Testing behavior when registry raises a RegistryError
+
+            Validate RegistryError is raised
+        """
+
+        def side_effect(_request, cleaned):
+            raise RegistryError(code=ErrorCode.COMMAND_SYNTAX_ERROR)
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        with self.assertRaises(RegistryError):
+            Domain.available("raises-error.gov")
+        patcher.stop()
 
 
 class TestRegistrantContacts(MockEppLib):
@@ -664,44 +780,372 @@ class TestRegistrantNameservers(TestCase):
         raise
 
 
-class TestRegistrantDNSSEC(TestCase):
+class TestRegistrantDNSSEC(MockEppLib):
     """Rule: Registrants may modify their secure DNS data"""
+
+    # helper function to create UpdateDomainDNSSECExtention object for verification
+    def createUpdateExtension(self, dnssecdata: extensions.DNSSECExtension):
+        return commands.UpdateDomainDNSSECExtension(
+            maxSigLife=dnssecdata.maxSigLife,
+            dsData=dnssecdata.dsData,
+            keyData=dnssecdata.keyData,
+            remDsData=None,
+            remKeyData=None,
+            remAllDsKeyData=True,
+        )
 
     def setUp(self):
         """
         Background:
-            Given the registrant is logged in
-            And the registrant is the admin on a domain
+            Given the analyst is logged in
+            And a domain exists in the registry
         """
-        pass
+        super().setUp()
+        # for the tests, need a domain in the unknown state
+        self.domain, _ = Domain.objects.get_or_create(name="fake.gov")
+        self.addDsData1 = {
+            "keyTag": 1234,
+            "alg": 3,
+            "digestType": 1,
+            "digest": "ec0bdd990b39feead889f0ba613db4adec0bdd99",
+        }
+        self.addDsData2 = {
+            "keyTag": 2345,
+            "alg": 3,
+            "digestType": 1,
+            "digest": "ec0bdd990b39feead889f0ba613db4adecb4adec",
+        }
+        self.keyDataDict = {
+            "flags": 257,
+            "protocol": 3,
+            "alg": 1,
+            "pubKey": "AQPJ////4Q==",
+        }
+        self.dnssecExtensionWithDsData: Mapping[str, Any] = {
+            "dsData": [common.DSData(**self.addDsData1)]
+        }
+        self.dnssecExtensionWithMultDsData: Mapping[str, Any] = {
+            "dsData": [
+                common.DSData(**self.addDsData1),
+                common.DSData(**self.addDsData2),
+            ],
+        }
+        self.dnssecExtensionWithKeyData: Mapping[str, Any] = {
+            "maxSigLife": 3215,
+            "keyData": [common.DNSSECKeyData(**self.keyDataDict)],
+        }
 
-    @skip("not implemented yet")
-    def test_user_adds_dns_data(self):
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
+    def test_user_adds_dnssec_data(self):
         """
-        Scenario: Registrant adds DNS data
+        Scenario: Registrant adds DNSSEC data.
+        Verify that both the setter and getter are functioning properly
+
+        This test verifies:
+        1 - setter calls UpdateDomain command
+        2 - setter adds the UpdateDNSSECExtension extension to the command
+        3 - setter causes the getter to call info domain on next get from cache
+        4 - getter properly parses dnssecdata from InfoDomain response and sets to cache
 
         """
-        raise
 
-    @skip("not implemented yet")
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[self.mockDataInfoDomain],
+                extensions=[
+                    extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        self.domain.dnssecdata = self.dnssecExtensionWithDsData
+        # get the DNS SEC extension added to the UpdateDomain command and
+        # verify that it is properly sent
+        # args[0] is the _request sent to registry
+        args, _ = mocked_send.call_args
+        # assert that the extension matches
+        self.assertEquals(
+            args[0].extensions[0],
+            self.createUpdateExtension(
+                extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+            ),
+        )
+        # test that the dnssecdata getter is functioning properly
+        dnssecdata_get = self.domain.dnssecdata
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.InfoDomain(
+                        name="fake.gov",
+                    ),
+                    cleaned=True,
+                ),
+            ]
+        )
+
+        self.assertEquals(
+            dnssecdata_get.dsData, self.dnssecExtensionWithDsData["dsData"]
+        )
+
+        patcher.stop()
+
     def test_dnssec_is_idempotent(self):
         """
         Scenario: Registrant adds DNS data twice, due to a UI glitch
 
-        """
         # implementation note: this requires seeing what happens when these are actually
         # sent like this, and then implementing appropriate mocks for any errors the
         # registry normally sends in this case
-        raise
 
-    @skip("not implemented yet")
+        This test verifies:
+        1 - UpdateDomain command called twice
+        2 - setter causes the getter to call info domain on next get from cache
+        3 - getter properly parses dnssecdata from InfoDomain response and sets to cache
+
+        """
+
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[self.mockDataInfoDomain],
+                extensions=[
+                    extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        # set the dnssecdata once
+        self.domain.dnssecdata = self.dnssecExtensionWithDsData
+        # set the dnssecdata again
+        self.domain.dnssecdata = self.dnssecExtensionWithDsData
+        # test that the dnssecdata getter is functioning properly
+        dnssecdata_get = self.domain.dnssecdata
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.InfoDomain(
+                        name="fake.gov",
+                    ),
+                    cleaned=True,
+                ),
+            ]
+        )
+
+        self.assertEquals(
+            dnssecdata_get.dsData, self.dnssecExtensionWithDsData["dsData"]
+        )
+
+        patcher.stop()
+
+    def test_user_adds_dnssec_data_multiple_dsdata(self):
+        """
+        Scenario: Registrant adds DNSSEC data with multiple DSData.
+        Verify that both the setter and getter are functioning properly
+
+        This test verifies:
+        1 - setter calls UpdateDomain command
+        2 - setter adds the UpdateDNSSECExtension extension to the command
+        3 - setter causes the getter to call info domain on next get from cache
+        4 - getter properly parses dnssecdata from InfoDomain response and sets to cache
+
+        """
+
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[self.mockDataInfoDomain],
+                extensions=[
+                    extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        self.domain.dnssecdata = self.dnssecExtensionWithMultDsData
+        # get the DNS SEC extension added to the UpdateDomain command
+        # and verify that it is properly sent
+        # args[0] is the _request sent to registry
+        args, _ = mocked_send.call_args
+        # assert that the extension matches
+        self.assertEquals(
+            args[0].extensions[0],
+            self.createUpdateExtension(
+                extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
+            ),
+        )
+        # test that the dnssecdata getter is functioning properly
+        dnssecdata_get = self.domain.dnssecdata
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.InfoDomain(
+                        name="fake.gov",
+                    ),
+                    cleaned=True,
+                ),
+            ]
+        )
+
+        self.assertEquals(
+            dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData["dsData"]
+        )
+
+        patcher.stop()
+
+    def test_user_adds_dnssec_keydata(self):
+        """
+        Scenario: Registrant adds DNSSEC data.
+        Verify that both the setter and getter are functioning properly
+
+        This test verifies:
+        1 - setter calls UpdateDomain command
+        2 - setter adds the UpdateDNSSECExtension extension to the command
+        3 - setter causes the getter to call info domain on next get from cache
+        4 - getter properly parses dnssecdata from InfoDomain response and sets to cache
+
+        """
+
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
+        def side_effect(_request, cleaned):
+            return MagicMock(
+                res_data=[self.mockDataInfoDomain],
+                extensions=[
+                    extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
+                ],
+            )
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        self.domain.dnssecdata = self.dnssecExtensionWithKeyData
+        # get the DNS SEC extension added to the UpdateDomain command
+        # and verify that it is properly sent
+        # args[0] is the _request sent to registry
+        args, _ = mocked_send.call_args
+        # assert that the extension matches
+        self.assertEquals(
+            args[0].extensions[0],
+            self.createUpdateExtension(
+                extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
+            ),
+        )
+        # test that the dnssecdata getter is functioning properly
+        dnssecdata_get = self.domain.dnssecdata
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="fake.gov",
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.InfoDomain(
+                        name="fake.gov",
+                    ),
+                    cleaned=True,
+                ),
+            ]
+        )
+
+        self.assertEquals(
+            dnssecdata_get.keyData, self.dnssecExtensionWithKeyData["keyData"]
+        )
+
+        patcher.stop()
+
     def test_update_is_unsuccessful(self):
         """
         Scenario: An update to the dns data is unsuccessful
             When an error is returned from epplibwrapper
             Then a user-friendly error message is returned for displaying on the web
         """
-        raise
+
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
+        def side_effect(_request, cleaned):
+            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        # if RegistryError is raised, view formats user-friendly
+        # error message if error is_client_error, is_session_error, or
+        # is_server_error; so test for those conditions
+        with self.assertRaises(RegistryError) as err:
+            self.domain.dnssecdata = self.dnssecExtensionWithDsData
+            self.assertTrue(
+                err.is_client_error() or err.is_session_error() or err.is_server_error()
+            )
+
+        patcher.stop()
 
 
 class TestAnalystClientHold(MockEppLib):
@@ -940,7 +1384,7 @@ class TestAnalystLock(TestCase):
         raise
 
 
-class TestAnalystDelete(TestCase):
+class TestAnalystDelete(MockEppLib):
     """Rule: Analysts may delete a domain"""
 
     def setUp(self):
@@ -949,35 +1393,99 @@ class TestAnalystDelete(TestCase):
             Given the analyst is logged in
             And a domain exists in the registry
         """
-        pass
+        super().setUp()
+        self.domain, _ = Domain.objects.get_or_create(
+            name="fake.gov", state=Domain.State.READY
+        )
+        self.domain_on_hold, _ = Domain.objects.get_or_create(
+            name="fake-on-hold.gov", state=Domain.State.ON_HOLD
+        )
 
-    @skip("not implemented yet")
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
     def test_analyst_deletes_domain(self):
         """
         Scenario: Analyst permanently deletes a domain
-            When `domain.delete()` is called
+            When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
         """
-        raise
+        # Put the domain in client hold
+        self.domain.place_client_hold()
+        # Delete it...
+        self.domain.deletedInEpp()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
 
-    @skip("not implemented yet")
-    def test_analyst_deletes_domain_idempotent(self):
-        """
-        Scenario: Analyst tries to delete an already deleted domain
-            Given `state` is already `DELETED`
-            When `domain.delete()` is called
-            Then `commands.DeleteDomain` is sent to the registry
-            And Domain returns normally (without error)
-        """
-        raise
+        # Domain itself should not be deleted
+        self.assertNotEqual(self.domain, None)
 
-    @skip("not implemented yet")
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.DELETED)
+
+        # Cache should be invalidated
+        self.assertEqual(self.domain._cache, {})
+
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
-            When an error is returned from epplibwrapper
-            Then a user-friendly error message is returned for displaying on the web
+            When a subdomain exists
+            Then a client error is returned of code 2305
             And `state` is not set to `DELETED`
         """
-        raise
+        # Desired domain
+        domain, _ = Domain.objects.get_or_create(
+            name="failDelete.gov", state=Domain.State.ON_HOLD
+        )
+        # Put the domain in client hold
+        domain.place_client_hold()
+
+        # Delete it
+        with self.assertRaises(RegistryError) as err:
+            domain.deletedInEpp()
+            self.assertTrue(
+                err.is_client_error()
+                and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+            )
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="failDelete.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
+
+        # Domain itself should not be deleted
+        self.assertNotEqual(domain, None)
+        # State should not have changed
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
+
+    def test_deletion_ready_fsm_failure(self):
+        """
+        Scenario: Domain deletion is unsuccessful due to FSM rules
+            Given state is 'ready'
+            When `domain.deletedInEpp()` is called
+            and domain is of `state` is `READY`
+            Then an FSM error is returned
+            And `state` is not set to `DELETED`
+        """
+        self.assertEqual(self.domain.state, Domain.State.READY)
+        with self.assertRaises(TransitionNotAllowed) as err:
+            self.domain.deletedInEpp()
+            self.assertTrue(
+                err.is_client_error()
+                and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION
+            )
+        # Domain should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.READY)
