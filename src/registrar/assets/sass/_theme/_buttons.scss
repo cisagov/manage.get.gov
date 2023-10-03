@@ -22,6 +22,27 @@ a.breadcrumb__back {
   }
 }
 
+a.usa-button {
+  text-decoration: none;
+}
+  
+a.usa-button--outline,
+a.usa-button--outline:visited {
+  box-shadow: inset 0 0 0 2px color('primary');
+  color: color('primary');
+}
+  
+a.usa-button--outline:hover,
+a.usa-button--outline:focus {
+  box-shadow: inset 0 0 0 2px color('primary-dark');
+  color: color('primary-dark');
+}
+  
+a.usa-button--outline:active {
+  box-shadow: inset 0 0 0 2px color('primary-darker');
+  color: color('primary-darker');
+}
+
 a.withdraw {
   background-color: color('error');
 }
@@ -60,14 +81,14 @@ a.usa-button--unstyled:visited {
   color: color('primary');
 }
   
-.dotgov-button--green {
-  background-color: color('success-dark');
-
-  &:hover {
-    background-color: color('success-darker');
+  .dotgov-button--green {
+    background-color: color('success-dark');
+  
+    &:hover {
+      background-color: color('success-darker');
+    }
+  
+    &:active {
+      background-color: color('green-80v');
+    }
   }
-
-  &:active {
-    background-color: color('green-80v');
-  }
-}

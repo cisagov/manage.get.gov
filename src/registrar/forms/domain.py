@@ -179,14 +179,15 @@ class DomainDsdataForm(forms.Form):
     # Q: Is ChoiceFiled right? Or do we need to data types other than strings
     # (TypedChoiceField)
     digest_type = forms.TypedChoiceField(
+        required=True,
         label="Digest Type",
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,
         # Q: Is this even needed or is a required=True sufficient?
-        error_messages={
-            "required": (
-                "You must select a Digest Type"
-            )
-        },
+        # error_messages={
+        #     "required": (
+        #         "You must select a Digest Type"
+        #     )
+        # },
     )
     digest = forms.CharField(
         required=True,
@@ -199,10 +200,10 @@ class DomainDsdataForm(forms.Form):
         # ],
     )
     
-    delete = forms.BooleanField(
-        required=False,
-        label="Delete",
-    )
+    # delete = forms.BooleanField(
+    #     required=False,
+    #     label="Delete",
+    # )
 
     # TODO: Conditional DS Key Data fields
     
@@ -249,10 +250,10 @@ class DomainKeydataForm(forms.Form):
         label="Pub key",
     )
     
-    delete = forms.BooleanField(
-        required=False,
-        label="Delete",
-    )
+    # delete = forms.BooleanField(
+    #     required=False,
+    #     label="Delete",
+    # )
 
     # TODO: Conditional DS Key Data fields
     

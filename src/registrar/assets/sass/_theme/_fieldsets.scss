@@ -5,7 +5,6 @@ fieldset {
     padding: units(3);
 }
 
-fieldset legend {
-    font-weight: font-weight('bold');
-    color: color('primary')
+fieldset:not(:first-child) {
+    margin-top: units(2);
 }

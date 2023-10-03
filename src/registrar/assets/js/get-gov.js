@@ -285,53 +285,47 @@ function handleValidationClick(e) {
       let newForm = serverForm2[0].cloneNode(true)
       let formNumberRegex = RegExp(`form-(\\d){1}-`,'g')
       let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g')
-      // let formExampleRegex = RegExp(`ns(\\d){1}`, 'g')
 
       formNum++
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`)
       newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data Record ${formNum+1}`)
-      // newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`)
       container.insertBefore(newForm, addButton)
 
       let inputs = newForm.querySelectorAll("input");
+      // Reset the values of each input to blank
+      inputs.forEach((input) => {
+        input.classList.remove("usa-input--error");
+        if (input.type === "text" || input.type === "number" || input.type === "password") {
+          input.value = ""; // Set the value to an empty string
+          
+        } else if (input.type === "checkbox" || input.type === "radio") {
+          input.checked = false; // Uncheck checkboxes and radios
+        }
+      });
 
-        // Reset the values of each input to blank
-        inputs.forEach((input) => {
-          input.classList.remove("usa-input--error");
-          if (input.type === "text" || input.type === "number" || input.type === "password") {
-            input.value = ""; // Set the value to an empty string
-            
-          } else if (input.type === "checkbox" || input.type === "radio") {
-            input.checked = false; // Uncheck checkboxes and radios
-          }
-        });
+      let selects = newForm.querySelectorAll("select");
+      selects.forEach((select) => {
+        select.classList.remove("usa-input--error");
+        select.selectedIndex = 0; // Set the value to an empty string
+      });
 
-        let selects = newForm.querySelectorAll("select");
+      let labels = newForm.querySelectorAll("label");
+      labels.forEach((label) => {
+        label.classList.remove("usa-label--error");
+      });
 
-        selects.forEach((select) => {
-          select.classList.remove("usa-input--error");
-          select.selectedIndex = 0; // Set the value to an empty string
-        });
+      let usaFormGroups = newForm.querySelectorAll(".usa-form-group");
+      usaFormGroups.forEach((usaFormGroup) => {
+        usaFormGroup.classList.remove("usa-form-group--error");
+      });
 
-
-        let labels = newForm.querySelectorAll("label");
-        labels.forEach((label) => {
-          label.classList.remove("usa-label--error");
-        });
-
-
-        let usaFormGroups = newForm.querySelectorAll(".usa-form-group");
-        usaFormGroups.forEach((usaFormGroup) => {
-          usaFormGroup.classList.remove("usa-form-group--error");
-        });
-
-        let usaErrorMessages = newForm.querySelectorAll(".usa-error-message");
-        usaErrorMessages.forEach((usaErrorMessage) => {
-          let parentDiv = usaErrorMessage.closest('div');
-          if (parentDiv) {
-            parentDiv.remove(); // Remove the parent div if it exists
-          }
-        });
+      let usaErrorMessages = newForm.querySelectorAll(".usa-error-message");
+      usaErrorMessages.forEach((usaErrorMessage) => {
+        let parentDiv = usaErrorMessage.closest('div');
+        if (parentDiv) {
+          parentDiv.remove(); // Remove the parent div if it exists
+        }
+      });
 
       totalForms.setAttribute('value', `${formNum+1}`)
   }

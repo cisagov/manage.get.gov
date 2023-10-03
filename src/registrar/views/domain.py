@@ -336,14 +336,14 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
         for form in formset:
             try:
-                if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
-                    dsrecord = {
-                        "keyTag": form.cleaned_data["key_tag"],
-                        "alg": form.cleaned_data["algorithm"],
-                        "digestType": form.cleaned_data["digest_type"],
-                        "digest": form.cleaned_data["digest"],
-                    }
-                    dnssecdata["dsData"].append(common.DSData(**dsrecord))
+                # if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
+                dsrecord = {
+                    "keyTag": form.cleaned_data["key_tag"],
+                    "alg": form.cleaned_data["algorithm"],
+                    "digestType": form.cleaned_data["digest_type"],
+                    "digest": form.cleaned_data["digest"],
+                }
+                dnssecdata["dsData"].append(common.DSData(**dsrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass
@@ -428,14 +428,14 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
 
         for form in formset:
             try:
-                if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
-                    keyrecord = {
-                        "flags": form.cleaned_data["flag"],
-                        "protocol": form.cleaned_data["protocol"],
-                        "alg": form.cleaned_data["algorithm"],
-                        "pubKey": form.cleaned_data["pub_key"],
-                    }
-                    dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))
+                # if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
+                keyrecord = {
+                    "flags": form.cleaned_data["flag"],
+                    "protocol": form.cleaned_data["protocol"],
+                    "alg": form.cleaned_data["algorithm"],
+                    "pubKey": form.cleaned_data["pub_key"],
+                }
+                dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass
