@@ -62,8 +62,8 @@
 
       <div class="grid-row">
         <div class="grid-col">
-          {% with attr_required=True %}
-            {% input_with_errors form.pub_key add_group_class="usa-form-group--unstyled-error" %}
+          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
+            {% input_with_errors form.pub_key %}
           {% endwith %}
         </div>
       </div>
