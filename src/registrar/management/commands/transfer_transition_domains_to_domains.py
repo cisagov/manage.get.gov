@@ -1,11 +1,9 @@
 """Load domain invitations for existing domains and their contacts."""
 
-import csv
 import logging
 import argparse
 
-from collections import defaultdict
-from django_fsm import TransitionNotAllowed # type: ignore
+from django_fsm import TransitionNotAllowed  # type: ignore
 
 from django.core.management import BaseCommand
 
@@ -30,28 +28,26 @@ class termColors:
     UNDERLINE = "\033[4m"
     BackgroundLightYellow = "\033[103m"
 
-#----------------------------------------
+
+# ----------------------------------------
 #  MAIN SCRIPT
-#----------------------------------------
+# ----------------------------------------
 class Command(BaseCommand):
-    help = """Load data from transition domain tables 
+    help = """Load data from transition domain tables
     into main domain tables."""
 
     def add_arguments(self, parser):
-
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
         parser.add_argument(
             "--limitParse", default=0, help="Sets max number of entries to load"
         )
 
-
     def handle(  # noqa: C901
         self,
         **options,
     ):
         """Load the data files and create the DomainInvitations."""
-        sep = options.get("sep")
 
         # grab command line arguments and store locally...
         debug_on = options.get("debug")
@@ -71,12 +67,13 @@ class Command(BaseCommand):
         # track of total rows parsed)
         total_rows_parsed = 0
 
-        logger.info(f"""{termColors.OKGREEN}
-========================== 
-Beginning Data Transfer 
+        logger.info(
+            f"""{termColors.OKGREEN}
 ==========================
-{termColors.ENDC}""")
-        
+Beginning Data Transfer
+==========================
+{termColors.ENDC}"""
+        )
 
         for transition_entry in TransitionDomain.objects.all():
             transition_domain_name = transition_entry.domain_name
@@ -86,21 +83,29 @@ Beginning Data Transfer
             try:
                 # DEBUG:
                 if debug_on:
-                    logger.info(f"""{termColors.WARNING}
-Processing Transition Domain: {transition_domain_name}, {transition_domain_status}{termColors.ENDC}""")
+                    logger.info(
+                        f"""{termColors.WARNING}
+Processing Transition Domain: {transition_domain_name}, {transition_domain_status}
+{termColors.ENDC}"""
+                    )
 
-                # for existing entry, update the status to the transition domain status
-                existingEntry = Domain.objects.get(
-                    name=transition_domain_name
-                )
+                # for existing entry, update the status to
+                # the transition domain status
+                existingEntry = Domain.objects.get(name=transition_domain_name)
                 current_state = existingEntry.state
-                
+
                 # DEBUG:
                 if debug_on:
-                    logger.info(f"""{termColors.WARNING}
-    > Found existing domain entry for: {transition_domain_name}, {current_state}{termColors.ENDC}""")
+                    logger.info(
+                        f"""{termColors.WARNING}
+    > Found existing domain entry for: {transition_domain_name}, {current_state}
+    {termColors.ENDC}"""
+                    )
                 if transition_domain_status != current_state:
-                    if transition_domain_status == TransitionDomain.StatusChoices.ON_HOLD:
+                    if (
+                        transition_domain_status
+                        == TransitionDomain.StatusChoices.ON_HOLD
+                    ):
                         existingEntry.place_client_hold(ignoreEPP=True)
                     else:
                         existingEntry.revert_client_hold(ignoreEPP=True)
@@ -108,13 +113,15 @@ Processing Transition Domain: {transition_domain_name}, {transition_domain_statu
                     updated_domain_entries.append(existingEntry)
                     # DEBUG:
                     if debug_on:
-                        logger.info(f"""{termColors.WARNING}
-    >> Updated {transition_domain_name} state from '{current_state}' to '{existingEntry.state}{termColors.ENDC}'""")
+                        logger.info(
+                            f"""{termColors.WARNING}
+    >> Updated {transition_domain_name} state from
+    '{current_state}' to '{existingEntry.state}{termColors.ENDC}'"""
+                        )
             except Domain.DoesNotExist:
                 # no matching entry, make one
                 newEntry = Domain(
-                    name = transition_domain_name,
-                    state = transition_domain_status
+                    name=transition_domain_name, state=transition_domain_status
                 )
                 to_create.append(newEntry)
 
@@ -131,8 +138,9 @@ Processing Transition Domain: {transition_domain_name}, {transition_domain_statu
 Domain table for domain:
 {transition_domain_name}
 ----------TERMINATING----------"""
-                        )
+                )
                 import sys
+
                 sys.exit()
             except TransitionNotAllowed as err:
                 skipped_domain_entries.append(transition_domain_name)
@@ -142,7 +150,7 @@ Unable to change state for {transition_domain_name}
     TRANSITION NOT ALLOWED error message (internal):
     {err}
     ----------SKIPPING----------"""
-                        )
+                )
 
             # DEBUG:
             if debug_on or debug_max_entries_to_parse > 0:
@@ -164,28 +172,28 @@ Unable to change state for {transition_domain_name}
         total_updated_domain_entries = len(updated_domain_entries)
 
         logger.info(
-f"""{termColors.OKGREEN}
+            f"""{termColors.OKGREEN}
 
 ============= FINISHED ===============
 Created {total_new_entries} transition domain entries,
 updated {total_updated_domain_entries} transition domain entries
 {termColors.ENDC}
 """
-)
+        )
         if len(skipped_domain_entries) > 0:
             logger.info(
-f"""{termColors.FAIL}
+                f"""{termColors.FAIL}
 
 ============= SKIPPED DOMAINS (ERRORS) ===============
 {skipped_domain_entries}
 {termColors.ENDC}
 """
-)
+            )
 
         # DEBUG:
         if debug_on:
             logger.info(
-f"""{termColors.WARNING}
+                f"""{termColors.WARNING}
 
 Created Domains:
 {to_create}
@@ -195,12 +203,11 @@ Updated Domains:
 
 {termColors.ENDC}
 """
-)
+            )
 
-
-# ----------------------------------------
-# HELPER FUNCTIONS
-# ----------------------------------------
+    # ----------------------------------------
+    # HELPER FUNCTIONS
+    # ----------------------------------------
 
     def print_debug_mode_statements(self, debug_on, debug_max_entries_to_parse):
         if debug_on:
@@ -210,7 +217,7 @@ Updated Domains:
 Detailed print statements activated.
 {termColors.ENDC}
 """
-)
+            )
         if debug_max_entries_to_parse > 0:
             logger.info(
                 f"""{termColors.OKCYAN}
@@ -219,4 +226,4 @@ Data transfer will be limited to
 {debug_max_entries_to_parse} entries.")
 {termColors.ENDC}
 """
-)
+            )
