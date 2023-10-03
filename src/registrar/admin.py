@@ -192,7 +192,7 @@ class MyUserAdmin(BaseUserAdmin):
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
-    
+
     analyst_list_display = [
         "email",
         "first_name",
