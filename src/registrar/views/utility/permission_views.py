@@ -29,20 +29,9 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     # variable name in template context for the model object
     context_object_name = "domain"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.security_email = None
-
-    def get_object(self, queryset=None):
-        obj = super().get_object(queryset)
-        self.security_email = obj.get_security_email()
-        return obj
-
+    # Adds context information for user permissions
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Store the security email
-        context["security_email"] = self.security_email
-        # Adds context information for user permissions
         user = self.request.user
         context["is_analyst_or_superuser"] = user.is_staff or user.is_superuser
         # Stored in a variable for the linter

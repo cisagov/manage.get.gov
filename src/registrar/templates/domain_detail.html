@@ -46,12 +46,7 @@
     {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
-    {% if security_email is not None and security_email != "dotgov@cisa.dhs.gov"%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url %}
-    {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value=None edit_link=url %}
-    {% endif %}
-    
+    {% include "includes/summary_item.html" with title='Security email' value=form.security_email.value edit_link=url %}
 
     {% url 'domain-users' pk=domain.id as url %}
     {% include "includes/summary_item.html" with title='User management' users='true' list=True value=domain.permissions.all edit_link=url %}
