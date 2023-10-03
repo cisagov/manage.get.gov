@@ -805,7 +805,7 @@ class Domain(TimeStampedModel, DomainHelper):
             cached_contact = self.get_contact_in_keys(contacts, contact_type_choice)
             if cached_contact is None:
                 # TODO - #1103
-                raise ContactError(code=ContactErrorCodes.CONTACT_NOT_FOUND)
+                raise ContactError("No contact was found in cache or the registry")
 
             return cached_contact
 
