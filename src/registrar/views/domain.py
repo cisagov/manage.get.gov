@@ -42,6 +42,7 @@ class DomainView(DomainPermissionView):
 
     template_name = "domain_detail.html"
 
+
 class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
     """Organization name and mailing address view"""
 
