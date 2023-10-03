@@ -626,15 +626,11 @@ class MockEppLib(TestCase):
         self, contact: PublicContact, disclose_email=False, createContact=True
     ):
         DF = common.DiscloseField
-        fields = {DF.FAX, DF.VOICE, DF.ADDR}
-
-        if not disclose_email:
-            fields.add(DF.EMAIL)
+        fields = {DF.EMAIL}
 
         di = common.Disclose(
-            flag=False,
+            flag=disclose_email,
             fields=fields,
-            types={DF.ADDR: "loc"},
         )
 
         # check docs here looks like we may have more than one address field but
