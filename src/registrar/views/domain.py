@@ -336,7 +336,7 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
         for form in formset:
             try:
-                if 'delete' in form.cleaned_data and form.cleaned_data['delete'] == True:
+                if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
                     dsrecord = {
                         "keyTag": form.cleaned_data["key_tag"],
                         "alg": form.cleaned_data["algorithm"],
@@ -352,7 +352,8 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
             errmsg = "Error updating DNSSEC data in the registry."
-            logger.error(f"{{ errmsg }}: {{ err }}")
+            logger.error(errmsg)
+            logger.error(err)
             messages.error(
                 self.request, errmsg
             )
@@ -427,7 +428,7 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
 
         for form in formset:
             try:
-                if 'delete' in form.cleaned_data and form.cleaned_data['delete'] == True:
+                if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
                     keyrecord = {
                         "flags": form.cleaned_data["flag"],
                         "protocol": form.cleaned_data["protocol"],
@@ -443,7 +444,8 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
             errmsg = "Error updating DNSSEC data in the registry."
-            logger.error(f"{{ errmsg }}: {{ err }}")
+            logger.error(errmsg)
+            logger.error(err)
             messages.error(
                 self.request, errmsg
             )
