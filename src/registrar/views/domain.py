@@ -242,7 +242,7 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
     template_name = "domain_dsdata.html"
     form_class = DomainDsdataFormset
-    
+    form = DomainDsdataForm
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
@@ -259,10 +259,6 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
             if dnssecdata.dsData is not None:
                 # Add existing nameservers as initial data
                 initial_data.extend({"key_tag": record.keyTag, "algorithm": record.alg, "digest_type": record.digestType, "digest": record.digest} for record in dnssecdata.dsData)
-
-        # form = DomainDsdataForm()
-        # delete_checkbox = form.fields['delete']
-        # initial_data.extend({delete_checkbox: delete_checkbox})
         
         return initial_data
 
@@ -285,6 +281,23 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         if formset.is_valid():
             return self.form_valid(formset)
         else:
+            #
+            #
+            #
+            # testing delete
+            try:
+                for form in formset:
+                    if 'delete' in form.cleaned_data:
+                        logger.debug(f"delete: {form.cleaned_data['delete']}")
+                    else:
+                        logger.debug(f"delete key does not exist, harcoding false")
+            except KeyError:
+                logger.debug(f"KeyError: {KeyError}")
+            #
+            #
+            #
+            #
+            
             return self.form_invalid(formset)
 
     def form_valid(self, formset):
@@ -295,7 +308,25 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
         for form in formset:
             try:
-                # TODO: build the right list of dicts to be passed
+                #
+                #
+                #
+                # untested
+                if 'delete' in form.cleaned_data:
+                    if form.cleaned_data['delete'] == False:
+                        pass
+                    else:
+                        # delete key exists and is true, delete this record
+                        logger.debug(f"delete: {form.cleaned_data['delete']}")
+                        
+                else:
+                    logger.debug(f"delete key does not exist, pass")
+                    pass
+                #
+                #
+                #
+                #
+                        
                 dsrecord = {
                     "keyTag": form.cleaned_data["key_tag"],
                     "alg": form.cleaned_data["algorithm"],

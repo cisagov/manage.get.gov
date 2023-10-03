@@ -103,3 +103,21 @@ abbr[title] {
   border-bottom: none;
   text-decoration: none;
 }
+
+@include at-media(tablet) {
+  .float-right-tablet {
+      float: right;
+  }
+  .float-left-tablet {
+     float: left;
+  }
+}
+
+@include at-media(desktop) {
+  .float-right-desktop {
+     float: right;
+  }
+  .float-left-desktop {
+     float: left;
+  }
+}

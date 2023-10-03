@@ -35,11 +35,22 @@
           {% endwith %}
         </div>
       </div>
-      {% with attr_required=True %}
-        {% input_with_errors form.digest %}
-      {% endwith %}
 
-      {% comment %} {% input_with_errors form.delete_checkbox %} {% endcomment %}
+      <div class="grid-row">
+        <div class="grid-col">
+          {% with attr_required=True %}
+            {% input_with_errors form.digest %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="grid-row margin-top-2">
+        <div class="grid-col">
+          {% with add_group_class="float-right-tablet" %}
+            {% input_with_errors form.delete %}
+          {% endwith %}
+        </div>
+      </div>
 
     </fieldset>
     {% endfor %}

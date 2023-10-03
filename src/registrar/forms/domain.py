@@ -179,7 +179,7 @@ class DomainDsdataForm(forms.Form):
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
-        choices=[(-1, "--Select--")] + ALGORITHM_CHOICES,
+        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,
         # Q: Is this even needed or is a required=True sufficient?
         # error_messages={
         #     "required": (
@@ -191,7 +191,7 @@ class DomainDsdataForm(forms.Form):
     # (TypedChoiceField)
     digest_type = forms.TypedChoiceField(
         label="Digest Type",
-        choices=[(-1, "--Select--")] + DIGEST_TYPE_CHOICES,
+        choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,
         # Q: Is this even needed or is a required=True sufficient?
         error_messages={
             "required": (
