@@ -39,7 +39,7 @@ class AvailableViewTest(TestCase):
         self.assertIn("gsa.gov", domains)
         # entries are all lowercase so GSA.GOV is not in the set
         self.assertNotIn("GSA.GOV", domains)
-        self.assertNotIn("igorville.gov", domains)
+        self.assertNotIn("igorvilleremixed.gov", domains)
         # all the entries have dots
         self.assertNotIn("gsa", domains)
 
@@ -48,7 +48,7 @@ class AvailableViewTest(TestCase):
         # input is lowercased so GSA.GOV should be found
         self.assertTrue(in_domains("GSA.GOV"))
         # This domain should not have been registered
-        self.assertFalse(in_domains("igorville.gov"))
+        self.assertFalse(in_domains("igorvilleremixed.gov"))
 
     def test_in_domains_dotgov(self):
         """Domain searches work without trailing .gov"""
@@ -56,7 +56,7 @@ class AvailableViewTest(TestCase):
         # input is lowercased so GSA.GOV should be found
         self.assertTrue(in_domains("GSA"))
         # This domain should not have been registered
-        self.assertFalse(in_domains("igorville"))
+        self.assertFalse(in_domains("igorvilleremixed"))
 
     def test_not_available_domain(self):
         """gsa.gov is not available"""
@@ -66,17 +66,17 @@ class AvailableViewTest(TestCase):
         self.assertFalse(json.loads(response.content)["available"])
 
     def test_available_domain(self):
-        """igorville.gov is still available"""
-        request = self.factory.get(API_BASE_PATH + "igorville.gov")
+        """igorvilleremixed.gov is still available"""
+        request = self.factory.get(API_BASE_PATH + "igorvilleremixed.gov")
         request.user = self.user
-        response = available(request, domain="igorville.gov")
+        response = available(request, domain="igorvilleremixed.gov")
         self.assertTrue(json.loads(response.content)["available"])
 
     def test_available_domain_dotgov(self):
-        """igorville.gov is still available even without the .gov suffix"""
-        request = self.factory.get(API_BASE_PATH + "igorville")
+        """igorvilleremixed.gov is still available even without the .gov suffix"""
+        request = self.factory.get(API_BASE_PATH + "igorvilleremixed")
         request.user = self.user
-        response = available(request, domain="igorville")
+        response = available(request, domain="igorvilleremixed")
         self.assertTrue(json.loads(response.content)["available"])
 
     def test_error_handling(self):
