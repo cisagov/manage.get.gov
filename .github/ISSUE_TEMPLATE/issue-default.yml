@@ -6,29 +6,27 @@ body:
     id: help
     attributes:
       value: |
-        > **Note**
-        > GitHub Issues use [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) for formatting.
+        > Titles should be short, descriptive, and compelling.
   - type: textarea
     id: issue
     attributes:
-      label: Issue Description
+      label: Issue description and context
       description: |
-        Describe the issue you are adding or content you are suggesting.
-        Share any next steps that should be taken our outcomes that would be beneficial.
+        Describe the issue so that someone who wasn't present for its discovery can understand the problem and why it matters. Use full sentences, plain language, and good [formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax – links and images welcome! Share desired outcomes or potential next steps.
     validations:
       required: true
   - type: textarea
-    id: additional-context
+    id: acceptance-criteria
     attributes:
-      label: Additional Context (optional)
-      description: "Include additional references (screenshots, design links, documentation, etc.) that are relevant"
+      label: Acceptance criteria
+      description: "If known, share 1-3 statements that would need to be true for this issue to be considered resolved. Use a checklist."
   - type: textarea
     id: issue-links
     attributes:
-      label: Issue Links
+      label: Other issues
       description: |
-        What other issues does this story relate to and how?
+        Add the issue number of other issues this relates to and how.
         
         Example:
-        - 🚧 Blocked by: #123
-        - 🔄 Relates to: #234
+        - 🚧 Blocks/is blocked by #123
+        - 🔄 Relates to #234
