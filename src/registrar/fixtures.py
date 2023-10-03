@@ -87,7 +87,7 @@ class UserFixture:
             "first_name": "Erin",
             "last_name": "Song",
         },
-          {
+        {
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
@@ -150,7 +150,7 @@ class UserFixture:
             "last_name": "Song-Analyst",
             "email": "erin.song+1@gsa.gov",
         },
-           {
+        {
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
