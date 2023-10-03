@@ -1098,7 +1098,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain",
             "domain-users",
             "domain-users-add",
-            "domain-nameservers",
+            "domain-dns-nameservers",
             "domain-org-name-address",
             "domain-authorizing-official",
             "domain-your-contact-information",
@@ -1119,7 +1119,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain",
             "domain-users",
             "domain-users-add",
-            "domain-nameservers",
+            "domain-dns-nameservers",
             "domain-org-name-address",
             "domain-authorizing-official",
             "domain-your-contact-information",
@@ -1308,7 +1308,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
     def test_domain_nameservers(self):
         """Can load domain's nameservers page."""
         page = self.client.get(
-            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
         )
         self.assertContains(page, "Domain name servers")
 
@@ -1319,7 +1319,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         Uses self.app WebTest because we need to interact with forms.
         """
         nameservers_page = self.app.get(
-            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
         )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1329,7 +1329,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-nameservers", kwargs={"pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
@@ -1342,7 +1342,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         Uses self.app WebTest because we need to interact with forms.
         """
         nameservers_page = self.app.get(
-            reverse("domain-nameservers", kwargs={"pk": self.domain.id})
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
         )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)

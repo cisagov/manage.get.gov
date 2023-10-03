@@ -11,7 +11,7 @@
 
   <p>You can enter your name services, as well as other DNS-related information, in the following sections:</p>
 
-  {% url 'domain-nameservers' pk=domain.id as url %}
+  {% url 'domain-dns-nameservers' pk=domain.id as url %}
   <p><a href="{{ url }}">DNS name servers</a></p>
 
   {% url 'domain-subdomains' pk=domain.id as url %}
