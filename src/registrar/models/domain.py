@@ -14,7 +14,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
+from registrar.models.utility.contact_error import ContactError
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
@@ -676,10 +676,10 @@ class Domain(TimeStampedModel, DomainHelper):
             return None
 
         if contact_type is None:
-            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
+            raise ContactError("contact_type is None")
 
         if contact_id is None:
-            raise ContactError(code=ContactErrorCodes.CONTACT_ID_NONE)
+            raise ContactError("contact_id is None")
 
         # Since contact_id is registry_id,
         # check that its the right length
@@ -688,10 +688,14 @@ class Domain(TimeStampedModel, DomainHelper):
             contact_id_length > PublicContact.get_max_id_length()
             or contact_id_length < 1
         ):
-            raise ContactError(code=ContactErrorCodes.CONTACT_ID_INVALID_LENGTH)
+            raise ContactError(
+                "contact_id is of invalid length. "
+                "Cannot exceed 16 characters, "
+                f"got {contact_id} with a length of {contact_id_length}"
+            )
 
         if not isinstance(contact, eppInfo.InfoContactResultData):
-            raise ContactError(code=ContactErrorCodes.CONTACT_INVALID_TYPE)
+            raise ContactError("Contact must be of type InfoContactResultData")
 
         auth_info = contact.auth_info
         postal_info = contact.postal_info

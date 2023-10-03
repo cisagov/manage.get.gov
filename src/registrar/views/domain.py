@@ -42,14 +42,6 @@ class DomainView(DomainPermissionView):
 
     template_name = "domain_detail.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        security_email = self.get_object().get_security_email()
-        if security_email is None or security_email == "dotgov@cisa.dhs.gov":
-            context["security_email"] = None
-            return context
-        context["security_email"] = security_email
-        return context
 
 class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
     """Organization name and mailing address view"""
