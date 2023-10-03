@@ -7,4 +7,75 @@
 
   <h1>Key Data</h1>
 
+  {% if domain.dnssecdata is not None and domain.dnssecdata.dsData is not None %}
+  <div class="usa-alert usa-alert--warning usa-alert--slim margin-bottom-3">
+    <div class="usa-alert__body">
+      <h4 class="usa-alert__heading">Warning, you cannot add Key Data</h4>
+      <p class="usa-alert__text">
+        You cannot add Key Data because you have already added DS Data. Delete your DS Data records in order to add Key Data.
+      </p>
+    </div>
+  </div>
+  {% else %}
+  {% include "includes/required_fields.html" %}
+
+  <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% for form in formset %}
+    <fieldset class="key-record">
+
+      <legend>Key Data record {{forloop.counter}}</legend>
+
+      <div class="grid-row grid-gap-2">
+        <div class="tablet:grid-col-4">
+          {% with attr_required=True %}
+            {% input_with_errors form.flag %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-4">
+          {% with attr_required=True %}
+            {% input_with_errors form.protocol %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-4">
+          {% with attr_required=True %}
+            {% input_with_errors form.algorithm %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="grid-row">
+        <div class="grid-col">
+          {% with attr_required=True %}
+            {% input_with_errors form.pub_key %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <div class="grid-row margin-top-2">
+        <div class="grid-col">
+          {% with add_group_class="float-right-tablet" %}
+            {% input_with_errors form.delete %}
+          {% endwith %}
+        </div>
+      </div>
+
+    </fieldset>
+    {% endfor %}
+
+    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-form2">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+        <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+      </svg><span class="margin-left-05">Add new record</span>
+    </button>
+
+    <button
+          type="submit"
+          class="usa-button"
+      >Save
+    </button>
+  </form>
+  {% endif %}
 {% endblock %}  {# domain_content #}

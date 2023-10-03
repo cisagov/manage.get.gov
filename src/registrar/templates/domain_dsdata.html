@@ -7,6 +7,16 @@
 
   <h1>DS Data</h1>
 
+  {% if domain.dnssecdata is not None and domain.dnssecdata.keyData is not None %}
+  <div class="usa-alert usa-alert--warning usa-alert--slim margin-bottom-3">
+    <div class="usa-alert__body">
+      <h4 class="usa-alert__heading">Warning, you cannot add DS Data</h4>
+      <p class="usa-alert__text">
+        You cannot add DS Data because you have already added Key Data. Delete your Key Data records in order to add DS Data.
+      </p>
+    </div>
+  </div>
+  {% else %}
   {% include "includes/required_fields.html" %}
 
   <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
@@ -67,5 +77,5 @@
       >Save
     </button>
   </form>
-
+  {% endif %}
 {% endblock %}  {# domain_content #}

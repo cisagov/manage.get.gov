@@ -31,6 +31,8 @@ from ..forms import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
+    DomainKeydataFormset,
+    DomainKeydataForm,
 )
 
 from epplibwrapper import (
@@ -371,11 +373,116 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
 
 
-class DomainKeydataView(DomainPermissionView):
+class DomainKeydataView(DomainPermissionView, FormMixin):
 
     """Domain DNSSEC key data editing view."""
 
     template_name = "domain_keydata.html"
+    form_class = DomainKeydataFormset
+    form = DomainKeydataForm
+
+    def get_initial(self):
+        """The initial value for the form (which is a formset here)."""
+        domain = self.get_object()
+        dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
+        initial_data = []
+        
+        if dnssecdata is not None:
+
+            if dnssecdata.dsData is not None:
+                # TODO: Throw an error
+                pass
+
+            if dnssecdata.keyData is not None:
+                # Add existing keydata as initial data
+                initial_data.extend({"flag": record.flags, "protocol": record.protocol, "algorithm": record.alg, "pub_key": record.pubKey} for record in dnssecdata.keyData)
+        
+        return initial_data
+
+    def get_success_url(self):
+        """Redirect to the Key Data page for the domain."""
+        return reverse("domain-dns-dnssec-keydata", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        """Adjust context from FormMixin for formsets."""
+        context = super().get_context_data(**kwargs)
+        # use "formset" instead of "form" for the key
+        context["formset"] = context.pop("form")
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Formset submission posts to this view."""
+        self.object = self.get_object()
+        formset = self.get_form()
+
+        if formset.is_valid():
+            return self.form_valid(formset)
+        else:
+            #
+            #
+            #
+            # testing delete
+            try:
+                for form in formset:
+                    if 'delete' in form.cleaned_data:
+                        logger.debug(f"delete: {form.cleaned_data['delete']}")
+                    else:
+                        logger.debug(f"delete key does not exist, harcoding false")
+            except KeyError:
+                logger.debug(f"KeyError: {KeyError}")
+            #
+            #
+            #
+            #
+            
+            return self.form_invalid(formset)
+
+    def form_valid(self, formset):
+        """The formset is valid, perform something with it."""
+
+        # Set the nameservers from the formset
+        dnssecdata = {"keyData":[]}
+
+        for form in formset:
+            try:
+                #
+                #
+                #
+                # untested
+                if 'delete' in form.cleaned_data:
+                    if form.cleaned_data['delete'] == False:
+                        pass
+                    else:
+                        # delete key exists and is true, delete this record
+                        logger.debug(f"delete: {form.cleaned_data['delete']}")
+                        
+                else:
+                    logger.debug(f"delete key does not exist, pass")
+                    pass
+                #
+                #
+                #
+                #
+                        
+                keyrecord = {
+                    "flags": form.cleaned_data["flag"],
+                    "protocol": form.cleaned_data["protocol"],
+                    "alg": form.cleaned_data["algorithm"],
+                    "pubKey": form.cleaned_data["pub_key"],
+                }
+                dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))
+            except KeyError:
+                # no server information in this field, skip it
+                pass
+        domain = self.get_object()
+        domain.dnssecdata = dnssecdata
+
+        messages.success(
+            self.request, "The Key Data records for this domain have been updated."
+        )
+
+        # superclass has the redirect
+        return super().form_valid(formset)
 
 
 class DomainYourContactInformationView(DomainPermissionView, FormMixin):

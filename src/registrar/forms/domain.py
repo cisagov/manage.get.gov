@@ -1,13 +1,13 @@
 """Forms for domain management."""
 
 from django import forms
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.forms import formset_factory
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 
 from ..models import Contact, DomainInformation
-
+from .common import ALGORITHM_CHOICES, DIGEST_TYPE_CHOICES, FLAG_CHOICES
 
 class DomainAddUserForm(forms.Form):
 
@@ -149,20 +149,6 @@ class DomainDnssecForm(forms.Form):
 class DomainDsdataForm(forms.Form):
 
     """Form for adding or editing a security email to a domain."""
-    
-    # Q: What are the options?
-    ALGORITHM_CHOICES = [
-        (1, "ERSA/MD5 [RSAMD5]"),
-        (2 , "Diffie-Hellman [DH]"),
-        (3 ,"DSA/SHA-1 [DSA]"),
-        (5 ,"RSA/SHA-1 [RSASHA1]"),
-    ]
-    # Q: What are the options?
-    DIGEST_TYPE_CHOICES = [
-        (0, "Reserved"),
-        (1, "SHA-256"),
-    ]
-    
     # TODO: ds key data
     # has_ds_key_data = forms.TypedChoiceField(
     #     required=True,
@@ -174,10 +160,8 @@ class DomainDsdataForm(forms.Form):
         required=True,
         label="Key tag",
         validators=[
-            RegexValidator(
-                "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Accepted range 0-65535.",
-            )
+            MinValueValidator(0, "Value must be between 0 and 65535"),
+            MaxValueValidator(65535, "Value must be between 0 and 65535"),
         ],
     )
 
@@ -230,7 +214,51 @@ DomainDsdataFormset = formset_factory(
 )
 
 
-# TODO:
-# class DomainKeyDataForm(forms.Form):
+class DomainKeydataForm(forms.Form):
+
+    """Form for adding or editing DNSSEC key data."""
+    # TODO: ds key data
+    # has_ds_key_data = forms.TypedChoiceField(
+    #     required=True,
+    #     label="DS Data record type",
+    #     choices=[(False, "DS Data"), (True, "DS Data with Key Data")],
+    # )
+
+    flag = forms.TypedChoiceField(
+        required=True,
+        label="Flag",
+        choices=FLAG_CHOICES,
+    )
+
+    protocol = forms.IntegerField(
+        max_value=3,
+        min_value=3,
+        initial=3,
+        required=True,
+        disabled=True,
+    )
+
+    algorithm = forms.TypedChoiceField(
+        required=True,
+        label="Algorithm",
+        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,
+    )
     
-#     """"""
+    pub_key = forms.CharField(
+        required=True,
+        label="Pub key",
+    )
+    
+    delete = forms.BooleanField(
+        required=False,
+        label="Delete",
+    )
+
+    # TODO: Conditional DS Key Data fields
+    
+    
+
+DomainKeydataFormset = formset_factory(
+    DomainKeydataForm,
+    extra=1,
+)
