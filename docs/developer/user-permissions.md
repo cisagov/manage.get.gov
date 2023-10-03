@@ -51,4 +51,4 @@ express what is allowed for those new roles.
 
 # Admin User Permissions
 
-Refre to [Django Admin Roles](../django-admin/roles.md)
+Refer to [Django Admin Roles](../django-admin/roles.md)
