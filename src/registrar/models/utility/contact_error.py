@@ -27,6 +27,7 @@ class ContactError(Exception):
         - 2002 CONTACT_ID_INVALID_LENGTH
         - 2003 CONTACT_INVALID_TYPE
     """
+
     # For linter
     _contact_id_error = "contact_id has an invalid length. Cannot exceed 16 characters."
     _contact_invalid_error = "Contact must be of type InfoContactResultData"
