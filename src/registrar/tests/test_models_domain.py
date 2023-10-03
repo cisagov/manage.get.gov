@@ -852,6 +852,9 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         """
 
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
         def side_effect(_request, cleaned):
             return MagicMock(
                 res_data=[self.mockDataInfoDomain],
@@ -919,6 +922,9 @@ class TestRegistrantDNSSEC(MockEppLib):
         3 - getter properly parses dnssecdata from InfoDomain response and sets to cache
 
         """
+
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
 
         def side_effect(_request, cleaned):
             return MagicMock(
@@ -988,6 +994,9 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         """
 
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
         def side_effect(_request, cleaned):
             return MagicMock(
                 res_data=[self.mockDataInfoDomain],
@@ -1054,6 +1063,9 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         """
 
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
+
         def side_effect(_request, cleaned):
             return MagicMock(
                 res_data=[self.mockDataInfoDomain],
@@ -1113,6 +1125,9 @@ class TestRegistrantDNSSEC(MockEppLib):
             When an error is returned from epplibwrapper
             Then a user-friendly error message is returned for displaying on the web
         """
+
+        # make sure to stop any other patcher so there are no conflicts
+        self.mockSendPatch.stop()
 
         def side_effect(_request, cleaned):
             raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
