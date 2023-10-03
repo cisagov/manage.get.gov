@@ -27,11 +27,11 @@
     <p>In order to enable DNSSEC and add Delegation Signer (DS) records, you must first configure it with your DNS hosting service. Your configuration will determine whether you need to add DS Data or Key Data. Contact your DNS hosting provider if you are unsure which record type to add.</p>
     <p>
       <a href="{% url 'domain-dns-dnssec-dsdata' pk=domain.id %}" class="usa-button usa-button--outline">Add DS Data</a>
-      <a href="{% url 'domain-dns-dnssec-dsdata' pk=domain.id %}" class="usa-button usa-button--outline">Add DS Data</a>
+      <a href="{% url 'domain-dns-dnssec-keydata' pk=domain.id %}" class="usa-button usa-button--outline">Add Key Data</a>
       <button
         type="submit"
         class="usa-button"
-        name="disable_dnssec"
+        name="cancel"
     >Cancel</button>
     </p>
     {% else %}

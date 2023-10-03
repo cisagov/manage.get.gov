@@ -38,6 +38,7 @@ from ..forms import (
 from epplibwrapper import (
     common,
     extensions,
+    RegistryError,
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
@@ -252,8 +253,18 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
             if 'enable_dnssec' in request.POST:
                 self.domain.dnssec_enabled = True
                 self.domain.save()
+            elif 'cancel' in request.POST:
+                self.domain.dnssec_enabled = False
+                self.domain.save()                
             elif 'disable_dnssec' in request.POST:
-                self.domain.dnssecdata = {}
+                try:
+                    self.domain.dnssecdata = {}
+                except RegistryError as err:
+                    errmsg = "Error removing existing DNSSEC record(s)."
+                    logger.error(errmsg + ": " + err)
+                    messages.error(
+                        self.request, errmsg
+                    )
                 self.domain.dnssec_enabled = False
                 self.domain.save()
         
@@ -305,23 +316,6 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         if formset.is_valid():
             return self.form_valid(formset)
         else:
-            #
-            #
-            #
-            # testing delete
-            try:
-                for form in formset:
-                    if 'delete' in form.cleaned_data:
-                        logger.debug(f"delete: {form.cleaned_data['delete']}")
-                    else:
-                        logger.debug(f"delete key does not exist, harcoding false")
-            except KeyError:
-                logger.debug(f"KeyError: {KeyError}")
-            #
-            #
-            #
-            #
-            
             return self.form_invalid(formset)
 
     def form_valid(self, formset):
@@ -332,45 +326,34 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
 
         for form in formset:
             try:
-                #
-                #
-                #
-                # untested
-                if 'delete' in form.cleaned_data:
-                    if form.cleaned_data['delete'] == False:
-                        pass
-                    else:
-                        # delete key exists and is true, delete this record
-                        logger.debug(f"delete: {form.cleaned_data['delete']}")
-                        
-                else:
-                    logger.debug(f"delete key does not exist, pass")
-                    pass
-                #
-                #
-                #
-                #
-                        
-                dsrecord = {
-                    "keyTag": form.cleaned_data["key_tag"],
-                    "alg": form.cleaned_data["algorithm"],
-                    "digestType": form.cleaned_data["digest_type"],
-                    "digest": form.cleaned_data["digest"],
-                }
-                dnssecdata["dsData"].append(common.DSData(**dsrecord))
+                if 'delete' in form.cleaned_data and form.cleaned_data['delete'] == True:
+                    dsrecord = {
+                        "keyTag": form.cleaned_data["key_tag"],
+                        "alg": form.cleaned_data["algorithm"],
+                        "digestType": form.cleaned_data["digest_type"],
+                        "digest": form.cleaned_data["digest"],
+                    }
+                    dnssecdata["dsData"].append(common.DSData(**dsrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
-        domain.dnssecdata = dnssecdata
-
-        messages.success(
-            self.request, "The DS Data records for this domain have been updated."
-        )
-
-        # superclass has the redirect
-        return super().form_valid(formset)
-
+        try:
+            domain.dnssecdata = dnssecdata
+        except RegistryError as err:
+            errmsg = "Error updating DNSSEC data in the registry."
+            logger.error(f"{{ errmsg }}: {{ err }}")
+            messages.error(
+                self.request, errmsg
+            )
+            return self.form_invalid(formset)
+        else:
+            messages.success(
+                self.request, "The DS Data records for this domain have been updated."
+            )
+            # superclass has the redirect
+            return super().form_valid(formset)
+        
 
 
 class DomainKeydataView(DomainPermissionView, FormMixin):
@@ -418,23 +401,6 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
         if formset.is_valid():
             return self.form_valid(formset)
         else:
-            #
-            #
-            #
-            # testing delete
-            try:
-                for form in formset:
-                    if 'delete' in form.cleaned_data:
-                        logger.debug(f"delete: {form.cleaned_data['delete']}")
-                    else:
-                        logger.debug(f"delete key does not exist, harcoding false")
-            except KeyError:
-                logger.debug(f"KeyError: {KeyError}")
-            #
-            #
-            #
-            #
-            
             return self.form_invalid(formset)
 
     def form_valid(self, formset):
@@ -445,44 +411,33 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
 
         for form in formset:
             try:
-                #
-                #
-                #
-                # untested
-                if 'delete' in form.cleaned_data:
-                    if form.cleaned_data['delete'] == False:
-                        pass
-                    else:
-                        # delete key exists and is true, delete this record
-                        logger.debug(f"delete: {form.cleaned_data['delete']}")
-                        
-                else:
-                    logger.debug(f"delete key does not exist, pass")
-                    pass
-                #
-                #
-                #
-                #
-                        
-                keyrecord = {
-                    "flags": form.cleaned_data["flag"],
-                    "protocol": form.cleaned_data["protocol"],
-                    "alg": form.cleaned_data["algorithm"],
-                    "pubKey": form.cleaned_data["pub_key"],
-                }
-                dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))
+                if 'delete' in form.cleaned_data and form.cleaned_data['delete'] == True:
+                    keyrecord = {
+                        "flags": form.cleaned_data["flag"],
+                        "protocol": form.cleaned_data["protocol"],
+                        "alg": form.cleaned_data["algorithm"],
+                        "pubKey": form.cleaned_data["pub_key"],
+                    }
+                    dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
-        domain.dnssecdata = dnssecdata
-
-        messages.success(
-            self.request, "The Key Data records for this domain have been updated."
-        )
-
-        # superclass has the redirect
-        return super().form_valid(formset)
+        try:
+            domain.dnssecdata = dnssecdata
+        except RegistryError as err:
+            errmsg = "Error updating DNSSEC data in the registry."
+            logger.error(f"{{ errmsg }}: {{ err }}")
+            messages.error(
+                self.request, errmsg
+            )
+            return self.form_invalid(formset)
+        else:
+            messages.success(
+                self.request, "The Key Data records for this domain have been updated."
+            )
+            # superclass has the redirect
+            return super().form_valid(formset)
 
 
 class DomainYourContactInformationView(DomainPermissionView, FormMixin):
