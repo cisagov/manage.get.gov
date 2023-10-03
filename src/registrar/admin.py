@@ -192,6 +192,14 @@ class MyUserAdmin(BaseUserAdmin):
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
+    
+    analyst_list_display = [
+        "email",
+        "first_name",
+        "last_name",
+        "group",
+        "status",
+    ]
 
     # NOT all fields are readonly for admin, otherwise we would have
     # set this at the permissions level. The exception is 'status'
@@ -219,13 +227,7 @@ class MyUserAdmin(BaseUserAdmin):
             return super().get_list_display(request)
 
         # Customize the list display for analysts
-        return (
-            "email",
-            "first_name",
-            "last_name",
-            "group",
-            "status",
-        )
+        return self.analyst_list_display
 
     def get_fieldsets(self, request, obj=None):
         if request.user.has_perm("registrar.full_access_permission"):

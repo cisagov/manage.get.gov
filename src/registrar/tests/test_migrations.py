@@ -31,7 +31,7 @@ class TestGroups(TestCase):
             UserGroup.objects.filter(name="full_access_group"), [full_access_group]
         )
 
-        # Test permissions for cisa_analysts)group
+        # Test permissions for cisa_analysts_group
         # Define the expected permission codenames
         expected_permissions = [
             "view_logentry",

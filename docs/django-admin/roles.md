@@ -7,6 +7,8 @@ Permissions on these roles are set through groups:
 groups and the methods to create them are defined in
 our `user_group` model and run in a migration.
 
+For more details, refer to the [user group model](../../src/registrar/models/user_group.py).
+
 ## Editing group permissions through code
 
 We can edit and deploy new group permissions by:
