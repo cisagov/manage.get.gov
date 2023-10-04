@@ -750,7 +750,6 @@ class TestRegistrantContacts(MockEppLib):
             Then Domain sends `commands.CreateContact` to the registry
             And the field `disclose` is set to false for DF.EMAIL
         """
-        self.maxDiff = None
         domain, _ = Domain.objects.get_or_create(name="defaultsecurity.gov")
         expectedSecContact = PublicContact.get_default_security()
         expectedSecContact.domain = domain
@@ -764,6 +763,27 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
         # Confirm that we are getting a default email
         self.assertEqual(domain.security_contact.email, expectedSecContact.email)
+
+    def test_not_disclosed_on_default_technical_contact(self):
+        """
+        Scenario: Registrant creates a new domain with no technical contact
+            When `domain.technical_contact.email` is equal to the default
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to false for DF.EMAIL
+        """
+        domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
+        expectedTechContact = PublicContact.get_default_technical()
+        expectedTechContact.domain = domain
+        expectedTechContact.registry_id = "defaultTech"
+        domain.technical_contact = expectedTechContact
+
+        expectedCreateCommand = self._convertPublicContactToEpp(
+            expectedTechContact, disclose_email=False
+        )
+
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+        # Confirm that we are getting a default email
+        self.assertEqual(domain.technical_contact.email, expectedTechContact.email)
 
     def test_is_disclosed_on_security_contact(self):
         """
