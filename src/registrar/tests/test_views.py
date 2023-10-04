@@ -1487,7 +1487,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = result.follow()
         self.assertContains(
-            success_page, "The security email for this domain have been updated"
+            success_page, "The security email for this domain has been updated"
         )
 
     def test_domain_overview_blocked_for_ineligible_user(self):
