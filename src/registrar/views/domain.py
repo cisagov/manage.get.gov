@@ -51,6 +51,7 @@ class DomainView(DomainPermissionView):
         context["security_email"] = security_email
         return context
 
+
 class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
     """Organization name and mailing address view"""
 

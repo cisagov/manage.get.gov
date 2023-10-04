@@ -38,7 +38,7 @@ class ContactError(Exception):
         ContactErrorCodes.CONTACT_ID_NONE: "contact_id is None",
         ContactErrorCodes.CONTACT_ID_INVALID_LENGTH: _contact_id_error,
         ContactErrorCodes.CONTACT_INVALID_TYPE: _contact_invalid_error,
-        ContactErrorCodes.CONTACT_NOT_FOUND: _contact_not_found_error
+        ContactErrorCodes.CONTACT_NOT_FOUND: _contact_not_found_error,
     }
 
     def __init__(self, *args, code=None, **kwargs):
