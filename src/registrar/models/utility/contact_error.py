@@ -2,8 +2,7 @@ from enum import IntEnum
 
 
 class ContactErrorCodes(IntEnum):
-    """
-    Used in the ContactError class for
+    """Used in the ContactError class for
     error mapping.
 
     Overview of contact error codes:
