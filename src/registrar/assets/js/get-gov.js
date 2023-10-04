@@ -237,48 +237,56 @@ function handleValidationClick(e) {
  * it everywhere.
  */
 (function prepareNameserverForms() {
-  let serverForm = document.querySelectorAll(".server-form")
-  let container = document.querySelector("#form-container")
-  let addButton = document.querySelector("#add-nameserver-form")
-  let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+  let serverForm = document.querySelectorAll(".server-form");
+  let container = document.querySelector("#form-container");
+  let addButton = document.querySelector("#add-nameserver-form");
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
 
-  let formNum = serverForm.length-1
+  let formNum = serverForm.length-1;
   if (addButton)
-    addButton.addEventListener('click', addForm)
+    addButton.addEventListener('click', addForm);
 
   function addForm(e){
-      let newForm = serverForm[2].cloneNode(true)
-      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g')
-      let formLabelRegex = RegExp(`Name server (\\d){1}`, 'g')
-      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g')
+      let newForm = serverForm[2].cloneNode(true);
+      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
+      let formLabelRegex = RegExp(`Name server (\\d){1}`, 'g');
+      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
 
-      formNum++
-      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`)
-      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Name server ${formNum+1}`)
-      newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`)
-      container.insertBefore(newForm, addButton)
-      newForm.querySelector("input").value = ""
+      formNum++;
+      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`);
+      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Name server ${formNum+1}`);
+      newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`);
+      container.insertBefore(newForm, addButton);
+      newForm.querySelector("input").value = "";
 
-      totalForms.setAttribute('value', `${formNum+1}`)
+      totalForms.setAttribute('value', `${formNum+1}`);
   }
 })();
 
 function prepareDeleteButtons() {
-  let serverForm2 = document.querySelectorAll(".ds-record")
-  let deleteButtons = document.querySelectorAll(".delete-record")
-  let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+  let deleteButtons = document.querySelectorAll(".delete-record");
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
 
-  let formNum = serverForm2.length-1
   // Loop through each delete button and attach the click event listener
   deleteButtons.forEach((deleteButton) => {
     deleteButton.addEventListener('click', removeForm);
   });
 
   function removeForm(e){
-    let formToRemove = e.target.closest(".ds-record")
-    formToRemove.remove()
-    formNum--
-    totalForms.setAttribute('value', `${formNum+1}`)
+    let formToRemove = e.target.closest(".ds-record");
+    formToRemove.remove();
+    let forms = document.querySelectorAll(".ds-record");
+    let formNum2 = forms.length;
+    totalForms.setAttribute('value', `${formNum2}`);
+
+    // We need to fix the indicies of every existing form otherwise 
+    // the frontend and backend will not match and will error on submit
+    // let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
+    // let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
+    // forms.forEach((form, index) => {
+    //   form.innerHTML = form.innerHTML.replace(formNumberRegex, `form-${index}-`);
+    //   form.innerHTML = form.innerHTML.replace(formLabelRegex, `DS Data Record ${index+1}`);
+    // });
   }
 }
 
@@ -287,27 +295,29 @@ function prepareDeleteButtons() {
  *
  */
 (function prepareDNSSECForms() {
-  let serverForm = document.querySelectorAll(".ds-record")
-  let container = document.querySelector("#form-container")
-  let addButton = document.querySelector("#add-ds-form")
-  let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+  let serverForm = document.querySelectorAll(".ds-record");
+  let container = document.querySelector("#form-container");
+  let addButton = document.querySelector("#add-ds-form");
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
 
-  prepareDeleteButtons()
+  // Attach click event listener on the delete buttons of the existing forms
+  prepareDeleteButtons();
 
-  let formNum = serverForm.length-1
   if (addButton) {
-    addButton.addEventListener('click', addForm)
+    addButton.addEventListener('click', addForm);
   }
 
   function addForm(e){
-      let newForm = serverForm[0].cloneNode(true)
-      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g')
-      let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g')
+      let forms = document.querySelectorAll(".ds-record");
+      let formNum = forms.length;
+      let newForm = serverForm[0].cloneNode(true);
+      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
+      let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
 
-      formNum++
-      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`)
-      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data Record ${formNum+1}`)
-      container.insertBefore(newForm, addButton)
+      formNum++;
+      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum-1}-`);
+      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data Record ${formNum}`);
+      container.insertBefore(newForm, addButton);
 
       let inputs = newForm.querySelectorAll("input");
       // Reset the values of each input to blank
@@ -321,6 +331,7 @@ function prepareDeleteButtons() {
         }
       });
 
+      // Reset any existing validation classes
       let selects = newForm.querySelectorAll("select");
       selects.forEach((select) => {
         select.classList.remove("usa-input--error");
@@ -337,6 +348,7 @@ function prepareDeleteButtons() {
         usaFormGroup.classList.remove("usa-form-group--error");
       });
 
+      // Remove any existing error messages
       let usaErrorMessages = newForm.querySelectorAll(".usa-error-message");
       usaErrorMessages.forEach((usaErrorMessage) => {
         let parentDiv = usaErrorMessage.closest('div');
@@ -345,9 +357,17 @@ function prepareDeleteButtons() {
         }
       });
 
-      totalForms.setAttribute('value', `${formNum+1}`)
+      totalForms.setAttribute('value', `${formNum}`);
 
-      prepareDeleteButtons()
+      // Attach click event listener on the delete buttons of the new form
+      prepareDeleteButtons();
+
+      // We need to fix the indicies of every existing form otherwise 
+      // the frontend and backend will not match and will error on submit
+      // forms.forEach((form, index) => {
+      //   form.innerHTML = form.innerHTML.replace(formNumberRegex, `form-${index}-`);
+      //   form.innerHTML = form.innerHTML.replace(formLabelRegex, `DS Data Record ${index+1}`);
+      // });
   }
 })();
 
