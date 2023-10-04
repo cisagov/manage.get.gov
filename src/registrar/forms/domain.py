@@ -148,13 +148,7 @@ class DomainDnssecForm(forms.Form):
 
 class DomainDsdataForm(forms.Form):
 
-    """Form for adding or editing a security email to a domain."""
-    # TODO: ds key data
-    # has_ds_key_data = forms.TypedChoiceField(
-    #     required=True,
-    #     label="DS Data record type",
-    #     choices=[(False, "DS Data"), (True, "DS Data with Key Data")],
-    # )
+    """Form for adding or editing DNSSEC DS Data to a domain."""
 
     key_tag = forms.IntegerField(
         required=True,
@@ -164,45 +158,25 @@ class DomainDsdataForm(forms.Form):
             MaxValueValidator(65535, "Value must be between 0 and 65535"),
         ],
     )
-
+    
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,
-        # Q: Is this even needed or is a required=True sufficient?
-        # error_messages={
-        #     "required": (
-        #         "You must select an Algorithm"
-        #     )
-        # },
     )
-    # Q: Is ChoiceFiled right? Or do we need to data types other than strings
-    # (TypedChoiceField)
+
     digest_type = forms.TypedChoiceField(
         required=True,
         label="Digest Type",
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,
-        # Q: Is this even needed or is a required=True sufficient?
-        # error_messages={
-        #     "required": (
-        #         "You must select a Digest Type"
-        #     )
-        # },
     )
+
     digest = forms.CharField(
         required=True,
         label="Digest",
-        # validators=[
-        #     RegexValidator(
-        #         "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-        #         message="Accepted range 0-65535.",
-        #     )
-        # ],
+        # TODO: Validation of digests in registrar?
     )
 
-    # TODO: Conditional DS Key Data fields
-    
-    
 
 DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
@@ -211,7 +185,7 @@ DomainDsdataFormset = formset_factory(
 
 class DomainKeydataForm(forms.Form):
 
-    """Form for adding or editing DNSSEC key data."""
+    """Form for adding or editing DNSSEC Key Data to a domain."""
 
     flag = forms.TypedChoiceField(
         required=True,
