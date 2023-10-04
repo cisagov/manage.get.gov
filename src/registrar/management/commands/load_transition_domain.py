@@ -87,7 +87,7 @@ class Command(BaseCommand):
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
         parser.add_argument(
-            "--limitParse", default=0, help="Sets max number of entries to load"
+            "--limitParse", default=0, help="Sets max number of entries to load (0 to load all of them)"
         )
 
         parser.add_argument(
