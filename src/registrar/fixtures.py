@@ -83,6 +83,16 @@ class UserFixture:
             "first_name": "Nicolle",
             "last_name": "LeClair",
         },
+        {
+            "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
+            "first_name": "Erin",
+            "last_name": "Song",
+        },
+        {
+            "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
+            "first_name": "Kristina",
+            "last_name": "Yin",
+        },
     ]
 
     STAFF = [
@@ -133,6 +143,18 @@ class UserFixture:
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
             "email": "nicolle.leclair@ecstech.com",
+        },
+        {
+            "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
+            "first_name": "Erin-Analyst",
+            "last_name": "Song-Analyst",
+            "email": "erin.song+1@gsa.gov",
+        },
+        {
+            "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
+            "first_name": "Kristina-Analyst",
+            "last_name": "Yin-Analyst",
+            "email": "kristina.yin+1@gsa.gov",
         },
     ]
 
