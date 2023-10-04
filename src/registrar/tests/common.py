@@ -647,6 +647,25 @@ class MockEppLib(TestCase):
         registrant="regContact",
     )
 
+    InfoDomainWithDefaultSecurityContact = fakedEppObject(
+        "fakepw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[
+            common.DomainContact(
+                contact="defaultSec",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            )
+        ],
+        hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+    )
+
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData(
+        "defaultSec", "dotgov@cisa.dhs.gov"
+    )
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData(
         "securityContact", "security@mail.gov"
     )
@@ -681,6 +700,8 @@ class MockEppLib(TestCase):
                 return MagicMock(res_data=[self.infoDomainNoContact])
             elif getattr(_request, "name", None) == "freeman.gov":
                 return MagicMock(res_data=[self.InfoDomainWithContacts])
+            elif getattr(_request, "name", None) == "defaultsecurity.gov":
+                return MagicMock(res_data=[self.InfoDomainWithDefaultSecurityContact])
             else:
                 return MagicMock(res_data=[self.mockDataInfoDomain])
         elif isinstance(_request, commands.InfoContact):
@@ -696,6 +717,8 @@ class MockEppLib(TestCase):
                     mocked_result = self.mockAdministrativeContact
                 case "regContact":
                     mocked_result = self.mockRegistrantContact
+                case "defaultSec":
+                    mocked_result = self.mockDefaultSecurityContact
                 case _:
                     # Default contact return
                     mocked_result = self.mockDataInfoContact
