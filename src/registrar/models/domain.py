@@ -452,13 +452,9 @@ class Domain(TimeStampedModel, DomainHelper):
             len(oldNameservers) - successDeletedCount + successCreatedCount
         )
 
-        # successTotalNameservers = self._update_delete_create_hosts(
-        #     deleted_values, updated_values, new_values, oldNameservers
-        # )
 
         if successTotalNameservers < 2:
             try:
-                print("DNS_NEEDED: We have less than 2 nameservers")
                 self.dns_needed()
                 self.save()
             except Exception as err:
