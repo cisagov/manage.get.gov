@@ -7,7 +7,7 @@ from django.forms import formset_factory
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 
 from ..models import Contact, DomainInformation
-from .common import ALGORITHM_CHOICES, DIGEST_TYPE_CHOICES, FLAG_CHOICES
+from .common import ALGORITHM_CHOICES, DIGEST_TYPE_CHOICES, FLAG_CHOICES, PROTOCOL_CHOICES
 
 class DomainAddUserForm(forms.Form):
 
@@ -230,13 +230,18 @@ class DomainKeydataForm(forms.Form):
         choices=FLAG_CHOICES,
     )
 
-    protocol = forms.IntegerField(
-        max_value=3,
-        min_value=3,
-        initial=3,
+    protocol = forms.TypedChoiceField(
         required=True,
-        disabled=True,
+        label="Protocol",
+        choices=PROTOCOL_CHOICES,
     )
+    # protocol = forms.IntegerField(
+    #     max_value=3,
+    #     min_value=3,
+    #     initial=3,
+    #     required=True,
+    #     disabled=True,
+    # )
 
     algorithm = forms.TypedChoiceField(
         required=True,
