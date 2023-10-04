@@ -859,7 +859,7 @@ class TestRegistrantNameservers(MockEppLib):
         """
 
         # Mock is set to return 3 nameservers on infodomain
-        self.extendedValues = True
+        self.threeNS = True
         self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
         expectedCalls = [
             # calls info domain, and info on all hosts
@@ -900,7 +900,7 @@ class TestRegistrantNameservers(MockEppLib):
             And `domain.is_active` returns False
 
         """
-        self.extendedValues = True
+        self.threeNS = True
         self.domain.ready()
         self.domain.nameservers = [(self.nameserver1,)]
         expectedCalls = [
@@ -952,7 +952,7 @@ class TestRegistrantNameservers(MockEppLib):
             And `commands.UpdateDomain` is sent to add #4 and #5 plus remove #2 and #3
             And `commands.DeleteHost` is sent to delete #2 and #3
         """
-        self.extendedValues = True
+        self.threeNS = True
         self.domain.ready()
         self.domain.nameservers = [
             (self.nameserver1,),
@@ -1112,7 +1112,7 @@ class TestRegistrantNameservers(MockEppLib):
         # sent like this, and then implementing appropriate mocks for any errors the
         # registry normally sends in this case
 
-        self.extendedValues = True
+        self.threeNS = True
 
         # Checking that it doesn't create or update even if out of order
         self.domain.nameservers = [
@@ -1194,7 +1194,7 @@ class TestRegistrantNameservers(MockEppLib):
         # print(self.mockedSendFunction.call_args_list)
 
     def tearDown(self):
-        self.extendedValues = False
+        self.threeNS = False
         return super().tearDown()
 
 

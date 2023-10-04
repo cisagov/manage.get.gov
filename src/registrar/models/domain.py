@@ -277,14 +277,12 @@ class Domain(TimeStampedModel, DomainHelper):
         return self.name in nameserver
 
     def checkHostIPCombo(self, nameserver: str, ip: list):
-        print("Do I come into checkHostIPCombo")
         if self.isSubdomain(nameserver) and (ip is None or ip == []):
             raise ValueError(
                 "Nameserver %s needs to have an "
                 "IP address because it is a subdomain" % nameserver
             )
         elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
-            print("In 2nd else statement")
             raise ValueError(
                 "Nameserver %s cannot be linked "
                 "because %s is not a subdomain" % (nameserver, ip)

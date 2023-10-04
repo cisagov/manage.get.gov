@@ -644,14 +644,15 @@ class MockEppLib(TestCase):
         ],
     )
 
-    # TODO-848: Fix naming
-    extendedValues = False
+    # Bc we have multiple tests utilizing 3 nameservers,
+    # easier to set a flag for it
+    threeNS = False
 
     def _getattrInfoDomain(self, _request):
         if getattr(_request, "name", None) == "security.gov":
             return MagicMock(res_data=[self.infoDomainNoContact])
         elif getattr(_request, "name", None) == "my-nameserver.gov":
-            if self.extendedValues:
+            if self.threeNS:
                 return MagicMock(res_data=[self.infoDomainThreeHosts])
             elif self.mockedSendFunction.call_count == 5:
                 return MagicMock(res_data=[self.infoDomainTwoHosts])
