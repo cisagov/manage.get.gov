@@ -741,6 +741,7 @@ class TestRegistrantContacts(MockEppLib):
                 contact, disclose_email=is_security
             )
 
+            # Should only be disclosed if the type is security
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
 
     def test_not_disclosed_on_default_security_contact(self):
