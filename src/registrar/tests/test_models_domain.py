@@ -629,6 +629,102 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
 
+    @skip("Dependent on #850")
+    def test_not_disclosed_on_other_contacts(self):
+        """
+        Scenario: Registrant creates a new domain with multiple contacts
+            When `domain` has registrant, admin, technical, 
+                and security contacts
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to false for DF.EMAIL
+                on all fields except security
+        """
+        # Generates a domain with four existing contacts
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        # Adds default emails to all fields
+        domain.addAllDefaults()
+        # Security contact should be disclosed
+        domain.security_contact.email = "test123@mail.gov"
+        # TODO - uncomment below when #850 is merged
+        domain.registrant_contact = domain.get_default_registrant_contact()
+
+        expected_admin = domain.get_default_administrative_contact()
+        expected_registrant = domain.get_default_registrant_contact()
+        expected_security = domain.get_default_security_contact()
+        expected_tech = domain.get_default_technical_contact()
+
+        contacts = [
+            expected_admin,
+            expected_registrant,
+            expected_security,
+            expected_tech
+        ]
+
+        for contact in contacts:
+            id = PublicContact.objects.get(
+                domain=self.domain,
+                contact_type=contact.contact_type_choice,
+            ).registry_id
+            contact.registry_id = id
+
+            expectedCreateCommand = self._convertPublicContactToEpp(
+                contact, disclose_email=False
+            )
+        
+            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+
+    @skip("Dependent on #850")
+    def test_not_disclosed_on_default_security_contact(self):
+        """
+        Scenario: Registrant creates a new domain with no security email
+            When `domain.security_contact.email` is equal to the default
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to false for DF.EMAIL
+        """
+        expectedSecContact = PublicContact.get_default_security()
+        expectedSecContact.domain = self.domain
+        self.domain.security_contact.email = "test123@mail.gov"
+
+        id = PublicContact.objects.get(
+            domain=self.domain,
+            contact_type=PublicContact.ContactTypeChoices.SECURITY,
+        ).registry_id
+
+        expectedSecContact.registry_id = id
+        expectedCreateCommand = self._convertPublicContactToEpp(
+            expectedSecContact, disclose_email=True
+        )
+        
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+        # Confirm that we are getting a default object
+        self.assertEqual(self.domain.security_contact, expectedSecContact)
+
+    @skip("Dependent on #850")
+    def test_is_disclosed_on_security_contact(self):
+        """
+        Scenario: Registrant creates a new domain with a security email
+            When `domain.security_contact.email` is set to a valid email
+                and is not the default
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to true for DF.EMAIL
+        """
+        expectedSecContact = PublicContact.get_default_security()
+        expectedSecContact.domain = self.domain
+
+        id = PublicContact.objects.get(
+            domain=self.domain,
+            contact_type=PublicContact.ContactTypeChoices.SECURITY,
+        ).registry_id
+
+        expectedSecContact.registry_id = id
+        expectedCreateCommand = self._convertPublicContactToEpp(
+            expectedSecContact, disclose_email=False
+        )
+        
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+        # Confirm that we are getting a default object
+        self.assertEqual(self.domain.security_contact, expectedSecContact)
+
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
         """
