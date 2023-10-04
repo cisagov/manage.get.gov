@@ -46,6 +46,7 @@ class UserFixture:
             "username": "70488e0a-e937-4894-a28c-16f5949effd4",
             "first_name": "Gaby",
             "last_name": "DiSarli",
+            "email": "gaby@truss.works",
         },
         {
             "username": "83c2b6dd-20a2-4cac-bb40-e22a72d2955c",
@@ -126,7 +127,6 @@ class UserFixture:
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
             "first_name": "Gaby-Analyst",
             "last_name": "DiSarli-Analyst",
-            "email": "gaby@truss.works",
         },
         {
             "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
