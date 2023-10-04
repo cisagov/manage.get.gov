@@ -292,7 +292,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         contact.save()
 
         messages.success(
-            self.request, "The security email for this domain have been updated."
+            self.request, "The security email for this domain has been updated."
         )
 
         # superclass has the redirect
