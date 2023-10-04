@@ -275,7 +275,6 @@ function prepareDeleteButtons() {
   });
 
   function removeForm(e){
-    console.log('lets delete stuff')
     let formToRemove = e.target.closest(".ds-record")
     formToRemove.remove()
     formNum--
@@ -292,6 +291,8 @@ function prepareDeleteButtons() {
   let container = document.querySelector("#form-container")
   let addButton = document.querySelector("#add-ds-form")
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+
+  prepareDeleteButtons()
 
   let formNum = serverForm.length-1
   if (addButton) {
@@ -351,29 +352,72 @@ function prepareDeleteButtons() {
 })();
 
 
-/**
- * An IIFE that attaches a click handler on the record delete button
- *
- */
-(function doPrepareDeleteButtons() {
-  prepareDeleteButtons()
-})();
+// (function prepareCancelButtons() {
+//   const cancelButton = document.querySelector('.btn-cancel');
 
-/**
- * An IIFE that attaches a click handler on form cancel buttons
- *
- */
-(function prepareCancelButtons() {
-  const cancelButton = document.querySelector('.btn-cancel');
+//   if (cancelButton) {
+//       cancelButton.addEventListener('click', () => {
 
-  if (cancelButton) {
-      cancelButton.addEventListener('click', () => {
-          // Option 1: Reset the form
-          const form = document.querySelector('form');
-          form.reset();
+//           // Option 2: Redirect to another page (e.g., the homepage)
 
-          // Option 2: Redirect to another page (e.g., the homepage)
-          // window.location.href = '/';
-      });
-  }
-})();
+//           localStorage.clear(); // Clear all localStorage data
+//           sessionStorage.clear(); // Clear all sessionStorage data
+
+//           location.reload();
+//       });
+//   }
+// })();
+
+
+// /**
+//  * An IIFE that attaches a click handler on form cancel buttons
+//  *
+//  */
+// (function prepareCancelButtons() {
+//   const cancelButton = document.querySelector('.btn-cancel');
+
+//   const formsetContainer = document.querySelector('#form-container');
+//   const originalFormHTML = document.querySelector('.ds-record').innerHTML;
+//   const numberOfFormsToReset = document.querySelectorAll('.ds-record').length;
+//   const addNewRecordButton = document.querySelector('#add-ds-form');
+//   const submitButton = document.querySelector('button[type="submit"]');
+
+//   if (cancelButton) {
+//     cancelButton.addEventListener('click', () => {
+//       // Reset the form to its initial values
+//       const form = document.querySelector('form');
+//       resetForm(form);
+//     });
+//   }
+
+//   function resetForm(form) {
+
+//     // Remove all existing forms within the container
+//     formsetContainer.innerHTML = '';
+//     for (let i = 0; i < numberOfFormsToReset; i++) {
+//       formsetContainer.innerHTML += originalFormHTML;
+//     }
+//     formsetContainer.innerHTML += addNewRecordButton
+//     formsetContainer.innerHTML += submitButton
+
+//     const dsRecords = form.querySelectorAll('.ds-record');
+
+//     dsRecords.forEach((record) => {
+//       const initialValuesField = record.querySelector('.initial-values');
+//       const formFields = record.querySelectorAll('input, textarea, select');
+
+//       if (initialValuesField) {
+//         const initialValues = JSON.parse(initialValuesField.value);
+
+//         formFields.forEach((field) => {
+//           const fieldName = field.name;
+//           if (fieldName in initialValues) {
+//             field.value = initialValues[fieldName];
+//           } else {
+//             field.value = ''; // Set to empty if no initial value
+//           }
+//         });
+//       }
+//     });
+//   }
+// })();

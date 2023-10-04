@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.shortcuts import redirect
+from django.template import RequestContext
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 
@@ -322,6 +323,9 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
             self.object.dnssec_key_confirmed = False
             self.object.save()
             return super().form_valid(formset)
+        
+        if 'btn-cancel-click' in request.POST:
+            return redirect('/', {'formset': formset},RequestContext(request))
                 
         if formset.is_valid():
             return self.form_valid(formset)
@@ -351,6 +355,7 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         try:
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
+            # Alysia: Check client hold error handling and duplicate this here
             errmsg = "Error updating DNSSEC data in the registry."
             logger.error(errmsg)
             logger.error(err)

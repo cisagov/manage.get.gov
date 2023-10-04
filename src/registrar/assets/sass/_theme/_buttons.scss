@@ -81,14 +81,21 @@ a.usa-button--unstyled:visited {
   color: color('primary');
 }
   
-  .dotgov-button--green {
-    background-color: color('success-dark');
-  
-    &:hover {
-      background-color: color('success-darker');
-    }
-  
-    &:active {
-      background-color: color('green-80v');
-    }
+.dotgov-button--green {
+  background-color: color('success-dark');
+
+  &:hover {
+    background-color: color('success-darker');
   }
+
+  &:active {
+    background-color: color('green-80v');
+  }
+}
+
+// WARNING: crazy hack ahead
+.btn-cancel {
+  position: relative;
+  top: -39.2px;
+  left: 88px;
+}
