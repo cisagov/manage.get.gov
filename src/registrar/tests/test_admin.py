@@ -934,13 +934,13 @@ class MyUserAdminTest(TestCase):
         request.user = create_user()
 
         list_display = self.admin.get_list_display(request)
-        expected_list_display = (
+        expected_list_display = [
             "email",
             "first_name",
             "last_name",
             "group",
             "status",
-        )
+        ]
 
         self.assertEqual(list_display, expected_list_display)
         self.assertNotIn("username", list_display)
