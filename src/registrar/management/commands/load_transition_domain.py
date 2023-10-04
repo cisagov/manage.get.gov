@@ -369,7 +369,7 @@ transtion_domain table for domain:
             for row in csv.reader(contacts_file, delimiter=sep):
                 userId = row[0]
                 user_email = row[6]
-                user_emails_dictionary[userId].append(user_email)
+                user_emails_dictionary[userId] = user_email
         logger.info("Loaded emails for %d users", len(user_emails_dictionary))
         return user_emails_dictionary
 
