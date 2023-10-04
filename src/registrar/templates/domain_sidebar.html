@@ -28,15 +28,6 @@
           </li>
 
           <li class="usa-sidenav__item">
-            {% url 'domain-dns-subdomains' pk=domain.id as url %}
-            <a href="{{ url }}"
-              {% if request.path == url %}class="usa-current"{% endif %}
-            >
-                Subdomain records
-            </a>
-          </li>
-
-          <li class="usa-sidenav__item">
             {% url 'domain-dns-dnssec' pk=domain.id as url %}
             <a href="{{ url }}"
               {% if request.path|startswith:url %}class="usa-current"{% endif %}

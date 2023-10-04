@@ -14,9 +14,6 @@
   {% url 'domain-dns-nameservers' pk=domain.id as url %}
   <p><a href="{{ url }}">DNS name servers</a></p>
 
-  {% url 'domain-subdomains' pk=domain.id as url %}
-  <p><a href="{{ url }}">Subdomain records</a></p>
-
   {% url 'domain-dnssec' pk=domain.id as url %}
   <p><a href="{{ url }}">DNSSEC</a></p>
 

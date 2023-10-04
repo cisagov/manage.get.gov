@@ -291,7 +291,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return None
 
     @dnssecdata.setter  # type: ignore
-    def dnssecdata(self, _dnssecdata: extensions.DNSSECExtension):
+    def dnssecdata(self, _dnssecdata: dict):
         updateParams = {
             "maxSigLife": _dnssecdata.get("maxSigLife", None),
             "dsData": _dnssecdata.get("dsData", None),

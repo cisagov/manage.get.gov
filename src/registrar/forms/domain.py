@@ -199,11 +199,6 @@ class DomainDsdataForm(forms.Form):
         #     )
         # ],
     )
-    
-    # delete = forms.BooleanField(
-    #     required=False,
-    #     label="Delete",
-    # )
 
     # TODO: Conditional DS Key Data fields
     
@@ -217,12 +212,6 @@ DomainDsdataFormset = formset_factory(
 class DomainKeydataForm(forms.Form):
 
     """Form for adding or editing DNSSEC key data."""
-    # TODO: ds key data
-    # has_ds_key_data = forms.TypedChoiceField(
-    #     required=True,
-    #     label="DS Data record type",
-    #     choices=[(False, "DS Data"), (True, "DS Data with Key Data")],
-    # )
 
     flag = forms.TypedChoiceField(
         required=True,
@@ -235,13 +224,6 @@ class DomainKeydataForm(forms.Form):
         label="Protocol",
         choices=PROTOCOL_CHOICES,
     )
-    # protocol = forms.IntegerField(
-    #     max_value=3,
-    #     min_value=3,
-    #     initial=3,
-    #     required=True,
-    #     disabled=True,
-    # )
 
     algorithm = forms.TypedChoiceField(
         required=True,
@@ -253,15 +235,7 @@ class DomainKeydataForm(forms.Form):
         required=True,
         label="Pub key",
     )
-    
-    # delete = forms.BooleanField(
-    #     required=False,
-    #     label="Delete",
-    # )
 
-    # TODO: Conditional DS Key Data fields
-    
-    
 
 DomainKeydataFormset = formset_factory(
     DomainKeydataForm,
