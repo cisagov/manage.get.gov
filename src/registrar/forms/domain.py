@@ -180,6 +180,8 @@ class DomainDsdataForm(forms.Form):
 
 DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
+    extra=0,
+    can_delete=True,
 )
 
 
@@ -213,4 +215,6 @@ class DomainKeydataForm(forms.Form):
 
 DomainKeydataFormset = formset_factory(
     DomainKeydataForm,
+    extra=0,
+    can_delete=True,
 )

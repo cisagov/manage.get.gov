@@ -287,6 +287,34 @@ function prepareDeleteButtons() {
     //   form.innerHTML = form.innerHTML.replace(formNumberRegex, `form-${index}-`);
     //   form.innerHTML = form.innerHTML.replace(formLabelRegex, `DS Data Record ${index+1}`);
     // });
+
+
+
+    let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
+    let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
+
+    forms.forEach((form, index) => {
+      // Iterate over child nodes of the current element
+      Array.from(form.querySelectorAll('label, input, select')).forEach((node) => {
+        // Iterate through the attributes of the current node
+        Array.from(node.attributes).forEach((attr) => {
+          // Check if the attribute value matches the regex
+          if (formNumberRegex.test(attr.value)) {
+            // Replace the attribute value with the updated value
+            attr.value = attr.value.replace(formNumberRegex, `form-${index}-`);
+          }
+        });
+      });
+
+      Array.from(form.querySelectorAll('h2, legend')).forEach((node) => {
+        node.textContent = node.textContent.replace(formLabelRegex, `DS Data record ${index + 1}`);
+      });
+    
+    });
+
+
+
+
   }
 }
 
@@ -316,7 +344,7 @@ function prepareDeleteButtons() {
 
       formNum++;
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum-1}-`);
-      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data Record ${formNum}`);
+      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data record ${formNum}`);
       container.insertBefore(newForm, addButton);
 
       let inputs = newForm.querySelectorAll("input");
@@ -369,6 +397,7 @@ function prepareDeleteButtons() {
       //   form.innerHTML = form.innerHTML.replace(formLabelRegex, `DS Data Record ${index+1}`);
       // });
   }
+
 })();
 
 

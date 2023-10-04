@@ -91,15 +91,19 @@
     </button>
 
     <button
-          type="button"
-          class="usa-button usa-button--outline btn-cancel"
-      >Cancel
-    </button>
-
-    <button
           type="submit"
           class="usa-button"
       >Save
+    </button>
+  </form>
+
+  <form aria-label="form to undo changes to the DS records">
+    <button
+          type="submit"
+          class="usa-button usa-button--outline btn-cancel"
+          name="btn-cancel-click"
+          aria-label="Reset the data in the DS records to the registry state (undo changes)"
+      >Cancel
     </button>
   </form>
   {% endif %}

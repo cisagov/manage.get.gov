@@ -293,6 +293,10 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
                 # Add existing nameservers as initial data
                 initial_data.extend({"key_tag": record.keyTag, "algorithm": record.alg, "digest_type": record.digestType, "digest": record.digest} for record in dnssecdata.dsData)
         
+        # Ensure at least 3 fields, filled or empty
+        while len(initial_data) == 0:
+            initial_data.append({})
+        
         return initial_data
 
     def get_success_url(self):
@@ -345,6 +349,8 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
+        if len(dnssecdata["dsData"]) == 0:
+            dnssecdata = {}
         try:
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
@@ -388,6 +394,10 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
             if dnssecdata.keyData is not None:
                 # Add existing keydata as initial data
                 initial_data.extend({"flag": record.flags, "protocol": record.protocol, "algorithm": record.alg, "pub_key": record.pubKey} for record in dnssecdata.keyData)
+        
+        # Ensure at least 3 fields, filled or empty
+        while len(initial_data) == 0:
+            initial_data.append({})
         
         return initial_data
 
@@ -438,6 +448,8 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
+        if len(dnssecdata["keyData"]) == 0:
+            dnssecdata = {}
         try:
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
