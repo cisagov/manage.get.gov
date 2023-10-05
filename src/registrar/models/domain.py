@@ -625,7 +625,10 @@ class Domain(TimeStampedModel, DomainHelper):
     def get_security_email(self):
         logger.info("get_security_email-> getting the contact ")
         secContact = self.security_contact
-        return secContact.email
+        if secContact is not None:
+            return secContact.email
+        else:
+            return None
 
     def clientHoldStatus(self):
         return epp.Status(state=self.Status.CLIENT_HOLD, description="", lang="en")
