@@ -316,9 +316,8 @@ function prepareDeleteButtons() {
   // Attach click event listener on the delete buttons of the existing forms
   prepareDeleteButtons();
 
-  if (addButton) {
+  if (addButton)
     addButton.addEventListener('click', addForm);
-  }
 
   function addForm(e){
       let forms = document.querySelectorAll(".ds-record");
@@ -390,6 +389,10 @@ function toggleElements() {
  *
  */
 (function toggleDNSSECWarning() {
-  document.getElementById("enable_dnssec").addEventListener("click", toggleElements);
-  document.getElementById("cancel_dnssec").addEventListener("click", toggleElements);
+  let toggle1 = document.getElementById("enable_dnssec");
+  if (toggle1)
+    toggle1.addEventListener("click", toggleElements);
+  let toggle2 = document.getElementById("cancel_dnssec");
+  if (toggle2)
+    toggle2.addEventListener("click", toggleElements);
 })();

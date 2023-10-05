@@ -39,6 +39,7 @@
       >Enable DNSSEC</button>
     </div>
 
+    {% comment %} display: none is sufficient on hidden elements for accessibility (removes accessibility tree) {% endcomment %}
     <div id="add-records" class="display-none">
       <h2> Add DS Records </h2>
       <p>In order to enable DNSSEC and add Delegation Signer (DS) records, you must first configure it with your DNS hosting service. Your configuration will determine whether you need to add DS Data or Key Data. Contact your DNS hosting provider if you are unsure which record type to add.</p>

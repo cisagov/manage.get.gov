@@ -154,27 +154,38 @@ class DomainDsdataForm(forms.Form):
         required=True,
         label="Key tag",
         validators=[
-            MinValueValidator(0, "Value must be between 0 and 65535"),
-            MaxValueValidator(65535, "Value must be between 0 and 65535"),
+            MinValueValidator(0, message="Value must be between 0 and 65535"),
+            MaxValueValidator(65535, message="Value must be between 0 and 65535"),
         ],
+        error_messages={
+            "required": ("Key tag is required.")
+        },
     )
     
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,
+        error_messages={
+            "required": ("Algorithm is required.")
+        },
     )
 
     digest_type = forms.TypedChoiceField(
         required=True,
         label="Digest Type",
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,
+        error_messages={
+            "required": ("Digest Type is required.")
+        },
     )
 
     digest = forms.CharField(
         required=True,
         label="Digest",
-        # TODO: Validation of digests in registrar?
+        error_messages={
+            "required": ("Digest is required.")
+        },
     )
 
 
@@ -193,23 +204,35 @@ class DomainKeydataForm(forms.Form):
         required=True,
         label="Flag",
         choices=FLAG_CHOICES,
+        error_messages={
+            "required": ("Flag is required.")
+        },
     )
 
     protocol = forms.TypedChoiceField(
         required=True,
         label="Protocol",
         choices=PROTOCOL_CHOICES,
+        error_messages={
+            "required": ("Protocol is required.")
+        },
     )
 
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,
+        error_messages={
+            "required": ("Algorithm is required.")
+        },
     )
     
     pub_key = forms.CharField(
         required=True,
         label="Pub key",
+        error_messages={
+            "required": ("Pub key is required.")
+        },
     )
 
 
