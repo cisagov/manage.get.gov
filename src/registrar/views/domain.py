@@ -241,9 +241,7 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
         self.domain = self.get_object()
         
         has_dnssec_records = self.domain.dnssecdata is not None
-        
-        logger.debug(f"clicked_enable_dns {self.clicked_enable_dns}")
-        
+                
         # if does_not_have_dnssec_records and self.clicked_enable_dns == False:
         #     logger.debug(f"clicked_enable_dns {self.clicked_enable_dns}")
         #     self.domain.dnssec_enabled = False
@@ -256,7 +254,7 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
 
         context['modal_button'] = modal_button
         context['has_dnssec_records'] = has_dnssec_records   
-        context['domain'] = self.domain
+        # context['domain'] = self.domain
         
         return context
 

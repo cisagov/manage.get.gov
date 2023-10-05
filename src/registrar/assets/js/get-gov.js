@@ -472,22 +472,18 @@ function prepareDeleteButtons() {
 // })();
 
 
+function toggleElements() {
+  let element1 = document.getElementById("enable-dnssec");
+  let element2 = document.getElementById("add-records");
+  element1.classList.toggle("display-none");
+  element2.classList.toggle("display-none");
+}
+
 /**
  * 
  *
  */
 (function toggleDNSSECWarning() {
-  document.getElementById("toggler1").addEventListener("click", function () {
-    var element = document.getElementById("step-1");
-    var element2 = document.getElementById("step-2");
-    element.classList.toggle("display-none");
-    element2.classList.toggle("display-none");
-  });
-
-  document.getElementById("toggler2").addEventListener("click", function () {
-    var element = document.getElementById("step-1");
-    var element2 = document.getElementById("step-2");
-    element.classList.toggle("display-none");
-    element2.classList.toggle("display-none");
-  });
+  document.getElementById("enable_dnssec").addEventListener("click", toggleElements);
+  document.getElementById("cancel_dnssec").addEventListener("click", toggleElements);
 })();

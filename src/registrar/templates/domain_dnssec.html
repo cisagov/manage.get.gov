@@ -11,7 +11,7 @@
 
   <form class="usa-form usa-form--large" method="post">
     {% csrf_token %}
-    {% if domain.has_dnssec_records %}
+    {% if has_dnssec_records %}
     <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
       <div class="usa-alert__body">
       In order to fully disable DNSSEC on your domain, you will need to work with your DNS provider to remove your DNSSEC-related records from your zone.
@@ -25,7 +25,7 @@
       >Disable DNSSEC</a
     >
     {% else %}
-    <div id="step-1">
+    <div id="enable-dnssec">
       <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
         <div class="usa-alert__body">
         It is strongly recommended that you do not enable this unless you fully understand DNSSEC and know how to set it up properly. If you make a mistake, it could cause your domain name to stop working.
@@ -35,11 +35,11 @@
           type="button"
           class="usa-button"
           name="enable_dnssec"
-          id="toggler1"
+          id="enable_dnssec"
       >Enable DNSSEC</button>
     </div>
 
-    <div id="step-2" class="display-none">
+    <div id="add-records" class="display-none">
       <h2> Add DS Records </h2>
       <p>In order to enable DNSSEC and add Delegation Signer (DS) records, you must first configure it with your DNS hosting service. Your configuration will determine whether you need to add DS Data or Key Data. Contact your DNS hosting provider if you are unsure which record type to add.</p>
       <p>
@@ -48,84 +48,21 @@
         <button
           type="button"
           class="usa-button usa-button--unstyled"
-          name="cancel"
-          id="toggler2"
+          name="cancel_dnssec"
+          id="cancel_dnssec"
       >Cancel</button>
       </p>
     </div>
-    
-    
-
-    
-
-    
     {% endif %}
   </form>
 
   <div
     class="usa-modal"
-    id="example-modal-1"
-    aria-labelledby="modal-1-heading"
-    aria-describedby="modal-1-description"
+    id="toggle-dnssec-alert"
+    aria-labelledby="Are you sure you want to continue?"
+    aria-describedby="Your DNSSEC records will be deleted from the registry."
   >
       {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="Your DNSSEC records will be deleted from the registry." modal_button=modal_button|safe %}
   </div>
-
-
-  {% comment %} <div
-      class="usa-modal"
-      id="example-modal-1"
-      aria-labelledby="modal-1-heading"
-      aria-describedby="modal-1-description"
-    >
-      <div class="usa-modal__content">
-        <div class="usa-modal__main">
-          <h2 class="usa-modal__heading" id="modal-1-heading">
-            Are you sure you want to continue?
-          </h2>
-          <div class="usa-prose">
-            <p id="modal-1-description">
-              Your DNSSEC records will be deleted from the registry.
-            </p>
-          </div>
-
-          
-          <div class="usa-modal__footer">
-            <ul class="usa-button-group">
-              <li class="usa-button-group__item">
-                <form method="post">
-                  {% csrf_token %}
-                  <button
-                      type="submit"
-                      class="usa-button"
-                      name="disable_dnssec"
-                  >Disable DNSSEC</button>
-                </form>
-              </li>
-              <li class="usa-button-group__item">
-                <button
-                  type="button"
-                  class="usa-button usa-button--unstyled padding-105 text-center"
-                  data-close-modal
-                >
-                  Cancel
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="usa-button usa-modal__close"
-          aria-label="Close this window"
-          data-close-modal
-        >
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-            <use xlink:href="/assets/img/sprite.svg#close"></use>
-          </svg>
-        </button>
-      </div>
-    </div> {% endcomment %}
-  
 
 {% endblock %}  {# domain_content #}
