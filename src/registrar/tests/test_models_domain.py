@@ -204,13 +204,9 @@ class TestDomainCache(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="registry.gov")
         fakedEpp = self.fakedEppObject()
         invalid_length = fakedEpp.dummyInfoContactResultData(
-            "Cymaticsisasubsetofmodalvibrationalphenomena",
-            "lengthInvalid@mail.gov"
+            "Cymaticsisasubsetofmodalvibrationalphenomena", "lengthInvalid@mail.gov"
         )
-        valid_object = fakedEpp.dummyInfoContactResultData(
-            "valid",
-            "valid@mail.gov"
-        )
+        valid_object = fakedEpp.dummyInfoContactResultData("valid", "valid@mail.gov")
 
         desired_error = ContactErrorCodes.CONTACT_ID_INVALID_LENGTH
         with self.assertRaises(ContactError) as context:
