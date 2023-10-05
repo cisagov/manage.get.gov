@@ -785,7 +785,7 @@ class DomainAdmin(ListHeaderAdmin):
             self.message_user(
                 request,
                 f"The registry statuses are {statuses}. "
-                "These statuses are from the EPP provider of the .gov registry."
+                "These statuses are from the provider of the .gov registry.",
             )
         return HttpResponseRedirect(".")
 
