@@ -34,7 +34,7 @@
             >
                 DNSSEC
             </a>
-            {% if domain.dnssec_enabled %}
+            {% if domain.dnssecdata is not None or request.path|startswith:url and request.path|endswith:'data' %}
             <ul class="usa-sidenav__sublist">
               <li class="usa-sidenav__item">
                 {% url 'domain-dns-dnssec-dsdata' pk=domain.id as url %}
