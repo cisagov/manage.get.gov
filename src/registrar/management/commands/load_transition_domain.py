@@ -1,10 +1,5 @@
 """Load domain invitations for existing domains and their contacts."""
 
-
-# NOTE:  Do we want to add userID to transition_domain?
-# (user might have multiple emails??)
-# NOTE:  How to determine of email has been sent??
-
 import csv
 import logging
 import argparse
@@ -26,7 +21,7 @@ class termColors:
     OKBLUE = "\033[94m"
     OKCYAN = "\033[96m"
     OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
+    YELLOW = "\033[93m"
     FAIL = "\033[91m"
     ENDC = "\033[0m"
     BOLD = "\033[1m"
@@ -72,14 +67,16 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add our three filename arguments."""
         parser.add_argument(
-            "domain_contacts_filename", help="Data file with domain contact information"
+            "domain_contacts_filename", 
+            help="Data file with domain contact information"
         )
         parser.add_argument(
             "contacts_filename",
             help="Data file with contact information",
         )
         parser.add_argument(
-            "domain_statuses_filename", help="Data file with domain status information"
+            "domain_statuses_filename", 
+            help="Data file with domain status information"
         )
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
@@ -95,6 +92,144 @@ class Command(BaseCommand):
             help="Deletes all data in the TransitionDomain table",
             action=argparse.BooleanOptionalAction,
         )
+
+    def print_debug_mode_statements(self, debug_on, debug_max_entries_to_parse):
+        if debug_on:
+            logger.info(
+                f"""{termColors.OKCYAN}
+                ----------DEBUG MODE ON----------
+                Detailed print statements activated.
+                {termColors.ENDC}
+                """
+                )
+        if debug_max_entries_to_parse > 0:
+            logger.info(
+                f"""{termColors.OKCYAN}
+                ----------LIMITER ON----------
+                Parsing of entries will be limited to
+                {debug_max_entries_to_parse} lines per file.")
+                Detailed print statements activated.
+                {termColors.ENDC}
+                """
+                )
+
+    def get_domain_user_dict(self, domain_statuses_filename, sep):
+        """Creates a mapping of domain name -> status"""
+        # TODO: figure out latest status
+        domain_status_dictionary = defaultdict(str)
+        # NOTE: how to determine "most recent" status?
+        logger.info("Reading domain statuses data file %s", domain_statuses_filename)
+        with open(domain_statuses_filename, "r") as domain_statuses_file:  # noqa
+            for row in csv.reader(domain_statuses_file, delimiter=sep):
+                domainName = row[0].lower()
+                domainStatus = row[1].lower()
+                # print("adding "+domainName+", "+domainStatus)
+                domain_status_dictionary[domainName] = domainStatus
+        logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
+        return domain_status_dictionary
+
+    def get_user_emails_dict(self, contacts_filename, sep):
+        """Creates mapping of userId -> emails"""
+        # NOTE: is this one to many??
+        user_emails_dictionary = defaultdict(list)
+        logger.info("Reading domain-contacts data file %s", contacts_filename)
+        with open(contacts_filename, "r") as contacts_file:
+            for row in csv.reader(contacts_file, delimiter=sep):
+                userId = row[0]
+                user_email = row[6]
+                user_emails_dictionary[userId].append(user_email)
+        logger.info("Loaded emails for %d users", len(user_emails_dictionary))
+        return user_emails_dictionary
+
+    def get_mapped_status(self, status_to_map):
+        # Map statuses as follows;
+        # "serverHold” fields will map to hold clientHold to hold
+        # and any ok state should map to Ready.
+        # Check if there are any statuses that are not
+        # serverhold, client hold or OK in the original data set.
+        status_maps = {
+            "hold": TransitionDomain.StatusChoices.HOLD,
+            "serverhold": TransitionDomain.StatusChoices.HOLD,
+            "clienthold": TransitionDomain.StatusChoices.HOLD,
+            "created": TransitionDomain.StatusChoices.READY,
+            "ok": TransitionDomain.StatusChoices.READY,
+        }
+        return status_maps[status_to_map]
+
+    def print_summary_duplications(
+        self, duplicate_domain_user_combos, duplicate_domains, users_without_email
+    ):
+        totalDupDomainUserPairs = len(duplicate_domain_user_combos)
+        totalDupDomains = len(duplicate_domains)
+        total_users_without_email = len(users_without_email)
+        if total_users_without_email > 0:
+            logger.warning(
+                "No e-mails found for users: {}".format(
+                    ", ".join(map(str, users_without_email))
+                )
+            )
+        if totalDupDomainUserPairs > 0 or totalDupDomains > 0:
+            temp_dupPairsAsString = "{}".format(
+                ", ".join(map(str, duplicate_domain_user_combos))
+            )
+            temp_dupDomainsAsString = "{}".format(
+                ", ".join(map(str, duplicate_domains))
+            )
+            logger.warning(
+                f"""{termColors.YELLOW}
+
+                    ----DUPLICATES FOUND-----
+
+                    {totalDupDomainUserPairs} DOMAIN - USER pairs
+                    were NOT unique in the supplied data files;
+
+                    {temp_dupPairsAsString}
+
+                    {totalDupDomains} DOMAINS were NOT unique in
+                    the supplied data files;
+
+                    {temp_dupDomainsAsString}
+                    {termColors.ENDC}"""
+            )
+
+    def print_summary_status_findings(self, domains_without_status, outlier_statuses):
+        total_domains_without_status = len(domains_without_status)
+        total_outlier_statuses = len(outlier_statuses)
+        if total_domains_without_status > 0:
+            temp_arrayToString = "{}".format(
+                ", ".join(map(str, domains_without_status))
+            )
+            logger.warning(
+                f"""{termColors.YELLOW}
+
+                --------------------------------------------
+                Found {total_domains_without_status} domains
+                without a status (defaulted to READY)
+                ---------------------------------------------
+
+                {temp_arrayToString}
+                {termColors.ENDC}"""
+            )
+
+        if total_outlier_statuses > 0:
+            temp_arrayToString = "{}".format(
+                ", ".join(map(str, outlier_statuses))
+            )  # noqa
+            logger.warning(
+                f"""{termColors.YELLOW}
+
+                --------------------------------------------
+                Found {total_outlier_statuses} unaccounted
+                for statuses-
+                --------------------------------------------
+
+                No mappings found for the following statuses
+                (defaulted to Ready):
+
+                {temp_arrayToString}
+                {termColors.ENDC}"""
+            )
+
 
     def handle(  # noqa: C901
         self,
@@ -116,7 +251,7 @@ class Command(BaseCommand):
             )
             if confirmReset:
                 logger.info(
-                    f"""{termColors.WARNING}
+                    f"""{termColors.YELLOW}
                 ----------Clearing Table Data----------
                 (please wait)
                 {termColors.ENDC}"""
@@ -230,14 +365,14 @@ class Command(BaseCommand):
                 if tempEntry_domain is not None:
                     if debug_on:
                         logger.info(
-                            f"{termColors.WARNING} DUPLICATE Verisign entries found for domain: {new_entry_domainName} {termColors.ENDC}"  # noqa
+                            f"{termColors.YELLOW} DUPLICATE Verisign entries found for domain: {new_entry_domainName} {termColors.ENDC}"  # noqa
                         )
                     if new_entry_domainName not in duplicate_domains:
                         duplicate_domains.append(new_entry_domainName)
                 if tempEntry_domainUserPair is not None:
                     if debug_on:
                         logger.info(
-                            f"""{termColors.WARNING} DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.WARNING}:  
+                            f"""{termColors.YELLOW} DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.YELLOW}:  
                             {new_entry_domainName} - {new_entry_email} {termColors.ENDC}"""  # noqa
                         )
                     if tempEntry_domainUserPair not in duplicate_domain_user_combos:
@@ -252,11 +387,11 @@ class Command(BaseCommand):
                             # DEBUG:
                             if debug_on:
                                 logger.info(
-                                    f"""{termColors.OKCYAN}
-    Updating entry: {existingEntry}
-    Status: {existingEntry.status} > {new_entry_status}
-    Email Sent: {existingEntry.email_sent} > {new_entry_emailSent}
-    {termColors.ENDC}"""
+                                    f"{termColors.OKCYAN}"
+                                    f"Updating entry: {existingEntry}"
+                                    f"Status: {existingEntry.status} > {new_entry_status}"
+                                    f"Email Sent: {existingEntry.email_sent} > {new_entry_emailSent}"
+                                    f"{termColors.ENDC}"
                                 )
 
                             existingEntry.status = new_entry_status
@@ -281,12 +416,11 @@ class Command(BaseCommand):
                             )
                     except TransitionDomain.MultipleObjectsReturned:
                         logger.info(
-                            f"""
-{termColors.FAIL}
-!!! ERROR: duplicate entries exist in the
-transtion_domain table for domain:
-{new_entry_domainName}
-----------TERMINATING----------"""
+                            f"{termColors.FAIL}"
+                            f"!!! ERROR: duplicate entries exist in the"
+                            f"transtion_domain table for domain:"
+                            f"{new_entry_domainName}"
+                            f"----------TERMINATING----------"
                         )
                         import sys
 
@@ -299,10 +433,9 @@ transtion_domain table for domain:
                         and debug_max_entries_to_parse != 0
                     ):
                         logger.info(
-                            f"""{termColors.WARNING}
-                            ----PARSE LIMIT REACHED.  HALTING PARSER.----
-                            {termColors.ENDC}
-                            """
+                            f"{termColors.YELLOW}"
+                            f"----PARSE LIMIT REACHED.  HALTING PARSER.----"
+                            f"{termColors.ENDC}"
                         )
                         break
 
@@ -310,13 +443,12 @@ transtion_domain table for domain:
 
         logger.info(
             f"""{termColors.OKGREEN}
-
-        ============= FINISHED ===============
-        Created {total_new_entries} transition domain entries,
-        updated {total_updated_domain_entries} transition domain entries
-        {termColors.ENDC}
-        """
-        )
+            ============= FINISHED ===============
+            Created {total_new_entries} transition domain entries,
+            updated {total_updated_domain_entries} transition domain entries
+            {termColors.ENDC}
+            """
+            )
 
         # Print a summary of findings (duplicate entries,
         # missing data..etc.)
@@ -324,140 +456,3 @@ transtion_domain table for domain:
             duplicate_domain_user_combos, duplicate_domains, users_without_email
         )
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
-
-    def print_debug_mode_statements(self, debug_on, debug_max_entries_to_parse):
-        if debug_on:
-            logger.info(
-                f"""{termColors.OKCYAN}
-            ----------DEBUG MODE ON----------
-            Detailed print statements activated.
-            {termColors.ENDC}
-            """
-            )
-        if debug_max_entries_to_parse > 0:
-            logger.info(
-                f"""{termColors.OKCYAN}
-            ----------LIMITER ON----------
-            Parsing of entries will be limited to
-            {debug_max_entries_to_parse} lines per file.")
-            Detailed print statements activated.
-            {termColors.ENDC}
-            """
-            )
-
-    def get_domain_user_dict(self, domain_statuses_filename, sep):
-        """Creates a mapping of domain name -> status"""
-        # TODO: figure out latest status
-        domain_status_dictionary = defaultdict(str)
-        # NOTE: how to determine "most recent" status?
-        logger.info("Reading domain statuses data file %s", domain_statuses_filename)
-        with open(domain_statuses_filename, "r") as domain_statuses_file:  # noqa
-            for row in csv.reader(domain_statuses_file, delimiter=sep):
-                domainName = row[0].lower()
-                domainStatus = row[1].lower()
-                # print("adding "+domainName+", "+domainStatus)
-                domain_status_dictionary[domainName] = domainStatus
-        logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
-        return domain_status_dictionary
-
-    def get_user_emails_dict(self, contacts_filename, sep):
-        """Creates mapping of userId -> emails"""
-        # NOTE: is this one to many??
-        user_emails_dictionary = defaultdict(list)
-        logger.info("Reading domain-contacts data file %s", contacts_filename)
-        with open(contacts_filename, "r") as contacts_file:
-            for row in csv.reader(contacts_file, delimiter=sep):
-                userId = row[0]
-                user_email = row[6]
-                user_emails_dictionary[userId].append(user_email)
-        logger.info("Loaded emails for %d users", len(user_emails_dictionary))
-        return user_emails_dictionary
-
-    def get_mapped_status(self, status_to_map):
-        # Map statuses as follows;
-        # "serverHold” fields will map to hold clientHold to hold
-        # and any ok state should map to Ready.
-        # Check if there are any statuses that are not
-        # serverhold, client hold or OK in the original data set.
-        status_maps = {
-            "hold": TransitionDomain.StatusChoices.HOLD,
-            "serverhold": TransitionDomain.StatusChoices.HOLD,
-            "clienthold": TransitionDomain.StatusChoices.HOLD,
-            "created": TransitionDomain.StatusChoices.READY,
-            "ok": TransitionDomain.StatusChoices.READY,
-        }
-        return status_maps[status_to_map]
-
-    def print_summary_duplications(
-        self, duplicate_domain_user_combos, duplicate_domains, users_without_email
-    ):
-        totalDupDomainUserPairs = len(duplicate_domain_user_combos)
-        totalDupDomains = len(duplicate_domains)
-        total_users_without_email = len(users_without_email)
-        if total_users_without_email > 0:
-            logger.warning(
-                "No e-mails found for users: {}".format(
-                    ", ".join(map(str, users_without_email))
-                )
-            )
-        if totalDupDomainUserPairs > 0 or totalDupDomains > 0:
-            temp_dupPairsAsString = "{}".format(
-                ", ".join(map(str, duplicate_domain_user_combos))
-            )
-            temp_dupDomainsAsString = "{}".format(
-                ", ".join(map(str, duplicate_domains))
-            )
-            logger.warning(
-                f"""{termColors.WARNING}
-
-                    ----DUPLICATES FOUND-----
-
-                    {totalDupDomainUserPairs} DOMAIN - USER pairs
-                    were NOT unique in the supplied data files;
-
-                    {temp_dupPairsAsString}
-
-                    {totalDupDomains} DOMAINS were NOT unique in
-                    the supplied data files;
-
-                    {temp_dupDomainsAsString}
-                    {termColors.ENDC}"""
-            )
-
-    def print_summary_status_findings(self, domains_without_status, outlier_statuses):
-        total_domains_without_status = len(domains_without_status)
-        total_outlier_statuses = len(outlier_statuses)
-        if total_domains_without_status > 0:
-            temp_arrayToString = "{}".format(
-                ", ".join(map(str, domains_without_status))
-            )
-            logger.warning(
-                f"""{termColors.WARNING}
-
-                --------------------------------------------
-                Found {total_domains_without_status} domains
-                without a status (defaulted to READY)
-                ---------------------------------------------
-
-                {temp_arrayToString}
-                {termColors.ENDC}"""
-            )
-
-        if total_outlier_statuses > 0:
-            temp_arrayToString = "{}".format(
-                ", ".join(map(str, outlier_statuses))
-            )  # noqa
-            logger.warning(
-                f"""{termColors.WARNING}
-
-                --------------------------------------------
-                Found {total_outlier_statuses} unaccounted
-                for statuses-
-                --------------------------------------------
-
-                No mappings found for the following statuses
-                (defaulted to Ready):
-
-                {temp_arrayToString}
-                {termColors.ENDC}"""
-            )
