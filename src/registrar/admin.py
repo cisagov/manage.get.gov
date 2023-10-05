@@ -141,7 +141,6 @@ class MyUserAdmin(BaseUserAdmin):
         "is_superuser",
         "status",
     )
-    # Temp comment for deploy to sandbox - will remove
     fieldsets = (
         (
             None,
