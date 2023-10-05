@@ -22,7 +22,8 @@ class TestNameserverError(TestCase):
         self.assertEqual(nsException.code, nsErrorCodes.MISSING_IP)
 
     def test_with_only_code(self):
-        """Test NameserverError when no ip address or nameserver is passed, only the code value"""
+        """Test NameserverError when no ip address
+        and no nameserver is passed"""
         nameserver = "nameserver val"
         expected = "Too many hosts provided, you may not have more than 13 nameservers."
 

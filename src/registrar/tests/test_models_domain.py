@@ -848,7 +848,7 @@ class TestRegistrantNameservers(MockEppLib):
                 (nameserver14,),
             ]
 
-        self.assertRaises(ValueError, _get_14_nameservers)
+        self.assertRaises(NameserverError, _get_14_nameservers)
         self.assertEqual(self.mockedSendFunction.call_count, 0)
 
     def test_user_removes_some_nameservers(self):
@@ -1032,7 +1032,7 @@ class TestRegistrantNameservers(MockEppLib):
 
         dotgovnameserver = "my-nameserver.gov"
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NameserverError):
             self.domain.nameservers = [(dotgovnameserver,)]
 
     def test_user_updates_ips(self):
@@ -1101,7 +1101,7 @@ class TestRegistrantNameservers(MockEppLib):
         """
         dotgovnameserver = "mynameserverdotgov.gov"
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NameserverError):
             self.domain.nameservers = [(dotgovnameserver, ["1.2.3"])]
 
     def test_nameservers_are_idempotent(self):

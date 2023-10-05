@@ -20,7 +20,7 @@ class NameserverErrorCodes(IntEnum):
 
 class NameserverError(Exception):
     """
-    NameserverError class used when to raise exceptions on
+    NameserverError class used to raise exceptions on
     the nameserver getter
     """
 
@@ -30,7 +30,9 @@ class NameserverError(Exception):
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: "Nameserver {} cannot be linked "
         "because it is not a subdomain",
         NameserverErrorCodes.INVALID_IP: "Nameserver {} has an invalid IP address: {}",
-        NameserverErrorCodes.TOO_MANY_HOSTS: "Too many hosts provided, you may not have more than 13 nameservers.",
+        NameserverErrorCodes.TOO_MANY_HOSTS: (
+            "Too many hosts provided, you may not have more than " "13 nameservers."
+        ),
     }
 
     def __init__(self, *args, code=None, nameserver=None, ip=None, **kwargs):
