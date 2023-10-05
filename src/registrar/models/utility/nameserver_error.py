@@ -5,7 +5,11 @@ class NameserverErrorCodes(IntEnum):
     """Used in the NameserverError class for
     error mapping.
     Overview of nameserver error codes:
-        -
+        - 1 MISSING_IP  ip address is missing for a nameserver
+        - 2 GLUE_RECORD_NOT_ALLOWED a host has a nameserver
+                                    value but is not a subdomain
+        - 3 INVALID_IP  invalid ip address format or invalid version
+        - 4 TOO_MANY_HOSTS  more than the max allowed host values
     """
 
     MISSING_IP = 1
@@ -16,11 +20,9 @@ class NameserverErrorCodes(IntEnum):
 
 class NameserverError(Exception):
     """
-    Overview of contact error codes:
-
+    NameserverError class used when to raise exceptions on
+    the nameserver getter
     """
-
-    # For linter
 
     _error_mapping = {
         NameserverErrorCodes.MISSING_IP: "Nameserver {} needs to have an "
