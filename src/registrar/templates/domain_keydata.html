@@ -4,6 +4,9 @@
 {% block title %}Key Data | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
+  {% for form in formset %}
+    {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
 
   <h1>Key Data</h1>
 
