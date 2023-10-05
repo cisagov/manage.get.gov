@@ -26,10 +26,9 @@ body:
       label: Links to other issues
       description: |
         Add the issue number of other issues this relates to and how (blocks, is blocked by, relates to).
-      placeholder: relates to #123
-  - type: textarea
+      placeholder: Relates to...
+  - type: markdown
     id: note
     attributes:
-      label: Note
-      description: |
-        We may edit this issue's text to document our understanding and clarify the product work.
+      value: |
+        > We may edit this issue's text to document our understanding and clarify the product work.
