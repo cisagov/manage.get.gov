@@ -15,7 +15,10 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-
+from registrar.models.utility.nameserver_error import (
+    NameserverError,
+    NameserverErrorCodes as nsErrorCodes,
+)
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
@@ -231,8 +234,9 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             hosts = self._get_property("hosts")
         except Exception as err:
-            # TODO-848: Check/add to error handling ticket if it's not addressed
-            # (Don't throw error as this is normal for a new domain?)
+            # Do not raise error when missing nameservers
+            # this is a standard occurence when a domain
+            # is first created
             logger.info("Domain is missing nameservers %s" % err)
             return []
 
@@ -279,20 +283,17 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def checkHostIPCombo(self, nameserver: str, ip: list):
         if self.isSubdomain(nameserver) and (ip is None or ip == []):
-            raise ValueError(
-                "Nameserver %s needs to have an "
-                "IP address because it is a subdomain" % nameserver
-            )
+            raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
+
         elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
-            raise ValueError(
-                "Nameserver %s cannot be linked "
-                "because %s is not a subdomain" % (nameserver, ip)
+            raise NameserverError(
+                code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip
             )
         elif ip is not None and ip != []:
             for addr in ip:
                 if not self._valid_ip_addr(addr):
-                    raise ValueError(
-                        "Nameserver %s has an invalid IP address: %s" % (nameserver, ip)
+                    raise NameserverError(
+                        code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
                     )
         return None
 
@@ -428,9 +429,7 @@ class Domain(TimeStampedModel, DomainHelper):
         example: [(ns1.okay.gov, [127.0.0.1, others ips])]"""
 
         if len(hosts) > 13:
-            raise ValueError(
-                "Too many hosts provided, you may not have more than 13 nameservers."
-            )
+            raise NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS)
         logger.info("Setting nameservers")
         logger.info(hosts)
 
@@ -451,7 +450,6 @@ class Domain(TimeStampedModel, DomainHelper):
         successTotalNameservers = (
             len(oldNameservers) - successDeletedCount + successCreatedCount
         )
-
 
         if successTotalNameservers < 2:
             try:

@@ -16,6 +16,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
+from registrar.models.utility.nameserver_error import NameserverError
 from .common import MockEppLib
 from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
@@ -1141,7 +1142,7 @@ class TestRegistrantNameservers(MockEppLib):
             name="nameserversubdomain.gov", state=Domain.State.READY
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NameserverError):
             domain.nameservers = [
                 ("ns1.nameserversubdomain.gov",),
                 ("ns2.nameserversubdomain.gov",),
@@ -1152,7 +1153,7 @@ class TestRegistrantNameservers(MockEppLib):
             name="nameserversubdomain.gov", state=Domain.State.READY
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NameserverError):
             domain.nameservers = [
                 ("ns1.cats-da-best.gov", ["1.2.3.4"]),
                 ("ns2.cats-da-best.gov", ["2.3.4.5"]),
@@ -1163,15 +1164,11 @@ class TestRegistrantNameservers(MockEppLib):
             name="nameserversubdomain.gov", state=Domain.State.READY
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NameserverError):
             domain.nameservers = [
                 ("ns1.nameserversubdomain.gov", ["1.2.3"]),
                 ("ns2.nameserversubdomain.gov", ["2.3.4"]),
             ]
-
-    @skip("not implemented yet")
-    def test_caching_issue(self):
-        raise
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
@@ -1192,11 +1189,9 @@ class TestRegistrantNameservers(MockEppLib):
         with self.assertRaises(RegistryError):
             domain.nameservers = [("ns1.failednameserver.gov", ["4.5.6"])]
 
-        # print("self.mockedSendFunction.call_args_list is ")
-        # print(self.mockedSendFunction.call_args_list)
-
     def tearDown(self):
         self.threeNS = False
+        Domain.objects.all().delete()
         return super().tearDown()
 
 
