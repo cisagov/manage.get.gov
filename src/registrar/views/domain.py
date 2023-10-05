@@ -44,8 +44,12 @@ class DomainView(DomainPermissionView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        default_email = Domain().get_default_security_contact().email
+        context["default_security_email"] = default_email
+
         security_email = self.get_object().get_security_email()
-        if security_email is None or security_email == "dotgov@cisa.dhs.gov":
+        if security_email is None or security_email == default_email:
             context["security_email"] = None
             return context
         context["security_email"] = security_email

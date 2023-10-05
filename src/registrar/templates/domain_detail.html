@@ -46,7 +46,7 @@
     {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
-    {% if security_email is not None and security_email != "dotgov@cisa.dhs.gov"%}
+    {% if security_email is not None and security_email != default_security_email%}
       {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url %}
     {% else %}
       {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url %}
