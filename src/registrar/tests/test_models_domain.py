@@ -717,11 +717,18 @@ class TestRegistrantContacts(MockEppLib):
         # Generates a domain with four existing contacts
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
 
+        # Contact setup
         expected_admin = domain.get_default_administrative_contact()
+        expected_admin.email = self.mockAdministrativeContact.email
+
         expected_registrant = domain.get_default_registrant_contact()
+        expected_registrant.email = self.mockRegistrantContact.email
+
         expected_security = domain.get_default_security_contact()
-        expected_security.email = "security@mail.gov"
+        expected_security.email = self.mockSecurityContact.email
+
         expected_tech = domain.get_default_technical_contact()
+        expected_tech.email = self.mockTechnicalContact.email
 
         domain.administrative_contact = expected_admin
         domain.registrant_contact = expected_registrant
@@ -729,20 +736,27 @@ class TestRegistrantContacts(MockEppLib):
         domain.technical_contact = expected_tech
 
         contacts = [
-            expected_admin,
-            expected_registrant,
-            expected_security,
-            expected_tech,
+            (expected_admin, domain.administrative_contact),
+            (expected_registrant, domain.registrant_contact),
+            (expected_security, domain.security_contact),
+            (expected_tech, domain.technical_contact),
         ]
 
+        # Test for each contact
         for contact in contacts:
-            is_security = contact.contact_type == "security"
+            expected_contact = contact[0]
+            actual_contact = contact[1]
+            is_security = actual_contact.contact_type == "security"
+
             expectedCreateCommand = self._convertPublicContactToEpp(
-                contact, disclose_email=is_security
+                expected_contact, disclose_email=is_security
             )
 
             # Should only be disclosed if the type is security, as the email is valid
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+
+            # The emails should match on both items
+            self.assertEqual(expected_contact.email, actual_contact.email)
 
     def test_not_disclosed_on_default_security_contact(self):
         """
