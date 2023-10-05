@@ -437,7 +437,10 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
             self.object.dnssec_ds_confirmed = False
             self.object.save()
             return super().form_valid(formset)
-
+        
+        if 'btn-cancel-click' in request.POST:
+            return redirect('/', {'formset': formset},RequestContext(request))
+        
         if formset.is_valid():
             return self.form_valid(formset)
         else:
