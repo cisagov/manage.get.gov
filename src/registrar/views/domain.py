@@ -233,6 +233,32 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
 
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
+    clicked_enable_dns = False
+        
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        """The initial value for the form (which is a formset here)."""
+        self.domain = self.get_object()
+        
+        has_dnssec_records = self.domain.dnssecdata is not None
+        
+        logger.debug(f"clicked_enable_dns {self.clicked_enable_dns}")
+        
+        # if does_not_have_dnssec_records and self.clicked_enable_dns == False:
+        #     logger.debug(f"clicked_enable_dns {self.clicked_enable_dns}")
+        #     self.domain.dnssec_enabled = False
+        #     self.domain.dnssec_ds_confirmed = False
+        #     self.domain.dnssec_key_confirmed = False
+        #     self.domain.save()
+            
+        # Create HTML for the buttons
+        modal_button = '<button type="submit" class="usa-button" name="disable_dnssec">Disable DNSSEC</button>'
+
+        context['modal_button'] = modal_button
+        context['has_dnssec_records'] = has_dnssec_records   
+        context['domain'] = self.domain
+        
+        return context
 
     def get_success_url(self):
         """Redirect to the DNSSEC page for the domain."""
@@ -243,16 +269,8 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
         """
         self.domain = self.get_object()
         form = self.get_form()
-        if form.is_valid():
-            if 'enable_dnssec' in request.POST:
-                self.domain.dnssec_enabled = True
-                self.domain.save()
-            elif 'cancel' in request.POST:
-                self.domain.dnssec_enabled = False
-                self.domain.dnssec_ds_confirmed = False
-                self.domain.dnssec_key_confirmed = False
-                self.domain.save()                
-            elif 'disable_dnssec' in request.POST:
+        if form.is_valid():             
+            if 'disable_dnssec' in request.POST:
                 try:
                     self.domain.dnssecdata = {}
                 except RegistryError as err:
@@ -261,7 +279,6 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
                     messages.error(
                         self.request, errmsg
                     )
-                self.domain.dnssec_enabled = False
                 self.domain.dnssec_ds_confirmed = False
                 self.domain.dnssec_key_confirmed = False
                 self.domain.save()
