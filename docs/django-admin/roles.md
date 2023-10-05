@@ -1,21 +1,18 @@
 # Django admin user roles
 
-Roles other than superuser should be defined in authentication and authorization groups in django admin 
+For our MVP, we create and maintain 2 admin roles:
+Full access and CISA analyst. Both have the role `staff`.
+Permissions on these roles are set through groups:
+`full_access_group` and `cisa_analysts_group`. These
+groups and the methods to create them are defined in
+our `user_group` model and run in a migration.
 
-## Superuser
+For more details, refer to the [user group model](../../src/registrar/models/user_group.py).
 
-Full access
+## Editing group permissions through code
 
-## CISA analyst
+We can edit and deploy new group permissions by:
 
-### Basic permission level
-
-Staff
-
-### Additional group permissions
-
-auditlog | log entry | can view log entry
-registrar | contact | can view contact
-registrar | domain application | can change domain application
-registrar | domain | can view domain
-registrar | user | can view user
+1. editing `user_group` then:
+2. Duplicating migration `0036_create_groups`
+and running migrations
