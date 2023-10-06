@@ -1550,7 +1550,6 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.assertContains(back_to_page, "Enable DNSSEC")
         
-        
     def test_dnssec_page_loads_with_data_in_domain(self):
         """DNSSEC overview page loads when domain has DNSSEC data
         and the template contains a button to disable DNSSEC."""
@@ -1559,6 +1558,16 @@ class TestDomainDNSSEC(TestDomainOverview):
             reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id})
         )
         self.assertContains(page, "Disable DNSSEC")
+
+        # Prepare the data for the POST request
+        post_data = {
+            'disable_dnssec': 'Disable DNSSEC',  # Replace with the actual form field and value
+        }
+        updated_page = self.client.post(reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}), post_data, follow=True)
+        
+        self.assertEqual(updated_page.status_code, 200)
+        
+        self.assertContains(updated_page, "Enable DNSSEC")
         
     def test_ds_form_loads_with_no_domain_data(self):
         """DNSSEC Add DS Data page loads when there is no
@@ -1614,6 +1623,47 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.assertContains(page, "Warning, you cannot add Key Data")
 
+    def test_ds_data_form_submits(self):
+        """DS Data form submits successfully
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(
+            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with less_console_noise():  # swallow log warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post, response should be a redirect
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = result.follow()
+        self.assertContains(page, "The DS Data records for this domain have been updated.")
+
+    def test_domain_nameservers_form_invalid(self):
+        """DS Data form errors with invalid data
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(
+            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-key_tag"] = ""
+        with less_console_noise():  # swallow logged warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(result, "Key tag is required", count=2, status_code=200)
 
     
 
