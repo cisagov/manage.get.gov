@@ -9,6 +9,7 @@ from django.core.management import BaseCommand
 
 from registrar.models import TransitionDomain
 from registrar.models import Domain
+from registrar.models import DomainInvitation
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ class termColors:
     OKBLUE = "\033[94m"
     OKCYAN = "\033[96m"
     OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
+    YELLOW = "\033[93m"
     FAIL = "\033[91m"
     ENDC = "\033[0m"
     BOLD = "\033[1m"
@@ -29,25 +30,53 @@ class termColors:
     BackgroundLightYellow = "\033[103m"
 
 
-# ----------------------------------------
-#  MAIN SCRIPT
-# ----------------------------------------
+    def print_debug_mode_statements(self, 
+                                    debug_on: bool, 
+                                    debug_max_entries_to_parse: int):
+        """Prints additional terminal statements to indicate if --debug
+        or --limitParse are in use"""
+        if debug_on:
+            logger.info(
+                f"""{termColors.OKCYAN}
+                ----------DEBUG MODE ON----------
+                Detailed print statements activated.
+                {termColors.ENDC}
+                """
+            )
+        if debug_max_entries_to_parse > 0:
+            logger.info(
+                f"""{termColors.OKCYAN}
+                ----------LIMITER ON----------
+                Parsing of entries will be limited to
+                {debug_max_entries_to_parse} lines per file.")
+                Detailed print statements activated.
+                {termColors.ENDC}
+                """
+            )
+
+
 class Command(BaseCommand):
     help = """Load data from transition domain tables
-    into main domain tables."""
+    into main domain tables.  Also create domain invitation
+    entries for every domain we ADD (but not for domains
+    we UPDATE)"""
 
     def add_arguments(self, parser):
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
         parser.add_argument(
-            "--limitParse", default=0, help="Sets max number of entries to load"
+            "--limitParse", 
+            default=0, 
+            help="Sets max number of entries to load, set to 0 to load all entries"
         )
 
     def handle(  # noqa: C901
         self,
         **options,
     ):
-        """Load the data files and create the DomainInvitations."""
+        """Parse entries in TransitionDomain table
+        and create (or update) corresponding entries in the 
+        Domain and DomainInvitation tables."""
 
         # grab command line arguments and store locally...
         debug_on = options.get("debug")
@@ -58,7 +87,8 @@ class Command(BaseCommand):
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
 
         # domains to ADD
-        to_create = []
+        domains_to_create = []
+        domain_invitations_to_create = []
         # domains we UPDATED
         updated_domain_entries = []
         # domains we SKIPPED
@@ -69,24 +99,25 @@ class Command(BaseCommand):
 
         logger.info(
             f"""{termColors.OKGREEN}
-==========================
-Beginning Data Transfer
-==========================
-{termColors.ENDC}"""
+            ==========================
+            Beginning Data Transfer
+            ==========================
+            {termColors.ENDC}"""
         )
 
         for transition_entry in TransitionDomain.objects.all():
             transition_domain_name = transition_entry.domain_name
             transition_domain_status = transition_entry.status
+            transition_domain_email = transition_entry.username
 
             # Check for existing domain entry
             try:
                 # DEBUG:
                 if debug_on:
                     logger.info(
-                        f"""{termColors.WARNING}
-Processing Transition Domain: {transition_domain_name}, {transition_domain_status}
-{termColors.ENDC}"""
+                        f"""{termColors.YELLOW}
+                        Processing Transition Domain: {transition_domain_name}, {transition_domain_status}
+                        {termColors.ENDC}""" # noqa
                     )
 
                 # for existing entry, update the status to
@@ -97,9 +128,9 @@ Processing Transition Domain: {transition_domain_name}, {transition_domain_statu
                 # DEBUG:
                 if debug_on:
                     logger.info(
-                        f"""{termColors.WARNING}
-    > Found existing domain entry for: {transition_domain_name}, {current_state}
-    {termColors.ENDC}"""
+                        f"""{termColors.YELLOW}
+                        > Found existing domain entry for: {transition_domain_name}, {current_state}
+                        {termColors.ENDC}""" # noqa
                     )
                 if transition_domain_status != current_state:
                     if (
@@ -114,30 +145,39 @@ Processing Transition Domain: {transition_domain_name}, {transition_domain_statu
                     # DEBUG:
                     if debug_on:
                         logger.info(
-                            f"""{termColors.WARNING}
-    >> Updated {transition_domain_name} state from
-    '{current_state}' to '{existingEntry.state}{termColors.ENDC}'"""
+                            f"""{termColors.YELLOW}
+                            >> Updated {transition_domain_name} state from
+                            '{current_state}' to '{existingEntry.state}{termColors.ENDC}'
+                            (no domain invitation entry added)"""
                         )
             except Domain.DoesNotExist:
                 # no matching entry, make one
                 newEntry = Domain(
-                    name=transition_domain_name, state=transition_domain_status
+                    name=transition_domain_name, 
+                    state=transition_domain_status
                 )
-                to_create.append(newEntry)
+                domains_to_create.append(newEntry)
+
+                domain_invitations_to_create.append(
+                    DomainInvitation(
+                        email=transition_domain_email.lower(),
+                        domain=transition_domain_name
+                    )
+                )
 
                 # DEBUG:
                 if debug_on:
                     logger.info(
-                        f"{termColors.OKCYAN} Adding entry: {newEntry} {termColors.ENDC}"  # noqa
+                        f"{termColors.OKCYAN} Adding domain AND domain invitation: {newEntry} {termColors.ENDC}"  # noqa
                     )
             except Domain.MultipleObjectsReturned:
                 logger.info(
                     f"""
-{termColors.FAIL}
-!!! ERROR: duplicate entries exist in the
-Domain table for domain:
-{transition_domain_name}
-----------TERMINATING----------"""
+                    {termColors.FAIL}
+                    !!! ERROR: duplicate entries exist in the
+                    Domain table for domain:
+                    {transition_domain_name}
+                    ----------TERMINATING----------"""
                 )
                 import sys
 
@@ -146,10 +186,10 @@ Domain table for domain:
                 skipped_domain_entries.append(transition_domain_name)
                 logger.info(
                     f"""{termColors.FAIL}
-Unable to change state for {transition_domain_name}
-    TRANSITION NOT ALLOWED error message (internal):
-    {err}
-    ----------SKIPPING----------"""
+                    Unable to change state for {transition_domain_name}
+                    TRANSITION NOT ALLOWED error message (internal):
+                    {err}
+                    ----------SKIPPING----------"""
                 )
 
             # DEBUG:
@@ -159,71 +199,53 @@ Unable to change state for {transition_domain_name}
                     and debug_max_entries_to_parse != 0
                 ):
                     logger.info(
-                        f"""{termColors.WARNING}
+                        f"""{termColors.YELLOW}
                         ----PARSE LIMIT REACHED.  HALTING PARSER.----
                         {termColors.ENDC}
                         """
                     )
                     break
 
-        Domain.objects.bulk_create(to_create)
+        Domain.objects.bulk_create(domains_to_create)
+        DomainInvitation.objects.bulk_create(domain_invitations_to_create)
 
-        total_new_entries = len(to_create)
+        total_new_entries = len(domains_to_create)
         total_updated_domain_entries = len(updated_domain_entries)
+        total_domain_invitation_entries = len(domain_invitations_to_create)
 
         logger.info(
             f"""{termColors.OKGREEN}
+            ============= FINISHED ===============
+            Created {total_new_entries} transition domain entries,
+            updated {total_updated_domain_entries} transition domain entries
 
-============= FINISHED ===============
-Created {total_new_entries} transition domain entries,
-updated {total_updated_domain_entries} transition domain entries
-{termColors.ENDC}
-"""
+            Created {total_domain_invitation_entries} domain invitation entries
+            (NOTE: no invitations are SENT in this script)
+            {termColors.ENDC}
+            """
         )
         if len(skipped_domain_entries) > 0:
             logger.info(
                 f"""{termColors.FAIL}
-
-============= SKIPPED DOMAINS (ERRORS) ===============
-{skipped_domain_entries}
-{termColors.ENDC}
-"""
+                ============= SKIPPED DOMAINS (ERRORS) ===============
+                {skipped_domain_entries}
+                {termColors.ENDC}
+                """
             )
 
         # DEBUG:
         if debug_on:
             logger.info(
-                f"""{termColors.WARNING}
+                f"""{termColors.YELLOW}
 
-Created Domains:
-{to_create}
+                Created Domains:
+                {domains_to_create}
 
-Updated Domains:
-{updated_domain_entries}
+                Updated Domains:
+                {updated_domain_entries}
 
-{termColors.ENDC}
-"""
+                {termColors.ENDC}
+                """
             )
 
-    # ----------------------------------------
-    # HELPER FUNCTIONS
-    # ----------------------------------------
 
-    def print_debug_mode_statements(self, debug_on, debug_max_entries_to_parse):
-        if debug_on:
-            logger.info(
-                f"""{termColors.WARNING}
-----------DEBUG MODE ON----------
-Detailed print statements activated.
-{termColors.ENDC}
-"""
-            )
-        if debug_max_entries_to_parse > 0:
-            logger.info(
-                f"""{termColors.OKCYAN}
-----------LIMITER ON----------
-Data transfer will be limited to
-{debug_max_entries_to_parse} entries.")
-{termColors.ENDC}
-"""
-            )
