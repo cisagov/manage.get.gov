@@ -24,6 +24,14 @@ a.breadcrumb__back {
 
 a.usa-button {
   text-decoration: none;
+  color: color('white');
+}
+
+a.usa-button:visited,
+a.usa-button:hover,
+a.usa-button:focus,
+a.usa-button:active {
+  color: color('white');
 }
   
 a.usa-button--outline,
