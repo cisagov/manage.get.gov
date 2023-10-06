@@ -20,6 +20,7 @@ body:
     attributes:
       label: Acceptance criteria
       description: "If known, share 1-3 statements that would need to be true for this issue to be considered resolved. Use a [task list](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists) if appropriate."
+      placeholder: "- [ ] The button does the thing."
   - type: textarea
     id: links-to-other-issues
     attributes:
