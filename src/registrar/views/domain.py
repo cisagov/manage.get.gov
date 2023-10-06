@@ -554,7 +554,11 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         """The initial value for the form."""
         domain = self.get_object()
         initial = super().get_initial()
-        initial["security_email"] = domain.security_contact.email
+        security_contact = domain.security_contact
+        if security_contact is None or security_contact.email == "dotgov@cisa.dhs.gov":
+            initial["security_email"] = None
+            return initial
+        initial["security_email"] = security_contact.email
         return initial
 
     def get_success_url(self):
@@ -583,7 +587,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         contact.save()
 
         messages.success(
-            self.request, "The security email for this domain have been updated."
+            self.request, "The security email for this domain has been updated."
         )
 
         # superclass has the redirect
