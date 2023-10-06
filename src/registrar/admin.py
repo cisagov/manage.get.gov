@@ -141,12 +141,17 @@ class MyUserAdmin(BaseUserAdmin):
         "group",
         "status",
     )
+    
+    list_filter = (
+        "is_active",
+        "groups",
+    )
 
     # Let's define First group
     # (which should in theory be the ONLY group)
     def group(self, obj):
         if obj.groups.filter(name="full_access_group").exists():
-            return "Super User"
+            return "Full access"
         elif obj.groups.filter(name="cisa_analysts_group").exists():
             return "Analyst"
         return ""
