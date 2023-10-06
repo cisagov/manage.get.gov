@@ -689,18 +689,18 @@ class MockEppLib(TestCase):
         "alg": 1,
         "pubKey": "AQPJ////4Q==",
     }
-    dnssecExtensionWithDsData: Mapping[str, Any] = {
-        "dsData": [common.DSData(**addDsData1)]
+    dnssecExtensionWithDsData: Mapping[Any, Any] = {
+        "dsData": [common.DSData(**addDsData1)]  # type: ignore
     }
     dnssecExtensionWithMultDsData: Mapping[str, Any] = {
         "dsData": [
-            common.DSData(**addDsData1),
-            common.DSData(**addDsData2),
+            common.DSData(**addDsData1),  # type: ignore
+            common.DSData(**addDsData2),  # type: ignore
         ],
     }
     dnssecExtensionWithKeyData: Mapping[str, Any] = {
         "maxSigLife": 3215,
-        "keyData": [common.DNSSECKeyData(**keyDataDict)],
+        "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
     }
 
     def mockSend(self, _request, cleaned):
@@ -709,54 +709,9 @@ class MockEppLib(TestCase):
         returns objects that simulate what would be in a epp response
         but only relevant pieces for tests"""
         if isinstance(_request, commands.InfoDomain):
-            if getattr(_request, "name", None) == "security.gov":
-                return MagicMock(res_data=[self.infoDomainNoContact])
-            elif getattr(_request, "name", None) == "dnssec-dsdata.gov":
-                return MagicMock(
-                    res_data=[self.mockDataInfoDomain],
-                    extensions=[
-                        extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
-                    ],
-                )
-            elif getattr(_request, "name", None) == "dnssec-multdsdata.gov":
-                return MagicMock(
-                    res_data=[self.mockDataInfoDomain],
-                    extensions=[
-                        extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
-                    ],
-                )
-            elif getattr(_request, "name", None) == "dnssec-keydata.gov":
-                return MagicMock(
-                    res_data=[self.mockDataInfoDomain],
-                    extensions=[
-                        extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
-                    ],
-                )
-            elif getattr(_request, "name", None) == "dnssec-none.gov":
-                # this case is not necessary, but helps improve readability
-                return MagicMock(res_data=[self.mockDataInfoDomain])
-            elif getattr(_request, "name", None) == "freeman.gov":
-                return MagicMock(res_data=[self.InfoDomainWithContacts])
-            else:
-                return MagicMock(res_data=[self.mockDataInfoDomain])
+            return self.mockInfoDomainCommands(_request, cleaned)
         elif isinstance(_request, commands.InfoContact):
-            mocked_result: info.InfoContactResultData
-
-            # For testing contact types
-            match getattr(_request, "id", None):
-                case "securityContact":
-                    mocked_result = self.mockSecurityContact
-                case "technicalContact":
-                    mocked_result = self.mockTechnicalContact
-                case "adminContact":
-                    mocked_result = self.mockAdministrativeContact
-                case "regContact":
-                    mocked_result = self.mockRegistrantContact
-                case _:
-                    # Default contact return
-                    mocked_result = self.mockDataInfoContact
-
-            return MagicMock(res_data=[mocked_result])
+            return self.mockInfoContactCommands(_request, cleaned)
         elif (
             isinstance(_request, commands.CreateContact)
             and getattr(_request, "id", None) == "fail"
@@ -781,6 +736,57 @@ class MockEppLib(TestCase):
         ):
             raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
         return MagicMock(res_data=[self.mockDataInfoHosts])
+
+    def mockInfoDomainCommands(self, _request, cleaned):
+        if getattr(_request, "name", None) == "security.gov":
+            return MagicMock(res_data=[self.infoDomainNoContact])
+        elif getattr(_request, "name", None) == "dnssec-dsdata.gov":
+            return MagicMock(
+                res_data=[self.mockDataInfoDomain],
+                extensions=[
+                    extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+                ],
+            )
+        elif getattr(_request, "name", None) == "dnssec-multdsdata.gov":
+            return MagicMock(
+                res_data=[self.mockDataInfoDomain],
+                extensions=[
+                    extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
+                ],
+            )
+        elif getattr(_request, "name", None) == "dnssec-keydata.gov":
+            return MagicMock(
+                res_data=[self.mockDataInfoDomain],
+                extensions=[
+                    extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
+                ],
+            )
+        elif getattr(_request, "name", None) == "dnssec-none.gov":
+            # this case is not necessary, but helps improve readability
+            return MagicMock(res_data=[self.mockDataInfoDomain])
+        elif getattr(_request, "name", None) == "freeman.gov":
+            return MagicMock(res_data=[self.InfoDomainWithContacts])
+        else:
+            return MagicMock(res_data=[self.mockDataInfoDomain])
+
+    def mockInfoContactCommands(self, _request, cleaned):
+        mocked_result: info.InfoContactResultData
+
+        # For testing contact types
+        match getattr(_request, "id", None):
+            case "securityContact":
+                mocked_result = self.mockSecurityContact
+            case "technicalContact":
+                mocked_result = self.mockTechnicalContact
+            case "adminContact":
+                mocked_result = self.mockAdministrativeContact
+            case "regContact":
+                mocked_result = self.mockRegistrantContact
+            case _:
+                # Default contact return
+                mocked_result = self.mockDataInfoContact
+
+        return MagicMock(res_data=[mocked_result])
 
     def setUp(self):
         """mock epp send function as this will fail locally"""

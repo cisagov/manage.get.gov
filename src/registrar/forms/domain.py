@@ -7,7 +7,13 @@ from django.forms import formset_factory
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 
 from ..models import Contact, DomainInformation
-from .common import ALGORITHM_CHOICES, DIGEST_TYPE_CHOICES, FLAG_CHOICES, PROTOCOL_CHOICES
+from .common import (
+    ALGORITHM_CHOICES,
+    DIGEST_TYPE_CHOICES,
+    FLAG_CHOICES,
+    PROTOCOL_CHOICES,
+)
+
 
 class DomainAddUserForm(forms.Form):
 
@@ -157,35 +163,27 @@ class DomainDsdataForm(forms.Form):
             MinValueValidator(0, message="Value must be between 0 and 65535"),
             MaxValueValidator(65535, message="Value must be between 0 and 65535"),
         ],
-        error_messages={
-            "required": ("Key tag is required.")
-        },
+        error_messages={"required": ("Key tag is required.")},
     )
-    
+
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
-        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,
-        error_messages={
-            "required": ("Algorithm is required.")
-        },
+        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
+        error_messages={"required": ("Algorithm is required.")},
     )
 
     digest_type = forms.TypedChoiceField(
         required=True,
         label="Digest Type",
-        choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,
-        error_messages={
-            "required": ("Digest Type is required.")
-        },
+        choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
+        error_messages={"required": ("Digest Type is required.")},
     )
 
     digest = forms.CharField(
         required=True,
         label="Digest",
-        error_messages={
-            "required": ("Digest is required.")
-        },
+        error_messages={"required": ("Digest is required.")},
     )
 
 
@@ -204,35 +202,27 @@ class DomainKeydataForm(forms.Form):
         required=True,
         label="Flag",
         choices=FLAG_CHOICES,
-        error_messages={
-            "required": ("Flag is required.")
-        },
+        error_messages={"required": ("Flag is required.")},
     )
 
     protocol = forms.TypedChoiceField(
         required=True,
         label="Protocol",
         choices=PROTOCOL_CHOICES,
-        error_messages={
-            "required": ("Protocol is required.")
-        },
+        error_messages={"required": ("Protocol is required.")},
     )
 
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
-        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,
-        error_messages={
-            "required": ("Algorithm is required.")
-        },
+        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
+        error_messages={"required": ("Algorithm is required.")},
     )
-    
+
     pub_key = forms.CharField(
         required=True,
         label="Pub key",
-        error_messages={
-            "required": ("Pub key is required.")
-        },
+        error_messages={"required": ("Pub key is required.")},
     )
 
 

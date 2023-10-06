@@ -18,11 +18,13 @@ def startswith(text, starts):
         return text.startswith(starts)
     return False
 
+
 @register.filter("endswith")
 def endswith(text, ends):
     if isinstance(text, str):
         return text.endswith(ends)
     return False
+
 
 @register.simple_tag
 def public_site_url(url_path):
