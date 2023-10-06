@@ -12,6 +12,7 @@ class TransitionDomain(TimeStampedModel):
     """Transition Domain model stores information about the
     state of a domain upon transition between registry
     providers"""
+    StatusChoices=StatusChoices
 
     StatusChoices = StatusChoices
 
