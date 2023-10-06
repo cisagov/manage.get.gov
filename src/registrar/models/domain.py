@@ -1,8 +1,8 @@
+from itertools import zip_longest
 import logging
-
 from datetime import date
 from string import digits
-from django_fsm import FSMField, transition  # type: ignore
+from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
 
@@ -10,9 +10,12 @@ from epplibwrapper import (
     CLIENT as registry,
     commands,
     common as epp,
+    extensions,
+    info as eppInfo,
     RegistryError,
     ErrorCode,
 )
+from registrar.models.utility.contact_error import ContactError
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
@@ -279,6 +282,27 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             return e.code
 
+    @Cache
+    def dnssecdata(self) -> extensions.DNSSECExtension:
+        return self._get_property("dnssecdata")
+
+    @dnssecdata.setter  # type: ignore
+    def dnssecdata(self, _dnssecdata: extensions.DNSSECExtension):
+        updateParams = {
+            "maxSigLife": _dnssecdata.get("maxSigLife", None),
+            "dsData": _dnssecdata.get("dsData", None),
+            "keyData": _dnssecdata.get("keyData", None),
+            "remAllDsKeyData": True,
+        }
+        request = commands.UpdateDomain(name=self.name)
+        extension = commands.UpdateDomainDNSSECExtension(**updateParams)
+        request.add_extension(extension)
+        try:
+            registry.send(request, cleaned=True)
+        except RegistryError as e:
+            logger.error("Error adding DNSSEC, code was %s error was %s" % (e.code, e))
+            raise e
+
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str]]):
         """host should be a tuple of type str, str,... where the elements are
@@ -352,9 +376,9 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     @Cache
-    def registrant_contact(self) -> PublicContact:
-        """Get or set the registrant for this domain."""
-        raise NotImplementedError()
+    def registrant_contact(self) -> PublicContact | None:
+        registrant = PublicContact.ContactTypeChoices.REGISTRANT
+        return self.generic_contact_getter(registrant)
 
     @registrant_contact.setter  # type: ignore
     def registrant_contact(self, contact: PublicContact):
@@ -367,9 +391,10 @@ class Domain(TimeStampedModel, DomainHelper):
         )
 
     @Cache
-    def administrative_contact(self) -> PublicContact:
-        """Get or set the admin contact for this domain."""
-        raise NotImplementedError()
+    def administrative_contact(self) -> PublicContact | None:
+        """Get the admin contact for this domain."""
+        admin = PublicContact.ContactTypeChoices.ADMINISTRATIVE
+        return self.generic_contact_getter(admin)
 
     @administrative_contact.setter  # type: ignore
     def administrative_contact(self, contact: PublicContact):
@@ -380,12 +405,6 @@ class Domain(TimeStampedModel, DomainHelper):
             )
         self._make_contact_in_registry(contact=contact)
         self._update_domain_with_contact(contact, rem=False)
-
-    def get_default_security_contact(self):
-        logger.info("getting default sec contact")
-        contact = PublicContact.get_default_security()
-        contact.domain = self
-        return contact
 
     def _update_epp_contact(self, contact: PublicContact):
         """Sends UpdateContact to update the actual contact object,
@@ -440,26 +459,10 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
     @Cache
-    def security_contact(self) -> PublicContact:
+    def security_contact(self) -> PublicContact | None:
         """Get or set the security contact for this domain."""
-        try:
-            contacts = self._get_property("contacts")
-            for contact in contacts:
-                if (
-                    "type" in contact.keys()
-                    and contact["type"] == PublicContact.ContactTypeChoices.SECURITY
-                ):
-                    tempContact = self.get_default_security_contact()
-                    tempContact.email = contact["email"]
-                    return tempContact
-
-        except Exception as err:  # use better error handling
-            logger.info("Couldn't get contact %s" % err)
-
-            # TODO - remove this ideally it should return None,
-            # but error handling needs to be
-            # added on the security email page so that it can handle it being none
-        return self.get_default_security_contact()
+        security = PublicContact.ContactTypeChoices.SECURITY
+        return self.generic_contact_getter(security)
 
     def _add_registrant_to_existing_domain(self, contact: PublicContact):
         """Used to change the registrant contact on an existing domain"""
@@ -533,6 +536,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 .filter(domain=self, contact_type=contact.contact_type)
                 .get()
             )
+
             if isRegistrant:
                 # send update domain only for registant contacts
                 existing_contact.delete()
@@ -589,9 +593,10 @@ class Domain(TimeStampedModel, DomainHelper):
         )
 
     @Cache
-    def technical_contact(self) -> PublicContact:
+    def technical_contact(self) -> PublicContact | None:
         """Get or set the tech contact for this domain."""
-        raise NotImplementedError()
+        tech = PublicContact.ContactTypeChoices.TECHNICAL
+        return self.generic_contact_getter(tech)
 
     @technical_contact.setter  # type: ignore
     def technical_contact(self, contact: PublicContact):
@@ -608,11 +613,6 @@ class Domain(TimeStampedModel, DomainHelper):
         could be replaced with request to see if ok status is set
         """
         return self.state == self.State.READY
-
-    def delete_request(self):
-        """Delete from host. Possibly a duplicate of _delete_host?"""
-        # TODO fix in ticket #901
-        pass
 
     def transfer(self):
         """Going somewhere. Not implemented."""
@@ -658,7 +658,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.DeleteDomain(name=self.name)
-        registry.send(request)
+        registry.send(request, cleaned=True)
 
     def __str__(self) -> str:
         return self.name
@@ -678,6 +678,231 @@ class Domain(TimeStampedModel, DomainHelper):
         protected=True,  # cannot change state directly, particularly in Django admin
         help_text="Very basic info about the lifecycle of this domain object",
     )
+
+    def isActive(self):
+        return self.state == Domain.State.CREATED
+
+    def map_epp_contact_to_public_contact(
+        self, contact: eppInfo.InfoContactResultData, contact_id, contact_type
+    ):
+        """Maps the Epp contact representation to a PublicContact object.
+
+        contact -> eppInfo.InfoContactResultData: The converted contact object
+
+        contact_id -> str: The given registry_id of the object (i.e "cheese@cia.gov")
+
+        contact_type -> str: The given contact type, (i.e. "tech" or "registrant")
+        """
+
+        if contact is None:
+            return None
+
+        if contact_type is None:
+            raise ContactError("contact_type is None")
+
+        if contact_id is None:
+            raise ContactError("contact_id is None")
+
+        # Since contact_id is registry_id,
+        # check that its the right length
+        contact_id_length = len(contact_id)
+        if (
+            contact_id_length > PublicContact.get_max_id_length()
+            or contact_id_length < 1
+        ):
+            raise ContactError(
+                "contact_id is of invalid length. "
+                "Cannot exceed 16 characters, "
+                f"got {contact_id} with a length of {contact_id_length}"
+            )
+
+        if not isinstance(contact, eppInfo.InfoContactResultData):
+            raise ContactError("Contact must be of type InfoContactResultData")
+
+        auth_info = contact.auth_info
+        postal_info = contact.postal_info
+        addr = postal_info.addr
+        streets = None
+        if addr is not None:
+            streets = addr.street
+        streets_kwargs = self._convert_streets_to_dict(streets)
+        desired_contact = PublicContact(
+            domain=self,
+            contact_type=contact_type,
+            registry_id=contact_id,
+            email=contact.email or "",
+            voice=contact.voice or "",
+            fax=contact.fax,
+            name=postal_info.name or "",
+            org=postal_info.org,
+            # For linter - default to "" instead of None
+            pw=getattr(auth_info, "pw", ""),
+            city=getattr(addr, "city", ""),
+            pc=getattr(addr, "pc", ""),
+            cc=getattr(addr, "cc", ""),
+            sp=getattr(addr, "sp", ""),
+            **streets_kwargs,
+        )  # type: ignore
+
+        return desired_contact
+
+    def _convert_streets_to_dict(self, streets):
+        """
+        Converts EPPLibs street representation
+        to PublicContacts.
+
+        Args:
+            streets (Sequence[str]): Streets from EPPLib.
+
+        Returns:
+            dict: {
+                "street1": str or "",
+
+                "street2": str or None,
+
+                "street3": str or None,
+            }
+
+        EPPLib returns 'street' as an sequence of strings.
+        Meanwhile, PublicContact has this split into three
+        seperate properties: street1, street2, street3.
+
+        Handles this disparity.
+        """
+        # 'zips' two lists together.
+        # For instance, (('street1', 'some_value_here'),
+        # ('street2', 'some_value_here'))
+        # Dict then converts this to a useable kwarg which we can pass in
+        street_dict = dict(
+            zip_longest(
+                ["street1", "street2", "street3"],
+                streets if streets is not None else [""],
+                fillvalue=None,
+            )
+        )
+        return street_dict
+
+    def _request_contact_info(self, contact: PublicContact):
+        try:
+            req = commands.InfoContact(id=contact.registry_id)
+            return registry.send(req, cleaned=True).res_data[0]
+        except RegistryError as error:
+            logger.error(
+                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
+                contact.registry_id,
+                contact.contact_type,
+                error.code,
+                error,
+            )
+            raise error
+
+    def generic_contact_getter(
+        self, contact_type_choice: PublicContact.ContactTypeChoices
+    ) -> PublicContact | None:
+        """Retrieves the desired PublicContact from the registry.
+        This abstracts the caching and EPP retrieval for
+        all contact items and thus may result in EPP calls being sent.
+
+        contact_type_choice is a literal in PublicContact.ContactTypeChoices,
+        for instance: PublicContact.ContactTypeChoices.SECURITY.
+
+        If you wanted to setup getter logic for Security, you would call:
+        cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
+        or cache_contact_helper("security").
+
+        """
+        # registrant_contact(s) are an edge case. They exist on
+        # the "registrant" property as opposed to contacts.
+        desired_property = "contacts"
+        if contact_type_choice == PublicContact.ContactTypeChoices.REGISTRANT:
+            desired_property = "registrant"
+
+        try:
+            # Grab from cache
+            contacts = self._get_property(desired_property)
+        except KeyError as error:
+            logger.error(f"Could not find {contact_type_choice}: {error}")
+            return None
+        else:
+            cached_contact = self.get_contact_in_keys(contacts, contact_type_choice)
+            if cached_contact is None:
+                # TODO - #1103
+                raise ContactError("No contact was found in cache or the registry")
+
+            return cached_contact
+
+    def get_default_security_contact(self):
+        """Gets the default security contact."""
+        contact = PublicContact.get_default_security()
+        contact.domain = self
+        return contact
+
+    def get_default_administrative_contact(self):
+        """Gets the default administrative contact."""
+        contact = PublicContact.get_default_administrative()
+        contact.domain = self
+        return contact
+
+    def get_default_technical_contact(self):
+        """Gets the default technical contact."""
+        contact = PublicContact.get_default_technical()
+        contact.domain = self
+        return contact
+
+    def get_default_registrant_contact(self):
+        """Gets the default registrant contact."""
+        contact = PublicContact.get_default_registrant()
+        contact.domain = self
+        return contact
+
+    def get_contact_in_keys(self, contacts, contact_type):
+        """Gets a contact object.
+
+        Args:
+            contacts ([PublicContact]): List of PublicContacts
+            contact_type (literal): Which PublicContact to get
+        Returns:
+            PublicContact | None
+        """
+        # Registrant doesn't exist as an array, and is of
+        # a special data type, so we need to handle that.
+        if contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
+            desired_contact = None
+            if isinstance(contacts, str):
+                desired_contact = self._registrant_to_public_contact(
+                    self._cache["registrant"]
+                )
+                # Set the cache with the updated object
+                # for performance reasons.
+                if "registrant" in self._cache:
+                    self._cache["registrant"] = desired_contact
+            elif isinstance(contacts, PublicContact):
+                desired_contact = contacts
+
+            return self._handle_registrant_contact(desired_contact)
+
+        _registry_id: str
+        if contact_type in contacts:
+            _registry_id = contacts.get(contact_type)
+
+        desired = PublicContact.objects.filter(
+            registry_id=_registry_id, domain=self, contact_type=contact_type
+        )
+
+        if desired.count() == 1:
+            return desired.get()
+
+        logger.info(f"Requested contact {_registry_id} does not exist in cache.")
+        return None
+
+    def _handle_registrant_contact(self, contact):
+        if (
+            contact.contact_type is not None
+            and contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT
+        ):
+            return contact
+        else:
+            raise ValueError("Invalid contact object for registrant_contact")
 
     # ForeignKey on UserDomainRole creates a "permissions" member for
     # all of the user-roles that are in place for this domain
@@ -725,9 +950,9 @@ class Domain(TimeStampedModel, DomainHelper):
             try:
                 logger.info("Getting domain info from epp")
                 req = commands.InfoDomain(name=self.name)
-                domainInfo = registry.send(req, cleaned=True).res_data[0]
+                domainInfoResponse = registry.send(req, cleaned=True)
                 exitEarly = True
-                return domainInfo
+                return domainInfoResponse
             except RegistryError as e:
                 count += 1
 
@@ -777,12 +1002,10 @@ class Domain(TimeStampedModel, DomainHelper):
         security_contact = self.get_default_security_contact()
         security_contact.save()
 
-        technical_contact = PublicContact.get_default_technical()
-        technical_contact.domain = self
+        technical_contact = self.get_default_technical_contact()
         technical_contact.save()
 
-        administrative_contact = PublicContact.get_default_administrative()
-        administrative_contact.domain = self
+        administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
     @transition(
@@ -804,16 +1027,32 @@ class Domain(TimeStampedModel, DomainHelper):
         self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=State.ON_HOLD, target=State.DELETED)
-    def deleted(self):
-        """domain is deleted in epp but is saved in our database"""
-        # TODO Domains may not be deleted if:
-        #  a child host is being used by
-        # another .gov domains.  The host must be first removed
-        # and/or renamed before the parent domain may be deleted.
-        logger.info("pendingCreate()-> inside pending create")
-        self._delete_domain()
-        # TODO - delete ticket any additional error handling here
+    @transition(
+        field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED
+    )
+    def deletedInEpp(self):
+        """Domain is deleted in epp but is saved in our database.
+        Error handling should be provided by the caller."""
+        # While we want to log errors, we want to preserve
+        # that information when this function is called.
+        # Human-readable errors are introduced at the admin.py level,
+        # as doing everything here would reduce reliablity.
+        try:
+            logger.info("deletedInEpp()-> inside _delete_domain")
+            self._delete_domain()
+        except RegistryError as err:
+            logger.error(f"Could not delete domain. Registry returned error: {err}")
+            raise err
+        except TransitionNotAllowed as err:
+            logger.error("Could not delete domain. FSM failure: {err}")
+            raise err
+        except Exception as err:
+            logger.error(
+                f"Could not delete domain. An unspecified error occured: {err}"
+            )
+            raise err
+        else:
+            self._invalidate_cache()
 
     @transition(
         field="state",
@@ -910,16 +1149,34 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
             return err.code
 
-    def _request_contact_info(self, contact: PublicContact):
-        req = commands.InfoContact(id=contact.registry_id)
-        return registry.send(req, cleaned=True).res_data[0]
+    def _fetch_contacts(self, contact_data):
+        """Fetch contact info."""
+        choices = PublicContact.ContactTypeChoices
+        # We expect that all these fields get populated,
+        # so we can create these early, rather than waiting.
+        contacts_dict = {
+            choices.ADMINISTRATIVE: None,
+            choices.SECURITY: None,
+            choices.TECHNICAL: None,
+        }
+        for domainContact in contact_data:
+            req = commands.InfoContact(id=domainContact.contact)
+            data = registry.send(req, cleaned=True).res_data[0]
+
+            # Map the object we recieved from EPP to a PublicContact
+            mapped_object = self.map_epp_contact_to_public_contact(
+                data, domainContact.contact, domainContact.type
+            )
+
+            # Find/create it in the DB
+            in_db = self._get_or_create_public_contact(mapped_object)
+            contacts_dict[in_db.contact_type] = in_db.registry_id
+        return contacts_dict
 
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
-
         try:
             return self._request_contact_info(contact)
-
         except RegistryError as e:
             if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                 logger.info(
@@ -942,6 +1199,23 @@ class Domain(TimeStampedModel, DomainHelper):
 
                 raise e
 
+    def _fetch_hosts(self, host_data):
+        """Fetch host info."""
+        hosts = []
+        for name in host_data:
+            req = commands.InfoHost(name=name)
+            data = registry.send(req, cleaned=True).res_data[0]
+            host = {
+                "name": name,
+                "addrs": getattr(data, "addrs", ...),
+                "cr_date": getattr(data, "cr_date", ...),
+                "statuses": getattr(data, "statuses", ...),
+                "tr_date": getattr(data, "tr_date", ...),
+                "up_date": getattr(data, "up_date", ...),
+            }
+            hosts.append({k: v for k, v in host.items() if v is not ...})
+        return hosts
+
     def _update_or_create_host(self, host):
         raise NotImplementedError()
 
@@ -952,7 +1226,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """Contact registry for info about a domain."""
         try:
             # get info from registry
-            data = self._get_or_create_domain()
+            dataResponse = self._get_or_create_domain()
+            data = dataResponse.res_data[0]
             # extract properties from response
             # (Ellipsis is used to mean "null")
             cache = {
@@ -967,88 +1242,115 @@ class Domain(TimeStampedModel, DomainHelper):
                 "tr_date": getattr(data, "tr_date", ...),
                 "up_date": getattr(data, "up_date", ...),
             }
-
             # remove null properties (to distinguish between "a value of None" and null)
             cleaned = {k: v for k, v in cache.items() if v is not ...}
 
             # statuses can just be a list no need to keep the epp object
-            if "statuses" in cleaned.keys():
+            if "statuses" in cleaned:
                 cleaned["statuses"] = [status.state for status in cleaned["statuses"]]
+
+            # get extensions info, if there is any
+            # DNSSECExtension is one possible extension, make sure to handle
+            # only DNSSECExtension and not other type extensions
+            returned_extensions = dataResponse.extensions
+            cleaned["dnssecdata"] = None
+            for extension in returned_extensions:
+                if isinstance(extension, extensions.DNSSECExtension):
+                    cleaned["dnssecdata"] = extension
+            # Capture and store old hosts and contacts from cache if they exist
+            old_cache_hosts = self._cache.get("hosts")
+            old_cache_contacts = self._cache.get("contacts")
+
             # get contact info, if there are any
             if (
-                # fetch_contacts and
-                "_contacts" in cleaned
+                fetch_contacts
+                and "_contacts" in cleaned
                 and isinstance(cleaned["_contacts"], list)
-                and len(cleaned["_contacts"])
+                and len(cleaned["_contacts"]) > 0
             ):
-                cleaned["contacts"] = []
-                for domainContact in cleaned["_contacts"]:
-                    # we do not use _get_or_create_* because we expect the object we
-                    # just asked the registry for still exists --
-                    # if not, that's a problem
-
-                    # TODO- discuss-should we check if contact is in public contacts
-                    # and add it if not- this is really to keep in mine the transisiton
-                    req = commands.InfoContact(id=domainContact.contact)
-                    data = registry.send(req, cleaned=True).res_data[0]
-
-                    # extract properties from response
-                    # (Ellipsis is used to mean "null")
-                    # convert this to use PublicContactInstead
-                    contact = {
-                        "id": domainContact.contact,
-                        "type": domainContact.type,
-                        "auth_info": getattr(data, "auth_info", ...),
-                        "cr_date": getattr(data, "cr_date", ...),
-                        "disclose": getattr(data, "disclose", ...),
-                        "email": getattr(data, "email", ...),
-                        "fax": getattr(data, "fax", ...),
-                        "postal_info": getattr(data, "postal_info", ...),
-                        "statuses": getattr(data, "statuses", ...),
-                        "tr_date": getattr(data, "tr_date", ...),
-                        "up_date": getattr(data, "up_date", ...),
-                        "voice": getattr(data, "voice", ...),
-                    }
-
-                    cleaned["contacts"].append(
-                        {k: v for k, v in contact.items() if v is not ...}
-                    )
+                cleaned["contacts"] = self._fetch_contacts(cleaned["_contacts"])
+                # We're only getting contacts, so retain the old
+                # hosts that existed in cache (if they existed)
+                # and pass them along.
+                if old_cache_hosts is not None:
+                    cleaned["hosts"] = old_cache_hosts
 
             # get nameserver info, if there are any
             if (
-                # fetch_hosts and
-                "_hosts" in cleaned
+                fetch_hosts
+                and "_hosts" in cleaned
                 and isinstance(cleaned["_hosts"], list)
                 and len(cleaned["_hosts"])
             ):
-                # TODO- add elif in cache set it to be the old cache value
-                # no point in removing
-                cleaned["hosts"] = []
-                for name in cleaned["_hosts"]:
-                    # we do not use _get_or_create_* because we expect the object we
-                    # just asked the registry for still exists --
-                    # if not, that's a problem
-                    req = commands.InfoHost(name=name)
-                    data = registry.send(req, cleaned=True).res_data[0]
-                    # extract properties from response
-                    # (Ellipsis is used to mean "null")
-                    host = {
-                        "name": name,
-                        "addrs": getattr(data, "addrs", ...),
-                        "cr_date": getattr(data, "cr_date", ...),
-                        "statuses": getattr(data, "statuses", ...),
-                        "tr_date": getattr(data, "tr_date", ...),
-                        "up_date": getattr(data, "up_date", ...),
-                    }
-                    cleaned["hosts"].append(
-                        {k: v for k, v in host.items() if v is not ...}
-                    )
-
+                cleaned["hosts"] = self._fetch_hosts(cleaned["_hosts"])
+                # We're only getting hosts, so retain the old
+                # contacts that existed in cache (if they existed)
+                # and pass them along.
+                if old_cache_contacts is not None:
+                    cleaned["contacts"] = old_cache_contacts
             # replace the prior cache with new data
             self._cache = cleaned
 
         except RegistryError as e:
             logger.error(e)
+
+    def _get_or_create_public_contact(self, public_contact: PublicContact):
+        """Tries to find a PublicContact object in our DB.
+        If it can't, it'll create it. Returns PublicContact"""
+        db_contact = PublicContact.objects.filter(
+            registry_id=public_contact.registry_id,
+            contact_type=public_contact.contact_type,
+            domain=self,
+        )
+
+        # Raise an error if we find duplicates.
+        # This should not occur
+        if db_contact.count() > 1:
+            raise Exception(
+                f"Multiple contacts found for {public_contact.contact_type}"
+            )
+
+        # Save to DB if it doesn't exist already.
+        if db_contact.count() == 0:
+            # Doesn't run custom save logic, just saves to DB
+            public_contact.save(skip_epp_save=True)
+            logger.info(f"Created a new PublicContact: {public_contact}")
+            # Append the item we just created
+            return public_contact
+
+        existing_contact = db_contact.get()
+
+        # Does the item we're grabbing match
+        # what we have in our DB?
+        if (
+            existing_contact.email != public_contact.email
+            or existing_contact.registry_id != public_contact.registry_id
+        ):
+            existing_contact.delete()
+            public_contact.save()
+            logger.warning("Requested PublicContact is out of sync " "with DB.")
+            return public_contact
+        # If it already exists, we can
+        # assume that the DB instance was updated
+        # during set, so we should just use that.
+        return existing_contact
+
+    def _registrant_to_public_contact(self, registry_id: str):
+        """EPPLib returns the registrant as a string,
+        which is the registrants associated registry_id. This function is used to
+        convert that id to a useable object by calling commands.InfoContact
+        on that ID, then mapping that object to type PublicContact."""
+        contact = PublicContact(
+            registry_id=registry_id,
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+        )
+        # Grabs the expanded contact
+        full_object = self._request_contact_info(contact)
+        # Maps it to type PublicContact
+        mapped_object = self.map_epp_contact_to_public_contact(
+            full_object, contact.registry_id, contact.contact_type
+        )
+        return self._get_or_create_public_contact(mapped_object)
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""

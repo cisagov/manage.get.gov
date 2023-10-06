@@ -139,10 +139,17 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         """The initial value for the form (which is a formset here)."""
         domain = self.get_object()
         nameservers = domain.nameservers
-        if nameservers is None:
-            return []
+        initial_data = []
 
-        return [{"server": name} for name, *ip in domain.nameservers]
+        if nameservers is not None:
+            # Add existing nameservers as initial data
+            initial_data.extend({"server": name} for name, *ip in nameservers)
+
+        # Ensure at least 3 fields, filled or empty
+        while len(initial_data) < 2:
+            initial_data.append({})
+
+        return initial_data
 
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""
@@ -158,6 +165,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
     def get_form(self, **kwargs):
         """Override the labels and required fields every time we get a formset."""
         formset = super().get_form(**kwargs)
+
         for i, form in enumerate(formset):
             form.fields["server"].label += f" {i+1}"
             if i < 2:
@@ -251,7 +259,11 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         """The initial value for the form."""
         domain = self.get_object()
         initial = super().get_initial()
-        initial["security_email"] = domain.security_contact.email
+        security_contact = domain.security_contact
+        if security_contact is None or security_contact.email == "dotgov@cisa.dhs.gov":
+            initial["security_email"] = None
+            return initial
+        initial["security_email"] = security_contact.email
         return initial
 
     def get_success_url(self):
@@ -280,7 +292,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         contact.save()
 
         messages.success(
-            self.request, "The security email for this domain have been updated."
+            self.request, "The security email for this domain has been updated."
         )
 
         # superclass has the redirect
