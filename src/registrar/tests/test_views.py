@@ -1133,7 +1133,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 self.assertEqual(response.status_code, 403)
 
 
-class TestDomainDetail(TestWithDomainPermissions, WebTest):
+class TestDomainOverview(TestWithDomainPermissions, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
@@ -1146,6 +1146,13 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         detail_page = home_page.click("Manage")
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
+
+
+class TestDomainUserManagement(TestWithDomainPermissions, WebTest):
+    def setUp(self):
+        super().setUp()
+        self.app.set_user(self.user.username)
+        self.client.force_login(self.user)
 
     def test_domain_user_management(self):
         response = self.client.get(
