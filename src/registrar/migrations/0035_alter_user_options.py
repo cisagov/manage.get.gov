@@ -5,7 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0033_usergroup"),
+        ("registrar", "0034_usergroup"),
     ]
 
     operations = [
