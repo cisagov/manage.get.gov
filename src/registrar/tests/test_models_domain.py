@@ -1094,7 +1094,7 @@ class TestRegistrantNameservers(MockEppLib):
         ]
 
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertTrue(self.domain.is_active())
+        self.assertTrue(self.domainWithThreeNS.is_active())
 
     def test_user_removes_too_many_nameservers(self):
         """
@@ -1145,7 +1145,7 @@ class TestRegistrantNameservers(MockEppLib):
         ]
 
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertFalse(self.domain.is_active())
+        self.assertFalse(self.domainWithThreeNS.is_active())
 
     def test_user_replaces_nameservers(self):
         """
@@ -1157,7 +1157,7 @@ class TestRegistrantNameservers(MockEppLib):
             And `commands.UpdateDomain` is sent to add #4 and #5 plus remove #2 and #3
             And `commands.DeleteHost` is sent to delete #2 and #3
         """
-
+        print("in second failing test")
         self.domainWithThreeNS.nameservers = [
             (self.nameserver1,),
             ("ns1.cats-are-superior1.com",),
@@ -1220,7 +1220,7 @@ class TestRegistrantNameservers(MockEppLib):
         ]
 
         self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertTrue(self.domain.is_active())
+        self.assertTrue(self.domainWithThreeNS.is_active())
 
     def test_user_cannot_add_subordinate_without_ip(self):
         """
@@ -1395,6 +1395,7 @@ class TestRegistrantNameservers(MockEppLib):
             domain.nameservers = [("ns1.failednameserver.gov", ["4.5.6"])]
 
     def tearDown(self):
+        print("in tear down")
         Domain.objects.all().delete()
         return super().tearDown()
 

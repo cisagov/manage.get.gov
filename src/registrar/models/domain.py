@@ -449,11 +449,11 @@ class Domain(TimeStampedModel, DomainHelper):
             oldNameservers,
         ) = self.getNameserverChanges(hosts=hosts)
 
+        successCreatedCount = self._new_host_values(new_values)
         successDeletedCount = self._deleted_host_values(deleted_values)  # returns value
         _ = self._update_host_values(
             updated_values, oldNameservers
         )  # returns nothing, just need to be run and errors
-        successCreatedCount = self._new_host_values(new_values)
 
         successTotalNameservers = (
             len(oldNameservers) - successDeletedCount + successCreatedCount
