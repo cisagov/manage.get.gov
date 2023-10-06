@@ -15,7 +15,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from registrar.models.utility.nameserver_error import (
+from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
 )

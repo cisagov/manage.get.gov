@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from registrar.models.utility.nameserver_error import (
+from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
 )

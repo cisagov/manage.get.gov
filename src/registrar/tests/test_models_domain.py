@@ -16,7 +16,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
-from registrar.models.utility.nameserver_error import NameserverError
+from registrar.utility.errors import NameserverError
 from .common import MockEppLib
 from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
