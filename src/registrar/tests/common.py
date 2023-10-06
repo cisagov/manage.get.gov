@@ -680,7 +680,6 @@ class MockEppLib(TestCase):
             "ns1.my-nameserver-2.com",
             "ns1.cats-are-superior3.com",
         ],
-
     )
     infoDomainNoHost = fakedEppObject(
         "my-nameserver.gov",
@@ -717,7 +716,7 @@ class MockEppLib(TestCase):
         ],
         addrs=["1.2.3.4", "2.3.4.5"],
     )
-    
+
     infoDomainCheckHostIPCombo = fakedEppObject(
         "nameserversubdomain.gov",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
@@ -759,7 +758,7 @@ class MockEppLib(TestCase):
         but only relevant pieces for tests"""
         if isinstance(_request, commands.InfoDomain):
             return self._getattrInfoDomain(_request)
-           
+
         elif isinstance(_request, commands.InfoContact):
             mocked_result: info.InfoContactResultData
 

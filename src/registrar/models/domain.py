@@ -1366,6 +1366,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def is_ipv6(self, ip: str):
         ip_addr = ipaddress.ip_address(ip)
         return ip_addr.version == 6
+
     def _fetch_hosts(self, host_data):
         """Fetch host info."""
         hosts = []
