@@ -21,6 +21,7 @@ from registrar.models import (
     User,
     UserDomainRole,
 )
+from registrar.models.public_contact import PublicContact
 
 from ..forms import (
     ContactForm,
@@ -297,7 +298,11 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         """The form is valid, call setter in model."""
 
         # Set the security email from the form
-        new_email = form.cleaned_data.get("security_email", "")
+        new_email: str = form.cleaned_data.get("security_email", "")
+
+        # If we pass nothing for the sec email, set to the default
+        if new_email is None or new_email.strip() == "":
+            new_email = PublicContact.get_default_security().email
 
         domain = self.get_object()
         contact = domain.security_contact
