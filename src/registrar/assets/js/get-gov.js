@@ -376,23 +376,3 @@ function prepareDeleteButtons() {
   }
 
 })();
-
-function toggleElements() {
-  let element1 = document.getElementById("enable-dnssec");
-  let element2 = document.getElementById("add-records");
-  element1.classList.toggle("display-none");
-  element2.classList.toggle("display-none");
-}
-
-/**
- * An IIFE that attaches a click handler to toggle the DNSSEC warning on the DNSSEC landing page
- *
- */
-(function toggleDNSSECWarning() {
-  let toggle1 = document.getElementById("enable_dnssec");
-  if (toggle1)
-    toggle1.addEventListener("click", toggleElements);
-  let toggle2 = document.getElementById("cancel_dnssec");
-  if (toggle2)
-    toggle2.addEventListener("click", toggleElements);
-})();
