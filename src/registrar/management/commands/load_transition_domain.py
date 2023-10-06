@@ -30,7 +30,7 @@ class termColors:
     BackgroundLightYellow = "\033[103m"
 
 
-def query_yes_no(question: str, default="yes") -> dict[str,bool]:
+def query_yes_no(question: str, default="yes") -> dict[str, bool]:
     """Ask a yes/no question via raw_input() and return their answer.
 
     "question" is a string that is presented to the user.
@@ -81,16 +81,14 @@ class Command(BaseCommand):
         for testing purposes, but USE WITH CAUTION
         """
         parser.add_argument(
-            "domain_contacts_filename", 
-            help="Data file with domain contact information"
+            "domain_contacts_filename", help="Data file with domain contact information"
         )
         parser.add_argument(
             "contacts_filename",
             help="Data file with contact information",
         )
         parser.add_argument(
-            "domain_statuses_filename", 
-            help="Data file with domain status information"
+            "domain_statuses_filename", help="Data file with domain status information"
         )
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
@@ -107,7 +105,9 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-    def print_debug_mode_statements(self, debug_on: bool, debug_max_entries_to_parse: int):
+    def print_debug_mode_statements(
+        self, debug_on: bool, debug_max_entries_to_parse: int
+    ):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
         if debug_on:
@@ -117,7 +117,7 @@ class Command(BaseCommand):
                 Detailed print statements activated.
                 {termColors.ENDC}
                 """
-                )
+            )
         if debug_max_entries_to_parse > 0:
             logger.info(
                 f"""{termColors.OKCYAN}
@@ -127,9 +127,11 @@ class Command(BaseCommand):
                 Detailed print statements activated.
                 {termColors.ENDC}
                 """
-                )
+            )
 
-    def get_domain_user_dict(self, domain_statuses_filename: str, sep: str) -> defaultdict(str):
+    def get_domain_user_dict(
+        self, domain_statuses_filename: str, sep: str
+    ) -> defaultdict(str):
         """Creates a mapping of domain name -> status"""
         domain_status_dictionary = defaultdict(str)
         logger.info("Reading domain statuses data file %s", domain_statuses_filename)
@@ -172,12 +174,12 @@ class Command(BaseCommand):
         return status_maps.get(status_to_map)
 
     def print_summary_duplications(
-        self, 
-        duplicate_domain_user_combos: list[TransitionDomain], 
-        duplicate_domains: list[TransitionDomain], 
-        users_without_email: list[str]
+        self,
+        duplicate_domain_user_combos: list[TransitionDomain],
+        duplicate_domains: list[TransitionDomain],
+        users_without_email: list[str],
     ):
-        """Called at the end of the script execution to print out a summary of 
+        """Called at the end of the script execution to print out a summary of
         data anomalies in the imported Verisign data.  Currently, we check for:
         - duplicate domains
         - duplicate domain - user pairs
@@ -217,11 +219,10 @@ class Command(BaseCommand):
                     {termColors.ENDC}"""
             )
 
-    def print_summary_status_findings(self, 
-                                      domains_without_status: list[str], 
-                                      outlier_statuses: list[str]
-                                      ):
-        """Called at the end of the script execution to print out a summary of 
+    def print_summary_status_findings(
+        self, domains_without_status: list[str], outlier_statuses: list[str]
+    ):
+        """Called at the end of the script execution to print out a summary of
         status anomolies in the imported Verisign data.  Currently, we check for:
         - domains without a status
         - any statuses not accounted for in our status mappings (see
@@ -264,7 +265,6 @@ class Command(BaseCommand):
                 {termColors.ENDC}"""
             )
 
-
     def handle(  # noqa: C901
         self,
         domain_contacts_filename,
@@ -275,7 +275,7 @@ class Command(BaseCommand):
         """Parse the data files and create TransitionDomains."""
         sep = options.get("sep")
 
-        # If --resetTable was used, prompt user to confirm 
+        # If --resetTable was used, prompt user to confirm
         # deletion of table data
         if options.get("resetTable"):
             confirm_reset = query_yes_no(
@@ -356,7 +356,7 @@ class Command(BaseCommand):
 
                 new_entry_status = TransitionDomain.StatusChoices.READY
                 new_entry_email = ""
-                new_entry_emailSent = False # set to False by default
+                new_entry_emailSent = False  # set to False by default
 
                 if new_entry_domainName not in domain_status_dictionary:
                     # this domain has no status...default to "Create"
@@ -482,7 +482,7 @@ class Command(BaseCommand):
             updated {total_updated_domain_entries} transition domain entries
             {termColors.ENDC}
             """
-            )
+        )
 
         # Print a summary of findings (duplicate entries,
         # missing data..etc.)
