@@ -29,10 +29,9 @@ class termColors:
     UNDERLINE = "\033[4m"
     BackgroundLightYellow = "\033[103m"
 
-
-    def print_debug_mode_statements(self, 
-                                    debug_on: bool, 
-                                    debug_max_entries_to_parse: int):
+    def print_debug_mode_statements(
+        self, debug_on: bool, debug_max_entries_to_parse: int
+    ):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
         if debug_on:
@@ -65,9 +64,9 @@ class Command(BaseCommand):
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
         parser.add_argument(
-            "--limitParse", 
-            default=0, 
-            help="Sets max number of entries to load, set to 0 to load all entries"
+            "--limitParse",
+            default=0,
+            help="Sets max number of entries to load, set to 0 to load all entries",
         )
 
     def handle(  # noqa: C901
@@ -75,7 +74,7 @@ class Command(BaseCommand):
         **options,
     ):
         """Parse entries in TransitionDomain table
-        and create (or update) corresponding entries in the 
+        and create (or update) corresponding entries in the
         Domain and DomainInvitation tables."""
 
         # grab command line arguments and store locally...
@@ -117,7 +116,7 @@ class Command(BaseCommand):
                     logger.info(
                         f"""{termColors.YELLOW}
                         Processing Transition Domain: {transition_domain_name}, {transition_domain_status}
-                        {termColors.ENDC}""" # noqa
+                        {termColors.ENDC}"""  # noqa
                     )
 
                 # for existing entry, update the status to
@@ -130,7 +129,7 @@ class Command(BaseCommand):
                     logger.info(
                         f"""{termColors.YELLOW}
                         > Found existing domain entry for: {transition_domain_name}, {current_state}
-                        {termColors.ENDC}""" # noqa
+                        {termColors.ENDC}"""  # noqa
                     )
                 if transition_domain_status != current_state:
                     if (
@@ -147,21 +146,21 @@ class Command(BaseCommand):
                         logger.info(
                             f"""{termColors.YELLOW}
                             >> Updated {transition_domain_name} state from
-                            '{current_state}' to '{existingEntry.state}{termColors.ENDC}'
-                            (no domain invitation entry added)"""
+                            '{current_state}' to '{existingEntry.state}'
+                            (no domain invitation entry added)
+                            {termColors.ENDC}"""
                         )
             except Domain.DoesNotExist:
                 # no matching entry, make one
                 newEntry = Domain(
-                    name=transition_domain_name, 
-                    state=transition_domain_status
+                    name=transition_domain_name, state=transition_domain_status
                 )
                 domains_to_create.append(newEntry)
 
                 domain_invitations_to_create.append(
                     DomainInvitation(
                         email=transition_domain_email.lower(),
-                        domain=transition_domain_name
+                        domain=transition_domain_name,
                     )
                 )
 
@@ -247,5 +246,3 @@ class Command(BaseCommand):
                 {termColors.ENDC}
                 """
             )
-
-
