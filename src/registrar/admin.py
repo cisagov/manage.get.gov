@@ -141,7 +141,7 @@ class MyUserAdmin(BaseUserAdmin):
         "group",
         "status",
     )
-    
+
     list_filter = (
         "is_active",
         "groups",
