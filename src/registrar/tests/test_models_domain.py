@@ -16,7 +16,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
-from registrar.utility.errors import NameserverError
+from registrar.utility.errors import ActionNotAllowed, NameserverError
 from .common import MockEppLib
 from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
@@ -862,6 +862,9 @@ class TestRegistrantNameservers(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(
             name="my-nameserver.gov", state=Domain.State.DNS_NEEDED
         )
+        self.domainWithThreeNS, _ = Domain.objects.get_or_create(
+            name="threenameserversDomain.gov", state=Domain.State.READY
+        )
 
     def test_get_nameserver_changes_success_deleted_vals(self):
         # Testing only deleting and no other changes
@@ -1063,14 +1066,13 @@ class TestRegistrantNameservers(MockEppLib):
         """
 
         # Mock is set to return 3 nameservers on infodomain
-        self.threeNS = True
-        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
+        self.domainWithThreeNS.nameservers = [(self.nameserver1,), (self.nameserver2,)]
         expectedCalls = [
             # calls info domain, and info on all hosts
             # to get past values
             # then removes the single host and updates domain
             call(
-                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
                 cleaned=True,
             ),
             call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
@@ -1078,7 +1080,7 @@ class TestRegistrantNameservers(MockEppLib):
             call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             call(
                 commands.UpdateDomain(
-                    name="my-nameserver.gov",
+                    name=self.domainWithThreeNS.name,
                     add=[],
                     rem=[common.HostObjSet(hosts=["ns1.cats-are-superior3.com"])],
                     nsset=None,
@@ -1104,12 +1106,11 @@ class TestRegistrantNameservers(MockEppLib):
             And `domain.is_active` returns False
 
         """
-        self.threeNS = True
-        self.domain.ready()
-        self.domain.nameservers = [(self.nameserver1,)]
+
+        self.domainWithThreeNS.nameservers = [(self.nameserver1,)]
         expectedCalls = [
             call(
-                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
                 cleaned=True,
             ),
             call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
@@ -1117,7 +1118,7 @@ class TestRegistrantNameservers(MockEppLib):
             call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             call(
                 commands.UpdateDomain(
-                    name="my-nameserver.gov",
+                    name=self.domainWithThreeNS.name,
                     add=[],
                     rem=[common.HostObjSet(hosts=["ns1.my-nameserver-2.com"])],
                     nsset=None,
@@ -1130,7 +1131,7 @@ class TestRegistrantNameservers(MockEppLib):
             call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
             call(
                 commands.UpdateDomain(
-                    name="my-nameserver.gov",
+                    name=self.domainWithThreeNS.name,
                     add=[],
                     rem=[common.HostObjSet(hosts=["ns1.cats-are-superior3.com"])],
                     nsset=None,
@@ -1156,9 +1157,8 @@ class TestRegistrantNameservers(MockEppLib):
             And `commands.UpdateDomain` is sent to add #4 and #5 plus remove #2 and #3
             And `commands.DeleteHost` is sent to delete #2 and #3
         """
-        self.threeNS = True
-        self.domain.ready()
-        self.domain.nameservers = [
+
+        self.domainWithThreeNS.nameservers = [
             (self.nameserver1,),
             ("ns1.cats-are-superior1.com",),
             ("ns1.cats-are-superior2.com",),
@@ -1166,7 +1166,7 @@ class TestRegistrantNameservers(MockEppLib):
 
         expectedCalls = [
             call(
-                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
                 cleaned=True,
             ),
             call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
@@ -1174,7 +1174,7 @@ class TestRegistrantNameservers(MockEppLib):
             call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             call(
                 commands.UpdateDomain(
-                    name="my-nameserver.gov",
+                    name=self.domainWithThreeNS.name,
                     add=[],
                     rem=[common.HostObjSet(hosts=["ns1.my-nameserver-2.com"])],
                     nsset=None,
@@ -1191,7 +1191,7 @@ class TestRegistrantNameservers(MockEppLib):
             ),
             call(
                 commands.UpdateDomain(
-                    name="my-nameserver.gov",
+                    name=self.domainWithThreeNS.name,
                     add=[common.HostObjSet(hosts=["ns1.cats-are-superior1.com"])],
                     rem=[],
                     nsset=None,
@@ -1207,7 +1207,7 @@ class TestRegistrantNameservers(MockEppLib):
             ),
             call(
                 commands.UpdateDomain(
-                    name="my-nameserver.gov",
+                    name=self.domainWithThreeNS.name,
                     add=[common.HostObjSet(hosts=["ns1.cats-are-superior2.com"])],
                     rem=[],
                     nsset=None,
@@ -1312,14 +1312,9 @@ class TestRegistrantNameservers(MockEppLib):
                 to the registry twice with identical data
             Then no errors are raised in Domain
         """
-        # implementation note: this requires seeing what happens when these are actually
-        # sent like this, and then implementing appropriate mocks for any errors the
-        # registry normally sends in this case
-
-        self.threeNS = True
 
         # Checking that it doesn't create or update even if out of order
-        self.domain.nameservers = [
+        self.domainWithThreeNS.nameservers = [
             (self.nameserver3,),
             (self.nameserver1,),
             (self.nameserver2,),
@@ -1327,7 +1322,7 @@ class TestRegistrantNameservers(MockEppLib):
 
         expectedCalls = [
             call(
-                commands.InfoDomain(name="my-nameserver.gov", auth_info=None),
+                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
                 cleaned=True,
             ),
             call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
@@ -1371,6 +1366,15 @@ class TestRegistrantNameservers(MockEppLib):
                 ("ns2.nameserversubdomain.gov", ["2.3.4"]),
             ]
 
+    def test_setting_not_allowed(self):
+        """Scenario: A domain state is not Ready or DNS Needed
+        then setting nameservers is not allowed"""
+        domain, _ = Domain.objects.get_or_create(
+            name="onholdDomain.gov", state=Domain.State.ON_HOLD
+        )
+        with self.assertRaises(ActionNotAllowed):
+            domain.nameservers = [self.nameserver1, self.nameserver2]
+
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
         """
@@ -1391,7 +1395,6 @@ class TestRegistrantNameservers(MockEppLib):
             domain.nameservers = [("ns1.failednameserver.gov", ["4.5.6"])]
 
     def tearDown(self):
-        self.threeNS = False
         Domain.objects.all().delete()
         return super().tearDown()
 

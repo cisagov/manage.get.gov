@@ -727,17 +727,11 @@ class MockEppLib(TestCase):
         ],
     )
 
-    # Bc we have multiple tests utilizing 3 nameservers,
-    # easier to set a flag for it
-    threeNS = False
-
     def _getattrInfoDomain(self, _request):
         if getattr(_request, "name", None) == "security.gov":
             return MagicMock(res_data=[self.infoDomainNoContact])
         elif getattr(_request, "name", None) == "my-nameserver.gov":
-            if self.threeNS:
-                return MagicMock(res_data=[self.infoDomainThreeHosts])
-            elif self.mockedSendFunction.call_count == 5:
+            if self.mockedSendFunction.call_count == 5:
                 return MagicMock(res_data=[self.infoDomainTwoHosts])
             else:
                 return MagicMock(res_data=[self.infoDomainNoHost])
@@ -747,8 +741,8 @@ class MockEppLib(TestCase):
             return MagicMock(res_data=[self.infoDomainCheckHostIPCombo])
         elif getattr(_request, "name", None) == "freeman.gov":
             return MagicMock(res_data=[self.InfoDomainWithContacts])
-        # elif getattr(_request, "name", None) == "failednameserver.gov":
-        #     return MagicMock(res_data=[self.infoDomainUpdateFail])
+        elif getattr(_request, "name", None) == "threenameserversDomain.gov":
+            return MagicMock(res_data=[self.infoDomainThreeHosts])
         return MagicMock(res_data=[self.mockDataInfoDomain])
 
     def mockSend(self, _request, cleaned):

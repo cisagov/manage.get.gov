@@ -13,6 +13,13 @@ class DomainUnavailableError(ValueError):
     pass
 
 
+class ActionNotAllowed(Exception):
+    """User accessed an action that is not
+    allowed by the current state"""
+
+    pass
+
+
 class NameserverErrorCodes(IntEnum):
     """Used in the NameserverError class for
     error mapping.

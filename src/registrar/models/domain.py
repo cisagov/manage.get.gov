@@ -17,6 +17,7 @@ from epplibwrapper import (
     ErrorCode,
 )
 from registrar.utility.errors import (
+    ActionNotAllowed,
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
 )
@@ -433,6 +434,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
         if len(hosts) > 13:
             raise NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS)
+
+        if self.state not in [self.State.DNS_NEEDED, self.State.READY]:
+            raise ActionNotAllowed("Nameservers can not be " "set in the current state")
+
         logger.info("Setting nameservers")
         logger.info(hosts)
 
@@ -465,9 +470,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
         elif successTotalNameservers >= 2 and successTotalNameservers <= 13:
             try:
-                print(
-                    "READY/SAVE: We are in happy path where btwen 2 and 13 inclusive ns"
-                )
                 self.ready()
                 self.save()
             except Exception as err:
