@@ -14,5 +14,6 @@ For more details, refer to the [user group model](../../src/registrar/models/use
 We can edit and deploy new group permissions by:
 
 1. editing `user_group` then:
-2. Duplicating migration `0036_create_groups`
-and running migrations
+2. Duplicating migration `0036_create_groups_01`
+and running migrations (append the name with a version number
+to help django detect the migration eg 0037_create_groups_02)
