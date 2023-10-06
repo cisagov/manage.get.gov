@@ -25,7 +25,7 @@ body:
     attributes:
       label: Links to other issues
       description: |
-        "Add the issue #number of other issues this relates to and how (e.g., 🚧 Blocks, ⛔️ Is blocked by, 🔄 Relates to)."
+        Add the issue #number of other issues this relates to and how (e.g., 🚧 Blocks, ⛔️ Is blocked by, 🔄 Relates to).
       placeholder: 🔄 Relates to... 
   - type: markdown
     id: note
