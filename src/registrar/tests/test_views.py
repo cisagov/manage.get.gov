@@ -1645,7 +1645,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         page = result.follow()
         self.assertContains(page, "The DS Data records for this domain have been updated.")
 
-    def test_domain_nameservers_form_invalid(self):
+    def test_ds_data_form_invalid(self):
         """DS Data form errors with invalid data
 
         Uses self.app WebTest because we need to interact with forms.
@@ -1665,9 +1665,49 @@ class TestDomainDNSSEC(TestDomainOverview):
         # the field.
         self.assertContains(result, "Key tag is required", count=2, status_code=200)
 
+    def test_key_data_form_submits(self):
+        """Key Data form submits successfully
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(
+            reverse("domain-dns-dnssec-keydata", kwargs={"pk": self.domain_keydata.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with less_console_noise():  # swallow log warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post, response should be a redirect
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-dnssec-keydata", kwargs={"pk": self.domain_keydata.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = result.follow()
+        self.assertContains(page, "The Key Data records for this domain have been updated.")
+
+    def test_key_data_form_invalid(self):
+        """Key Data form errors with invalid data
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(
+            reverse("domain-dns-dnssec-keydata", kwargs={"pk": self.domain_keydata.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-pub_key"] = ""
+        with less_console_noise():  # swallow logged warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(result, "Pub key is required", count=2, status_code=200)
     
-
-
+    
 class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
