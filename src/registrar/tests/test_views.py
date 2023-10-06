@@ -18,6 +18,7 @@ from registrar.models import (
     DraftDomain,
     DomainInvitation,
     Contact,
+    PublicContact,
     Website,
     UserDomainRole,
     User,
@@ -1113,6 +1114,7 @@ class TestWithDomainPermissions(TestWithUser):
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
             DomainApplication.objects.all().delete()
+            PublicContact.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
         except ValueError:  # pass if already deleted
