@@ -867,7 +867,7 @@ class TestRegistrantNameservers(MockEppLib):
         )
 
     def test_get_nameserver_changes_success_deleted_vals(self):
-        # Testing only deleting and no other changes
+        """Testing only deleting and no other changes"""
         self.domain._cache["hosts"] = [
             {"name": "ns1.example.com", "addrs": None},
             {"name": "ns2.example.com", "addrs": ["1.2.3.4"]},
@@ -891,7 +891,7 @@ class TestRegistrantNameservers(MockEppLib):
         )
 
     def test_get_nameserver_changes_success_updated_vals(self):
-        # Testing only updating no other changes
+        """Testing only updating no other changes"""
         self.domain._cache["hosts"] = [
             {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3.4"]},
         ]

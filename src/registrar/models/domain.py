@@ -272,9 +272,15 @@ class Domain(TimeStampedModel, DomainHelper):
             return e.code
 
     def _convert_list_to_dict(self, listToConvert: list[tuple[str, list]]):
+        """converts a list of hosts into a dictionary
+        Args:
+            list[tuple[str, list]]: such as [("123",["1","2","3"])]
+            This is the list of hosts to convert
+
+        returns:
+            convertDict (dict(str,list))- such as{"123":["1","2","3"]}"""
         newDict: dict[str, Any] = {}
 
-        # TODO-848: If duplicated nameserver names, throw error
         for tup in listToConvert:
             if len(tup) == 1:
                 newDict[tup[0]] = None
@@ -282,10 +288,24 @@ class Domain(TimeStampedModel, DomainHelper):
                 newDict[tup[0]] = tup[1]
         return newDict
 
-    def isSubdomain(self, nameserver):
+    def isSubdomain(self, nameserver: str):
+        """Returns boolean if the domain name is found in the argument passed"""
         return self.name in nameserver
 
-    def checkHostIPCombo(self, nameserver: str, ip: list):
+    def checkHostIPCombo(self, nameserver: str, ip: list[str]):
+        """Checks the parameters past for a valid combination
+        raises error if:
+            - nameserver is a subdomain but is missing ip
+            - nameserver is not a subdomain but is missing ip
+            - nameserver is a subdomain but an ip passed is invalid
+
+        Args:
+            hostname (str)- nameserver or subdomain
+            ip (list[str])-list of ip strings
+        Throws:
+            NameserverError (if exception hit)
+        Returns:
+            None"""
         if self.isSubdomain(nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
@@ -301,7 +321,11 @@ class Domain(TimeStampedModel, DomainHelper):
                     )
         return None
 
-    def _valid_ip_addr(self, ip):
+    def _valid_ip_addr(self, ip: str):
+        """returns boolean if valid ip address string
+        We currently only accept v4 or v6 ips
+        returns:
+            isValid (boolean)-True for valid ip address"""
         try:
             ip = ipaddress.ip_address(ip)
             return ip.version == 6 or ip.version == 4
@@ -315,11 +339,17 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         calls self.nameserver, it should pull from cache but may result
         in an epp call
-        returns tuple of four values as follows:
-        deleted_values: list
-        updated_values: list
-        new_values: dict
-        prevHostDict: dict"""
+        Args:
+            hosts: list[tuple[str, list]] such as [("123",["1","2","3"])]
+        Throws:
+            NameserverError (if exception hit)
+        Returns:
+            tuple[list, list, dict, dict]
+                These four tuple values as follows:
+                deleted_values: list[str]
+                updated_values: list[str]
+                new_values: dict(str,list)
+                prevHostDict: dict(str,list)"""
 
         oldNameservers = self.nameservers
 
@@ -428,7 +458,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @nameservers.setter  # type: ignore
     def nameservers(self, hosts: list[tuple[str, list]]):
-        """host should be a tuple of type str, str,... where the elements are
+        """Host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, [127.0.0.1, others ips])]"""
 
@@ -477,8 +507,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     "nameserver setter checked for create state "
                     "and it did not succeed. Warning: %s" % err
                 )
-        # TODO-848: Handle removed nameservers here,
-        # will need to change the state then go back to DNS_NEEDED
 
     @Cache
     def statuses(self) -> list[str]:
@@ -1154,17 +1182,6 @@ class Domain(TimeStampedModel, DomainHelper):
         self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=State.ON_HOLD, target=State.DELETED)
-    def deleted(self):
-        """domain is deleted in epp but is saved in our database"""
-        # TODO Domains may not be deleted if:
-        #  a child host is being used by
-        # another .gov domains.  The host must be first removed
-        # and/or renamed before the parent domain may be deleted.
-        logger.info("dns_needed_from_unknown()-> inside pending create")
-        self._delete_domain()
-        # TODO - delete ticket any additional error handling here
-
     @transition(
         field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED
     )
@@ -1387,6 +1404,16 @@ class Domain(TimeStampedModel, DomainHelper):
         return hosts
 
     def _convert_ips(self, ip_list: list[str]):
+        """Convert Ips to a list of epp.Ip objects
+        use when sending update host command.
+        if there are no ips an empty list will be returned
+
+        Args:
+            ip_list (list[str]): the new list of ips, may be empty
+        Returns:
+            edited_ip_list (list[epp.Ip]): list of epp.ip objects ready to
+            be sent to the registry
+        """
         edited_ip_list = []
         if ip_list is None:
             return []
@@ -1400,6 +1427,17 @@ class Domain(TimeStampedModel, DomainHelper):
         return edited_ip_list
 
     def _update_host(self, nameserver: str, ip_list: list[str], old_ip_list: list[str]):
+        """Update an existing host object in EPP. Sends the update host command
+        can result in a RegistryError
+        Args:
+            nameserver (str): nameserver or subdomain
+            ip_list (list[str]): the new list of ips, may be empty
+            old_ip_list  (list[str]): the old ip list, may also be empty
+
+        Returns:
+            errorCode (int): one of ErrorCode enum type values
+
+        """
         try:
             if (
                 ip_list is None
@@ -1425,6 +1463,18 @@ class Domain(TimeStampedModel, DomainHelper):
             return e.code
 
     def _delete_host(self, nameserver: str):
+        """Remove this host from the domain and delete the host object in registry,
+        will only delete the host object, if it's not being used by another domain
+        Performs two epp calls and can result in a RegistryError
+        Args:
+            nameserver (str): nameserver or subdomain
+            ip_list (list[str]): the new list of ips, may be empty
+            old_ip_list  (list[str]): the old ip list, may also be empty
+
+        Returns:
+            errorCode (int): one of ErrorCode enum type values
+
+        """
         try:
             updateReq = commands.UpdateDomain(
                 name=self.name, rem=[epp.HostObjSet([nameserver])]
