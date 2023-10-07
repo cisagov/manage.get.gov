@@ -321,13 +321,13 @@ class Domain(TimeStampedModel, DomainHelper):
                     )
         return None
 
-    def _valid_ip_addr(self, ip: str):
+    def _valid_ip_addr(self, ipToTest: str):
         """returns boolean if valid ip address string
         We currently only accept v4 or v6 ips
         returns:
             isValid (boolean)-True for valid ip address"""
         try:
-            ip = ipaddress.ip_address(ip)
+            ip = ipaddress.ip_address(ipToTest)
             return ip.version == 6 or ip.version == 4
 
         except ValueError:
