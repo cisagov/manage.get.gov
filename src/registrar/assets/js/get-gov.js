@@ -279,17 +279,6 @@ function prepareDeleteButtons() {
     let formNum2 = forms.length;
     totalForms.setAttribute('value', `${formNum2}`);
 
-    // We need to fix the indicies of every existing form otherwise 
-    // the frontend and backend will not match and will error on submit
-    // let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
-    // let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
-    // forms.forEach((form, index) => {
-    //   form.innerHTML = form.innerHTML.replace(formNumberRegex, `form-${index}-`);
-    //   form.innerHTML = form.innerHTML.replace(formLabelRegex, `DS Data Record ${index+1}`);
-    // });
-
-
-
     let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
     let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
 
@@ -311,10 +300,6 @@ function prepareDeleteButtons() {
       });
     
     });
-
-
-
-
   }
 }
 
@@ -331,9 +316,8 @@ function prepareDeleteButtons() {
   // Attach click event listener on the delete buttons of the existing forms
   prepareDeleteButtons();
 
-  if (addButton) {
+  if (addButton)
     addButton.addEventListener('click', addForm);
-  }
 
   function addForm(e){
       let forms = document.querySelectorAll(".ds-record");
@@ -389,84 +373,6 @@ function prepareDeleteButtons() {
 
       // Attach click event listener on the delete buttons of the new form
       prepareDeleteButtons();
-
-      // We need to fix the indicies of every existing form otherwise 
-      // the frontend and backend will not match and will error on submit
-      // forms.forEach((form, index) => {
-      //   form.innerHTML = form.innerHTML.replace(formNumberRegex, `form-${index}-`);
-      //   form.innerHTML = form.innerHTML.replace(formLabelRegex, `DS Data Record ${index+1}`);
-      // });
   }
 
 })();
-
-
-// (function prepareCancelButtons() {
-//   const cancelButton = document.querySelector('.btn-cancel');
-
-//   if (cancelButton) {
-//       cancelButton.addEventListener('click', () => {
-
-//           // Option 2: Redirect to another page (e.g., the homepage)
-
-//           localStorage.clear(); // Clear all localStorage data
-//           sessionStorage.clear(); // Clear all sessionStorage data
-
-//           location.reload();
-//       });
-//   }
-// })();
-
-
-// /**
-//  * An IIFE that attaches a click handler on form cancel buttons
-//  *
-//  */
-// (function prepareCancelButtons() {
-//   const cancelButton = document.querySelector('.btn-cancel');
-
-//   const formsetContainer = document.querySelector('#form-container');
-//   const originalFormHTML = document.querySelector('.ds-record').innerHTML;
-//   const numberOfFormsToReset = document.querySelectorAll('.ds-record').length;
-//   const addNewRecordButton = document.querySelector('#add-ds-form');
-//   const submitButton = document.querySelector('button[type="submit"]');
-
-//   if (cancelButton) {
-//     cancelButton.addEventListener('click', () => {
-//       // Reset the form to its initial values
-//       const form = document.querySelector('form');
-//       resetForm(form);
-//     });
-//   }
-
-//   function resetForm(form) {
-
-//     // Remove all existing forms within the container
-//     formsetContainer.innerHTML = '';
-//     for (let i = 0; i < numberOfFormsToReset; i++) {
-//       formsetContainer.innerHTML += originalFormHTML;
-//     }
-//     formsetContainer.innerHTML += addNewRecordButton
-//     formsetContainer.innerHTML += submitButton
-
-//     const dsRecords = form.querySelectorAll('.ds-record');
-
-//     dsRecords.forEach((record) => {
-//       const initialValuesField = record.querySelector('.initial-values');
-//       const formFields = record.querySelectorAll('input, textarea, select');
-
-//       if (initialValuesField) {
-//         const initialValues = JSON.parse(initialValuesField.value);
-
-//         formFields.forEach((field) => {
-//           const fieldName = field.name;
-//           if (fieldName in initialValues) {
-//             field.value = initialValues[fieldName];
-//           } else {
-//             field.value = ''; // Set to empty if no initial value
-//           }
-//         });
-//       }
-//     });
-//   }
-// })();

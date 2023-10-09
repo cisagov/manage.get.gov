@@ -1,7 +1,8 @@
 # common.py
-# 
+#
 # ALGORITHM_CHOICES are options for alg attribute in DS Data and Key Data
-# reference: https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml
+# reference:
+# https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml
 ALGORITHM_CHOICES = [
     (1, "(1) ERSA/MD5 [RSAMD5]"),
     (2, "(2) Diffie-Hellman [DH]"),
