@@ -292,21 +292,80 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info("Domain does not have dnssec data defined %s" % err)
             return None
 
+    def getDnssecdataChanges(
+            self, _dnssecdata: dict
+        ) -> tuple[dict, dict]:
+        """
+        calls self.dnssecdata, it should pull from cache but may result
+        in an epp call
+        returns tuple of 2 values as follows:
+            addExtension: dict
+            remExtension: dict
+        
+        addExtension includes all dsData or keyData to be added
+        remExtension includes all dsData or keyData to be removed
+
+        method operates on dsData OR keyData, never a mix of the two;
+        operates based on which is present in _dnssecdata;
+        if neither is present, addExtension will be empty dict, and
+        remExtension will be all existing dnssecdata to be deleted
+        """
+
+        oldDnssecdata = self.dnssecdata
+        addDnssecdata = {}
+        remDnssecdata = {}
+
+        if len(_dnssecdata["dsData"]) > 0:
+            # initialize addDnssecdata and remDnssecdata for dsData
+            addDnssecdata["dsData"] = []
+            remDnssecdata["dsData"] = []
+
+            # if existing dsData not in new dsData, mark for removal
+            remDnssecdata["dsData"] = [dsData for dsData in oldDnssecdata["dsData"] if dsData not in _dnssecdata["dsData"]]
+
+            # if new dsData not in existing dsData, mark for add
+            addDnssecdata["dsData"] = [dsData for dsData in _dnssecdata["dsData"] if dsData not in oldDnssecdata["dsData"]]
+        elif len(_dnssecdata["keyData"]) > 0:
+            # initialize addDnssecdata and remDnssecdata for keyData
+            addDnssecdata["keyData"] = []
+            remDnssecdata["keyData"] = []
+
+            # if existing keyData not in new keyData, mark for removal
+            remDnssecdata["keyData"] = [keyData for keyData in oldDnssecdata["keyData"] if keyData not in _dnssecdata["keyData"]]
+
+            # if new keyData not in existing keyData, mark for add
+            addDnssecdata["keyData"] = [keyData for keyData in _dnssecdata["keyData"] if keyData not in oldDnssecdata["keyData"]]
+        else:
+            # there are no new dsData or keyData, remove all
+            remDnssecdata["dsData"] = oldDnssecdata["dsData"]
+            remDnssecdata["keyData"] = oldDnssecdata["keyData"]
+
+        return addDnssecdata, remDnssecdata
+
     @dnssecdata.setter  # type: ignore
     def dnssecdata(self, _dnssecdata: dict):
-        updateParams = {
+        _addDnssecdata, _remDnssecdata = self.getDnssecdataChanges(_dnssecdata)
+        addParams = {
             "maxSigLife": _dnssecdata.get("maxSigLife", None),
             "dsData": _dnssecdata.get("dsData", None),
             "keyData": _dnssecdata.get("keyData", None),
-            "remAllDsKeyData": True,
         }
-        request = commands.UpdateDomain(name=self.name)
-        extension = commands.UpdateDomainDNSSECExtension(**updateParams)
-        request.add_extension(extension)
+        remParams = {
+            "maxSigLife": _dnssecdata.get("maxSigLife", None),
+            "dsData": _dnssecdata.get("dsData", None),
+            "keyData": _dnssecdata.get("keyData", None),
+        }
+        addRequest = commands.UpdateDomain(name=self.name)
+        addExtension = commands.UpdateDomainDNSSECExtension(**addParams)
+        addRequest.add_extension(addExtension)
+        remRequest = commands.UpdateDomain(name=self.name)
+        remExtension = commands.UpdateDomainDNSSECExtension(**remParams)
+        remRequest.add_extension(remExtension)
         try:
-            registry.send(request, cleaned=True)
+            registry.send(addRequest, cleaned=True)
+            registry.send(remRequest, cleaned=True)
         except RegistryError as e:
-            logger.error("Error adding DNSSEC, code was %s error was %s" % (e.code, e))
+            logger.error("Error updating DNSSEC, code was %s error was %s" % (e.code, e))
             raise e
 
     @nameservers.setter  # type: ignore
