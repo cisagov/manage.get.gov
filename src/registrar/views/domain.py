@@ -371,8 +371,8 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
                 # or form.cleaned_data['delete'] == False:
                 dsrecord = {
                     "keyTag": form.cleaned_data["key_tag"],
-                    "alg": form.cleaned_data["algorithm"],
-                    "digestType": form.cleaned_data["digest_type"],
+                    "alg": int(form.cleaned_data["algorithm"]),
+                    "digestType": int(form.cleaned_data["digest_type"]),
                     "digest": form.cleaned_data["digest"],
                 }
                 dnssecdata["dsData"].append(common.DSData(**dsrecord))
@@ -490,9 +490,9 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
                 # if 'delete' not in form.cleaned_data
                 # or form.cleaned_data['delete'] == False:
                 keyrecord = {
-                    "flags": form.cleaned_data["flag"],
-                    "protocol": form.cleaned_data["protocol"],
-                    "alg": form.cleaned_data["algorithm"],
+                    "flags": int(form.cleaned_data["flag"]),
+                    "protocol": int(form.cleaned_data["protocol"]),
+                    "alg": int(form.cleaned_data["algorithm"]),
                     "pubKey": form.cleaned_data["pub_key"],
                 }
                 dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))

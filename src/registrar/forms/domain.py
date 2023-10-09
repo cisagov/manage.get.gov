@@ -169,6 +169,7 @@ class DomainDsdataForm(forms.Form):
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
+        coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
         error_messages={"required": ("Algorithm is required.")},
     )
@@ -176,6 +177,7 @@ class DomainDsdataForm(forms.Form):
     digest_type = forms.TypedChoiceField(
         required=True,
         label="Digest Type",
+        coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
         error_messages={"required": ("Digest Type is required.")},
     )
@@ -201,6 +203,7 @@ class DomainKeydataForm(forms.Form):
     flag = forms.TypedChoiceField(
         required=True,
         label="Flag",
+        coerce=int,
         choices=FLAG_CHOICES,
         error_messages={"required": ("Flag is required.")},
     )
@@ -208,6 +211,7 @@ class DomainKeydataForm(forms.Form):
     protocol = forms.TypedChoiceField(
         required=True,
         label="Protocol",
+        coerce=int,
         choices=PROTOCOL_CHOICES,
         error_messages={"required": ("Protocol is required.")},
     )
@@ -215,6 +219,7 @@ class DomainKeydataForm(forms.Form):
     algorithm = forms.TypedChoiceField(
         required=True,
         label="Algorithm",
+        coerce=int,
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
         error_messages={"required": ("Algorithm is required.")},
     )
