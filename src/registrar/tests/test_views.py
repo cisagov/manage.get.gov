@@ -1,11 +1,11 @@
 from unittest import skip
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock, ANY, patch
 
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .common import completed_application
+from .common import MockEppLib, completed_application  # type: ignore
 
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -25,7 +25,6 @@ from registrar.models import (
 from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
-from .common import MockEppLib
 
 
 class TestViews(TestCase):
@@ -1133,7 +1132,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 self.assertEqual(response.status_code, 403)
 
 
-class TestDomainDetail(TestWithDomainPermissions, WebTest):
+class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
@@ -1426,6 +1425,40 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         )
         self.assertContains(page, "Testy")
 
+    def test_domain_security_email_existing_security_contact(self):
+        """Can load domain's security email page."""
+        self.mockSendPatch = patch("registrar.models.domain.registry.send")
+        self.mockedSendFunction = self.mockSendPatch.start()
+        self.mockedSendFunction.side_effect = self.mockSend
+
+        domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+        # Add current user to this domain
+        _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
+        page = self.client.get(
+            reverse("domain-security-email", kwargs={"pk": domain_contact.id})
+        )
+
+        # Loads correctly
+        self.assertContains(page, "Domain security email")
+        self.assertContains(page, "security@mail.gov")
+        self.mockSendPatch.stop()
+
+    def test_domain_security_email_no_security_contact(self):
+        """Loads a domain with no defined security email.
+        We should not show the default."""
+        self.mockSendPatch = patch("registrar.models.domain.registry.send")
+        self.mockedSendFunction = self.mockSendPatch.start()
+        self.mockedSendFunction.side_effect = self.mockSend
+
+        page = self.client.get(
+            reverse("domain-security-email", kwargs={"pk": self.domain.id})
+        )
+
+        # Loads correctly
+        self.assertContains(page, "Domain security email")
+        self.assertNotContains(page, "dotgov@cisa.dhs.gov")
+        self.mockSendPatch.stop()
+
     def test_domain_security_email(self):
         """Can load domain's security email page."""
         page = self.client.get(
@@ -1433,10 +1466,8 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         )
         self.assertContains(page, "Domain security email")
 
-    @skip("Ticket 912 needs to fix this one")
     def test_domain_security_email_form(self):
         """Adding a security email works.
-
         Uses self.app WebTest because we need to interact with forms.
         """
         security_email_page = self.app.get(
@@ -1456,7 +1487,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = result.follow()
         self.assertContains(
-            success_page, "The security email for this domain have been updated"
+            success_page, "The security email for this domain has been updated"
         )
 
     def test_domain_overview_blocked_for_ineligible_user(self):
