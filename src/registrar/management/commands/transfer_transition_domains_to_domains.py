@@ -2,6 +2,7 @@
 
 import logging
 import argparse
+import sys
 
 from django_fsm import TransitionNotAllowed  # type: ignore
 
@@ -29,6 +30,23 @@ class termColors:
     UNDERLINE = "\033[4m"
     BackgroundLightYellow = "\033[103m"
 
+    
+
+class Command(BaseCommand):
+    help = """Load data from transition domain tables
+    into main domain tables.  Also create domain invitation
+    entries for every domain we ADD (but not for domains
+    we UPDATE)"""
+
+    def add_arguments(self, parser):
+        parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
+
+        parser.add_argument(
+            "--limitParse",
+            default=0,
+            help="Sets max number of entries to load, set to 0 to load all entries",
+        )
+
     def print_debug_mode_statements(
         self, debug_on: bool, debug_max_entries_to_parse: int
     ):
@@ -54,21 +72,6 @@ class termColors:
             )
 
 
-class Command(BaseCommand):
-    help = """Load data from transition domain tables
-    into main domain tables.  Also create domain invitation
-    entries for every domain we ADD (but not for domains
-    we UPDATE)"""
-
-    def add_arguments(self, parser):
-        parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
-
-        parser.add_argument(
-            "--limitParse",
-            default=0,
-            help="Sets max number of entries to load, set to 0 to load all entries",
-        )
-
     def handle(  # noqa: C901
         self,
         **options,
@@ -92,6 +95,8 @@ class Command(BaseCommand):
         updated_domain_entries = []
         # domains we SKIPPED
         skipped_domain_entries = []
+        # domainInvitations we SKIPPED
+        skipped_domain_invitations = []
         # if we are limiting our parse (for testing purposes, keep
         # track of total rows parsed)
         total_rows_parsed = 0
@@ -114,8 +119,8 @@ class Command(BaseCommand):
                 # DEBUG:
                 if debug_on:
                     logger.info(
-                        f"""{termColors.YELLOW}
-                        Processing Transition Domain: {transition_domain_name}, {transition_domain_status}
+                        f"""{termColors.OKCYAN}
+                        Processing Transition Domain: {transition_domain_name}, {transition_domain_status}, {transition_domain_email}
                         {termColors.ENDC}"""  # noqa
                     )
 
@@ -132,10 +137,7 @@ class Command(BaseCommand):
                         {termColors.ENDC}"""  # noqa
                     )
                 if transition_domain_status != current_state:
-                    if (
-                        transition_domain_status
-                        == TransitionDomain.StatusChoices.ON_HOLD
-                    ):
+                    if transition_domain_status == TransitionDomain.StatusChoices.ON_HOLD:
                         existingEntry.place_client_hold(ignoreEPP=True)
                     else:
                         existingEntry.revert_client_hold(ignoreEPP=True)
@@ -151,24 +153,46 @@ class Command(BaseCommand):
                             {termColors.ENDC}"""
                         )
             except Domain.DoesNotExist:
-                # no matching entry, make one
-                newEntry = Domain(
-                    name=transition_domain_name, state=transition_domain_status
-                )
-                domains_to_create.append(newEntry)
 
-                domain_invitations_to_create.append(
-                    DomainInvitation(
-                        email=transition_domain_email.lower(),
-                        domain=transition_domain_name,
-                    )
+                already_in_to_create = next(
+                    (x for x in domains_to_create if x.name == transition_domain_name),
+                    None,
                 )
-
-                # DEBUG:
-                if debug_on:
-                    logger.info(
-                        f"{termColors.OKCYAN} Adding domain AND domain invitation: {newEntry} {termColors.ENDC}"  # noqa
+                if already_in_to_create:
+                    # DEBUG:
+                    if debug_on:
+                        logger.info(
+                            f"""{termColors.YELLOW}
+                            Duplicate Detected: {transition_domain_name}.
+                            Cannot add duplicate entry for another username.
+                            Violates Unique Key constraint.
+                            {termColors.ENDC}"""
+                        )
+                else:
+                    # no matching entry, make one
+                    new_entry = Domain(
+                        name=transition_domain_name, state=transition_domain_status
                     )
+                    domains_to_create.append(new_entry)
+
+                    if transition_domain_email:
+                        new_domain_invitation = DomainInvitation(
+                                email=transition_domain_email.lower(),
+                                domain=new_entry
+                            )
+                        domain_invitations_to_create.append(new_domain_invitation)
+                    else:
+                        logger.info(
+                            f"{termColors.FAIL} ! No e-mail found for domain: {new_entry}" 
+                            f"(SKIPPED ADDING DOMAIN INVITATION){termColors.ENDC}"
+                        )
+                        skipped_domain_invitations.append(transition_domain_name)
+
+                    # DEBUG:
+                    if debug_on:
+                        logger.info(
+                            f"{termColors.OKCYAN} Adding domain AND domain invitation: {new_entry} {termColors.ENDC}"  # noqa
+                        )
             except Domain.MultipleObjectsReturned:
                 logger.info(
                     f"""
@@ -178,8 +202,6 @@ class Command(BaseCommand):
                     {transition_domain_name}
                     ----------TERMINATING----------"""
                 )
-                import sys
-
                 sys.exit()
             except TransitionNotAllowed as err:
                 skipped_domain_entries.append(transition_domain_name)
@@ -194,7 +216,7 @@ class Command(BaseCommand):
             # DEBUG:
             if debug_on or debug_max_entries_to_parse > 0:
                 if (
-                    total_rows_parsed > debug_max_entries_to_parse
+                    total_rows_parsed >= debug_max_entries_to_parse
                     and debug_max_entries_to_parse != 0
                 ):
                     logger.info(
@@ -231,6 +253,15 @@ class Command(BaseCommand):
                 {termColors.ENDC}
                 """
             )
+        if len(skipped_domain_invitations) > 0:
+            logger.info(
+                f"""{termColors.FAIL}
+                ============= SKIPPED DOMAIN INVITATIONS (ERRORS) ===============
+                {skipped_domain_invitations}
+                {termColors.ENDC}
+                """
+            )
+            
 
         # DEBUG:
         if debug_on:
