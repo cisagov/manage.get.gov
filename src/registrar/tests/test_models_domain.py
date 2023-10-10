@@ -1035,9 +1035,8 @@ class TestRegistrantDNSSEC(MockEppLib):
         """
 
         domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-        domain.dnssecdata = extensions.DNSSECExtension(
-            **self.dnssecExtensionWithDsData
-        )
+        domain.dnssecdata = self.dnssecExtensionWithDsData
+        
         # get the DNS SEC extension added to the UpdateDomain command and
         # verify that it is properly sent
         # args[0] is the _request sent to registry
@@ -1046,7 +1045,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.assertEquals(
             args[0].extensions[0],
             self.createUpdateExtension(
-                extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+                self.dnssecExtensionWithDsData
             ),
         )
         # test that the dnssecdata getter is functioning properly
@@ -1079,7 +1078,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         )
 
         self.assertEquals(
-            dnssecdata_get.dsData, self.dnssecExtensionWithDsData["dsData"]
+            dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData
         )
 
     def test_dnssec_is_idempotent(self):
@@ -1096,15 +1095,15 @@ class TestRegistrantDNSSEC(MockEppLib):
         3 - setter causes the getter to call info domain on next get from cache
         4 - UpdateDomain command is not called on second setter (no change)
         5 - getter properly parses dnssecdata from InfoDomain response and sets to cache
-
+ 
         """
 
         domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
 
         # set the dnssecdata once
-        domain.dnssecdata = extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+        domain.dnssecdata = self.dnssecExtensionWithDsData
         # set the dnssecdata again
-        domain.dnssecdata = extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+        domain.dnssecdata = self.dnssecExtensionWithDsData
         # test that the dnssecdata getter is functioning properly
         dnssecdata_get = domain.dnssecdata
         self.mockedSendFunction.assert_has_calls(
@@ -1141,7 +1140,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         )
 
         self.assertEquals(
-            dnssecdata_get.dsData, self.dnssecExtensionWithDsData["dsData"]
+            dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData
         )
 
     def test_user_adds_dnssec_data_multiple_dsdata(self):
@@ -1159,7 +1158,7 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         domain, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
 
-        domain.dnssecdata = extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
+        domain.dnssecdata = self.dnssecExtensionWithMultDsData
         # get the DNS SEC extension added to the UpdateDomain command
         # and verify that it is properly sent
         # args[0] is the _request sent to registry
@@ -1168,7 +1167,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.assertEquals(
             args[0].extensions[0],
             self.createUpdateExtension(
-                extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
+                self.dnssecExtensionWithMultDsData
             ),
         )
         # test that the dnssecdata getter is functioning properly
@@ -1195,7 +1194,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         )
 
         self.assertEquals(
-            dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData["dsData"]
+            dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData
         )
 
     def test_user_removes_dnssec_data(self):
@@ -1215,8 +1214,8 @@ class TestRegistrantDNSSEC(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         # dnssecdata_get_initial = domain.dnssecdata  # call to force initial mock
         # domain._invalidate_cache()
-        domain.dnssecdata = extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
-        domain.dnssecdata = extensions.DNSSECExtension(**self.dnssecExtensionRemovingDsData)
+        domain.dnssecdata = self.dnssecExtensionWithDsData
+        domain.dnssecdata = self.dnssecExtensionRemovingDsData
         # get the DNS SEC extension added to the UpdateDomain command and
         # verify that it is properly sent
         # args[0] is the _request sent to registry
@@ -1225,7 +1224,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.assertEquals(
             args[0].extensions[0],
             self.createUpdateExtension(
-                extensions.DNSSECExtension(**self.dnssecExtensionWithDsData),
+                self.dnssecExtensionWithDsData,
                 remove=True,
             ),
         )
@@ -1281,7 +1280,7 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         domain, _ = Domain.objects.get_or_create(name="dnssec-keydata.gov")
 
-        domain.dnssecdata = extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
+        domain.dnssecdata = self.dnssecExtensionWithKeyData
         # get the DNS SEC extension added to the UpdateDomain command
         # and verify that it is properly sent
         # args[0] is the _request sent to registry
@@ -1290,7 +1289,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         self.assertEquals(
             args[0].extensions[0],
             self.createUpdateExtension(
-                extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
+                self.dnssecExtensionWithKeyData
             ),
         )
         # test that the dnssecdata getter is functioning properly
@@ -1317,7 +1316,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         )
 
         self.assertEquals(
-            dnssecdata_get.keyData, self.dnssecExtensionWithKeyData["keyData"]
+            dnssecdata_get.keyData, self.dnssecExtensionWithKeyData.keyData
         )
 
     def test_update_is_unsuccessful(self):
@@ -1330,7 +1329,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="dnssec-invalid.gov")
 
         with self.assertRaises(RegistryError) as err:
-            domain.dnssecdata = extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+            domain.dnssecdata = self.dnssecExtensionWithDsData
             self.assertTrue(
                 err.is_client_error() or err.is_session_error() or err.is_server_error()
             )

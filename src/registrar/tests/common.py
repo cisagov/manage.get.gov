@@ -704,22 +704,19 @@ class MockEppLib(TestCase):
         "alg": 1,
         "pubKey": "AQPJ////4Q==",
     }
-    dnssecExtensionWithDsData: Mapping[Any, Any] = {
-        "dsData": [common.DSData(**addDsData1)],  # type: ignore
-    }
-    dnssecExtensionWithMultDsData: Mapping[str, Any] = {
+    dnssecExtensionWithDsData = extensions.DNSSECExtension(**{
+        "dsData": [common.DSData(**addDsData1)],
+    })
+    dnssecExtensionWithMultDsData = extensions.DNSSECExtension(**{
         "dsData": [
             common.DSData(**addDsData1),  # type: ignore
             common.DSData(**addDsData2),  # type: ignore
         ],
-    }
-    dnssecExtensionWithKeyData: Mapping[str, Any] = {
+    })
+    dnssecExtensionWithKeyData = extensions.DNSSECExtension(**{
         "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
-    }
-    dnssecExtensionRemovingDsData: Mapping[Any, Any] = {
-        "dsData": None,
-        "keyData": None,
-    }
+    })
+    dnssecExtensionRemovingDsData = extensions.DNSSECExtension()
 
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
@@ -765,7 +762,7 @@ class MockEppLib(TestCase):
                 return MagicMock(
                     res_data=[self.mockDataInfoDomain],
                     extensions=[
-                        extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+                        self.dnssecExtensionWithDsData
                     ],
                 )
         elif getattr(_request, "name", None) == "dnssec-multdsdata.gov":
@@ -775,7 +772,7 @@ class MockEppLib(TestCase):
                 return MagicMock(
                     res_data=[self.mockDataInfoDomain],
                     extensions=[
-                        extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
+                        self.dnssecExtensionWithMultDsData
                     ],
                 )
         elif getattr(_request, "name", None) == "dnssec-keydata.gov":
@@ -785,7 +782,7 @@ class MockEppLib(TestCase):
                 return MagicMock(
                     res_data=[self.mockDataInfoDomain],
                     extensions=[
-                        extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
+                        self.dnssecExtensionWithKeyData
                     ],
                 )
         elif getattr(_request, "name", None) == "dnssec-none.gov":
