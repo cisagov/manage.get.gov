@@ -784,9 +784,12 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-            # elif isinstance(_request, commands.UpdateHost):
-            #     if getattr(_request, "name", None) == "ns1.failednameserver.gov":
-            #         raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        elif isinstance(_request, commands.UpdateHost):
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif isinstance(_request, commands.UpdateDomain):
             return MagicMock(
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,

@@ -366,7 +366,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # get deleted values-which are values in previous nameserver list
             # but are not in the list of new host values
             if prevHost not in newHostDict:
-                deleted_values.append((prevHost, addrs))
+                deleted_values.append(prevHost)
             # if the host exists in both, check if the addresses changed
             else:
                 # TODO - host is being updated when previous was None+new is empty list
@@ -388,16 +388,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         return (deleted_values, updated_values, new_values, previousHostDict)
 
-    def _deleted_host_values(self, deleted_values) -> int:
-        successDeletedCount = 0
-
-        for hostTuple in deleted_values:
-            deleted_response_code = self._delete_host(hostTuple[0])
-            if deleted_response_code == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-                successDeletedCount += 1
-
-        return successDeletedCount
-
     def _update_host_values(self, updated_values, oldNameservers):
         for hostTuple in updated_values:
             updated_response_code = self._update_host(
@@ -412,8 +402,15 @@ class Domain(TimeStampedModel, DomainHelper):
                     % (hostTuple[0], updated_response_code)
                 )
 
-    def _new_host_values(self, new_values) -> int:
-        successCreatedCount = 0
+    def createNewHostList(self, new_values: dict) -> list:
+        """convert the dictionary of new values to a list of HostObjSet
+        for use in the UpdateDomain epp message
+        Args:
+            new_values: dict(str,list)- dict of {nameserver:ips} to add to domain
+        Returns:
+            list[epp.HostObjSet]-epp object list for use in the UpdateDomain epp message
+        """
+        addToDomainList = []
         for key, value in new_values.items():
             createdCode = self._create_host(
                 host=key, addrs=value
@@ -422,18 +419,21 @@ class Domain(TimeStampedModel, DomainHelper):
                 createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
                 or createdCode == ErrorCode.OBJECT_EXISTS
             ):
-                request = commands.UpdateDomain(
-                    name=self.name, add=[epp.HostObjSet([key])]
-                )
-                try:
-                    registry.send(request, cleaned=True)
-                    successCreatedCount += 1
-                except RegistryError as e:
-                    logger.error(
-                        "Error adding nameserver, code was %s error was %s"
-                        % (e.code, e)
-                    )
-        return successCreatedCount
+                addToDomainList.append(epp.HostObjSet([key]))
+
+        return addToDomainList
+
+    def createDeleteHostList(self, hostsToDelete: list[str]):
+        """
+        Args:
+            hostsToDelete (list[str])- list of nameserver/host names to remove
+        Returns:
+            list[epp.HostObjSet]-epp object list for use in the UpdateDomain epp message
+        """
+        deleteList = []
+        for nameserver in hostsToDelete:
+            deleteList.append(epp.HostObjSet([nameserver]))
+        return deleteList
 
     @Cache
     def dnssecdata(self) -> extensions.DNSSECExtension:
@@ -479,16 +479,23 @@ class Domain(TimeStampedModel, DomainHelper):
             oldNameservers,
         ) = self.getNameserverChanges(hosts=hosts)
 
-        successCreatedCount = self._new_host_values(new_values)
-        successDeletedCount = self._deleted_host_values(deleted_values)  # returns value
         _ = self._update_host_values(
             updated_values, oldNameservers
         )  # returns nothing, just need to be run and errors
-
-        successTotalNameservers = (
-            len(oldNameservers) - successDeletedCount + successCreatedCount
+        addToDomainList = self.createNewHostList(new_values)
+        deleteHostList = self.createDeleteHostList(deleted_values)
+        responseCode = self.addAndRemoveHostsFromDomain(
+            hostsToAdd=addToDomainList, hostsToDelete=deleteHostList
         )
 
+        # if unable to update domain raise error and stop
+        if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
+            raise NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN)
+
+        successTotalNameservers = (
+            len(oldNameservers) - len(deleteHostList) + len(addToDomainList)
+        )
+        self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
         if successTotalNameservers < 2:
             try:
                 self.dns_needed()
@@ -1459,36 +1466,64 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info("_update_host()-> sending req as %s" % request)
             return response.code
         except RegistryError as e:
-            logger.error("Error _delete_host, code was %s error was %s" % (e.code, e))
+            logger.error("Error _update_host, code was %s error was %s" % (e.code, e))
             return e.code
 
-    def _delete_host(self, nameserver: str):
-        """Remove this host from the domain and delete the host object in registry,
-        will only delete the host object, if it's not being used by another domain
-        Performs two epp calls and can result in a RegistryError
+    def addAndRemoveHostsFromDomain(
+        self, hostsToAdd: list[str], hostsToDelete: list[str]
+    ):
+        """sends an UpdateDomain message to the registry with the hosts provided
         Args:
-            nameserver (str): nameserver or subdomain
-            ip_list (list[str]): the new list of ips, may be empty
-            old_ip_list  (list[str]): the old ip list, may also be empty
-
+            hostsToDelete (list[epp.HostObjSet])- list of host objects to delete
+            hostsToAdd (list[epp.HostObjSet])- list of host objects to add
         Returns:
-            errorCode (int): one of ErrorCode enum type values
-
+            response code (int)- RegistryErrorCode integer value
+            defaults to return COMMAND_COMPLETED_SUCCESSFULLY
+            if there is nothing to add or delete
         """
+
+        if hostsToAdd == [] and hostsToDelete == []:
+            return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
+
         try:
             updateReq = commands.UpdateDomain(
-                name=self.name, rem=[epp.HostObjSet([nameserver])]
+                name=self.name, rem=hostsToDelete, add=hostsToAdd
             )
             response = registry.send(updateReq, cleaned=True)
 
-            logger.info("_delete_host()-> sending update domain req as %s" % updateReq)
-
-            deleteHostReq = commands.DeleteHost(name=nameserver)
-            response = registry.send(deleteHostReq, cleaned=True)
             logger.info(
-                "_delete_host()-> sending delete host req as %s" % deleteHostReq
+                "addAndRemoveHostsFromDomain()-> sending update domain req as %s"
+                % updateReq
             )
-            return response.code
+
+        except RegistryError as e:
+            logger.error(
+                "Error addAndRemoveHostsFromDomain, code was %s error was %s"
+                % (e.code, e)
+            )
+
+        return response.code
+
+    def _delete_hosts_if_not_used(self, hostsToDelete: list[str]):
+        """delete the host object in registry,
+        will only delete the host object, if it's not being used by another domain
+        Performs just the DeleteHost epp call
+        Supresses regstry error, as registry can disallow delete for various reasons
+        Args:
+            hostsToDelete (list[str])- list of nameserver/host names to remove
+        Returns:
+            None
+
+        """
+        try:
+            for nameserver in hostsToDelete:
+                deleteHostReq = commands.DeleteHost(name=nameserver)
+                registry.send(deleteHostReq, cleaned=True)
+                logger.info(
+                    "_delete_hosts_if_not_used()-> sending delete host req as %s"
+                    % deleteHostReq
+                )
+
         except RegistryError as e:
             if e.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
                 logger.info(
@@ -1497,9 +1532,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
             else:
                 logger.error(
-                    "Error _delete_host, code was %s error was %s" % (e.code, e)
+                    "Error _delete_hosts_if_not_used, code was %s error was %s"
+                    % (e.code, e)
                 )
-                return e.code
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""

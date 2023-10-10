@@ -35,6 +35,7 @@ class NameserverErrorCodes(IntEnum):
     GLUE_RECORD_NOT_ALLOWED = 2
     INVALID_IP = 3
     TOO_MANY_HOSTS = 4
+    UNABLE_TO_UPDATE_DOMAIN = 5
 
 
 class NameserverError(Exception):
@@ -51,6 +52,10 @@ class NameserverError(Exception):
         NameserverErrorCodes.INVALID_IP: "Nameserver {} has an invalid IP address: {}",
         NameserverErrorCodes.TOO_MANY_HOSTS: (
             "Too many hosts provided, you may not have more than " "13 nameservers."
+        ),
+        NameserverErrorCodes.UNABLE_TO_UPDATE_DOMAIN: (
+            "Unable to update domain, changes were not applied."
+            "Check logs as a Registry Error is the likely cause"
         ),
     }
 
