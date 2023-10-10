@@ -29,7 +29,8 @@ class PublicContact(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         """Save to the registry and also locally in the registrar database."""
-        if hasattr(self, "domain"):
+        skip_epp_save = kwargs.pop("skip_epp_save", False)
+        if hasattr(self, "domain") and not skip_epp_save:
             match self.contact_type:
                 case PublicContact.ContactTypeChoices.REGISTRANT:
                     self.domain.registrant_contact = self
@@ -147,6 +148,10 @@ class PublicContact(TimeStampedModel):
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
+
+    @classmethod
+    def get_max_id_length(cls):
+        return cls._meta.get_field("registry_id").max_length
 
     def __str__(self):
         return (
