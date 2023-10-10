@@ -182,7 +182,7 @@ class Command(BaseCommand):
                         domain_invitations_to_create.append(new_domain_invitation)
                     else:
                         logger.info(
-                            f"{termColors.FAIL} ! No e-mail found for domain: {new_entry}"
+                            f"{termColors.FAIL} ! No e-mail found for domain: {new_entry}"  # noqa
                             f"(SKIPPED ADDING DOMAIN INVITATION){termColors.ENDC}"
                         )
                         skipped_domain_invitations.append(transition_domain_name)
