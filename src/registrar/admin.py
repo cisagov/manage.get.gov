@@ -811,7 +811,8 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("Domain statuses are %s" ". Thanks!") % statuses,
+                f"The registry statuses are {statuses}. "
+                "These statuses are from the provider of the .gov registry.",
             )
         return HttpResponseRedirect(".")
 
