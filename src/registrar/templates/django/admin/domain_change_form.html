@@ -13,10 +13,10 @@
         {% elif original.state == original.State.ON_HOLD %}
           <input type="submit" value="Remove hold" name="_remove_client_hold">
         {% endif %}
-        <input id="manageDomainSubmitButton" type="submit" value="Manage Domain" name="_edit_domain">
-        <input type="submit" value="get status" name="_get_status">
+        <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
+        <input type="submit" value="Get registry status" name="_get_status">
         {% if original.state != original.State.DELETED %}
-        <input type="submit" value="Delete Domain in Registry" name="_delete_domain">
+        <input type="submit" value="Delete domain in registry" name="_delete_domain">
         {% endif %}
     </div>
     {{ block.super }}

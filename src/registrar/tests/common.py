@@ -19,6 +19,7 @@ from registrar.models import (
     DomainApplication,
     DomainInvitation,
     User,
+    UserGroup,
     DomainInformation,
     PublicContact,
     Domain,
@@ -95,7 +96,10 @@ class MockUserLogin:
             }
             user, _ = UserModel.objects.get_or_create(**args)
             user.is_staff = True
-            user.is_superuser = True
+            # Create or retrieve the group
+            group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+            # Add the user to the group
+            user.groups.set([group])
             user.save()
             backend = settings.AUTHENTICATION_BACKENDS[-1]
             login(request, user, backend=backend)
@@ -427,22 +431,33 @@ def mock_user():
 def create_superuser():
     User = get_user_model()
     p = "adminpass"
-    return User.objects.create_superuser(
+    user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
+        is_staff=True,
         password=p,
     )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
 
 
 def create_user():
     User = get_user_model()
     p = "userpass"
-    return User.objects.create_user(
+    user = User.objects.create_user(
         username="staffuser",
         email="user@example.com",
         is_staff=True,
         password=p,
     )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
 
 
 def create_ready_domain():

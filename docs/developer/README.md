@@ -80,7 +80,7 @@ The endpoint /admin can be used to view and manage site content, including but n
 1. Login via login.gov
 2. Go to the home page and make sure you can see the part where you can submit an application
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4
-4. in src/registrar/fixtures.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
+4. in src/registrar/fixtures_users.py add to the `ADMINS` list in that file by adding your UUID as your username along with your first and last name. See below:
 
 ```
  ADMINS = [
@@ -102,7 +102,7 @@ Analysts are a variant of the admin role with limited permissions. The process f
 1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
 2. Go to the home page and make sure you can see the part where you can submit an application
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
-4. in src/registrar/fixtures.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
+4. in src/registrar/fixtures_users.py add to the `STAFF` list in that file by adding your UUID as your username along with your first and last name. See below:
 
 ```
  STAFF = [
@@ -145,7 +145,7 @@ You can change the logging verbosity, if needed. Do a web search for "django log
 
 ## Mock data
 
-There is a `post_migrate` signal in [signals.py](../../src/registrar/signals.py) that will load the fixtures from [fixtures.py](../../src/registrar/fixtures.py), giving you some test data to play with while developing.
+There is a `post_migrate` signal in [signals.py](../../src/registrar/signals.py) that will load the fixtures from [fixtures_user.py](../../src/registrar/fixtures_users.py) and [fixtures_applications.py](../../src/registrar/fixtures_applications.py), giving you some test data to play with while developing.
 
 See the [database-access README](./database-access.md) for information on how to pull data to update these fixtures.
 

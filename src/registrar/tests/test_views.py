@@ -1309,7 +1309,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         page = self.client.get(
             reverse("domain-nameservers", kwargs={"pk": self.domain.id})
         )
-        self.assertContains(page, "Domain name servers")
+        self.assertContains(page, "DNS name servers")
 
     @skip("Broken by adding registry connection fix in ticket 848")
     def test_domain_nameservers_form(self):
@@ -1414,7 +1414,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         page = self.client.get(
             reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
         )
-        self.assertContains(page, "Domain contact information")
+        self.assertContains(page, "Your contact information")
 
     def test_domain_your_contact_information_content(self):
         """Logged-in user's contact information appears on the page."""
@@ -1439,7 +1439,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         )
 
         # Loads correctly
-        self.assertContains(page, "Domain security email")
+        self.assertContains(page, "Security email")
         self.assertContains(page, "security@mail.gov")
         self.mockSendPatch.stop()
 
@@ -1455,7 +1455,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         )
 
         # Loads correctly
-        self.assertContains(page, "Domain security email")
+        self.assertContains(page, "Security email")
         self.assertNotContains(page, "dotgov@cisa.dhs.gov")
         self.mockSendPatch.stop()
 
@@ -1464,7 +1464,7 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
         page = self.client.get(
             reverse("domain-security-email", kwargs={"pk": self.domain.id})
         )
-        self.assertContains(page, "Domain security email")
+        self.assertContains(page, "Security email")
 
     def test_domain_security_email_form(self):
         """Adding a security email works.
