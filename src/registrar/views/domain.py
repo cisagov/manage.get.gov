@@ -497,7 +497,7 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
                 }
                 if dnssecdata.keyData is None:
                     dnssecdata.keyData = []
-                dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))
+                dnssecdata.keyData.append(common.DNSSECKeyData(**keyrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass

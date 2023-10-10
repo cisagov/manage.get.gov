@@ -294,9 +294,8 @@ class Domain(TimeStampedModel, DomainHelper):
             return None
 
     def getDnssecdataChanges(
-            self,
-            _dnssecdata: Optional[extensions.DNSSECExtension]
-            ) -> tuple[dict, dict]:
+        self, _dnssecdata: Optional[extensions.DNSSECExtension]
+    ) -> tuple[dict, dict]:
         """
         calls self.dnssecdata, it should pull from cache but may result
         in an epp call
@@ -392,17 +391,17 @@ class Domain(TimeStampedModel, DomainHelper):
         remRequest.add_extension(remExtension)
         try:
             if (
-                "dsData" in _addDnssecdata and
-                _addDnssecdata["dsData"] is not None
-                or "keyData" in _addDnssecdata and
-                _addDnssecdata["keyData"] is not None
+                "dsData" in _addDnssecdata
+                and _addDnssecdata["dsData"] is not None
+                or "keyData" in _addDnssecdata
+                and _addDnssecdata["keyData"] is not None
             ):
                 registry.send(addRequest, cleaned=True)
             if (
-                "dsData" in _remDnssecdata and
-                _remDnssecdata["dsData"] is not None
-                or "keyData" in _remDnssecdata and
-                _remDnssecdata["keyData"] is not None
+                "dsData" in _remDnssecdata
+                and _remDnssecdata["dsData"] is not None
+                or "keyData" in _remDnssecdata
+                and _remDnssecdata["keyData"] is not None
             ):
                 registry.send(remRequest, cleaned=True)
         except RegistryError as e:
