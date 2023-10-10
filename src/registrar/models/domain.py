@@ -2,6 +2,7 @@ from itertools import zip_longest
 import logging
 from datetime import date
 from string import digits
+from typing import Optional
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
@@ -283,7 +284,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return e.code
 
     @Cache
-    def dnssecdata(self) -> extensions.DNSSECExtension:
+    def dnssecdata(self) -> Optional[extensions.DNSSECExtension]:
         try:
             return self._get_property("dnssecdata")
         except Exception as err:
@@ -291,17 +292,18 @@ class Domain(TimeStampedModel, DomainHelper):
             # TODO - 433 error handling ticket should address this
             logger.info("Domain does not have dnssec data defined %s" % err)
             return None
-    
+
     def getDnssecdataChanges(
-            self, _dnssecdata: dict
-        ) -> tuple[dict, dict]:
+            self,
+            _dnssecdata: Optional[extensions.DNSSECExtension]
+            ) -> tuple[dict, dict]:
         """
         calls self.dnssecdata, it should pull from cache but may result
         in an epp call
         returns tuple of 2 values as follows:
             addExtension: dict
             remExtension: dict
-        
+
         addExtension includes all dsData or keyData to be added
         remExtension includes all dsData or keyData to be removed
 
@@ -311,34 +313,76 @@ class Domain(TimeStampedModel, DomainHelper):
         remExtension will be all existing dnssecdata to be deleted
         """
 
+        if isinstance(_dnssecdata, extensions.DNSSECExtension):
+            logger.info("extension is properly typed")
+        else:
+            logger.info("extension is NOT properly typed")
+
         oldDnssecdata = self.dnssecdata
-        addDnssecdata = {"dsData": [], "keyData": [],}
-        remDnssecdata = {"dsData": [], "keyData": [],}
+        addDnssecdata: dict = {}
+        #     "dsData": [],
+        #     "keyData": [],
+        # }
+        remDnssecdata: dict = {}
+        #     "dsData": [],
+        #     "keyData": [],
+        # }
 
-        if _dnssecdata and len(_dnssecdata["dsData"]) > 0:
-
+        if _dnssecdata and _dnssecdata.dsData is not None:
+            logger.info("there is submitted dsdata for comparison")
+            logger.info("there is %s submitted records", len(_dnssecdata.dsData))
             # initialize addDnssecdata and remDnssecdata for dsData
-            addDnssecdata["dsData"] = _dnssecdata["dsData"]
-            remDnssecdata["dsData"] = []
+            addDnssecdata["dsData"] = _dnssecdata.dsData
+            # remDnssecdata["dsData"] = []
 
             if oldDnssecdata and len(oldDnssecdata.dsData) > 0:
+                logger.info("there is existing ds data for comparison")
+                logger.info("there is %s existing records for compare", len(oldDnssecdata.dsData))
                 # if existing dsData not in new dsData, mark for removal
-                remDnssecdata["dsData"] = [dsData for dsData in oldDnssecdata.dsData if dsData not in _dnssecdata["dsData"]]
+                dsDataForRemoval = [
+                    dsData
+                    for dsData in oldDnssecdata.dsData
+                    if dsData not in _dnssecdata.dsData
+                ]
+                if len(dsDataForRemoval) > 0:
+                    logger.info("ds data marked for removal")
+                    remDnssecdata["dsData"] = dsDataForRemoval
 
                 # if new dsData not in existing dsData, mark for add
-                addDnssecdata["dsData"] = [dsData for dsData in _dnssecdata["dsData"] if dsData not in oldDnssecdata.dsData]
-            
-        elif _dnssecdata and len(_dnssecdata["keyData"]) > 0:
+                dsDataForAdd = [
+                    dsData
+                    for dsData in _dnssecdata.dsData
+                    if dsData not in oldDnssecdata.dsData
+                ]
+                if len(dsDataForAdd) > 0:
+                    logger.info("ds data marked for add")
+                    addDnssecdata["dsData"] = dsDataForAdd
+                else:
+                    addDnssecdata["dsData"] = None
+
+        elif _dnssecdata and _dnssecdata.keyData is not None:
             # initialize addDnssecdata and remDnssecdata for keyData
-            addDnssecdata["keyData"] = _dnssecdata["keyData"]
-            remDnssecdata["keyData"] = []
+            addDnssecdata["keyData"] = _dnssecdata.keyData
+            # remDnssecdata["keyData"] = []
 
             if oldDnssecdata and len(oldDnssecdata.keyData) > 0:
                 # if existing keyData not in new keyData, mark for removal
-                remDnssecdata["keyData"] = [keyData for keyData in oldDnssecdata.keyData if keyData not in _dnssecdata["keyData"]]
+                keyDataForRemoval = [
+                    keyData
+                    for keyData in oldDnssecdata.keyData
+                    if keyData not in _dnssecdata.keyData
+                ]
+                if len(keyDataForRemoval) > 0:
+                    remDnssecdata["keyData"] = keyDataForRemoval
 
                 # if new keyData not in existing keyData, mark for add
-                addDnssecdata["keyData"] = [keyData for keyData in _dnssecdata["keyData"] if keyData not in oldDnssecdata.keyData]
+                keyDataForAdd = [
+                    keyData
+                    for keyData in _dnssecdata.keyData
+                    if keyData not in oldDnssecdata.keyData
+                ]
+                if len(keyDataForAdd) > 0:
+                    addDnssecdata["keyData"] = keyDataForAdd
         else:
             # there are no new dsData or keyData, remove all
             remDnssecdata["dsData"] = getattr(oldDnssecdata, "dsData", None)
@@ -347,7 +391,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return addDnssecdata, remDnssecdata
 
     @dnssecdata.setter  # type: ignore
-    def dnssecdata(self, _dnssecdata: dict):
+    def dnssecdata(self, _dnssecdata: Optional[extensions.DNSSECExtension]):
         _addDnssecdata, _remDnssecdata = self.getDnssecdataChanges(_dnssecdata)
         addParams = {
             "maxSigLife": _addDnssecdata.get("maxSigLife", None),
@@ -366,12 +410,26 @@ class Domain(TimeStampedModel, DomainHelper):
         remExtension = commands.UpdateDomainDNSSECExtension(**remParams)
         remRequest.add_extension(remExtension)
         try:
-            if len(_addDnssecdata.get("dsData", [])) > 0 or len(_addDnssecdata.get("keyData",[])) > 0:
+            if (
+                "dsData" in _addDnssecdata and
+                _addDnssecdata["dsData"] is not None
+                or "keyData" in _addDnssecdata and
+                _addDnssecdata["keyData"] is not None
+            ):
+                logger.info("sending addition")
                 registry.send(addRequest, cleaned=True)
-            if len(_remDnssecdata.get("dsData", [])) > 0 or len(_remDnssecdata.get("keyData", [])) > 0:
+            if (
+                "dsData" in _remDnssecdata and
+                _remDnssecdata["dsData"] is not None
+                or "keyData" in _remDnssecdata and
+                _remDnssecdata["keyData"] is not None
+            ):
+                logger.info("sending removal")
                 registry.send(remRequest, cleaned=True)
         except RegistryError as e:
-            logger.error("Error updating DNSSEC, code was %s error was %s" % (e.code, e))
+            logger.error(
+                "Error updating DNSSEC, code was %s error was %s" % (e.code, e)
+            )
             raise e
 
     @nameservers.setter  # type: ignore

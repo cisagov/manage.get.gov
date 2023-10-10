@@ -706,22 +706,19 @@ class MockEppLib(TestCase):
     }
     dnssecExtensionWithDsData: Mapping[Any, Any] = {
         "dsData": [common.DSData(**addDsData1)],  # type: ignore
-        "keyData": [],
     }
     dnssecExtensionWithMultDsData: Mapping[str, Any] = {
         "dsData": [
             common.DSData(**addDsData1),  # type: ignore
             common.DSData(**addDsData2),  # type: ignore
         ],
-        "keyData": [],
     }
     dnssecExtensionWithKeyData: Mapping[str, Any] = {
         "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
-        "dsData": [],
     }
     dnssecExtensionRemovingDsData: Mapping[Any, Any] = {
-        "dsData": [],
-        "keyData": [],
+        "dsData": None,
+        "keyData": None,
     }
 
     def mockSend(self, _request, cleaned):
