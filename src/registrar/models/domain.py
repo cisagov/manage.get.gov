@@ -1293,7 +1293,7 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error(e)
 
-        except TransitionNotAllowed:
+        except TransitionNotAllowed as err:
             # Fixes a bug with _fetch_cache trying to create
             # a deleted domain, as cache gets cleared on delete.
             # Instead, serve what we have locally.
@@ -1332,6 +1332,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 cleaned = {k: v for k, v in cache.items() if v is not ...}
 
                 self._cache = cleaned
+            else:
+                raise err
 
 
     def _get_or_create_public_contact(self, public_contact: PublicContact):
