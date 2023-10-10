@@ -5,7 +5,7 @@ from .utility.time_stamped_model import TimeStampedModel
 
 class StatusChoices(models.TextChoices):
     READY = "ready", "Ready"
-    HOLD = "hold", "Hold"
+    ON_HOLD = "on hold", "On Hold"
 
 
 class TransitionDomain(TimeStampedModel):
