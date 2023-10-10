@@ -705,17 +705,23 @@ class MockEppLib(TestCase):
         "pubKey": "AQPJ////4Q==",
     }
     dnssecExtensionWithDsData: Mapping[Any, Any] = {
-        "dsData": [common.DSData(**addDsData1)]  # type: ignore
+        "dsData": [common.DSData(**addDsData1)],  # type: ignore
+        "keyData": [],
     }
     dnssecExtensionWithMultDsData: Mapping[str, Any] = {
         "dsData": [
             common.DSData(**addDsData1),  # type: ignore
             common.DSData(**addDsData2),  # type: ignore
         ],
+        "keyData": [],
     }
     dnssecExtensionWithKeyData: Mapping[str, Any] = {
-        "maxSigLife": 3215,
         "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
+        "dsData": [],
+    }
+    dnssecExtensionRemovingDsData: Mapping[Any, Any] = {
+        "dsData": [],
+        "keyData": [],
     }
 
     def mockSend(self, _request, cleaned):
@@ -756,26 +762,35 @@ class MockEppLib(TestCase):
         if getattr(_request, "name", None) == "security.gov":
             return MagicMock(res_data=[self.infoDomainNoContact])
         elif getattr(_request, "name", None) == "dnssec-dsdata.gov":
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
-                ],
-            )
+            if self.mockedSendFunction.call_count == 1:
+                return MagicMock(res_data=[self.mockDataInfoDomain])
+            else:
+                return MagicMock(
+                    res_data=[self.mockDataInfoDomain],
+                    extensions=[
+                        extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
+                    ],
+                )
         elif getattr(_request, "name", None) == "dnssec-multdsdata.gov":
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
-                ],
-            )
+            if self.mockedSendFunction.call_count == 1:
+                return MagicMock(res_data=[self.mockDataInfoDomain])
+            else:
+                return MagicMock(
+                    res_data=[self.mockDataInfoDomain],
+                    extensions=[
+                        extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
+                    ],
+                )
         elif getattr(_request, "name", None) == "dnssec-keydata.gov":
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
-                ],
-            )
+            if self.mockedSendFunction.call_count == 1:
+                return MagicMock(res_data=[self.mockDataInfoDomain])
+            else:
+                return MagicMock(
+                    res_data=[self.mockDataInfoDomain],
+                    extensions=[
+                        extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
+                    ],
+                )
         elif getattr(_request, "name", None) == "dnssec-none.gov":
             # this case is not necessary, but helps improve readability
             return MagicMock(res_data=[self.mockDataInfoDomain])
