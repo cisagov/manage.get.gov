@@ -30,7 +30,6 @@ class termColors:
     UNDERLINE = "\033[4m"
     BackgroundLightYellow = "\033[103m"
 
-    
 
 class Command(BaseCommand):
     help = """Load data from transition domain tables
@@ -70,7 +69,6 @@ class Command(BaseCommand):
                 {termColors.ENDC}
                 """
             )
-
 
     def handle(  # noqa: C901
         self,
@@ -137,7 +135,10 @@ class Command(BaseCommand):
                         {termColors.ENDC}"""  # noqa
                     )
                 if transition_domain_status != current_state:
-                    if transition_domain_status == TransitionDomain.StatusChoices.ON_HOLD:
+                    if (
+                        transition_domain_status
+                        == TransitionDomain.StatusChoices.ON_HOLD
+                    ):
                         existingEntry.place_client_hold(ignoreEPP=True)
                     else:
                         existingEntry.revert_client_hold(ignoreEPP=True)
@@ -153,7 +154,6 @@ class Command(BaseCommand):
                             {termColors.ENDC}"""
                         )
             except Domain.DoesNotExist:
-
                 already_in_to_create = next(
                     (x for x in domains_to_create if x.name == transition_domain_name),
                     None,
@@ -177,13 +177,12 @@ class Command(BaseCommand):
 
                     if transition_domain_email:
                         new_domain_invitation = DomainInvitation(
-                                email=transition_domain_email.lower(),
-                                domain=new_entry
-                            )
+                            email=transition_domain_email.lower(), domain=new_entry
+                        )
                         domain_invitations_to_create.append(new_domain_invitation)
                     else:
                         logger.info(
-                            f"{termColors.FAIL} ! No e-mail found for domain: {new_entry}" 
+                            f"{termColors.FAIL} ! No e-mail found for domain: {new_entry}"
                             f"(SKIPPED ADDING DOMAIN INVITATION){termColors.ENDC}"
                         )
                         skipped_domain_invitations.append(transition_domain_name)
@@ -261,7 +260,6 @@ class Command(BaseCommand):
                 {termColors.ENDC}
                 """
             )
-            
 
         # DEBUG:
         if debug_on:
