@@ -3,6 +3,8 @@
 import logging
 from time import sleep
 
+from epplibwrapper.utility.pool import EppConnectionPool
+
 try:
     from epplib.client import Client
     from epplib import commands
@@ -62,35 +64,12 @@ class EPPLibWrapper:
         )
         # prepare a context manager which will connect and login when invoked
         # (it will also logout and disconnect when the context manager exits)
-        self._connect = Socket(self._client, self._login)
+        self._connection_pool = EppConnectionPool(login=self._login, client=self._client)
+        self._connection_pool.runpool()
 
     def _send(self, command):
         """Helper function used by `send`."""
-        try:
-            cmd_type = command.__class__.__name__
-            with self._connect as wire:
-                response = wire.send(command)
-        except (ValueError, ParsingError) as err:
-            message = "%s failed to execute due to some syntax error."
-            logger.warning(message, cmd_type, exc_info=True)
-            raise RegistryError(message) from err
-        except TransportError as err:
-            message = "%s failed to execute due to a connection error."
-            logger.warning(message, cmd_type, exc_info=True)
-            raise RegistryError(message) from err
-        except LoginError as err:
-            message = "%s failed to execute due to a registry login error."
-            logger.warning(message, cmd_type, exc_info=True)
-            raise RegistryError(message) from err
-        except Exception as err:
-            message = "%s failed to execute due to an unknown error." % err
-            logger.warning(message, cmd_type, exc_info=True)
-            raise RegistryError(message) from err
-        else:
-            if response.code >= 2000:
-                raise RegistryError(response.msg, code=response.code)
-            else:
-                return response
+        self._connection_pool.command_queue.put(command)
 
     def send(self, command, *, cleaned=False):
         """Login, send the command, then close the connection. Tries 3 times."""
