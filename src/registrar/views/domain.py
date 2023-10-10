@@ -241,7 +241,7 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
         
         has_dnssec_records = self.domain.dnssecdata is not None
                 
-        # Create HTML for the buttons
+        # Create HTML for the modal button
         modal_button = '<button type="submit" class="usa-button" name="disable_dnssec">Disable DNSSEC</button>'
 
         context['modal_button'] = modal_button
