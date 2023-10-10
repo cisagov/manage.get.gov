@@ -18,6 +18,7 @@ from registrar.models import (
     DraftDomain,
     DomainInvitation,
     Contact,
+    PublicContact,
     Website,
     UserDomainRole,
     User,
@@ -1071,11 +1072,15 @@ class TestWithDomainPermissions(TestWithUser):
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-        self.domain_multdsdata, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
+        self.domain_multdsdata, _ = Domain.objects.get_or_create(
+            name="dnssec-multdsdata.gov"
+        )
         self.domain_keydata, _ = Domain.objects.get_or_create(name="dnssec-keydata.gov")
-        # We could simply use domain (igoreville) but this will be more readable in tests 
+        # We could simply use domain (igorville) but this will be more readable in tests
         # that inherit this setUp
-        self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
+        self.domain_dnssec_none, _ = Domain.objects.get_or_create(
+            name="dnssec-none.gov"
+        )
         self.domain_information, _ = DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain
         )
@@ -1098,13 +1103,17 @@ class TestWithDomainPermissions(TestWithUser):
             user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.ADMIN
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_multdsdata, role=UserDomainRole.Roles.ADMIN
+            user=self.user,
+            domain=self.domain_multdsdata,
+            role=UserDomainRole.Roles.ADMIN,
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_keydata, role=UserDomainRole.Roles.ADMIN
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_dnssec_none, role=UserDomainRole.Roles.ADMIN
+            user=self.user,
+            domain=self.domain_dnssec_none,
+            role=UserDomainRole.Roles.ADMIN,
         )
 
     def tearDown(self):
@@ -1113,6 +1122,7 @@ class TestWithDomainPermissions(TestWithUser):
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
             DomainApplication.objects.all().delete()
+            PublicContact.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
         except ValueError:  # pass if already deleted
@@ -1175,7 +1185,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
-        
+
     def test_domain_overview_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
@@ -1190,7 +1200,6 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
 
 
 class TestDomainUserManagement(TestDomainOverview):
-    
     def test_domain_user_management(self):
         response = self.client.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
@@ -1348,9 +1357,9 @@ class TestDomainUserManagement(TestDomainOverview):
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
         self.assertContains(home_page, self.domain.name)
-        
-class TestDomainNameservers(TestDomainOverview):
 
+
+class TestDomainNameservers(TestDomainOverview):
     def test_domain_nameservers(self):
         """Can load domain's nameservers page."""
         page = self.client.get(
@@ -1401,9 +1410,9 @@ class TestDomainNameservers(TestDomainOverview):
         # error text appears twice, once at the top of the page, once around
         # the field.
         self.assertContains(result, "This field is required", count=2, status_code=200)
-        
-class TestDomainAuthorizingOfficial(TestDomainOverview):
 
+
+class TestDomainAuthorizingOfficial(TestDomainOverview):
     def test_domain_authorizing_official(self):
         """Can load domain's authorizing official page."""
         page = self.client.get(
@@ -1421,9 +1430,9 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
             reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
         )
         self.assertContains(page, "Testy")
-        
-class TestDomainOrganization(TestDomainOverview):
 
+
+class TestDomainOrganization(TestDomainOverview):
     def test_domain_org_name_address(self):
         """Can load domain's org name and mailing address page."""
         page = self.client.get(
@@ -1459,9 +1468,9 @@ class TestDomainOrganization(TestDomainOverview):
 
         self.assertContains(success_result_page, "Not igorville")
         self.assertContains(success_result_page, "Faketown")
-        
-class TestDomainContactInformation(TestDomainOverview):
 
+
+class TestDomainContactInformation(TestDomainOverview):
     def test_domain_your_contact_information(self):
         """Can load domain's your contact information page."""
         page = self.client.get(
@@ -1477,9 +1486,9 @@ class TestDomainContactInformation(TestDomainOverview):
             reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
         )
         self.assertContains(page, "Testy")
-        
-class TestDomainSecurityEmail(TestDomainOverview):
 
+
+class TestDomainSecurityEmail(TestDomainOverview):
     def test_domain_security_email_existing_security_contact(self):
         """Can load domain's security email page."""
         self.mockSendPatch = patch("registrar.models.domain.registry.send")
@@ -1544,47 +1553,50 @@ class TestDomainSecurityEmail(TestDomainOverview):
         self.assertContains(
             success_page, "The security email for this domain has been updated"
         )
-       
-        
+
+
 class TestDomainDNSSEC(TestDomainOverview):
-    
+
     """MockEPPLib is already inherited."""
-        
+
     def test_dnssec_page_refreshes_enable_button(self):
         """DNSSEC overview page loads when domain has no DNSSEC data
         and shows a 'Enable DNSSEC' button. When button is clicked the template
         updates. When user navigates away then comes back to the page, the
         'Enable DNSSEC' button is shown again."""
         # home_page = self.app.get("/")
-        
+
         page = self.client.get(
             reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id})
         )
         self.assertContains(page, "Enable DNSSEC")
-        
+
         # Prepare the data for the POST request
         post_data = {
-            'enable_dnssec': 'Enable DNSSEC',  # Replace with the actual form field and value
-            # Add other form fields as needed
+            "enable_dnssec": "Enable DNSSEC",
         }
-        updated_page = self.client.post(reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}), post_data, follow=True)
-        
+        updated_page = self.client.post(
+            reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}),
+            post_data,
+            follow=True,
+        )
+
         self.assertEqual(updated_page.status_code, 200)
-        
+
         self.assertContains(updated_page, "Add DS Data")
         self.assertContains(updated_page, "Add Key Data")
-        
+
         self.app.get("/")
-        
+
         back_to_page = self.client.get(
             reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id})
         )
         self.assertContains(back_to_page, "Enable DNSSEC")
-        
+
     def test_dnssec_page_loads_with_data_in_domain(self):
         """DNSSEC overview page loads when domain has DNSSEC data
         and the template contains a button to disable DNSSEC."""
-        
+
         page = self.client.get(
             reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id})
         )
@@ -1592,63 +1604,71 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         # Prepare the data for the POST request
         post_data = {
-            'disable_dnssec': 'Disable DNSSEC',  # Replace with the actual form field and value
+            "disable_dnssec": "Disable DNSSEC",
         }
-        updated_page = self.client.post(reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}), post_data, follow=True)
-        
+        updated_page = self.client.post(
+            reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}),
+            post_data,
+            follow=True,
+        )
+
         self.assertEqual(updated_page.status_code, 200)
-        
+
         self.assertContains(updated_page, "Enable DNSSEC")
-        
+
     def test_ds_form_loads_with_no_domain_data(self):
         """DNSSEC Add DS Data page loads when there is no
         domain DNSSEC data and shows a button to Add DS Data record"""
-        
+
         page = self.client.get(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id})
+            reverse(
+                "domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}
+            )
         )
         self.assertContains(page, "Add DS Data record")
-        
+
     def test_ds_form_loads_with_ds_data(self):
         """DNSSEC Add DS Data page loads when there is
         domain DNSSEC DS data and shows the data"""
-        
+
         page = self.client.get(
             reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
         )
         self.assertContains(page, "DS Data record 1")
-        
+
     def test_ds_form_loads_with_key_data(self):
         """DNSSEC Add DS Data page loads when there is
         domain DNSSEC KEY data and shows an alert"""
-        
+
         page = self.client.get(
             reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_keydata.id})
         )
         self.assertContains(page, "Warning, you cannot add DS Data")
-        
+
     def test_key_form_loads_with_no_domain_data(self):
         """DNSSEC Add Key Data page loads when there is no
         domain DNSSEC data and shows a button to Add DS Key record"""
-        
+
         page = self.client.get(
-            reverse("domain-dns-dnssec-keydata", kwargs={"pk": self.domain_dnssec_none.id})
+            reverse(
+                "domain-dns-dnssec-keydata", kwargs={"pk": self.domain_dnssec_none.id}
+            )
         )
         self.assertContains(page, "Add DS Key record")
-        
+
     def test_key_form_loads_with_key_data(self):
         """DNSSEC Add Key Data page loads when there is
         domain DNSSEC Key data and shows the data"""
-        
+
         page = self.client.get(
             reverse("domain-dns-dnssec-keydata", kwargs={"pk": self.domain_keydata.id})
         )
         self.assertContains(page, "DS Data record 1")
-        
+
     def test_key_form_loads_with_ds_data(self):
         """DNSSEC Add Key Data page loads when there is
         domain DNSSEC DS data and shows an alert"""
-        
+
         page = self.client.get(
             reverse("domain-dns-dnssec-keydata", kwargs={"pk": self.domain_dsdata.id})
         )
@@ -1674,7 +1694,9 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
-        self.assertContains(page, "The DS Data records for this domain have been updated.")
+        self.assertContains(
+            page, "The DS Data records for this domain have been updated."
+        )
 
     def test_ds_data_form_invalid(self):
         """DS Data form errors with invalid data
@@ -1716,7 +1738,9 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
-        self.assertContains(page, "The Key Data records for this domain have been updated.")
+        self.assertContains(
+            page, "The Key Data records for this domain have been updated."
+        )
 
     def test_key_data_form_invalid(self):
         """Key Data form errors with invalid data
@@ -1737,8 +1761,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         # error text appears twice, once at the top of the page, once around
         # the field.
         self.assertContains(result, "Pub key is required", count=2, status_code=200)
-    
-    
+
+
 class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()

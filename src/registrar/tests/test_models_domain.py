@@ -1003,7 +1003,6 @@ class TestRegistrantDNSSEC(MockEppLib):
         super().setUp()
         # for the tests, need a domain in the unknown state
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov")
-        
 
     def tearDown(self):
         Domain.objects.all().delete()

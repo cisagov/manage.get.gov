@@ -233,20 +233,24 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
 
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
-        
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         """The initial value for the form (which is a formset here)."""
         self.domain = self.get_object()
-        
-        has_dnssec_records = self.domain.dnssecdata is not None
-                
-        # Create HTML for the modal button
-        modal_button = '<button type="submit" class="usa-button" name="disable_dnssec">Disable DNSSEC</button>'
 
-        context['modal_button'] = modal_button
-        context['has_dnssec_records'] = has_dnssec_records   
-        context['dnssec_enabled'] = self.request.session.pop('dnssec_enabled', False)
+        has_dnssec_records = self.domain.dnssecdata is not None
+
+        # Create HTML for the modal button
+        modal_button = (
+            '<button type="submit" '
+            'class="usa-button" '
+            'name="disable_dnssec">Disable DNSSEC</button>'
+        )
+
+        context["modal_button"] = modal_button
+        context["has_dnssec_records"] = has_dnssec_records
+        context["dnssec_enabled"] = self.request.session.pop("dnssec_enabled", False)
 
         return context
 
@@ -255,27 +259,24 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
         return reverse("domain-dns-dnssec", kwargs={"pk": self.domain.pk})
 
     def post(self, request, *args, **kwargs):
-        """Form submission posts to this view.
-        """
+        """Form submission posts to this view."""
         self.domain = self.get_object()
         form = self.get_form()
-        if form.is_valid():             
-            if 'disable_dnssec' in request.POST:
+        if form.is_valid():
+            if "disable_dnssec" in request.POST:
                 try:
                     self.domain.dnssecdata = {}
                 except RegistryError as err:
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
-                    messages.error(
-                        self.request, errmsg
-                    )
-                request.session['dnssec_ds_confirmed'] = False
-                request.session['dnssec_key_confirmed'] = False
-            elif 'enable_dnssec' in request.POST:
-                request.session['dnssec_enabled'] = True
-                request.session['dnssec_ds_confirmed'] = False
-                request.session['dnssec_key_confirmed'] = False
-        
+                    messages.error(self.request, errmsg)
+                request.session["dnssec_ds_confirmed"] = False
+                request.session["dnssec_key_confirmed"] = False
+            elif "enable_dnssec" in request.POST:
+                request.session["dnssec_enabled"] = True
+                request.session["dnssec_ds_confirmed"] = False
+                request.session["dnssec_key_confirmed"] = False
+
         return self.form_valid(form)
 
 
@@ -292,21 +293,28 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         domain = self.get_object()
         dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
         initial_data = []
-        
-        if dnssecdata is not None:
 
+        if dnssecdata is not None:
             if dnssecdata.keyData is not None:
                 # TODO: Throw an error
                 pass
 
             if dnssecdata.dsData is not None:
                 # Add existing nameservers as initial data
-                initial_data.extend({"key_tag": record.keyTag, "algorithm": record.alg, "digest_type": record.digestType, "digest": record.digest} for record in dnssecdata.dsData)
-        
+                initial_data.extend(
+                    {
+                        "key_tag": record.keyTag,
+                        "algorithm": record.alg,
+                        "digest_type": record.digestType,
+                        "digest": record.digest,
+                    }
+                    for record in dnssecdata.dsData
+                )
+
         # Ensure at least 3 fields, filled or empty
         while len(initial_data) == 0:
             initial_data.append({})
-        
+
         return initial_data
 
     def get_success_url(self):
@@ -319,16 +327,18 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         # use "formset" instead of "form" for the key
         context["formset"] = context.pop("form")
 
-        # set the dnssec_ds_confirmed flag in the context for this view 
+        # set the dnssec_ds_confirmed flag in the context for this view
         # based either on the existence of DS Data in the domain,
         # or on the flag stored in the session
         domain = self.get_object()
         dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
 
         if dnssecdata is not None and dnssecdata.dsData is not None:
-            self.request.session['dnssec_ds_confirmed'] = True
+            self.request.session["dnssec_ds_confirmed"] = True
 
-        context['dnssec_ds_confirmed'] = self.request.session.get('dnssec_ds_confirmed', False)
+        context["dnssec_ds_confirmed"] = self.request.session.get(
+            "dnssec_ds_confirmed", False
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -336,14 +346,14 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         self.object = self.get_object()
         formset = self.get_form()
 
-        if 'confirm-ds' in request.POST:
-            request.session['dnssec_ds_confirmed'] = True
-            request.session['dnssec_key_confirmed'] = False
+        if "confirm-ds" in request.POST:
+            request.session["dnssec_ds_confirmed"] = True
+            request.session["dnssec_key_confirmed"] = False
             return super().form_valid(formset)
-        
-        if 'btn-cancel-click' in request.POST:
-            return redirect('/', {'formset': formset},RequestContext(request))
-                
+
+        if "btn-cancel-click" in request.POST:
+            return redirect("/", {"formset": formset}, RequestContext(request))
+
         if formset.is_valid():
             return self.form_valid(formset)
         else:
@@ -353,11 +363,12 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         """The formset is valid, perform something with it."""
 
         # Set the nameservers from the formset
-        dnssecdata = {"dsData":[]}
+        dnssecdata = {"dsData": []}
 
         for form in formset:
             try:
-                # if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
+                # if 'delete' not in form.cleaned_data
+                # or form.cleaned_data['delete'] == False:
                 dsrecord = {
                     "keyTag": form.cleaned_data["key_tag"],
                     "alg": form.cleaned_data["algorithm"],
@@ -378,9 +389,7 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
             errmsg = "Error updating DNSSEC data in the registry."
             logger.error(errmsg)
             logger.error(err)
-            messages.error(
-                self.request, errmsg
-            )
+            messages.error(self.request, errmsg)
             return self.form_invalid(formset)
         else:
             messages.success(
@@ -388,7 +397,6 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
             )
             # superclass has the redirect
             return super().form_valid(formset)
-        
 
 
 class DomainKeydataView(DomainPermissionView, FormMixin):
@@ -404,21 +412,28 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
         domain = self.get_object()
         dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
         initial_data = []
-        
-        if dnssecdata is not None:
 
+        if dnssecdata is not None:
             if dnssecdata.dsData is not None:
                 # TODO: Throw an error
                 pass
 
             if dnssecdata.keyData is not None:
                 # Add existing keydata as initial data
-                initial_data.extend({"flag": record.flags, "protocol": record.protocol, "algorithm": record.alg, "pub_key": record.pubKey} for record in dnssecdata.keyData)
-        
+                initial_data.extend(
+                    {
+                        "flag": record.flags,
+                        "protocol": record.protocol,
+                        "algorithm": record.alg,
+                        "pub_key": record.pubKey,
+                    }
+                    for record in dnssecdata.keyData
+                )
+
         # Ensure at least 3 fields, filled or empty
         while len(initial_data) == 0:
             initial_data.append({})
-        
+
         return initial_data
 
     def get_success_url(self):
@@ -431,32 +446,34 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
         # use "formset" instead of "form" for the key
         context["formset"] = context.pop("form")
 
-        # set the dnssec_key_confirmed flag in the context for this view 
+        # set the dnssec_key_confirmed flag in the context for this view
         # based either on the existence of Key Data in the domain,
         # or on the flag stored in the session
         domain = self.get_object()
         dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
 
         if dnssecdata is not None and dnssecdata.keyData is not None:
-            self.request.session['dnssec_key_confirmed'] = True
+            self.request.session["dnssec_key_confirmed"] = True
 
-        context['dnssec_key_confirmed'] = self.request.session.get('dnssec_key_confirmed', False)
+        context["dnssec_key_confirmed"] = self.request.session.get(
+            "dnssec_key_confirmed", False
+        )
         return context
 
     def post(self, request, *args, **kwargs):
         """Formset submission posts to this view."""
         self.object = self.get_object()
         formset = self.get_form()
-        
-        if 'confirm-key' in request.POST:
-            request.session['dnssec_key_confirmed'] = True
-            request.session['dnssec_ds_confirmed'] = False
+
+        if "confirm-key" in request.POST:
+            request.session["dnssec_key_confirmed"] = True
+            request.session["dnssec_ds_confirmed"] = False
             self.object.save()
             return super().form_valid(formset)
-        
-        if 'btn-cancel-click' in request.POST:
-            return redirect('/', {'formset': formset},RequestContext(request))
-        
+
+        if "btn-cancel-click" in request.POST:
+            return redirect("/", {"formset": formset}, RequestContext(request))
+
         if formset.is_valid():
             return self.form_valid(formset)
         else:
@@ -466,11 +483,12 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
         """The formset is valid, perform something with it."""
 
         # Set the nameservers from the formset
-        dnssecdata = {"keyData":[]}
+        dnssecdata = {"keyData": []}
 
         for form in formset:
             try:
-                # if 'delete' not in form.cleaned_data or form.cleaned_data['delete'] == False:
+                # if 'delete' not in form.cleaned_data
+                # or form.cleaned_data['delete'] == False:
                 keyrecord = {
                     "flags": form.cleaned_data["flag"],
                     "protocol": form.cleaned_data["protocol"],
@@ -490,9 +508,7 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
             errmsg = "Error updating DNSSEC data in the registry."
             logger.error(errmsg)
             logger.error(err)
-            messages.error(
-                self.request, errmsg
-            )
+            messages.error(self.request, errmsg)
             return self.form_invalid(formset)
         else:
             messages.success(
