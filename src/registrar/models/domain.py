@@ -313,31 +313,15 @@ class Domain(TimeStampedModel, DomainHelper):
         remExtension will be all existing dnssecdata to be deleted
         """
 
-        if isinstance(_dnssecdata, extensions.DNSSECExtension):
-            logger.info("extension is properly typed")
-        else:
-            logger.info("extension is NOT properly typed")
-
         oldDnssecdata = self.dnssecdata
         addDnssecdata: dict = {}
-        #     "dsData": [],
-        #     "keyData": [],
-        # }
         remDnssecdata: dict = {}
-        #     "dsData": [],
-        #     "keyData": [],
-        # }
 
         if _dnssecdata and _dnssecdata.dsData is not None:
-            logger.info("there is submitted dsdata for comparison")
-            logger.info("there is %s submitted records", len(_dnssecdata.dsData))
             # initialize addDnssecdata and remDnssecdata for dsData
             addDnssecdata["dsData"] = _dnssecdata.dsData
-            # remDnssecdata["dsData"] = []
 
             if oldDnssecdata and len(oldDnssecdata.dsData) > 0:
-                logger.info("there is existing ds data for comparison")
-                logger.info("there is %s existing records for compare", len(oldDnssecdata.dsData))
                 # if existing dsData not in new dsData, mark for removal
                 dsDataForRemoval = [
                     dsData
@@ -345,7 +329,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     if dsData not in _dnssecdata.dsData
                 ]
                 if len(dsDataForRemoval) > 0:
-                    logger.info("ds data marked for removal")
                     remDnssecdata["dsData"] = dsDataForRemoval
 
                 # if new dsData not in existing dsData, mark for add
@@ -355,7 +338,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     if dsData not in oldDnssecdata.dsData
                 ]
                 if len(dsDataForAdd) > 0:
-                    logger.info("ds data marked for add")
                     addDnssecdata["dsData"] = dsDataForAdd
                 else:
                     addDnssecdata["dsData"] = None
@@ -363,7 +345,6 @@ class Domain(TimeStampedModel, DomainHelper):
         elif _dnssecdata and _dnssecdata.keyData is not None:
             # initialize addDnssecdata and remDnssecdata for keyData
             addDnssecdata["keyData"] = _dnssecdata.keyData
-            # remDnssecdata["keyData"] = []
 
             if oldDnssecdata and len(oldDnssecdata.keyData) > 0:
                 # if existing keyData not in new keyData, mark for removal
@@ -416,7 +397,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 or "keyData" in _addDnssecdata and
                 _addDnssecdata["keyData"] is not None
             ):
-                logger.info("sending addition")
                 registry.send(addRequest, cleaned=True)
             if (
                 "dsData" in _remDnssecdata and
@@ -424,7 +404,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 or "keyData" in _remDnssecdata and
                 _remDnssecdata["keyData"] is not None
             ):
-                logger.info("sending removal")
                 registry.send(remRequest, cleaned=True)
         except RegistryError as e:
             logger.error(
