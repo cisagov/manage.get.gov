@@ -718,7 +718,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         if not isinstance(contact, eppInfo.InfoContactResultData):
             raise ContactError("Contact must be of type InfoContactResultData")
-
         auth_info = contact.auth_info
         postal_info = contact.postal_info
         addr = postal_info.addr
