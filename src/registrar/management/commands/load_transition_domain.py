@@ -143,9 +143,9 @@ class Command(BaseCommand):
         logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
         return domain_status_dictionary
 
-    def get_user_emails_dict(self,
-                             contacts_filename: str,
-                             sep) -> defaultdict[str, str]:
+    def get_user_emails_dict(
+        self, contacts_filename: str, sep
+    ) -> defaultdict[str, str]:
         """Creates mapping of userId -> emails"""
         user_emails_dictionary = defaultdict(str)
         logger.info("Reading domain-contacts data file %s", contacts_filename)
@@ -157,8 +157,7 @@ class Command(BaseCommand):
         logger.info("Loaded emails for %d users", len(user_emails_dictionary))
         return user_emails_dictionary
 
-    def get_mapped_status(self,
-                          status_to_map: str):
+    def get_mapped_status(self, status_to_map: str):
         """
         Given a verisign domain status, return a corresponding
         status defined for our domains.
@@ -429,8 +428,8 @@ class Command(BaseCommand):
                                 logger.info(
                                     f"{termColors.OKCYAN}"
                                     f"Updating entry: {existing_entry}"
-                                    f"Status: {existing_entry.status} > {new_entry_status}" # noqa
-                                    f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}" # noqa
+                                    f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
+                                    f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
                                     f"{termColors.ENDC}"
                                 )
 
