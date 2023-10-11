@@ -15,6 +15,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
+from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 from .common import MockEppLib
 from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
@@ -191,6 +192,56 @@ class TestDomainCache(MockEppLib):
         cached_contact = domain._cache["contacts"].get(security)
         self.assertEqual(cached_contact, in_db.registry_id)
         self.assertEqual(domain.security_contact.email, "123test@mail.gov")
+
+    def test_errors_map_epp_contact_to_public_contact(self):
+        """
+        Scenario: Registrant gets invalid data from EPPLib
+            When the `map_epp_contact_to_public_contact` function
+                gets invalid data from EPPLib
+            Then the function throws the expected ContactErrors
+        """
+        domain, _ = Domain.objects.get_or_create(name="registry.gov")
+        fakedEpp = self.fakedEppObject()
+        invalid_length = fakedEpp.dummyInfoContactResultData(
+            "Cymaticsisasubsetofmodalvibrationalphenomena", "lengthInvalid@mail.gov"
+        )
+        valid_object = fakedEpp.dummyInfoContactResultData("valid", "valid@mail.gov")
+
+        desired_error = ContactErrorCodes.CONTACT_ID_INVALID_LENGTH
+        with self.assertRaises(ContactError) as context:
+            domain.map_epp_contact_to_public_contact(
+                invalid_length,
+                invalid_length.id,
+                PublicContact.ContactTypeChoices.SECURITY,
+            )
+        self.assertEqual(context.exception.code, desired_error)
+
+        desired_error = ContactErrorCodes.CONTACT_ID_NONE
+        with self.assertRaises(ContactError) as context:
+            domain.map_epp_contact_to_public_contact(
+                valid_object,
+                None,
+                PublicContact.ContactTypeChoices.SECURITY,
+            )
+        self.assertEqual(context.exception.code, desired_error)
+
+        desired_error = ContactErrorCodes.CONTACT_INVALID_TYPE
+        with self.assertRaises(ContactError) as context:
+            domain.map_epp_contact_to_public_contact(
+                "bad_object",
+                valid_object.id,
+                PublicContact.ContactTypeChoices.SECURITY,
+            )
+        self.assertEqual(context.exception.code, desired_error)
+
+        desired_error = ContactErrorCodes.CONTACT_TYPE_NONE
+        with self.assertRaises(ContactError) as context:
+            domain.map_epp_contact_to_public_contact(
+                valid_object,
+                valid_object.id,
+                None,
+            )
+        self.assertEqual(context.exception.code, desired_error)
 
 
 class TestDomainCreation(MockEppLib):
