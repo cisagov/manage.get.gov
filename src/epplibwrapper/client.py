@@ -71,7 +71,7 @@ class EPPLibWrapper:
             # Which errors the pool should look out for
             "exc_classes": (LoginError, RegistryError,),
             # Should we ping the connection on occassion to keep it alive?
-            "keep_alive": None,
+            "keepalive": None,
         }
         self._pool = EppConnectionPool(client=self._client, login=self._login, options=options)
 

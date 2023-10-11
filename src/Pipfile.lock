@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "49cd54bd0c272b04889898edc62b2a314d9675409d862a93e257b3f79e09f84e"
+            "sha256": "f9d7900daf9ca6d77fc9fe29c79b7620040cdaa50a34401bb2f84cef0862189e"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -366,11 +366,11 @@
         },
         "faker": {
             "hashes": [
-                "sha256:85468e16d4a9a8712bfdb98ba55aaf17c60658266a76958d099aee6a18c0a6c5",
-                "sha256:d75401c631a991b32d3595f26250f42c007cc32653ac3e522b626f3d80770571"
+                "sha256:63da90512d0cb3acdb71bd833bb3071cb8a196020d08b8567a01d232954f1820",
+                "sha256:f321e657ed61616fbfe14dbb9ccc6b2e8282652bbcfcb503c1bd0231ff834df6"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==19.9.0"
+            "version": "==19.10.0"
         },
         "fred-epplib": {
             "git": "https://github.com/cisagov/epplib.git",
@@ -435,6 +435,10 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==23.9.1"
+        },
+        "geventconnpool": {
+            "git": "https://github.com/zandercymatics/geventconnpool.git",
+            "ref": "e4f349117875fa70b1034b89c3bc7caafac6a9b4"
         },
         "greenlet": {
             "hashes": [
@@ -503,13 +507,6 @@
             ],
             "markers": "python_version < '3.11' and platform_python_implementation == 'CPython'",
             "version": "==3.0.0"
-        },
-        "gsocketpool": {
-            "hashes": [
-                "sha256:f2e2749aceadce6b27ca52e2b0a64af99797746a8681e1a2963f72007c14cb14"
-            ],
-            "index": "pypi",
-            "version": "==0.1.6"
         },
         "gunicorn": {
             "hashes": [
