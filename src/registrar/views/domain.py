@@ -241,7 +241,7 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
 
         has_dnssec_records = self.domain.dnssecdata is not None
 
-        # Create HTML for the buttons
+        # Create HTML for the modal button
         modal_button = (
             '<button type="submit" '
             'class="usa-button" '
@@ -297,6 +297,8 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         if dnssecdata is not None:
             if dnssecdata.keyData is not None:
                 # TODO: Throw an error
+                # Note: This is moot if we're
+                # removing key data
                 pass
 
             if dnssecdata.dsData is not None:
@@ -311,7 +313,7 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
                     for record in dnssecdata.dsData
                 )
 
-        # Ensure at least 3 fields, filled or empty
+        # Ensure at least 1 record, filled or empty
         while len(initial_data) == 0:
             initial_data.append({})
 
@@ -385,7 +387,6 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
         try:
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
-            # Alysia: Check client hold error handling and duplicate this here
             errmsg = "Error updating DNSSEC data in the registry."
             logger.error(errmsg)
             logger.error(err)
@@ -415,7 +416,9 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
 
         if dnssecdata is not None:
             if dnssecdata.dsData is not None:
-                # TODO: Throw an error
+                # TODO: Throw an error?
+                # Note: this is moot if we're
+                # removing Key data
                 pass
 
             if dnssecdata.keyData is not None:
@@ -430,7 +433,7 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
                     for record in dnssecdata.keyData
                 )
 
-        # Ensure at least 3 fields, filled or empty
+        # Ensure at least 1 record, filled or empty
         while len(initial_data) == 0:
             initial_data.append({})
 
