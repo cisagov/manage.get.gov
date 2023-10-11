@@ -308,7 +308,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         contact = domain.security_contact
 
         # If no default is created for security_contact,
-        # then we cannot connect to EPPLib.
+        # then we cannot connect to the registry.
         if contact is None:
             messages.error(self.request, "Update failed. Cannot contact the registry.")
             return redirect(self.get_success_url())
