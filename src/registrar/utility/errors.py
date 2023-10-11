@@ -51,7 +51,7 @@ class NameserverError(Exception):
         "because it is not a subdomain",
         NameserverErrorCodes.INVALID_IP: "Nameserver {} has an invalid IP address: {}",
         NameserverErrorCodes.TOO_MANY_HOSTS: (
-            "Too many hosts provided, you may not have more than " "13 nameservers."
+            "Too many hosts provided, you may not have more than 13 nameservers."
         ),
         NameserverErrorCodes.UNABLE_TO_UPDATE_DOMAIN: (
             "Unable to update domain, changes were not applied."
