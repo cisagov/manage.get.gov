@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("contenttypes", "0002_remove_content_type_name"),
-        ("registrar", "0034_alter_user_options"),
+        ("registrar", "0035_alter_user_options"),
     ]
 
     operations = [migrations.RunPython(forward, backward)]
