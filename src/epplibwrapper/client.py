@@ -3,6 +3,8 @@
 import logging
 from time import sleep
 
+from epplibwrapper.utility.pool import EppConnectionPool
+
 try:
     from epplib.client import Client
     from epplib import commands
@@ -63,13 +65,22 @@ class EPPLibWrapper:
         # prepare a context manager which will connect and login when invoked
         # (it will also logout and disconnect when the context manager exits)
         self._connect = Socket(self._client, self._login)
+        options = {
+            # Pool size
+            "size": 10,
+            # Which errors the pool should look out for
+            "exc_classes": (LoginError, RegistryError,),
+            # Should we ping the connection on occassion to keep it alive?
+            "keep_alive": None,
+        }
+        self._pool = EppConnectionPool(client=self._client, login=self._login, options=options)
 
     def _send(self, command):
         """Helper function used by `send`."""
         try:
             cmd_type = command.__class__.__name__
-            with self._connect as wire:
-                response = wire.send(command)
+            with self._pool.get() as connection:
+                response = connection.send(command)
         except (ValueError, ParsingError) as err:
             message = "%s failed to execute due to some syntax error."
             logger.warning(message, cmd_type, exc_info=True)
