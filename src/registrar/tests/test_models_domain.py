@@ -993,8 +993,7 @@ class TestRegistrantNameservers(MockEppLib):
         update_domain_with_created = commands.UpdateDomain(
             name=self.domain.name,
             add=[
-                common.HostObjSet([created_host1.name]),
-                common.HostObjSet([created_host2.name]),
+                common.HostObjSet([created_host1.name, created_host2.name]),
             ],
             rem=[],
         )
@@ -1125,8 +1124,12 @@ class TestRegistrantNameservers(MockEppLib):
                     name=self.domainWithThreeNS.name,
                     add=[],
                     rem=[
-                        common.HostObjSet(hosts=["ns1.my-nameserver-2.com"]),
-                        common.HostObjSet(hosts=["ns1.cats-are-superior3.com"]),
+                        common.HostObjSet(
+                            hosts=[
+                                "ns1.my-nameserver-2.com",
+                                "ns1.cats-are-superior3.com",
+                            ]
+                        ),
                     ],
                     nsset=None,
                     keyset=None,
@@ -1178,12 +1181,20 @@ class TestRegistrantNameservers(MockEppLib):
                 commands.UpdateDomain(
                     name=self.domainWithThreeNS.name,
                     add=[
-                        common.HostObjSet(hosts=["ns1.cats-are-superior1.com"]),
-                        common.HostObjSet(hosts=["ns1.cats-are-superior2.com"]),
+                        common.HostObjSet(
+                            hosts=[
+                                "ns1.cats-are-superior1.com",
+                                "ns1.cats-are-superior2.com",
+                            ]
+                        ),
                     ],
                     rem=[
-                        common.HostObjSet(hosts=["ns1.my-nameserver-2.com"]),
-                        common.HostObjSet(hosts=["ns1.cats-are-superior3.com"]),
+                        common.HostObjSet(
+                            hosts=[
+                                "ns1.my-nameserver-2.com",
+                                "ns1.cats-are-superior3.com",
+                            ]
+                        ),
                     ],
                     nsset=None,
                     keyset=None,

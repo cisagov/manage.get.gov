@@ -252,8 +252,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return hostList
 
     def _create_host(self, host, addrs):
-        """Call _check_host first before using this function,
-        This creates the host object in the registry
+        """Creates the host object in the registry
         doesn't add the created host to the domain
         returns ErrorCode (int)"""
         logger.info("Creating host")
@@ -380,7 +379,7 @@ class Domain(TimeStampedModel, DomainHelper):
         new_values = {
             key: newHostDict.get(key)
             for key in newHostDict
-            if key not in previousHostDict
+            if key not in previousHostDict and key.strip() != ""
         }
 
         for nameserver, ip in new_values.items():
@@ -402,15 +401,19 @@ class Domain(TimeStampedModel, DomainHelper):
                     % (hostTuple[0], updated_response_code)
                 )
 
-    def createNewHostList(self, new_values: dict) -> list:
+    def createNewHostList(self, new_values: dict):
         """convert the dictionary of new values to a list of HostObjSet
         for use in the UpdateDomain epp message
         Args:
             new_values: dict(str,list)- dict of {nameserver:ips} to add to domain
         Returns:
-            list[epp.HostObjSet]-epp object list for use in the UpdateDomain epp message
+            tuple [list[epp.HostObjSet], int]
+            list[epp.HostObjSet]-epp object  for use in the UpdateDomain epp message
+                defaults to empty list
+            int-number of items being created default 0
         """
-        addToDomainList = []
+
+        hostStringList = []
         for key, value in new_values.items():
             createdCode = self._create_host(
                 host=key, addrs=value
@@ -419,21 +422,31 @@ class Domain(TimeStampedModel, DomainHelper):
                 createdCode == ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
                 or createdCode == ErrorCode.OBJECT_EXISTS
             ):
-                addToDomainList.append(epp.HostObjSet([key]))
+                hostStringList.append(key)
+        if hostStringList == []:
+            return [], 0
 
-        return addToDomainList
+        addToDomainObject = epp.HostObjSet(hosts=hostStringList)
+        return [addToDomainObject], len(hostStringList)
 
     def createDeleteHostList(self, hostsToDelete: list[str]):
         """
         Args:
             hostsToDelete (list[str])- list of nameserver/host names to remove
         Returns:
-            list[epp.HostObjSet]-epp object list for use in the UpdateDomain epp message
+            tuple [list[epp.HostObjSet], int]
+            list[epp.HostObjSet]-epp object  for use in the UpdateDomain epp message
+                defaults to empty list
+            int-number of items being created default 0
         """
-        deleteList = []
+        deleteStrList = []
         for nameserver in hostsToDelete:
-            deleteList.append(epp.HostObjSet([nameserver]))
-        return deleteList
+            deleteStrList.append(nameserver)
+        if deleteStrList == []:
+            return [], 0
+        deleteObj = epp.HostObjSet(hosts=hostsToDelete)
+
+        return [deleteObj], len(deleteStrList)
 
     @Cache
     def dnssecdata(self) -> extensions.DNSSECExtension:
@@ -482,8 +495,8 @@ class Domain(TimeStampedModel, DomainHelper):
         _ = self._update_host_values(
             updated_values, oldNameservers
         )  # returns nothing, just need to be run and errors
-        addToDomainList = self.createNewHostList(new_values)
-        deleteHostList = self.createDeleteHostList(deleted_values)
+        addToDomainList, addToDomainCount = self.createNewHostList(new_values)
+        deleteHostList, deleteCount = self.createDeleteHostList(deleted_values)
         responseCode = self.addAndRemoveHostsFromDomain(
             hostsToAdd=addToDomainList, hostsToDelete=deleteHostList
         )
@@ -492,9 +505,8 @@ class Domain(TimeStampedModel, DomainHelper):
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN)
 
-        successTotalNameservers = (
-            len(oldNameservers) - len(deleteHostList) + len(addToDomainList)
-        )
+        successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
+
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
         if successTotalNameservers < 2:
             try:
