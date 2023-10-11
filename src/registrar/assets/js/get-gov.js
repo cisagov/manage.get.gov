@@ -276,8 +276,7 @@ function prepareDeleteButtons() {
     let formToRemove = e.target.closest(".ds-record");
     formToRemove.remove();
     let forms = document.querySelectorAll(".ds-record");
-    let formNum2 = forms.length;
-    totalForms.setAttribute('value', `${formNum2}`);
+    totalForms.setAttribute('value', `${forms.length}`);
 
     let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
     let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
