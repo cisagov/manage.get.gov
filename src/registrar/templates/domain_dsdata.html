@@ -8,6 +8,14 @@
     {% include "includes/form_errors.html" with form=form %}
   {% endfor %}
 
+  {% if domain.dnssecdata is None and not dnssec_ds_confirmed %}
+  <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
+    <div class="usa-alert__body">
+    You have no DS Data added. Enable DNSSEC by adding DS Data or return to the DNSSEC page and click 'enable.'
+    </div>
+  </div>
+  {% endif %}
+
   <h1>DS Data</h1>
 
   {% if domain.dnssecdata is not None and domain.dnssecdata.keyData is not None %}

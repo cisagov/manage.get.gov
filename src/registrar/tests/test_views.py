@@ -1618,14 +1618,15 @@ class TestDomainDNSSEC(TestDomainOverview):
 
     def test_ds_form_loads_with_no_domain_data(self):
         """DNSSEC Add DS Data page loads when there is no
-        domain DNSSEC data and shows a button to Add DS Data record"""
+        domain DNSSEC data and shows a button to Add new record"""
 
         page = self.client.get(
             reverse(
                 "domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}
             )
         )
-        self.assertContains(page, "Add DS Data record")
+        self.assertContains(page, "You have no DS Data added")
+        self.assertContains(page, "Add new record")
 
     def test_ds_form_loads_with_ds_data(self):
         """DNSSEC Add DS Data page loads when there is
