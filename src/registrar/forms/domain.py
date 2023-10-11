@@ -70,7 +70,7 @@ class DomainSecurityEmailForm(forms.Form):
 
     """Form for adding or editing a security email to a domain."""
 
-    security_email = forms.EmailField(label="Security email")
+    security_email = forms.EmailField(label="Security email", required=False)
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):

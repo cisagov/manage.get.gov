@@ -89,7 +89,8 @@ command in the running Cloud.gov container. For example, to run our Django
 admin command that loads test fixture data:
 
 ```
-cf run-task getgov-{environment} --command "./manage.py load" --name fixtures
+cf run-task getgov-{environment} --command "./manage.py load" --name fixtures--users
+cf run-task getgov-{environment} --command "./manage.py load" --name fixtures--applications
 ```
 
 However, this task runs asynchronously in the background without any command
