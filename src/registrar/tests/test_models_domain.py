@@ -746,7 +746,7 @@ class TestRegistrantContacts(MockEppLib):
         for contact in contacts:
             expected_contact = contact[0]
             actual_contact = contact[1]
-            is_security = actual_contact.contact_type == "security"
+            is_security = expected_contact.contact_type == "security"
 
             expectedCreateCommand = self._convertPublicContactToEpp(
                 expected_contact, disclose_email=is_security
