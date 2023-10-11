@@ -7,7 +7,7 @@ import random
 from string import ascii_uppercase
 from django.test import TestCase
 from unittest.mock import MagicMock, Mock, patch
-from typing import List, Dict, Mapping, Any
+from typing import List, Dict
 
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
@@ -704,19 +704,27 @@ class MockEppLib(TestCase):
         "alg": 1,
         "pubKey": "AQPJ////4Q==",
     }
-    dnssecExtensionWithDsData: Mapping[Any, Any] = {
-        "dsData": [common.DSData(**addDsData1)]  # type: ignore
-    }
-    dnssecExtensionWithMultDsData: Mapping[str, Any] = {
-        "dsData": [
-            common.DSData(**addDsData1),  # type: ignore
-            common.DSData(**addDsData2),  # type: ignore
-        ],
-    }
-    dnssecExtensionWithKeyData: Mapping[str, Any] = {
-        "maxSigLife": 3215,
-        "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
-    }
+    dnssecExtensionWithDsData = extensions.DNSSECExtension(
+        **{
+            "dsData": [
+                common.DSData(**addDsData1)  # type: ignore
+            ],  # type: ignore
+        }
+    )
+    dnssecExtensionWithMultDsData = extensions.DNSSECExtension(
+        **{
+            "dsData": [
+                common.DSData(**addDsData1),  # type: ignore
+                common.DSData(**addDsData2),  # type: ignore
+            ],  # type: ignore
+        }
+    )
+    dnssecExtensionWithKeyData = extensions.DNSSECExtension(
+        **{
+            "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
+        }
+    )
+    dnssecExtensionRemovingDsData = extensions.DNSSECExtension()
 
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
@@ -758,23 +766,17 @@ class MockEppLib(TestCase):
         elif getattr(_request, "name", None) == "dnssec-dsdata.gov":
             return MagicMock(
                 res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
-                ],
+                extensions=[self.dnssecExtensionWithDsData],
             )
         elif getattr(_request, "name", None) == "dnssec-multdsdata.gov":
             return MagicMock(
                 res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
-                ],
+                extensions=[self.dnssecExtensionWithMultDsData],
             )
         elif getattr(_request, "name", None) == "dnssec-keydata.gov":
             return MagicMock(
                 res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
-                ],
+                extensions=[self.dnssecExtensionWithKeyData],
             )
         elif getattr(_request, "name", None) == "dnssec-none.gov":
             # this case is not necessary, but helps improve readability

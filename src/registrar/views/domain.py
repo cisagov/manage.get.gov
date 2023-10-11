@@ -378,8 +378,8 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
-        # Set the nameservers from the formset
-        dnssecdata = {"dsData": []}
+        # Set the dnssecdata from the formset
+        dnssecdata = extensions.DNSSECExtension()
 
         for form in formset:
             try:
@@ -387,17 +387,17 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
                 # or form.cleaned_data['delete'] == False:
                 dsrecord = {
                     "keyTag": form.cleaned_data["key_tag"],
-                    "alg": form.cleaned_data["algorithm"],
-                    "digestType": form.cleaned_data["digest_type"],
+                    "alg": int(form.cleaned_data["algorithm"]),
+                    "digestType": int(form.cleaned_data["digest_type"]),
                     "digest": form.cleaned_data["digest"],
                 }
-                dnssecdata["dsData"].append(common.DSData(**dsrecord))
+                if dnssecdata.dsData is None:
+                    dnssecdata.dsData = []
+                dnssecdata.dsData.append(common.DSData(**dsrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
-        if len(dnssecdata["dsData"]) == 0:
-            dnssecdata = {}
         try:
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
@@ -500,25 +500,25 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
         """The formset is valid, perform something with it."""
 
         # Set the nameservers from the formset
-        dnssecdata = {"keyData": []}
+        dnssecdata = extensions.DNSSECExtension()
 
         for form in formset:
             try:
                 # if 'delete' not in form.cleaned_data
                 # or form.cleaned_data['delete'] == False:
                 keyrecord = {
-                    "flags": form.cleaned_data["flag"],
-                    "protocol": form.cleaned_data["protocol"],
-                    "alg": form.cleaned_data["algorithm"],
+                    "flags": int(form.cleaned_data["flag"]),
+                    "protocol": int(form.cleaned_data["protocol"]),
+                    "alg": int(form.cleaned_data["algorithm"]),
                     "pubKey": form.cleaned_data["pub_key"],
                 }
-                dnssecdata["keyData"].append(common.DNSSECKeyData(**keyrecord))
+                if dnssecdata.keyData is None:
+                    dnssecdata.keyData = []
+                dnssecdata.keyData.append(common.DNSSECKeyData(**keyrecord))
             except KeyError:
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
-        if len(dnssecdata["keyData"]) == 0:
-            dnssecdata = {}
         try:
             domain.dnssecdata = dnssecdata
         except RegistryError as err:
