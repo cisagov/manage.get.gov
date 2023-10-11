@@ -16,12 +16,15 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
+
 from registrar.utility.errors import (
     ActionNotAllowed,
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
 )
-from registrar.models.utility.contact_error import ContactError
+
+from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
+
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
@@ -799,7 +802,10 @@ class Domain(TimeStampedModel, DomainHelper):
     def get_security_email(self):
         logger.info("get_security_email-> getting the contact ")
         secContact = self.security_contact
-        return secContact.email
+        if secContact is not None:
+            return secContact.email
+        else:
+            return None
 
     def clientHoldStatus(self):
         return epp.Status(state=self.Status.CLIENT_HOLD, description="", lang="en")
@@ -872,10 +878,10 @@ class Domain(TimeStampedModel, DomainHelper):
             return None
 
         if contact_type is None:
-            raise ContactError("contact_type is None")
+            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
 
         if contact_id is None:
-            raise ContactError("contact_id is None")
+            raise ContactError(code=ContactErrorCodes.CONTACT_ID_NONE)
 
         # Since contact_id is registry_id,
         # check that its the right length
@@ -884,14 +890,10 @@ class Domain(TimeStampedModel, DomainHelper):
             contact_id_length > PublicContact.get_max_id_length()
             or contact_id_length < 1
         ):
-            raise ContactError(
-                "contact_id is of invalid length. "
-                "Cannot exceed 16 characters, "
-                f"got {contact_id} with a length of {contact_id_length}"
-            )
+            raise ContactError(code=ContactErrorCodes.CONTACT_ID_INVALID_LENGTH)
 
         if not isinstance(contact, eppInfo.InfoContactResultData):
-            raise ContactError("Contact must be of type InfoContactResultData")
+            raise ContactError(code=ContactErrorCodes.CONTACT_INVALID_TYPE)
 
         auth_info = contact.auth_info
         postal_info = contact.postal_info
@@ -1055,8 +1057,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
             return self._handle_registrant_contact(desired_contact)
 
-        _registry_id: str
-        if contact_type in contacts:
+        _registry_id: str = ""
+        if contacts is not None and contact_type in contacts:
             _registry_id = contacts.get(contact_type)
 
         desired = PublicContact.objects.filter(

@@ -63,9 +63,9 @@ class DomainPermission(PermissionsLoginMixin):
         """
 
         # Check if the user is permissioned...
-        user_is_analyst_or_superuser = (
-            self.request.user.is_staff or self.request.user.is_superuser
-        )
+        user_is_analyst_or_superuser = self.request.user.has_perm(
+            "registrar.analyst_access_permission"
+        ) or self.request.user.has_perm("registrar.full_access_permission")
 
         if not user_is_analyst_or_superuser:
             return False
