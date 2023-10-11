@@ -1293,50 +1293,6 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error(e)
 
-        except TransitionNotAllowed as err:
-            # Fixes a bug with _fetch_cache trying to create
-            # a deleted domain, as cache gets cleared on delete.
-            # Instead, serve what we have locally.
-            if self.state == self.State.DELETED:
-                logger.warning("Attempted to create a deleted domain")
-                data = self._cache
-                choices = PublicContact.ContactTypeChoices
-                contacts_dict = {
-                    choices.ADMINISTRATIVE: None,
-                    choices.SECURITY: None,
-                    choices.TECHNICAL: None,
-                }
-                registrant_id = ...
-                existing_contacts = PublicContact.objects.filter(domain=self)
-                if existing_contacts.count() > 0:
-                    for choice in contacts_dict:
-                        contacts_dict[choice] = existing_contacts.get(
-                            contact_type=choice
-                        ).registry_id
-                    # Edge case for registrant
-                    registrant = PublicContact.ContactTypeChoices.REGISTRANT
-                    registrant_id = existing_contacts.get(
-                        contact_type=registrant
-                    ).registry_id
-
-                cache = {
-                    "auth_info": getattr(data, "auth_info", ...),
-                    "contacts": getattr(data, "contacts", contacts_dict),
-                    "cr_date": getattr(data, "cr_date", ...),
-                    "ex_date": getattr(data, "ex_date", ...),
-                    "hosts": getattr(data, "hosts", ...),
-                    "name": getattr(data, "name", self.name),
-                    "registrant": getattr(data, "name", registrant_id),
-                    "statuses": getattr(data, "statuses", ...),
-                    "tr_date": getattr(data, "tr_date", ...),
-                    "up_date": getattr(data, "up_date", ...),
-                }
-                cleaned = {k: v for k, v in cache.items() if v is not ...}
-
-                self._cache = cleaned
-            else:
-                logger.error("Unknown TransitionNotAllowed exception")
-                raise err
 
     def _get_or_create_public_contact(self, public_contact: PublicContact):
         """Tries to find a PublicContact object in our DB.

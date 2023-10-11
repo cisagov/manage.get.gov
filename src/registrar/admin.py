@@ -138,6 +138,8 @@ class MyUserAdmin(BaseUserAdmin):
         "email",
         "first_name",
         "last_name",
+        # Group is a custom property defined within this file,
+        # rather than in a model like the other properties
         "group",
         "status",
     )
