@@ -138,23 +138,11 @@ class MyUserAdmin(BaseUserAdmin):
         "email",
         "first_name",
         "last_name",
+        # Group is a custom property defined within this file,
+        # rather than in a model like the other properties
         "group",
         "status",
     )
-
-    list_filter = (
-        "is_active",
-        "groups",
-    )
-
-    # Let's define First group
-    # (which should in theory be the ONLY group)
-    def group(self, obj):
-        if obj.groups.filter(name="full_access_group").exists():
-            return "Full access"
-        elif obj.groups.filter(name="cisa_analysts_group").exists():
-            return "Analyst"
-        return ""
 
     fieldsets = (
         (
@@ -221,6 +209,20 @@ class MyUserAdmin(BaseUserAdmin):
         "last_login",
         "date_joined",
     ]
+
+    list_filter = (
+        "is_active",
+        "groups",
+    )
+
+    # Let's define First group
+    # (which should in theory be the ONLY group)
+    def group(self, obj):
+        if obj.groups.filter(name="full_access_group").exists():
+            return "Full access"
+        elif obj.groups.filter(name="cisa_analysts_group").exists():
+            return "Analyst"
+        return ""
 
     def get_list_display(self, request):
         # The full_access_permission perm will load onto the full_access_group
