@@ -295,7 +295,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """Checks the parameters past for a valid combination
         raises error if:
             - nameserver is a subdomain but is missing ip
-            - nameserver is not a subdomain but is missing ip
+            - nameserver is not a subdomain but has ip
             - nameserver is a subdomain but an ip passed is invalid
 
         Args:
