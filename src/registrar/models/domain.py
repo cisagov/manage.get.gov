@@ -1503,7 +1503,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 % (e.code, e)
             )
             return e.code
-        
 
     def _delete_hosts_if_not_used(self, hostsToDelete: list[str]):
         """delete the host object in registry,
