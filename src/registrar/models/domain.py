@@ -1293,7 +1293,6 @@ class Domain(TimeStampedModel, DomainHelper):
         except RegistryError as e:
             logger.error(e)
 
-
     def _get_or_create_public_contact(self, public_contact: PublicContact):
         """Tries to find a PublicContact object in our DB.
         If it can't, it'll create it. Returns PublicContact"""
