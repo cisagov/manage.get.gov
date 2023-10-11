@@ -20,14 +20,19 @@
     </div>
   </div>
   {% elif not dnssec_ds_confirmed %}
-    <p>In order to enable DNSSEC and add DS records, you must first configure it with your DNS hosting service. Your configuration will determine whether you need to add DS Data or Key Data. Contact your DNS hosting provider if you are unsure which record type to add.</p>
+    <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
+    <p>Enter the values given by your DNS provider for DS Data.</p>
+    <p>Required fields are marked with an asterisk (<abbr
+      title="required"
+      class="usa-hint usa-hint--required"
+      >*</abbr>).</p>
     <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
       {% csrf_token %}
-      <button
-        type="submit"
-        class="usa-button"
-        name="confirm-ds"
-        >Add DS Data record</button>
+      <button type="submit" class="usa-button usa-button--unstyled display-block" name="confirm-ds">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+          <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+        </svg><span class="margin-left-05">Add new record</span>
+      </button>
     </form>
   {% else %}
 
