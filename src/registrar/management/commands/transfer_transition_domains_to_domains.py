@@ -51,29 +51,37 @@ class Command(BaseCommand):
     ):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
-        if debug_on:
-            logger.info(
-                f"""{termColors.OKCYAN}
-                ----------DEBUG MODE ON----------
-                Detailed print statements activated.
-                {termColors.ENDC}
-                """
-            )
-        if debug_max_entries_to_parse > 0:
-            logger.info(
-                f"""{termColors.OKCYAN}
-                ----------LIMITER ON----------
-                Parsing of entries will be limited to
-                {debug_max_entries_to_parse} lines per file.")
-                Detailed print statements activated.
-                {termColors.ENDC}
-                """
-            )
+        self.print_debug(
+            debug_on,
+            f"""{termColors.OKCYAN}
+            ----------DEBUG MODE ON----------
+            Detailed print statements activated.
+            {termColors.ENDC}
+            """,
+        )
+        self.print_debug(
+            debug_max_entries_to_parse > 0,
+            f"""{termColors.OKCYAN}
+            ----------LIMITER ON----------
+            Parsing of entries will be limited to
+            {debug_max_entries_to_parse} lines per file.")
+            Detailed print statements activated.
+            {termColors.ENDC}
+            """,
+        )
 
-    def update_domain_status(self,
-                             transition_domain:TransitionDomain,
-                             target_domain:Domain,
-                             debug_on:bool) -> bool:
+    def print_debug(self, print_condition: bool, print_statement: str):
+        """This function reduces complexity of debug statements
+        in other functions.
+        It uses the logger to write the given print_statement to the
+        terminal if print_condition is TRUE"""
+        # DEBUG:
+        if print_condition:
+            logger.info(print_statement)
+
+    def update_domain_status(
+        self, transition_domain: TransitionDomain, target_domain: Domain, debug_on: bool
+    ) -> bool:
         """Given a transition domain that matches an existing domain,
         updates the existing domain object with that status of
         the transition domain.
@@ -83,31 +91,33 @@ class Command(BaseCommand):
         transition_domain_status = transition_domain.status
         existing_status = target_domain.state
         if transition_domain_status != existing_status:
-            if (
-                transition_domain_status
-                == TransitionDomain.StatusChoices.ON_HOLD
-            ):
+            if transition_domain_status == TransitionDomain.StatusChoices.ON_HOLD:
                 target_domain.place_client_hold(ignoreEPP=True)
             else:
                 target_domain.revert_client_hold(ignoreEPP=True)
             target_domain.save()
-            # DEBUG:
-            if debug_on:
-                logger.info(
-                    f"""{termColors.YELLOW}
-                    >> Updated {target_domain.name} state from
-                    '{existing_status}' to '{target_domain.state}'
-                    (no domain invitation entry added)
-                    {termColors.ENDC}"""
-                )
 
-    def print_summary_of_findings(self,
-                                  domains_to_create,
-                                  updated_domain_entries,
-                                  domain_invitations_to_create,
-                                  skipped_domain_entries,
-                                  skipped_domain_invitations,
-                                  debug_on):
+            # DEBUG:
+            self.print_debug(
+                debug_on,
+                f"""{termColors.YELLOW}
+                >> Updated {target_domain.name} state from
+                '{existing_status}' to '{target_domain.state}'
+                (no domain invitation entry added)
+                {termColors.ENDC}""",
+            )
+            return True
+        return False
+
+    def print_summary_of_findings(
+        self,
+        domains_to_create,
+        updated_domain_entries,
+        domain_invitations_to_create,
+        skipped_domain_entries,
+        skipped_domain_invitations,
+        debug_on,
+    ):
         """Prints to terminal a summary of findings from
         transferring transition domains to domains"""
 
@@ -119,7 +129,7 @@ class Command(BaseCommand):
             f"""{termColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} transition domain entries,
-            updated {total_updated_domain_entries} transition domain entries
+            Updated {total_updated_domain_entries} transition domain entries
 
             Created {total_domain_invitation_entries} domain invitation entries
             (NOTE: no invitations are SENT in this script)
@@ -144,19 +154,19 @@ class Command(BaseCommand):
             )
 
         # DEBUG:
-        if debug_on:
-            logger.info(
-                f"""{termColors.YELLOW}
+        self.print_debug(
+            debug_on,
+            f"""{termColors.YELLOW}
 
-                Created Domains:
-                {domains_to_create}
+            Created Domains:
+            {domains_to_create}
 
-                Updated Domains:
-                {updated_domain_entries}
+            Updated Domains:
+            {updated_domain_entries}
 
-                {termColors.ENDC}
-                """
-            )
+            {termColors.ENDC}
+            """,
+        )
 
     def handle(
         self,
@@ -203,28 +213,31 @@ class Command(BaseCommand):
             # Check for existing domain entry
             try:
                 # DEBUG:
-                if debug_on:
-                    logger.info(
-                        f"""{termColors.OKCYAN}
-                        Processing Transition Domain: {transition_domain_name}, {transition_domain_status}, {transition_domain_email}
-                        {termColors.ENDC}"""  # noqa
-                    )
-                
+                self.print_debug(
+                    debug_on,
+                    f"""{termColors.OKCYAN}
+                    Processing Transition Domain: {transition_domain_name}, {transition_domain_status}, {transition_domain_email}
+                    {termColors.ENDC}""",  # noqa
+                )
+
                 # get the existing domain
                 target_domain = Domain.objects.get(name=transition_domain_name)
+
                 # DEBUG:
-                if debug_on:
-                    logger.info(
-                        f"""{termColors.YELLOW}
-                        > Found existing domain entry for: {transition_domain_name}, {target_domain.state}
-                        {termColors.ENDC}"""  # noqa
-                    )
+                self.print_debug(
+                    debug_on,
+                    f"""{termColors.YELLOW}
+                    > Found existing domain entry for: {transition_domain_name}, {target_domain.state}
+                    {termColors.ENDC}""",  # noqa
+                )
 
                 # for existing entry, update the status to
                 # the transition domain status
-                update_made = self.update_domain_status(transition_domain, target_domain, debug_on)
+                update_made = self.update_domain_status(
+                    transition_domain, target_domain, debug_on
+                )
                 if update_made:
-                    updated_domain_entries.append(transition_domain.name)
+                    updated_domain_entries.append(transition_domain.domain_name)
 
             except Domain.DoesNotExist:
                 already_in_to_create = next(
@@ -232,15 +245,14 @@ class Command(BaseCommand):
                     None,
                 )
                 if already_in_to_create:
-                    # DEBUG:
-                    if debug_on:
-                        logger.info(
-                            f"""{termColors.YELLOW}
-                            Duplicate Detected: {transition_domain_name}.
-                            Cannot add duplicate entry for another username.
-                            Violates Unique Key constraint.
-                            {termColors.ENDC}"""
-                        )
+                    self.print_debug(
+                        debug_on,
+                        f"""{termColors.YELLOW}
+                        Duplicate Detected: {transition_domain_name}.
+                        Cannot add duplicate entry for another username.
+                        Violates Unique Key constraint.
+                        {termColors.ENDC}""",
+                    )
                 else:
                     # no matching entry, make one
                     new_entry = Domain(
@@ -261,10 +273,10 @@ class Command(BaseCommand):
                         skipped_domain_invitations.append(transition_domain_name)
 
                     # DEBUG:
-                    if debug_on:
-                        logger.info(
-                            f"{termColors.OKCYAN} Adding domain AND domain invitation: {new_entry} {termColors.ENDC}"  # noqa
-                        )
+                    self.print_debug(
+                        debug_on,
+                        f"{termColors.OKCYAN} Adding domain AND domain invitation: {new_entry} {termColors.ENDC}",  # noqa
+                    )
             except Domain.MultipleObjectsReturned:
                 logger.warning(
                     f"""
@@ -286,7 +298,10 @@ class Command(BaseCommand):
                 )
 
             # Check parse limit
-            if debug_max_entries_to_parse > 0 and total_rows_parsed >= debug_max_entries_to_parse:
+            if (
+                debug_max_entries_to_parse > 0
+                and total_rows_parsed >= debug_max_entries_to_parse
+            ):
                 logger.info(
                     f"""{termColors.YELLOW}
                     ----PARSE LIMIT REACHED.  HALTING PARSER.----
@@ -298,9 +313,11 @@ class Command(BaseCommand):
         Domain.objects.bulk_create(domains_to_create)
         DomainInvitation.objects.bulk_create(domain_invitations_to_create)
 
-        self.print_summary_of_findings(domains_to_create,
-                                  updated_domain_entries,
-                                  domain_invitations_to_create,
-                                  skipped_domain_entries,
-                                  skipped_domain_invitations,
-                                  debug_on)
+        self.print_summary_of_findings(
+            domains_to_create,
+            updated_domain_entries,
+            domain_invitations_to_create,
+            skipped_domain_entries,
+            skipped_domain_invitations,
+            debug_on,
+        )
