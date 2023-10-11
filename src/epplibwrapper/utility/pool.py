@@ -1,5 +1,10 @@
+import logging
 from geventconnpool import ConnectionPool
+from epplibwrapper import RegistryError
+from epplibwrapper.errors import LoginError
 from epplibwrapper.socket import Socket
+
+logger = logging.getLogger(__name__)
 
 class EppConnectionPool(ConnectionPool):
     def __init__(self, client, login, options):
@@ -13,8 +18,10 @@ class EppConnectionPool(ConnectionPool):
         try:
             connection = socket.connect()
             return connection
-        except Exception as err:
-            raise err
+        except LoginError as err:
+            message = "_new_connection failed to execute due to a registry login error."
+            logger.warning(message, exc_info=True)
+            raise RegistryError(message) from err
 
     def _keepalive(self, connection):
         pass

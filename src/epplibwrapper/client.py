@@ -62,15 +62,12 @@ class EPPLibWrapper:
                 password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
             )
         )
-        # prepare a context manager which will connect and login when invoked
-        # (it will also logout and disconnect when the context manager exits)
-        self._connect = Socket(self._client, self._login)
         options = {
             # Pool size
             "size": 10,
             # Which errors the pool should look out for
             "exc_classes": (LoginError, RegistryError,),
-            # Should we ping the connection on occassion to keep it alive?
+            # Should we ping the connection on occasion to keep it alive?
             "keepalive": None,
         }
         self._pool = EppConnectionPool(client=self._client, login=self._login, options=options)
