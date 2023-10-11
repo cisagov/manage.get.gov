@@ -1489,20 +1489,21 @@ class Domain(TimeStampedModel, DomainHelper):
             updateReq = commands.UpdateDomain(
                 name=self.name, rem=hostsToDelete, add=hostsToAdd
             )
-            response = registry.send(updateReq, cleaned=True)
 
             logger.info(
                 "addAndRemoveHostsFromDomain()-> sending update domain req as %s"
                 % updateReq
             )
+            response = registry.send(updateReq, cleaned=True)
 
+            return response.code
         except RegistryError as e:
             logger.error(
                 "Error addAndRemoveHostsFromDomain, code was %s error was %s"
                 % (e.code, e)
             )
-
-        return response.code
+            return e.code
+        
 
     def _delete_hosts_if_not_used(self, hostsToDelete: list[str]):
         """delete the host object in registry,
