@@ -1,28 +1,31 @@
 from asyncio import Queue
 from queue import Empty
-import time
 import logging
 from epplibwrapper.utility.connector import EPPConnector
 from socketpool.pool import ConnectionPool
 logger = logging.getLogger(__name__)
 
 class EppConnectionPool():
-    def __init__(self, options=None):
+    def __init__(self, **options):
+        logger.debug("EppConnectionPool() -> init was successful")
         self.pool = ConnectionPool(
             factory=EPPConnector,
             options=options
         )
+        logger.debug("EppConnectionPool() -> pool created")
         self.service = EppPoolService()
         self.service.start()
         self.command_queue = Queue()
 
     def runpool(self):
+        logger.debug("EppConnectionPool() -> in run pool")
         while True:
             command_exists = True
             # This is the exit condition
             try:
                 data = self.command_queue.get()
             except Empty:
+                logger.debug("EppConnectionPool() -> empty queue")
                 command_exists = False
 
             if command_exists:

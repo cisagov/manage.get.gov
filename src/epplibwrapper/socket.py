@@ -43,3 +43,14 @@ class Socket:
             self.client.close()
         except Exception:
             logger.warning("Connection to registry was not cleanly closed.")
+    
+    def send(self, command):
+        logger.debug(f"command is this: {command}")
+        response = self.client.send(command)
+        # TODO - add some validation
+        """
+        if response.code >= 2000:
+            self.client.close()
+            raise LoginError(response.msg)
+        """
+        return response

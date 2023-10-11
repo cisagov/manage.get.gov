@@ -5,21 +5,21 @@ try:
     from epplib.exceptions import TransportError, ParsingError
 except ImportError:
     pass
-from errors import LoginError, RegistryError
+from ..errors import LoginError, RegistryError
 
 from epplibwrapper.socket import Socket
 
 logger = logging.getLogger(__name__)
 
 class EPPConnector(Connector):
-    def __init__(self, client, login, pool=None):
-        self._socket = Socket(client, login)
-        self._socket.connect()
-
+    def __init__(self, client, login, backend_mod, pool=None):
         self._connected = True
         self._life = time.time()
-
         self._pool = pool
+
+        self.backend_mod = backend_mod
+        self._socket = Socket(client, login)
+        self._socket.connect()
 
     def __del__(self):
         self.release()

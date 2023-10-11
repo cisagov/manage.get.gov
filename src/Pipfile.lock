@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "199b87bfff61270327ff4959f95dbce28035a3483875ff0500284653e60e6a48"
+            "sha256": "91abf0a0055cf1f86cd90839433c67c772e981090e045bb0143966cb5e37d726"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -366,11 +366,11 @@
         },
         "faker": {
             "hashes": [
-                "sha256:5b234b89a9c536a37420f612169b6e58627b823ba1bba2504c0450db3b136620",
-                "sha256:d86cb3150626bd642c6abd8a64107ddb0b154500252f46a56efe527a50594866"
+                "sha256:85468e16d4a9a8712bfdb98ba55aaf17c60658266a76958d099aee6a18c0a6c5",
+                "sha256:d75401c631a991b32d3595f26250f42c007cc32653ac3e522b626f3d80770571"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==19.8.0"
+            "version": "==19.9.0"
         },
         "fred-epplib": {
             "git": "https://github.com/cisagov/epplib.git",
@@ -925,11 +925,8 @@
             "version": "==1.16.0"
         },
         "socketpool": {
-            "hashes": [
-                "sha256:a06733434a56c4b60b8fcaa168102d2386253d36425804d55532a6bbbda6e2ec"
-            ],
-            "index": "pypi",
-            "version": "==0.5.3"
+            "git": "https://github.com/zandercymatics/socketpool.git",
+            "ref": "21f4fd1136f65c8a548b84e0b2069c54d4fafec2"
         },
         "sqlparse": {
             "hashes": [
@@ -958,12 +955,12 @@
         },
         "whitenoise": {
             "hashes": [
-                "sha256:15fe60546ac975b58e357ccaeb165a4ca2d0ab697e48450b8f0307ca368195a8",
-                "sha256:16468e9ad2189f09f4a8c635a9031cc9bb2cdbc8e5e53365407acf99f7ade9ec"
+                "sha256:8998f7370973447fac1e8ef6e8ded2c5209a7b1f67c1012866dbcd09681c3251",
+                "sha256:b1f9db9bf67dc183484d760b99f4080185633136a273a03f6436034a41064146"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.7'",
-            "version": "==6.5.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==6.6.0"
         }
     },
     "develop": {

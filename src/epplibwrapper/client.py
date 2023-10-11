@@ -1,6 +1,8 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
+from asyncio import Queue
 import logging
+import threading
 from time import sleep
 
 from epplibwrapper.utility.pool import EppConnectionPool
@@ -43,7 +45,6 @@ class EPPLibWrapper:
 
     def __init__(self) -> None:
         """Initialize settings which will be used for all connections."""
-
         # prepare (but do not send) a Login command
         self._login = commands.Login(
             cl_id=settings.SECRET_REGISTRY_CL_ID,
