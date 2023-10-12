@@ -40,11 +40,11 @@ class TestGroups(TestCase):
             "view_domain",
             "change_domainapplication",
             "change_domaininformation",
+            "add_domaininvitation",
+            "view_domaininvitation",
             "change_draftdomain",
             "analyst_access_permission",
             "change_user",
-            "add_domaininvitation",
-            "view_domaininvitation",
         ]
 
         # Get the codenames of actual permissions associated with the group
