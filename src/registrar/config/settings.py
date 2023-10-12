@@ -538,8 +538,9 @@ SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 # WARNING: Setting this value too high could cause frequent app crashes!
 EPP_CONNECTION_POOL_SIZE = 10
 
-# Determines if we should ping open connections
-POOL_KEEP_ALIVE = True
+# Determines the interval in which we ping open connections in seconds
+# Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE
+POOL_KEEP_ALIVE = 600
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
