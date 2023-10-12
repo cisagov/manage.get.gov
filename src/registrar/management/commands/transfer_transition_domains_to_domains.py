@@ -1,5 +1,3 @@
-"""Load domain invitations for existing domains and their contacts."""
-
 import logging
 import argparse
 import sys
@@ -115,8 +113,7 @@ class Command(BaseCommand):
         updated_domain_entries,
         domain_invitations_to_create,
         skipped_domain_entries,
-        skipped_domain_invitations,
-        debug_on,
+        debug_on
     ):
         """Prints to terminal a summary of findings from
         transferring transition domains to domains"""
@@ -144,6 +141,13 @@ class Command(BaseCommand):
                 {termColors.ENDC}
                 """
             )
+
+        # determine domainInvitations we SKIPPED
+        skipped_domain_invitations = []
+        for domain in domains_to_create:
+            skipped_domain_invitations.append(domain)
+        for domain_invite in domain_invitations_to_create:
+            if domain_invite.domain in skipped_domain_invitations: skipped_domain_invitations.remove(domain_invite.domain)
         if len(skipped_domain_invitations) > 0:
             logger.info(
                 f"""{termColors.FAIL}
@@ -168,6 +172,33 @@ class Command(BaseCommand):
             """,
         )
 
+    def try_add_domain_invitation(self, 
+                                  domain_email: str,
+                                  associated_domain: Domain) -> DomainInvitation:
+        """If no domain invitation exists for the given domain and
+        e-mail, create and return a new domain invitation object.
+        If one already exists, or if the email is invalid, return NONE"""
+
+        # this exception should never happen, but adding it just in case
+        assert (associated_domain is None, "domain cannot be null for a Domain Invitation object!")
+        
+        # check that the given e-mail is valid
+        if domain_email is not None and domain_email != "":
+            # check that a domain invitation doesn't already 
+            # exist for this e-mail / Domain pair
+            domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
+                email = domain_email.lower(), 
+                domain=associated_domain).exists()
+            if not domain_email_already_in_domain_invites:
+                # Create new domain invitation
+                new_domain_invitation = DomainInvitation(
+                    email=domain_email.lower(), 
+                    domain=associated_domain
+                )
+                return new_domain_invitation
+        return None
+
+
     def handle(
         self,
         **options,
@@ -191,8 +222,6 @@ class Command(BaseCommand):
         updated_domain_entries = []
         # domains we SKIPPED
         skipped_domain_entries = []
-        # domainInvitations we SKIPPED
-        skipped_domain_invitations = []
         # if we are limiting our parse (for testing purposes, keep
         # track of total rows parsed)
         total_rows_parsed = 0
@@ -210,92 +239,135 @@ class Command(BaseCommand):
             transition_domain_status = transition_domain.status
             transition_domain_email = transition_domain.username
 
+            # DEBUG:
+            self.print_debug(
+                debug_on,
+                f"""{termColors.OKCYAN}
+                Processing Transition Domain: {transition_domain_name}, {transition_domain_status}, {transition_domain_email}
+                {termColors.ENDC}""",  # noqa
+            )
+
+            new_domain_invitation = None
             # Check for existing domain entry
-            try:
-                # DEBUG:
-                self.print_debug(
-                    debug_on,
-                    f"""{termColors.OKCYAN}
-                    Processing Transition Domain: {transition_domain_name}, {transition_domain_status}, {transition_domain_email}
-                    {termColors.ENDC}""",  # noqa
-                )
+            domain_exists = Domain.objects.filter(
+                name=transition_domain_name
+                ).exists()
+            if domain_exists:
+                try:
+                    # get the existing domain
+                    domain_to_update = Domain.objects.get(name=transition_domain_name)
+                    # DEBUG:
+                    self.print_debug(
+                        debug_on,
+                        f"""{termColors.YELLOW}
+                        > Found existing entry in Domain table for: {transition_domain_name}, {domain_to_update.state}
+                        {termColors.ENDC}""",  # noqa
+                    )
 
-                # get the existing domain
-                target_domain = Domain.objects.get(name=transition_domain_name)
+                    # for existing entry, update the status to
+                    # the transition domain status
+                    update_made = self.update_domain_status(
+                        transition_domain, domain_to_update, debug_on
+                    )
+                    if update_made:
+                        # keep track of updated domains for data analysis purposes
+                        updated_domain_entries.append(transition_domain.domain_name)
 
-                # DEBUG:
-                self.print_debug(
-                    debug_on,
-                    f"""{termColors.YELLOW}
-                    > Found existing domain entry for: {transition_domain_name}, {target_domain.state}
-                    {termColors.ENDC}""",  # noqa
-                )
+                    # check if we need to add a domain invitation 
+                    # (eg. for a new user)
+                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, domain_to_update)
 
-                # for existing entry, update the status to
-                # the transition domain status
-                update_made = self.update_domain_status(
-                    transition_domain, target_domain, debug_on
-                )
-                if update_made:
-                    updated_domain_entries.append(transition_domain.domain_name)
+                except Domain.MultipleObjectsReturned:
+                    # This exception was thrown once before during testing.
+                    # While the circumstances that led to corrupt data in
+                    # the domain table was a freak accident, and the possibility of it
+                    # happening again is safe-guarded by a key constraint,
+                    # better to keep an eye out for it since it would require
+                    # immediate attention.
+                    logger.warning(
+                        f"""
+                        {termColors.FAIL}
+                        !!! ERROR: duplicate entries already exist in the
+                        Domain table for the following domain:
+                        {transition_domain_name}
+                        
+                        RECOMMENDATION:
+                        This means the Domain table is corrupt.  Please
+                        check the Domain table data as there should be a key
+                        constraint which prevents duplicate entries.
 
-            except Domain.DoesNotExist:
-                already_in_to_create = next(
+                        ----------TERMINATING----------"""
+                    )
+                    sys.exit()
+                except TransitionNotAllowed as err:
+                    skipped_domain_entries.append(transition_domain_name)
+                    logger.warning(
+                        f"""{termColors.FAIL}
+                        Unable to change state for {transition_domain_name}
+                        
+                        RECOMMENDATION:
+                        This indicates there might have been changes to the
+                        Domain model which were not accounted for in this
+                        migration script.  Please check state change rules
+                        in the Domain model and ensure we are following the
+                        correct state transition pathways.
+
+                        INTERNAL ERROR MESSAGE:
+                        'TRANSITION NOT ALLOWED' exception
+                        {err}
+                        ----------SKIPPING----------"""
+                    )
+            else:
+                # no entry was found in the domain table
+                # for the given domain.  Create a new entry.
+
+                # first see if we are already adding an entry for this domain.
+                # The unique key constraint does not allow duplicate domain entries
+                # even if there are different users.
+                existing_domain_in_to_create = next(
                     (x for x in domains_to_create if x.name == transition_domain_name),
                     None,
                 )
-                if already_in_to_create:
+                if existing_domain_in_to_create is not None:
                     self.print_debug(
                         debug_on,
                         f"""{termColors.YELLOW}
                         Duplicate Detected: {transition_domain_name}.
                         Cannot add duplicate entry for another username.
                         Violates Unique Key constraint.
+
+                        Checking for unique user e-mail for Domain Invitations...
                         {termColors.ENDC}""",
                     )
+                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, existing_domain_in_to_create)
                 else:
                     # no matching entry, make one
-                    new_entry = Domain(
-                        name=transition_domain_name, state=transition_domain_status
+                    new_domain = Domain(
+                        name=transition_domain_name, 
+                        state=transition_domain_status
                     )
-                    domains_to_create.append(new_entry)
-
-                    if transition_domain_email:
-                        new_domain_invitation = DomainInvitation(
-                            email=transition_domain_email.lower(), domain=new_entry
-                        )
-                        domain_invitations_to_create.append(new_domain_invitation)
-                    else:
-                        logger.info(
-                            f"{termColors.FAIL} ! No e-mail found for domain: {new_entry}"  # noqa
-                            f"(SKIPPED ADDING DOMAIN INVITATION){termColors.ENDC}"
-                        )
-                        skipped_domain_invitations.append(transition_domain_name)
-
+                    domains_to_create.append(new_domain)
                     # DEBUG:
                     self.print_debug(
                         debug_on,
-                        f"{termColors.OKCYAN} Adding domain AND domain invitation: {new_entry} {termColors.ENDC}",  # noqa
+                        f"{termColors.OKCYAN} Adding domain: {new_domain} {termColors.ENDC}"
                     )
-            except Domain.MultipleObjectsReturned:
-                logger.warning(
-                    f"""
-                    {termColors.FAIL}
-                    !!! ERROR: duplicate entries exist in the
-                    Domain table for domain:
-                    {transition_domain_name}
-                    ----------TERMINATING----------"""
+                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, new_domain)
+                
+            if new_domain_invitation is None:
+                logger.info(
+                    f"{termColors.YELLOW} ! No new e-mail detected !"  # noqa
+                    f"(SKIPPED ADDING DOMAIN INVITATION){termColors.ENDC}"
                 )
-                sys.exit()
-            except TransitionNotAllowed as err:
-                skipped_domain_entries.append(transition_domain_name)
-                logger.warning(
-                    f"""{termColors.FAIL}
-                    Unable to change state for {transition_domain_name}
-                    TRANSITION NOT ALLOWED error message (internal):
-                    {err}
-                    ----------SKIPPING----------"""
+            else:
+                # DEBUG:
+                self.print_debug(
+                    debug_on,
+                    f"{termColors.OKCYAN} Adding domain invitation: {new_domain_invitation} {termColors.ENDC}",
                 )
+                domain_invitations_to_create.append(new_domain_invitation)
+
+                
 
             # Check parse limit
             if (
@@ -318,6 +390,5 @@ class Command(BaseCommand):
             updated_domain_entries,
             domain_invitations_to_create,
             skipped_domain_entries,
-            skipped_domain_invitations,
-            debug_on,
+            debug_on
         )
