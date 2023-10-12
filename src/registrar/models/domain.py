@@ -1,6 +1,7 @@
 from itertools import zip_longest
 import logging
 import ipaddress
+import re
 from datetime import date
 from string import digits
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
@@ -292,7 +293,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def isSubdomain(self, nameserver: str):
         """Returns boolean if the domain name is found in the argument passed"""
-        return self.name in nameserver
+        subdomain_pattern = r"([\w-]+\.)*"
+        full_pattern = subdomain_pattern + self.name
+        regex = re.compile(full_pattern)
+        return bool(regex.match(nameserver))
 
     def checkHostIPCombo(self, nameserver: str, ip: list[str]):
         """Checks the parameters past for a valid combination
