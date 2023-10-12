@@ -342,6 +342,12 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by email or domain."
 
+    # Mark the FSM field 'status' as readonly
+    # to allow admin users to create Domain Invitations
+    # without triggering the FSM Transition Not Allowed
+    # error.
+    readonly_fields = ["status"]
+
 
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""

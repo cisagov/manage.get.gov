@@ -8,7 +8,8 @@
 # step 3: fake run the latest migration in the migrations list
 # [RECOMMENDED]
 # Alternatively:
-# Only step: duplicate the migration that loads data and run: docker-compose exec app ./manage.py migrate
+# step 1: duplicate the migration that loads data
+# step 2: docker-compose exec app ./manage.py migrate
 
 from django.db import migrations
 from registrar.models import UserGroup
