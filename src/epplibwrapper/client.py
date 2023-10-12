@@ -17,7 +17,6 @@ from django.conf import settings
 
 from .cert import Cert, Key
 from .errors import LoginError, RegistryError
-from .socket import Socket
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +63,11 @@ class EPPLibWrapper:
         )
         options = {
             # Pool size
-            "size": 10,
+            "size": settings.EPP_CONNECTION_POOL_SIZE,
             # Which errors the pool should look out for
             "exc_classes": (LoginError, RegistryError,),
-            # Should we ping the connection on occasion to keep it alive?
-            "keepalive": None,
+            # Occasionally pings the registry to keep the connection alive 
+            "keepalive": settings.POOL_KEEP_ALIVE,
         }
         self._pool = EppConnectionPool(client=self._client, login=self._login, options=options)
 
