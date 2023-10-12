@@ -10,6 +10,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 class EppConnectionPool(ConnectionPool):
     def __init__(self, client, login, options):
         # For storing shared credentials
@@ -35,7 +36,7 @@ class EppConnectionPool(ConnectionPool):
         except Exception as err:
             logger.error("Failed to keep the connection alive.", exc_info=True)
             raise RegistryError("Failed to keep the connection alive.") from err
-    
+
     def create_socket(self, client, login) -> Socket:
         """Creates and returns a socket instance"""
         socket = Socket(client, login)

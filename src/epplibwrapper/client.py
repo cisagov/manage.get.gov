@@ -65,11 +65,16 @@ class EPPLibWrapper:
             # Pool size
             "size": settings.EPP_CONNECTION_POOL_SIZE,
             # Which errors the pool should look out for
-            "exc_classes": (LoginError, RegistryError,),
-            # Occasionally pings the registry to keep the connection alive 
+            "exc_classes": (
+                LoginError,
+                RegistryError,
+            ),
+            # Occasionally pings the registry to keep the connection alive
             "keepalive": settings.POOL_KEEP_ALIVE,
         }
-        self._pool = EppConnectionPool(client=self._client, login=self._login, options=options)
+        self._pool = EppConnectionPool(
+            client=self._client, login=self._login, options=options
+        )
 
     def _send(self, command):
         """Helper function used by `send`."""
