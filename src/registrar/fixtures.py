@@ -437,6 +437,23 @@ class DomainApplicationFixture:
             da.alternative_domains.add(*alternative_domains)
 
     @classmethod
+    def _create_domain_applications_for_user(cls, user):
+        """Helper method top make domain applications for one user."""
+        logger.debug("Loading domain applications for %s" % user)
+        for app in cls.DA:
+            try:
+                da, _ = DomainApplication.objects.get_or_create(
+                    creator=user,
+                    organization_name=app["organization_name"],
+                )
+                cls._set_non_foreign_key_fields(da, app)
+                cls._set_foreign_key_fields(da, app, user)
+                da.save()
+                cls._set_many_to_many_relations(da, app)
+            except Exception as e:
+                logger.warning(e)
+
+    @classmethod
     def load(cls):
         """Creates domain applications for each user in the database."""
         logger.info("Going to load %s domain applications" % len(cls.DA))
@@ -447,24 +464,23 @@ class DomainApplicationFixture:
             return
 
         for user in users:
-            logger.debug("Loading domain applications for %s" % user)
-            for app in cls.DA:
-                try:
-                    da, _ = DomainApplication.objects.get_or_create(
-                        creator=user,
-                        organization_name=app["organization_name"],
-                    )
-                    cls._set_non_foreign_key_fields(da, app)
-                    cls._set_foreign_key_fields(da, app, user)
-                    da.save()
-                    cls._set_many_to_many_relations(da, app)
-                except Exception as e:
-                    logger.warning(e)
+            cls._create_domain_applications_for_user(user)
 
 
 class DomainFixture(DomainApplicationFixture):
 
     """Create one domain and permissions on it for each user."""
+
+    @classmethod
+    def _create_domains_for_user(cls, user):
+        """Helper method to create domains for one user."""
+        # approve one of each users in review status domains
+        application = DomainApplication.objects.filter(
+            creator=user, status=DomainApplication.IN_REVIEW
+        ).last()
+        logger.debug(f"Approving {application} for {user}")
+        application.approve()
+        application.save()
 
     @classmethod
     def load(cls):
@@ -475,10 +491,4 @@ class DomainFixture(DomainApplicationFixture):
             return
 
         for user in users:
-            # approve one of each users in review status domains
-            application = DomainApplication.objects.filter(
-                creator=user, status=DomainApplication.IN_REVIEW
-            ).last()
-            logger.debug(f"Approving {application} for {user}")
-            application.approve()
-            application.save()
+            cls._create_domains_for_user(user)
