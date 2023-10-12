@@ -15,8 +15,6 @@ class TransitionDomain(TimeStampedModel):
 
     StatusChoices = StatusChoices
 
-    StatusChoices = StatusChoices
-
     username = models.TextField(
         null=False,
         blank=False,
