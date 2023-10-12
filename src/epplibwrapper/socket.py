@@ -1,7 +1,9 @@
 import logging
+from time import sleep
 
 try:
     from epplib import commands
+    from epplib.client import Client
 except ImportError:
     pass
 
@@ -14,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Socket:
     """Context manager which establishes a TCP connection with registry."""
 
-    def __init__(self, client, login) -> None:
+    def __init__(self, client: commands.Login, login: Client) -> None:
         """Save the epplib client and login details."""
         self.client = client
         self.login = login
@@ -27,14 +29,38 @@ class Socket:
         """Runs disconnect(), which closes a connection with EPPLib."""
         self.disconnect()
 
-    def connect(self):
+    def connect(self, pass_response_only=False):
         """Use epplib to connect."""
         self.client.connect()
         response = self.client.send(self.login)
-        if response.code >= 2000:
+        if self.is_login_error(response.code):
             self.client.close()
             raise LoginError(response.msg)
         return self.client
+
+    def is_login_error(self, code):
+        return code >= 2000
+
+    def test_connection_success(self):
+        """Tests if a successful connection can be made with the registry"""
+        # Something went wrong if this doesn't exist
+        if not hasattr(self.client, "connect"):
+            return False
+
+        counter = 0  # we'll try 3 times
+        while True:
+            try:
+                self.client.connect()
+                response = self.client.send(self.login)
+            except LoginError as err:
+                if err.should_retry() and counter < 3:
+                    counter += 1
+                    sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
+                else:  # don't try again
+                    return False
+            else:
+                self.disconnect()
+                return not self.is_login_error(response.code)
 
     def disconnect(self):
         """Close the connection."""
