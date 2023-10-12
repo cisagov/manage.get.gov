@@ -267,8 +267,40 @@ class Command(BaseCommand):
                 {domains_without_status_as_string}
                 {termColors.ENDC}"""
             )
+    
 
-    def handle(  # noqa: C901
+    def print_debug(self, print_condition: bool, print_statement: str):
+        """This function reduces complexity of debug statements
+        in other functions.
+        It uses the logger to write the given print_statement to the
+        terminal if print_condition is TRUE"""
+        # DEBUG:
+        if print_condition:
+            logger.info(print_statement)
+
+
+    def prompt_table_reset():
+        """Brings up a prompt in the terminal asking
+        if the user wishes to delete data in the
+        TransitionDomain table.  If the user confirms,
+        deletes all the data in the TransitionDomain table"""
+        confirm_reset = query_yes_no(
+            f"""
+            {termColors.FAIL}
+            WARNING: Resetting the table will permanently delete all
+            the data!
+            Are you sure you want to continue?{termColors.ENDC}"""
+        )
+        if confirm_reset:
+            logger.info(
+                f"""{termColors.YELLOW}
+            ----------Clearing Table Data----------
+            (please wait)
+            {termColors.ENDC}"""
+            )
+            TransitionDomain.objects.all().delete()
+
+    def handle(
         self,
         domain_contacts_filename,
         contacts_filename,
@@ -281,21 +313,7 @@ class Command(BaseCommand):
         # If --resetTable was used, prompt user to confirm
         # deletion of table data
         if options.get("resetTable"):
-            confirm_reset = query_yes_no(
-                f"""
-                {termColors.FAIL}
-                WARNING: Resetting the table will permanently delete all
-                the data!
-                Are you sure you want to continue?{termColors.ENDC}"""
-            )
-            if confirm_reset:
-                logger.info(
-                    f"""{termColors.YELLOW}
-                ----------Clearing Table Data----------
-                (please wait)
-                {termColors.ENDC}"""
-                )
-                TransitionDomain.objects.all().delete()
+            self.prompt_table_reset()
 
         # Get --debug argument
         debug_on = options.get("debug")
@@ -354,26 +372,35 @@ class Command(BaseCommand):
 
                 # fields are just domain, userid, role
                 # lowercase the domain names
-                new_entry_domainName = row[0].lower()
+                new_entry_domain_name = row[0].lower()
                 user_id = row[1]
 
                 new_entry_status = TransitionDomain.StatusChoices.READY
                 new_entry_email = ""
                 new_entry_emailSent = False  # set to False by default
 
-                if new_entry_domainName not in domain_status_dictionary:
-                    # this domain has no status...default to "Create"
-                    if new_entry_domainName not in domains_without_status:
-                        domains_without_status.append(new_entry_domainName)
+                # PART 1: Get the status
+                if new_entry_domain_name not in domain_status_dictionary:
+                    # This domain has no status...default to "Create"
+                    # (For data analysis purposes, add domain name 
+                    # to list of all domains without status 
+                    # (avoid duplicate entries))
+                    if new_entry_domain_name not in domains_without_status:
+                        domains_without_status.append(new_entry_domain_name)
                 else:
-                    original_status = domain_status_dictionary[new_entry_domainName]
+                    # Map the status 
+                    original_status = domain_status_dictionary[new_entry_domain_name]
                     mapped_status = self.get_mapped_status(original_status)
                     if mapped_status is None:
+                        # (For data analysis purposes, check for any statuses 
+                        # that don't have a mapping and add to list 
+                        # of "outlier statuses")
                         logger.info("Unknown status: " + original_status)
                         outlier_statuses.append(original_status)
                     else:
                         new_entry_status = mapped_status
-
+                
+                # PART 2: Get the e-mail
                 if user_id not in user_emails_dictionary:
                     # this user has no e-mail...this should never happen
                     if user_id not in users_without_email:
@@ -381,6 +408,7 @@ class Command(BaseCommand):
                 else:
                     new_entry_email = user_emails_dictionary[user_id]
 
+                # PART 3: Create the transition domain object
                 # Check for duplicate data in the file we are
                 # parsing so we do not add duplicates
                 # NOTE: Currently, we allow duplicate domains,
@@ -389,7 +417,7 @@ class Command(BaseCommand):
                 # since we are still deciding on whether
                 # to make this field unique or not. ~10/25/2023
                 existing_domain = next(
-                    (x for x in to_create if x.domain_name == new_entry_domainName),
+                    (x for x in to_create if x.domain_name == new_entry_domain_name),
                     None,
                 )
                 existing_domain_user_pair = next(
@@ -397,43 +425,48 @@ class Command(BaseCommand):
                         x
                         for x in to_create
                         if x.username == new_entry_email
-                        and x.domain_name == new_entry_domainName
+                        and x.domain_name == new_entry_domain_name
                     ),
                     None,
                 )
                 if existing_domain is not None:
-                    if debug_on:
-                        logger.info(
-                            f"{termColors.YELLOW} DUPLICATE Verisign entries found for domain: {new_entry_domainName} {termColors.ENDC}"  # noqa
+                    # DEBUG:
+                    self.print_debug(
+                        debug_on,
+                        f"{termColors.YELLOW} DUPLICATE Verisign entries found for domain: {new_entry_domain_name} {termColors.ENDC}"  # noqa
                         )
-                    if new_entry_domainName not in duplicate_domains:
-                        duplicate_domains.append(new_entry_domainName)
+                    if new_entry_domain_name not in duplicate_domains:
+                        duplicate_domains.append(new_entry_domain_name)
                 if existing_domain_user_pair is not None:
-                    if debug_on:
-                        logger.info(
-                            f"""{termColors.YELLOW} DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.YELLOW}:  
-                            {new_entry_domainName} - {new_entry_email} {termColors.ENDC}"""  # noqa
+                    # DEBUG:
+                    self.print_debug(
+                        debug_on,
+                        f"""{termColors.YELLOW} DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.YELLOW}:  
+                        {new_entry_domain_name} - {new_entry_email} {termColors.ENDC}"""  # noqa
                         )
                     if existing_domain_user_pair not in duplicate_domain_user_combos:
                         duplicate_domain_user_combos.append(existing_domain_user_pair)
                 else:
                     try:
-                        existing_entry = TransitionDomain.objects.get(
-                            username=new_entry_email, domain_name=new_entry_domainName
+                        entry_exists = TransitionDomain.objects.exists(
+                            username=new_entry_email, domain_name=new_entry_domain_name
                         )
+                        if(entry_exists):
+                            existing_entry = TransitionDomain.objects.get(
+                                username=new_entry_email, domain_name=new_entry_domain_name
+                            )
 
-                        if existing_entry.status != new_entry_status:
-                            # DEBUG:
-                            if debug_on:
-                                logger.info(
+                            if existing_entry.status != new_entry_status:
+                                # DEBUG:
+                                self.print_debug(
+                                    debug_on,
                                     f"{termColors.OKCYAN}"
                                     f"Updating entry: {existing_entry}"
                                     f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
                                     f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
                                     f"{termColors.ENDC}"
-                                )
-
-                            existing_entry.status = new_entry_status
+                                    )
+                                existing_entry.status = new_entry_status
 
                         existing_entry.email_sent = new_entry_emailSent
                         existing_entry.save()
@@ -441,7 +474,7 @@ class Command(BaseCommand):
                         # no matching entry, make one
                         new_entry = TransitionDomain(
                             username=new_entry_email,
-                            domain_name=new_entry_domainName,
+                            domain_name=new_entry_domain_name,
                             status=new_entry_status,
                             email_sent=new_entry_emailSent,
                         )
@@ -449,26 +482,23 @@ class Command(BaseCommand):
                         total_new_entries += 1
 
                         # DEBUG:
-                        if debug_on:
-                            logger.info(
-                                f"{termColors.OKCYAN} Adding entry {total_new_entries}: {new_entry} {termColors.ENDC}"  # noqa
-                            )
+                        self.print_debug(
+                            debug_on,
+                            f"{termColors.OKCYAN} Adding entry {total_new_entries}: {new_entry} {termColors.ENDC}"  # noqa
+                        )
                     except TransitionDomain.MultipleObjectsReturned:
                         logger.info(
                             f"{termColors.FAIL}"
                             f"!!! ERROR: duplicate entries exist in the"
                             f"transtion_domain table for domain:"
-                            f"{new_entry_domainName}"
+                            f"{new_entry_domain_name}"
                             f"----------TERMINATING----------"
                         )
                         sys.exit()
 
                 # DEBUG:
-                if debug_on or debug_max_entries_to_parse > 0:
-                    if (
-                        total_rows_parsed >= debug_max_entries_to_parse
-                        and debug_max_entries_to_parse != 0
-                    ):
+                if (total_rows_parsed >= debug_max_entries_to_parse
+                    and debug_max_entries_to_parse != 0):
                         logger.info(
                             f"{termColors.YELLOW}"
                             f"----PARSE LIMIT REACHED.  HALTING PARSER.----"

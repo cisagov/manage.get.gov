@@ -76,3 +76,55 @@ An example script using this technique is in
 ```shell
 docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_contacts.daily.dotgov.GOV.txt /app/escrow_contacts.daily.dotgov.GOV.txt
 ```
+
+## Transition Domains
+Verisign provides information about Transition Domains in 3 files;
+FILE 1: escrow_domain_contacts.daily.gov.GOV.txt
+FILE 2: escrow_contacts.daily.gov.GOV.txt
+FILE 3: escrow_domain_statuses.daily.gov.GOV.txt
+
+Transferring this data from these files into our domain tables happens in two steps;
+
+### STEP 1: Load Transition Domain data into TransitionDomain table
+
+**SETUP**
+
+In order to use the management command, we need to add the files to a folder under `src/`.
+This will allow Docker to mount the files to a container (under `/app`) for our use.  
+
+ - Create a folder called `tmp` underneath `src/`
+ - Add the above files to this folder
+ - Open a terminal and navigate to `src/`
+
+Then run the following command  (This will parse the three files in your `tmp` folder and load the information into the TransitionDomain table);
+```shell
+docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt
+```
+
+**OPTIONAL COMMAND LINE ARGUMENTS**: 
+`--debug`
+This will print out additional, detailed logs.
+
+`--limitParse 100` 
+Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
+
+`--resetTable`
+This will delete all the data loaded into transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
+
+
+### STEP 2: Transfer Transition Domain data into main Domain tables
+
+Now that we've loaded all the data into TransitionDomain, we need to update the main Domain and DomainInvitation tables with this information.  
+
+In the same terminal as used in STEP 1, run the command below; 
+(This will parse the data in TransitionDomain and either create a corresponding Domain object, OR, if a corresponding Domain already exists, it will update that Domain with the incoming status. It will also create DomainInvitation objects for each user associated with the domain):
+```shell
+docker compose run -T app ./manage.py transfer_transition_domains_to_domains
+```
+
+**OPTIONAL COMMAND LINE ARGUMENTS**: 
+`--debug`
+This will print out additional, detailed logs.
+
+`--limitParse 100` 
+Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
