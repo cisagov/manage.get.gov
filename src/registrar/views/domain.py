@@ -381,7 +381,7 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
 
     def form_valid(self, form):
         """Add the specified user on this domain."""
-        requested_email = form.cleaned_data.get("email", "")
+        requested_email = form.cleaned_data["email"]
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
