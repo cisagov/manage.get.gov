@@ -3,8 +3,6 @@
 import logging
 from time import sleep
 
-from epplibwrapper.utility.pool import EppConnectionPool
-
 try:
     from epplib.client import Client
     from epplib import commands
@@ -17,6 +15,7 @@ from django.conf import settings
 
 from .cert import Cert, Key
 from .errors import LoginError, RegistryError
+from .utility.pool import EppConnectionPool
 
 logger = logging.getLogger(__name__)
 
@@ -78,25 +77,32 @@ class EPPLibWrapper:
 
     def _send(self, command):
         """Helper function used by `send`."""
+        cmd_type = command.__class__.__name__
         try:
-            cmd_type = command.__class__.__name__
+            # We won't have an EPP connection locally,
+            # shortcut this and raise an err
+            # TODO - implement a timeout in _pool.get()
+            if settings.DEBUG:
+                raise LoginError
             with self._pool.get() as connection:
                 response = connection.send(command)
         except (ValueError, ParsingError) as err:
-            message = "%s failed to execute due to some syntax error."
-            logger.warning(message, cmd_type, exc_info=True)
+            message = f"{cmd_type} failed to execute due to some syntax error."
+            logger.warning(message, exc_info=True)
             raise RegistryError(message) from err
         except TransportError as err:
-            message = "%s failed to execute due to a connection error."
-            logger.warning(message, cmd_type, exc_info=True)
+            message = f"{cmd_type} failed to execute due to a connection error."
+            logger.warning(message, exc_info=True)
             raise RegistryError(message) from err
         except LoginError as err:
-            message = "%s failed to execute due to a registry login error."
-            logger.warning(message, cmd_type, exc_info=True)
+            # For linter
+            text = "failed to execute due to a registry login error."
+            message = f"{cmd_type} {text}"
+            logger.warning(message, exc_info=True)
             raise RegistryError(message) from err
         except Exception as err:
-            message = "%s failed to execute due to an unknown error." % err
-            logger.warning(message, cmd_type, exc_info=True)
+            message = f"{cmd_type} failed to execute due to an unknown error."
+            logger.warning(message, exc_info=True)
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
