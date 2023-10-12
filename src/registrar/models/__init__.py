@@ -12,6 +12,7 @@ from .nameserver import Nameserver
 from .user_domain_role import UserDomainRole
 from .public_contact import PublicContact
 from .user import User
+from .user_group import UserGroup
 from .website import Website
 from .transition_domain import TransitionDomain
 
@@ -28,6 +29,7 @@ __all__ = [
     "UserDomainRole",
     "PublicContact",
     "User",
+    "UserGroup",
     "Website",
     "TransitionDomain",
 ]
@@ -42,6 +44,7 @@ auditlog.register(Host)
 auditlog.register(Nameserver)
 auditlog.register(UserDomainRole)
 auditlog.register(PublicContact)
-auditlog.register(User)
+auditlog.register(User, m2m_fields=["user_permissions", "groups"])
+auditlog.register(UserGroup, m2m_fields=["permissions"])
 auditlog.register(Website)
 auditlog.register(TransitionDomain)
