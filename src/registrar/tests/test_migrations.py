@@ -31,8 +31,8 @@ class TestGroups(TestCase):
             UserGroup.objects.filter(name="full_access_group"), [full_access_group]
         )
 
-        # Test data migrations for cisa_analysts_group permission
-        # ran as expected.
+        # Test permissions for cisa_analysts_group
+        # Verifies permission data migrations ran as expected.
         # Define the expected permission codenames
         expected_permissions = [
             "view_logentry",
