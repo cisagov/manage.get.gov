@@ -113,7 +113,7 @@ class Command(BaseCommand):
         updated_domain_entries,
         domain_invitations_to_create,
         skipped_domain_entries,
-        debug_on
+        debug_on,
     ):
         """Prints to terminal a summary of findings from
         transferring transition domains to domains"""
@@ -147,7 +147,8 @@ class Command(BaseCommand):
         for domain in domains_to_create:
             skipped_domain_invitations.append(domain)
         for domain_invite in domain_invitations_to_create:
-            if domain_invite.domain in skipped_domain_invitations: skipped_domain_invitations.remove(domain_invite.domain)
+            if domain_invite.domain in skipped_domain_invitations:
+                skipped_domain_invitations.remove(domain_invite.domain)
         if len(skipped_domain_invitations) > 0:
             logger.info(
                 f"""{termColors.FAIL}
@@ -172,32 +173,45 @@ class Command(BaseCommand):
             """,
         )
 
-    def try_add_domain_invitation(self, 
-                                  domain_email: str,
-                                  associated_domain: Domain) -> DomainInvitation:
+    def try_add_domain_invitation(
+        self, domain_email: str, associated_domain: Domain
+    ) -> DomainInvitation | None:
         """If no domain invitation exists for the given domain and
         e-mail, create and return a new domain invitation object.
         If one already exists, or if the email is invalid, return NONE"""
 
-        # this exception should never happen, but adding it just in case
-        assert (associated_domain is None, "domain cannot be null for a Domain Invitation object!")
-        
+        # this should never happen, but adding it just in case
+        if associated_domain is None:
+            logger.warning(
+                f"""
+                        {termColors.FAIL}
+                        !!! ERROR: Domain cannot be null for a
+                        Domain Invitation object!
+
+                        RECOMMENDATION:
+                        Somehow, an empty domain object is
+                        being passed to the subroutine in charge
+                        of making domain invitations. Walk through
+                        the code to see what is amiss.
+
+                        ----------TERMINATING----------"""
+            )
+            sys.exit()
+
         # check that the given e-mail is valid
         if domain_email is not None and domain_email != "":
-            # check that a domain invitation doesn't already 
+            # check that a domain invitation doesn't already
             # exist for this e-mail / Domain pair
             domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
-                email = domain_email.lower(), 
-                domain=associated_domain).exists()
+                email=domain_email.lower(), domain=associated_domain
+            ).exists()
             if not domain_email_already_in_domain_invites:
                 # Create new domain invitation
                 new_domain_invitation = DomainInvitation(
-                    email=domain_email.lower(), 
-                    domain=associated_domain
+                    email=domain_email.lower(), domain=associated_domain
                 )
                 return new_domain_invitation
         return None
-
 
     def handle(
         self,
@@ -249,9 +263,7 @@ class Command(BaseCommand):
 
             new_domain_invitation = None
             # Check for existing domain entry
-            domain_exists = Domain.objects.filter(
-                name=transition_domain_name
-                ).exists()
+            domain_exists = Domain.objects.filter(name=transition_domain_name).exists()
             if domain_exists:
                 try:
                     # get the existing domain
@@ -273,9 +285,11 @@ class Command(BaseCommand):
                         # keep track of updated domains for data analysis purposes
                         updated_domain_entries.append(transition_domain.domain_name)
 
-                    # check if we need to add a domain invitation 
+                    # check if we need to add a domain invitation
                     # (eg. for a new user)
-                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, domain_to_update)
+                    new_domain_invitation = self.try_add_domain_invitation(
+                        transition_domain_email, domain_to_update
+                    )
 
                 except Domain.MultipleObjectsReturned:
                     # This exception was thrown once before during testing.
@@ -290,7 +304,7 @@ class Command(BaseCommand):
                         !!! ERROR: duplicate entries already exist in the
                         Domain table for the following domain:
                         {transition_domain_name}
-                        
+
                         RECOMMENDATION:
                         This means the Domain table is corrupt.  Please
                         check the Domain table data as there should be a key
@@ -304,7 +318,7 @@ class Command(BaseCommand):
                     logger.warning(
                         f"""{termColors.FAIL}
                         Unable to change state for {transition_domain_name}
-                        
+
                         RECOMMENDATION:
                         This indicates there might have been changes to the
                         Domain model which were not accounted for in this
@@ -339,21 +353,24 @@ class Command(BaseCommand):
                         Checking for unique user e-mail for Domain Invitations...
                         {termColors.ENDC}""",
                     )
-                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, existing_domain_in_to_create)
+                    new_domain_invitation = self.try_add_domain_invitation(
+                        transition_domain_email, existing_domain_in_to_create
+                    )
                 else:
                     # no matching entry, make one
                     new_domain = Domain(
-                        name=transition_domain_name, 
-                        state=transition_domain_status
+                        name=transition_domain_name, state=transition_domain_status
                     )
                     domains_to_create.append(new_domain)
                     # DEBUG:
                     self.print_debug(
                         debug_on,
-                        f"{termColors.OKCYAN} Adding domain: {new_domain} {termColors.ENDC}"
+                        f"{termColors.OKCYAN} Adding domain: {new_domain} {termColors.ENDC}",  # noqa
                     )
-                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, new_domain)
-                
+                    new_domain_invitation = self.try_add_domain_invitation(
+                        transition_domain_email, new_domain
+                    )
+
             if new_domain_invitation is None:
                 logger.info(
                     f"{termColors.YELLOW} ! No new e-mail detected !"  # noqa
@@ -363,13 +380,11 @@ class Command(BaseCommand):
                 # DEBUG:
                 self.print_debug(
                     debug_on,
-                    f"{termColors.OKCYAN} Adding domain invitation: {new_domain_invitation} {termColors.ENDC}",
+                    f"{termColors.OKCYAN} Adding domain invitation: {new_domain_invitation} {termColors.ENDC}",  # noqa
                 )
                 domain_invitations_to_create.append(new_domain_invitation)
 
-                
-
-            # Check parse limit
+            # Check parse limit and exit loop if parse limit has been reached
             if (
                 debug_max_entries_to_parse > 0
                 and total_rows_parsed >= debug_max_entries_to_parse
@@ -390,5 +405,5 @@ class Command(BaseCommand):
             updated_domain_entries,
             domain_invitations_to_create,
             skipped_domain_entries,
-            debug_on
+            debug_on,
         )
