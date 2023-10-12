@@ -21,6 +21,7 @@ class DomainInformation(TimeStampedModel):
 
     StateTerritoryChoices = DomainApplication.StateTerritoryChoices
 
+    # use the short names in Django admin
     OrganizationChoices = DomainApplication.OrganizationChoices
 
     BranchChoices = DomainApplication.BranchChoices

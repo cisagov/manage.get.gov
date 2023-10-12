@@ -219,9 +219,9 @@ class MyUserAdmin(BaseUserAdmin):
     # (which should in theory be the ONLY group)
     def group(self, obj):
         if obj.groups.filter(name="full_access_group").exists():
-            return "Full access"
+            return "full_access_group"
         elif obj.groups.filter(name="cisa_analysts_group").exists():
-            return "Analyst"
+            return "cisa_analysts_group"
         return ""
 
     def get_list_display(self, request):

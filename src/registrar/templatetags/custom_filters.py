@@ -1,5 +1,6 @@
 from django import template
 import re
+from registrar.models.domain_application import DomainApplication
 
 register = template.Library()
 
@@ -48,3 +49,17 @@ def contains_checkbox(html_list):
         if re.search(r'<input[^>]*type="checkbox"', html_string):
             return True
     return False
+
+
+@register.filter
+def get_organization_long_name(organization_type):
+    organization_choices_dict = {}
+
+    for name, value in DomainApplication.OrganizationChoicesVerbose.choices:
+        organization_choices_dict[name] = value
+
+    long_form_type = organization_choices_dict[organization_type]
+    if long_form_type is not None:
+        return long_form_type
+
+    return "Error"
