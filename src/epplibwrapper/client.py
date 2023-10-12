@@ -74,6 +74,8 @@ class EPPLibWrapper:
         }
 
         self._pool = None
+        # Since we reuse the same creds for each pool, we can test on
+        # one socket, and if successful, then we know we can connect.
         if not settings.DEBUG or self._test_registry_connection_success():
             self._pool = EppConnectionPool(
                 client=self._client, login=self._login, options=options

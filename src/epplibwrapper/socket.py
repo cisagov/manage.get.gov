@@ -42,7 +42,8 @@ class Socket:
         return code >= 2000
 
     def test_connection_success(self):
-        """Tests if a successful connection can be made with the registry"""
+        """Tests if a successful connection can be made with the registry.
+        Tries 3 times"""
         # Something went wrong if this doesn't exist
         if not hasattr(self.client, "connect"):
             return False
