@@ -534,9 +534,6 @@ SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
-# endregion
-# region: Registry Connection Pool----------------------------------------------------------###
-
 # Use this variable to set the size of our connection pool in client.py
 # WARNING: Setting this value too high could cause frequent app crashes!
 EPP_CONNECTION_POOL_SIZE = 10
