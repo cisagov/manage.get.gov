@@ -1,5 +1,3 @@
-"""Load domain invitations for existing domains and their contacts."""
-
 import sys
 import csv
 import logging
@@ -193,10 +191,11 @@ class Command(BaseCommand):
         total_duplicate_domains = len(duplicate_domains)
         total_users_without_email = len(users_without_email)
         if total_users_without_email > 0:
+            users_without_email_as_string = "{}".format(
+                ", ".join(map(str, duplicate_domain_user_combos))
+            )
             logger.warning(
-                "No e-mails found for users: {}".format(
-                    ", ".join(map(str, users_without_email))
-                )
+                f"{termColors.YELLOW} No e-mails found for users: {users_without_email_as_string}"  # noqa
             )
         if total_duplicate_pairs > 0 or total_duplicate_domains > 0:
             duplicate_pairs_as_string = "{}".format(
@@ -267,7 +266,6 @@ class Command(BaseCommand):
                 {domains_without_status_as_string}
                 {termColors.ENDC}"""
             )
-    
 
     def print_debug(self, print_condition: bool, print_statement: str):
         """This function reduces complexity of debug statements
@@ -278,8 +276,7 @@ class Command(BaseCommand):
         if print_condition:
             logger.info(print_statement)
 
-
-    def prompt_table_reset():
+    def prompt_table_reset(self):
         """Brings up a prompt in the terminal asking
         if the user wishes to delete data in the
         TransitionDomain table.  If the user confirms,
@@ -300,7 +297,7 @@ class Command(BaseCommand):
             )
             TransitionDomain.objects.all().delete()
 
-    def handle(
+    def handle(  # noqa: C901
         self,
         domain_contacts_filename,
         contacts_filename,
@@ -382,24 +379,24 @@ class Command(BaseCommand):
                 # PART 1: Get the status
                 if new_entry_domain_name not in domain_status_dictionary:
                     # This domain has no status...default to "Create"
-                    # (For data analysis purposes, add domain name 
-                    # to list of all domains without status 
+                    # (For data analysis purposes, add domain name
+                    # to list of all domains without status
                     # (avoid duplicate entries))
                     if new_entry_domain_name not in domains_without_status:
                         domains_without_status.append(new_entry_domain_name)
                 else:
-                    # Map the status 
+                    # Map the status
                     original_status = domain_status_dictionary[new_entry_domain_name]
                     mapped_status = self.get_mapped_status(original_status)
                     if mapped_status is None:
-                        # (For data analysis purposes, check for any statuses 
-                        # that don't have a mapping and add to list 
+                        # (For data analysis purposes, check for any statuses
+                        # that don't have a mapping and add to list
                         # of "outlier statuses")
                         logger.info("Unknown status: " + original_status)
                         outlier_statuses.append(original_status)
                     else:
                         new_entry_status = mapped_status
-                
+
                 # PART 2: Get the e-mail
                 if user_id not in user_emails_dictionary:
                     # this user has no e-mail...this should never happen
@@ -433,27 +430,28 @@ class Command(BaseCommand):
                     # DEBUG:
                     self.print_debug(
                         debug_on,
-                        f"{termColors.YELLOW} DUPLICATE Verisign entries found for domain: {new_entry_domain_name} {termColors.ENDC}"  # noqa
-                        )
+                        f"{termColors.YELLOW} DUPLICATE file entries found for domain: {new_entry_domain_name} {termColors.ENDC}",  # noqa
+                    )
                     if new_entry_domain_name not in duplicate_domains:
                         duplicate_domains.append(new_entry_domain_name)
                 if existing_domain_user_pair is not None:
                     # DEBUG:
                     self.print_debug(
                         debug_on,
-                        f"""{termColors.YELLOW} DUPLICATE Verisign entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.YELLOW}:  
-                        {new_entry_domain_name} - {new_entry_email} {termColors.ENDC}"""  # noqa
-                        )
+                        f"""{termColors.YELLOW} DUPLICATE file entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.YELLOW}:  
+                        {new_entry_domain_name} - {new_entry_email} {termColors.ENDC}""",  # noqa
+                    )
                     if existing_domain_user_pair not in duplicate_domain_user_combos:
                         duplicate_domain_user_combos.append(existing_domain_user_pair)
                 else:
-                    try:
-                        entry_exists = TransitionDomain.objects.exists(
-                            username=new_entry_email, domain_name=new_entry_domain_name
-                        )
-                        if(entry_exists):
+                    entry_exists = TransitionDomain.objects.filter(
+                        username=new_entry_email, domain_name=new_entry_domain_name
+                    ).exists()
+                    if entry_exists:
+                        try:
                             existing_entry = TransitionDomain.objects.get(
-                                username=new_entry_email, domain_name=new_entry_domain_name
+                                username=new_entry_email,
+                                domain_name=new_entry_domain_name,
                             )
 
                             if existing_entry.status != new_entry_status:
@@ -464,13 +462,21 @@ class Command(BaseCommand):
                                     f"Updating entry: {existing_entry}"
                                     f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
                                     f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
-                                    f"{termColors.ENDC}"
-                                    )
+                                    f"{termColors.ENDC}",
+                                )
                                 existing_entry.status = new_entry_status
-
-                        existing_entry.email_sent = new_entry_emailSent
-                        existing_entry.save()
-                    except TransitionDomain.DoesNotExist:
+                            existing_entry.email_sent = new_entry_emailSent
+                            existing_entry.save()
+                        except TransitionDomain.MultipleObjectsReturned:
+                            logger.info(
+                                f"{termColors.FAIL}"
+                                f"!!! ERROR: duplicate entries exist in the"
+                                f"transtion_domain table for domain:"
+                                f"{new_entry_domain_name}"
+                                f"----------TERMINATING----------"
+                            )
+                            sys.exit()
+                    else:
                         # no matching entry, make one
                         new_entry = TransitionDomain(
                             username=new_entry_email,
@@ -484,27 +490,20 @@ class Command(BaseCommand):
                         # DEBUG:
                         self.print_debug(
                             debug_on,
-                            f"{termColors.OKCYAN} Adding entry {total_new_entries}: {new_entry} {termColors.ENDC}"  # noqa
+                            f"{termColors.OKCYAN} Adding entry {total_new_entries}: {new_entry} {termColors.ENDC}",  # noqa
                         )
-                    except TransitionDomain.MultipleObjectsReturned:
-                        logger.info(
-                            f"{termColors.FAIL}"
-                            f"!!! ERROR: duplicate entries exist in the"
-                            f"transtion_domain table for domain:"
-                            f"{new_entry_domain_name}"
-                            f"----------TERMINATING----------"
-                        )
-                        sys.exit()
 
-                # DEBUG:
-                if (total_rows_parsed >= debug_max_entries_to_parse
-                    and debug_max_entries_to_parse != 0):
-                        logger.info(
-                            f"{termColors.YELLOW}"
-                            f"----PARSE LIMIT REACHED.  HALTING PARSER.----"
-                            f"{termColors.ENDC}"
-                        )
-                        break
+                # Check Parse limit and exit loop if needed
+                if (
+                    total_rows_parsed >= debug_max_entries_to_parse
+                    and debug_max_entries_to_parse != 0
+                ):
+                    logger.info(
+                        f"{termColors.YELLOW}"
+                        f"----PARSE LIMIT REACHED.  HALTING PARSER.----"
+                        f"{termColors.ENDC}"
+                    )
+                    break
 
         TransitionDomain.objects.bulk_create(to_create)
 
