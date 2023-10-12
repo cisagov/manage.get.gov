@@ -540,7 +540,7 @@ EPP_CONNECTION_POOL_SIZE = 10
 
 # Determines the interval in which we ping open connections in seconds
 # Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE
-POOL_KEEP_ALIVE = 600
+POOL_KEEP_ALIVE = None
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
