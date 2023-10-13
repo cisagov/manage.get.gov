@@ -838,41 +838,45 @@ class MockEppLib(TestCase):
             )
 
     def mockInfoDomainCommands(self, _request, cleaned):
-        if getattr(_request, "name", None) == "security.gov":
-            return MagicMock(res_data=[self.infoDomainNoContact])
-        elif getattr(_request, "name", None) == "dnssec-dsdata.gov":
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[self.dnssecExtensionWithDsData],
-            )
-        elif getattr(_request, "name", None) == "dnssec-multdsdata.gov":
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[self.dnssecExtensionWithMultDsData],
-            )
-        elif getattr(_request, "name", None) == "dnssec-keydata.gov":
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[self.dnssecExtensionWithKeyData],
-            )
-        elif getattr(_request, "name", None) == "dnssec-none.gov":
-            # this case is not necessary, but helps improve readability
-            return MagicMock(res_data=[self.mockDataInfoDomain])
-        elif getattr(_request, "name", None) == "my-nameserver.gov":
-            if self.mockedSendFunction.call_count == 5:
-                return MagicMock(res_data=[self.infoDomainTwoHosts])
-            else:
-                return MagicMock(res_data=[self.infoDomainNoHost])
-        elif getattr(_request, "name", None) == "nameserverwithip.gov":
-            return MagicMock(res_data=[self.infoDomainHasIP])
-        elif getattr(_request, "name", None) == "namerserversubdomain.gov":
-            return MagicMock(res_data=[self.infoDomainCheckHostIPCombo])
-        elif getattr(_request, "name", None) == "freeman.gov":
-            return MagicMock(res_data=[self.InfoDomainWithContacts])
-        elif getattr(_request, "name", None) == "threenameserversDomain.gov":
-            return MagicMock(res_data=[self.infoDomainThreeHosts])
-        else:
-            return MagicMock(res_data=[self.mockDataInfoDomain])
+        request_name = getattr(_request, "name", None)
+
+        # Define a dictionary to map request names to data and extension values
+        request_mappings = {
+            "security.gov": (self.infoDomainNoContact, None),
+            "dnssec-dsdata.gov": (
+                self.mockDataInfoDomain,
+                self.dnssecExtensionWithDsData,
+            ),
+            "dnssec-multdsdata.gov": (
+                self.mockDataInfoDomain,
+                self.dnssecExtensionWithMultDsData,
+            ),
+            "dnssec-keydata.gov": (
+                self.mockDataInfoDomain,
+                self.dnssecExtensionWithKeyData,
+            ),
+            "dnssec-none.gov": (self.mockDataInfoDomain, None),
+            "my-nameserver.gov": (
+                self.infoDomainTwoHosts
+                if self.mockedSendFunction.call_count == 5
+                else self.infoDomainNoHost,
+                None,
+            ),
+            "nameserverwithip.gov": (self.infoDomainHasIP, None),
+            "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
+            "freeman.gov": (self.InfoDomainWithContacts, None),
+            "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
+        }
+
+        # Retrieve the corresponding values from the dictionary
+        res_data, extensions = request_mappings.get(
+            request_name, (self.mockDataInfoDomain, None)
+        )
+
+        return MagicMock(
+            res_data=[res_data],
+            extensions=[extensions] if extensions is not None else [],
+        )
 
     def mockInfoContactCommands(self, _request, cleaned):
         mocked_result: info.InfoContactResultData
