@@ -43,6 +43,7 @@
         {% else %}
           {% include "includes/contact.html" with contact=value %}
         {% endif %}
+      <!-- TODO #687 add here another elif for nameservers to show item Ips -->
       {% elif list %}
         {% if value|length == 1 %}
             {% if users %}

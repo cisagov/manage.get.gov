@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0036_contenttypes_permissions"),
+        ("registrar", "0037_create_groups_v01"),
     ]
 
     operations = [
