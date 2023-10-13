@@ -791,6 +791,8 @@ class MockEppLib(TestCase):
             return self.mockInfoDomainCommands(_request, cleaned)
         elif isinstance(_request, commands.InfoContact):
             return self.mockInfoContactCommands(_request, cleaned)
+        elif isinstance(_request, commands.UpdateDomain):
+            return self.mockUpdateDomainCommands(_request, cleaned)
         elif (
             isinstance(_request, commands.CreateContact)
             and getattr(_request, "id", None) == "fail"
@@ -805,16 +807,6 @@ class MockEppLib(TestCase):
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
         elif isinstance(_request, commands.UpdateHost):
-            return MagicMock(
-                res_data=[self.mockDataHostChange],
-                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-            )
-        elif (
-            isinstance(_request, commands.UpdateDomain)
-            and getattr(_request, "name", None) == "dnssec-invalid.gov"
-        ):
-            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
-        elif isinstance(_request, commands.UpdateDomain):
             return MagicMock(
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
@@ -835,6 +827,15 @@ class MockEppLib(TestCase):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
                 )
         return MagicMock(res_data=[self.mockDataInfoHosts])
+
+    def mockUpdateDomainCommands(self, _request, cleaned):
+        if getattr(_request, "name", None) == "dnssec-invalid.gov":
+            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
+        else:
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
 
     def mockInfoDomainCommands(self, _request, cleaned):
         if getattr(_request, "name", None) == "security.gov":
