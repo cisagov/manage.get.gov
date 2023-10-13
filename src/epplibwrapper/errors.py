@@ -79,6 +79,9 @@ class RegistryError(Exception):
 
     def is_client_error(self):
         return self.code is not None and (self.code >= 2000 and self.code <= 2308)
+    
+    def is_not_retryable(self):
+        pass
 
 
 class LoginError(RegistryError):

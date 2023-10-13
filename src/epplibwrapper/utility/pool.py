@@ -1,4 +1,6 @@
+from collections import deque
 import logging
+import gevent
 from geventconnpool import ConnectionPool
 from epplibwrapper.errors import RegistryError, LoginError
 from epplibwrapper.socket import Socket
@@ -11,15 +13,23 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class EppConnectionPool(ConnectionPool):
-    def __init__(self, client, login, options):
+class EPPConnectionPool(ConnectionPool):
+    """A connection pool for EPPLib.
+
+    Args:
+        client (Client): The client
+        login (commands.Login): Login creds
+        options (dict): Options for the ConnectionPool
+        base class
+    """
+    def __init__(self, client, login, options: dict):
         # For storing shared credentials
         self._client = client
         self._login = login
         super().__init__(**options)
 
     def _new_connection(self):
-        socket = self.create_socket(self._client, self._login)
+        socket = self._create_socket(self._client, self._login)
         try:
             connection = socket.connect()
             return connection
@@ -37,7 +47,39 @@ class EppConnectionPool(ConnectionPool):
             logger.error("Failed to keep the connection alive.", exc_info=True)
             raise RegistryError("Failed to keep the connection alive.") from err
 
-    def create_socket(self, client, login) -> Socket:
+    def _create_socket(self, client, login) -> Socket:
         """Creates and returns a socket instance"""
         socket = Socket(client, login)
         return socket
+    
+    def get_connections(self):
+        """Returns the connection queue"""
+        return self.conn
+    
+    def kill_all_connections(self):
+        """Kills all active connections in the pool."""
+        try:
+            gevent.killall(self.conn)
+            self.conn.clear()
+            # Clear the semaphore
+            for i in range(self.lock.counter):
+                self.lock.release()
+        # TODO - connection pool err
+        except Exception as err:
+            logger.error(
+                "Could not kill all connections."
+            )
+            raise err
+    
+    def repopulate_all_connections(self):
+        """Regenerates the connection pool.
+        If any connections exist, kill them first.
+        """
+        if len(self.conn) > 0:
+            self.kill_all_connections()
+        for i in range(self.size):
+            self.lock.acquire()
+        for i in range(self.size):
+            gevent.spawn_later(self.SPAWN_FREQUENCY*i, self._addOne)
+
+

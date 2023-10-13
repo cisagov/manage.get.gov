@@ -3,6 +3,8 @@
 import logging
 from time import sleep
 
+from epplibwrapper.utility.pool_status import PoolStatus
+
 try:
     from epplib.client import Client
     from epplib import commands
@@ -16,7 +18,7 @@ from django.conf import settings
 from .cert import Cert, Key
 from .errors import LoginError, RegistryError
 from .socket import Socket
-from .utility.pool import EppConnectionPool
+from .utility.pool import EPPConnectionPool
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,6 @@ except Exception:
         "Problem with client certificate. Registrar cannot contact registry.",
         exc_info=True,
     )
-
 
 class EPPLibWrapper:
     """
@@ -61,35 +62,33 @@ class EPPLibWrapper:
                 password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
             )
         )
-        options = {
+
+        self.pool_options = {
             # Pool size
             "size": settings.EPP_CONNECTION_POOL_SIZE,
             # Which errors the pool should look out for
             "exc_classes": (
-                LoginError,
-                RegistryError,
+                TransportError,
             ),
-            # Occasionally pings the registry to keep the connection alive
+            # Occasionally pings the registry to keep the connection alive.
+            # Value in seconds => (keepalive / size)
             "keepalive": settings.POOL_KEEP_ALIVE,
         }
 
         self._pool = None
-        # Since we reuse the same creds for each pool, we can test on
-        # one socket, and if successful, then we know we can connect.
-        if not settings.DEBUG or self._test_registry_connection_success():
-            self._pool = EppConnectionPool(
-                client=self._client, login=self._login, options=options
-            )
-        else:
-            logger.warning("Cannot contact the Registry")
-            # TODO - signal that the app may need to restart?
+        # Tracks the status of the pool
+        self.pool_status = PoolStatus()
+
+        self.start_connection_pool()
 
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
         try:
-            if self._pool is None:
-                raise LoginError
+            if not self.pool_status.connection_success:
+                raise LoginError(
+                    "Couldn't connect to the registry after three attempts"
+                )
             # TODO - add a timeout
             with self._pool.get() as connection:
                 response = connection.send(command)
@@ -122,6 +121,21 @@ class EPPLibWrapper:
         # try to prevent use of this method without appropriate safeguards
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
+        
+        # Reopen the pool if its closed
+        if not self.pool_status.pool_running:
+            # We want to reopen the connection pool,
+            # but we don't want the end user to wait while it opens.
+            # Raise syntax doesn't allow this, so we use a try/catch
+            # block.
+            try:
+                raise RegistryError(
+                    "Can't contact the Registry. Please try again later"
+                )
+            except RegistryError as err:
+                raise err
+            finally:
+                self.start_connection_pool()
 
         counter = 0  # we'll try 3 times
         while True:
@@ -133,6 +147,53 @@ class EPPLibWrapper:
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
                     raise err
+
+    def start_connection_pool(self, restart_pool_if_exists = True):
+        """Starts a connection pool for the registry. 
+
+        restart_pool_if_exists -> bool: 
+        If an instance of the pool already exists,
+        then then that instance will be killed first. 
+        It is generally recommended to keep this enabled."""
+        
+        # Since we reuse the same creds for each pool, we can test on
+        # one socket, and if successful, then we know we can connect.
+        if settings.DEBUG or self._test_registry_connection_success():
+            logger.warning("Cannot contact the Registry")
+            self.pool_status.connection_success = False
+            # Q: Should err be raised instead?
+            # Q2: Since we try to connect 3 times,
+            # this indicates that the Registry isn't responsive.
+            # What should we do in this case?
+            return
+        else:
+            self.pool_status.connection_success = True
+        
+        # If this function is reinvoked, then ensure
+        # that we don't have duplicate data sitting around.
+        if self._pool is not None and restart_pool_if_exists:
+            logger.info("Connection pool restarting...")
+            self.kill_pool()
+        
+        self._pool = EPPConnectionPool(
+            client=self._client, login=self._login, options=self.pool_options
+        )
+        self.pool_status.pool_running = True
+
+        logger.info("Connection pool started")
+    
+    def kill_pool(self):
+        """Kills the existing pool. Use this instead
+        of self._pool = None, as that doesn't clear
+        gevent instances."""
+        if self._pool is not None:
+            self._pool.kill_all_connections()
+            self._pool = None
+            self.pool_status.pool_running = False
+            return
+        logger.info(
+            "kill_pool() was invoked but there was no pool to delete"
+        )
 
     def _test_registry_connection_success(self):
         """Check that determines if our login
