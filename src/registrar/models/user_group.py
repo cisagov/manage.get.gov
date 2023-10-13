@@ -51,6 +51,11 @@ class UserGroup(Group):
                 "model": "user",
                 "permissions": ["analyst_access_permission", "change_user"],
             },
+            {
+                "app_label": "registrar",
+                "model": "domaininvitation",
+                "permissions": ["add_domaininvitation", "view_domaininvitation"],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end

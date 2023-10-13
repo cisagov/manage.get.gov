@@ -32,6 +32,7 @@ class TestGroups(TestCase):
         )
 
         # Test permissions for cisa_analysts_group
+        # Verifies permission data migrations ran as expected.
         # Define the expected permission codenames
         expected_permissions = [
             "view_logentry",
@@ -39,6 +40,8 @@ class TestGroups(TestCase):
             "view_domain",
             "change_domainapplication",
             "change_domaininformation",
+            "add_domaininvitation",
+            "view_domaininvitation",
             "change_draftdomain",
             "analyst_access_permission",
             "change_user",

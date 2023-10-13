@@ -20,7 +20,8 @@ class DomainNameserverForm(forms.Form):
 
     """Form for changing nameservers."""
 
-    server = forms.CharField(label="Name server")
+    server = forms.CharField(label="Name server", strip=True)
+    # when adding IPs to this form ensure they are stripped as well
 
 
 NameserverFormset = formset_factory(
