@@ -107,9 +107,9 @@ class DomainApplication(TimeStampedModel):
     class OrganizationChoices(models.TextChoices):
 
         """
-            Primary organization choices:
-            For use in django admin
-            Keys need to match OrganizationChoicesVerbose
+        Primary organization choices:
+        For use in django admin
+        Keys need to match OrganizationChoicesVerbose
         """
 
         FEDERAL = "federal", "Federal"
@@ -124,9 +124,9 @@ class DomainApplication(TimeStampedModel):
     class OrganizationChoicesVerbose(models.TextChoices):
 
         """
-            Secondary organization choices
-            For use in the application form and on the templates
-            Keys need to match OrganizationChoices
+        Secondary organization choices
+        For use in the application form and on the templates
+        Keys need to match OrganizationChoices
         """
 
         FEDERAL = (
