@@ -536,7 +536,7 @@ SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
 # Use this variable to set the size of our connection pool in client.py
 # WARNING: Setting this value too high could cause frequent app crashes!
-EPP_CONNECTION_POOL_SIZE = 10
+EPP_CONNECTION_POOL_SIZE = 1
 
 # Determines the interval in which we ping open connections in seconds
 # Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE
