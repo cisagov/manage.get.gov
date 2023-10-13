@@ -176,7 +176,7 @@ class DomainDsdataForm(forms.Form):
 
     digest_type = forms.TypedChoiceField(
         required=True,
-        label="Digest Type",
+        label="Digest type",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
         error_messages={"required": ("Digest Type is required.")},

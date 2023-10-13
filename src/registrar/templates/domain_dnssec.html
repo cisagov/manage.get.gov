@@ -9,10 +9,10 @@
 
   <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your domain. Enabling DNSSEC ensures that when someone visits your domain, they can be certain that it's connecting to the correct server, preventing potential hijacking or tampering with your domain's records.</p>
 
-  <form class="usa-form usa-form--large" method="post">
+  <form class="usa-form usa-form--text-width" method="post">
     {% csrf_token %}
     {% if has_dnssec_records %}
-    <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
+    <div class="usa-alert usa-alert--info usa-alert--slim">
       <div class="usa-alert__body">
       In order to fully disable DNSSEC on your domain, you will need to work with your DNS provider to remove your DNSSEC-related records from your zone.
       </div>
@@ -33,7 +33,7 @@
         <a href="{% url 'domain-dns-dnssec-keydata' pk=domain.id %}" class="usa-button usa-button--outline">Add Key Data</a>
         <button
           type="submit"
-          class="usa-button usa-button--unstyled"
+          class="usa-button usa-button--unstyled margin-left-2"
           name="cancel_dnssec"
           id="cancel_dnssec"
       >Cancel</button>
@@ -41,7 +41,7 @@
     </div>
     {% else %}
     <div id="enable-dnssec">
-      <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
+      <div class="usa-alert usa-alert--info usa-alert--slim">
         <div class="usa-alert__body">
         It is strongly recommended that you only enable DNSSEC if you know how to set it up properly at your hosting service. If you make a mistake, it could cause your domain name to stop working.
         </div>

@@ -8,6 +8,10 @@
   max-width: none;
 }
 
+.usa-form--text-width {
+  max-width: measure(5);
+}
+
 .usa-textarea {
   @include at-media('tablet') {
     height: units('mobile');
