@@ -101,7 +101,23 @@ a.usa-button--unstyled:visited {
   }
 }
 
-// WARNING: crazy hack ahead
+// Cancel button used on the
+// DNSSEC main page
+// We want to center this button on mobile
+// and add some extra left margin on tablet+
+.usa-button--cancel {
+  text-align: center;
+  @include at-media('tablet') {
+    margin-left: units(2);
+  }
+}
+
+
+// WARNING: crazy hack ahead:
+// Cancel button(s) on the DNSSEC form pages
+// We want to position the cancel button on the
+// dnssec forms next to the submit button
+// This button's markup is in its own form
 .btn-cancel {
   position: relative;
   top: -39.2px;
