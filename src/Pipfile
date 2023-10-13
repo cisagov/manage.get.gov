@@ -26,7 +26,7 @@ boto3 = "*"
 typing-extensions ='*'
 django-login-required-middleware = "*"
 fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
-geventconnpool = {git = "https://github.com/zandercymatics/geventconnpool.git", ref = "master"}
+geventconnpool = {git = "https://github.com/rasky/geventconnpool.git", ref = "1bbb93a714a331a069adf27265fe582d9ba7ecd4"}
 
 [dev-packages]
 django-debug-toolbar = "*"
