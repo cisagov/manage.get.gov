@@ -44,6 +44,7 @@ except NameError:
 
 # Attn: these imports should NOT be at the top of the file
 try:
+    from .utility.pool import EPPConnectionPool
     from .client import CLIENT, commands
     from .errors import RegistryError, ErrorCode
     from epplib.models import common, info
