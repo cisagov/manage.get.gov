@@ -5,13 +5,15 @@ from .utility.time_stamped_model import TimeStampedModel
 
 class StatusChoices(models.TextChoices):
     READY = "ready", "Ready"
-    HOLD = "hold", "Hold"
+    ON_HOLD = "on hold", "On Hold"
 
 
 class TransitionDomain(TimeStampedModel):
     """Transition Domain model stores information about the
     state of a domain upon transition between registry
     providers"""
+
+    StatusChoices = StatusChoices
 
     username = models.TextField(
         null=False,
