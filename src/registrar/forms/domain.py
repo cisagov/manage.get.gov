@@ -20,7 +20,8 @@ class DomainNameserverForm(forms.Form):
 
     """Form for changing nameservers."""
 
-    server = forms.CharField(label="Name server")
+    server = forms.CharField(label="Name server", strip=True)
+    # when adding IPs to this form ensure they are stripped as well
 
 
 NameserverFormset = formset_factory(
@@ -64,7 +65,7 @@ class DomainSecurityEmailForm(forms.Form):
 
     """Form for adding or editing a security email to a domain."""
 
-    security_email = forms.EmailField(label="Security email")
+    security_email = forms.EmailField(label="Security email", required=False)
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):

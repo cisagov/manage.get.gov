@@ -21,6 +21,7 @@ from registrar.models import (
     User,
     UserDomainRole,
 )
+from registrar.models.public_contact import PublicContact
 
 from ..forms import (
     ContactForm,
@@ -41,6 +42,19 @@ class DomainView(DomainPermissionView):
     """Domain detail overview page."""
 
     template_name = "domain_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        default_email = Domain().get_default_security_contact().email
+        context["default_security_email"] = default_email
+
+        security_email = self.get_object().get_security_email()
+        if security_email is None or security_email == default_email:
+            context["security_email"] = None
+            return context
+        context["security_email"] = security_email
+        return context
 
 
 class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
@@ -287,10 +301,21 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         """The form is valid, call setter in model."""
 
         # Set the security email from the form
-        new_email = form.cleaned_data.get("security_email", "")
+        new_email: str = form.cleaned_data.get("security_email", "")
+
+        # If we pass nothing for the sec email, set to the default
+        if new_email is None or new_email.strip() == "":
+            new_email = PublicContact.get_default_security().email
 
         domain = self.object
         contact = domain.security_contact
+
+        # If no default is created for security_contact,
+        # then we cannot connect to the registry.
+        if contact is None:
+            messages.error(self.request, "Update failed. Cannot contact the registry.")
+            return redirect(self.get_success_url())
+
         contact.email = new_email
         contact.save()
 
