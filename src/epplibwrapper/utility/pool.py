@@ -1,4 +1,3 @@
-from collections import deque
 import logging
 import gevent
 from geventconnpool import ConnectionPool

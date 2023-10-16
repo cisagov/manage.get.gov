@@ -8,15 +8,19 @@ from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignor
 
 from django.db import models
 from typing import Any
-from epplibwrapper import (
-    CLIENT as registry,
-    commands,
-    common as epp,
-    extensions,
-    info as eppInfo,
-    RegistryError,
-    ErrorCode,
-)
+try:
+    from epplibwrapper import (
+        CLIENT as registry,
+        commands,
+        common as epp,
+        extensions,
+        info as eppInfo,
+        RegistryError,
+        ErrorCode,
+    )
+except ImportError:
+    pass
+
 
 from registrar.utility.errors import (
     ActionNotAllowed,
