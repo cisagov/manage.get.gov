@@ -9,17 +9,6 @@ from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignor
 from django.db import models
 from typing import Any
 
-from epplibwrapper import (
-    
-    CLIENT as registry,
-    commands,
-    common as epp,
-    extensions,
-    info as eppInfo,
-    RegistryError,
-    ErrorCode,
-)
-
 
 from registrar.utility.errors import (
     ActionNotAllowed,
@@ -35,8 +24,24 @@ from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
-
 logger = logging.getLogger(__name__)
+try:
+    from epplibwrapper import (
+        CLIENT as registry,
+        commands,
+        common as epp,
+        extensions,
+        info as eppInfo,
+        RegistryError,
+        ErrorCode,
+    )
+except ImportError as err:
+    logger.error("An import error occured....")
+    logger.error(err)
+    raise err
+
+
+
 
 
 class Domain(TimeStampedModel, DomainHelper):
