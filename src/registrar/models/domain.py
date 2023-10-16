@@ -1,5 +1,6 @@
 from itertools import zip_longest
 import logging
+import inspect
 from datetime import date
 from string import digits
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
@@ -50,7 +51,32 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
+        #self.print_calling_function()
+        logger.info("__init__ being called on domain")
         super(Domain, self).__init__(*args, **kwargs)
+
+    def print_calling_function(self):
+        # Get the current frame in the call stack
+        current_frame = inspect.currentframe()
+
+        i = 1
+        while True:
+            try:
+                # Get the calling frame
+                calling_frame = inspect.getouterframes(current_frame, 2)[i]
+
+                # Extract information about the calling function
+                calling_function_name = calling_frame.function
+                calling_module_name = calling_frame[0].f_globals['__name__']
+                calling_line_number = calling_frame[2]
+
+                # Print information about the calling function
+                print(f"Calling function: {calling_function_name} in module {calling_module_name} at line {calling_line_number}")
+
+                i+=1
+            except Exception as err:
+                print("========================================================")
+                break
 
     class Status(models.TextChoices):
         """
@@ -144,10 +170,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         def __get__(self, obj, objtype=None):
             """Called during get. Example: `r = domain.registrant`."""
+            logger.info("domain __get__ is called: %s", obj)
             return super().__get__(obj, objtype)
 
         def __set__(self, obj, value):
             """Called during set. Example: `domain.registrant = 'abc123'`."""
+            logger.info("domain __set__ is called: %s", obj)
             super().__set__(obj, value)
             # always invalidate cache after sending updates to the registry
             obj._invalidate_cache()
@@ -1223,6 +1251,7 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
+        logger.info("fetch_cache called")
         """Contact registry for info about a domain."""
         try:
             # get info from registry
@@ -1354,6 +1383,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
+        logger.debug("_invalidate_cache called")
         self._cache = {}
 
     def _get_property(self, property):

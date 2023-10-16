@@ -54,7 +54,7 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.organization_name instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.get_object().domain_info
+        form_kwargs["instance"] = self.object.domain_info
         return form_kwargs
 
     def get_success_url(self):
@@ -97,7 +97,7 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.authorizing_official instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.get_object().domain_info.authorizing_official
+        form_kwargs["instance"] = self.object.domain_info.authorizing_official
         return form_kwargs
 
     def get_success_url(self):
@@ -137,8 +137,11 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
-        domain = self.get_object()
+        logger.info("DomainNameserversView.get_initial()")
+        domain = self.object
+        logger.info("DomainNameserversView.get_initial:: after get_object")
         nameservers = domain.nameservers
+        logger.info("DomainNameserversView.get_initial:: after set nameservers")
         initial_data = []
 
         if nameservers is not None:
@@ -196,7 +199,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
             except KeyError:
                 # no server information in this field, skip it
                 pass
-        domain = self.get_object()
+        domain = self.object
         domain.nameservers = nameservers
 
         messages.success(
@@ -257,7 +260,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
 
     def get_initial(self):
         """The initial value for the form."""
-        domain = self.get_object()
+        domain = self.object
         initial = super().get_initial()
         security_contact = domain.security_contact
         if security_contact is None or security_contact.email == "dotgov@cisa.dhs.gov":
@@ -286,7 +289,7 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         # Set the security email from the form
         new_email = form.cleaned_data.get("security_email", "")
 
-        domain = self.get_object()
+        domain = self.object
         contact = domain.security_contact
         contact.email = new_email
         contact.save()
