@@ -16,35 +16,74 @@ In practice, the lack of a connection pool has resulted in performance issues wh
 
 ## Considered Options
 
-**Option 1:** Use the existing connection pool library `geventconnpool` as a foundation for connection pooling.
+**Option 1:** Use the existing connection pool library `geventconnpool`.
+<details open>
+<summary>➕ Pros</summary>
+
+- Saves development time and effort. 
+- A tiny library that is easy to audit and understand.
+- Built to be flexible, so every built-in function can be overridden with minimal effort.
+- This library has been used for [EPP before](https://github.com/rasky/geventconnpool/issues/9).
+- Uses [`gevent`](http://www.gevent.org/) for coroutines, which is reliable and well maintained.
+- [`gevent`](http://www.gevent.org/) is used in our WSGI web server.  
+- This library is the closest match to our needs that we have found.
+
+</details>
+<details open>
+<summary>➖ Cons</summary>
+
+- Not a well maintained library, could require a fork if a dependency breaks.
+- Heavily reliant on `gevent`.
+
+</details>
 
 **Option 2:** Write our own connection pool logic.
+<details open>
+<summary>➕ Pros</summary>
 
-**Option 3:** Modify an existing library which we will tailor to our needs.
+- Full control over functionality, can be tailored to our specific needs.
+- Highly specific to our stack, could be fine tuned for performance.
 
-## Tradeoffs
+</details>
+<details open>
+<summary>➖ Cons</summary>
 
-**Option 1:**
-Pros: 
-- Subtantially saves development time and effort. 
-- It is a tiny library that is easy to audit and understand.
-- This library has been used for [EPP before](https://github.com/rasky/geventconnpool/issues/9)
-- Uses [`gevent`](http://www.gevent.org/) for coroutines, which is reliable and well maintained.
--  
-- Cons: May not be tailored to our specific needs, could introduce unwanted dependencies.
+- Requires significant development time and effort, needs thorough testing.
+- Would require managing with and developing around concurrency.
+- Introduces the potential for many unseen bugs.
 
-**Option 2:**
-- Pros: Full control over functionality, can be tailored to our specific needs.
-- Cons: Requires significant development time and effort, needs thorough testing.
+</details>
 
-**Option 3:**
-- Pros: Savings in development time and effort, can be tailored to our specific needs.
-- Cons: Could introduce complexity, potential issues with maintaining the modified library.
+**Option 3:** Modify an existing library which we will then tailor to our needs.
+<details open>
+<summary>➕ Pros</summary>
+
+- Savings in development time and effort, can be tailored to our specific needs.
+- Good middleground between the first two options.
+
+</details>
+<details open>
+<summary>➖ Cons</summary>
+
+- Could introduce complexity, potential issues with maintaining the modified library.
+- May not be necessary if the given library is flexible enough. 
+
+</details>
 
 ## Decision
 
-We have decided to go with option 1. New users of the registrar will need to have at least one approved application OR prior registered .gov domain in order to submit another application. We chose this option because we would like to allow users be able to work on applications, even if they are unable to submit them. 
+We have decided to go with option 1, which is to use the `geventconnpool` library. It closely matches our needs and offers several advantages. Of note, it significantly saves on development time and it is inherently flexible. This allows us to easily change functionality with minimal effort. In addition, the gevent library (which this uses) offers performance benefits due to it being a) written in [cython](https://cython.org/), b) very well maintained and purpose built for tasks such as these, and c) used in our WGSI server. 
 
-A [user flow diagram](https://miro.com/app/board/uXjVM3jz3Bs=/?share_link_id=875307531981) demonstrates our decision.
+In summary, this decision was driven by the library's flexibility, simplicity, and compatibility with our tech stack. We acknowledge the risk associated with its maintenance status, but believe that the benefit outweighs the risk. 
 
 ## Consequences
+
+While its small size makes it easy to work around, `geventconnpool` is not actively maintained. Its last update was in 2021, and as such there is a risk that its dependencies (gevent) will outpace this library and cause it to break. If such an event occurs, it would require that we fork the library and fix those issues. See option 3 pros/cons.
+
+## Mitigation Plan
+To manage this risk, we'll:
+
+1. Monitor the gevent library for updates.
+2. Design the connection pool logic abstractly such that we can easily swap the underlying logic out without needing (or minimizing the need) to rewrite code in `epplibwrapper`.
+3. Document a process for forking and maintaining the library if it becomes necessary, including testing procedures.
+4. Establish a contingency plan for reverting to a previous system state or switching to a different library if significant issues arise with `gevent` or `geventconnpool`.
