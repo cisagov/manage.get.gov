@@ -22,6 +22,7 @@ class EPPConnectionPool(ConnectionPool):
         options (dict): Options for the ConnectionPool
         base class
     """
+
     def __init__(self, client, login, options: dict):
         # For storing shared credentials
         self._client = client
@@ -51,11 +52,11 @@ class EPPConnectionPool(ConnectionPool):
         """Creates and returns a socket instance"""
         socket = Socket(client, login)
         return socket
-    
+
     def get_connections(self):
         """Returns the connection queue"""
         return self.conn
-    
+
     def kill_all_connections(self):
         """Kills all active connections in the pool."""
         try:
@@ -66,11 +67,9 @@ class EPPConnectionPool(ConnectionPool):
                 self.lock.release()
         # TODO - connection pool err
         except Exception as err:
-            logger.error(
-                "Could not kill all connections."
-            )
+            logger.error("Could not kill all connections.")
             raise err
-    
+
     def repopulate_all_connections(self):
         """Regenerates the connection pool.
         If any connections exist, kill them first.
@@ -80,6 +79,4 @@ class EPPConnectionPool(ConnectionPool):
         for i in range(self.size):
             self.lock.acquire()
         for i in range(self.size):
-            gevent.spawn_later(self.SPAWN_FREQUENCY*i, self._addOne)
-
-
+            gevent.spawn_later(self.SPAWN_FREQUENCY * i, self._addOne)

@@ -36,6 +36,7 @@ except Exception:
         exc_info=True,
     )
 
+
 class EPPLibWrapper:
     """
     A wrapper over epplib's client.
@@ -69,9 +70,7 @@ class EPPLibWrapper:
             # Pool size
             "size": settings.EPP_CONNECTION_POOL_SIZE,
             # Which errors the pool should look out for
-            "exc_classes": (
-                TransportError,
-            ),
+            "exc_classes": (TransportError,),
             # Occasionally pings the registry to keep the connection alive.
             # Value in seconds => (keepalive / size)
             "keepalive": settings.POOL_KEEP_ALIVE,
@@ -133,7 +132,7 @@ class EPPLibWrapper:
         # try to prevent use of this method without appropriate safeguards
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
-        
+
         # Reopen the pool if its closed
         if not self.pool_status.pool_running:
             # We want to reopen the connection pool,
@@ -160,12 +159,12 @@ class EPPLibWrapper:
                 else:  # don't try again
                     raise err
 
-    def start_connection_pool(self, restart_pool_if_exists = True):
-        """Starts a connection pool for the registry. 
+    def start_connection_pool(self, restart_pool_if_exists=True):
+        """Starts a connection pool for the registry.
 
-        restart_pool_if_exists -> bool: 
+        restart_pool_if_exists -> bool:
         If an instance of the pool already exists,
-        then then that instance will be killed first. 
+        then then that instance will be killed first.
         It is generally recommended to keep this enabled."""
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
@@ -179,13 +178,13 @@ class EPPLibWrapper:
             return
         else:
             self.pool_status.connection_success = True
-        
+
         # If this function is reinvoked, then ensure
         # that we don't have duplicate data sitting around.
         if self._pool is not None and restart_pool_if_exists:
             logger.info("Connection pool restarting...")
             self.kill_pool()
-        
+
         self._pool = EPPConnectionPool(
             client=self._client, login=self._login, options=self.pool_options
         )
@@ -193,7 +192,7 @@ class EPPLibWrapper:
         self.pool_status.pool_hanging = False
 
         logger.info("Connection pool started")
-    
+
     def kill_pool(self):
         """Kills the existing pool. Use this instead
         of self._pool = None, as that doesn't clear
@@ -203,9 +202,7 @@ class EPPLibWrapper:
             self._pool = None
             self.pool_status.pool_running = False
             return
-        logger.info(
-            "kill_pool() was invoked but there was no pool to delete"
-        )
+        logger.info("kill_pool() was invoked but there was no pool to delete")
 
     def _test_registry_connection_success(self):
         """Check that determines if our login
