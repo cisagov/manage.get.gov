@@ -3,6 +3,8 @@
 import logging
 from time import sleep
 
+from gevent import Timeout
+
 from epplibwrapper.utility.pool_status import PoolStatus
 
 try:
@@ -84,14 +86,22 @@ class EPPLibWrapper:
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
+        # Start a timeout to check if the pool is hanging
+        timeout = Timeout(settings.POOL_TIMEOUT)
+        timeout.start()
         try:
             if not self.pool_status.connection_success:
                 raise LoginError(
                     "Couldn't connect to the registry after three attempts"
                 )
-            # TODO - add a timeout
             with self._pool.get() as connection:
                 response = connection.send(command)
+        except Timeout as t:
+            if t is timeout:
+                # Flag that the pool is frozen,
+                # then restart the pool.
+                self.pool_status.pool_hanging = True
+                self.start_connection_pool()
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
             logger.warning(message, exc_info=True)
@@ -115,6 +125,8 @@ class EPPLibWrapper:
                 raise RegistryError(response.msg, code=response.code)
             else:
                 return response
+        finally:
+            timeout.close()
 
     def send(self, command, *, cleaned=False):
         """Login, send the command, then close the connection. Tries 3 times."""
@@ -155,7 +167,6 @@ class EPPLibWrapper:
         If an instance of the pool already exists,
         then then that instance will be killed first. 
         It is generally recommended to keep this enabled."""
-        
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
         if settings.DEBUG or self._test_registry_connection_success():
@@ -179,6 +190,7 @@ class EPPLibWrapper:
             client=self._client, login=self._login, options=self.pool_options
         )
         self.pool_status.pool_running = True
+        self.pool_status.pool_hanging = False
 
         logger.info("Connection pool started")
     
