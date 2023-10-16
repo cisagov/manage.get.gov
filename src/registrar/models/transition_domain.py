@@ -13,6 +13,8 @@ class TransitionDomain(TimeStampedModel):
     state of a domain upon transition between registry
     providers"""
 
+    # This is necessary to expose the enum to external
+    # classes that import TransitionDomain
     StatusChoices = StatusChoices
 
     username = models.TextField(

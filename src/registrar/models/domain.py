@@ -1191,20 +1191,29 @@ class Domain(TimeStampedModel, DomainHelper):
     @transition(
         field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD
     )
-    def place_client_hold(self):
-        """place a clienthold on a domain (no longer should resolve)"""
+    def place_client_hold(self, ignoreEPP=False):
+        """place a clienthold on a domain (no longer should resolve)
+        ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
+        """
         # TODO - ensure all requirements for client hold are made here
         # (check prohibited statuses)
         logger.info("clientHold()-> inside clientHold")
-        self._place_client_hold()
+
+        # In order to allow transition domains to by-pass EPP calls,
+        # include this ignoreEPP flag
+        if not ignoreEPP:
+            self._place_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
-    def revert_client_hold(self):
-        """undo a clienthold placed on a domain"""
+    def revert_client_hold(self, ignoreEPP=False):
+        """undo a clienthold placed on a domain
+        ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
+        """
 
         logger.info("clientHold()-> inside clientHold")
-        self._remove_client_hold()
+        if not ignoreEPP:
+            self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
     @transition(
