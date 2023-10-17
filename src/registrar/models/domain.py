@@ -1450,8 +1450,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _fetch_hosts(self, host_data):
         """Fetch host info."""
+        logger.info("calling _fetch_hosts on %s hosts", len(host_data))
         hosts = []
         for name in host_data:
+            logger.info("calling InfoHost on %s", name)
             req = commands.InfoHost(name=name)
             data = registry.send(req, cleaned=True).res_data[0]
             host = {
@@ -1463,6 +1465,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 "up_date": getattr(data, "up_date", ...),
             }
             hosts.append({k: v for k, v in host.items() if v is not ...})
+        logger.info("successfully called InfoHost on host_data, and have %s hosts to set to cache", len(hosts))
         return hosts
 
     def _convert_ips(self, ip_list: list[str]):
@@ -1593,6 +1596,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         logger.info("fetch_cache called")
+        logger.info("fetch_hosts = %s", fetch_hosts)
+        logger.info("fetch_contacts = %s", fetch_contacts)
         """Contact registry for info about a domain."""
         try:
             # get info from registry
@@ -1629,6 +1634,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     cleaned["dnssecdata"] = extension
             # Capture and store old hosts and contacts from cache if they exist
             old_cache_hosts = self._cache.get("hosts")
+            logger.info("old_cache_hosts is %s", old_cache_hosts)
             old_cache_contacts = self._cache.get("contacts")
 
             # get contact info, if there are any
@@ -1643,22 +1649,30 @@ class Domain(TimeStampedModel, DomainHelper):
                 # hosts that existed in cache (if they existed)
                 # and pass them along.
                 if old_cache_hosts is not None:
+                    logger.debug("resetting cleaned['hosts'] to old_cache_hosts")
                     cleaned["hosts"] = old_cache_hosts
 
             # get nameserver info, if there are any
             if (
                 fetch_hosts
-                and "_hosts" in cleaned
-                and isinstance(cleaned["_hosts"], list)
-                and len(cleaned["_hosts"])
             ):
-                cleaned["hosts"] = self._fetch_hosts(cleaned["_hosts"])
+                if (
+                    "_hosts" in cleaned
+                    and isinstance(cleaned["_hosts"], list)
+                    and len(cleaned["_hosts"])
+                ):
+                    cleaned["hosts"] = self._fetch_hosts(cleaned["_hosts"])
+                else:
+                    cleaned["hosts"] = []
                 # We're only getting hosts, so retain the old
                 # contacts that existed in cache (if they existed)
                 # and pass them along.
+                logger.info("set cleaned['hosts'] to %s", cleaned["hosts"])
                 if old_cache_contacts is not None:
+                    logger.info("resetting cleaned['contacts'] to old_cache_contacts")
                     cleaned["contacts"] = old_cache_contacts
             # replace the prior cache with new data
+            logger.info("replacing the prior cache with new data")
             self._cache = cleaned
 
         except RegistryError as e:
@@ -1729,6 +1743,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
+        logger.info("__get_property(%s)", property)
         if property not in self._cache:
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
