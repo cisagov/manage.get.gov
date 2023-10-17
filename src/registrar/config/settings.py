@@ -169,6 +169,11 @@ WSGI_APPLICATION = "registrar.config.wsgi.application"
 #         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
 #     }
 # }
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
 
 # Absolute path to the directory where `collectstatic`
 # will place static files for deployment.
@@ -651,6 +656,9 @@ SESSION_COOKIE_SAMESITE = "Lax"
 
 # instruct browser to only send cookie via HTTPS
 SESSION_COOKIE_SECURE = True
+
+# session engine to cache session information
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load

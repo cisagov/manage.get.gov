@@ -61,7 +61,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
-        #self.print_calling_function()
+        self.print_calling_function()
         logger.info("__init__ being called on domain")
         super(Domain, self).__init__(*args, **kwargs)
 
@@ -180,7 +180,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         def __get__(self, obj, objtype=None):
             """Called during get. Example: `r = domain.registrant`."""
-            logger.info("domain __get__ is called: %s", obj)
+            logger.info("domain __get__ is called: %s: %s", obj, objtype)
             return super().__get__(obj, objtype)
 
         def __set__(self, obj, value):

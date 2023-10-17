@@ -36,8 +36,76 @@ from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
 
 logger = logging.getLogger(__name__)
 
+class DomainBaseView(DomainPermissionView):
 
-class DomainView(DomainPermissionView):
+    def get(self, request, *args, **kwargs):
+        logger.info("DomainBaseView::get")
+        self._get_domain(request)
+        # pk = self.kwargs.get('pk')
+        # cached_domain = request.session.get(pk)
+        
+        # if cached_domain:
+        #     logger.info("reading object from session cache")
+        #     self.object = cached_domain
+        # else:
+        #     logger.info("reading object from db")
+        #     self.object = self.get_object()
+        #     logger.info("writing object to session cache")
+        #     request.session[pk] = self.object
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
+    def _get_domain(self, request):
+        # get domain from session cache or from db
+        # and set to self.object
+        # set session to self for downstream functions to 
+        # update session cache
+        self.session = request.session
+        pk = self.kwargs.get('pk')
+        cached_domain = self.session.get(pk)
+
+        if cached_domain:
+            logger.info("reading object from session cache")
+            self.object = cached_domain
+        else:
+            logger.info("reading object from db")
+            self.object = self.get_object()
+        self._update_session_with_domain()
+
+    def _update_session_with_domain(self):
+        pk = self.kwargs.get('pk')
+        logger.info("writing object to session cache")
+        self.session[pk] = self.object               
+
+
+class DomainFormBaseView(DomainBaseView, FormMixin):
+    
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view.
+
+        This post method harmonizes using DetailView and FormMixin together.
+        """
+        self._get_domain(request)
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+        
+    def form_valid(self, form):
+        self._update_session_with_domain()
+
+        # superclass has the redirect
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        self._update_session_with_domain()
+
+        # superclass has the redirect
+        return super().form_invalid(form)
+        
+
+class DomainView(DomainBaseView):
 
     """Domain detail overview page."""
 
@@ -46,10 +114,10 @@ class DomainView(DomainPermissionView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        default_email = Domain().get_default_security_contact().email
+        default_email = self.object.get_default_security_contact().email
         context["default_security_email"] = default_email
 
-        security_email = self.get_object().get_security_email()
+        security_email = self.object.get_security_email()
         if security_email is None or security_email == default_email:
             context["security_email"] = None
             return context
@@ -57,7 +125,7 @@ class DomainView(DomainPermissionView):
         return context
 
 
-class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
+class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization name and mailing address view"""
 
     model = Domain
@@ -75,18 +143,6 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         """Redirect to the overview page for the domain."""
         return reverse("domain-org-name-address", kwargs={"pk": self.object.pk})
 
-    def post(self, request, *args, **kwargs):
-        """Form submission posts to this view.
-
-        This post method harmonizes using DetailView and FormMixin together.
-        """
-        self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
         form.save()
@@ -99,7 +155,7 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
         return super().form_valid(form)
 
 
-class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
+class DomainAuthorizingOfficialView(DomainFormBaseView):
 
     """Domain authorizing official editing view."""
 
@@ -118,18 +174,6 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
         """Redirect to the overview page for the domain."""
         return reverse("domain-authorizing-official", kwargs={"pk": self.object.pk})
 
-    def post(self, request, *args, **kwargs):
-        """Form submission posts to this view.
-
-        This post method harmonizes using DetailView and FormMixin together.
-        """
-        self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
     def form_valid(self, form):
         """The form is valid, save the authorizing official."""
         form.save()
@@ -142,7 +186,7 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
         return super().form_valid(form)
 
 
-class DomainNameserversView(DomainPermissionView, FormMixin):
+class DomainNameserversView(DomainFormBaseView):
 
     """Domain nameserver editing view."""
 
@@ -191,16 +235,6 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
                 form.fields["server"].required = False
         return formset
 
-    def post(self, request, *args, **kwargs):
-        """Formset submission posts to this view."""
-        self.object = self.get_object()
-        formset = self.get_form()
-
-        if formset.is_valid():
-            return self.form_valid(formset)
-        else:
-            return self.form_invalid(formset)
-
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
@@ -224,7 +258,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         return super().form_valid(formset)
 
 
-class DomainYourContactInformationView(DomainPermissionView, FormMixin):
+class DomainYourContactInformationView(DomainFormBaseView):
 
     """Domain your contact information editing view."""
 
@@ -241,16 +275,6 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
         """Redirect to the your contact information for the domain."""
         return reverse("domain-your-contact-information", kwargs={"pk": self.object.pk})
 
-    def post(self, request, *args, **kwargs):
-        """Form submission posts to this view."""
-        self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid():
-            # there is a valid email address in the form
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
     def form_valid(self, form):
         """The form is valid, call setter in model."""
 
@@ -265,7 +289,7 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
         return super().form_valid(form)
 
 
-class DomainSecurityEmailView(DomainPermissionView, FormMixin):
+class DomainSecurityEmailView(DomainFormBaseView):
 
     """Domain security email editing view."""
 
@@ -286,16 +310,6 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
     def get_success_url(self):
         """Redirect to the security email page for the domain."""
         return reverse("domain-security-email", kwargs={"pk": self.object.pk})
-
-    def post(self, request, *args, **kwargs):
-        """Form submission posts to this view."""
-        self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid():
-            # there is a valid email address in the form
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
 
     def form_valid(self, form):
         """The form is valid, call setter in model."""
@@ -327,14 +341,14 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         return redirect(self.get_success_url())
 
 
-class DomainUsersView(DomainPermissionView):
+class DomainUsersView(DomainBaseView):
 
     """User management page in the domain details."""
 
     template_name = "domain_users.html"
 
 
-class DomainAddUserView(DomainPermissionView, FormMixin):
+class DomainAddUserView(DomainFormBaseView):
 
     """Inside of a domain's user management, a form for adding users.
 
@@ -347,15 +361,6 @@ class DomainAddUserView(DomainPermissionView, FormMixin):
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid():
-            # there is a valid email address in the form
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
 
     def _domain_abs_url(self):
         """Get an absolute URL for this domain."""
