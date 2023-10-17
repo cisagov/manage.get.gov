@@ -51,7 +51,6 @@ logger = logging.getLogger(__name__)
 
 
 class DomainView(DomainPermissionView):
-
     """Domain detail overview page."""
 
     template_name = "domain_detail.html"
@@ -113,7 +112,6 @@ class DomainOrgNameAddressView(DomainPermissionView, FormMixin):
 
 
 class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
-
     """Domain authorizing official editing view."""
 
     model = Domain
@@ -156,14 +154,12 @@ class DomainAuthorizingOfficialView(DomainPermissionView, FormMixin):
 
 
 class DomainDNSView(DomainPermissionView):
-
     """DNS Information View."""
 
     template_name = "domain_dns.html"
 
 
 class DomainNameserversView(DomainPermissionView, FormMixin):
-
     """Domain nameserver editing view."""
 
     template_name = "domain_nameservers.html"
@@ -242,15 +238,15 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 
 
 class DomainDNSSECView(DomainPermissionView, FormMixin):
-
     """Domain DNSSEC editing view."""
 
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
         """The initial value for the form (which is a formset here)."""
+        context = super().get_context_data(**kwargs)
+
         self.domain = self.get_object()
 
         has_dnssec_records = self.domain.dnssecdata is not None
@@ -294,8 +290,7 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
         return self.form_valid(form)
 
 
-class DomainDsdataView(DomainPermissionView, FormMixin):
-
+class DomainDsDataView(DomainPermissionView, FormMixin):
     """Domain DNSSEC ds data editing view."""
 
     template_name = "domain_dsdata.html"
@@ -395,7 +390,9 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
                     dnssecdata.dsData = []
                 dnssecdata.dsData.append(common.DSData(**dsrecord))
             except KeyError:
-                # no server information in this field, skip it
+                # no cleaned_data provided for this form, but passed
+                # as valid; this can happen if form has been added but
+                # not been interacted with; in that case, want to ignore
                 pass
         domain = self.get_object()
         try:
@@ -414,8 +411,7 @@ class DomainDsdataView(DomainPermissionView, FormMixin):
             return super().form_valid(formset)
 
 
-class DomainKeydataView(DomainPermissionView, FormMixin):
-
+class DomainKeyDataView(DomainPermissionView, FormMixin):
     """Domain DNSSEC key data editing view."""
 
     template_name = "domain_keydata.html"
@@ -536,7 +532,6 @@ class DomainKeydataView(DomainPermissionView, FormMixin):
 
 
 class DomainYourContactInformationView(DomainPermissionView, FormMixin):
-
     """Domain your contact information editing view."""
 
     template_name = "domain_your_contact_information.html"
@@ -577,7 +572,6 @@ class DomainYourContactInformationView(DomainPermissionView, FormMixin):
 
 
 class DomainSecurityEmailView(DomainPermissionView, FormMixin):
-
     """Domain security email editing view."""
 
     template_name = "domain_security_email.html"
@@ -639,14 +633,12 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
 
 
 class DomainUsersView(DomainPermissionView):
-
     """User management page in the domain details."""
 
     template_name = "domain_users.html"
 
 
 class DomainAddUserView(DomainPermissionView, FormMixin):
-
     """Inside of a domain's user management, a form for adding users.
 
     Multiple inheritance is used here for permissions, form handling, and

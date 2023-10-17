@@ -97,12 +97,12 @@ urlpatterns = [
     ),
     path(
         "domain/<int:pk>/dns/dnssec/dsdata",
-        views.DomainDsdataView.as_view(),
+        views.DomainDsDataView.as_view(),
         name="domain-dns-dnssec-dsdata",
     ),
     path(
         "domain/<int:pk>/dns/dnssec/keydata",
-        views.DomainKeydataView.as_view(),
+        views.DomainKeyDataView.as_view(),
         name="domain-dns-dnssec-keydata",
     ),
     path(

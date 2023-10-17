@@ -16,14 +16,12 @@ from .common import (
 
 
 class DomainAddUserForm(forms.Form):
-
     """Form for adding a user to a domain."""
 
     email = forms.EmailField(label="Email")
 
 
 class DomainNameserverForm(forms.Form):
-
     """Form for changing nameservers."""
 
     server = forms.CharField(label="Name server", strip=True)
@@ -37,7 +35,6 @@ NameserverFormset = formset_factory(
 
 
 class ContactForm(forms.ModelForm):
-
     """Form for updating contacts."""
 
     class Meta:
@@ -68,14 +65,12 @@ class ContactForm(forms.ModelForm):
 
 
 class DomainSecurityEmailForm(forms.Form):
-
     """Form for adding or editing a security email to a domain."""
 
     security_email = forms.EmailField(label="Security email", required=False)
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):
-
     """Form for updating the organization name and mailing address."""
 
     zipcode = forms.CharField(
@@ -149,12 +144,10 @@ class DomainOrgNameAddressForm(forms.ModelForm):
 
 
 class DomainDnssecForm(forms.Form):
-
     """Form for enabling and disabling dnssec"""
 
 
 class DomainDsdataForm(forms.Form):
-
     """Form for adding or editing DNSSEC DS Data to a domain."""
 
     key_tag = forms.IntegerField(
@@ -198,7 +191,6 @@ DomainDsdataFormset = formset_factory(
 
 
 class DomainKeydataForm(forms.Form):
-
     """Form for adding or editing DNSSEC Key Data to a domain."""
 
     flag = forms.TypedChoiceField(

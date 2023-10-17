@@ -315,9 +315,17 @@ function prepareDeleteButtons() {
   // Attach click event listener on the delete buttons of the existing forms
   prepareDeleteButtons();
 
+  // Attack click event listener on the add button
   if (addButton)
     addButton.addEventListener('click', addForm);
 
+  /*
+   * Add a formset to the end of the form.
+   * For each element in the added formset, name the elements with the prefix,
+   * form-{#}-{element_name} where # is the index of the formset and element_name
+   * is the element's name.
+   * Additionally, update the form element's metadata, including totalForms' value.
+   */
   function addForm(e){
       let forms = document.querySelectorAll(".ds-record");
       let formNum = forms.length;

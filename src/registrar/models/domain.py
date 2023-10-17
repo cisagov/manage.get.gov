@@ -458,11 +458,21 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @Cache
     def dnssecdata(self) -> Optional[extensions.DNSSECExtension]:
+        """
+        Get a complete list of dnssecdata extensions for this domain.
+
+        dnssecdata are provided as a list of DNSSECExtension objects.
+
+        A DNSSECExtension object includes:
+            maxSigLife: Optional[int]
+            dsData: Optional[Sequence[DSData]]
+            keyData: Optional[Sequence[DNSSECKeyData]]
+
+        """
         try:
             return self._get_property("dnssecdata")
         except Exception as err:
             # Don't throw error as this is normal for a new domain
-            # TODO - 433 error handling ticket should address this
             logger.info("Domain does not have dnssec data defined %s" % err)
             return None
 
