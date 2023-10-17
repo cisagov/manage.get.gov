@@ -61,7 +61,13 @@ class Socket:
                     return False
             else:
                 self.disconnect()
-                return not self.is_login_error(response.code)
+                
+                # If we encounter a login error, fail
+                if self.is_login_error(response.code):
+                    return False
+                
+                # otherwise, just return true
+                return True
 
     def disconnect(self):
         """Close the connection."""
