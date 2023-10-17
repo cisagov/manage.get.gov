@@ -1,23 +1,27 @@
 """Forms for domain management."""
 
 from django import forms
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.forms import formset_factory
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 
 from ..models import Contact, DomainInformation
+from .common import (
+    ALGORITHM_CHOICES,
+    DIGEST_TYPE_CHOICES,
+    FLAG_CHOICES,
+    PROTOCOL_CHOICES,
+)
 
 
 class DomainAddUserForm(forms.Form):
-
     """Form for adding a user to a domain."""
 
     email = forms.EmailField(label="Email")
 
 
 class DomainNameserverForm(forms.Form):
-
     """Form for changing nameservers."""
 
     server = forms.CharField(label="Name server", strip=True)
@@ -31,7 +35,6 @@ NameserverFormset = formset_factory(
 
 
 class ContactForm(forms.ModelForm):
-
     """Form for updating contacts."""
 
     class Meta:
@@ -62,14 +65,12 @@ class ContactForm(forms.ModelForm):
 
 
 class DomainSecurityEmailForm(forms.Form):
-
     """Form for adding or editing a security email to a domain."""
 
     security_email = forms.EmailField(label="Security email", required=False)
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):
-
     """Form for updating the organization name and mailing address."""
 
     zipcode = forms.CharField(
@@ -140,3 +141,91 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             self.fields[field_name].required = True
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
+
+
+class DomainDnssecForm(forms.Form):
+    """Form for enabling and disabling dnssec"""
+
+
+class DomainDsdataForm(forms.Form):
+    """Form for adding or editing DNSSEC DS Data to a domain."""
+
+    key_tag = forms.IntegerField(
+        required=True,
+        label="Key tag",
+        validators=[
+            MinValueValidator(0, message="Value must be between 0 and 65535"),
+            MaxValueValidator(65535, message="Value must be between 0 and 65535"),
+        ],
+        error_messages={"required": ("Key tag is required.")},
+    )
+
+    algorithm = forms.TypedChoiceField(
+        required=True,
+        label="Algorithm",
+        coerce=int,  # need to coerce into int so dsData objects can be compared
+        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
+        error_messages={"required": ("Algorithm is required.")},
+    )
+
+    digest_type = forms.TypedChoiceField(
+        required=True,
+        label="Digest type",
+        coerce=int,  # need to coerce into int so dsData objects can be compared
+        choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
+        error_messages={"required": ("Digest Type is required.")},
+    )
+
+    digest = forms.CharField(
+        required=True,
+        label="Digest",
+        error_messages={"required": ("Digest is required.")},
+    )
+
+
+DomainDsdataFormset = formset_factory(
+    DomainDsdataForm,
+    extra=0,
+    can_delete=True,
+)
+
+
+class DomainKeydataForm(forms.Form):
+    """Form for adding or editing DNSSEC Key Data to a domain."""
+
+    flag = forms.TypedChoiceField(
+        required=True,
+        label="Flag",
+        coerce=int,
+        choices=FLAG_CHOICES,
+        error_messages={"required": ("Flag is required.")},
+    )
+
+    protocol = forms.TypedChoiceField(
+        required=True,
+        label="Protocol",
+        coerce=int,
+        choices=PROTOCOL_CHOICES,
+        error_messages={"required": ("Protocol is required.")},
+    )
+
+    algorithm = forms.TypedChoiceField(
+        required=True,
+        label="Algorithm",
+        coerce=int,
+        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
+        error_messages={"required": ("Algorithm is required.")},
+    )
+
+    pub_key = forms.CharField(
+        required=True,
+        label="Pub key",
+        error_messages={"required": ("Pub key is required.")},
+    )
+
+
+DomainKeydataFormset = formset_factory(
+    DomainKeydataForm,
+    extra=0,
+    can_delete=True,
+)
