@@ -3,9 +3,11 @@ from unittest.mock import MagicMock, patch
 from django.conf import settings
 
 from django.test import TestCase
+from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.utility.pool import EPPConnectionPool
 from registrar.models.domain import Domain
 from registrar.models.domain import registry
+from contextlib import ExitStack
 
 import logging
 
@@ -120,16 +122,23 @@ class TestConnectionPool(TestCase):
         # Fake data for the _pool object
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
 
+        def start_fake_connection(self):
+            registry.pool_status.pool_running = True
+            registry.pool_status.connection_success = True
+            registry._pool = registry.get_pool()
+        
         # The connection pool will fail to start, start it manually
         # so that our mocks can take over
-        registry.start_connection_pool(try_start_if_invalid=True)
-
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(EPPLibWrapper, "get_pool", self.fake_pool))
+            stack.enter_context(patch.object(EPPLibWrapper, "start_connection_pool", start_fake_connection))
+            expected_contact = domain.security_contact
+        
         # Pretend that we've connected
         registry.pool_status.pool_running = True
         registry.pool_status.connection_success = True
 
         # Trigger the getter - should succeed
-        expected_contact = domain.security_contact
         self.assertEqual(registry.pool_status.pool_running, True)
         self.assertEqual(registry.pool_status.connection_success, True)
-        self.assertEqual(len(registry._pool.conn), self.pool_options["size"])
+        self.assertEqual(len(registry.get_pool().conn), self.pool_options["size"])
