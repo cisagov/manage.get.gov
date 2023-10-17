@@ -46,6 +46,7 @@ class Socket:
         Tries 3 times"""
         # Something went wrong if this doesn't exist
         if not hasattr(self.client, "connect"):
+            logger.warning("self.client does not have a connect method")
             return False
 
         counter = 0  # we'll try 3 times
@@ -58,12 +59,15 @@ class Socket:
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
+                    logger.warning("LoginError raised and should not retry or has been retried 3 times already")
+                    logger.warning(f"should retry? {err.should_retry()}")
                     return False
             else:
                 self.disconnect()
-                
+
                 # If we encounter a login error, fail
                 if self.is_login_error(response.code):
+                    logger.warning("was login error")
                     return False
                 
                 # otherwise, just return true

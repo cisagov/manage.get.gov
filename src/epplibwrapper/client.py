@@ -189,7 +189,7 @@ class EPPLibWrapper:
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
         if (
-            not try_start_if_invalid
+            try_start_if_invalid
             and (settings.DEBUG
             or not self._test_registry_connection_success())
         ):

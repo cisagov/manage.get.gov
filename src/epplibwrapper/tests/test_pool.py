@@ -137,18 +137,13 @@ class TestConnectionPool(TestCase):
         with ExitStack() as stack:
             stack.enter_context(patch.object(Socket, "connect", None))
             stack.enter_context(patch.object(Socket, "send", fake_send))
-            stack.enter_context(patch.object(Socket, "_create_socket", Socket()))
+            stack.enter_context(patch.object(EPPLibWrapper, "_create_pool", self.fake_pool))
             #stack.enter_context(patch.object(EPPLibWrapper, "get_pool", self.fake_pool))
-            pool = EPPLibWrapper(False)
-            # The connection pool will fail to start, start it manually
-            # so that our mocks can take over
-            pool.start_connection_pool(try_start_if_invalid=True)
-            print(f"this is pool {pool._pool.__dict__}")
             # Pool should be running, and be the right size
-            self.assertEqual(pool.pool_status.pool_running, True)
-            self.assertEqual(pool.pool_status.connection_success, True)
-            pool.send(commands.InfoDomain(name="test.gov"), cleaned=True)
-            self.assertEqual(len(pool._pool.conn), self.pool_options["size"])
+            self.assertEqual(registry.pool_status.pool_running, True)
+            self.assertEqual(registry.pool_status.connection_success, True)
+            registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
+            self.assertEqual(len(registry._pool.conn), self.pool_options["size"])
 
             #pool.send()
             
