@@ -4,7 +4,7 @@ from .contact import Contact
 try:
     from .domain_application import DomainApplication
 except ImportError as err:
-    print(err.with_traceback())
+    print(err)
     pass
 from .domain_information import DomainInformation
 from .domain import Domain
