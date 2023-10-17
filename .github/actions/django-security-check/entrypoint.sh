@@ -14,7 +14,7 @@ if [[ "$ENV_TYPE" == "pipenv" ]]; then
     cd $REQS
     pip3 install pipenv
     PIPENV_IGNORE_VIRTUALENVS=1 pipenv install
-    cd $MANAGE_PATH && PIPENV_IGNORE_VIRTUALENVS=1 pipenv run python3 manage.py check --deploy --fail-level ${FAIL} ${ARGS} &> output.txt
+    cd $MANAGE_PATH && PIPENV_IGNORE_VIRTUALENVS=1 pipenv run python manage.py check --deploy --fail-level ${FAIL} ${ARGS} &> output.txt
     EXIT_CODE=$?
 fi
 if [[ "$ENV_TYPE" == "venv" ]]; then
