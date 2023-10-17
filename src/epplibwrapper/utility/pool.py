@@ -1,8 +1,8 @@
 import logging
 import gevent
 from geventconnpool import ConnectionPool
-from epplibwrapper.errors import RegistryError, LoginError
 from epplibwrapper.socket import Socket
+from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
 
 try:
     from epplib.commands import Hello
@@ -33,10 +33,13 @@ class EPPConnectionPool(ConnectionPool):
         try:
             connection = socket.connect()
             return connection
-        except LoginError as err:
-            message = "_new_connection failed to execute due to a registry login error."
+        except Exception as err:
+            message = f"Failed to execute due to a registry login error: {err}"
             logger.error(message, exc_info=True)
-            raise RegistryError(message) from err
+            # We want to raise a pool error rather than a LoginError here
+            # because if this occurs internally, we should handle this
+            # differently than we otherwise would for LoginError.
+            raise PoolError(code=PoolErrorCodes.NEW_CONNECTION_FAILED) from err
 
     def _keepalive(self, c):
         """Sends a command to the server to keep the connection alive."""
@@ -44,8 +47,9 @@ class EPPConnectionPool(ConnectionPool):
             # Sends a ping to EPPLib
             c.send(Hello())
         except Exception as err:
-            logger.error("Failed to keep the connection alive.", exc_info=True)
-            raise RegistryError("Failed to keep the connection alive.") from err
+            message = "Failed to keep the connection alive."
+            logger.error(message, exc_info=True)
+            raise PoolError(code=PoolErrorCodes.KEEP_ALIVE_FAILED) from err
 
     def _create_socket(self, client, login) -> Socket:
         """Creates and returns a socket instance"""
@@ -64,7 +68,6 @@ class EPPConnectionPool(ConnectionPool):
             # Clear the semaphore
             for i in range(self.lock.counter):
                 self.lock.release()
-        # TODO - connection pool err
         except Exception as err:
             logger.error("Could not kill all connections.")
             raise err

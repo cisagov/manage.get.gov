@@ -16,32 +16,25 @@ from registrar.utility.errors import (
     NameserverErrorCodes as nsErrorCodes,
 )
 
-from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
+from epplibwrapper import (
+    CLIENT as registry,
+    commands,
+    common as epp,
+    extensions,
+    info as eppInfo,
+    RegistryError,
+    ErrorCode,
+)
 
+from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
+
 logger = logging.getLogger(__name__)
-try:
-    from epplibwrapper import (
-        CLIENT as registry,
-        commands,
-        common as epp,
-        extensions,
-        info as eppInfo,
-        RegistryError,
-        ErrorCode,
-    )
-except ImportError as err:
-    logger.error("An import error occured....")
-    logger.error(err)
-    raise err
-
-
-
 
 
 class Domain(TimeStampedModel, DomainHelper):

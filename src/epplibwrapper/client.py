@@ -44,7 +44,7 @@ class EPPLibWrapper:
     ATTN: This should not be used directly. Use `Domain` from domain.py.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, start_connection_pool=True) -> None:
         """Initialize settings which will be used for all connections."""
         # prepare (but do not send) a Login command
         self._login = commands.Login(
@@ -80,7 +80,8 @@ class EPPLibWrapper:
         # Tracks the status of the pool
         self.pool_status = PoolStatus()
 
-        self.start_connection_pool()
+        if start_connection_pool:
+            self.start_connection_pool()
 
     def _send(self, command):
         """Helper function used by `send`."""
@@ -103,21 +104,21 @@ class EPPLibWrapper:
                 self.start_connection_pool()
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
-            logger.warning(message, exc_info=True)
+            logger.error(message, exc_info=True)
             raise RegistryError(message) from err
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.warning(message, exc_info=True)
+            logger.error(message, exc_info=True)
             raise RegistryError(message) from err
         except LoginError as err:
             # For linter
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.warning(message, exc_info=True)
+            logger.error(message, exc_info=True)
             raise RegistryError(message) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.warning(message, exc_info=True)
+            logger.error(message, exc_info=True)
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
@@ -134,15 +135,15 @@ class EPPLibWrapper:
             raise ValueError("Please sanitize user input before sending it.")
 
         # Reopen the pool if its closed
+        # Only occurs when a login error is raised, after connection is successful
         if not self.pool_status.pool_running:
             # We want to reopen the connection pool,
             # but we don't want the end user to wait while it opens.
             # Raise syntax doesn't allow this, so we use a try/catch
             # block.
             try:
-                raise RegistryError(
-                    "Can't contact the Registry. Please try again later"
-                )
+                logger.error("Can't contact the Registry. Pool was not running.")
+                raise RegistryError("Can't contact the Registry. Pool was not running.")
             except RegistryError as err:
                 raise err
             finally:
@@ -159,39 +160,46 @@ class EPPLibWrapper:
                 else:  # don't try again
                     raise err
 
-    def start_connection_pool(self, restart_pool_if_exists=True):
+    def start_connection_pool(
+        self, restart_pool_if_exists=True, try_start_if_invalid=False
+    ):
         """Starts a connection pool for the registry.
 
         restart_pool_if_exists -> bool:
         If an instance of the pool already exists,
         then then that instance will be killed first.
-        It is generally recommended to keep this enabled."""
+        It is generally recommended to keep this enabled.
+
+        try_start_if_invalid -> bool:
+        Designed for use in test cases, if we can't connect
+        to the registry, ignore that and try to connect anyway
+        It is generally recommended to keep this disabled.
+        """
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
-        if settings.DEBUG or self._test_registry_connection_success():
+        if (
+            not try_start_if_invalid
+            and settings.DEBUG
+            or not self._test_registry_connection_success()
+        ):
             logger.warning("Cannot contact the Registry")
             self.pool_status.connection_success = False
-            # Q: Should err be raised instead?
-            # Q2: Since we try to connect 3 times,
-            # this indicates that the Registry isn't responsive.
-            # What should we do in this case?
-            return
         else:
             self.pool_status.connection_success = True
 
-        # If this function is reinvoked, then ensure
-        # that we don't have duplicate data sitting around.
-        if self._pool is not None and restart_pool_if_exists:
-            logger.info("Connection pool restarting...")
-            self.kill_pool()
+            # If this function is reinvoked, then ensure
+            # that we don't have duplicate data sitting around.
+            if self._pool is not None and restart_pool_if_exists:
+                logger.info("Connection pool restarting...")
+                self.kill_pool()
 
-        self._pool = EPPConnectionPool(
-            client=self._client, login=self._login, options=self.pool_options
-        )
-        self.pool_status.pool_running = True
-        self.pool_status.pool_hanging = False
+            self._pool = EPPConnectionPool(
+                client=self._client, login=self._login, options=self.pool_options
+            )
+            self.pool_status.pool_running = True
+            self.pool_status.pool_hanging = False
 
-        logger.info("Connection pool started")
+            logger.info("Connection pool started")
 
     def kill_pool(self):
         """Kills the existing pool. Use this instead
@@ -220,7 +228,7 @@ class EPPLibWrapper:
 try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
-    logger.debug("registry client initialized")
+    logger.info("registry client initialized")
 except Exception:
     CLIENT = None  # type: ignore
     logger.warning(

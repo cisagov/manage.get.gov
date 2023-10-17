@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Socket:
     """Context manager which establishes a TCP connection with registry."""
 
-    def __init__(self, client: commands.Login, login: Client) -> None:
+    def __init__(self, client: Client, login: commands.Login) -> None:
         """Save the epplib client and login details."""
         self.client = client
         self.login = login
@@ -29,7 +29,7 @@ class Socket:
         """Runs disconnect(), which closes a connection with EPPLib."""
         self.disconnect()
 
-    def connect(self, pass_response_only=False):
+    def connect(self):
         """Use epplib to connect."""
         self.client.connect()
         response = self.client.send(self.login)
