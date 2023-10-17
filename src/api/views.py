@@ -59,12 +59,12 @@ def in_domains(domain):
     given domain doesn't end with .gov, ".gov" is added when looking for
     a match.
     """
-    domain = domain.lower()
+    Domain = apps.get_model("registrar.Domain")
     if domain.endswith(".gov"):
-        return domain.lower() in _domains()
+        return Domain.available(domain)
     else:
         # domain search string doesn't end with .gov, add it on here
-        return (domain + ".gov") in _domains()
+        return Domain.available(domain + ".gov")
 
 
 @require_http_methods(["GET"])

@@ -30,6 +30,7 @@ from epplibwrapper import (
     info,
     RegistryError,
     ErrorCode,
+    responses,
 )
 
 logger = logging.getLogger(__name__)
@@ -824,7 +825,41 @@ class MockEppLib(TestCase):
                 raise RegistryError(
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
                 )
-
+        elif isinstance(_request, commands.CheckDomain):
+            if "gsa.gov" in getattr(_request, "names", None):
+                return MagicMock(
+                    res_data=[
+                        responses.check.CheckDomainResultData(
+                            name="gsa.gov", avail=True, reason=None
+                        ),
+                    ]
+                )
+            elif "GSA.gov" in getattr(_request, "names", None):
+                return MagicMock(
+                    res_data=[
+                        responses.check.CheckDomainResultData(
+                            name="GSA.gov", avail=True, reason=None
+                        ),
+                    ]
+                )
+            elif "igorvilleremixed.gov" in getattr(_request, "names", None):
+                return MagicMock(
+                    res_data=[
+                        responses.check.CheckDomainResultData(
+                            name="igorvilleremixed.gov", avail=False, reason=None
+                        ),
+                    ]
+                )
+            elif "errordomain.gov" in getattr(_request, "names", None):
+                raise RegistryError("Registry cannot find domain availability.")
+            else:
+                return MagicMock(
+                    res_data=[
+                        responses.check.CheckDomainResultData(
+                            name="domainnotfound.gov", avail=False, reason="In Use"
+                        )
+                    ],
+                )
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):
