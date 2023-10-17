@@ -236,28 +236,150 @@ function handleValidationClick(e) {
  * Only does something on a single page, but it should be fast enough to run
  * it everywhere.
  */
-(function prepareForms() {
-  let serverForm = document.querySelectorAll(".server-form")
-  let container = document.querySelector("#form-container")
-  let addButton = document.querySelector("#add-form")
-  let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+(function prepareNameserverForms() {
+  let serverForm = document.querySelectorAll(".server-form");
+  let container = document.querySelector("#form-container");
+  let addButton = document.querySelector("#add-nameserver-form");
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
 
-  let formNum = serverForm.length-1
-  addButton.addEventListener('click', addForm)
+  let formNum = serverForm.length-1;
+  if (addButton)
+    addButton.addEventListener('click', addForm);
 
   function addForm(e){
-      let newForm = serverForm[2].cloneNode(true)
-      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g')
-      let formLabelRegex = RegExp(`Name server (\\d){1}`, 'g')
-      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g')
+      let newForm = serverForm[2].cloneNode(true);
+      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
+      let formLabelRegex = RegExp(`Name server (\\d){1}`, 'g');
+      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
 
-      formNum++
-      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`)
-      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Name server ${formNum+1}`)
-      newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`)
-      container.insertBefore(newForm, addButton)
-      newForm.querySelector("input").value = ""
+      formNum++;
+      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`);
+      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Name server ${formNum+1}`);
+      newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`);
+      container.insertBefore(newForm, addButton);
+      newForm.querySelector("input").value = "";
 
-      totalForms.setAttribute('value', `${formNum+1}`)
+      totalForms.setAttribute('value', `${formNum+1}`);
   }
+})();
+
+function prepareDeleteButtons() {
+  let deleteButtons = document.querySelectorAll(".delete-record");
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+
+  // Loop through each delete button and attach the click event listener
+  deleteButtons.forEach((deleteButton) => {
+    deleteButton.addEventListener('click', removeForm);
+  });
+
+  function removeForm(e){
+    let formToRemove = e.target.closest(".ds-record");
+    formToRemove.remove();
+    let forms = document.querySelectorAll(".ds-record");
+    totalForms.setAttribute('value', `${forms.length}`);
+
+    let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
+    let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
+
+    forms.forEach((form, index) => {
+      // Iterate over child nodes of the current element
+      Array.from(form.querySelectorAll('label, input, select')).forEach((node) => {
+        // Iterate through the attributes of the current node
+        Array.from(node.attributes).forEach((attr) => {
+          // Check if the attribute value matches the regex
+          if (formNumberRegex.test(attr.value)) {
+            // Replace the attribute value with the updated value
+            attr.value = attr.value.replace(formNumberRegex, `form-${index}-`);
+          }
+        });
+      });
+
+      Array.from(form.querySelectorAll('h2, legend')).forEach((node) => {
+        node.textContent = node.textContent.replace(formLabelRegex, `DS Data record ${index + 1}`);
+      });
+    
+    });
+  }
+}
+
+/**
+ * An IIFE that attaches a click handler for our dynamic DNSSEC forms
+ *
+ */
+(function prepareDNSSECForms() {
+  let serverForm = document.querySelectorAll(".ds-record");
+  let container = document.querySelector("#form-container");
+  let addButton = document.querySelector("#add-ds-form");
+  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+
+  // Attach click event listener on the delete buttons of the existing forms
+  prepareDeleteButtons();
+
+  // Attack click event listener on the add button
+  if (addButton)
+    addButton.addEventListener('click', addForm);
+
+  /*
+   * Add a formset to the end of the form.
+   * For each element in the added formset, name the elements with the prefix,
+   * form-{#}-{element_name} where # is the index of the formset and element_name
+   * is the element's name.
+   * Additionally, update the form element's metadata, including totalForms' value.
+   */
+  function addForm(e){
+      let forms = document.querySelectorAll(".ds-record");
+      let formNum = forms.length;
+      let newForm = serverForm[0].cloneNode(true);
+      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
+      let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
+
+      formNum++;
+      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum-1}-`);
+      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data record ${formNum}`);
+      container.insertBefore(newForm, addButton);
+
+      let inputs = newForm.querySelectorAll("input");
+      // Reset the values of each input to blank
+      inputs.forEach((input) => {
+        input.classList.remove("usa-input--error");
+        if (input.type === "text" || input.type === "number" || input.type === "password") {
+          input.value = ""; // Set the value to an empty string
+          
+        } else if (input.type === "checkbox" || input.type === "radio") {
+          input.checked = false; // Uncheck checkboxes and radios
+        }
+      });
+
+      // Reset any existing validation classes
+      let selects = newForm.querySelectorAll("select");
+      selects.forEach((select) => {
+        select.classList.remove("usa-input--error");
+        select.selectedIndex = 0; // Set the value to an empty string
+      });
+
+      let labels = newForm.querySelectorAll("label");
+      labels.forEach((label) => {
+        label.classList.remove("usa-label--error");
+      });
+
+      let usaFormGroups = newForm.querySelectorAll(".usa-form-group");
+      usaFormGroups.forEach((usaFormGroup) => {
+        usaFormGroup.classList.remove("usa-form-group--error");
+      });
+
+      // Remove any existing error messages
+      let usaErrorMessages = newForm.querySelectorAll(".usa-error-message");
+      usaErrorMessages.forEach((usaErrorMessage) => {
+        let parentDiv = usaErrorMessage.closest('div');
+        if (parentDiv) {
+          parentDiv.remove(); // Remove the parent div if it exists
+        }
+      });
+
+      totalForms.setAttribute('value', `${formNum}`);
+
+      // Attach click event listener on the delete buttons of the new form
+      prepareDeleteButtons();
+  }
+
 })();

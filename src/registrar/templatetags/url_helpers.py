@@ -19,6 +19,13 @@ def startswith(text, starts):
     return False
 
 
+@register.filter("endswith")
+def endswith(text, ends):
+    if isinstance(text, str):
+        return text.endswith(ends)
+    return False
+
+
 @register.simple_tag
 def public_site_url(url_path):
     """Make a full URL for this path at our public site.

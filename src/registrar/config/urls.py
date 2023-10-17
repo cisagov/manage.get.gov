@@ -81,9 +81,29 @@ urlpatterns = [
     path("domain/<int:pk>", views.DomainView.as_view(), name="domain"),
     path("domain/<int:pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
     path(
-        "domain/<int:pk>/nameservers",
+        "domain/<int:pk>/dns",
+        views.DomainDNSView.as_view(),
+        name="domain-dns",
+    ),
+    path(
+        "domain/<int:pk>/dns/nameservers",
         views.DomainNameserversView.as_view(),
-        name="domain-nameservers",
+        name="domain-dns-nameservers",
+    ),
+    path(
+        "domain/<int:pk>/dns/dnssec",
+        views.DomainDNSSECView.as_view(),
+        name="domain-dns-dnssec",
+    ),
+    path(
+        "domain/<int:pk>/dns/dnssec/dsdata",
+        views.DomainDsDataView.as_view(),
+        name="domain-dns-dnssec-dsdata",
+    ),
+    path(
+        "domain/<int:pk>/dns/dnssec/keydata",
+        views.DomainKeyDataView.as_view(),
+        name="domain-dns-dnssec-keydata",
     ),
     path(
         "domain/<int:pk>/your-contact-information",
