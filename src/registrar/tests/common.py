@@ -32,6 +32,8 @@ from epplibwrapper import (
     ErrorCode,
 )
 
+from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
+
 logger = logging.getLogger(__name__)
 
 
@@ -794,6 +796,20 @@ class MockEppLib(TestCase):
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        elif (
+            isinstance(_request, commands.CreateContact)
+            and getattr(_request, "email", None) == "test@failCreate.gov"
+        ):
+            # use this for when a contact is being updated
+            # mocks a registry error on creation
+            raise RegistryError(code=None)
+        elif (
+            isinstance(_request, commands.CreateContact)
+            and getattr(_request, "email", None) == "test@contactError.gov"
+        ):
+            # use this for when a contact is being updated
+            # mocks a registry error on creation
+            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
         elif isinstance(_request, commands.CreateHost):
             return MagicMock(
                 res_data=[self.mockDataHostChange],

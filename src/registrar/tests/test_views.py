@@ -1490,6 +1490,66 @@ class TestDomainDetail(TestWithDomainPermissions, WebTest, MockEppLib):
             success_page, "The security email for this domain has been updated"
         )
 
+    def test_security_email_form_messages(self):
+        """
+        Test against the success and error messages that are defined in the view
+        """
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        form_data_registry_error = {
+            "security_email": "test@failCreate.gov",
+        }
+
+        form_data_contact_error = {
+            "security_email": "test@contactError.gov",
+        }
+
+        form_data_success = {
+            "security_email": "test@something.gov",
+        }
+
+        test_cases = [
+            (
+                "RegistryError",
+                form_data_registry_error,
+                "Update failed. Cannot contact the registry.",
+            ),
+            ("ContactError", form_data_contact_error, "Value entered was wrong."),
+            (
+                "RegistrySuccess",
+                form_data_success,
+                "The security email for this domain has been updated.",
+            ),
+            # Add more test cases with different scenarios here
+        ]
+
+        for test_name, data, expected_message in test_cases:
+            response = self.client.post(
+                reverse("domain-security-email", kwargs={"pk": self.domain.id}),
+                data=data,
+                follow=True,
+            )
+
+            # Check the response status code, content, or any other relevant assertions
+            self.assertEqual(response.status_code, 200)
+
+            # Check if the expected message tag is set
+            if test_name == "RegistryError" or test_name == "ContactError":
+                message_tag = "error"
+            elif test_name == "RegistrySuccess":
+                message_tag = "success"
+            else:
+                # Handle other cases if needed
+                message_tag = "info"  # Change to the appropriate default
+
+            # Check the message tag
+            messages = list(response.context["messages"])
+            self.assertEqual(len(messages), 1)
+            message = messages[0]
+            self.assertEqual(message.tags, message_tag)
+            self.assertEqual(message.message, expected_message)
+
     def test_domain_overview_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
