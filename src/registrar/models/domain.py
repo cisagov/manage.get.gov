@@ -547,15 +547,9 @@ class Domain(TimeStampedModel, DomainHelper):
         remExtension = commands.UpdateDomainDNSSECExtension(**remParams)
         remRequest.add_extension(remExtension)
         try:
-            if (
-                "dsData" in _addDnssecdata
-                and _addDnssecdata["dsData"] is not None
-            ):
+            if "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None:
                 registry.send(addRequest, cleaned=True)
-            if (
-                "dsData" in _remDnssecdata
-                and _remDnssecdata["dsData"] is not None
-            ):
+            if "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None:
                 registry.send(remRequest, cleaned=True)
         except RegistryError as e:
             logger.error(

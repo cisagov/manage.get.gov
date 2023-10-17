@@ -24,4 +24,3 @@ DIGEST_TYPE_CHOICES = [
     (0, "(0) Reserved"),
     (1, "(1) SHA-256"),
 ]
-

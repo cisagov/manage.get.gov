@@ -1555,7 +1555,7 @@ class TestDomainDNSSEC(TestDomainOverview):
     def test_dnssec_page_refreshes_enable_button(self):
         """DNSSEC overview page loads when domain has no DNSSEC data
         and shows a 'Enable DNSSEC' button."""
-        
+
         page = self.client.get(
             reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id})
         )
