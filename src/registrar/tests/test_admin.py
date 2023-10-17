@@ -620,9 +620,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         expected_fields = [
             "creator",
             "about_your_organization",
-            "address_line1",
-            "address_line2",
-            "zipcode",
             "requested_domain",
             "alternative_domains",
             "purpose",
