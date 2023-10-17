@@ -1626,6 +1626,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
 
+
 class TestDomainDNSSEC(TestDomainOverview):
 
     """MockEPPLib is already inherited."""

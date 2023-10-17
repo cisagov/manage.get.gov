@@ -795,28 +795,8 @@ class MockEppLib(TestCase):
             return self.mockInfoContactCommands(_request, cleaned)
         elif isinstance(_request, commands.UpdateDomain):
             return self.mockUpdateDomainCommands(_request, cleaned)
-        elif (
-            isinstance(_request, commands.CreateContact)
-            and getattr(_request, "id", None) == "fail"
-            and self.mockedSendFunction.call_count == 3
-        ):
-            # use this for when a contact is being updated
-            # sets the second send() to fail
-            raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
-        elif (
-            isinstance(_request, commands.CreateContact)
-            and getattr(_request, "email", None) == "test@failCreate.gov"
-        ):
-            # use this for when a contact is being updated
-            # mocks a registry error on creation
-            raise RegistryError(code=None)
-        elif (
-            isinstance(_request, commands.CreateContact)
-            and getattr(_request, "email", None) == "test@contactError.gov"
-        ):
-            # use this for when a contact is being updated
-            # mocks a registry error on creation
-            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
+        elif isinstance(_request, commands.CreateContact):
+            return self.mockCreateContactCommands(_request, cleaned)
         elif isinstance(_request, commands.CreateHost):
             return MagicMock(
                 res_data=[self.mockDataHostChange],
@@ -912,6 +892,24 @@ class MockEppLib(TestCase):
                 mocked_result = self.mockDataInfoContact
 
         return MagicMock(res_data=[mocked_result])
+
+    def mockCreateContactCommands(self, _request, cleaned):
+        if (
+            getattr(_request, "id", None) == "fail"
+            and self.mockedSendFunction.call_count == 3
+        ):
+            # use this for when a contact is being updated
+            # sets the second send() to fail
+            raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        elif getattr(_request, "email", None) == "test@failCreate.gov":
+            # use this for when a contact is being updated
+            # mocks a registry error on creation
+            raise RegistryError(code=None)
+        elif getattr(_request, "email", None) == "test@contactError.gov":
+            # use this for when a contact is being updated
+            # mocks a contact error on creation
+            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
+        return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):
         """mock epp send function as this will fail locally"""
