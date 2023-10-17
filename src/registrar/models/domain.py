@@ -486,12 +486,11 @@ class Domain(TimeStampedModel, DomainHelper):
             addExtension: dict
             remExtension: dict
 
-        addExtension includes all dsData or keyData to be added
-        remExtension includes all dsData or keyData to be removed
+        addExtension includes all dsData to be added
+        remExtension includes all dsData to be removed
 
-        method operates on dsData OR keyData, never a mix of the two;
-        operates based on which is present in _dnssecdata;
-        if neither is present, addExtension will be empty dict, and
+        method operates on dsData;
+        if dsData is not present, addExtension will be empty dict, and
         remExtension will be all existing dnssecdata to be deleted
         """
 

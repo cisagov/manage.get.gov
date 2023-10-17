@@ -8,41 +8,17 @@
     {% include "includes/form_errors.html" with form=form %}
   {% endfor %}
 
-  {% if domain.dnssecdata is None and not dnssec_ds_confirmed %}
+  {% if domain.dnssecdata is None %}
   <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
     <div class="usa-alert__body">
-    You have no DS Data added. Enable DNSSEC by adding DS Data or return to the DNSSEC page and click 'enable.'
+      You have no DS Data added. Enable DNSSEC by adding DS Data.
     </div>
   </div>
   {% endif %}
 
   <h1>DS Data</h1>
 
-  {% if domain.dnssecdata is not None and domain.dnssecdata.keyData is not None %}
-  <div class="usa-alert usa-alert--warning usa-alert--slim margin-bottom-3">
-    <div class="usa-alert__body">
-      <h4 class="usa-alert__heading">Warning, you cannot add DS Data</h4>
-      <p class="usa-alert__text">
-        You cannot add DS Data because you have already added Key Data. Delete your Key Data records in order to add DS Data.
-      </p>
-    </div>
-  </div>
-  {% elif not dnssec_ds_confirmed %}
-    <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
-    <p>Enter the values given by your DNS provider for DS Data.</p>
-    <p>Required fields are marked with an asterisk (<abbr
-      title="required"
-      class="usa-hint usa-hint--required"
-      >*</abbr>).</p>
-    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
-      {% csrf_token %}
-      <button type="submit" class="usa-button usa-button--unstyled display-block" name="confirm-ds">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-          <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-        </svg><span class="margin-left-05">Add new record</span>
-      </button>
-    </form>
-  {% else %}
+  <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
 
   <p>Enter the values given by your DNS provider for DS Data.</p>
   {% include "includes/required_fields.html" %}
@@ -119,5 +95,5 @@
       >Cancel
     </button>
   </form>
-  {% endif %}
+
 {% endblock %}  {# domain_content #}
