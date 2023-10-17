@@ -1,0 +1,93 @@
+@use "uswds-core" as *;
+
+.dotgov-table--stacked {
+  td, th {
+    padding: units(1) units(2) units(2px) 0;
+    border: none;
+  }
+
+  tr:first-child th:first-child {
+    border-top: none;
+  }
+
+  tr {
+    border-bottom: none;
+    border-top: 2px solid color('base-light');
+    margin-top: units(2);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  td[data-label]:before,
+  th[data-label]:before {
+    color: color('primary-darker');
+    padding-bottom: units(2px);
+  }
+}
+
+.dotgov-table {
+  width: 100%;
+
+  a {
+    display: flex;
+    align-items: flex-start;
+    color: color('primary');
+
+    &:visited {
+      color: color('primary');
+    }
+
+    .usa-icon {
+      // align icon with x height
+      margin-top: units(0.5);
+      margin-right: units(0.5);
+    }
+  }
+
+  th[data-sortable]:not([aria-sort]) .usa-table__header__button {
+    right: auto;
+  }
+
+  tbody th {
+    word-break: break-word;
+  }
+
+  @include at-media(mobile-lg) {
+
+    margin-top: units(1);
+
+    tr {
+      border: none;
+    }
+
+    td, th {
+      border-bottom: 1px solid color('base-light');
+    }
+
+    thead th {
+      color: color('primary-darker');
+      border-bottom: 2px solid color('base-light');
+    }
+
+    tbody tr:last-of-type {
+      td, th {
+        border-bottom: 0;
+      }
+    }
+
+    td, th,
+    .usa-tabel th{
+      padding: units(2) units(2) units(2) 0;
+    }
+
+    th:first-of-type {
+      padding-left: 0;
+    }
+
+    thead tr:first-child th:first-child {
+      border-top: none;
+    }
+  }
+}

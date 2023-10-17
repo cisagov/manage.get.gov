@@ -149,7 +149,7 @@ def input_with_errors(context, field=None):  # noqa: C901
     # see Widget.get_context() on
     # https://docs.djangoproject.com/en/4.1/ref/forms/widgets
     widget = field.field.widget.get_context(
-        field.html_name, field.value() or field.initial, field.build_widget_attrs(attrs)
+        field.html_name, field.value(), field.build_widget_attrs(attrs)
     )  # -> {"widget": {"name": ...}}
 
     context["widget"] = widget["widget"]

@@ -1,0 +1,10 @@
+@use "uswds-core" as *;
+
+fieldset {
+    border: solid 1px color('base-lighter');
+    padding: units(3);
+}
+
+fieldset:not(:first-child) {
+    margin-top: units(2);
+}

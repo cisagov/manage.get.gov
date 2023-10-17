@@ -1,0 +1,25 @@
+@use "uswds-core" as *;
+
+.usa-form .usa-button {
+  margin-top: units(3);
+}
+
+.usa-form--extra-large {
+  max-width: none;
+}
+
+.usa-form--text-width {
+  max-width: measure(5);
+}
+
+.usa-textarea {
+  @include at-media('tablet') {
+    height: units('mobile');
+  }
+}
+
+.usa-form-group--unstyled-error {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
