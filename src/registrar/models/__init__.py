@@ -1,10 +1,11 @@
 from auditlog.registry import auditlog  # type: ignore
-
+import traceback
 from .contact import Contact
 try:
     from .domain_application import DomainApplication
 except ImportError as err:
-    print(err)
+    print("Error traceback is...")
+    print(traceback.format_exc())
     pass
 from .domain_information import DomainInformation
 from .domain import Domain
