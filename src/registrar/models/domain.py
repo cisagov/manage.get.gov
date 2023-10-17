@@ -1736,6 +1736,7 @@ class Domain(TimeStampedModel, DomainHelper):
             )
 
         if property in self._cache:
+            logger.info("writing %s to cache", property)
             return self._cache[property]
         else:
             raise KeyError(
