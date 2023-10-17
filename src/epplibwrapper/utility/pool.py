@@ -3,11 +3,11 @@ import gevent
 from geventconnpool import ConnectionPool
 from epplibwrapper.socket import Socket
 from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
-
 try:
     from epplib.commands import Hello
 except ImportError:
     pass
+
 
 logger = logging.getLogger(__name__)
 

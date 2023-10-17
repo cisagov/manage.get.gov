@@ -44,6 +44,8 @@ except NameError:
 
 # Attn: these imports should NOT be at the top of the file
 try:
+    from epplibwrapper.socket import Socket
+    from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
     from .client import CLIENT, commands
     from .errors import RegistryError, ErrorCode
     from epplib.models import common, info
@@ -61,4 +63,7 @@ __all__ = [
     "info",
     "ErrorCode",
     "RegistryError",
+    "Socket",
+    "PoolError",
+    "PoolErrorCodes"
 ]
