@@ -81,8 +81,7 @@ class EPPLibWrapper:
         self.pool_status = PoolStatus()
 
         if start_connection_pool:
-            pass
-            #self.start_connection_pool()
+            self.start_connection_pool()
 
     def _send(self, command):
         """Helper function used by `send`."""

@@ -78,6 +78,7 @@ DEBUG = env_debug
 # Installing them here makes them available for execution.
 # Do not access INSTALLED_APPS directly. Use `django.apps.apps` instead.
 INSTALLED_APPS = [
+    "epplibwrapper",
     # let's be sure to install our own application!
     # it needs to be listed before django.contrib.admin
     # otherwise Django would find the default template
