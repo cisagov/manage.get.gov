@@ -4,10 +4,6 @@
 {% block title %}DS Data | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
-  {% for form in formset %}
-    {% include "includes/form_errors.html" with form=form %}
-  {% endfor %}
-
   {% if domain.dnssecdata is None %}
   <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
     <div class="usa-alert__body">
@@ -15,6 +11,10 @@
     </div>
   </div>
   {% endif %}
+
+  {% for form in formset %}
+    {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
 
   <h1>DS Data</h1>
 
