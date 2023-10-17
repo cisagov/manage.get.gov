@@ -2,21 +2,16 @@ from unittest import skip
 from unittest.mock import MagicMock, patch
 from django.conf import settings
 
-from django.test import Client
 from django.test import TestCase
-from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.utility.pool import EPPConnectionPool
 from registrar.models.domain import Domain
-from registrar.tests.common import MockEppLib
 from registrar.models.domain import registry
 
 import logging
 
 try:
-    from epplib.client import Client
     from epplib import commands
     from epplib.exceptions import TransportError
-    from epplib.responses import base
 except ImportError:
     pass
 

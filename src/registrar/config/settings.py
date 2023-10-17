@@ -546,7 +546,7 @@ EPP_CONNECTION_POOL_SIZE = 1
 
 # Determines the interval in which we ping open connections in seconds
 # Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE
-POOL_KEEP_ALIVE = 60 # Ping every 20 seconds
+POOL_KEEP_ALIVE = 60 
 
 # Determines how long we try to keep a pool alive for,
 # before restarting it.
