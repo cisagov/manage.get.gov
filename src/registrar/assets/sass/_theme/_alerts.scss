@@ -1,0 +1,17 @@
+// Fixes some font size disparities with the Figma
+// for usa-alert alert elements
+.usa-alert {
+  .usa-alert__heading.larger-font-sizing {
+    font-size: units(3);
+  }
+}
+  
+// The icon was off center for some reason
+// Fixes that issue
+@media (min-width: 64em){
+  .usa-alert--warning{
+    .usa-alert__body::before {
+      left: 1rem !important;
+    }
+  } 
+}
