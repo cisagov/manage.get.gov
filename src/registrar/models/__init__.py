@@ -1,7 +1,11 @@
 from auditlog.registry import auditlog  # type: ignore
 
 from .contact import Contact
-from .domain_application import DomainApplication
+try:
+    from .domain_application import DomainApplication
+except ImportError as err:
+    print(err.with_traceback())
+    pass
 from .domain_information import DomainInformation
 from .domain import Domain
 from .draft_domain import DraftDomain
