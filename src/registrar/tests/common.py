@@ -761,6 +761,28 @@ class MockEppLib(TestCase):
             return MagicMock(res_data=[self.infoDomainThreeHosts])
         return MagicMock(res_data=[self.mockDataInfoDomain])
 
+    def _mockDomainName(self, _name, _avail=False):
+        return MagicMock(
+            res_data=[
+                responses.check.CheckDomainResultData(
+                    name=_name, avail=_avail, reason=None
+                ),
+            ]
+        )
+    
+    def _handleCheckDomain(self, _request):
+        print(getattr(_request, "names", None))
+        if "gsa.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("gsa.gov", True)
+        elif "GSA.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("GSA.gov", True)
+        elif "igorvilleremixed.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("igorvilleremixed.gov", False)
+        elif "errordomain.gov" in getattr(_request, "names", None):
+            raise RegistryError("Registry cannot find domain availability.")
+        else:
+            return self._mockDomainName("domainnotfound.gov", False)
+
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
         registry is imported from epplibwrapper
@@ -826,40 +848,7 @@ class MockEppLib(TestCase):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
                 )
         elif isinstance(_request, commands.CheckDomain):
-            if "gsa.gov" in getattr(_request, "names", None):
-                return MagicMock(
-                    res_data=[
-                        responses.check.CheckDomainResultData(
-                            name="gsa.gov", avail=True, reason=None
-                        ),
-                    ]
-                )
-            elif "GSA.gov" in getattr(_request, "names", None):
-                return MagicMock(
-                    res_data=[
-                        responses.check.CheckDomainResultData(
-                            name="GSA.gov", avail=True, reason=None
-                        ),
-                    ]
-                )
-            elif "igorvilleremixed.gov" in getattr(_request, "names", None):
-                return MagicMock(
-                    res_data=[
-                        responses.check.CheckDomainResultData(
-                            name="igorvilleremixed.gov", avail=False, reason=None
-                        ),
-                    ]
-                )
-            elif "errordomain.gov" in getattr(_request, "names", None):
-                raise RegistryError("Registry cannot find domain availability.")
-            else:
-                return MagicMock(
-                    res_data=[
-                        responses.check.CheckDomainResultData(
-                            name="domainnotfound.gov", avail=False, reason="In Use"
-                        )
-                    ],
-                )
+            return self._handleCheckDomain(_request)
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):
