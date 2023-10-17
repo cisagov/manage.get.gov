@@ -4,6 +4,7 @@ from django.conf import settings
 
 from django.test import TestCase
 from epplibwrapper.client import EPPLibWrapper
+from epplibwrapper.socket import Socket
 from epplibwrapper.utility.pool import EPPConnectionPool
 from registrar.models.domain import Domain
 from registrar.models.domain import registry
@@ -121,24 +122,37 @@ class TestConnectionPool(TestCase):
         """A .send is invoked on the pool successfully"""
         # Fake data for the _pool object
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
-
-        def start_fake_connection(self):
-            registry.pool_status.pool_running = True
-            registry.pool_status.connection_success = True
-            registry._pool = registry.get_pool()
         
-        # The connection pool will fail to start, start it manually
-        # so that our mocks can take over
+        def fake_send(self):
+            return MagicMock(
+                code=1000,
+                msg="Command completed successfully",
+                res_data=None,
+                cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
+                sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
+                extensions=[],
+                msg_q=None,
+            )
+
         with ExitStack() as stack:
-            stack.enter_context(patch.object(EPPLibWrapper, "get_pool", self.fake_pool))
-            stack.enter_context(patch.object(EPPLibWrapper, "start_connection_pool", start_fake_connection))
-            expected_contact = domain.security_contact
-        
-        # Pretend that we've connected
-        registry.pool_status.pool_running = True
-        registry.pool_status.connection_success = True
+            stack.enter_context(patch.object(Socket, "connect", None))
+            stack.enter_context(patch.object(Socket, "send", fake_send))
+            stack.enter_context(patch.object(Socket, "_create_socket", Socket()))
+            #stack.enter_context(patch.object(EPPLibWrapper, "get_pool", self.fake_pool))
+            pool = EPPLibWrapper(False)
+            # The connection pool will fail to start, start it manually
+            # so that our mocks can take over
+            pool.start_connection_pool(try_start_if_invalid=True)
+            print(f"this is pool {pool._pool.__dict__}")
+            # Pool should be running, and be the right size
+            self.assertEqual(pool.pool_status.pool_running, True)
+            self.assertEqual(pool.pool_status.connection_success, True)
+            pool.send(commands.InfoDomain(name="test.gov"), cleaned=True)
+            self.assertEqual(len(pool._pool.conn), self.pool_options["size"])
 
-        # Trigger the getter - should succeed
-        self.assertEqual(registry.pool_status.pool_running, True)
-        self.assertEqual(registry.pool_status.connection_success, True)
-        self.assertEqual(len(registry.get_pool().conn), self.pool_options["size"])
+            #pool.send()
+            
+            # Trigger the getter - should succeed
+            #expected_contact = domain.security_contact
+
+

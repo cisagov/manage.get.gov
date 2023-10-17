@@ -1,8 +1,8 @@
 from auditlog.registry import auditlog  # type: ignore
 from .contact import Contact
-from .domain import Domain
 from .domain_application import DomainApplication
 from .domain_information import DomainInformation
+from .domain import Domain
 from .draft_domain import DraftDomain
 from .host_ip import HostIP
 from .host import Host
@@ -17,9 +17,9 @@ from .transition_domain import TransitionDomain
 
 __all__ = [
     "Contact",
-    "Domain",
     "DomainApplication",
     "DomainInformation",
+    "Domain",
     "DraftDomain",
     "DomainInvitation",
     "HostIP",

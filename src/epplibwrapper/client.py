@@ -168,7 +168,7 @@ class EPPLibWrapper:
     def _create_pool(self, client, login, options):
         """Creates and returns new pool instance"""
         return EPPConnectionPool(
-                client, login, options
+            client, login, options
         )
 
     def start_connection_pool(
@@ -190,8 +190,8 @@ class EPPLibWrapper:
         # one socket, and if successful, then we know we can connect.
         if (
             not try_start_if_invalid
-            and settings.DEBUG
-            or not self._test_registry_connection_success()
+            and (settings.DEBUG
+            or not self._test_registry_connection_success())
         ):
             logger.warning("Cannot contact the Registry")
             self.pool_status.connection_success = False
