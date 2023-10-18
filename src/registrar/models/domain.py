@@ -16,20 +16,16 @@ from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
 )
-
-try: 
-    from epplibwrapper import (
-        CLIENT as registry,
-        commands,
-        common as epp,
-        extensions,
-        info as eppInfo,
-        RegistryError,
-        ErrorCode,
-    )
-except Exception as err:
-    print(f"err is {err}")
-    pass
+ 
+from epplibwrapper import (
+    CLIENT as registry,
+    commands,
+    common as epp,
+    extensions,
+    info as eppInfo,
+    RegistryError,
+    ErrorCode,
+)
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 

@@ -234,7 +234,8 @@ class EPPLibWrapper:
 
 try:
     # Initialize epplib
-    CLIENT = EPPLibWrapper()
+    #CLIENT = EPPLibWrapper()
+    CLIENT = None
     logger.info("registry client initialized")
 except Exception:
     CLIENT = None  # type: ignore
