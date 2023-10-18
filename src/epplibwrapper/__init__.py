@@ -44,8 +44,6 @@ except NameError:
 
 # Attn: these imports should NOT be at the top of the file
 try:
-    from epplibwrapper.socket import Socket
-    from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
     from .client import CLIENT, commands
     from .errors import RegistryError, ErrorCode, CANNOT_CONTACT_REGISTRY, GENERIC_ERROR
     from epplib.models import common, info
