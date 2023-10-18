@@ -1715,7 +1715,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _extract_data_from_response(self, data_response):
         data = data_response.res_data[0]
-        cache = {
+        return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),
             "cr_date": getattr(data, "cr_date", ...),
@@ -1727,7 +1727,6 @@ class Domain(TimeStampedModel, DomainHelper):
             "tr_date": getattr(data, "tr_date", ...),
             "up_date": getattr(data, "up_date", ...),
         }
-        return {k: v for k, v in cache.items() if v is not ...}
 
     def _remove_null_properties(self, cache):
         return {k: v for k, v in cache.items() if v is not ...}
@@ -1821,7 +1820,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
-        logger.debug("_invalidate_cache called")
         self._cache = {}
 
     def _get_property(self, property):
