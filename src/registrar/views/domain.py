@@ -23,11 +23,8 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
-<<<<<<< HEAD
 from registrar.utility.errors import NameserverError
-=======
 from registrar.models.utility.contact_error import ContactError
->>>>>>> main
 
 from ..forms import (
     ContactForm,
@@ -284,11 +281,9 @@ class DomainNameserversView(DomainFormBaseView):
             except KeyError:
                 # no server information in this field, skip it
                 pass
-<<<<<<< HEAD
-        domain = self.get_object()
         
         try:
-            domain.nameservers = nameservers
+            self.object.nameservers = nameservers
         except NameserverError as Err:
             # TODO: move into literal
             messages.error(self.request, 'Whoops, Nameservers Error')
@@ -307,13 +302,6 @@ class DomainNameserversView(DomainFormBaseView):
             messages.success(
                 self.request, "The name servers for this domain have been updated."
             )
-=======
-        self.object.nameservers = nameservers
-
-        messages.success(
-            self.request, "The name servers for this domain have been updated."
-        )
->>>>>>> main
 
         # superclass has the redirect
         return super().form_valid(formset)
