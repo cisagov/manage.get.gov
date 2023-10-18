@@ -5,8 +5,9 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.forms import formset_factory
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.utility.errors import NameserverError
 
-from ..models import Contact, DomainInformation
+from ..models import Contact, DomainInformation, Domain
 from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
@@ -21,18 +22,35 @@ class DomainAddUserForm(forms.Form):
     email = forms.EmailField(label="Email")
 
 
+class IPAddressField(forms.CharField):
+    # def __init__(self, server_value, *args, **kwargs):
+    #     self.server_value = server_value
+    #     super().__init__(*args, **kwargs)
+        
+    def validate(self, value):
+        super().validate(value)  # Run the default CharField validation
+
+        ip_list = [ip.strip() for ip in value.split(",")]  # Split IPs and remove whitespace
+        
+        # TODO: pass hostname from view?
+        hostname = "" 
+        
+        # Call the IP validation method from Domain
+        try:
+            Domain.checkHostIPCombo(hostname, ip_list)
+        except NameserverError as e:
+            raise forms.ValidationError(str(e))
+
+
 class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
 
     server = forms.CharField(label="Name server", strip=True)
 
-    ip = forms.CharField(
-        label="IP address", 
-        strip=True, 
+    ip = IPAddressField(
+        label="IP address",
+        strip=True,
         required=False,
-        validators=[
-            # TODO in progress
-        ],
     )
 
 
