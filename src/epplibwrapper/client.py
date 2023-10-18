@@ -121,7 +121,6 @@ class EPPLibWrapper:
             logger.error(message, exc_info=True)
             raise RegistryError(message) from err
         else:
-            print(f"test thing {response}")
             if response.code >= 2000:
                 raise RegistryError(response.msg, code=response.code)
             else:
@@ -188,10 +187,7 @@ class EPPLibWrapper:
         """
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
-        if (
-            settings.DEBUG
-            or not self._test_registry_connection_success()
-        ):
+        if not self._test_registry_connection_success():
             logger.warning("Cannot contact the Registry")
             self.pool_status.connection_success = False
         else:
