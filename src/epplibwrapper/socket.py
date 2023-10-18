@@ -59,8 +59,6 @@ class Socket:
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
-                    logger.warning("LoginError raised and should not retry or has been retried 3 times already")
-                    logger.warning(f"should retry? {err.should_retry()}")
                     return False
             else:
                 self.disconnect()
@@ -69,7 +67,7 @@ class Socket:
                 if self.is_login_error(response.code):
                     logger.warning("was login error")
                     return False
-                
+
                 # otherwise, just return true
                 return True
 

@@ -163,16 +163,12 @@ class EPPLibWrapper:
     def get_pool(self):
         """Get the current pool instance"""
         return self._pool
-    
+
     def _create_pool(self, client, login, options):
         """Creates and returns new pool instance"""
-        return EPPConnectionPool(
-            client, login, options
-        )
+        return EPPConnectionPool(client, login, options)
 
-    def start_connection_pool(
-        self, restart_pool_if_exists=True
-    ):
+    def start_connection_pool(self, restart_pool_if_exists=True):
         """Starts a connection pool for the registry.
 
         restart_pool_if_exists -> bool:
@@ -199,9 +195,7 @@ class EPPLibWrapper:
                 logger.info("Connection pool restarting...")
                 self.kill_pool()
 
-            self._pool = self._create_pool(
-                self._client, self._login, self.pool_options
-            ) 
+            self._pool = self._create_pool(self._client, self._login, self.pool_options)
 
             self.pool_status.pool_running = True
             self.pool_status.pool_hanging = False

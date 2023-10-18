@@ -1,15 +1,11 @@
 import datetime
 from pathlib import Path
-from unittest import skip
 from unittest.mock import MagicMock, patch
 from dateutil.tz import tzlocal
-from django.conf import settings
-
 from django.test import TestCase
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.socket import Socket
 from epplibwrapper.utility.pool import EPPConnectionPool
-from registrar.models.domain import Domain
 from registrar.models.domain import registry
 from contextlib import ExitStack
 
@@ -40,7 +36,7 @@ class TestConnectionPool(TestCase):
             # Value in seconds => (keepalive / size)
             "keepalive": 60,
         }
-    
+
     def fake_socket(self, login, client):
         # Create a fake client object
         fake_client = Client(
@@ -56,55 +52,57 @@ class TestConnectionPool(TestCase):
 
     def patch_success(self):
         return True
-    
+
     def fake_send(self, command, cleaned=None):
-            mock = MagicMock(
-                code=1000,
-                msg="Command completed successfully",
-                res_data=None,
-                cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
-                sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
-                extensions=[],
-                msg_q=None,
-            )
-            return mock
-    
+        mock = MagicMock(
+            code=1000,
+            msg="Command completed successfully",
+            res_data=None,
+            cl_tr_id="xkw1uo#2023-10-17T15:29:09.559376",
+            sv_tr_id="5CcH4gxISuGkq8eqvr1UyQ==-35a",
+            extensions=[],
+            msg_q=None,
+        )
+        return mock
+
     @patch.object(EPPLibWrapper, "_test_registry_connection_success", patch_success)
     def test_pool_sends_data(self):
         """A .send is invoked on the pool successfully"""
         expected_result = {
-            'cl_tr_id': None,
-            'code': 1000,
-            'extensions': [],
-            'msg': 'Command completed successfully',
-            'msg_q': None,
-            'res_data': [info.InfoDomainResultData(
-                            roid='DF1340360-GOV',
-                            statuses=[
-                                        common.Status(
-                                            state='serverTransferProhibited',
-                                            description=None,
-                                            lang='en'
-                                        ),
-                                        common.Status(state='inactive',
-                                                description=None,
-                                                lang='en')],
-                            cl_id='gov2023-ote',
-                            cr_id='gov2023-ote',
-                            cr_date=datetime.datetime(2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()),
-                            up_id='gov2023-ote',
-                            up_date=datetime.datetime(2023, 8, 17, 2, 3, 19, tzinfo=tzlocal()),
-                            tr_date=None,
-                            name='test3.gov',
-                            registrant='TuaWnx9hnm84GCSU',
-                            admins=[],
-                            nsset=None,
-                            keyset=None,
-                            ex_date=datetime.date(2024, 8, 15),
-                            auth_info=info.DomainAuthInfo(pw='2fooBAR123fooBaz')
-                            )
-                        ],
-            'sv_tr_id': 'wRRNVhKhQW2m6wsUHbo/lA==-29a'
+            "cl_tr_id": None,
+            "code": 1000,
+            "extensions": [],
+            "msg": "Command completed successfully",
+            "msg_q": None,
+            "res_data": [
+                info.InfoDomainResultData(
+                    roid="DF1340360-GOV",
+                    statuses=[
+                        common.Status(
+                            state="serverTransferProhibited",
+                            description=None,
+                            lang="en",
+                        ),
+                        common.Status(state="inactive", description=None, lang="en"),
+                    ],
+                    cl_id="gov2023-ote",
+                    cr_id="gov2023-ote",
+                    cr_date=datetime.datetime(
+                        2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()
+                    ),
+                    up_id="gov2023-ote",
+                    up_date=datetime.datetime(2023, 8, 17, 2, 3, 19, tzinfo=tzlocal()),
+                    tr_date=None,
+                    name="test3.gov",
+                    registrant="TuaWnx9hnm84GCSU",
+                    admins=[],
+                    nsset=None,
+                    keyset=None,
+                    ex_date=datetime.date(2024, 8, 15),
+                    auth_info=info.DomainAuthInfo(pw="2fooBAR123fooBaz"),
+                )
+            ],
+            "sv_tr_id": "wRRNVhKhQW2m6wsUHbo/lA==-29a",
         }
 
         def fake_client(mock_client):
@@ -117,16 +115,18 @@ class TestConnectionPool(TestCase):
                 )
             )
             return client
-        
+
         # Mock a response from EPP
         def fake_receive(command, cleaned=None):
-            location= Path(__file__).parent / "utility" / "infoDomain.xml"
+            location = Path(__file__).parent / "utility" / "infoDomain.xml"
             xml = (location).read_bytes()
             return xml
 
         # Mock what happens inside the "with"
         with ExitStack() as stack:
-            stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
+            stack.enter_context(
+                patch.object(EPPConnectionPool, "_create_socket", self.fake_socket)
+            )
             stack.enter_context(patch.object(Socket, "connect", fake_client))
             stack.enter_context(patch.object(SocketTransport, "send", self.fake_send))
             stack.enter_context(patch.object(SocketTransport, "receive", fake_receive))
@@ -141,17 +141,18 @@ class TestConnectionPool(TestCase):
 
             # Should this ever fail, it either means that the schema has changed,
             # or the pool is broken.
-            # If the schema has changed: Update the associated infoDomain.xml file 
+            # If the schema has changed: Update the associated infoDomain.xml file
             self.assertEqual(result.__dict__, expected_result)
 
             # The number of open pools should match the number of requested ones.
             # If it is 0, then they failed to open
             self.assertEqual(len(registry._pool.conn), self.pool_options["size"])
-    
+
     @patch.object(EPPLibWrapper, "_test_registry_connection_success", patch_success)
     def test_raises_transport_error(self):
         """A .send is invoked on the pool, but registry connection is lost
         right as we send a command."""
+
         # Fake data for the _pool object
         def fake_client(self):
             client = Client(
@@ -165,7 +166,9 @@ class TestConnectionPool(TestCase):
             return client
 
         with ExitStack() as stack:
-            stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
+            stack.enter_context(
+                patch.object(EPPConnectionPool, "_create_socket", self.fake_socket)
+            )
             stack.enter_context(patch.object(Socket, "connect", fake_client))
             # Restart the connection pool, since it starts on app startup
             registry.start_connection_pool()
@@ -176,5 +179,3 @@ class TestConnectionPool(TestCase):
             # Try to send a command out - should fail
             with self.assertRaises(TransportError):
                 registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
-
-
