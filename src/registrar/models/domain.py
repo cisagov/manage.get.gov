@@ -17,15 +17,18 @@ from registrar.utility.errors import (
     NameserverErrorCodes as nsErrorCodes,
 )
 
-from epplibwrapper import (
-    CLIENT as registry,
-    commands,
-    common as epp,
-    extensions,
-    info as eppInfo,
-    RegistryError,
-    ErrorCode,
-)
+try: 
+    from epplibwrapper import (
+        CLIENT as registry,
+        commands,
+        common as epp,
+        extensions,
+        info as eppInfo,
+        RegistryError,
+        ErrorCode,
+    )
+except Exception:
+    pass
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 

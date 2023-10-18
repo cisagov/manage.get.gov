@@ -68,11 +68,10 @@ class TestConnectionPool(TestCase):
                 msg_q=None,
             )
             return mock
-
+    
     @patch.object(EPPLibWrapper, "_test_registry_connection_success", patch_success)
     def test_pool_sends_data(self):
         """A .send is invoked on the pool successfully"""
-        self.maxDiff = None
         expected_result = {
             'cl_tr_id': None,
             'code': 1000,
@@ -124,6 +123,7 @@ class TestConnectionPool(TestCase):
             location= Path(__file__).parent / "utility" / "infoDomain.xml"
             xml = (location).read_bytes()
             return xml
+
         # Mock what happens inside the "with"
         with ExitStack() as stack:
             stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
@@ -139,7 +139,11 @@ class TestConnectionPool(TestCase):
             # Send a command
             result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
 
+            # Should this ever fail, it either means that the schema has changed,
+            # or the pool is broken.
+            # If the schema has changed: Update the associated infoDomain.xml file 
             self.assertEqual(result.__dict__, expected_result)
+
             # The number of open pools should match the number of requested ones.
             # If it is 0, then they failed to open
             self.assertEqual(len(registry._pool.conn), self.pool_options["size"])
