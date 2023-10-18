@@ -1743,7 +1743,14 @@ class Domain(TimeStampedModel, DomainHelper):
         return dnssec_data
 
     def _get_contacts(self, contacts):
-        cleaned_contacts = {}
+        choices = PublicContact.ContactTypeChoices
+        # We expect that all these fields get populated,
+        # so we can create these early, rather than waiting.
+        cleaned_contacts = {
+            choices.ADMINISTRATIVE: None,
+            choices.SECURITY: None,
+            choices.TECHNICAL: None,
+        }
         if contacts and isinstance(contacts, list) and len(contacts) > 0:
             cleaned_contacts = self._fetch_contacts(contacts)
         return cleaned_contacts
