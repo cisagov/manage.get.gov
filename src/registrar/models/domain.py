@@ -27,7 +27,8 @@ try:
         RegistryError,
         ErrorCode,
     )
-except Exception:
+except Exception as err:
+    print(f"err is {err}")
     pass
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
