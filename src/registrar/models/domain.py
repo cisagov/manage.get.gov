@@ -1698,17 +1698,13 @@ class Domain(TimeStampedModel, DomainHelper):
             old_cache_contacts = self._cache.get("contacts")
 
             if fetch_contacts:
-                cleaned["contacts"] = self._get_contacts(
-                    cleaned.get("_contacts", [])
-                )
+                cleaned["contacts"] = self._get_contacts(cleaned.get("_contacts", []))
                 if old_cache_hosts is not None:
                     logger.debug("resetting cleaned['hosts'] to old_cache_hosts")
                     cleaned["hosts"] = old_cache_hosts
 
             if fetch_hosts:
-                cleaned["hosts"] = self._get_hosts(
-                    cleaned.get("_hosts", [])
-                )
+                cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
                 if old_cache_contacts is not None:
                     cleaned["contacts"] = old_cache_contacts
 
