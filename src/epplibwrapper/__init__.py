@@ -47,7 +47,7 @@ try:
     from epplibwrapper.socket import Socket
     from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
     from .client import CLIENT, commands
-    from .errors import RegistryError, ErrorCode
+    from .errors import RegistryError, ErrorCode, CANNOT_CONTACT_REGISTRY, GENERIC_ERROR
     from epplib.models import common, info
     from epplib.responses import extensions
     from epplib import responses
@@ -63,7 +63,6 @@ __all__ = [
     "info",
     "ErrorCode",
     "RegistryError",
-    "Socket",
-    "PoolError",
-    "PoolErrorCodes"
+    "CANNOT_CONTACT_REGISTRY",
+    "GENERIC_ERROR",
 ]
