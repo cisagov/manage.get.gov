@@ -173,7 +173,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 
         if nameservers is not None:
             # Add existing nameservers as initial data
-            initial_data.extend({"server": name} for name, *ip in nameservers)
+            initial_data.extend({"server": name, "ip": ip} for name, ip in nameservers)
 
         # Ensure at least 3 fields, filled or empty
         while len(initial_data) < 2:
@@ -198,6 +198,7 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
 
         for i, form in enumerate(formset):
             form.fields["server"].label += f" {i+1}"
+            form.fields["ip"].label += f" {i+1}"
             if i < 2:
                 form.fields["server"].required = True
             else:
@@ -221,7 +222,10 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         nameservers = []
         for form in formset:
             try:
-                as_tuple = (form.cleaned_data["server"],)
+                as_tuple = (
+                    form.cleaned_data["server"],
+                    [form.cleaned_data["ip"]]
+                )
                 nameservers.append(as_tuple)
             except KeyError:
                 # no server information in this field, skip it

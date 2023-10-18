@@ -22,15 +22,24 @@
 
     {% for form in formset %}
     <div class="server-form">
-    {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
-      {% if forloop.counter <= 2 %}
-        {% with attr_required=True %}
-          {% input_with_errors form.server %}
-        {% endwith %}
-      {% else %}
-        {% input_with_errors form.server %}
-      {% endif %}
-    {% endwith %}
+      <div class="grid-row grid-gap-2 flex-end">
+        <div class="tablet:grid-col-6">
+          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+            {% if forloop.counter <= 2 %}
+              {% with attr_required=True %}
+                {% input_with_errors form.server %}
+              {% endwith %}
+            {% else %}
+              {% input_with_errors form.server %}
+            {% endif %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-6">
+          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+            {% input_with_errors form.ip %}
+          {% endwith %}
+        </div>
+      </div>
     </div>
     {% endfor %}
 

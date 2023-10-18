@@ -322,6 +322,7 @@ class Domain(TimeStampedModel, DomainHelper):
             )
         elif ip is not None and ip != []:
             for addr in ip:
+                logger.info(f"ip address {addr}")
                 if not self._valid_ip_addr(addr):
                     raise NameserverError(
                         code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
@@ -334,7 +335,9 @@ class Domain(TimeStampedModel, DomainHelper):
         returns:
             isValid (boolean)-True for valid ip address"""
         try:
+            logger.info(f"in valid_ip_addr: {ipToTest}")
             ip = ipaddress.ip_address(ipToTest)
+            logger.info(ip.version)
             return ip.version == 6 or ip.version == 4
 
         except ValueError:
@@ -602,7 +605,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(hosts) > 13:
             raise NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS)
 
-        if self.state not in [self.State.DNS_NEEDED, self.State.READY]:
+        if self.state not in [self.State.DNS_NEEDED, self.State.READY, self.State.UNKNOWN]:
             raise ActionNotAllowed("Nameservers can not be " "set in the current state")
 
         logger.info("Setting nameservers")
