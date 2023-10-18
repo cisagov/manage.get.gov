@@ -1,0 +1,30 @@
+@use "uswds-core" as *;
+
+.usa-sidenav {
+  .usa-sidenav__item {
+    span {
+      a.link_usa-checked {
+        padding: 0;
+      }
+    }    
+  }
+}
+
+.sidenav__step--locked {
+  color: color('base-darker');
+  span {
+    display: flex;
+    align-items: flex-start;
+    padding: units(1);
+
+    .usa-icon {
+        flex-shrink: 0;
+        //align lock body to x-height
+        margin: units('2px') units(1) 0 0;
+    }
+  }
+}
+
+.stepnav {
+  margin-top: units(2);
+}
