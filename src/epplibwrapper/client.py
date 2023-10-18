@@ -172,7 +172,7 @@ class EPPLibWrapper:
         )
 
     def start_connection_pool(
-        self, restart_pool_if_exists=True, try_start_if_invalid=False
+        self, restart_pool_if_exists=True
     ):
         """Starts a connection pool for the registry.
 
@@ -189,9 +189,8 @@ class EPPLibWrapper:
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
         if (
-            try_start_if_invalid
-            and (settings.DEBUG
-            or not self._test_registry_connection_success())
+            settings.DEBUG
+            or not self._test_registry_connection_success()
         ):
             logger.warning("Cannot contact the Registry")
             self.pool_status.connection_success = False

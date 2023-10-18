@@ -34,7 +34,7 @@ class EPPConnectionPool(ConnectionPool):
             connection = socket.connect()
             return connection
         except Exception as err:
-            message = f"Failed to execute due to a registry login error: {err}"
+            message = f"Failed to execute due to a registry error: {err}"
             logger.error(message, exc_info=True)
             # We want to raise a pool error rather than a LoginError here
             # because if this occurs internally, we should handle this

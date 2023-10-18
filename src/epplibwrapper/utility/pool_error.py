@@ -26,7 +26,7 @@ class PoolError(Exception):
 
     # For linter
     kill_failed = "Could not kill all connections."
-    conn_failed = "Failed to execute due to a registry login error."
+    conn_failed = "Failed to execute due to a registry error."
     alive_failed = "Failed to keep the connection alive."
     _error_mapping = {
         PoolErrorCodes.KILL_ALL_FAILED: kill_failed,

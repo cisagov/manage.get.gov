@@ -14,6 +14,7 @@ import logging
 
 try:
     from epplib import commands
+    from epplib.client import Client
     from epplib.exceptions import TransportError
 except ImportError:
     pass
@@ -35,6 +36,15 @@ class TestConnectionPool(TestCase):
             "keepalive": 60,
         }
 
+        #self.start_mocks()
+
+    def tearDown(self):
+        #self.mock_send_patch.stop()
+        #self.mock_connect_patch.stop()
+        #self.mockSendPatch.stop()
+        pass
+    
+    def start_mocks(self):
         # Mock a successful connection
         self.mock_connect_patch = patch("epplib.client.Client.connect")
         self.mocked_connect_function = self.mock_connect_patch.start()
@@ -49,11 +59,6 @@ class TestConnectionPool(TestCase):
         self.mockSendPatch = patch("registrar.models.domain.registry._pool")
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.fake_pool
-
-    def tearDown(self):
-        self.mock_send_patch.stop()
-        self.mock_connect_patch.stop()
-        self.mockSendPatch.stop()
 
     def mock_connect(self, _request):
         return None
@@ -95,6 +100,22 @@ class TestConnectionPool(TestCase):
             client=mock_client, login=mock_login, options=self.pool_options
         )
         return pool
+    
+    @patch("djangooidc.views.CLIENT", autospec=True)
+    def fake_socket(self, mock_client):
+        # mock client
+        mock_client.callback.side_effect = self.user_info
+        # Create a mock transport object
+        mock_login = MagicMock()
+        mock_login.transport.cert_file = "path/to/cert_file"
+        mock_login.transport.key_file = "path/to/key_file"
+        return Socket(mock_client, mock_login)
+
+    def test(self, client, login):
+        mock = MagicMock()
+        mock.response.code = 1000
+        mock().return_value = 1000
+        return MagicMock()
 
     @skip("not implemented yet")
     def test_pool_timesout(self):
@@ -124,7 +145,7 @@ class TestConnectionPool(TestCase):
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
         
         def fake_send(self):
-            return MagicMock(
+            mock = MagicMock(
                 code=1000,
                 msg="Command completed successfully",
                 res_data=None,
@@ -133,12 +154,10 @@ class TestConnectionPool(TestCase):
                 extensions=[],
                 msg_q=None,
             )
+            return mock
 
         with ExitStack() as stack:
-            stack.enter_context(patch.object(Socket, "connect", None))
-            stack.enter_context(patch.object(Socket, "send", fake_send))
-            stack.enter_context(patch.object(EPPLibWrapper, "_create_pool", self.fake_pool))
-            #stack.enter_context(patch.object(EPPLibWrapper, "get_pool", self.fake_pool))
+            stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
             # Pool should be running, and be the right size
             self.assertEqual(registry.pool_status.pool_running, True)
             self.assertEqual(registry.pool_status.connection_success, True)
