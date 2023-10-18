@@ -26,7 +26,14 @@ class DomainNameserverForm(forms.Form):
 
     server = forms.CharField(label="Name server", strip=True)
 
-    ip = forms.CharField(label="IP address", strip=True, required=False)
+    ip = forms.CharField(
+        label="IP address", 
+        strip=True, 
+        required=False,
+        validators=[
+            # TODO in progress
+        ],
+    )
 
 
 NameserverFormset = formset_factory(

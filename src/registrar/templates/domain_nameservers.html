@@ -16,7 +16,7 @@
 
   {% include "includes/required_fields.html" %}
 
-  <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+  <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
 
@@ -26,7 +26,7 @@
         <div class="tablet:grid-col-6">
           {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
             {% if forloop.counter <= 2 %}
-              {% with attr_required=True %}
+              {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
                 {% input_with_errors form.server %}
               {% endwith %}
             {% else %}
@@ -35,7 +35,7 @@
           {% endwith %}
         </div>
         <div class="tablet:grid-col-6">
-          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" add_group_class="usa-form-group--unstyled-error" %}
             {% input_with_errors form.ip %}
           {% endwith %}
         </div>

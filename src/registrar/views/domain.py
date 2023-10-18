@@ -23,6 +23,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
+from registrar.utility.errors import NameserverError
 
 from ..forms import (
     ContactForm,
@@ -222,20 +223,44 @@ class DomainNameserversView(DomainPermissionView, FormMixin):
         nameservers = []
         for form in formset:
             try:
+                ip_string = form.cleaned_data["ip"]
+                # Split the string into a list using a comma as the delimiter
+                ip_list = ip_string.split(',')
+                # Remove any leading or trailing whitespace from each IP in the list
+                # this will return [''] if no ips have been entered, which is taken
+                # into account in the model in checkHostIPCombo
+                ip_list = [ip.strip() for ip in ip_list]
+                            
                 as_tuple = (
                     form.cleaned_data["server"],
-                    [form.cleaned_data["ip"]]
+                    ip_list,
                 )
                 nameservers.append(as_tuple)
             except KeyError:
                 # no server information in this field, skip it
                 pass
         domain = self.get_object()
-        domain.nameservers = nameservers
-
-        messages.success(
-            self.request, "The name servers for this domain have been updated."
-        )
+        
+        try:
+            domain.nameservers = nameservers
+        except NameserverError as Err:
+            # TODO: move into literal
+            messages.error(self.request, 'Whoops, Nameservers Error')
+            #  messages.error(self.request, GENERIC_ERROR)
+            logger.error(f"Nameservers error: {Err}")
+        # TODO: registry is not throwing an error when no connection
+        # TODO: merge 1103 and use literals
+        except RegistryError as Err:
+            if Err.is_connection_error():
+                messages.error(self.request, 'CANNOT_CONTACT_REGISTRY')
+                logger.error(f"Registry connection error: {Err}")
+            else:
+                messages.error(self.request, 'GENERIC_ERROR')
+                logger.error(f"Registry error: {Err}")
+        else:
+            messages.success(
+                self.request, "The name servers for this domain have been updated."
+            )
 
         # superclass has the redirect
         return super().form_valid(formset)

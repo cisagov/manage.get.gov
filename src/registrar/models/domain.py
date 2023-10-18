@@ -313,14 +313,14 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if self.isSubdomain(nameserver) and (ip is None or ip == []):
+        if self.isSubdomain(nameserver) and (ip is None or ip == [] or ip != []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
-        elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
+        elif not self.isSubdomain(nameserver) and (ip is not None and ip != [] and ip != ['']):
             raise NameserverError(
                 code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip
             )
-        elif ip is not None and ip != []:
+        elif ip is not None and ip != [] and ip != ['']:
             for addr in ip:
                 logger.info(f"ip address {addr}")
                 if not self._valid_ip_addr(addr):
