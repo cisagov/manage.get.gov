@@ -51,40 +51,55 @@ logger = logging.getLogger(__name__)
 
 
 class DomainBaseView(DomainPermissionView):
+    """
+    Base View for the Domain. Handles getting and setting the domain
+    in session cache on GETs. Also provides methods for getting
+    and setting the domain in cache
+    """
+
     def get(self, request, *args, **kwargs):
-        logger.info("DomainBaseView::get")
         self._get_domain(request)
         context = self.get_context_data(object=self.object)
         return self.render_to_response(context)
 
     def _get_domain(self, request):
-        # get domain from session cache or from db
-        # and set to self.object
-        # set session to self for downstream functions to
-        # update session cache
+        """
+        get domain from session cache or from db and set
+        to self.object
+        set session to self for downstream functions to
+        update session cache
+        """
         self.session = request.session
-        pk = self.kwargs.get("pk")
-        cached_domain = self.session.get(pk)
+        # domain:private_key is the session key to use for
+        # caching the domain in the session
+        domain_pk = "domain:" + str(self.kwargs.get("pk"))
+        cached_domain = self.session.get(domain_pk)
 
         if cached_domain:
-            logger.info("reading object from session cache")
             self.object = cached_domain
         else:
-            logger.info("reading object from db")
             self.object = self.get_object()
         self._update_session_with_domain()
 
     def _update_session_with_domain(self):
-        pk = self.kwargs.get("pk")
-        logger.info("writing object to session cache")
-        self.session[pk] = self.object
+        """
+        update domain in the session cache
+        """
+        domain_pk = "domain:" + str(self.kwargs.get("pk"))
+        self.session[domain_pk] = self.object
 
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
+    """
+    Form Base View for the Domain. Handles getting and setting
+    domain in cache when dealing with domain forms. Provides
+    implementations of post, form_valid and form_invalid.
+    """
+
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view.
 
-        This post method harmonizes using DetailView and FormMixin together.
+        This post method harmonizes using DomainBaseView and FormMixin
         """
         self._get_domain(request)
         form = self.get_form()
@@ -94,12 +109,14 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             return self.form_invalid(form)
 
     def form_valid(self, form):
+        # updates session cache with domain
         self._update_session_with_domain()
 
         # superclass has the redirect
         return super().form_valid(form)
 
     def form_invalid(self, form):
+        # updates session cache with domain
         self._update_session_with_domain()
 
         # superclass has the redirect
@@ -200,11 +217,7 @@ class DomainNameserversView(DomainFormBaseView):
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
-        logger.info("DomainNameserversView.get_initial()")
-        domain = self.object
-        logger.info("DomainNameserversView.get_initial:: after get_object")
-        nameservers = domain.nameservers
-        logger.info("DomainNameserversView.get_initial:: after set nameservers")
+        nameservers = self.object.nameservers
         initial_data = []
 
         if nameservers is not None:
@@ -252,8 +265,7 @@ class DomainNameserversView(DomainFormBaseView):
             except KeyError:
                 # no server information in this field, skip it
                 pass
-        domain = self.object
-        domain.nameservers = nameservers
+        self.object.nameservers = nameservers
 
         messages.success(
             self.request, "The name servers for this domain have been updated."
@@ -273,9 +285,7 @@ class DomainDNSSECView(DomainFormBaseView):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
 
-        self.domain = self.object
-
-        has_dnssec_records = self.domain.dnssecdata is not None
+        has_dnssec_records = self.object.dnssecdata is not None
 
         # Create HTML for the modal button
         modal_button = (
@@ -292,17 +302,16 @@ class DomainDNSSECView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the DNSSEC page for the domain."""
-        return reverse("domain-dns-dnssec", kwargs={"pk": self.domain.pk})
+        return reverse("domain-dns-dnssec", kwargs={"pk": self.object.pk})
 
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view."""
         self._get_domain(request)
-        self.domain = self.object
         form = self.get_form()
         if form.is_valid():
             if "disable_dnssec" in request.POST:
                 try:
-                    self.domain.dnssecdata = {}
+                    self.object.dnssecdata = {}
                 except RegistryError as err:
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
@@ -326,8 +335,7 @@ class DomainDsDataView(DomainFormBaseView):
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
-        domain = self.object
-        dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
+        dnssecdata: extensions.DNSSECExtension = self.object.dnssecdata
         initial_data = []
 
         if dnssecdata is not None:
@@ -368,8 +376,7 @@ class DomainDsDataView(DomainFormBaseView):
         # set the dnssec_ds_confirmed flag in the context for this view
         # based either on the existence of DS Data in the domain,
         # or on the flag stored in the session
-        domain = self.object
-        dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
+        dnssecdata: extensions.DNSSECExtension = self.object.dnssecdata
 
         if dnssecdata is not None and dnssecdata.dsData is not None:
             self.request.session["dnssec_ds_confirmed"] = True
@@ -421,9 +428,8 @@ class DomainDsDataView(DomainFormBaseView):
                 # as valid; this can happen if form has been added but
                 # not been interacted with; in that case, want to ignore
                 pass
-        domain = self.object
         try:
-            domain.dnssecdata = dnssecdata
+            self.object.dnssecdata = dnssecdata
         except RegistryError as err:
             errmsg = "Error updating DNSSEC data in the registry."
             logger.error(errmsg)
@@ -447,8 +453,7 @@ class DomainKeyDataView(DomainFormBaseView):
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
-        domain = self.object
-        dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
+        dnssecdata: extensions.DNSSECExtension = self.object.dnssecdata
         initial_data = []
 
         if dnssecdata is not None:
@@ -489,8 +494,7 @@ class DomainKeyDataView(DomainFormBaseView):
         # set the dnssec_key_confirmed flag in the context for this view
         # based either on the existence of Key Data in the domain,
         # or on the flag stored in the session
-        domain = self.object
-        dnssecdata: extensions.DNSSECExtension = domain.dnssecdata
+        dnssecdata: extensions.DNSSECExtension = self.object.dnssecdata
 
         if dnssecdata is not None and dnssecdata.keyData is not None:
             self.request.session["dnssec_key_confirmed"] = True
@@ -541,9 +545,8 @@ class DomainKeyDataView(DomainFormBaseView):
             except KeyError:
                 # no server information in this field, skip it
                 pass
-        domain = self.object
         try:
-            domain.dnssecdata = dnssecdata
+            self.object.dnssecdata = dnssecdata
         except RegistryError as err:
             errmsg = "Error updating DNSSEC data in the registry."
             logger.error(errmsg)
@@ -596,9 +599,8 @@ class DomainSecurityEmailView(DomainFormBaseView):
 
     def get_initial(self):
         """The initial value for the form."""
-        domain = self.object
         initial = super().get_initial()
-        security_contact = domain.security_contact
+        security_contact = self.object.security_contact
         if security_contact is None or security_contact.email == "dotgov@cisa.dhs.gov":
             initial["security_email"] = None
             return initial
@@ -619,8 +621,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         if new_email is None or new_email.strip() == "":
             new_email = PublicContact.get_default_security().email
 
-        domain = self.object
-        contact = domain.security_contact
+        contact = self.object.security_contact
 
         # If no default is created for security_contact,
         # then we cannot connect to the registry.
