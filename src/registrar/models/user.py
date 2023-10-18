@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .domain_invitation import DomainInvitation
+from registrar.models import TransitionDomain
+from registrar.models import DomainInformation
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -81,6 +83,22 @@ class User(AbstractUser):
                 logger.warn(
                     "Failed to retrieve invitation %s", invitation, exc_info=True
                 )
+        
+        transition_domain_exists = TransitionDomain.objects.filter(
+            username=self.email
+        ).exists()
+        if transition_domain_exists:
+            # Looks like the user logged in with the same e-mail as
+            # a corresponding transition domain.  Create a Domain
+            # Information object.
+            # TODO: Do we need to check for existing Domain Info objects?
+            # TODO: Should we add a Domain to the DomainInfo object?
+            # NOTE that adding a user role for this user
+            # as admin for this domain is already done
+            # in the incitation.retrieve() method. So
+            # we don't need to do that here.
+           new_domain_info = DomainInformation(creator=self)
+           new_domain_info.save()
 
     class Meta:
         permissions = [
