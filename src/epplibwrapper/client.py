@@ -1,10 +1,9 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+
 from time import sleep
-
 from gevent import Timeout
-
 from epplibwrapper.utility.pool_status import PoolStatus
 
 try:
