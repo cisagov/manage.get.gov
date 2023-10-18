@@ -1,0 +1,80 @@
+@use "uswds-core" as *;
+@use "typography" as *;
+
+.register-form-step > h1 {
+  //align to top of sidebar on first page of the form
+  margin-top: units(-1);
+}
+
+  //Tighter spacing when H2 is immediatly after H1
+.register-form-step .usa-fieldset:first-of-type h2:first-of-type,
+.register-form-step h1 + h2 {
+  margin-top: units(1);
+}
+
+.register-form-step h3 {
+  color: color('primary-dark');
+  letter-spacing: $letter-space--xs;
+  margin-top: units(3);
+  margin-bottom: 0;
+
+  + p {
+    margin-top: units(0.5);
+  }
+}
+
+.register-form-step h4 {
+  margin-bottom: 0;
+
+  + p {
+    margin-top: units(0.5);
+  }
+}
+
+.register-form-step a {
+  color: color('primary');
+
+  &:visited {
+    color: color('violet-70v'); //USWDS default
+  }
+}
+.register-form-step .usa-form-group:first-of-type, 
+.register-form-step .usa-label:first-of-type {
+  margin-top: units(1);
+}
+
+.ao_example p {
+  margin-top: units(1);
+}
+
+.domain_example {
+  p {
+    margin-bottom: 0;
+  }
+
+  .usa-list {
+    margin-top: units(0.5);
+  }
+}
+
+.review__step {
+  margin-top: units(3);
+}
+
+  .summary-item hr,
+.review__step hr {
+  border: none; //reset
+  border-top: 1px solid color('primary-dark');
+  margin-top: 0;
+  margin-bottom: units(0.5);
+}
+
+.review__step__title a:visited {
+  color: color('primary');
+}
+
+.review__step__name {
+  color: color('primary-dark');
+  font-weight: font-weight('semibold');
+  margin-bottom: units(0.5);
+}
