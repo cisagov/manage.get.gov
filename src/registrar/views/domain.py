@@ -23,6 +23,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
+from registrar.models.utility.contact_error import ContactError
 
 from ..forms import (
     ContactForm,
@@ -41,6 +42,8 @@ from epplibwrapper import (
     common,
     extensions,
     RegistryError,
+    CANNOT_CONTACT_REGISTRY,
+    GENERIC_ERROR,
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
@@ -618,15 +621,27 @@ class DomainSecurityEmailView(DomainPermissionView, FormMixin):
         # If no default is created for security_contact,
         # then we cannot connect to the registry.
         if contact is None:
-            messages.error(self.request, "Update failed. Cannot contact the registry.")
+            messages.error(self.request, CANNOT_CONTACT_REGISTRY)
             return redirect(self.get_success_url())
 
         contact.email = new_email
-        contact.save()
 
-        messages.success(
-            self.request, "The security email for this domain has been updated."
-        )
+        try:
+            contact.save()
+        except RegistryError as Err:
+            if Err.is_connection_error():
+                messages.error(self.request, CANNOT_CONTACT_REGISTRY)
+                logger.error(f"Registry connection error: {Err}")
+            else:
+                messages.error(self.request, GENERIC_ERROR)
+                logger.error(f"Registry error: {Err}")
+        except ContactError as Err:
+            messages.error(self.request, GENERIC_ERROR)
+            logger.error(f"Generic registry error: {Err}")
+        else:
+            messages.success(
+                self.request, "The security email for this domain has been updated."
+            )
 
         # superclass has the redirect
         return redirect(self.get_success_url())
