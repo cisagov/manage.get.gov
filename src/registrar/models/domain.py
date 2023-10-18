@@ -313,7 +313,7 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if self.isSubdomain(nameserver) and (ip is None or ip == [] or ip != []):
+        if self.isSubdomain(nameserver) and (ip is None or ip == [] or ip == ['']):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
         elif not self.isSubdomain(nameserver) and (ip is not None and ip != [] and ip != ['']):
