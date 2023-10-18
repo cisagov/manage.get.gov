@@ -1,4 +1,5 @@
 import logging
+import greenlet
 import gevent
 from geventconnpool import ConnectionPool
 from epplibwrapper.socket import Socket
