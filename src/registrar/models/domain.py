@@ -817,7 +817,7 @@ class Domain(TimeStampedModel, DomainHelper):
             and errorCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
         ):
             # TODO- ticket #433 look here for error handling
-            raise Exception("Unable to add contact to registry")
+            raise RegistryError(code=errorCode)
 
         # contact doesn't exist on the domain yet
         logger.info("_set_singleton_contact()-> contact has been added to the registry")
