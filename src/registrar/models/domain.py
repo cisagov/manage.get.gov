@@ -9,6 +9,7 @@ from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignor
 
 from django.db import models
 from typing import Any
+import greenlet
 import gevent
 from epplibwrapper import (
     CLIENT as registry,
