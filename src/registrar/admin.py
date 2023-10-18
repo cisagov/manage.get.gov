@@ -721,7 +721,7 @@ class DomainAdmin(ListHeaderAdmin):
     ]
 
     def organization_type(self, obj):
-        return obj.domain_info.organization_type
+        return obj.domain_info.get_organization_type_display()
 
     organization_type.admin_order_field = (  # type: ignore
         "domain_info__organization_type"
