@@ -314,7 +314,6 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        logger.info("checkHostIPCombo is called on %s, %s", name, nameserver)
         if cls.isSubdomain(name, nameserver) and (ip is None or ip == [] or ip == ['']):
 
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
@@ -330,7 +329,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     raise NameserverError(
                         code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
                     )
-        logger.info("got no errors")
         return None
 
     @classmethod
@@ -340,7 +338,6 @@ class Domain(TimeStampedModel, DomainHelper):
         returns:
             isValid (boolean)-True for valid ip address"""
         try:
-            logger.info(f"in valid_ip_addr: {ipToTest}")
             ip = ipaddress.ip_address(ipToTest)
             logger.info(ip.version)
             return ip.version == 6 or ip.version == 4

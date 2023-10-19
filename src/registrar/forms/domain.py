@@ -5,7 +5,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.forms import formset_factory
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
-from registrar.utility.errors import NameserverError
+from registrar.utility.errors import (
+    NameserverError,
+    NameserverErrorCodes as nsErrorCodes
+)
 
 from ..models import Contact, DomainInformation, Domain
 from .common import (
@@ -70,9 +73,9 @@ class DomainNameserverForm(forms.Form):
         # make sure there's a nameserver if an ip is passed
         if ip:
             ip_list = [ip.strip() for ip in ip.split(",")]
-            if len(server) < len(ip_list):
+            if not server and len(ip_list) > 0:
                 # If 'server' is empty, disallow 'ip' input
-                raise forms.ValidationError("Name server must be provided to enter IP address.")
+                self.add_error('server', "Nameserver must be provided to enter IP address.")
         
         # if there's a nameserver and an ip, validate nameserver/ip combo
         
@@ -84,7 +87,12 @@ class DomainNameserverForm(forms.Form):
             try:
                 Domain.checkHostIPCombo(domain, server, ip_list)
             except NameserverError as e:
-                raise forms.ValidationError(str(e))
+                if e.code == nsErrorCodes.GLUE_RECORD_NOT_ALLOWED:
+                    self.add_error('server', "Name server address does not match domain name")
+                elif e.code == nsErrorCodes.MISSING_IP:
+                    self.add_error('ip', "Subdomains require an IP address")
+                else:
+                    self.add_error('ip', str(e))
 
         return cleaned_data
 
