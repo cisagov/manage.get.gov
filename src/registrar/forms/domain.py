@@ -60,9 +60,8 @@ class DomainNameserverForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         # Access the context object passed to the form
-        print(f"domain domain domain {kwargs}")
-        self.domain = kwargs.pop('rachid', None)
-        print(f"domain domain domain {kwargs}")
+        print(f"kwargs in __init__ {kwargs}")
+        self.domain = kwargs.pop('domain', None)
         super().__init__(*args, **kwargs)
     
     # def __init__(self, request, *args, **kwargs):
@@ -78,27 +77,20 @@ class DomainNameserverForm(forms.Form):
         # make sure there's a nameserver if an ip is passed
         if ip:
             ip_list = [ip.strip() for ip in ip.split(",")]
-            if not server:
+            if len(server) < len(ip_list):
                 # If 'server' is empty, disallow 'ip' input
                 raise forms.ValidationError("Name server must be provided to enter IP address.")
-            try:
-                Domain.checkHostIPCombo(server, ip_list)
-            except NameserverError as e:
-                raise forms.ValidationError(str(e))
         
-        # if there's a nameserver, validate nameserver/ip combo
-        domain, _ = Domain.objects.get_or_create(name="magazine-claim.gov")
+        # if there's a nameserver and an ip, validate nameserver/ip combo
+        domain, _ = Domain.objects.get_or_create(name="realize-shake-too.gov")
         
         # Access session data from the request object
         # session_data = self.request.session.get('nameservers_form_domain', None)
         
-        print(f"domain domain domain {self.domain}")
+        print(f"domain in clean: {self.domain}")
         
-        if server:
-            if ip:
-                ip_list = [ip.strip() for ip in ip.split(",")]
-            else:
-                ip_list = [""]
+        if server and ip:
+            ip_list = [ip.strip() for ip in ip.split(",")]
             try:
                 Domain.checkHostIPCombo(domain, server, ip_list)
             except NameserverError as e:
@@ -110,6 +102,8 @@ class DomainNameserverForm(forms.Form):
 NameserverFormset = formset_factory(
     DomainNameserverForm,
     extra=1,
+    max_num=13,
+    validate_max=True,
 )
 
 

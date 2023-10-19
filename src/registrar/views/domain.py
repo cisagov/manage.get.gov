@@ -219,11 +219,13 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
 
     template_name = "domain_nameservers.html"
     form_class = NameserverFormset
+    model = Domain
     
     def get_formset_kwargs(self, index):
         kwargs = super().get_formset_kwargs(index)
         # kwargs['domain'] = self.object  # Pass the context data
         kwargs.update({"domain", self.object})
+        print(f"kwargs in get_formset_kwargs {kwargs}")
         return kwargs
     
     def get_initial(self):
@@ -254,8 +256,12 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
 
     def get_form(self, **kwargs):
         """Override the labels and required fields every time we get a formset."""
-        formset = super().get_form(**kwargs)        
+        # kwargs.update({"domain", self.object})
+        
+        formset = super().get_form(**kwargs)    
+        
         for i, form in enumerate(formset):
+            # form = self.get_form(self, **kwargs)
             form.fields["server"].label += f" {i+1}"
             form.fields["ip"].label += f" {i+1}"
             if i < 2:
