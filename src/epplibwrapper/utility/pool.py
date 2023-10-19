@@ -6,9 +6,12 @@ from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
 
 try:
     from epplib.commands import Hello
+    from epplib.exceptions import TransportError
 except ImportError:
     pass
 
+from gevent.lock import BoundedSemaphore
+from collections import deque
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,34 @@ class EPPConnectionPool(ConnectionPool):
         # For storing shared credentials
         self._client = client
         self._login = login
-        super().__init__(**options)
+        # Keep track of each greenlet
+        self.greenlets = []
+
+        # Define optional pool settings.
+        # Kept in a dict so that the parent class,
+        # client.py, can maintain seperation/expanadability
+        self.size = 1
+        if "size" in options:
+            self.size = options["size"]
+
+        self.exc_classes = tuple((TransportError,))
+        if "exc_classes" in options:
+            self.exc_classes = options["exc_classes"]
+
+        self.keepalive = None
+        if "keepalive" in options:
+            self.keepalive = options["keepalive"]
+
+        # Determines the period in which new
+        # gevent threads are spun up
+        self.spawn_frequency = 0.1
+        if "spawn_frequency" in options:
+            self.spawn_frequency = options["spawn_frequency"]
+
+        self.conn = deque()
+        self.lock = BoundedSemaphore(self.size)
+
+        self.populate_all_connections()
 
     def _new_connection(self):
         socket = self._create_socket(self._client, self._login)
@@ -64,22 +94,38 @@ class EPPConnectionPool(ConnectionPool):
     def kill_all_connections(self):
         """Kills all active connections in the pool."""
         try:
-            gevent.killall(self.conn)
-            self.conn.clear()
-            # Clear the semaphore
-            for i in range(self.lock.counter):
-                self.lock.release()
+            if len(self.conn) > 0:
+                gevent.killall(self.greenlets)
+
+                self.greenlets.clear()
+                self.conn.clear()
+
+                # Clear the semaphore
+                self.lock = BoundedSemaphore(self.size)
+            else:
+                logger.info("No connections to kill.")
         except Exception as err:
             logger.error("Could not kill all connections.")
             raise err
 
-    def repopulate_all_connections(self):
-        """Regenerates the connection pool.
+    def populate_all_connections(self):
+        """Generates the connection pool.
         If any connections exist, kill them first.
+        Based off of the __init__ definition for geventconnpool.
         """
         if len(self.conn) > 0:
             self.kill_all_connections()
+
+        # Setup the lock
         for i in range(self.size):
             self.lock.acquire()
+
+        # Open multiple connections
         for i in range(self.size):
-            gevent.spawn_later(self.SPAWN_FREQUENCY * i, self._addOne)
+            self.greenlets.append(
+                gevent.spawn_later(self.spawn_frequency * i, self._addOne)
+            )
+
+        # Open a "keepalive" thread if we want to ping open connections
+        if self.keepalive:
+            self.greenlets.append(gevent.spawn(self._keepalive_periodic))

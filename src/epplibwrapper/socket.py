@@ -38,15 +38,36 @@ class Socket:
             raise LoginError(response.msg)
         return self.client
 
+    def disconnect(self):
+        """Close the connection."""
+        try:
+            self.client.send(commands.Logout())
+            self.client.close()
+        except Exception:
+            logger.warning("Connection to registry was not cleanly closed.")
+
+    def send(self, command):
+        """Sends a command to the registry.
+        If the response code is >= 2000,
+        then this function raises a LoginError.
+        The calling function should handle this."""
+        response = self.client.send(command)
+        if self.is_login_error(response.code):
+            self.client.close()
+            raise LoginError(response.msg)
+
+        return response
+
     def is_login_error(self, code):
+        """Returns the result of code >= 2000"""
         return code >= 2000
 
     def test_connection_success(self):
         """Tests if a successful connection can be made with the registry.
-        Tries 3 times"""
+        Tries 3 times."""
         # Something went wrong if this doesn't exist
         if not hasattr(self.client, "connect"):
-            logger.warning("self.client does not have a connect method")
+            logger.warning("self.client does not have a connect attribute")
             return False
 
         counter = 0  # we'll try 3 times
@@ -72,21 +93,5 @@ class Socket:
                     logger.warning("was login error")
                     return False
 
-                # otherwise, just return true
+                # Otherwise, just return true
                 return True
-
-    def disconnect(self):
-        """Close the connection."""
-        try:
-            self.client.send(commands.Logout())
-            self.client.close()
-        except Exception:
-            logger.warning("Connection to registry was not cleanly closed.")
-
-    def send(self, command):
-        response = self.client.send(command)
-        if response.code >= 2000:
-            self.client.close()
-            raise LoginError(response.msg)
-
-        return response

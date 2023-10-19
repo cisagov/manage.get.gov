@@ -68,7 +68,9 @@ class EPPLibWrapper:
         self.pool_options = {
             # Pool size
             "size": settings.EPP_CONNECTION_POOL_SIZE,
-            # Which errors the pool should look out for
+            # Which errors the pool should look out for.
+            # Avoid changing this unless necessary,
+            # it can and will break things.
             "exc_classes": (TransportError,),
             # Occasionally pings the registry to keep the connection alive.
             # Value in seconds => (keepalive / size)
@@ -76,6 +78,7 @@ class EPPLibWrapper:
         }
 
         self._pool = None
+
         # Tracks the status of the pool
         self.pool_status = PoolStatus()
 
@@ -85,9 +88,11 @@ class EPPLibWrapper:
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
+
         # Start a timeout to check if the pool is hanging
         timeout = Timeout(settings.POOL_TIMEOUT)
         timeout.start()
+
         try:
             if not self.pool_status.connection_success:
                 raise LoginError(
@@ -96,6 +101,9 @@ class EPPLibWrapper:
             with self._pool.get() as connection:
                 response = connection.send(command)
         except Timeout as t:
+            # If more than one pool exists,
+            # multiple timeouts can be floating around.
+            # We need to be specific as to which we are targeting.
             if t is timeout:
                 # Flag that the pool is frozen,
                 # then restart the pool.
@@ -125,6 +133,7 @@ class EPPLibWrapper:
             else:
                 return response
         finally:
+            # Close the timeout no matter what happens
             timeout.close()
 
     def send(self, command, *, cleaned=False):
@@ -174,11 +183,6 @@ class EPPLibWrapper:
         If an instance of the pool already exists,
         then then that instance will be killed first.
         It is generally recommended to keep this enabled.
-
-        try_start_if_invalid -> bool:
-        Designed for use in test cases, if we can't connect
-        to the registry, ignore that and try to connect anyway
-        It is generally recommended to keep this disabled.
         """
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
@@ -209,7 +213,7 @@ class EPPLibWrapper:
             self._pool.kill_all_connections()
             self._pool = None
             self.pool_status.pool_running = False
-            return
+            return None
         logger.info("kill_pool() was invoked but there was no pool to delete")
 
     def _test_registry_connection_success(self):
@@ -219,9 +223,11 @@ class EPPLibWrapper:
         """
         socket = Socket(self._client, self._login)
         can_login = False
+
         # Something went wrong if this doesn't exist
         if hasattr(socket, "test_connection_success"):
             can_login = socket.test_connection_success()
+
         return can_login
 
 
@@ -229,9 +235,8 @@ try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
     logger.info("registry client initialized")
-except Exception as err:
+except Exception:
     CLIENT = None  # type: ignore
     logger.warning(
         "Unable to configure epplib. Registrar cannot contact registry.", exc_info=True
     )
-    logger.warning(err)
