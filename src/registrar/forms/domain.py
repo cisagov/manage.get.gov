@@ -47,6 +47,8 @@ class IPAddressField(forms.CharField):
 class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
 
+    domain = forms.CharField(widget=forms.HiddenInput, required=False)
+
     server = forms.CharField(label="Name server", strip=True)
 
     ip = IPAddressField(
@@ -58,21 +60,12 @@ class DomainNameserverForm(forms.Form):
         # ],
     )
     
-    def __init__(self, *args, **kwargs):
-        # Access the context object passed to the form
-        print(f"kwargs in __init__ {kwargs}")
-        self.domain = kwargs.pop('domain', None)
-        super().__init__(*args, **kwargs)
-    
-    # def __init__(self, request, *args, **kwargs):
-    #     # Pass the request object to the form during initialization
-    #     self.request = request
-    #     super().__init__(*args, **kwargs)
-    
     def clean(self):
         cleaned_data = super().clean()
         server = cleaned_data.get('server', '')
         ip = cleaned_data.get('ip', '')
+        domain = cleaned_data.get('domain', '')
+        print(f"clean is called on {domain} {server}")
 
         # make sure there's a nameserver if an ip is passed
         if ip:
@@ -82,15 +75,12 @@ class DomainNameserverForm(forms.Form):
                 raise forms.ValidationError("Name server must be provided to enter IP address.")
         
         # if there's a nameserver and an ip, validate nameserver/ip combo
-        domain, _ = Domain.objects.get_or_create(name="realize-shake-too.gov")
         
-        # Access session data from the request object
-        # session_data = self.request.session.get('nameservers_form_domain', None)
-        
-        print(f"domain in clean: {self.domain}")
-        
-        if server and ip:
-            ip_list = [ip.strip() for ip in ip.split(",")]
+        if server:
+            if ip:
+                ip_list = [ip.strip() for ip in ip.split(",")]
+            else:
+                ip_list = ['']
             try:
                 Domain.checkHostIPCombo(domain, server, ip_list)
             except NameserverError as e:

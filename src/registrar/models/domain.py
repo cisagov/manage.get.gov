@@ -291,14 +291,16 @@ class Domain(TimeStampedModel, DomainHelper):
                 newDict[tup[0]] = tup[1]
         return newDict
 
-    def isSubdomain(self, nameserver: str):
+    @classmethod
+    def isSubdomain(cls, name: str, nameserver: str):
         """Returns boolean if the domain name is found in the argument passed"""
         subdomain_pattern = r"([\w-]+\.)*"
-        full_pattern = subdomain_pattern + self.name
+        full_pattern = subdomain_pattern + name
         regex = re.compile(full_pattern)
         return bool(regex.match(nameserver))
 
-    def checkHostIPCombo(self, nameserver: str, ip: list[str]):
+    @classmethod
+    def checkHostIPCombo(cls, name: str, nameserver: str, ip: list[str]):
         """Checks the parameters past for a valid combination
         raises error if:
             - nameserver is a subdomain but is missing ip
@@ -312,23 +314,27 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if self.isSubdomain(nameserver) and (ip is None or ip == [] or ip == ['']):
+        logger.info("checkHostIPCombo is called on %s, %s", name, nameserver)
+        if cls.isSubdomain(name, nameserver) and (ip is None or ip == [] or ip == ['']):
+
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
-        elif not self.isSubdomain(nameserver) and (ip is not None and ip != [] and ip != ['']):
+        elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != [] and ip != ['']):
             raise NameserverError(
                 code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip
             )
         elif ip is not None and ip != [] and ip != ['']:
             for addr in ip:
                 logger.info(f"ip address {addr}")
-                if not self._valid_ip_addr(addr):
+                if not cls._valid_ip_addr(addr):
                     raise NameserverError(
                         code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
                     )
+        logger.info("got no errors")
         return None
 
-    def _valid_ip_addr(self, ipToTest: str):
+    @classmethod
+    def _valid_ip_addr(cls, ipToTest: str):
         """returns boolean if valid ip address string
         We currently only accept v4 or v6 ips
         returns:
@@ -383,7 +389,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 if newHostDict[prevHost] is not None and set(
                     newHostDict[prevHost]
                 ) != set(addrs):
-                    self.checkHostIPCombo(nameserver=prevHost, ip=newHostDict[prevHost])
+                    self.__class__.checkHostIPCombo(name=self.name, nameserver=prevHost, ip=newHostDict[prevHost])
                     updated_values.append((prevHost, newHostDict[prevHost]))
 
         new_values = {
@@ -393,7 +399,7 @@ class Domain(TimeStampedModel, DomainHelper):
         }
 
         for nameserver, ip in new_values.items():
-            self.checkHostIPCombo(nameserver=nameserver, ip=ip)
+            self.__class__.checkHostIPCombo(name=self.name, nameserver=nameserver, ip=ip)
 
         return (deleted_values, updated_values, new_values, previousHostDict)
 

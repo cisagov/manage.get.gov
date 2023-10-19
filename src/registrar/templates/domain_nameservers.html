@@ -24,6 +24,7 @@
     <div class="server-form">
       <div class="grid-row grid-gap-2 flex-end">
         <div class="tablet:grid-col-6">
+          {{ form.domain }}
           {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
             {% if forloop.counter <= 2 %}
               {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}

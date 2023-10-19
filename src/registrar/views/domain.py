@@ -221,13 +221,6 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
     form_class = NameserverFormset
     model = Domain
     
-    def get_formset_kwargs(self, index):
-        kwargs = super().get_formset_kwargs(index)
-        # kwargs['domain'] = self.object  # Pass the context data
-        kwargs.update({"domain", self.object})
-        print(f"kwargs in get_formset_kwargs {kwargs}")
-        return kwargs
-    
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
         nameservers = self.object.nameservers
@@ -257,7 +250,6 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
     def get_form(self, **kwargs):
         """Override the labels and required fields every time we get a formset."""
         # kwargs.update({"domain", self.object})
-        
         formset = super().get_form(**kwargs)    
         
         for i, form in enumerate(formset):
@@ -268,8 +260,22 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
                 form.fields["server"].required = True
             else:
                 form.fields["server"].required = False
+            form.fields["domain"].initial = self.object.name
+            print(f"domain in get_form {self.object.name}")
         return formset
+        
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view.
 
+        This post method harmonizes using DomainBaseView and FormMixin
+        """
+        self._get_domain(request)
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+        
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
@@ -286,7 +292,7 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
                 # this will return [''] if no ips have been entered, which is taken
                 # into account in the model in checkHostIPCombo
                 ip_list = [ip.strip() for ip in ip_list]
-                            
+    
                 as_tuple = (
                     form.cleaned_data["server"],
                     ip_list,
