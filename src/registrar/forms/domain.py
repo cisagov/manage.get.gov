@@ -23,23 +23,25 @@ class DomainAddUserForm(forms.Form):
 
 
 class IPAddressField(forms.CharField):
-    # def __init__(self, server_value, *args, **kwargs):
-    #     self.server_value = server_value
-    #     super().__init__(*args, **kwargs)
+    
+    
         
-    def validate(self, value):
+    def validate(self, value):    
         super().validate(value)  # Run the default CharField validation
 
-        ip_list = [ip.strip() for ip in value.split(",")]  # Split IPs and remove whitespace
+        # ip_list = [ip.strip() for ip in value.split(",")]  # Split IPs and remove whitespace
         
-        # TODO: pass hostname from view?
-        hostname = "" 
+        # # TODO: pass hostname from view?
         
-        # Call the IP validation method from Domain
-        try:
-            Domain.checkHostIPCombo(hostname, ip_list)
-        except NameserverError as e:
-            raise forms.ValidationError(str(e))
+        # hostname = self.form.cleaned_data.get("server", "")
+        
+        # print(f"hostname {hostname}")
+        
+        # # Call the IP validation method from Domain
+        # try:
+        #     Domain.checkHostIPCombo(hostname, ip_list)
+        # except NameserverError as e:
+        #     raise forms.ValidationError(str(e))
 
 
 class DomainNameserverForm(forms.Form):
@@ -51,7 +53,58 @@ class DomainNameserverForm(forms.Form):
         label="IP address",
         strip=True,
         required=False,
+        # validators=[
+        #     django.core.validators.validate_ipv46_address
+        # ],
     )
+    
+    def __init__(self, *args, **kwargs):
+        # Access the context object passed to the form
+        print(f"domain domain domain {kwargs}")
+        self.domain = kwargs.pop('rachid', None)
+        print(f"domain domain domain {kwargs}")
+        super().__init__(*args, **kwargs)
+    
+    # def __init__(self, request, *args, **kwargs):
+    #     # Pass the request object to the form during initialization
+    #     self.request = request
+    #     super().__init__(*args, **kwargs)
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        server = cleaned_data.get('server', '')
+        ip = cleaned_data.get('ip', '')
+
+        # make sure there's a nameserver if an ip is passed
+        if ip:
+            ip_list = [ip.strip() for ip in ip.split(",")]
+            if not server:
+                # If 'server' is empty, disallow 'ip' input
+                raise forms.ValidationError("Name server must be provided to enter IP address.")
+            try:
+                Domain.checkHostIPCombo(server, ip_list)
+            except NameserverError as e:
+                raise forms.ValidationError(str(e))
+        
+        # if there's a nameserver, validate nameserver/ip combo
+        domain, _ = Domain.objects.get_or_create(name="magazine-claim.gov")
+        
+        # Access session data from the request object
+        # session_data = self.request.session.get('nameservers_form_domain', None)
+        
+        print(f"domain domain domain {self.domain}")
+        
+        if server:
+            if ip:
+                ip_list = [ip.strip() for ip in ip.split(",")]
+            else:
+                ip_list = [""]
+            try:
+                Domain.checkHostIPCombo(domain, server, ip_list)
+            except NameserverError as e:
+                raise forms.ValidationError(str(e))
+
+        return cleaned_data
 
 
 NameserverFormset = formset_factory(

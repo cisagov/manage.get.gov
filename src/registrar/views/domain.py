@@ -14,6 +14,7 @@ from django.shortcuts import redirect
 from django.template import RequestContext
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
+from django.forms import BaseFormSet
 
 from registrar.models import (
     Domain,
@@ -213,12 +214,18 @@ class DomainDNSView(DomainBaseView):
     template_name = "domain_dns.html"
 
 
-class DomainNameserversView(DomainFormBaseView):
+class DomainNameserversView(DomainFormBaseView, BaseFormSet):
     """Domain nameserver editing view."""
 
     template_name = "domain_nameservers.html"
     form_class = NameserverFormset
-
+    
+    def get_formset_kwargs(self, index):
+        kwargs = super().get_formset_kwargs(index)
+        # kwargs['domain'] = self.object  # Pass the context data
+        kwargs.update({"domain", self.object})
+        return kwargs
+    
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
         nameservers = self.object.nameservers
@@ -247,8 +254,7 @@ class DomainNameserversView(DomainFormBaseView):
 
     def get_form(self, **kwargs):
         """Override the labels and required fields every time we get a formset."""
-        formset = super().get_form(**kwargs)
-
+        formset = super().get_form(**kwargs)        
         for i, form in enumerate(formset):
             form.fields["server"].label += f" {i+1}"
             form.fields["ip"].label += f" {i+1}"
@@ -261,6 +267,8 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
+        self.request.session['nameservers_form_domain'] = self.object
+        
         # Set the nameservers from the formset
         nameservers = []
         for form in formset:
