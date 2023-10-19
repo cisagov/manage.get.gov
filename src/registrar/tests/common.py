@@ -917,23 +917,23 @@ class MockEppLib(TestCase):
     def mockInfoContactCommands(self, _request, cleaned):
         mocked_result: info.InfoContactResultData
 
-            # For testing contact types
-            match getattr(_request, "id", None):
-                case "securityContact":
-                    mocked_result = self.mockSecurityContact
-                case "technicalContact":
-                    mocked_result = self.mockTechnicalContact
-                case "adminContact":
-                    mocked_result = self.mockAdministrativeContact
-                case "regContact":
-                    mocked_result = self.mockRegistrantContact
-                case "defaultSec":
-                    mocked_result = self.mockDefaultSecurityContact
-                case "defaultTech":
-                    mocked_result = self.mockDefaultTechnicalContact
-                case _:
-                    # Default contact return
-                    mocked_result = self.mockDataInfoContact
+        # For testing contact types
+        match getattr(_request, "id", None):
+            case "securityContact":
+                mocked_result = self.mockSecurityContact
+            case "technicalContact":
+                mocked_result = self.mockTechnicalContact
+            case "adminContact":
+                mocked_result = self.mockAdministrativeContact
+            case "regContact":
+                mocked_result = self.mockRegistrantContact
+            case "defaultSec":
+                mocked_result = self.mockDefaultSecurityContact
+            case "defaultTech":
+                mocked_result = self.mockDefaultTechnicalContact
+            case _:
+                # Default contact return
+                mocked_result = self.mockDataInfoContact
 
         return MagicMock(res_data=[mocked_result])
 
