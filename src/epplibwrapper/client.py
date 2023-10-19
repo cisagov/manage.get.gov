@@ -217,7 +217,7 @@ class EPPLibWrapper:
         credentials are valid, and/or if the Registrar
         can be contacted
         """
-        socket = Socket(self._login, self._client)
+        socket = Socket(self._client, self._login)
         can_login = False
         # Something went wrong if this doesn't exist
         if hasattr(socket, "test_connection_success"):
