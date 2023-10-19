@@ -3,7 +3,6 @@ Feature being tested: Registry Integration
 
 This file tests the various ways in which the registrar interacts with the registry.
 """
-from typing import Mapping, Any
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
@@ -1442,15 +1441,27 @@ class TestRegistrantDNSSEC(MockEppLib):
     """Rule: Registrants may modify their secure DNS data"""
 
     # helper function to create UpdateDomainDNSSECExtention object for verification
-    def createUpdateExtension(self, dnssecdata: extensions.DNSSECExtension):
-        return commands.UpdateDomainDNSSECExtension(
-            maxSigLife=dnssecdata.maxSigLife,
-            dsData=dnssecdata.dsData,
-            keyData=dnssecdata.keyData,
-            remDsData=None,
-            remKeyData=None,
-            remAllDsKeyData=True,
-        )
+    def createUpdateExtension(
+        self, dnssecdata: extensions.DNSSECExtension, remove=False
+    ):
+        if not remove:
+            return commands.UpdateDomainDNSSECExtension(
+                maxSigLife=dnssecdata.maxSigLife,
+                dsData=dnssecdata.dsData,
+                keyData=dnssecdata.keyData,
+                remDsData=None,
+                remKeyData=None,
+                remAllDsKeyData=False,
+            )
+        else:
+            return commands.UpdateDomainDNSSECExtension(
+                maxSigLife=dnssecdata.maxSigLife,
+                dsData=None,
+                keyData=None,
+                remDsData=dnssecdata.dsData,
+                remKeyData=dnssecdata.keyData,
+                remAllDsKeyData=False,
+            )
 
     def setUp(self):
         """
@@ -1461,37 +1472,6 @@ class TestRegistrantDNSSEC(MockEppLib):
         super().setUp()
         # for the tests, need a domain in the unknown state
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov")
-        self.addDsData1 = {
-            "keyTag": 1234,
-            "alg": 3,
-            "digestType": 1,
-            "digest": "ec0bdd990b39feead889f0ba613db4adec0bdd99",
-        }
-        self.addDsData2 = {
-            "keyTag": 2345,
-            "alg": 3,
-            "digestType": 1,
-            "digest": "ec0bdd990b39feead889f0ba613db4adecb4adec",
-        }
-        self.keyDataDict = {
-            "flags": 257,
-            "protocol": 3,
-            "alg": 1,
-            "pubKey": "AQPJ////4Q==",
-        }
-        self.dnssecExtensionWithDsData: Mapping[str, Any] = {
-            "dsData": [common.DSData(**self.addDsData1)]
-        }
-        self.dnssecExtensionWithMultDsData: Mapping[str, Any] = {
-            "dsData": [
-                common.DSData(**self.addDsData1),
-                common.DSData(**self.addDsData2),
-            ],
-        }
-        self.dnssecExtensionWithKeyData: Mapping[str, Any] = {
-            "maxSigLife": 3215,
-            "keyData": [common.DNSSECKeyData(**self.keyDataDict)],
-        }
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -1499,51 +1479,62 @@ class TestRegistrantDNSSEC(MockEppLib):
 
     def test_user_adds_dnssec_data(self):
         """
-        Scenario: Registrant adds DNSSEC data.
+        Scenario: Registrant adds DNSSEC ds data.
         Verify that both the setter and getter are functioning properly
 
         This test verifies:
-        1 - setter calls UpdateDomain command
-        2 - setter adds the UpdateDNSSECExtension extension to the command
-        3 - setter causes the getter to call info domain on next get from cache
-        4 - getter properly parses dnssecdata from InfoDomain response and sets to cache
+        1 - setter initially calls InfoDomain command
+        2 - setter then calls UpdateDomain command
+        3 - setter adds the UpdateDNSSECExtension extension to the command
+        4 - setter causes the getter to call info domain on next get from cache
+        5 - getter properly parses dnssecdata from InfoDomain response and sets to cache
 
         """
 
-        # make sure to stop any other patcher so there are no conflicts
-        self.mockSendPatch.stop()
-
+        # need to use a separate patcher and side_effect for this test, as
+        # response from InfoDomain must be different for different iterations
+        # of the same command
         def side_effect(_request, cleaned):
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
-                ],
-            )
+            if isinstance(_request, commands.InfoDomain):
+                if mocked_send.call_count == 1:
+                    return MagicMock(res_data=[self.mockDataInfoDomain])
+                else:
+                    return MagicMock(
+                        res_data=[self.mockDataInfoDomain],
+                        extensions=[self.dnssecExtensionWithDsData],
+                    )
+            else:
+                return MagicMock(res_data=[self.mockDataInfoHosts])
 
         patcher = patch("registrar.models.domain.registry.send")
         mocked_send = patcher.start()
         mocked_send.side_effect = side_effect
 
-        self.domain.dnssecdata = self.dnssecExtensionWithDsData
+        domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
+        domain.dnssecdata = self.dnssecExtensionWithDsData
+
         # get the DNS SEC extension added to the UpdateDomain command and
         # verify that it is properly sent
         # args[0] is the _request sent to registry
         args, _ = mocked_send.call_args
-        # assert that the extension matches
+        # assert that the extension on the update matches
         self.assertEquals(
             args[0].extensions[0],
-            self.createUpdateExtension(
-                extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
-            ),
+            self.createUpdateExtension(self.dnssecExtensionWithDsData),
         )
         # test that the dnssecdata getter is functioning properly
-        dnssecdata_get = self.domain.dnssecdata
+        dnssecdata_get = domain.dnssecdata
         mocked_send.assert_has_calls(
             [
                 call(
+                    commands.InfoDomain(
+                        name="dnssec-dsdata.gov",
+                    ),
+                    cleaned=True,
+                ),
+                call(
                     commands.UpdateDomain(
-                        name="fake.gov",
+                        name="dnssec-dsdata.gov",
                         nsset=None,
                         keyset=None,
                         registrant=None,
@@ -1553,16 +1544,14 @@ class TestRegistrantDNSSEC(MockEppLib):
                 ),
                 call(
                     commands.InfoDomain(
-                        name="fake.gov",
+                        name="dnssec-dsdata.gov",
                     ),
                     cleaned=True,
                 ),
             ]
         )
 
-        self.assertEquals(
-            dnssecdata_get.dsData, self.dnssecExtensionWithDsData["dsData"]
-        )
+        self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
 
         patcher.stop()
 
@@ -1575,48 +1564,52 @@ class TestRegistrantDNSSEC(MockEppLib):
         # registry normally sends in this case
 
         This test verifies:
-        1 - UpdateDomain command called twice
-        2 - setter causes the getter to call info domain on next get from cache
-        3 - getter properly parses dnssecdata from InfoDomain response and sets to cache
+        1 - InfoDomain command is called first
+        2 - UpdateDomain command called on the initial setter
+        3 - setter causes the getter to call info domain on next get from cache
+        4 - UpdateDomain command is not called on second setter (no change)
+        5 - getter properly parses dnssecdata from InfoDomain response and sets to cache
 
         """
 
-        # make sure to stop any other patcher so there are no conflicts
-        self.mockSendPatch.stop()
-
+        # need to use a separate patcher and side_effect for this test, as
+        # response from InfoDomain must be different for different iterations
+        # of the same command
         def side_effect(_request, cleaned):
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithDsData)
-                ],
-            )
+            if isinstance(_request, commands.InfoDomain):
+                if mocked_send.call_count == 1:
+                    return MagicMock(res_data=[self.mockDataInfoDomain])
+                else:
+                    return MagicMock(
+                        res_data=[self.mockDataInfoDomain],
+                        extensions=[self.dnssecExtensionWithDsData],
+                    )
+            else:
+                return MagicMock(res_data=[self.mockDataInfoHosts])
 
         patcher = patch("registrar.models.domain.registry.send")
         mocked_send = patcher.start()
         mocked_send.side_effect = side_effect
 
+        domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
+
         # set the dnssecdata once
-        self.domain.dnssecdata = self.dnssecExtensionWithDsData
+        domain.dnssecdata = self.dnssecExtensionWithDsData
         # set the dnssecdata again
-        self.domain.dnssecdata = self.dnssecExtensionWithDsData
+        domain.dnssecdata = self.dnssecExtensionWithDsData
         # test that the dnssecdata getter is functioning properly
-        dnssecdata_get = self.domain.dnssecdata
+        dnssecdata_get = domain.dnssecdata
         mocked_send.assert_has_calls(
             [
                 call(
-                    commands.UpdateDomain(
-                        name="fake.gov",
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
+                    commands.InfoDomain(
+                        name="dnssec-dsdata.gov",
                     ),
                     cleaned=True,
                 ),
                 call(
                     commands.UpdateDomain(
-                        name="fake.gov",
+                        name="dnssec-dsdata.gov",
                         nsset=None,
                         keyset=None,
                         registrant=None,
@@ -1626,16 +1619,20 @@ class TestRegistrantDNSSEC(MockEppLib):
                 ),
                 call(
                     commands.InfoDomain(
-                        name="fake.gov",
+                        name="dnssec-dsdata.gov",
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.InfoDomain(
+                        name="dnssec-dsdata.gov",
                     ),
                     cleaned=True,
                 ),
             ]
         )
 
-        self.assertEquals(
-            dnssecdata_get.dsData, self.dnssecExtensionWithDsData["dsData"]
-        )
+        self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
 
         patcher.stop()
 
@@ -1652,22 +1649,28 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         """
 
-        # make sure to stop any other patcher so there are no conflicts
-        self.mockSendPatch.stop()
-
+        # need to use a separate patcher and side_effect for this test, as
+        # response from InfoDomain must be different for different iterations
+        # of the same command
         def side_effect(_request, cleaned):
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
-                ],
-            )
+            if isinstance(_request, commands.InfoDomain):
+                if mocked_send.call_count == 1:
+                    return MagicMock(res_data=[self.mockDataInfoDomain])
+                else:
+                    return MagicMock(
+                        res_data=[self.mockDataInfoDomain],
+                        extensions=[self.dnssecExtensionWithMultDsData],
+                    )
+            else:
+                return MagicMock(res_data=[self.mockDataInfoHosts])
 
         patcher = patch("registrar.models.domain.registry.send")
         mocked_send = patcher.start()
         mocked_send.side_effect = side_effect
 
-        self.domain.dnssecdata = self.dnssecExtensionWithMultDsData
+        domain, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
+
+        domain.dnssecdata = self.dnssecExtensionWithMultDsData
         # get the DNS SEC extension added to the UpdateDomain command
         # and verify that it is properly sent
         # args[0] is the _request sent to registry
@@ -1675,17 +1678,15 @@ class TestRegistrantDNSSEC(MockEppLib):
         # assert that the extension matches
         self.assertEquals(
             args[0].extensions[0],
-            self.createUpdateExtension(
-                extensions.DNSSECExtension(**self.dnssecExtensionWithMultDsData)
-            ),
+            self.createUpdateExtension(self.dnssecExtensionWithMultDsData),
         )
         # test that the dnssecdata getter is functioning properly
-        dnssecdata_get = self.domain.dnssecdata
+        dnssecdata_get = domain.dnssecdata
         mocked_send.assert_has_calls(
             [
                 call(
                     commands.UpdateDomain(
-                        name="fake.gov",
+                        name="dnssec-multdsdata.gov",
                         nsset=None,
                         keyset=None,
                         registrant=None,
@@ -1695,7 +1696,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                 ),
                 call(
                     commands.InfoDomain(
-                        name="fake.gov",
+                        name="dnssec-multdsdata.gov",
                     ),
                     cleaned=True,
                 ),
@@ -1703,14 +1704,103 @@ class TestRegistrantDNSSEC(MockEppLib):
         )
 
         self.assertEquals(
-            dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData["dsData"]
+            dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData
+        )
+
+        patcher.stop()
+
+    def test_user_removes_dnssec_data(self):
+        """
+        Scenario: Registrant removes DNSSEC ds data.
+        Verify that both the setter and getter are functioning properly
+
+        This test verifies:
+        1 - setter initially calls InfoDomain command
+        2 - first setter calls UpdateDomain command
+        3 - second setter calls InfoDomain command again
+        3 - setter then calls UpdateDomain command
+        4 - setter adds the UpdateDNSSECExtension extension to the command with rem
+
+        """
+
+        # need to use a separate patcher and side_effect for this test, as
+        # response from InfoDomain must be different for different iterations
+        # of the same command
+        def side_effect(_request, cleaned):
+            if isinstance(_request, commands.InfoDomain):
+                if mocked_send.call_count == 1:
+                    return MagicMock(res_data=[self.mockDataInfoDomain])
+                else:
+                    return MagicMock(
+                        res_data=[self.mockDataInfoDomain],
+                        extensions=[self.dnssecExtensionWithDsData],
+                    )
+            else:
+                return MagicMock(res_data=[self.mockDataInfoHosts])
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
+        # dnssecdata_get_initial = domain.dnssecdata  # call to force initial mock
+        # domain._invalidate_cache()
+        domain.dnssecdata = self.dnssecExtensionWithDsData
+        domain.dnssecdata = self.dnssecExtensionRemovingDsData
+        # get the DNS SEC extension added to the UpdateDomain command and
+        # verify that it is properly sent
+        # args[0] is the _request sent to registry
+        args, _ = mocked_send.call_args
+        # assert that the extension on the update matches
+        self.assertEquals(
+            args[0].extensions[0],
+            self.createUpdateExtension(
+                self.dnssecExtensionWithDsData,
+                remove=True,
+            ),
+        )
+        mocked_send.assert_has_calls(
+            [
+                call(
+                    commands.InfoDomain(
+                        name="dnssec-dsdata.gov",
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.UpdateDomain(
+                        name="dnssec-dsdata.gov",
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.InfoDomain(
+                        name="dnssec-dsdata.gov",
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.UpdateDomain(
+                        name="dnssec-dsdata.gov",
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+            ]
         )
 
         patcher.stop()
 
     def test_user_adds_dnssec_keydata(self):
         """
-        Scenario: Registrant adds DNSSEC data.
+        Scenario: Registrant adds DNSSEC key data.
         Verify that both the setter and getter are functioning properly
 
         This test verifies:
@@ -1721,22 +1811,28 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         """
 
-        # make sure to stop any other patcher so there are no conflicts
-        self.mockSendPatch.stop()
-
+        # need to use a separate patcher and side_effect for this test, as
+        # response from InfoDomain must be different for different iterations
+        # of the same command
         def side_effect(_request, cleaned):
-            return MagicMock(
-                res_data=[self.mockDataInfoDomain],
-                extensions=[
-                    extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
-                ],
-            )
+            if isinstance(_request, commands.InfoDomain):
+                if mocked_send.call_count == 1:
+                    return MagicMock(res_data=[self.mockDataInfoDomain])
+                else:
+                    return MagicMock(
+                        res_data=[self.mockDataInfoDomain],
+                        extensions=[self.dnssecExtensionWithKeyData],
+                    )
+            else:
+                return MagicMock(res_data=[self.mockDataInfoHosts])
 
         patcher = patch("registrar.models.domain.registry.send")
         mocked_send = patcher.start()
         mocked_send.side_effect = side_effect
 
-        self.domain.dnssecdata = self.dnssecExtensionWithKeyData
+        domain, _ = Domain.objects.get_or_create(name="dnssec-keydata.gov")
+
+        domain.dnssecdata = self.dnssecExtensionWithKeyData
         # get the DNS SEC extension added to the UpdateDomain command
         # and verify that it is properly sent
         # args[0] is the _request sent to registry
@@ -1744,17 +1840,15 @@ class TestRegistrantDNSSEC(MockEppLib):
         # assert that the extension matches
         self.assertEquals(
             args[0].extensions[0],
-            self.createUpdateExtension(
-                extensions.DNSSECExtension(**self.dnssecExtensionWithKeyData)
-            ),
+            self.createUpdateExtension(self.dnssecExtensionWithKeyData),
         )
         # test that the dnssecdata getter is functioning properly
-        dnssecdata_get = self.domain.dnssecdata
+        dnssecdata_get = domain.dnssecdata
         mocked_send.assert_has_calls(
             [
                 call(
                     commands.UpdateDomain(
-                        name="fake.gov",
+                        name="dnssec-keydata.gov",
                         nsset=None,
                         keyset=None,
                         registrant=None,
@@ -1764,7 +1858,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                 ),
                 call(
                     commands.InfoDomain(
-                        name="fake.gov",
+                        name="dnssec-keydata.gov",
                     ),
                     cleaned=True,
                 ),
@@ -1772,7 +1866,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         )
 
         self.assertEquals(
-            dnssecdata_get.keyData, self.dnssecExtensionWithKeyData["keyData"]
+            dnssecdata_get.keyData, self.dnssecExtensionWithKeyData.keyData
         )
 
         patcher.stop()
@@ -1784,26 +1878,13 @@ class TestRegistrantDNSSEC(MockEppLib):
             Then a user-friendly error message is returned for displaying on the web
         """
 
-        # make sure to stop any other patcher so there are no conflicts
-        self.mockSendPatch.stop()
+        domain, _ = Domain.objects.get_or_create(name="dnssec-invalid.gov")
 
-        def side_effect(_request, cleaned):
-            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
-
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        # if RegistryError is raised, view formats user-friendly
-        # error message if error is_client_error, is_session_error, or
-        # is_server_error; so test for those conditions
         with self.assertRaises(RegistryError) as err:
-            self.domain.dnssecdata = self.dnssecExtensionWithDsData
+            domain.dnssecdata = self.dnssecExtensionWithDsData
             self.assertTrue(
                 err.is_client_error() or err.is_session_error() or err.is_server_error()
             )
-
-        patcher.stop()
 
 
 class TestAnalystClientHold(MockEppLib):

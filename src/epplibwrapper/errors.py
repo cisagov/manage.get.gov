@@ -1,5 +1,8 @@
 from enum import IntEnum
 
+CANNOT_CONTACT_REGISTRY = "Update failed. Cannot contact the registry."
+GENERIC_ERROR = "Value entered was wrong."
+
 
 class ErrorCode(IntEnum):
     """

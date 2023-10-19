@@ -652,6 +652,9 @@ SESSION_COOKIE_SAMESITE = "Lax"
 # instruct browser to only send cookie via HTTPS
 SESSION_COOKIE_SECURE = True
 
+# session engine to cache session information
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
 # our site within an iframe

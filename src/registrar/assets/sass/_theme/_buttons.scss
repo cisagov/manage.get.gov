@@ -1,0 +1,125 @@
+@use "uswds-core" as *;
+
+/* Make "placeholder" links visually obvious */
+a[href$="todo"]::after {
+  background-color: yellow;
+  color: color(blue-80v);
+  content: " [link TBD]";
+  font-style: italic;
+}
+  
+a.breadcrumb__back {
+  display:flex;
+  align-items: center;
+  margin-bottom: units(2.5);
+  &:visited {
+    color: color('primary');
+  }
+  
+  @include at-media('tablet') {
+    //align to top of sidebar
+    margin-top: units(-0.5);
+  }
+}
+
+a.usa-button {
+  text-decoration: none;
+  color: color('white');
+}
+
+a.usa-button:visited,
+a.usa-button:hover,
+a.usa-button:focus,
+a.usa-button:active {
+  color: color('white');
+}
+  
+a.usa-button--outline,
+a.usa-button--outline:visited {
+  box-shadow: inset 0 0 0 2px color('primary');
+  color: color('primary');
+}
+  
+a.usa-button--outline:hover,
+a.usa-button--outline:focus {
+  box-shadow: inset 0 0 0 2px color('primary-dark');
+  color: color('primary-dark');
+}
+  
+a.usa-button--outline:active {
+  box-shadow: inset 0 0 0 2px color('primary-darker');
+  color: color('primary-darker');
+}
+
+a.withdraw {
+  background-color: color('error');
+}
+  
+a.withdraw_outline,
+a.withdraw_outline:visited {
+  box-shadow: inset 0 0 0 2px color('error');
+  color: color('error');
+}
+  
+a.withdraw_outline:hover,
+a.withdraw_outline:focus {
+  box-shadow: inset 0 0 0 2px color('error-dark');
+  color: color('error-dark');
+}
+  
+a.withdraw_outline:active {
+  box-shadow: inset 0 0 0 2px color('error-darker');
+  color: color('error-darker');
+}
+
+a.withdraw:hover,
+a.withdraw:focus {
+  background-color: color('error-dark');
+}
+  
+a.withdraw:active {
+  background-color: color('error-darker');
+}
+
+.usa-button--unstyled .usa-icon {
+  vertical-align: bottom;
+}
+
+a.usa-button--unstyled:visited {
+  color: color('primary');
+}
+  
+.dotgov-button--green {
+  background-color: color('success-dark');
+
+  &:hover {
+    background-color: color('success-darker');
+  }
+
+  &:active {
+    background-color: color('green-80v');
+  }
+}
+
+// Cancel button used on the
+// DNSSEC main page
+// We want to center this button on mobile
+// and add some extra left margin on tablet+
+.usa-button--cancel {
+  text-align: center;
+  @include at-media('tablet') {
+    margin-left: units(2);
+  }
+}
+
+
+// WARNING: crazy hack ahead:
+// Cancel button(s) on the DNSSEC form pages
+// We want to position the cancel button on the
+// dnssec forms next to the submit button
+// This button's markup is in its own form
+.btn-cancel {
+  position: relative;
+  top: -39.2px;
+  left: 88px;
+}
