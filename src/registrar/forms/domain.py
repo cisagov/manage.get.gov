@@ -55,7 +55,7 @@ class DomainNameserverForm(forms.Form):
     server = forms.CharField(label="Name server", strip=True)
 
     ip = IPAddressField(
-        label="IP address",
+        label="IP Address (IPv4 or IPv6)",
         strip=True,
         required=False,
         # validators=[
@@ -75,7 +75,7 @@ class DomainNameserverForm(forms.Form):
             ip_list = [ip.strip() for ip in ip.split(",")]
             if not server and len(ip_list) > 0:
                 # If 'server' is empty, disallow 'ip' input
-                self.add_error('server', "Nameserver must be provided to enter IP address.")
+                self.add_error('server', "Name server must be provided to enter IP address.")
         
         # if there's a nameserver and an ip, validate nameserver/ip combo
         

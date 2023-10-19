@@ -255,7 +255,6 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
         for i, form in enumerate(formset):
             # form = self.get_form(self, **kwargs)
             form.fields["server"].label += f" {i+1}"
-            form.fields["ip"].label += f" {i+1}"
             if i < 2:
                 form.fields["server"].required = True
             else:
@@ -270,11 +269,15 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
         This post method harmonizes using DomainBaseView and FormMixin
         """
         self._get_domain(request)
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
+        formset = self.get_form()
+        
+        if "btn-cancel-click" in request.POST:
+            return redirect("/", {"formset": formset}, RequestContext(request))
+        
+        if formset.is_valid():
+            return self.form_valid(formset)
         else:
-            return self.form_invalid(form)
+            return self.form_invalid(formset)
         
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
@@ -320,7 +323,7 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
                 logger.error(f"Registry error: {Err}")
         else:
             messages.success(
-                self.request, "The name servers for this domain have been updated."
+                self.request, "The name servers for this domain have been updated. Keep in mind that DNS changes may take some time to propagate across the internet. It can take anywhere from a few minutes to 48 hours for your changes to take place."
             )
 
         # superclass has the redirect
