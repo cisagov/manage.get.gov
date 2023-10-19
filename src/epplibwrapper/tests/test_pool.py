@@ -1,7 +1,7 @@
 import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from dateutil.tz import tzlocal # type: ignore
+from dateutil.tz import tzlocal  # type: ignore
 from django.test import TestCase
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import RegistryError
@@ -182,6 +182,8 @@ class TestConnectionPool(TestCase):
 
             # Try to send a command out - should fail
             with self.assertRaises(RegistryError):
-                expected_message = "InfoDomain failed to execute due to a connection error."
-                result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
-                self.assertEqual(result, expected_message)
+                expected = "InfoDomain failed to execute due to a connection error."
+                result = registry.send(
+                    commands.InfoDomain(name="test.gov"), cleaned=True
+                )
+                self.assertEqual(result, expected)
