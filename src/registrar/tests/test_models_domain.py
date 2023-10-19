@@ -19,7 +19,7 @@ from registrar.utility.errors import ActionNotAllowed, NameserverError
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
-from .common import MockEppLib
+
 from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
     commands,
@@ -29,6 +29,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
+from .common import MockEppLib
 import logging
 
 logger = logging.getLogger(__name__)
@@ -812,6 +813,72 @@ class TestRegistrantContacts(MockEppLib):
 
             # The emails should match on both items
             self.assertEqual(expected_contact.email, actual_contact.email)
+
+    def test_convert_public_contact_to_epp(self):
+        self.maxDiff = None
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+        dummy_contact = domain.get_default_security_contact()
+        test_disclose = self._convertPublicContactToEpp(
+            dummy_contact, disclose_email=True
+        ).__dict__
+        test_not_disclose = self._convertPublicContactToEpp(
+            dummy_contact, disclose_email=False
+        ).__dict__
+        expected_disclose = {
+            "auth_info": common.ContactAuthInfo(pw='2fooBAR123fooBaz'),
+            "disclose": common.Disclose(flag=True, fields={common.DiscloseField.EMAIL}, types=None),
+            "email": "dotgov@cisa.dhs.gov",
+            "extensions": [],
+            "fax": None,
+            "id": "ThIq2NcRIDN7PauO",
+            "ident": None,
+            "notify_email": None,
+            "postal_info": common.PostalInfo(
+                name='Registry Customer Service',
+                addr=common.ContactAddr(
+                    street=['4200 Wilson Blvd.', None, None],
+                    city='Arlington',
+                    pc='22201',
+                    cc='US',
+                    sp='VA'
+                ),
+                org='Cybersecurity and Infrastructure Security Agency',
+                type='loc'
+            ),
+            "vat": None,
+            "voice": "+1.8882820870"
+        }
+        expected_not_disclose = {
+            "auth_info": common.ContactAuthInfo(pw='2fooBAR123fooBaz'),
+            "disclose": common.Disclose(flag=False, fields={common.DiscloseField.EMAIL}, types=None),
+            "email": "dotgov@cisa.dhs.gov",
+            "extensions": [],
+            "fax": None,
+            "id": "ThrECENCHI76PGLh",
+            "ident": None,
+            "notify_email": None,
+            "postal_info": common.PostalInfo(
+                name='Registry Customer Service',
+                addr=common.ContactAddr(
+                    street=['4200 Wilson Blvd.', None, None],
+                    city='Arlington',
+                    pc='22201',
+                    cc='US',
+                    sp='VA'
+                ),
+                org='Cybersecurity and Infrastructure Security Agency',
+                type='loc'
+            ),
+            "vat": None,
+            "voice": "+1.8882820870"
+        }
+
+        # Set the ids equal, since this value changes
+        test_disclose["id"] = expected_disclose["id"]
+        test_not_disclose["id"] = expected_not_disclose["id"]
+
+        self.assertEqual(test_disclose, expected_disclose)
+        self.assertEqual(test_not_disclose, expected_not_disclose)
 
     def test_not_disclosed_on_default_security_contact(self):
         """

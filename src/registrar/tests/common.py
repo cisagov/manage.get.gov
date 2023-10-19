@@ -901,7 +901,7 @@ class MockEppLib(TestCase):
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
-            "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None)
+            "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
         }
 
         # Retrieve the corresponding values from the dictionary
