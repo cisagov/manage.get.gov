@@ -34,6 +34,8 @@ from epplibwrapper import (
     responses,
 )
 
+from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
+
 logger = logging.getLogger(__name__)
 
 
@@ -792,7 +794,7 @@ class MockEppLib(TestCase):
             ]
         )
 
-    def _handleCheckDomain(self, _request):
+    def mockCheckDomainCommand(self, _request, cleaned):
         if "gsa.gov" in getattr(_request, "names", None):
             return self._mockDomainName("gsa.gov", True)
         elif "GSA.gov" in getattr(_request, "names", None):
@@ -809,31 +811,16 @@ class MockEppLib(TestCase):
         registry is imported from epplibwrapper
         returns objects that simulate what would be in a epp response
         but only relevant pieces for tests"""
-        if (
-            isinstance(_request, commands.CreateContact)
-            and getattr(_request, "id", None) == "fail"
-            and self.mockedSendFunction.call_count == 3
-        ):
-            # use this for when a contact is being updated
-            # sets the second send() to fail
-            raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
-
-        if (
-            isinstance(_request, commands.DeleteDomain)
-            and getattr(_request, "name", None) == "failDelete.gov"
-        ):
-            name = getattr(_request, "name", None)
-            fake_nameserver = "ns1.failDelete.gov"
-            if name in fake_nameserver:
-                raise RegistryError(
-                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
-                )
 
         match type(_request):
             case commands.InfoDomain:
                 return self.mockInfoDomainCommands(_request, cleaned)
             case commands.InfoContact:
                 return self.mockInfoContactCommands(_request, cleaned)
+            case commands.CreateContact:
+                return self.mockCreateContactCommands(_request, cleaned)
+            case commands.UpdateDomain:
+                return self.mockUpdateDomainCommands(_request, cleaned)
             case commands.CreateHost:
                 return MagicMock(
                     res_data=[self.mockDataHostChange],
@@ -844,15 +831,15 @@ class MockEppLib(TestCase):
                     res_data=[self.mockDataHostChange],
                     code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
                 )
-            case commands.UpdateDomain:
-                return self.mockUpdateDomainCommands(_request, cleaned)
             case commands.DeleteHost:
                 return MagicMock(
                     res_data=[self.mockDataHostChange],
                     code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
                 )
             case commands.CheckDomain:
-                return self._handleCheckDomain(_request)
+                return self.mockCheckDomainCommand(_request, cleaned)
+            case commands.DeleteDomain:
+                return self.mockDeleteDomainCommands(_request, cleaned)
             case _:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
@@ -864,6 +851,17 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
+    
+    def mockDeleteDomainCommands(self, _request, cleaned):
+        if getattr(_request, "name", None) == "failDelete.gov":
+            name = getattr(_request, "name", None)
+            fake_nameserver = "ns1.failDelete.gov"
+            if name in fake_nameserver:
+                raise RegistryError(
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+                )
+        return None
+
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
@@ -924,6 +922,24 @@ class MockEppLib(TestCase):
                 mocked_result = self.mockDataInfoContact
 
         return MagicMock(res_data=[mocked_result])
+
+    def mockCreateContactCommands(self, _request, cleaned):
+        if (
+            getattr(_request, "id", None) == "fail"
+            and self.mockedSendFunction.call_count == 3
+        ):
+            # use this for when a contact is being updated
+            # sets the second send() to fail
+            raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        elif getattr(_request, "email", None) == "test@failCreate.gov":
+            # use this for when a contact is being updated
+            # mocks a registry error on creation
+            raise RegistryError(code=None)
+        elif getattr(_request, "email", None) == "test@contactError.gov":
+            # use this for when a contact is being updated
+            # mocks a contact error on creation
+            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
+        return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):
         """mock epp send function as this will fail locally"""
