@@ -851,7 +851,7 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-    
+
     def mockDeleteDomainCommands(self, _request, cleaned):
         if getattr(_request, "name", None) == "failDelete.gov":
             name = getattr(_request, "name", None)
@@ -861,7 +861,6 @@ class MockEppLib(TestCase):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
                 )
         return None
-
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
