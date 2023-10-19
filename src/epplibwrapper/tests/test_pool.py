@@ -170,7 +170,7 @@ class TestConnectionPool(TestCase):
                 patch.object(EPPConnectionPool, "_create_socket", self.fake_socket)
             )
             stack.enter_context(patch.object(Socket, "connect", fake_client))
-            
+
             # Pool should be running
             self.assertEqual(registry.pool_status.connection_success, True)
             self.assertEqual(registry.pool_status.pool_running, True)

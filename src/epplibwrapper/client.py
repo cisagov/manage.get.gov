@@ -229,8 +229,9 @@ try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
     logger.info("registry client initialized")
-except Exception:
+except Exception as err:
     CLIENT = None  # type: ignore
     logger.warning(
         "Unable to configure epplib. Registrar cannot contact registry.", exc_info=True
     )
+    logger.warning(err)

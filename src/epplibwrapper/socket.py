@@ -60,6 +60,10 @@ class Socket:
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
                     return False
+            # Occurs when an invalid creds are passed in - such as on localhost
+            except OSError as err:
+                logger.error(err)
+                return False
             else:
                 self.disconnect()
 
