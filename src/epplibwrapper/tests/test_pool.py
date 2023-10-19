@@ -109,12 +109,13 @@ class TestConnectionPool(TestCase):
         }
 
         def fake_client(mock_client):
+            pw = "none"
             client = Client(
                 SocketTransport(
                     "none",
                     cert_file="path/to/cert_file",
                     key_file="path/to/key_file",
-                    password="none",
+                    password=pw,
                 )
             )
             return client
