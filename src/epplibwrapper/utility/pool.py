@@ -30,12 +30,13 @@ class EPPConnectionPool(ConnectionPool):
         # For storing shared credentials
         self._client = client
         self._login = login
+
         # Keep track of each greenlet
         self.greenlets = []
 
         # Define optional pool settings.
         # Kept in a dict so that the parent class,
-        # client.py, can maintain seperation/expanadability
+        # client.py, can maintain seperation/expandability
         self.size = 1
         if "size" in options:
             self.size = options["size"]
