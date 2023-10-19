@@ -900,11 +900,10 @@ class MockEppLib(TestCase):
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
+            "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
+            "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None)
         }
-        TODO =             elif getattr(_request, "name", None) == "defaultsecurity.gov":
-                return MagicMock(res_data=[self.InfoDomainWithDefaultSecurityContact])
-            elif getattr(_request, "name", None) == "defaulttechnical.gov":
-                return MagicMock(res_data=[self.InfoDomainWithDefaultTechnicalContact])
+
         # Retrieve the corresponding values from the dictionary
         res_data, extensions = request_mappings.get(
             request_name, (self.mockDataInfoDomain, None)
