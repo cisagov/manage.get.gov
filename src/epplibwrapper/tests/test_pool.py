@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 from dateutil.tz import tzlocal
 from django.test import TestCase
 from epplibwrapper.client import EPPLibWrapper
+from epplibwrapper.errors import RegistryError
 from epplibwrapper.socket import Socket
 from epplibwrapper.utility.pool import EPPConnectionPool
 from registrar.models.domain import registry
@@ -38,13 +39,15 @@ class TestConnectionPool(TestCase):
         }
 
     def fake_socket(self, login, client):
+        # Linter reasons
+        pw = "none"
         # Create a fake client object
         fake_client = Client(
             SocketTransport(
                 "none",
                 cert_file="path/to/cert_file",
                 key_file="path/to/key_file",
-                password="none",
+                password=pw,
             )
         )
 
@@ -149,7 +152,7 @@ class TestConnectionPool(TestCase):
             self.assertEqual(len(registry._pool.conn), self.pool_options["size"])
 
     @patch.object(EPPLibWrapper, "_test_registry_connection_success", patch_success)
-    def test_raises_transport_error(self):
+    def test_raises_connection_error(self):
         """A .send is invoked on the pool, but registry connection is lost
         right as we send a command."""
 
@@ -176,5 +179,7 @@ class TestConnectionPool(TestCase):
             self.assertEqual(registry.pool_status.pool_running, True)
 
             # Try to send a command out - should fail
-            with self.assertRaises(TransportError):
-                registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
+            with self.assertRaises(RegistryError):
+                expected_message = "InfoDomain failed to execute due to a connection error."
+                result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
+                self.assertEqual(result, expected_message)
