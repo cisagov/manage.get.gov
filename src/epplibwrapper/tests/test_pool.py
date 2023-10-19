@@ -1,7 +1,7 @@
 import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal # type: ignore
 from django.test import TestCase
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import RegistryError
