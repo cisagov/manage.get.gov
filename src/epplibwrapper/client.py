@@ -4,10 +4,7 @@ import logging
 
 from time import sleep
 from gevent import Timeout
-from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
 from epplibwrapper.utility.pool_status import PoolStatus
-
-logger = logging.getLogger(__name__)
 
 try:
     from epplib.client import Client
@@ -15,7 +12,6 @@ try:
     from epplib.exceptions import TransportError, ParsingError
     from epplib.transport import SocketTransport
 except ImportError:
-    logger.warning("There was an import error {}")
     pass
 
 from django.conf import settings
@@ -25,7 +21,7 @@ from .errors import LoginError, RegistryError
 from .socket import Socket
 from .utility.pool import EPPConnectionPool
 
-
+logger = logging.getLogger(__name__)
 
 try:
     # Write cert and key to disk
@@ -59,11 +55,15 @@ class EPPLibWrapper:
             ],
         )
 
-        # TODO - if client is none, send signal up and set it 
-        # back to this
         # establish a client object with a TCP socket transport
-        self._client = self._get_default_client()
-        logger.warning(f"client is this {self._client}")
+        self._client = Client(
+            SocketTransport(
+                settings.SECRET_REGISTRY_HOSTNAME,
+                cert_file=CERT.filename,
+                key_file=KEY.filename,
+                password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
+            )
+        )
 
         self.pool_options = {
             # Pool size
@@ -81,16 +81,6 @@ class EPPLibWrapper:
 
         if start_connection_pool:
             self.start_connection_pool()
-
-    def _get_default_client(self):
-        return Client(
-            SocketTransport(
-                settings.SECRET_REGISTRY_HOSTNAME,
-                cert_file=CERT.filename,
-                key_file=KEY.filename,
-                password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
-            )
-        )
 
     def _send(self, command):
         """Helper function used by `send`."""
@@ -227,34 +217,12 @@ class EPPLibWrapper:
         credentials are valid, and/or if the Registrar
         can be contacted
         """
-        socket = self._create_default_socket()
-        can_login = True
+        socket = Socket(self._login, self._client)
+        can_login = False
         # Something went wrong if this doesn't exist
-        if not hasattr(socket, "test_connection_success"):
-            return can_login
-
-        try:
+        if hasattr(socket, "test_connection_success"):
             can_login = socket.test_connection_success()
-        except PoolError as err:
-            logger.error(err)
-            # If the client isn't the right type,
-            # recreate it.
-            if err.code == PoolErrorCodes.INVALID_CLIENT_TYPE:
-                # Try to recreate the socket
-                self._client = self._get_default_client()
-                socket = self._create_default_socket()
-
-                # Test it again
-                can_login = socket.test_connection_success()
-                return can_login
-        else:
-            return can_login
-    
-    def _create_default_socket(self):
-        """Creates a default socket.
-        Uses self._login and self._client
-        """
-        return Socket(self._login, self._client)
+        return can_login
 
 
 try:

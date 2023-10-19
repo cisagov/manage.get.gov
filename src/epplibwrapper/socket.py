@@ -1,15 +1,13 @@
 import logging
 from time import sleep
 
-from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
-
 try:
     from epplib import commands
     from epplib.client import Client
 except ImportError:
     pass
 
-from .errors import LoginError, SocketError
+from .errors import LoginError
 
 
 logger = logging.getLogger(__name__)
@@ -48,9 +46,8 @@ class Socket:
         Tries 3 times"""
         # Something went wrong if this doesn't exist
         if not hasattr(self.client, "connect"):
-            message = "self.client does not have a connect method"
-            logger.warning(message)
-            raise PoolError(code=PoolErrorCodes.INVALID_CLIENT_TYPE)
+            logger.warning("self.client does not have a connect method")
+            return False
 
         counter = 0  # we'll try 3 times
         while True:

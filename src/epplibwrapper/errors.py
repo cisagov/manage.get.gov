@@ -86,5 +86,3 @@ class RegistryError(Exception):
 
 class LoginError(RegistryError):
     pass
-
-
