@@ -19,6 +19,7 @@ from registrar.models import (
     DomainApplication,
     DomainInvitation,
     User,
+    UserGroup,
     DomainInformation,
     PublicContact,
     Domain,
@@ -26,10 +27,13 @@ from registrar.models import (
 from epplibwrapper import (
     commands,
     common,
+    extensions,
     info,
     RegistryError,
     ErrorCode,
 )
+
+from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +99,10 @@ class MockUserLogin:
             }
             user, _ = UserModel.objects.get_or_create(**args)
             user.is_staff = True
-            user.is_superuser = True
+            # Create or retrieve the group
+            group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+            # Add the user to the group
+            user.groups.set([group])
             user.save()
             backend = settings.AUTHENTICATION_BACKENDS[-1]
             login(request, user, backend=backend)
@@ -427,22 +434,33 @@ def mock_user():
 def create_superuser():
     User = get_user_model()
     p = "adminpass"
-    return User.objects.create_superuser(
+    user = User.objects.create_user(
         username="superuser",
         email="admin@example.com",
+        is_staff=True,
         password=p,
     )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
 
 
 def create_user():
     User = get_user_model()
     p = "userpass"
-    return User.objects.create_user(
+    user = User.objects.create_user(
         username="staffuser",
         email="user@example.com",
         is_staff=True,
         password=p,
     )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
 
 
 def create_ready_domain():
@@ -556,6 +574,8 @@ class MockEppLib(TestCase):
             contacts=...,
             hosts=...,
             statuses=...,
+            avail=...,
+            addrs=...,
             registrant=...,
         ):
             self.auth_info = auth_info
@@ -563,6 +583,8 @@ class MockEppLib(TestCase):
             self.contacts = contacts
             self.hosts = hosts
             self.statuses = statuses
+            self.avail = avail  # use for CheckDomain
+            self.addrs = addrs
             self.registrant = registrant
 
         def dummyInfoContactResultData(
@@ -705,8 +727,99 @@ class MockEppLib(TestCase):
         hosts=["fake.host.com"],
     )
 
+    infoDomainThreeHosts = fakedEppObject(
+        "my-nameserver.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+        ],
+    )
+    infoDomainNoHost = fakedEppObject(
+        "my-nameserver.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=[],
+    )
+
+    infoDomainTwoHosts = fakedEppObject(
+        "my-nameserver.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=["ns1.my-nameserver-1.com", "ns1.my-nameserver-2.com"],
+    )
+
     mockDataInfoHosts = fakedEppObject(
+        "lastPw",
+        cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35),
+        addrs=["1.2.3.4", "2.3.4.5"],
+    )
+
+    mockDataHostChange = fakedEppObject(
         "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
+    )
+    addDsData1 = {
+        "keyTag": 1234,
+        "alg": 3,
+        "digestType": 1,
+        "digest": "ec0bdd990b39feead889f0ba613db4adec0bdd99",
+    }
+    addDsData2 = {
+        "keyTag": 2345,
+        "alg": 3,
+        "digestType": 1,
+        "digest": "ec0bdd990b39feead889f0ba613db4adecb4adec",
+    }
+    keyDataDict = {
+        "flags": 257,
+        "protocol": 3,
+        "alg": 1,
+        "pubKey": "AQPJ////4Q==",
+    }
+    dnssecExtensionWithDsData = extensions.DNSSECExtension(
+        **{
+            "dsData": [
+                common.DSData(**addDsData1)  # type: ignore
+            ],  # type: ignore
+        }
+    )
+    dnssecExtensionWithMultDsData = extensions.DNSSECExtension(
+        **{
+            "dsData": [
+                common.DSData(**addDsData1),  # type: ignore
+                common.DSData(**addDsData2),  # type: ignore
+            ],  # type: ignore
+        }
+    )
+    dnssecExtensionWithKeyData = extensions.DNSSECExtension(
+        **{
+            "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
+        }
+    )
+    dnssecExtensionRemovingDsData = extensions.DNSSECExtension()
+
+    infoDomainHasIP = fakedEppObject(
+        "nameserverwithip.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=[
+            "ns1.nameserverwithip.gov",
+            "ns2.nameserverwithip.gov",
+            "ns3.nameserverwithip.gov",
+        ],
+        addrs=["1.2.3.4", "2.3.4.5"],
+    )
+
+    infoDomainCheckHostIPCombo = fakedEppObject(
+        "nameserversubdomain.gov",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[],
+        hosts=[
+            "ns1.nameserversubdomain.gov",
+            "ns2.nameserversubdomain.gov",
+        ],
     )
 
     def mockSend(self, _request, cleaned):
@@ -715,18 +828,95 @@ class MockEppLib(TestCase):
         returns objects that simulate what would be in a epp response
         but only relevant pieces for tests"""
         if isinstance(_request, commands.InfoDomain):
-            if getattr(_request, "name", None) == "security.gov":
-                return MagicMock(res_data=[self.infoDomainNoContact])
-            elif getattr(_request, "name", None) == "freeman.gov":
-                return MagicMock(res_data=[self.InfoDomainWithContacts])
-            elif getattr(_request, "name", None) == "defaultsecurity.gov":
+            return self.mockInfoDomainCommands(_request, cleaned)
+        elif isinstance(_request, commands.InfoContact):
+            return self.mockInfoContactCommands(_request, cleaned)
+        elif isinstance(_request, commands.UpdateDomain):
+            return self.mockUpdateDomainCommands(_request, cleaned)
+        elif isinstance(_request, commands.CreateContact):
+            return self.mockCreateContactCommands(_request, cleaned)
+        elif isinstance(_request, commands.CreateHost):
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif isinstance(_request, commands.UpdateHost):
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif isinstance(_request, commands.DeleteHost):
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif (
+            isinstance(_request, commands.DeleteDomain)
+            and getattr(_request, "name", None) == "failDelete.gov"
+        ):
+            name = getattr(_request, "name", None)
+            fake_nameserver = "ns1.failDelete.gov"
+            if name in fake_nameserver:
+                raise RegistryError(
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+                )
+        return MagicMock(res_data=[self.mockDataInfoHosts])
+
+    def mockUpdateDomainCommands(self, _request, cleaned):
+        if getattr(_request, "name", None) == "dnssec-invalid.gov":
+            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
+        else:
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+
+    def mockInfoDomainCommands(self, _request, cleaned):
+        request_name = getattr(_request, "name", None)
+
+        # Define a dictionary to map request names to data and extension values
+        request_mappings = {
+            "security.gov": (self.infoDomainNoContact, None),
+            "dnssec-dsdata.gov": (
+                self.mockDataInfoDomain,
+                self.dnssecExtensionWithDsData,
+            ),
+            "dnssec-multdsdata.gov": (
+                self.mockDataInfoDomain,
+                self.dnssecExtensionWithMultDsData,
+            ),
+            "dnssec-keydata.gov": (
+                self.mockDataInfoDomain,
+                self.dnssecExtensionWithKeyData,
+            ),
+            "dnssec-none.gov": (self.mockDataInfoDomain, None),
+            "my-nameserver.gov": (
+                self.infoDomainTwoHosts
+                if self.mockedSendFunction.call_count == 5
+                else self.infoDomainNoHost,
+                None,
+            ),
+            "nameserverwithip.gov": (self.infoDomainHasIP, None),
+            "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
+            "freeman.gov": (self.InfoDomainWithContacts, None),
+            "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
+        }
+        TODO =             elif getattr(_request, "name", None) == "defaultsecurity.gov":
                 return MagicMock(res_data=[self.InfoDomainWithDefaultSecurityContact])
             elif getattr(_request, "name", None) == "defaulttechnical.gov":
                 return MagicMock(res_data=[self.InfoDomainWithDefaultTechnicalContact])
-            else:
-                return MagicMock(res_data=[self.mockDataInfoDomain])
-        elif isinstance(_request, commands.InfoContact):
-            mocked_result: info.InfoContactResultData
+        # Retrieve the corresponding values from the dictionary
+        res_data, extensions = request_mappings.get(
+            request_name, (self.mockDataInfoDomain, None)
+        )
+
+        return MagicMock(
+            res_data=[res_data],
+            extensions=[extensions] if extensions is not None else [],
+        )
+
+    def mockInfoContactCommands(self, _request, cleaned):
+        mocked_result: info.InfoContactResultData
 
             # For testing contact types
             match getattr(_request, "id", None):
@@ -746,25 +936,24 @@ class MockEppLib(TestCase):
                     # Default contact return
                     mocked_result = self.mockDataInfoContact
 
-            return MagicMock(res_data=[mocked_result])
-        elif (
-            isinstance(_request, commands.CreateContact)
-            and getattr(_request, "id", None) == "fail"
+        return MagicMock(res_data=[mocked_result])
+
+    def mockCreateContactCommands(self, _request, cleaned):
+        if (
+            getattr(_request, "id", None) == "fail"
             and self.mockedSendFunction.call_count == 3
         ):
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
-        elif (
-            isinstance(_request, commands.DeleteDomain)
-            and getattr(_request, "name", None) == "failDelete.gov"
-        ):
-            name = getattr(_request, "name", None)
-            fake_nameserver = "ns1.failDelete.gov"
-            if name in fake_nameserver:
-                raise RegistryError(
-                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
-                )
+        elif getattr(_request, "email", None) == "test@failCreate.gov":
+            # use this for when a contact is being updated
+            # mocks a registry error on creation
+            raise RegistryError(code=None)
+        elif getattr(_request, "email", None) == "test@contactError.gov":
+            # use this for when a contact is being updated
+            # mocks a contact error on creation
+            raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def setUp(self):

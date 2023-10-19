@@ -8,7 +8,15 @@
 
 /*--------------------------------------------------
 --- Custom Styles ---------------------------------*/
-@forward "uswds-theme-custom-styles";
+@forward "base";
+@forward "typography";
+@forward "buttons";
+@forward "forms";
+@forward "fieldsets";
+@forward "alerts";
+@forward "tables";
+@forward "sidenav";
+@forward "register-form";
 
 /*--------------------------------------------------
 --- Admin ---------------------------------*/

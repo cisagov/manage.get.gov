@@ -3,6 +3,7 @@ from django import forms
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
@@ -137,8 +138,9 @@ class MyUserAdmin(BaseUserAdmin):
         "email",
         "first_name",
         "last_name",
-        "is_staff",
-        "is_superuser",
+        # Group is a custom property defined within this file,
+        # rather than in a model like the other properties
+        "group",
         "status",
     )
 
@@ -163,6 +165,9 @@ class MyUserAdmin(BaseUserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    # Hide Username (uuid), Groups and Permissions
+    # Q: Now that we're using Groups and Permissions,
+    # do we expose those to analysts to view?
     analyst_fieldsets = (
         (
             None,
@@ -174,14 +179,23 @@ class MyUserAdmin(BaseUserAdmin):
             {
                 "fields": (
                     "is_active",
-                    "is_staff",
-                    "is_superuser",
+                    "groups",
                 )
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
 
+    analyst_list_display = [
+        "email",
+        "first_name",
+        "last_name",
+        "group",
+        "status",
+    ]
+
+    # NOT all fields are readonly for admin, otherwise we would have
+    # set this at the permissions level. The exception is 'status'
     analyst_readonly_fields = [
         "password",
         "Personal Info",
@@ -190,43 +204,56 @@ class MyUserAdmin(BaseUserAdmin):
         "email",
         "Permissions",
         "is_active",
-        "is_staff",
-        "is_superuser",
+        "groups",
         "Important dates",
         "last_login",
         "date_joined",
     ]
 
-    def get_list_display(self, request):
-        if not request.user.is_superuser:
-            # Customize the list display for staff users
-            return (
-                "email",
-                "first_name",
-                "last_name",
-                "is_staff",
-                "is_superuser",
-                "status",
-            )
+    list_filter = (
+        "is_active",
+        "groups",
+    )
 
-        # Use the default list display for non-staff users
-        return super().get_list_display(request)
+    # Let's define First group
+    # (which should in theory be the ONLY group)
+    def group(self, obj):
+        if obj.groups.filter(name="full_access_group").exists():
+            return "Full access"
+        elif obj.groups.filter(name="cisa_analysts_group").exists():
+            return "Analyst"
+        return ""
+
+    def get_list_display(self, request):
+        # The full_access_permission perm will load onto the full_access_group
+        # which is equivalent to superuser. The other group we use to manage
+        # perms is cisa_analysts_group. cisa_analysts_group will never contain
+        # full_access_permission
+        if request.user.has_perm("registrar.full_access_permission"):
+            # Use the default list display for all access users
+            return super().get_list_display(request)
+
+        # Customize the list display for analysts
+        return self.analyst_list_display
 
     def get_fieldsets(self, request, obj=None):
-        if not request.user.is_superuser:
-            # If the user doesn't have permission to change the model,
-            # show a read-only fieldset
+        if request.user.has_perm("registrar.full_access_permission"):
+            # Show all fields for all access users
+            return super().get_fieldsets(request, obj)
+        elif request.user.has_perm("registrar.analyst_access_permission"):
+            # show analyst_fieldsets for analysts
             return self.analyst_fieldsets
-
-        # If the user has permission to change the model, show all fields
-        return super().get_fieldsets(request, obj)
+        else:
+            # any admin user should belong to either full_access_group
+            # or cisa_analyst_group
+            return []
 
     def get_readonly_fields(self, request, obj=None):
-        if request.user.is_superuser:
-            return ()  # No read-only fields for superusers
-        elif request.user.is_staff:
-            return self.analyst_readonly_fields  # Read-only fields for staff
-        return ()  # No read-only fields for other users
+        if request.user.has_perm("registrar.full_access_permission"):
+            return ()  # No read-only fields for all access users
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        return self.analyst_readonly_fields
 
 
 class HostIPInline(admin.StackedInline):
@@ -314,6 +341,12 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         "domain__name",
     ]
     search_help_text = "Search by email or domain."
+
+    # Mark the FSM field 'status' as readonly
+    # to allow admin users to create Domain Invitations
+    # without triggering the FSM Transition Not Allowed
+    # error.
+    readonly_fields = ["status"]
 
 
 class DomainInformationAdmin(ListHeaderAdmin):
@@ -405,11 +438,12 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
         readonly_fields = list(self.readonly_fields)
 
-        if request.user.is_superuser:
+        if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
-        else:
-            readonly_fields.extend([field for field in self.analyst_readonly_fields])
-            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields  # Read-only fields for analysts
 
 
 class DomainApplicationAdminForm(forms.ModelForm):
@@ -623,11 +657,12 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 ["current_websites", "other_contacts", "alternative_domains"]
             )
 
-        if request.user.is_superuser:
+        if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
-        else:
-            readonly_fields.extend([field for field in self.analyst_readonly_fields])
-            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
 
     def display_restricted_warning(self, request, obj):
         if obj and obj.creator.status == models.User.RESTRICTED:
@@ -784,7 +819,8 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("Domain statuses are %s" ". Thanks!") % statuses,
+                f"The registry statuses are {statuses}. "
+                "These statuses are from the provider of the .gov registry.",
             )
         return HttpResponseRedirect(".")
 
@@ -870,7 +906,9 @@ class DomainAdmin(ListHeaderAdmin):
         # Fixes a bug wherein users which are only is_staff
         # can access 'change' when GET,
         # but cannot access this page when it is a request of type POST.
-        if request.user.is_staff:
+        if request.user.has_perm(
+            "registrar.full_access_permission"
+        ) or request.user.has_perm("registrar.analyst_access_permission"):
             return True
         return super().has_change_permission(request, obj)
 
@@ -885,6 +923,10 @@ class DraftDomainAdmin(ListHeaderAdmin):
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
+# Unregister the built-in Group model
+admin.site.unregister(Group)
+# Register UserGroup
+admin.site.register(models.UserGroup)
 admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
