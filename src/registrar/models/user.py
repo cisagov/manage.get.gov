@@ -4,9 +4,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .domain_invitation import DomainInvitation
-from registrar.models import TransitionDomain
-from registrar.models import DomainInformation
-from registrar.models import Domain
+from .transition_domain import TransitionDomain
+from .domain_information import DomainInformation
+from .domain import Domain
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -82,6 +82,26 @@ class User(AbstractUser):
                     "Failed to retrieve invitation %s", invitation, exc_info=True
                 )
 
+    def create_domain_and_invite(self, transition_domain: TransitionDomain):
+        print("creating DOMAIN")
+        new_domain = Domain(
+            name=transition_domain.domain_name, state=transition_domain.status
+        )
+        new_domain.save()
+        # check that a domain invitation doesn't already
+        # exist for this e-mail / Domain pair
+        domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
+            email=transition_domain.username.lower(), domain=new_domain
+        ).exists()
+        if not domain_email_already_in_domain_invites:
+
+            print("creating INVITATION")
+            # Create new domain invitation
+            new_domain_invitation = DomainInvitation(
+                email=transition_domain.username.lower(), domain=new_domain
+            )
+            new_domain_invitation.save()
+
     def check_transition_domains_on_login(self):
         """When a user first arrives on the site, we need to check
         if they are logging in with the same e-mail as a
@@ -106,27 +126,26 @@ class User(AbstractUser):
             # Check that there is a corresponding domain object
             # for this transition domain.  If not, we have an error
             # with our data and migrations need to be run again.
-            # TODO: how should we handle this?
 
             # Get the domain that corresponds with this transition domain
-            domain_exists = Domain.objects.filter(name=transition_domain.name).exists()
+            domain_exists = Domain.objects.filter(name=transition_domain.domain_name).exists()
             if not domain_exists:
                 logger.warn("""There are transition domains without
                             corresponding domain objects! 
                             Please run migration scripts for transition domains
                             (See data_migration.md)""")
-                # TODO: throw exception??
-                break
-            domain = Domain.objects.get(name=transition_domain.name)
+                # No need to throw an exception...just create a domain
+                # and domain invite, then proceed as normal
+                self.create_domain_and_invite(transition_domain)
+
+            domain = Domain.objects.get(name=transition_domain.domain_name)
 
             # Create a domain information object, if one doesn't
             # already exist
             domain_info_exists = DomainInformation.objects.filter(
-                creator=self,
                 domain=domain
             ).exists()
             if not domain_info_exists:
-                # TODO: Should we add a Domain to the DomainInfo object?
                 new_domain_info = DomainInformation(
                     creator=self,
                     domain=domain) 
@@ -139,14 +158,21 @@ class User(AbstractUser):
         invitations that match their email address.
 
         We also need to check if they are logging in with the same e-mail
-        as a transition domain and update our database accordingly.
+        as a transition domain and update our domainInfo objects accordingly.
         """
 
-        # PART 1: DOMAIN INVITATIONS
-        self.check_domain_invitations_on_login()
-        
-        # PART 2: TRANSITION DOMAINS
+        # PART 1: TRANSITION DOMAINS
+        # 
+        # NOTE: THIS MUST RUN FIRST
+        # (If we have an issue where transition domains were
+        # not fully converted into Domain and DomainInvitation
+        # objects, this method will fill in the gaps.
+        # This will ensure the Domain Invitations method
+        # runs correctly (no missing invites))
         self.check_transition_domains_on_login()
+
+        # PART 2: DOMAIN INVITATIONS
+        self.check_domain_invitations_on_login()
         
 
     class Meta:
