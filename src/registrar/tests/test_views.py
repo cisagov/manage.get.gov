@@ -1108,7 +1108,9 @@ class TestWithDomainPermissions(TestWithUser):
             role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_keydata, role=UserDomainRole.Roles.MANAGER
+            user=self.user,
+            domain=self.domain_keydata,
+            role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
