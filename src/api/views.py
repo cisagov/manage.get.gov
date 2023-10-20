@@ -3,8 +3,6 @@ from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 
-from django.contrib.auth.decorators import login_required
-
 import requests
 
 from cachetools.func import ttl_cache
@@ -68,7 +66,6 @@ def in_domains(domain):
 
 
 @require_http_methods(["GET"])
-@login_required
 def available(request, domain=""):
     """Is a given domain available or not.
 
