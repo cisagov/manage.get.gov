@@ -25,6 +25,7 @@ DOMAIN_API_MESSAGES = {
     "invalid": "Enter a domain using only letters,"
     " numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
+    "error": "Error finding domain availability."
 }
 
 
@@ -99,4 +100,6 @@ def available(request, domain=""):
                 {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
             )
     except:
-        raise RegistryError("Registry cannot find domain availability.") 
+        return JsonResponse(
+                {"available": False, "message": DOMAIN_API_MESSAGES["error"]}
+            )

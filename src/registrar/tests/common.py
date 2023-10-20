@@ -839,6 +839,8 @@ class MockEppLib(TestCase):
             return self._mockDomainName("GSA.gov", False)
         elif "igorville.gov" in getattr(_request, "names", None):
             return self._mockDomainName("igorvilleremixed.gov", True)
+        elif "top-level-agency.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("top-level-agency.gov", True)
         elif "errordomain.gov" in getattr(_request, "names", None):
             raise RegistryError("Registry cannot find domain availability.")
         else:
