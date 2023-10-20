@@ -25,7 +25,7 @@ DOMAIN_API_MESSAGES = {
     "invalid": "Enter a domain using only letters,"
     " numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
-    "error": "Error finding domain availability."
+    "error": "Error finding domain availability.",
 }
 
 
@@ -67,7 +67,7 @@ def check_domain_available(domain):
         else:
             # domain search string doesn't end with .gov, add it on here
             return Domain.available(domain + ".gov")
-    except:
+    except Exception:
         return False
 
 
@@ -99,7 +99,7 @@ def available(request, domain=""):
             return JsonResponse(
                 {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
             )
-    except:
+    except Exception:
         return JsonResponse(
-                {"available": False, "message": DOMAIN_API_MESSAGES["error"]}
-            )
+            {"available": False, "message": DOMAIN_API_MESSAGES["error"]}
+        )

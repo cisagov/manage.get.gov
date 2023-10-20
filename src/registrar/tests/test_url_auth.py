@@ -116,7 +116,7 @@ class TestURLAuth(TestCase):
         "/openid/callback",
         "/openid/callback/login/",
         "/openid/callback/logout/",
-        "/api/v1/available"
+        "/api/v1/available",
     ]
 
     def assertURLIsProtectedByAuth(self, url):
