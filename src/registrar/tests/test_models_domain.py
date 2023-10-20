@@ -19,7 +19,7 @@ from registrar.utility.errors import ActionNotAllowed, NameserverError
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
-from .common import MockEppLib
+
 from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
     commands,
@@ -29,6 +29,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
+from .common import MockEppLib
 import logging
 
 logger = logging.getLogger(__name__)
@@ -759,6 +760,198 @@ class TestRegistrantContacts(MockEppLib):
         ]
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
+
+    def test_not_disclosed_on_other_contacts(self):
+        """
+        Scenario: Registrant creates a new domain with multiple contacts
+            When `domain` has registrant, admin, technical,
+                and security contacts
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to false for DF.EMAIL
+                on all fields except security
+        """
+        # Generates a domain with four existing contacts
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+        # Contact setup
+        expected_admin = domain.get_default_administrative_contact()
+        expected_admin.email = self.mockAdministrativeContact.email
+
+        expected_registrant = domain.get_default_registrant_contact()
+        expected_registrant.email = self.mockRegistrantContact.email
+
+        expected_security = domain.get_default_security_contact()
+        expected_security.email = self.mockSecurityContact.email
+
+        expected_tech = domain.get_default_technical_contact()
+        expected_tech.email = self.mockTechnicalContact.email
+
+        domain.administrative_contact = expected_admin
+        domain.registrant_contact = expected_registrant
+        domain.security_contact = expected_security
+        domain.technical_contact = expected_tech
+
+        contacts = [
+            (expected_admin, domain.administrative_contact),
+            (expected_registrant, domain.registrant_contact),
+            (expected_security, domain.security_contact),
+            (expected_tech, domain.technical_contact),
+        ]
+
+        # Test for each contact
+        for contact in contacts:
+            expected_contact = contact[0]
+            actual_contact = contact[1]
+            is_security = expected_contact.contact_type == "security"
+
+            expectedCreateCommand = self._convertPublicContactToEpp(
+                expected_contact, disclose_email=is_security
+            )
+
+            # Should only be disclosed if the type is security, as the email is valid
+            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+
+            # The emails should match on both items
+            self.assertEqual(expected_contact.email, actual_contact.email)
+
+    def test_convert_public_contact_to_epp(self):
+        self.maxDiff = None
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+        dummy_contact = domain.get_default_security_contact()
+        test_disclose = self._convertPublicContactToEpp(
+            dummy_contact, disclose_email=True
+        ).__dict__
+        test_not_disclose = self._convertPublicContactToEpp(
+            dummy_contact, disclose_email=False
+        ).__dict__
+
+        # Separated for linter
+        disclose_email_field = {common.DiscloseField.EMAIL}
+        expected_disclose = {
+            "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+            "disclose": common.Disclose(
+                flag=True, fields=disclose_email_field, types=None
+            ),
+            "email": "dotgov@cisa.dhs.gov",
+            "extensions": [],
+            "fax": None,
+            "id": "ThIq2NcRIDN7PauO",
+            "ident": None,
+            "notify_email": None,
+            "postal_info": common.PostalInfo(
+                name="Registry Customer Service",
+                addr=common.ContactAddr(
+                    street=["4200 Wilson Blvd.", None, None],
+                    city="Arlington",
+                    pc="22201",
+                    cc="US",
+                    sp="VA",
+                ),
+                org="Cybersecurity and Infrastructure Security Agency",
+                type="loc",
+            ),
+            "vat": None,
+            "voice": "+1.8882820870",
+        }
+
+        # Separated for linter
+        expected_not_disclose = {
+            "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+            "disclose": common.Disclose(
+                flag=False, fields=disclose_email_field, types=None
+            ),
+            "email": "dotgov@cisa.dhs.gov",
+            "extensions": [],
+            "fax": None,
+            "id": "ThrECENCHI76PGLh",
+            "ident": None,
+            "notify_email": None,
+            "postal_info": common.PostalInfo(
+                name="Registry Customer Service",
+                addr=common.ContactAddr(
+                    street=["4200 Wilson Blvd.", None, None],
+                    city="Arlington",
+                    pc="22201",
+                    cc="US",
+                    sp="VA",
+                ),
+                org="Cybersecurity and Infrastructure Security Agency",
+                type="loc",
+            ),
+            "vat": None,
+            "voice": "+1.8882820870",
+        }
+
+        # Set the ids equal, since this value changes
+        test_disclose["id"] = expected_disclose["id"]
+        test_not_disclose["id"] = expected_not_disclose["id"]
+
+        self.assertEqual(test_disclose, expected_disclose)
+        self.assertEqual(test_not_disclose, expected_not_disclose)
+
+    def test_not_disclosed_on_default_security_contact(self):
+        """
+        Scenario: Registrant creates a new domain with no security email
+            When `domain.security_contact.email` is equal to the default
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to false for DF.EMAIL
+        """
+        domain, _ = Domain.objects.get_or_create(name="defaultsecurity.gov")
+        expectedSecContact = PublicContact.get_default_security()
+        expectedSecContact.domain = domain
+        expectedSecContact.registry_id = "defaultSec"
+        domain.security_contact = expectedSecContact
+
+        expectedCreateCommand = self._convertPublicContactToEpp(
+            expectedSecContact, disclose_email=False
+        )
+
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+        # Confirm that we are getting a default email
+        self.assertEqual(domain.security_contact.email, expectedSecContact.email)
+
+    def test_not_disclosed_on_default_technical_contact(self):
+        """
+        Scenario: Registrant creates a new domain with no technical contact
+            When `domain.technical_contact.email` is equal to the default
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to false for DF.EMAIL
+        """
+        domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
+        expectedTechContact = PublicContact.get_default_technical()
+        expectedTechContact.domain = domain
+        expectedTechContact.registry_id = "defaultTech"
+        domain.technical_contact = expectedTechContact
+
+        expectedCreateCommand = self._convertPublicContactToEpp(
+            expectedTechContact, disclose_email=False
+        )
+
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+        # Confirm that we are getting a default email
+        self.assertEqual(domain.technical_contact.email, expectedTechContact.email)
+
+    def test_is_disclosed_on_security_contact(self):
+        """
+        Scenario: Registrant creates a new domain with a security email
+            When `domain.security_contact.email` is set to a valid email
+                and is not the default
+            Then Domain sends `commands.CreateContact` to the registry
+            And the field `disclose` is set to true for DF.EMAIL
+        """
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        expectedSecContact = PublicContact.get_default_security()
+        expectedSecContact.domain = domain
+        expectedSecContact.email = "123@mail.gov"
+        domain.security_contact = expectedSecContact
+
+        expectedCreateCommand = self._convertPublicContactToEpp(
+            expectedSecContact, disclose_email=True
+        )
+
+        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+        # Confirm that we are getting the desired email
+        self.assertEqual(domain.security_contact.email, expectedSecContact.email)
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):

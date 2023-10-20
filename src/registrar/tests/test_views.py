@@ -89,7 +89,7 @@ class LoggedInTests(TestWithUser):
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.assertNotContains(response, "igorville.gov")
         role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=domain, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER
         )
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
@@ -1121,23 +1121,25 @@ class TestWithDomainPermissions(TestWithUser):
             creator=self.user, domain=self.domain_dnssec_none
         )
         self.role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_multdsdata,
-            role=UserDomainRole.Roles.ADMIN,
+            role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_keydata, role=UserDomainRole.Roles.ADMIN
+            user=self.user,
+            domain=self.domain_keydata,
+            role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_dnssec_none,
-            role=UserDomainRole.Roles.ADMIN,
+            role=UserDomainRole.Roles.MANAGER,
         )
 
     def tearDown(self):
@@ -1223,14 +1225,14 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
             self.assertEqual(response.status_code, 403)
 
 
-class TestDomainUserManagement(TestDomainOverview):
-    def test_domain_user_management(self):
+class TestDomainManagers(TestDomainOverview):
+    def test_domain_managers(self):
         response = self.client.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
         )
-        self.assertContains(response, "User management")
+        self.assertContains(response, "Domain managers")
 
-    def test_domain_user_management_add_link(self):
+    def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
         management_page = self.app.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})

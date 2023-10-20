@@ -612,7 +612,7 @@ class DomainApplication(TimeStampedModel):
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
-            user=self.creator, domain=created_domain, role=UserDomainRole.Roles.ADMIN
+            user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
 
         self._send_status_update_email(

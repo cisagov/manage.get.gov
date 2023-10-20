@@ -1410,18 +1410,16 @@ class Domain(TimeStampedModel, DomainHelper):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visable"""
-        isSecurity = contact.contact_type == contact.ContactTypeChoices.SECURITY
+        is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
-        fields = {DF.FAX, DF.VOICE, DF.ADDR}
-
-        if not isSecurity or (
-            isSecurity and contact.email == PublicContact.get_default_security().email
-        ):
-            fields.add(DF.EMAIL)
+        fields = {DF.EMAIL}
+        disclose = (
+            is_security and contact.email != PublicContact.get_default_security().email
+        )
+        # Will only disclose DF.EMAIL if its not the default
         return epp.Disclose(
-            flag=False,
+            flag=disclose,
             fields=fields,
-            types={DF.ADDR: "loc"},
         )
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
