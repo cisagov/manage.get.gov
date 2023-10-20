@@ -824,9 +824,13 @@ class TestRegistrantContacts(MockEppLib):
         test_not_disclose = self._convertPublicContactToEpp(
             dummy_contact, disclose_email=False
         ).__dict__
+
+        # Separated for linter
+        disclose_email_field = {common.DiscloseField.EMAIL}
+        disclose = common.Disclose(flag=True, fields=disclose_email_field, types=None),
         expected_disclose = {
             "auth_info": common.ContactAuthInfo(pw='2fooBAR123fooBaz'),
-            "disclose": common.Disclose(flag=True, fields={common.DiscloseField.EMAIL}, types=None),
+            "disclose": disclose,
             "email": "dotgov@cisa.dhs.gov",
             "extensions": [],
             "fax": None,
@@ -848,9 +852,12 @@ class TestRegistrantContacts(MockEppLib):
             "vat": None,
             "voice": "+1.8882820870"
         }
+
+        # Separated for linter
+        not_disclose = common.Disclose(flag=False, fields=disclose_email_field, types=None)
         expected_not_disclose = {
             "auth_info": common.ContactAuthInfo(pw='2fooBAR123fooBaz'),
-            "disclose": common.Disclose(flag=False, fields={common.DiscloseField.EMAIL}, types=None),
+            "disclose": not_disclose,
             "email": "dotgov@cisa.dhs.gov",
             "extensions": [],
             "fax": None,
