@@ -656,7 +656,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
 
 
 class DomainUsersView(DomainBaseView):
-    """User management page in the domain details."""
+    """Domain managers page in the domain details."""
 
     template_name = "domain_users.html"
 

@@ -1204,7 +1204,7 @@ class TestDomainUserManagement(TestDomainOverview):
         response = self.client.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
         )
-        self.assertContains(response, "User management")
+        self.assertContains(response, "Domain managers")
 
     def test_domain_user_management_add_link(self):
         """Button to get to user add page works."""
