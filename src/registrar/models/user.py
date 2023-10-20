@@ -87,19 +87,23 @@ class User(AbstractUser):
         transition_domain_status = transition_domain.status
         transition_domain_email = transition_domain.username
 
-        new_domain = Domain(name=transition_domain_name, state=transition_domain_status)
-        new_domain.save()
-        # check that a domain invitation doesn't already
-        # exist for this e-mail / Domain pair
-        domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
-            email=transition_domain_email.lower(), domain=new_domain
-        ).exists()
-        if not domain_email_already_in_domain_invites:
-            # Create new domain invitation
-            new_domain_invitation = DomainInvitation(
-                email=transition_domain_email.lower(), domain=new_domain
+        # type safety check.  name should never be none
+        if transition_domain_name is not None:
+            new_domain = Domain(
+                name=transition_domain_name, state=transition_domain_status
             )
-            new_domain_invitation.save()
+            new_domain.save()
+            # check that a domain invitation doesn't already
+            # exist for this e-mail / Domain pair
+            domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
+                email=transition_domain_email.lower(), domain=new_domain
+            ).exists()
+            if not domain_email_already_in_domain_invites:
+                # Create new domain invitation
+                new_domain_invitation = DomainInvitation(
+                    email=transition_domain_email.lower(), domain=new_domain
+                )
+                new_domain_invitation.save()
 
     def check_transition_domains_on_login(self):
         """When a user first arrives on the site, we need to check
