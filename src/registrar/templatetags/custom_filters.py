@@ -55,11 +55,9 @@ def contains_checkbox(html_list):
 
 @register.filter
 def get_organization_long_name(organization_type):
-    # https://gist.github.com/OmenApps/3eef60ba4204f3d1842d9d7477efcce1#file-django_choices-txt-L28
     organization_choices_dict = dict(
         DomainApplication.OrganizationChoicesVerbose.choices
     )
-
     long_form_type = organization_choices_dict[organization_type]
     if long_form_type is None:
         logger.error("Organization type error, triggered by a template's custom filter")
