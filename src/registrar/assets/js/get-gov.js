@@ -383,3 +383,31 @@ function prepareDeleteButtons() {
   }
 
 })();
+
+/**
+ * An IIFE that triggers a modal on the DS Data Form under certain conditions
+ *
+ */
+(function triggerModalOnDsDataForm() {
+  let saveButon = document.querySelector("#save-ds-data");
+  
+  // if (saveButon)
+  //   saveButon.addEventListener('click', triggerModalIfModalTriggerExists);
+
+  // function triggerModalIfModalTriggerExists(e){
+  if (saveButon) {
+        let i = 0;
+        var tryToTriggerModal = setInterval(function() {
+            i++;
+            if (i > 100) {
+              clearInterval(tryToTriggerModal);
+            }
+            let modalTrigger = document.querySelector("#ds-toggle-dnssec-alert");
+            if (modalTrigger) {
+              modalTrigger.click()
+              clearInterval(tryToTriggerModal);
+            }
+        }, 50);
+
+  }
+})();

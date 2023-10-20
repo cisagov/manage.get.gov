@@ -14,6 +14,7 @@ from django.shortcuts import redirect
 from django.template import RequestContext
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
+from django.shortcuts import render
 
 from registrar.models import (
     Domain,
@@ -252,7 +253,7 @@ class DomainDNSSECView(DomainPermissionView, FormMixin):
         # Create HTML for the modal button
         modal_button = (
             '<button type="submit" '
-            'class="usa-button" '
+            'class="usa-button usa-button--secondary" '
             'name="disable_dnssec">Disable DNSSEC</button>'
         )
 
@@ -322,6 +323,19 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
         context = super().get_context_data(**kwargs)
         # use "formset" instead of "form" for the key
         context["formset"] = context.pop("form")
+        
+        # Create HTML for the modal button
+        modal_button = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="disable-override-click">Disable DNSSEC</button>'
+        )
+
+        # context to back out of a broken form on all fields delete
+        context["modal_button"] = modal_button
+        context["dnssec_ds_confirmed"] = self.request.session.get(
+            "dnssec_ds_confirmed", False
+        )
 
         return context
 
@@ -329,16 +343,35 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
         """Formset submission posts to this view."""
         self.object = self.get_object()
         formset = self.get_form()
+        override = False
 
+        # switch to form in template
+        if "confirm-ds" in request.POST:
+            request.session["dnssec_ds_confirmed"] = True
+            return super().form_valid(formset)
+        
+        # This is called but the form cancel button, but also by the modal's X and cacel button
         if "btn-cancel-click" in request.POST:
-            return redirect("/", {"formset": formset}, RequestContext(request))
+            return render(request, 'domain_dsdata.html', {'formset': formset})
+        
+        if "disable-override-click" in request.POST:
+            override = True
+            # we are deleteing all data,
+            # switch out of form
+            request.session["dnssec_ds_confirmed"] = False
+        
+        if len(formset) == 0 and formset.initial != [{}] and override == False:
+            # trigger the modal
+            context = self.get_context_data(**kwargs)
+            context["trigger_modal"] = True
+            return self.render_to_response(context)
 
         if formset.is_valid():
             return self.form_valid(formset)
         else:
             return self.form_invalid(formset)
 
-    def form_valid(self, formset):
+    def form_valid(self, formset, **kwargs):
         """The formset is valid, perform something with it."""
 
         # Set the dnssecdata from the formset

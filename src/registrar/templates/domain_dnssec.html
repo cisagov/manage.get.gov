@@ -7,19 +7,32 @@
 
   <h1>DNSSEC</h1>
 
-  <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your domain, they can be certain that it's connecting to the correct server, preventing potential hijacking or tampering with your domain's records.</p>
+  <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your website, they can be certain that it’s connecting to the correct server, preventing potential hijacking or tampering with your domain's records. </p>
 
   <form class="usa-form usa-form--text-width" method="post">
     {% csrf_token %}
     {% if has_dnssec_records %}
-    <div class="usa-alert usa-alert--info usa-alert--slim">
-      <div class="usa-alert__body">
-        In order to fully disable DNSSEC on your domain, you will need to work with your DNS provider to remove your DNSSEC-related records from your zone.
+    <div
+        class="usa-summary-box dotgov-status-box padding-top-0" 
+        role="region"
+        aria-labelledby="Important notes on disabling DNSSEC"
+    >
+      <div class="usa-summary-box__body">
+        <p class="usa-summary-box__heading font-sans-md margin-bottom-0" 
+           id="summary-box-key-information"
+        >
+        <h2>A note on disabling DNSSEC</h2>
+        <ul class="usa-list">
+          <li>After clicking disable DNSSEC here, you will need to wait to disable DNSSEC at your DNS hosting provider after the expiration of the TTL (“time to live”) on your host’s records, which is usually between 1 hour and a day</li>
+          <li>If you disable DNSSEC at your DNS hosting provider before the expiration of the TTL, you may cause your domain to appear offline</li>
+          <li>Ask your DNS host for more information on their TTL expiry time</li>
+        </ul>
       </div>
     </div>
+    <h2>DNSSEC is enabled on your domain</h2>
     <a
       href="#toggle-dnssec-alert"
-      class="usa-button"
+      class="usa-button usa-button--outline margin-top-1"
       aria-controls="toggle-dnssec-alert"
       data-open-modal
       >Disable DNSSEC</a
@@ -42,7 +55,7 @@
     aria-labelledby="Are you sure you want to continue?"
     aria-describedby="Your DNSSEC records will be deleted from the registry."
   >
-      {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="Your DNSSEC records will be deleted from the registry." modal_button=modal_button|safe %}
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_button=modal_button|safe %}
   </div>
 
 {% endblock %}  {# domain_content #}
