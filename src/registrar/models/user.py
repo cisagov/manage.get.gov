@@ -83,22 +83,21 @@ class User(AbstractUser):
                 )
 
     def create_domain_and_invite(self, transition_domain: TransitionDomain):
-        print("creating DOMAIN")
-        new_domain = Domain(
-            name=transition_domain.domain_name, state=transition_domain.status
-        )
+        transition_domain_name = transition_domain.domain_name
+        transition_domain_status = transition_domain.status
+        transition_domain_email = transition_domain.username
+
+        new_domain = Domain(name=transition_domain_name, state=transition_domain_status)
         new_domain.save()
         # check that a domain invitation doesn't already
         # exist for this e-mail / Domain pair
         domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
-            email=transition_domain.username.lower(), domain=new_domain
+            email=transition_domain_email.lower(), domain=new_domain
         ).exists()
         if not domain_email_already_in_domain_invites:
-
-            print("creating INVITATION")
             # Create new domain invitation
             new_domain_invitation = DomainInvitation(
-                email=transition_domain.username.lower(), domain=new_domain
+                email=transition_domain_email.lower(), domain=new_domain
             )
             new_domain_invitation.save()
 
@@ -107,18 +106,16 @@ class User(AbstractUser):
         if they are logging in with the same e-mail as a
         transition domain and update our database accordingly."""
 
-        for transition_domain in TransitionDomain.objects.filter(
-            username=self.email
-        ):
+        for transition_domain in TransitionDomain.objects.filter(username=self.email):
             # Looks like the user logged in with the same e-mail as
-            # one or more corresponding transition domains.  
+            # one or more corresponding transition domains.
             # Create corresponding DomainInformation objects.
 
             # NOTE: adding an ADMIN user role for this user
             # for each domain should already be done
-            # in the invitation.retrieve() method. 
+            # in the invitation.retrieve() method.
             # However, if the migration scripts for transition
-            # domain objects were not executed correctly, 
+            # domain objects were not executed correctly,
             # there could be transition domains without
             # any corresponding Domain & DomainInvitation objects,
             # which means the invitation.retrieve() method might
@@ -128,12 +125,16 @@ class User(AbstractUser):
             # with our data and migrations need to be run again.
 
             # Get the domain that corresponds with this transition domain
-            domain_exists = Domain.objects.filter(name=transition_domain.domain_name).exists()
+            domain_exists = Domain.objects.filter(
+                name=transition_domain.domain_name
+            ).exists()
             if not domain_exists:
-                logger.warn("""There are transition domains without
-                            corresponding domain objects! 
+                logger.warn(
+                    """There are transition domains without
+                            corresponding domain objects!
                             Please run migration scripts for transition domains
-                            (See data_migration.md)""")
+                            (See data_migration.md)"""
+                )
                 # No need to throw an exception...just create a domain
                 # and domain invite, then proceed as normal
                 self.create_domain_and_invite(transition_domain)
@@ -146,9 +147,7 @@ class User(AbstractUser):
                 domain=domain
             ).exists()
             if not domain_info_exists:
-                new_domain_info = DomainInformation(
-                    creator=self,
-                    domain=domain) 
+                new_domain_info = DomainInformation(creator=self, domain=domain)
                 new_domain_info.save()
 
     def first_login(self):
@@ -162,7 +161,7 @@ class User(AbstractUser):
         """
 
         # PART 1: TRANSITION DOMAINS
-        # 
+        #
         # NOTE: THIS MUST RUN FIRST
         # (If we have an issue where transition domains were
         # not fully converted into Domain and DomainInvitation
@@ -173,7 +172,6 @@ class User(AbstractUser):
 
         # PART 2: DOMAIN INVITATIONS
         self.check_domain_invitations_on_login()
-        
 
     class Meta:
         permissions = [

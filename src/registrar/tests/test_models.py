@@ -614,8 +614,9 @@ class TestInvitations(TestCase):
         self.user.first_login()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
 
+
 class TestUser(TestCase):
-    """For now, just test actions that 
+    """For now, just test actions that
     occur on user login."""
 
     def setUp(self):
@@ -626,8 +627,9 @@ class TestUser(TestCase):
         # clean out the roles each time
         UserDomainRole.objects.all().delete()
 
-        TransitionDomain.objects.get_or_create(username="mayor@igorville.gov", 
-                                               domain_name=self.domain_name)
+        TransitionDomain.objects.get_or_create(
+            username="mayor@igorville.gov", domain_name=self.domain_name
+        )
 
     def tearDown(self):
         super().tearDown()
@@ -644,10 +646,10 @@ class TestUser(TestCase):
 
         self.user.first_login()
         self.assertTrue(DomainInformation.objects.get(domain=self.domain))
-    
+
     def test_check_transition_domains_without_domains_on_login(self):
         """A new user's first_login callback checks transition domains.
-        This test makes sure that in the event a domain does not exist 
+        This test makes sure that in the event a domain does not exist
         for a given transition domain, both a domain and domain invitation
         are created."""
         self.user.first_login()
