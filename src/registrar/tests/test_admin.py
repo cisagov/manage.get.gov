@@ -11,6 +11,7 @@ from registrar.admin import (
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
+    ContactAdmin,
 )
 from registrar.models import (
     Domain,
@@ -660,9 +661,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         expected_fields = [
             "creator",
             "about_your_organization",
-            "address_line1",
-            "address_line2",
-            "zipcode",
             "requested_domain",
             "alternative_domains",
             "purpose",
@@ -1353,3 +1351,38 @@ class DomainSessionVariableTest(TestCase):
             {"_edit_domain": "true"},
             follow=True,
         )
+
+
+class ContactAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.admin = ContactAdmin(model=get_user_model(), admin_site=None)
+        self.superuser = create_superuser()
+        self.staffuser = create_user()
+
+    def test_readonly_when_restricted_staffuser(self):
+        request = self.factory.get("/")
+        request.user = self.staffuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = [
+            "user",
+        ]
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_when_restricted_superuser(self):
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = []
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def tearDown(self):
+        User.objects.all().delete()
