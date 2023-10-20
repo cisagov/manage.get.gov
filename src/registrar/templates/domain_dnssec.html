@@ -7,7 +7,7 @@
 
   <h1>DNSSEC</h1>
 
-  <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your website, they can be certain that it’s connecting to the correct server, preventing potential hijacking or tampering with your domain's records. </p>
+  <p>DNSSEC, or DNS Security Extensions, is additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your website, they can be certain that it’s connecting to the correct server, preventing potential hijacking or tampering with your domain's records.</p>
 
   <form class="usa-form usa-form--text-width" method="post">
     {% csrf_token %}
@@ -21,12 +21,13 @@
         <p class="usa-summary-box__heading font-sans-md margin-bottom-0" 
            id="summary-box-key-information"
         >
-        <h2>A note on disabling DNSSEC</h2>
+        <h2>To fully disable DNSSEC </h2>
         <ul class="usa-list">
-          <li>After clicking disable DNSSEC here, you will need to wait to disable DNSSEC at your DNS hosting provider after the expiration of the TTL (“time to live”) on your host’s records, which is usually between 1 hour and a day</li>
-          <li>If you disable DNSSEC at your DNS hosting provider before the expiration of the TTL, you may cause your domain to appear offline</li>
-          <li>Ask your DNS host for more information on their TTL expiry time</li>
+          <li>Click “Disable DNSSEC”  below.</li>
+          <li>Wait until the Time to Live (TTL) expires on your DNSSEC records managed by your DNS hosting provider. This is often less than 24 hours, but confirm with your provider.</li>
+          <li>After the TTL expiration, disable DNSSEC at your DNS hosting provider. </li>
         </ul>
+        <p><strong>Warning:</strong> If you disable DNSSEC at your DNS hosting provider before TTL expiration, this may cause your domain to appear offline.</p>
       </div>
     </div>
     <h2>DNSSEC is enabled on your domain</h2>
