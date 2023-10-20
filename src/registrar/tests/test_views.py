@@ -142,9 +142,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     @boto3_mocking.patching
     def test_application_form_submission(self):
-        """Can fill out the entire form and submit.
+        """
+        Can fill out the entire form and submit.
         As we add additional form pages, we need to include them here to make
         this test work.
+
+        This test also looks for the long organization name on the summary page.
         """
         num_pages_tested = 0
         # elections, type_of_work, tribal_government, no_other_contacts
@@ -428,7 +431,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         review_form = review_page.form
 
         # Review page contains all the previously entered data
-        self.assertContains(review_page, "Federal")
+        # Let's make sure the long org name is displayed
+        self.assertContains(review_page, "Federal: an agency of the U.S. government")
         self.assertContains(review_page, "Executive")
         self.assertContains(review_page, "Testorg")
         self.assertContains(review_page, "address 1")
@@ -1066,6 +1070,26 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
+    def test_long_org_name_in_application(self):
+        """
+        Make sure the long name is displaying in the application form,
+        org step
+        """
+        request = self.app.get(reverse("application:")).follow()
+        self.assertContains(request, "Federal: an agency of the U.S. government")
+
+    def test_long_org_name_in_application_manage(self):
+        """
+        Make sure the long name is displaying in the application summary
+        page (manage your application)
+        """
+        completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "city.gov")
+        # click the "Edit" link
+        detail_page = home_page.click("Manage")
+        self.assertContains(detail_page, "Federal: an agency of the U.S. government")
+
 
 class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
@@ -1201,14 +1225,14 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
             self.assertEqual(response.status_code, 403)
 
 
-class TestDomainUserManagement(TestDomainOverview):
-    def test_domain_user_management(self):
+class TestDomainManagers(TestDomainOverview):
+    def test_domain_managers(self):
         response = self.client.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
         )
-        self.assertContains(response, "User management")
+        self.assertContains(response, "Domain managers")
 
-    def test_domain_user_management_add_link(self):
+    def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
         management_page = self.app.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})

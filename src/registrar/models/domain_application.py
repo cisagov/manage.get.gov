@@ -105,28 +105,57 @@ class DomainApplication(TimeStampedModel):
         ARMED_FORCES_AP = "AP", "Armed Forces Pacific (AP)"
 
     class OrganizationChoices(models.TextChoices):
+
+        """
+        Primary organization choices:
+        For use in django admin
+        Keys need to match OrganizationChoicesVerbose
+        """
+
+        FEDERAL = "federal", "Federal"
+        INTERSTATE = "interstate", "Interstate"
+        STATE_OR_TERRITORY = "state_or_territory", "State or territory"
+        TRIBAL = "tribal", "Tribal"
+        COUNTY = "county", "County"
+        CITY = "city", "City"
+        SPECIAL_DISTRICT = "special_district", "Special district"
+        SCHOOL_DISTRICT = "school_district", "School district"
+
+    class OrganizationChoicesVerbose(models.TextChoices):
+
+        """
+        Secondary organization choices
+        For use in the application form and on the templates
+        Keys need to match OrganizationChoices
+        """
+
         FEDERAL = (
             "federal",
-            "Federal: an agency of the U.S. government's executive, legislative, "
-            "or judicial branches",
+            "Federal: an agency of the U.S. government's executive, "
+            "legislative, or judicial branches",
         )
         INTERSTATE = "interstate", "Interstate: an organization of two or more states"
-        STATE_OR_TERRITORY = "state_or_territory", (
-            "State or territory: one of the 50 U.S. states, the District of "
-            "Columbia, American Samoa, Guam, Northern Mariana Islands, "
-            "Puerto Rico, or the U.S. Virgin Islands"
+        STATE_OR_TERRITORY = (
+            "state_or_territory",
+            "State or territory: one of the 50 U.S. states, the District of Columbia, "
+            "American Samoa, Guam, Northern Mariana Islands, Puerto Rico, or the U.S. "
+            "Virgin Islands",
         )
-        TRIBAL = "tribal", (
-            "Tribal: a tribal government recognized by the federal or "
-            "a state government"
+        TRIBAL = (
+            "tribal",
+            "Tribal: a tribal government recognized by the federal or a state "
+            "government",
         )
         COUNTY = "county", "County: a county, parish, or borough"
         CITY = "city", "City: a city, town, township, village, etc."
-        SPECIAL_DISTRICT = "special_district", (
-            "Special district: an independent organization within a single state"
+        SPECIAL_DISTRICT = (
+            "special_district",
+            "Special district: an independent organization within a single state",
         )
-        SCHOOL_DISTRICT = "school_district", (
-            "School district: a school district that is not part of a local government"
+        SCHOOL_DISTRICT = (
+            "school_district",
+            "School district: a school district that is not part of a local "
+            "government",
         )
 
     class BranchChoices(models.TextChoices):
@@ -297,6 +326,7 @@ class DomainApplication(TimeStampedModel):
     # ##### data fields from the initial form #####
     organization_type = models.CharField(
         max_length=255,
+        # use the short names in Django admin
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,

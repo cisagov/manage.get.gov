@@ -53,6 +53,26 @@ class TestDomainAdmin(MockEppLib):
         self.factory = RequestFactory()
         super().setUp()
 
+    def test_short_org_name_in_domains_list(self):
+        """
+        Make sure the short name is displaying in admin on the list page
+        """
+        self.client.force_login(self.superuser)
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application.approve()
+
+        response = self.client.get("/admin/registrar/domain/")
+
+        # There are 3 template references to Federal (3) plus one reference in the table
+        # for our actual application
+        self.assertContains(response, "Federal", count=4)
+        # This may be a bit more robust
+        self.assertContains(
+            response, '<td class="field-organization_type">Federal</td>', count=1
+        )
+        # Now let's make sure the long description does not exist
+        self.assertNotContains(response, "Federal: an agency of the U.S. government")
+
     @skip("Why did this test stop working, and is is a good test")
     def test_place_and_remove_hold(self):
         domain = create_ready_domain()
@@ -244,8 +264,11 @@ class TestDomainAdmin(MockEppLib):
         raise
 
     def tearDown(self):
-        User.objects.all().delete()
         super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
 
 
 class TestDomainApplicationAdminForm(TestCase):
@@ -300,6 +323,23 @@ class TestDomainApplicationAdmin(MockEppLib):
         )
         self.superuser = create_superuser()
         self.staffuser = create_user()
+
+    def test_short_org_name_in_applications_list(self):
+        """
+        Make sure the short name is displaying in admin on the list page
+        """
+        self.client.force_login(self.superuser)
+        completed_application()
+        response = self.client.get("/admin/registrar/domainapplication/")
+        # There are 3 template references to Federal (3) plus one reference in the table
+        # for our actual application
+        self.assertContains(response, "Federal", count=4)
+        # This may be a bit more robust
+        self.assertContains(
+            response, '<td class="field-organization_type">Federal</td>', count=1
+        )
+        # Now let's make sure the long description does not exist
+        self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
     @boto3_mocking.patching
     def test_save_model_sends_submitted_email(self):
