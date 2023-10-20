@@ -670,6 +670,44 @@ class MockEppLib(TestCase):
         registrant="regContact",
     )
 
+    InfoDomainWithDefaultSecurityContact = fakedEppObject(
+        "fakepw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[
+            common.DomainContact(
+                contact="defaultSec",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            )
+        ],
+        hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+    )
+
+    InfoDomainWithDefaultTechnicalContact = fakedEppObject(
+        "fakepw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[
+            common.DomainContact(
+                contact="defaultTech",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            )
+        ],
+        hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+    )
+
+    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
+        "defaultTech", "dotgov@cisa.dhs.gov"
+    )
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData(
+        "defaultSec", "dotgov@cisa.dhs.gov"
+    )
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData(
         "securityContact", "security@mail.gov"
     )
@@ -891,6 +929,8 @@ class MockEppLib(TestCase):
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
+            "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
+            "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
         }
 
         # Retrieve the corresponding values from the dictionary
@@ -916,6 +956,10 @@ class MockEppLib(TestCase):
                 mocked_result = self.mockAdministrativeContact
             case "regContact":
                 mocked_result = self.mockRegistrantContact
+            case "defaultSec":
+                mocked_result = self.mockDefaultSecurityContact
+            case "defaultTech":
+                mocked_result = self.mockDefaultTechnicalContact
             case _:
                 # Default contact return
                 mocked_result = self.mockDataInfoContact
@@ -950,15 +994,11 @@ class MockEppLib(TestCase):
         self, contact: PublicContact, disclose_email=False, createContact=True
     ):
         DF = common.DiscloseField
-        fields = {DF.FAX, DF.VOICE, DF.ADDR}
-
-        if not disclose_email:
-            fields.add(DF.EMAIL)
+        fields = {DF.EMAIL}
 
         di = common.Disclose(
-            flag=False,
+            flag=disclose_email,
             fields=fields,
-            types={DF.ADDR: "loc"},
         )
 
         # check docs here looks like we may have more than one address field but
