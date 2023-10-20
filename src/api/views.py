@@ -89,11 +89,14 @@ def available(request, domain=""):
             {"available": False, "message": DOMAIN_API_MESSAGES["invalid"]}
         )
     # a domain is available if it is NOT in the list of current domains
-    if check_domain_available(domain):
-        return JsonResponse(
-            {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
-        )
-    else:
-        return JsonResponse(
-            {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
-        )
+    try:
+        if check_domain_available(domain):
+            return JsonResponse(
+                {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
+            )
+        else:
+            return JsonResponse(
+                {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
+            )
+    except:
+        raise RegistryError("Registry cannot find domain availability.") 
