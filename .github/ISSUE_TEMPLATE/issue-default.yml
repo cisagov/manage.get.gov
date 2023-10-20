@@ -24,8 +24,8 @@ body:
    - type: textarea
      id: additional-context
      attributes:
-       label: Additional context
-       description: "Share any other thoughts, like how this might be implemented or fixed. Screenshots and links to documents/discussions are welcome."
+      label: Additional context
+      description: "Share any other thoughts, like how this might be implemented or fixed. Screenshots and links to documents/discussions are welcome."
   - type: textarea
     id: links-to-other-issues
     attributes:
