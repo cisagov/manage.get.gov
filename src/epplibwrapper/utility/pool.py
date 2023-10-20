@@ -1,4 +1,5 @@
 import logging
+from typing import List
 import gevent
 from geventconnpool import ConnectionPool
 from epplibwrapper.socket import Socket
@@ -32,7 +33,7 @@ class EPPConnectionPool(ConnectionPool):
         self._login = login
 
         # Keep track of each greenlet
-        self.greenlets = []
+        self.greenlets: List[gevent.Greenlet] = []
 
         # Define optional pool settings.
         # Kept in a dict so that the parent class,
@@ -55,7 +56,7 @@ class EPPConnectionPool(ConnectionPool):
         if "spawn_frequency" in options:
             self.spawn_frequency = options["spawn_frequency"]
 
-        self.conn = deque()
+        self.conn: deque = deque()
         self.lock = BoundedSemaphore(self.size)
 
         self.populate_all_connections()
