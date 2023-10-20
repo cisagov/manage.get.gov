@@ -31,6 +31,7 @@ from epplibwrapper import (
     info,
     RegistryError,
     ErrorCode,
+    responses,
 )
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
@@ -784,45 +785,63 @@ class MockEppLib(TestCase):
         ],
     )
 
+    def _mockDomainName(self, _name, _avail=False):
+        return MagicMock(
+            res_data=[
+                responses.check.CheckDomainResultData(
+                    name=_name, avail=_avail, reason=None
+                ),
+            ]
+        )
+
+    def mockCheckDomainCommand(self, _request, cleaned):
+        if "gsa.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("gsa.gov", True)
+        elif "GSA.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("GSA.gov", True)
+        elif "igorvilleremixed.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("igorvilleremixed.gov", False)
+        elif "errordomain.gov" in getattr(_request, "names", None):
+            raise RegistryError("Registry cannot find domain availability.")
+        else:
+            return self._mockDomainName("domainnotfound.gov", False)
+
     def mockSend(self, _request, cleaned):
         """Mocks the registry.send function used inside of domain.py
         registry is imported from epplibwrapper
         returns objects that simulate what would be in a epp response
         but only relevant pieces for tests"""
-        if isinstance(_request, commands.InfoDomain):
-            return self.mockInfoDomainCommands(_request, cleaned)
-        elif isinstance(_request, commands.InfoContact):
-            return self.mockInfoContactCommands(_request, cleaned)
-        elif isinstance(_request, commands.UpdateDomain):
-            return self.mockUpdateDomainCommands(_request, cleaned)
-        elif isinstance(_request, commands.CreateContact):
-            return self.mockCreateContactCommands(_request, cleaned)
-        elif isinstance(_request, commands.CreateHost):
-            return MagicMock(
-                res_data=[self.mockDataHostChange],
-                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-            )
-        elif isinstance(_request, commands.UpdateHost):
-            return MagicMock(
-                res_data=[self.mockDataHostChange],
-                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-            )
-        elif isinstance(_request, commands.DeleteHost):
-            return MagicMock(
-                res_data=[self.mockDataHostChange],
-                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-            )
-        elif (
-            isinstance(_request, commands.DeleteDomain)
-            and getattr(_request, "name", None) == "failDelete.gov"
-        ):
-            name = getattr(_request, "name", None)
-            fake_nameserver = "ns1.failDelete.gov"
-            if name in fake_nameserver:
-                raise RegistryError(
-                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+
+        match type(_request):
+            case commands.InfoDomain:
+                return self.mockInfoDomainCommands(_request, cleaned)
+            case commands.InfoContact:
+                return self.mockInfoContactCommands(_request, cleaned)
+            case commands.CreateContact:
+                return self.mockCreateContactCommands(_request, cleaned)
+            case commands.UpdateDomain:
+                return self.mockUpdateDomainCommands(_request, cleaned)
+            case commands.CreateHost:
+                return MagicMock(
+                    res_data=[self.mockDataHostChange],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
                 )
-        return MagicMock(res_data=[self.mockDataInfoHosts])
+            case commands.UpdateHost:
+                return MagicMock(
+                    res_data=[self.mockDataHostChange],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
+            case commands.DeleteHost:
+                return MagicMock(
+                    res_data=[self.mockDataHostChange],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
+            case commands.CheckDomain:
+                return self.mockCheckDomainCommand(_request, cleaned)
+            case commands.DeleteDomain:
+                return self.mockDeleteDomainCommands(_request, cleaned)
+            case _:
+                return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def mockUpdateDomainCommands(self, _request, cleaned):
         if getattr(_request, "name", None) == "dnssec-invalid.gov":
@@ -832,6 +851,16 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
+
+    def mockDeleteDomainCommands(self, _request, cleaned):
+        if getattr(_request, "name", None) == "failDelete.gov":
+            name = getattr(_request, "name", None)
+            fake_nameserver = "ns1.failDelete.gov"
+            if name in fake_nameserver:
+                raise RegistryError(
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
+                )
+        return None
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
