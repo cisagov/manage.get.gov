@@ -827,10 +827,11 @@ class TestRegistrantContacts(MockEppLib):
 
         # Separated for linter
         disclose_email_field = {common.DiscloseField.EMAIL}
-        disclose = common.Disclose(flag=True, fields=disclose_email_field, types=None),
         expected_disclose = {
-            "auth_info": common.ContactAuthInfo(pw='2fooBAR123fooBaz'),
-            "disclose": disclose,
+            "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+            "disclose": common.Disclose(
+                flag=True, fields=disclose_email_field, types=None
+            ),
             "email": "dotgov@cisa.dhs.gov",
             "extensions": [],
             "fax": None,
@@ -838,26 +839,27 @@ class TestRegistrantContacts(MockEppLib):
             "ident": None,
             "notify_email": None,
             "postal_info": common.PostalInfo(
-                name='Registry Customer Service',
+                name="Registry Customer Service",
                 addr=common.ContactAddr(
-                    street=['4200 Wilson Blvd.', None, None],
-                    city='Arlington',
-                    pc='22201',
-                    cc='US',
-                    sp='VA'
+                    street=["4200 Wilson Blvd.", None, None],
+                    city="Arlington",
+                    pc="22201",
+                    cc="US",
+                    sp="VA",
                 ),
-                org='Cybersecurity and Infrastructure Security Agency',
-                type='loc'
+                org="Cybersecurity and Infrastructure Security Agency",
+                type="loc",
             ),
             "vat": None,
-            "voice": "+1.8882820870"
+            "voice": "+1.8882820870",
         }
 
         # Separated for linter
-        not_disclose = common.Disclose(flag=False, fields=disclose_email_field, types=None)
         expected_not_disclose = {
-            "auth_info": common.ContactAuthInfo(pw='2fooBAR123fooBaz'),
-            "disclose": not_disclose,
+            "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+            "disclose": common.Disclose(
+                flag=False, fields=disclose_email_field, types=None
+            ),
             "email": "dotgov@cisa.dhs.gov",
             "extensions": [],
             "fax": None,
@@ -865,19 +867,19 @@ class TestRegistrantContacts(MockEppLib):
             "ident": None,
             "notify_email": None,
             "postal_info": common.PostalInfo(
-                name='Registry Customer Service',
+                name="Registry Customer Service",
                 addr=common.ContactAddr(
-                    street=['4200 Wilson Blvd.', None, None],
-                    city='Arlington',
-                    pc='22201',
-                    cc='US',
-                    sp='VA'
+                    street=["4200 Wilson Blvd.", None, None],
+                    city="Arlington",
+                    pc="22201",
+                    cc="US",
+                    sp="VA",
                 ),
-                org='Cybersecurity and Infrastructure Security Agency',
-                type='loc'
+                org="Cybersecurity and Infrastructure Security Agency",
+                type="loc",
             ),
             "vat": None,
-            "voice": "+1.8882820870"
+            "voice": "+1.8882820870",
         }
 
         # Set the ids equal, since this value changes
