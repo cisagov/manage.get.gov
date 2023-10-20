@@ -834,11 +834,11 @@ class MockEppLib(TestCase):
 
     def mockCheckDomainCommand(self, _request, cleaned):
         if "gsa.gov" in getattr(_request, "names", None):
-            return self._mockDomainName("gsa.gov", True)
+            return self._mockDomainName("gsa.gov", False)
         elif "GSA.gov" in getattr(_request, "names", None):
-            return self._mockDomainName("GSA.gov", True)
-        elif "igorvilleremixed.gov" in getattr(_request, "names", None):
-            return self._mockDomainName("igorvilleremixed.gov", False)
+            return self._mockDomainName("GSA.gov", False)
+        elif "igorville.gov" in getattr(_request, "names", None):
+            return self._mockDomainName("igorvilleremixed.gov", True)
         elif "errordomain.gov" in getattr(_request, "names", None):
             raise RegistryError("Registry cannot find domain availability.")
         else:

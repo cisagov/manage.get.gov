@@ -50,8 +50,8 @@ def _domains():
     return domains
 
 
-def in_domains(domain):
-    """Return true if the given domain is in the domains list.
+def check_domain_available(domain):
+    """Return true if the given domain is available.
 
     The given domain is lowercased to match against the domains list. If the
     given domain doesn't end with .gov, ".gov" is added when looking for
@@ -83,11 +83,11 @@ def available(request, domain=""):
             {"available": False, "message": DOMAIN_API_MESSAGES["invalid"]}
         )
     # a domain is available if it is NOT in the list of current domains
-    if in_domains(domain):
+    if check_domain_available(domain):
         return JsonResponse(
-            {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
+            {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
         )
     else:
         return JsonResponse(
-            {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
+            {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
         )
