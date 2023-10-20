@@ -42,7 +42,7 @@ as health checks used by our platform).
 ## Adding roles
 
 The current MVP design uses only a single role called
-`UserDomainRole.Roles.ADMIN` that has all access on a domain. As such, the
+`UserDomainRole.Roles.MANAGER` that has all access on a domain. As such, the
 permission mixin doesn't need to examine the `role` field carefully. In the
 future, as we add additional roles that our product vision calls for
 (read-only? editing only some information?), we need to add conditional

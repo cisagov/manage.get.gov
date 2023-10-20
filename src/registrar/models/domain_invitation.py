@@ -63,7 +63,7 @@ class DomainInvitation(TimeStampedModel):
 
         # and create a role for that user on this domain
         _, created = UserDomainRole.objects.get_or_create(
-            user=user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+            user=user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
         if not created:
             # something strange happened and this role already existed when

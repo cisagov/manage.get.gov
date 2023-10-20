@@ -736,7 +736,7 @@ class DomainAddUserView(DomainFormBaseView):
 
         try:
             UserDomainRole.objects.create(
-                user=requested_user, domain=self.object, role=UserDomainRole.Roles.ADMIN
+                user=requested_user, domain=self.object, role=UserDomainRole.Roles.MANAGER
             )
         except IntegrityError:
             # User already has the desired role! Do nothing??

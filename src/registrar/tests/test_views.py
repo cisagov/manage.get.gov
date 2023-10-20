@@ -89,7 +89,7 @@ class LoggedInTests(TestWithUser):
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.assertNotContains(response, "igorville.gov")
         role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=domain, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER
         )
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
@@ -1097,23 +1097,23 @@ class TestWithDomainPermissions(TestWithUser):
             creator=self.user, domain=self.domain_dnssec_none
         )
         self.role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_multdsdata,
-            role=UserDomainRole.Roles.ADMIN,
+            role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_keydata, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=self.domain_keydata, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_dnssec_none,
-            role=UserDomainRole.Roles.ADMIN,
+            role=UserDomainRole.Roles.MANAGER,
         )
 
     def tearDown(self):
