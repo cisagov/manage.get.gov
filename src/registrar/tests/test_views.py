@@ -1199,14 +1199,14 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
             self.assertEqual(response.status_code, 403)
 
 
-class TestDomainUserManagement(TestDomainOverview):
-    def test_domain_user_management(self):
+class TestDomainManagers(TestDomainOverview):
+    def test_domain_managers(self):
         response = self.client.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
         )
         self.assertContains(response, "Domain managers")
 
-    def test_domain_user_management_add_link(self):
+    def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
         management_page = self.app.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
