@@ -5,6 +5,8 @@ from django.http import JsonResponse
 
 import requests
 
+from login_required import login_not_required
+
 from cachetools.func import ttl_cache
 
 
@@ -58,14 +60,18 @@ def check_domain_available(domain):
     a match.
     """
     Domain = apps.get_model("registrar.Domain")
-    if domain.endswith(".gov"):
-        return Domain.available(domain)
-    else:
-        # domain search string doesn't end with .gov, add it on here
-        return Domain.available(domain + ".gov")
+    try:
+        if domain.endswith(".gov"):
+            return Domain.available(domain)
+        else:
+            # domain search string doesn't end with .gov, add it on here
+            return Domain.available(domain + ".gov")
+    except:
+        return False
 
 
 @require_http_methods(["GET"])
+@login_not_required
 def available(request, domain=""):
     """Is a given domain available or not.
 
