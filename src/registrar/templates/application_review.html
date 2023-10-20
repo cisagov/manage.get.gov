@@ -1,5 +1,6 @@
 {% extends 'application_form.html' %}
 {% load static url_helpers %}
+{% load custom_filters %}
 
 {% block form_required_fields_help_text %}
 {# there are no required fields on this page so don't show this #}
@@ -26,7 +27,13 @@
         <div class="review__step__name">{{ form_titles|get_item:step }}</div>
         <div>
           {% if step == Step.ORGANIZATION_TYPE %}
-            {{ application.get_organization_type_display|default:"Incomplete" }}
+            {% if application.organization_type is not None %}
+              {% with long_org_type=application.organization_type|get_organization_long_name %}
+                {{ long_org_type }}
+              {% endwith %}
+            {% else %}
+              Incomplete
+            {% endif %}
           {% endif %}
           {% if step == Step.TRIBAL_GOVERNMENT %}
             {{ application.tribe_name|default:"Incomplete" }}
