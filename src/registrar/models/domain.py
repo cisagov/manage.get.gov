@@ -2,6 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
+import string
 from datetime import date
 from string import digits
 from typing import Optional
@@ -227,6 +228,43 @@ class Domain(TimeStampedModel, DomainHelper):
         It is not a secret.
         """
         raise NotImplementedError()
+
+    @Cache
+    def format_nameservers(self):
+        """
+        Formatting nameservers for display for this domain.
+
+        Hosts are provided as a list of tuples, e.g.
+
+            [("ns1.example.com",), ("ns1.example.gov", ["0.0.0.0"])]
+
+        We want to display as:
+            ns1.example.gov
+            ns1.example.gov (0.0.0.0)
+
+        Subordinate hosts (something.your-domain.gov) MUST have IP addresses,
+        while non-subordinate hosts MUST NOT.
+
+
+        """
+        try:
+            hosts = self._get_property("hosts")
+        except Exception as err:
+            # Do not raise error when missing nameservers
+            # this is a standard occurence when a domain
+            # is first created
+            logger.info("Domain is missing nameservers %s" % err)
+            return []
+
+        hostList = []
+        for host in hosts:
+            host_info = host["name"]
+            if len(host["addrs"]) > 0:
+                converter = string.maketrans("[]", "()")
+                host_info.append(host["addrs"].translate(converter, "'"))
+            hostList.append(host_info)
+
+        return hostList
 
     @Cache
     def nameservers(self) -> list[tuple[str, list]]:
