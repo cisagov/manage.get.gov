@@ -1384,7 +1384,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @transition(
         field="state",
-        source=[State.DNS_NEEDED],
+        source=[State.DNS_NEEDED, State.READY],
         target=State.READY,
         # conditions=[dns_not_needed]
     )
@@ -1549,7 +1549,7 @@ class Domain(TimeStampedModel, DomainHelper):
             data = registry.send(req, cleaned=True).res_data[0]
             host = {
                 "name": name,
-                "addrs": getattr(data, "addrs", ...),
+                "addrs": [item.addr for item in getattr(data, "addrs", [])],
                 "cr_date": getattr(data, "cr_date", ...),
                 "statuses": getattr(data, "statuses", ...),
                 "tr_date": getattr(data, "tr_date", ...),

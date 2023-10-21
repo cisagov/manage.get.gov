@@ -228,7 +228,7 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
 
         if nameservers is not None:
             # Add existing nameservers as initial data
-            initial_data.extend({"server": name, "ip": ip} for name, ip in nameservers)
+            initial_data.extend({"server": name, "ip": ','.join(ip)} for name, ip in nameservers)
 
         # Ensure at least 3 fields, filled or empty
         while len(initial_data) < 2:
