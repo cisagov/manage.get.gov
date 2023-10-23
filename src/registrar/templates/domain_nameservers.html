@@ -29,9 +29,9 @@
     {{ formset.management_form }}
 
     {% for form in formset %}
-    <div class="server-form">
+    <div class="repeatable-form">
       <div class="grid-row grid-gap-2 flex-end">
-        <div class="tablet:grid-col-6">
+        <div class="tablet:grid-col-5">
           {{ form.domain }}
           {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
             {% if forloop.counter <= 2 %}
@@ -43,16 +43,25 @@
             {% endif %}
           {% endwith %}
         </div>
-        <div class="tablet:grid-col-6">
-          {% with sublabel_text="Ex: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" %}
+        <div class="tablet:grid-col-5">
+          {% with sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" %}
             {% input_with_errors form.ip %}
           {% endwith %}
+        </div>
+        <div class="tablet:grid-col-2">
+          {% if forloop.counter > 2 %}
+            <button type="button" class="usa-button usa-button--unstyled display-block delete-record margin-bottom-075">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+              </svg><span class="margin-left-05">Delete</span>
+            </button>
+          {% endif %}
         </div>
       </div>
     </div>
     {% endfor %}
 
-    <button type="button" class="usa-button usa-button--unstyled display-block margin-bottom-2" id="add-nameserver-form">
+    <button type="button" class="usa-button usa-button--unstyled display-block margin-bottom-2" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another name server</span>
