@@ -22,7 +22,7 @@
 
   <p>Enter the values given by your DNS provider for DS Data.</p>
 
-  {% if not dnssec_ds_confirmed %}
+  {% comment %} {% if not dnssec_ds_confirmed %}
     <p>Required fields are marked with an asterisk (<abbr
       title="required"
       class="usa-hint usa-hint--required"
@@ -35,7 +35,7 @@
         </svg><span class="margin-left-05">Add new record</span>
       </button>
     </form>
-  {% else %}
+  {% else %} {% endcomment %}
     {% include "includes/required_fields.html" %}
 
     <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
@@ -111,7 +111,7 @@
         >Cancel
       </button>
     </form>
-  {% endif %}
+  {% comment %} {% endif %} {% endcomment %}
 
   {% if trigger_modal %}
   <a

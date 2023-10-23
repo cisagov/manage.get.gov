@@ -333,9 +333,6 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
 
         # context to back out of a broken form on all fields delete
         context["modal_button"] = modal_button
-        context["dnssec_ds_confirmed"] = self.request.session.get(
-            "dnssec_ds_confirmed", False
-        )
 
         return context
 
@@ -344,23 +341,15 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
         self.object = self.get_object()
         formset = self.get_form()
         override = False
-
-        # switch to form in template
-        if "confirm-ds" in request.POST:
-            request.session["dnssec_ds_confirmed"] = True
-            return super().form_valid(formset)
         
-        # This is called but the form cancel button, but also by the modal's X and cacel button
+        # This is called by the form cancel button, and also by the modal's X and cancel buttons
         if "btn-cancel-click" in request.POST:
-            return render(request, 'domain_dsdata.html', {'formset': formset})
+            return redirect("domain-dns-dnssec-dsdata", {"formset": formset}, RequestContext(request))
         
         if "disable-override-click" in request.POST:
             override = True
-            # we are deleteing all data,
-            # switch out of form
-            request.session["dnssec_ds_confirmed"] = False
         
-        if len(formset) == 0 and formset.initial != [{}] and override == False:
+        if len(formset) == 0 and formset.initial == [{}] and override == False:
             # trigger the modal
             context = self.get_context_data(**kwargs)
             context["trigger_modal"] = True
