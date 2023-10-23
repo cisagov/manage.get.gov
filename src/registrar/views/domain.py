@@ -324,16 +324,6 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
         context = super().get_context_data(**kwargs)
         # use "formset" instead of "form" for the key
         context["formset"] = context.pop("form")
-        
-        # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="disable-override-click">Disable DNSSEC</button>'
-        )
-
-        # context to back out of a broken form on all fields delete
-        context["modal_button"] = modal_button
 
         return context
 
@@ -342,30 +332,22 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
         self.object = self.get_object()
         formset = self.get_form()
         override = False
-        
-        # log the context and the formset
-        logger.info("==================FORMSET================")
-        logger.info(formset)
-        logger.info("=======>>>>>>CONTEXT<<<<<<===========")
-        logger.info(self.get_context_data(**kwargs))
-        logger.info("========^^^^^^^CONTEXT^^^^^^^^========")
-
 
         # This is called by the form cancel button, and also by the modal's X and cancel buttons
         if "btn-cancel-click" in request.POST:
-            logger.info(">>>>>>>clicked cancel")
             url = self.get_success_url()
             return HttpResponseRedirect(url)
-            #return reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.object.pk})
-            #  return redirect("domain-dns-dnssec-dsdata", kwargs={"pk": self.object.pk})
         
+        # This is called by the Disable DNSSEC modal to override
         if "disable-override-click" in request.POST:
-            logger.info(">>>>>>>>clicked disable")
             override = True
         
-        if len(formset) == 0 and formset.initial != [{}] and override == False:
+        # This is called when all DNSSEC data has been deleted and the
+        # Save button is pressed
+        if len(formset) == 0 and formset.initial == [{}] and override == False:
             # trigger the modal
-            logger.info(">>>>>>>>clicked save")
+            # get context data from super() rather than self
+            # to preserve the context["form"]
             context = super().get_context_data(form=formset)
             context["trigger_modal"] = True
             # Create HTML for the modal button
@@ -387,7 +369,6 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
     def form_valid(self, formset, **kwargs):
         """The formset is valid, perform something with it."""
 
-        logger.info("form_valid is called")
         # Set the dnssecdata from the formset
         dnssecdata = extensions.DNSSECExtension()
 
@@ -411,9 +392,7 @@ class DomainDsDataView(DomainPermissionView, FormMixin):
                 pass
         domain = self.get_object()
         try:
-            logger.debug("attempting to set dnssecdata")
             domain.dnssecdata = dnssecdata
-            logger.debug("successfully set the dnssecdata")
         except RegistryError as err:
             errmsg = "Error updating DNSSEC data in the registry."
             logger.error(errmsg)
