@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% load custom_filters %}
+
 {% block title %}Domain request status | {{ domainapplication.requested_domain.name }} | {% endblock %}
 {% load static url_helpers %}
 
@@ -50,7 +52,9 @@
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
     <h2 class="text-primary-darker"> Summary of your domain request </h2> 
     {% with heading_level='h3' %}
-    {% include "includes/summary_item.html" with title='Type of organization' value=domainapplication.get_organization_type_display heading_level=heading_level %}
+    {% with long_org_type=domainapplication.organization_type|get_organization_long_name %}
+      {% include "includes/summary_item.html" with title='Type of organization' value=long_org_type heading_level=heading_level %}
+    {% endwith %}
 
     {% if domainapplication.tribe_name %}
       {% include "includes/summary_item.html" with title='Tribal government' value=domainapplication.tribe_name heading_level=heading_level %}

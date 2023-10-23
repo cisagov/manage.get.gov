@@ -581,7 +581,7 @@ ALLOWED_HOSTS = [
     "getgov-bl.app.cloud.gov",
     "getgov-rjm.app.cloud.gov",
     "getgov-dk.app.cloud.gov",
-    "get.gov",
+    "manage.get.gov",
 ]
 
 # Extend ALLOWED_HOSTS.
@@ -651,6 +651,9 @@ SESSION_COOKIE_SAMESITE = "Lax"
 
 # instruct browser to only send cookie via HTTPS
 SESSION_COOKIE_SECURE = True
+
+# session engine to cache session information
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load

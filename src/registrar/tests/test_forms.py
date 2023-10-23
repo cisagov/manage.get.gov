@@ -1,6 +1,6 @@
 """Test form validation requirements."""
 
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 
 from registrar.forms.application_wizard import (
     CurrentSitesForm,
@@ -16,9 +16,16 @@ from registrar.forms.application_wizard import (
     AboutYourOrganizationForm,
 )
 from registrar.forms.domain import ContactForm
+from registrar.tests.common import MockEppLib
+from django.contrib.auth import get_user_model
 
 
-class TestFormValidation(TestCase):
+class TestFormValidation(MockEppLib):
+    def setUp(self):
+        super().setUp()
+        self.user = get_user_model().objects.create(username="username")
+        self.factory = RequestFactory()
+
     def test_org_contact_zip_invalid(self):
         form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(

@@ -89,7 +89,7 @@ class LoggedInTests(TestWithUser):
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.assertNotContains(response, "igorville.gov")
         role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=domain, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER
         )
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
@@ -142,9 +142,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     @boto3_mocking.patching
     def test_application_form_submission(self):
-        """Can fill out the entire form and submit.
+        """
+        Can fill out the entire form and submit.
         As we add additional form pages, we need to include them here to make
         this test work.
+
+        This test also looks for the long organization name on the summary page.
         """
         num_pages_tested = 0
         # elections, type_of_work, tribal_government, no_other_contacts
@@ -428,7 +431,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         review_form = review_page.form
 
         # Review page contains all the previously entered data
-        self.assertContains(review_page, "Federal")
+        # Let's make sure the long org name is displayed
+        self.assertContains(review_page, "Federal: an agency of the U.S. government")
         self.assertContains(review_page, "Executive")
         self.assertContains(review_page, "Testorg")
         self.assertContains(review_page, "address 1")
@@ -1066,6 +1070,26 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # page = self.app.get(url)
         # self.assertNotContains(page, "VALUE")
 
+    def test_long_org_name_in_application(self):
+        """
+        Make sure the long name is displaying in the application form,
+        org step
+        """
+        request = self.app.get(reverse("application:")).follow()
+        self.assertContains(request, "Federal: an agency of the U.S. government")
+
+    def test_long_org_name_in_application_manage(self):
+        """
+        Make sure the long name is displaying in the application summary
+        page (manage your application)
+        """
+        completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "city.gov")
+        # click the "Edit" link
+        detail_page = home_page.click("Manage")
+        self.assertContains(detail_page, "Federal: an agency of the U.S. government")
+
 
 class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
@@ -1093,10 +1117,10 @@ class TestWithDomainPermissions(TestWithUser):
             creator=self.user, domain=self.domain_dnssec_none
         )
         self.role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.ADMIN
+            user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
@@ -1106,7 +1130,7 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_dnssec_none,
-            role=UserDomainRole.Roles.ADMIN,
+            role=UserDomainRole.Roles.MANAGER,
         )
 
     def tearDown(self):
@@ -1192,14 +1216,14 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
             self.assertEqual(response.status_code, 403)
 
 
-class TestDomainUserManagement(TestDomainOverview):
-    def test_domain_user_management(self):
+class TestDomainManagers(TestDomainOverview):
+    def test_domain_managers(self):
         response = self.client.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
         )
-        self.assertContains(response, "User management")
+        self.assertContains(response, "Domain managers")
 
-    def test_domain_user_management_add_link(self):
+    def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
         management_page = self.app.get(
             reverse("domain-users", kwargs={"pk": self.domain.id})
@@ -1546,6 +1570,78 @@ class TestDomainSecurityEmail(TestDomainOverview):
         self.assertContains(
             success_page, "The security email for this domain has been updated"
         )
+
+    def test_security_email_form_messages(self):
+        """
+        Test against the success and error messages that are defined in the view
+        """
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        form_data_registry_error = {
+            "security_email": "test@failCreate.gov",
+        }
+
+        form_data_contact_error = {
+            "security_email": "test@contactError.gov",
+        }
+
+        form_data_success = {
+            "security_email": "test@something.gov",
+        }
+
+        test_cases = [
+            (
+                "RegistryError",
+                form_data_registry_error,
+                "Update failed. Cannot contact the registry.",
+            ),
+            ("ContactError", form_data_contact_error, "Value entered was wrong."),
+            (
+                "RegistrySuccess",
+                form_data_success,
+                "The security email for this domain has been updated.",
+            ),
+            # Add more test cases with different scenarios here
+        ]
+
+        for test_name, data, expected_message in test_cases:
+            response = self.client.post(
+                reverse("domain-security-email", kwargs={"pk": self.domain.id}),
+                data=data,
+                follow=True,
+            )
+
+            # Check the response status code, content, or any other relevant assertions
+            self.assertEqual(response.status_code, 200)
+
+            # Check if the expected message tag is set
+            if test_name == "RegistryError" or test_name == "ContactError":
+                message_tag = "error"
+            elif test_name == "RegistrySuccess":
+                message_tag = "success"
+            else:
+                # Handle other cases if needed
+                message_tag = "info"  # Change to the appropriate default
+
+            # Check the message tag
+            messages = list(response.context["messages"])
+            self.assertEqual(len(messages), 1)
+            message = messages[0]
+            self.assertEqual(message.tags, message_tag)
+            self.assertEqual(message.message, expected_message)
+
+    def test_domain_overview_blocked_for_ineligible_user(self):
+        """We could easily duplicate this test for all domain management
+        views, but a single url test should be solid enough since all domain
+        management pages share the same permissions class"""
+        self.user.status = User.RESTRICTED
+        self.user.save()
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "igorville.gov")
+        with less_console_noise():
+            response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+            self.assertEqual(response.status_code, 403)
 
 
 class TestDomainDNSSEC(TestDomainOverview):
