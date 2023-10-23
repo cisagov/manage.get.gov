@@ -145,10 +145,21 @@ cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE}
 /tmp/lifecycle/shell
 ```
 
+From this directory, run the following command:
+```shell
+./manage.py cat_files_into_getgov --file_extension txt
+```
+
+NOTE: This will look for all files in /tmp with the .txt extension, but this can
+be changed if you are dealing with different extensions.
+
+#### Manual method
+If the `cat_files_into_getgov.py` script isn't working, follow these steps instead.
+
 **Move the desired file into the correct directory**
 
 ```shell
-cat ../tmp/{filename} > datamigration/{filename}
+cat ../tmp/{filename} > migrationdata/{filename}
 ```
 
 
