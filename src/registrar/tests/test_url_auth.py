@@ -110,13 +110,13 @@ class TestURLAuth(TestCase):
     # Note that the trailing slash is wobbly depending on how the URL was defined.
     IGNORE_URLS = [
         # These are the OIDC auth endpoints that always need
-        # to be public.
+        # to be public. Use the exact URLs that will be tested.
         "/openid/login/",
         "/openid/logout/",
         "/openid/callback",
         "/openid/callback/login/",
         "/openid/callback/logout/",
-        "/api/v1/available",
+        "/api/v1/available/whitehouse.gov",
     ]
 
     def assertURLIsProtectedByAuth(self, url):

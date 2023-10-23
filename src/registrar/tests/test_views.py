@@ -291,6 +291,9 @@ class DomainApplicationTests(TestWithUser, WebTest):
         dotgov_result = dotgov_form.submit()
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
+        print("dotgov result: ", dotgov_form)
+        print("application: ", application)
+        print("application requested domain: ", application.requested_domain)
         self.assertEqual(application.requested_domain.name, "city.gov")
         self.assertEqual(
             application.alternative_domains.filter(website="city1.gov").count(), 1
