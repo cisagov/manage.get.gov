@@ -2,7 +2,6 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-import string
 from datetime import date
 from string import digits
 from typing import Optional
@@ -260,10 +259,8 @@ class Domain(TimeStampedModel, DomainHelper):
         for host in hosts:
             host_info = host["name"]
             if len(host["addrs"]) > 0:
-                converter = string.maketrans("[]", "()")
-                host_info.append(host["addrs"].translate(converter, "'"))
+                hostList.append(tuple(host["addrs"]))
             hostList.append(host_info)
-
         return hostList
 
     @Cache
@@ -291,7 +288,6 @@ class Domain(TimeStampedModel, DomainHelper):
         hostList = []
         for host in hosts:
             hostList.append((host["name"], host["addrs"]))
-
         return hostList
 
     def _create_host(self, host, addrs):
