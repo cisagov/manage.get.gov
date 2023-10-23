@@ -257,10 +257,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         hostList = []
         for host in hosts:
-            host_info = host["name"]
-            if len(host["addrs"]) > 0:
-                hostList.append(tuple(host["addrs"]))
-            hostList.append(host_info)
+            host_info_str = f'{host["name"]} {host["addrs"] if len(host["addrs"]) > 0 else ""}'
+            hostList.append(host_info_str)
         return hostList
 
     @Cache
