@@ -49,6 +49,7 @@
           {% endwith %}
         </div>
         <div class="tablet:grid-col-2">
+          {% comment %} TODO: remove this if for 1192 {% endcomment %}
           {% if forloop.counter > 2 %}
             <button type="button" class="usa-button usa-button--unstyled display-block delete-record margin-bottom-075">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
@@ -61,17 +62,21 @@
     </div>
     {% endfor %}
 
-    <button type="button" class="usa-button usa-button--unstyled display-block margin-bottom-2" id="add-form">
+    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another name server</span>
     </button>
 
-    <button
-          type="submit"
-          class="usa-button"
-      >Save
-    </button>
+    {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
+    This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
+    <div class="margin-top-2">
+      <button
+            type="submit"
+            class="usa-button"
+        >Save
+      </button>
+    </div>
   </form>
 
   <form aria-label="form to undo changes to the Name Servers">

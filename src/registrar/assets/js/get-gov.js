@@ -238,6 +238,10 @@ function handleValidationClick(e) {
 function prepareDeleteButtons(formLabel) {
   let deleteButtons = document.querySelectorAll(".delete-record");
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+  let isNameserversForm = false;
+  let addButton = document.querySelector("#add-form");
+  if (document.title.includes("DNS name servers |"))
+    isNameserversForm = true;
 
   // Loop through each delete button and attach the click event listener
   deleteButtons.forEach((deleteButton) => {
@@ -251,7 +255,9 @@ function prepareDeleteButtons(formLabel) {
     totalForms.setAttribute('value', `${forms.length}`);
 
     let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
-    let formLabelRegex = RegExp(`${formLabel} (\\d){1}`, 'g');
+    let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
+    // For the eample on Nameservers
+    let formExampleRegex = RegExp(`ns(\\d+){1}`, 'g');
 
     forms.forEach((form, index) => {
       // Iterate over child nodes of the current element
@@ -267,9 +273,42 @@ function prepareDeleteButtons(formLabel) {
       });
 
       // h2 and legend for DS form, label for nameservers  
-      Array.from(form.querySelectorAll('h2, legend, label')).forEach((node) => {
-        node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
+      Array.from(form.querySelectorAll('h2, legend, label, p')).forEach((node) => {
+        
+        // Ticket: 1192
+        // if (isNameserversForm && index <= 1 && !node.innerHTML.includes('*')) {
+        // // Create a new element
+        // const newElement = document.createElement('abbr');
+        // newElement.textContent = '*';
+        // // TODO: finish building abbr
+
+        // // Append the new element to the parent
+        // node.appendChild(newElement);
+        //   // Find the next sibling that is an input element
+        //   let nextInputElement = node.nextElementSibling;
+
+        //   while (nextInputElement) {
+        //     if (nextInputElement.tagName === 'INPUT') {
+        //       // Found the next input element
+        //       console.log(nextInputElement);
+        //       break;
+        //     }
+        //     nextInputElement = nextInputElement.nextElementSibling;
+        //   }
+        //   nextInputElement.required = true;
+        // }
+
+        // Ticket: 1192 - remove if
+        if (!(isNameserversForm && index <= 1)) {
+          node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
+          node.textContent = node.textContent.replace(formExampleRegex, `ns${index + 1}`);
+        }
       });
+
+      // Remove the add more button if we have less than 13 forms
+      if (isNameserversForm && forms.length <= 13) {
+        addButton.classList.remove("display-none")
+      }
     
     });
   }
@@ -288,7 +327,9 @@ function prepareDeleteButtons(formLabel) {
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
   let cloneIndex = 0;
   let formLabel = '';
+  let isNameserversForm = false;
   if (document.title.includes("DNS name servers |")) {
+    isNameserversForm = true;
     cloneIndex = 2;
     formLabel = "Name server";
   } else if ((document.title.includes("DS Data |")) || (document.title.includes("Key Data |"))) {
@@ -358,5 +399,10 @@ function prepareDeleteButtons(formLabel) {
 
       // Attach click event listener on the delete buttons of the new form
       prepareDeleteButtons(formLabel);
+
+      // Hide the add more button if we have 13 forms
+      if (isNameserversForm && formNum == 13) {
+        addButton.classList.add("display-none")
+      }
   }
 })();
