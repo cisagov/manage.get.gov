@@ -382,7 +382,7 @@ class DomainDsDataView(DomainFormBaseView):
         
         # This is called when all DNSSEC data has been deleted and the
         # Save button is pressed
-        if len(formset) == 0 and formset.initial == [{}] and override == False:
+        if len(formset) == 0 and formset.initial != [{}] and override == False:
             # trigger the modal
             # get context data from super() rather than self
             # to preserve the context["form"]
