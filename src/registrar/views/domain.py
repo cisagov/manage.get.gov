@@ -10,6 +10,7 @@ import logging
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template import RequestContext
 from django.urls import reverse
@@ -272,7 +273,8 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
         formset = self.get_form()
         
         if "btn-cancel-click" in request.POST:
-            return redirect("/", {"formset": formset}, RequestContext(request))
+            url = self.get_success_url()
+            return HttpResponseRedirect(url)
         
         if formset.is_valid():
             return self.form_valid(formset)
