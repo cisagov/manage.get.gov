@@ -581,7 +581,7 @@ ALLOWED_HOSTS = [
     "getgov-bl.app.cloud.gov",
     "getgov-rjm.app.cloud.gov",
     "getgov-dk.app.cloud.gov",
-    "get.gov",
+    "manage.get.gov",
 ]
 
 # Extend ALLOWED_HOSTS.

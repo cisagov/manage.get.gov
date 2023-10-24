@@ -710,7 +710,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
 
 
 class DomainUsersView(DomainBaseView):
-    """User management page in the domain details."""
+    """Domain managers page in the domain details."""
 
     template_name = "domain_users.html"
 
@@ -790,7 +790,9 @@ class DomainAddUserView(DomainFormBaseView):
 
         try:
             UserDomainRole.objects.create(
-                user=requested_user, domain=self.object, role=UserDomainRole.Roles.ADMIN
+                user=requested_user,
+                domain=self.object,
+                role=UserDomainRole.Roles.MANAGER,
             )
         except IntegrityError:
             # User already has the desired role! Do nothing??

@@ -15,7 +15,7 @@ class UserDomainRole(TimeStampedModel):
         elsewhere.
         """
 
-        ADMIN = "manager"
+        MANAGER = "manager"
 
     user = models.ForeignKey(
         "registrar.User",

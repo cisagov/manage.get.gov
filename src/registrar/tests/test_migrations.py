@@ -36,7 +36,7 @@ class TestGroups(TestCase):
         # Define the expected permission codenames
         expected_permissions = [
             "view_logentry",
-            "view_contact",
+            "change_contact",
             "view_domain",
             "change_domainapplication",
             "change_domaininformation",
@@ -45,6 +45,7 @@ class TestGroups(TestCase):
             "change_draftdomain",
             "analyst_access_permission",
             "change_user",
+            "change_website",
         ]
 
         # Get the codenames of actual permissions associated with the group
