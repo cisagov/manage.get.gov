@@ -1701,6 +1701,22 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.assertContains(page, "DS Data record 1")
 
+    def test_ds_data_form_modal(self):
+        """When user clicks on save, a modal pops up."""
+        add_data_page = self.app.get(
+            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
+        )
+        self.assertNotContains(add_data_page, "Trigger Disable DNSSEC Modal")
+        # Simulate a delete all data
+        form_data = {}
+        response = self.client.post(
+            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}),
+            data=form_data,
+        )
+        self.assertEqual(response.status_code, 200)  # Adjust status code as needed
+        # Now check to see whether the JS trigger for the modal is present on the page
+        self.assertContains(response, "Trigger Disable DNSSEC Modal")
+
     def test_ds_data_form_submits(self):
         """DS Data form submits successfully
 
