@@ -292,7 +292,7 @@ class DomainDNSSECView(DomainFormBaseView):
         modal_button = (
             '<button type="submit" '
             'class="usa-button usa-button--secondary" '
-            'name="disable_dnssec">Disable DNSSEC</button>'
+            'name="disable_dnssec">Confirm</button>'
         )
 
         context["modal_button"] = modal_button
