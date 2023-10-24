@@ -12,7 +12,8 @@ from django.contrib.auth import get_user_model
 from registrar.models import TransitionDomain
 from registrar.models import Domain
 from registrar.models import DomainInvitation
-from registrar.models.domain_information import DomainInformation
+from registrar.models import DomainInformation
+from registrar.models import User
 
 from registrar.management.commands.utility.terminal_helper import TerminalColors
 from registrar.management.commands.utility.terminal_helper import TerminalHelper
@@ -337,19 +338,33 @@ class Command(BaseCommand):
                     ==================
                     {TerminalColors.ENDC}
                     """)
-        for invite in DomainInvitation.objects.all():
-            #DEBUG:
-            TerminalHelper.print_debug(debug_on,f"""{TerminalColors.OKCYAN}Processing invite: {invite}{TerminalColors.ENDC}""")
-             # get a user with this email address
-            User = get_user_model()
-            try:
-                user = User.objects.get(email=invite.email)
-                #DEBUG:
-                TerminalHelper.print_debug(debug_on,f"""{TerminalColors.OKCYAN}Logging in user: {user}{TerminalColors.ENDC}""")
-                Client.force_login(user)
-            except User.DoesNotExist:
-                #TODO: how should we handle this?
-                logger.warn(f"""{TerminalColors.FAIL}No user found {invite.email}{TerminalColors.ENDC}""")
+        # for invite in DomainInvitation.objects.all():
+        #     #DEBUG:
+        #     TerminalHelper.print_conditional(debug_on,f"""{TerminalColors.OKCYAN}Processing invite: {invite}{TerminalColors.ENDC}""")
+        #      # get a user with this email address
+        #     user_exists = User.objects.filter(email=invite.email).exists()
+        #     user, _ = User.objects.get_or_create(email=invite.email)
+        #     #DEBUG:
+        #     TerminalHelper.print_conditional(user_exists,f"""{TerminalColors.OKCYAN}No user found (creating temporary user object){TerminalColors.ENDC}""")
+        #     TerminalHelper.print_conditional(debug_on,f"""{TerminalColors.OKCYAN}Logging in user: {user}{TerminalColors.ENDC}""")
+        #     user.first_login()
+        #     if not user_exists:
+        #         logger.warn(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
+        #         user.delete()
+
+        # for invite in DomainInvitation.objects.all():
+        #     #DEBUG:
+        #     TerminalHelper.print_debug(debug_on,f"""{TerminalColors.OKCYAN}Processing invite: {invite}{TerminalColors.ENDC}""")
+        #      # get a user with this email address
+        #     User = get_user_model()
+        #     try:
+        #         user = User.objects.get(email=invite.email)
+        #         #DEBUG:
+        #         TerminalHelper.print_debug(debug_on,f"""{TerminalColors.OKCYAN}Logging in user: {user}{TerminalColors.ENDC}""")
+        #         Client.force_login(user)
+        #     except User.DoesNotExist:
+        #         #TODO: how should we handle this?
+        #         logger.warn(f"""{TerminalColors.FAIL}No user found {invite.email}{TerminalColors.ENDC}""")
 
     def handle(
         self,
