@@ -1,5 +1,13 @@
+"""Data migration:
+ 1 - generates a report of data integrity across all
+ transition domain related tables
+ 2 - allows users to run all migration scripts for
+ transition domain data
+"""
+
 import logging
 import argparse
+import sys
 import os
 
 from django.test import Client
@@ -7,18 +15,19 @@ from django.test import Client
 from django_fsm import TransitionNotAllowed  # type: ignore
 
 from django.core.management import BaseCommand
-from django.contrib.auth import get_user_model
 
-from registrar.models import TransitionDomain
-from registrar.models import Domain
-from registrar.models import DomainInvitation
-from registrar.models import DomainInformation
-from registrar.models import User
+from registrar.models import (
+    Domain,
+    DomainInformation,
+    DomainInvitation,
+    TransitionDomain,
+    User,
+)
 
-from registrar.management.commands.utility.terminal_helper import TerminalColors
-from registrar.management.commands.utility.terminal_helper import TerminalHelper
-
-from registrar.management.commands.load_transition_domain import Command as load_transition_domain_command
+from registrar.management.commands.utility.terminal_helper import (
+    TerminalColors,
+    TerminalHelper
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +37,45 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """
         OPTIONAL ARGUMENTS:
+        --runLoaders
+        A boolean (default to true), which triggers running
+        all scripts (in sequence) for transition domain migrations
+
+        --triggerLogins
+        A boolean (default to true), which triggers running
+        simulations of user logins for each user in domain invitation
+
+        --loaderDirectory
+        The location of the files used for load_transition_domain migration script
+        EXAMPLE USAGE:
+        > --loaderDirectory /app/tmp
+
+        --loaderFilenames
+        The files used for load_transition_domain migration script.  
+        Must appear IN ORDER and separated by spaces: 
+        EXAMPLE USAGE:
+        > --loaderFilenames domain_contacts_filename.txt contacts_filename.txt domain_statuses_filename.txt
+        where...
+        - domain_contacts_filename is the Data file with domain contact information
+        - contacts_filename is the Data file with contact information
+        - domain_statuses_filename is the Data file with domain status information
+
+        --sep
+        Delimiter for the loaders to correctly parse the given text files.
+        (usually this can remain at default value of |)
+
         --debug
         A boolean (default to true), which activates additional print statements
+
+        --limitParse
+        Used by the loaders (load_transition_domain) to set the limit for the
+        number of data entries to insert.  Set to 0 (or just don't use this
+        argument) to parse every entry. This was provided primarily for testing
+        purposes
+
+        --resetTable
+        Used by the loaders to trigger a prompt for deleting all table entries.  
+        Useful for testing purposes, but USE WITH CAUTION
         """
 
         parser.add_argument("--runLoaders",
@@ -59,22 +105,6 @@ class Command(BaseCommand):
             - domain_statuses_filename is the Data file with domain status information"""
         )
 
-        # parser.add_argument(
-        #     "domain_contacts_filename",
-        #     default="escrow_domain_contacts.daily.gov.GOV.txt",
-        #     help="Data file with domain contact information"
-        # )
-        # parser.add_argument(
-        #     "contacts_filename",
-        #     default="escrow_contacts.daily.gov.GOV.txt",
-        #     help="Data file with contact information",
-        # )
-        # parser.add_argument(
-        #     "domain_statuses_filename",
-        #     default="escrow_domain_statuses.daily.gov.GOV.txt",
-        #     help="Data file with domain status information"
-        # )
-
         parser.add_argument("--sep", default="|", help="Delimiter character for the loader files")
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
@@ -89,30 +119,22 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-    def print_debug_mode_statements(
-        self, debug_on: bool
-    ):
-        """Prints additional terminal statements to indicate if --debug
-        or --limitParse are in use"""
-        self.print_debug(
-            debug_on,
-            f"""{TerminalColors.OKCYAN}
-            ----------DEBUG MODE ON----------
-            Detailed print statements activated.
-            {TerminalColors.ENDC}
-            """,
-        )
+    
 
-    def print_debug(self, print_condition: bool, print_statement: str):
-        """This function reduces complexity of debug statements
-        in other functions.
-        It uses the logger to write the given print_statement to the
-        terminal if print_condition is TRUE"""
-        # DEBUG:
-        if print_condition:
-            logger.info(print_statement)
-
-    def compare_tables(self, debug_on):
+    def compare_tables(self, debug_on: bool):
+        """Does a diff between the transition_domain and the following tables: 
+        domain, domain_information and the domain_invitation. 
+        
+        Produces the following report (printed to the terminal):
+            #1 - Print any domains that exist in the transition_domain table
+            but not in their corresponding domain, domain information or
+            domain invitation tables.
+            #2 - Print which table this domain is missing from
+            #3- Check for duplicate entries in domain or 
+            domain_information tables and print which are 
+            duplicates and in which tables
+            """
+        
         logger.info(
             f"""{TerminalColors.OKCYAN}
             ============= BEGINNING ANALYSIS ===============
@@ -121,19 +143,19 @@ class Command(BaseCommand):
         )
 
         #TODO: would filteredRelation be faster?
+
+        missing_domains = []
+        duplicate_domains = []
+        missing_domain_informations = []
+        missing_domain_invites = []
         for transition_domain in TransitionDomain.objects.all():# DEBUG:
             transition_domain_name = transition_domain.domain_name
             transition_domain_email = transition_domain.username
 
-            self.print_debug(
+            TerminalHelper.print_conditional(
                 debug_on,
                 f"{TerminalColors.OKCYAN}Checking: {transition_domain_name} {TerminalColors.ENDC}",  # noqa
             )
-
-            missing_domains = []
-            duplicate_domains = []
-            missing_domain_informations = []
-            missing_domain_invites = []
 
             # Check Domain table
             matching_domains = Domain.objects.filter(name=transition_domain_name)
@@ -144,12 +166,16 @@ class Command(BaseCommand):
                                                                           domain__name=transition_domain_name)
 
             if len(matching_domains) == 0:
+                TerminalHelper.print_conditional(debug_on, f"""{TerminalColors.YELLOW}Missing Domain{TerminalColors.ENDC}""")
                 missing_domains.append(transition_domain_name)
             elif len(matching_domains) > 1:
+                TerminalHelper.print_conditional(debug_on, f"""{TerminalColors.YELLOW}Duplicate Domain{TerminalColors.ENDC}""")
                 duplicate_domains.append(transition_domain_name)
             if len(matching_domain_informations) == 0:
+                TerminalHelper.print_conditional(debug_on, f"""{TerminalColors.YELLOW}Missing Domain Information{TerminalColors.ENDC}""")
                 missing_domain_informations.append(transition_domain_name)
             if len(matching_domain_invitations) == 0:
+                TerminalHelper.print_conditional(debug_on, f"""{TerminalColors.YELLOW}Missing Domain Invitation{TerminalColors.ENDC}""")
                 missing_domain_invites.append(transition_domain_name)
 
         total_missing_domains = len(missing_domains)
@@ -174,7 +200,7 @@ class Command(BaseCommand):
             (These are transition domains which have duplicate entries in the Domain Table)
             {TerminalColors.YELLOW}{duplicate_domains_as_string}{TerminalColors.OKGREEN}
 
-            {total_missing_domain_informations} Domains Information Entries missing:
+            {total_missing_domain_informations} Domain Information Entries missing:
             (These are transition domains which have no entries in the Domain Information Table)
             {TerminalColors.YELLOW}{missing_domain_informations_as_string}{TerminalColors.OKGREEN}
 
@@ -185,79 +211,92 @@ class Command(BaseCommand):
             """
         )
     
-    def run_load_transition_domain_script(self,
-                                          file_location,
-                                          domain_contacts_filename,
-                                          contacts_filename,
-                                          domain_statuses_filename,
-                                          sep,
-                                          reset_table,
-                                          debug_on,
-                                          debug_max_entries_to_parse):
-        load_transition_domain_command_string = "./manage.py load_transition_domain "
-        load_transition_domain_command_string += file_location+domain_contacts_filename + " "
-        load_transition_domain_command_string += file_location+contacts_filename + " "
-        load_transition_domain_command_string += file_location+domain_statuses_filename + " "
+    def prompt_for_execution(self, command_string: str, prompt_title: str) -> bool:
+        """Prompts the user to inspect the given terminal command string
+        and asks if they wish to execute it.  If the user responds (y),
+        execute the command"""
 
-        if sep is not None and sep != "|":
-            load_transition_domain_command_string += f"--sep {sep} "
-
-        if reset_table:
-            load_transition_domain_command_string += "--resetTable "
-
-        if debug_on:
-            load_transition_domain_command_string += "--debug "
-
-        if debug_max_entries_to_parse > 0:
-            load_transition_domain_command_string += f"--limitParse {debug_max_entries_to_parse} "
-
-        proceed_load_transition_domain = TerminalHelper.query_yes_no(
-            f"""{TerminalColors.OKCYAN}
-            =====================================
-            Running load_transition_domain script
-            =====================================
-            
-            {load_transition_domain_command_string}
-            {TerminalColors.FAIL}
-            Proceed?
-            {TerminalColors.ENDC}"""
-        )
-
-        if not proceed_load_transition_domain:
-            return
-        logger.info(f"""{TerminalColors.OKCYAN}
-        ==== EXECUTING... ====
-        {TerminalColors.ENDC}""")
-        os.system(f"{load_transition_domain_command_string}")
-    
-    def run_transfer_script(self, debug_on):
-        command_string = "./manage.py transfer_transition_domains_to_domains "
-
-        if debug_on:
-            command_string += "--debug "
-
-
-        proceed_load_transition_domain = TerminalHelper.query_yes_no(
+        # Allow the user to inspect the command string
+        # and ask if they wish to proceed
+        proceed_execution = TerminalHelper.query_yes_no(
             f"""{TerminalColors.OKCYAN}
             =====================================================
-            Running transfer_transition_domains_to_domains script
+            {prompt_title}
             =====================================================
-            
+            *** IMPORTANT:  VERIFY THE FOLLOWING COMMAND LOOKS CORRECT ***
+
             {command_string}
             {TerminalColors.FAIL}
-            Proceed?
+            Proceed? (Y = proceed, N = skip)
             {TerminalColors.ENDC}"""
         )
 
-        if not proceed_load_transition_domain:
-            return
+        # If the user decided to proceed executing the command,
+        # run the command for loading transition domains.
+        # Otherwise, exit this subroutine.
+        if not proceed_execution:
+            sys.exit()
+        
         logger.info(f"""{TerminalColors.OKCYAN}
         ==== EXECUTING... ====
         {TerminalColors.ENDC}""")
         os.system(f"{command_string}")
 
+        return True
+    
+    def run_load_transition_domain_script(self,
+                                          file_location: str,
+                                          domain_contacts_filename: str,
+                                          contacts_filename: str,
+                                          domain_statuses_filename: str,
+                                          sep: str,
+                                          reset_table: bool,
+                                          debug_on: bool,
+                                          debug_max_entries_to_parse: int):
+        """Runs the load_transition_domain script"""
+        # Create the command string
+        command_string = "./manage.py load_transition_domain "
+        command_string += file_location+domain_contacts_filename + " "
+        command_string += file_location+contacts_filename + " "
+        command_string += file_location+domain_statuses_filename + " "
+        if sep is not None and sep != "|":
+            command_string += f"--sep {sep} "
+        if reset_table:
+            command_string += "--resetTable "
+        if debug_on:
+            command_string += "--debug "
+        if debug_max_entries_to_parse > 0:
+            command_string += f"--limitParse {debug_max_entries_to_parse} "
+
+        # Execute the command string
+        self.prompt_for_execution(command_string, "Running load_transition_domain script")
+        
+    
+    def run_transfer_script(self, debug_on:bool):
+        """Runs the transfer_transition_domains_to_domains script"""
+        # Create the command string
+        command_string = "./manage.py transfer_transition_domains_to_domains "
+        if debug_on:
+            command_string += "--debug "
+        # Execute the command string
+        self.prompt_for_execution(command_string, "Running transfer_transition_domains_to_domains script")
+
+
+    def run_send_invites_script(self):
+        """Runs the send_domain_invitations script"""
+        # Create the command string...
+        command_string = "./manage.py send_domain_invitations -s"
+        # Execute the command string
+        self.prompt_for_execution(command_string, "Running send_domain_invitations script")
+
+
     def run_migration_scripts(self,
                             options):
+        """Runs the following migration scripts (in order): 
+                1 - imports for trans domains
+                2 - transfer to domain & domain invitation"""
+        
+        # Grab filepath information from the arguments
         file_location = options.get("loaderDirectory")+"/"
         filenames = options.get("loaderFilenames").split()
         if len(filenames) < 3:
@@ -277,6 +316,9 @@ class Command(BaseCommand):
         contacts_filename = filenames[1]
         domain_statuses_filename = filenames[2]
 
+        # Allow the user to inspect the filepath
+        # data given in the arguments, and prompt
+        # the user to verify this info before proceeding
         files_are_correct = TerminalHelper.query_yes_no(
             f"""
             {TerminalColors.OKCYAN}
@@ -288,14 +330,17 @@ class Command(BaseCommand):
             ....for the following files:
             - domain contacts: {domain_contacts_filename}
             - contacts: {contacts_filename}
-            - domain statuses: {domain_statuses_filename}y
+            - domain statuses: {domain_statuses_filename}
 
             {TerminalColors.FAIL}
             Does this look correct?{TerminalColors.ENDC}"""
         )
 
+        # If the user rejected the filepath information
+        # as incorrect, prompt the user to provide 
+        # correct file inputs in their original command
+        # prompt and exit this subroutine
         if not files_are_correct:
-            # prompt the user to provide correct file inputs
             logger.info(f"""
             {TerminalColors.YELLOW}
             PLEASE Re-Run the script with the correct file location and filenames: 
@@ -306,20 +351,16 @@ class Command(BaseCommand):
             """)
             return
         
-        # Get --sep argument
+        # Proceed executing the migration scripts...
+        # ...First, Get all the arguments
         sep = options.get("sep")
-
-        # Get --resetTable argument
         reset_table = options.get("resetTable")
-
-        # Get --debug argument
         debug_on = options.get("debug")
-
-        # Get --limitParse argument
         debug_max_entries_to_parse = int(
             options.get("limitParse")
-        )  # set to 0 to parse all entries
+        )
 
+        #...Second, Run the migration scripts in order
         self.run_load_transition_domain_script(file_location,
                                           domain_contacts_filename,
                                           contacts_filename,
@@ -328,29 +369,49 @@ class Command(BaseCommand):
                                           reset_table,
                                           debug_on,
                                           debug_max_entries_to_parse)
-
         self.run_transfer_script(debug_on)
 
+
     def simulate_user_logins(self, debug_on):
-        logger.info(f"""{TerminalColors.OKCYAN}
-                    ==================
-                    SIMULATING LOGINS
-                    ==================
-                    {TerminalColors.ENDC}
-                    """)
-        # for invite in DomainInvitation.objects.all():
-        #     #DEBUG:
-        #     TerminalHelper.print_conditional(debug_on,f"""{TerminalColors.OKCYAN}Processing invite: {invite}{TerminalColors.ENDC}""")
-        #      # get a user with this email address
-        #     user_exists = User.objects.filter(email=invite.email).exists()
-        #     user, _ = User.objects.get_or_create(email=invite.email)
-        #     #DEBUG:
-        #     TerminalHelper.print_conditional(user_exists,f"""{TerminalColors.OKCYAN}No user found (creating temporary user object){TerminalColors.ENDC}""")
-        #     TerminalHelper.print_conditional(debug_on,f"""{TerminalColors.OKCYAN}Logging in user: {user}{TerminalColors.ENDC}""")
+        """Simulates logins for users (this will add
+        Domain Information objects to our tables)"""
+
+        logger.info(f""
+                    f"{TerminalColors.OKCYAN}"
+                    f"================== SIMULATING LOGINS =================="
+                    f"{TerminalColors.ENDC}")
+        for invite in DomainInvitation.objects.all(): #TODO: limit to our stuff
+            #DEBUG:
+            TerminalHelper.print_conditional(debug_on,
+                                             f"{TerminalColors.OKCYAN}"
+                                             f"Processing invite: {invite}"
+                                             f"{TerminalColors.ENDC}")
+            # get a user with this email address
+            user, user_created = User.objects.get_or_create(email=invite.email, username=invite.email)
+            #DEBUG:
+            TerminalHelper.print_conditional(user_created,
+                                             f"""{TerminalColors.OKCYAN}No user found (creating temporary user object){TerminalColors.ENDC}""")
+            TerminalHelper.print_conditional(debug_on,
+                                             f"""{TerminalColors.OKCYAN}Executing first-time login for user: {user}{TerminalColors.ENDC}""")
+            user.first_login()
+            if user_created:
+                logger.info(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
+                user.delete()
+
+        # get a user with this email address
+        # user_exists = User.objects.filter(email=invite.email).exists()
+        # if user_exists:
+        #     user = User.objects.get(email=invite.email)
+        #     TerminalHelper.print_conditional(debug_on,
+        #                                     f"""{TerminalColors.OKCYAN}Logging in user: {user}{TerminalColors.ENDC}""")
         #     user.first_login()
-        #     if not user_exists:
-        #         logger.warn(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
-        #         user.delete()
+        # else:
+        #     logger.info(f"""{TerminalColors.YELLOW}No user found -- creating temp user object...{TerminalColors.ENDC}""")
+        #     user = User(email=invite.email)
+        #     user.save()
+        #     user.first_login()
+        #     logger.info(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
+        #     user.delete()
 
         # for invite in DomainInvitation.objects.all():
         #     #DEBUG:
@@ -371,58 +432,108 @@ class Command(BaseCommand):
         **options,
     ):
         """
-        Does a diff between the transition_domain and the following tables: 
-        domain, domain_information and the domain_invitation. 
-        
-        Produces the following report (printed to the terminal):
-            #1 - Print any domains that exist in the transition_domain table
-            but not in their corresponding domain, domain information or
-            domain invitation tables.
-            #2 - Print which table this domain is missing from
-            #3- Check for duplicate entries in domain or 
-            domain_information tables and print which are 
-            duplicates and in which tables
-
-            (ONLY RUNS with full script option)
-            - Emails should be sent to the appropriate users
-            note that all moved domains should now be accessible
-            on django admin for an analyst
-
-        OPTIONS:
-        -- (run all other scripts: 
-                1 - imports for trans domains
-                2 - transfer to domain & domain invitation
-                3 - send domain invite) 
-                ** Triggers table reset **
+        Does the following;
+        1 - run loader scripts
+        2 - simulate logins
+        3 - send domain invitations (Emails should be sent to the appropriate users
+        note that all moved domains should now be accessible
+        on django admin for an analyst) 
+        4 - analyze the data for transition domains
+        and generate a report
         """
 
-        # Get --debug argument
+        # SETUP
+        # Grab all arguments relevant to
+        # orchestrating which parts of this script
+        # should execute.  Print some indicators to
+        # the terminal so the user knows what is
+        # enabled.
         debug_on = options.get("debug")
-        # Get --runLoaders argument
         run_loaders_on = options.get("runLoaders")
-        # Get --triggerLogins argument
         simulate_user_login_enabled = options.get("triggerLogins")
-
+        TerminalHelper.print_conditional(
+                debug_on,
+                f"""{TerminalColors.OKCYAN}
+                ----------DEBUG MODE ON----------
+                Detailed print statements activated.
+                {TerminalColors.ENDC}
+                """
+            )
+        TerminalHelper.print_conditional(
+                run_loaders_on,
+                f"""{TerminalColors.OKCYAN}
+                ----------RUNNING LOADERS ON----------
+                All migration scripts will be run before
+                analyzing the data.
+                {TerminalColors.ENDC}
+                """
+            )
+        TerminalHelper.print_conditional(
+                run_loaders_on,
+                f"""{TerminalColors.OKCYAN}
+                ----------TRIGGER LOGINS ON----------
+                Will be simulating user logins
+                {TerminalColors.ENDC}
+                """
+            )
+        # If a user decides to run all migration
+        # scripts, they may or may not wish to
+        # proceed with analysis of the data depending
+        # on the results of the migration.
+        # Provide a breakpoint for them to decide
+        # whether to continue or not.
+        # The same will happen if simulating user
+        # logins (to allow users to run only that
+        # portion of the script if desired)
         prompt_continuation_of_analysis = False
 
-        # Run migration scripts if specified by user...
+        # STEP 1 -- RUN LOADERS
+        # Run migration scripts if specified by user
         if run_loaders_on:
             self.run_migration_scripts(options)
             prompt_continuation_of_analysis = True
         
-        # Simulate user login for each user in domain invitation if sepcified by user
+        # STEP 2 -- SIMULATE LOGINS
+        # Simulate user login for each user in domain
+        # invitation if specified by user OR if running
+        # migration scripts.
+        # (NOTE: Although users can choose to run login
+        # simulations separately (for testing purposes),
+        # if we are running all migration scripts, we should
+        # automatically execute this as the final step
+        # to ensure Domain Information objects get added
+        # to the database.)
+        if run_loaders_on:
+            simulate_user_login_enabled = TerminalHelper.query_yes_no(
+            f"""{TerminalColors.FAIL}
+            Proceed with simulating user logins?
+            {TerminalColors.ENDC}"""
+            )
         if simulate_user_login_enabled:
             self.simulate_user_logins(debug_on)
             prompt_continuation_of_analysis = True
         
-        analyze_tables = True
+       
+        # STEP 3 -- SEND INVITES
+        proceed_with_sending_invites = TerminalHelper.query_yes_no(
+            f"""{TerminalColors.FAIL}
+            Proceed with sending user invites?
+            {TerminalColors.ENDC}"""
+            )
+        if proceed_with_sending_invites:
+            self.run_send_invites_script()
+            prompt_continuation_of_analysis = True
+
+        # STEP 4 -- ANALYZE TABLES & GENERATE REPORT
+        # Analyze tables for corrupt data...
+        
+        # only prompt if we ran steps 1 and/or 2
         if prompt_continuation_of_analysis:
             analyze_tables = TerminalHelper.query_yes_no(
                 f"""{TerminalColors.FAIL}
                 Proceed with table analysis?
                 {TerminalColors.ENDC}"""
             )
-
-        # Analyze tables for corrupt data...
-        if analyze_tables:
-            self.compare_tables(debug_on)
+            if not analyze_tables:
+                return
+        self.compare_tables(debug_on)

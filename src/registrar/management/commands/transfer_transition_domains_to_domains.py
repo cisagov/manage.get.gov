@@ -10,23 +10,12 @@ from registrar.models import TransitionDomain
 from registrar.models import Domain
 from registrar.models import DomainInvitation
 
+from registrar.management.commands.utility.terminal_helper import (
+    TerminalColors,
+    TerminalHelper
+)
+
 logger = logging.getLogger(__name__)
-
-
-class termColors:
-    """Colors for terminal outputs
-    (makes reading the logs WAY easier)"""
-
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKCYAN = "\033[96m"
-    OKGREEN = "\033[92m"
-    YELLOW = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-    BackgroundLightYellow = "\033[103m"
 
 
 class Command(BaseCommand):
@@ -49,33 +38,25 @@ class Command(BaseCommand):
     ):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
-        self.print_debug(
+        TerminalHelper.print_conditional(
             debug_on,
-            f"""{termColors.OKCYAN}
+            f"""{TerminalColors.OKCYAN}
             ----------DEBUG MODE ON----------
             Detailed print statements activated.
-            {termColors.ENDC}
+            {TerminalColors.ENDC}
             """,
         )
-        self.print_debug(
+        TerminalHelper.print_conditional(
             debug_max_entries_to_parse > 0,
-            f"""{termColors.OKCYAN}
+            f"""{TerminalColors.OKCYAN}
             ----------LIMITER ON----------
             Parsing of entries will be limited to
             {debug_max_entries_to_parse} lines per file.")
             Detailed print statements activated.
-            {termColors.ENDC}
+            {TerminalColors.ENDC}
             """,
         )
 
-    def print_debug(self, print_condition: bool, print_statement: str):
-        """This function reduces complexity of debug statements
-        in other functions.
-        It uses the logger to write the given print_statement to the
-        terminal if print_condition is TRUE"""
-        # DEBUG:
-        if print_condition:
-            logger.info(print_statement)
 
     def update_domain_status(
         self, transition_domain: TransitionDomain, target_domain: Domain, debug_on: bool
@@ -96,13 +77,13 @@ class Command(BaseCommand):
             target_domain.save()
 
             # DEBUG:
-            self.print_debug(
+            TerminalHelper.print_conditional(
                 debug_on,
-                f"""{termColors.YELLOW}
+                f"""{TerminalColors.YELLOW}
                 >> Updated {target_domain.name} state from
                 '{existing_status}' to '{target_domain.state}'
                 (no domain invitation entry added)
-                {termColors.ENDC}""",
+                {TerminalColors.ENDC}""",
             )
             return True
         return False
@@ -123,22 +104,22 @@ class Command(BaseCommand):
         total_domain_invitation_entries = len(domain_invitations_to_create)
 
         logger.info(
-            f"""{termColors.OKGREEN}
+            f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} transition domain entries,
             Updated {total_updated_domain_entries} transition domain entries
 
             Created {total_domain_invitation_entries} domain invitation entries
             (NOTE: no invitations are SENT in this script)
-            {termColors.ENDC}
+            {TerminalColors.ENDC}
             """
         )
         if len(skipped_domain_entries) > 0:
             logger.info(
-                f"""{termColors.FAIL}
+                f"""{TerminalColors.FAIL}
                 ============= SKIPPED DOMAINS (ERRORS) ===============
                 {skipped_domain_entries}
-                {termColors.ENDC}
+                {TerminalColors.ENDC}
                 """
             )
 
@@ -151,25 +132,25 @@ class Command(BaseCommand):
                 skipped_domain_invitations.remove(domain_invite.domain)
         if len(skipped_domain_invitations) > 0:
             logger.info(
-                f"""{termColors.FAIL}
+                f"""{TerminalColors.FAIL}
                 ============= SKIPPED DOMAIN INVITATIONS (ERRORS) ===============
                 {skipped_domain_invitations}
-                {termColors.ENDC}
+                {TerminalColors.ENDC}
                 """
             )
 
         # DEBUG:
-        self.print_debug(
+        TerminalHelper.print_conditional(
             debug_on,
-            f"""{termColors.YELLOW}
-
+            f"""{TerminalColors.YELLOW}
+            ======= DEBUG OUTPUT =======
             Created Domains:
             {domains_to_create}
 
             Updated Domains:
             {updated_domain_entries}
 
-            {termColors.ENDC}
+            {TerminalColors.ENDC}
             """,
         )
 
@@ -184,7 +165,7 @@ class Command(BaseCommand):
         if associated_domain is None:
             logger.warning(
                 f"""
-                        {termColors.FAIL}
+                        {TerminalColors.FAIL}
                         !!! ERROR: Domain cannot be null for a
                         Domain Invitation object!
 
@@ -241,11 +222,11 @@ class Command(BaseCommand):
         total_rows_parsed = 0
 
         logger.info(
-            f"""{termColors.OKGREEN}
+            f"""{TerminalColors.OKGREEN}
             ==========================
             Beginning Data Transfer
             ==========================
-            {termColors.ENDC}"""
+            {TerminalColors.ENDC}"""
         )
 
         for transition_domain in TransitionDomain.objects.all():
@@ -254,11 +235,11 @@ class Command(BaseCommand):
             transition_domain_email = transition_domain.username
 
             # DEBUG:
-            self.print_debug(
+            TerminalHelper.print_conditional(
                 debug_on,
-                f"""{termColors.OKCYAN}
+                f"""{TerminalColors.OKCYAN}
                 Processing Transition Domain: {transition_domain_name}, {transition_domain_status}, {transition_domain_email}
-                {termColors.ENDC}""",  # noqa
+                {TerminalColors.ENDC}""",  # noqa
             )
 
             new_domain_invitation = None
@@ -269,11 +250,11 @@ class Command(BaseCommand):
                     # get the existing domain
                     domain_to_update = Domain.objects.get(name=transition_domain_name)
                     # DEBUG:
-                    self.print_debug(
+                    TerminalHelper.print_conditional(
                         debug_on,
-                        f"""{termColors.YELLOW}
+                        f"""{TerminalColors.YELLOW}
                         > Found existing entry in Domain table for: {transition_domain_name}, {domain_to_update.state}
-                        {termColors.ENDC}""",  # noqa
+                        {TerminalColors.ENDC}""",  # noqa
                     )
 
                     # for existing entry, update the status to
@@ -300,7 +281,7 @@ class Command(BaseCommand):
                     # immediate attention.
                     logger.warning(
                         f"""
-                        {termColors.FAIL}
+                        {TerminalColors.FAIL}
                         !!! ERROR: duplicate entries already exist in the
                         Domain table for the following domain:
                         {transition_domain_name}
@@ -316,7 +297,7 @@ class Command(BaseCommand):
                 except TransitionNotAllowed as err:
                     skipped_domain_entries.append(transition_domain_name)
                     logger.warning(
-                        f"""{termColors.FAIL}
+                        f"""{TerminalColors.FAIL}
                         Unable to change state for {transition_domain_name}
 
                         RECOMMENDATION:
@@ -343,15 +324,15 @@ class Command(BaseCommand):
                     None,
                 )
                 if existing_domain_in_to_create is not None:
-                    self.print_debug(
+                    TerminalHelper.print_conditional(
                         debug_on,
-                        f"""{termColors.YELLOW}
+                        f"""{TerminalColors.YELLOW}
                         Duplicate Detected: {transition_domain_name}.
                         Cannot add duplicate entry for another username.
                         Violates Unique Key constraint.
 
                         Checking for unique user e-mail for Domain Invitations...
-                        {termColors.ENDC}""",
+                        {TerminalColors.ENDC}""",
                     )
                     new_domain_invitation = self.try_add_domain_invitation(
                         transition_domain_email, existing_domain_in_to_create
@@ -363,9 +344,9 @@ class Command(BaseCommand):
                     )
                     domains_to_create.append(new_domain)
                     # DEBUG:
-                    self.print_debug(
+                    TerminalHelper.print_conditional(
                         debug_on,
-                        f"{termColors.OKCYAN} Adding domain: {new_domain} {termColors.ENDC}",  # noqa
+                        f"{TerminalColors.OKCYAN} Adding domain: {new_domain} {TerminalColors.ENDC}",  # noqa
                     )
                     new_domain_invitation = self.try_add_domain_invitation(
                         transition_domain_email, new_domain
@@ -373,14 +354,14 @@ class Command(BaseCommand):
 
             if new_domain_invitation is None:
                 logger.info(
-                    f"{termColors.YELLOW} ! No new e-mail detected !"  # noqa
-                    f"(SKIPPED ADDING DOMAIN INVITATION){termColors.ENDC}"
+                    f"{TerminalColors.YELLOW} ! No new e-mail detected !"  # noqa
+                    f"(SKIPPED ADDING DOMAIN INVITATION){TerminalColors.ENDC}"
                 )
             else:
                 # DEBUG:
-                self.print_debug(
+                TerminalHelper.print_conditional(
                     debug_on,
-                    f"{termColors.OKCYAN} Adding domain invitation: {new_domain_invitation} {termColors.ENDC}",  # noqa
+                    f"{TerminalColors.OKCYAN} Adding domain invitation: {new_domain_invitation} {TerminalColors.ENDC}",  # noqa
                 )
                 domain_invitations_to_create.append(new_domain_invitation)
 
@@ -390,9 +371,9 @@ class Command(BaseCommand):
                 and total_rows_parsed >= debug_max_entries_to_parse
             ):
                 logger.info(
-                    f"""{termColors.YELLOW}
+                    f"""{TerminalColors.YELLOW}
                     ----PARSE LIMIT REACHED.  HALTING PARSER.----
-                    {termColors.ENDC}
+                    {TerminalColors.ENDC}
                     """
                 )
                 break
