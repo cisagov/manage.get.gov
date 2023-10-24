@@ -324,7 +324,6 @@ class Domain(TimeStampedModel, DomainHelper):
             )
         elif ip is not None and ip != [] and ip != ['']:
             for addr in ip:
-                logger.info(f"ip address {addr}")
                 if not cls._valid_ip_addr(addr):
                     raise NameserverError(
                         code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
@@ -339,7 +338,6 @@ class Domain(TimeStampedModel, DomainHelper):
             isValid (boolean)-True for valid ip address"""
         try:
             ip = ipaddress.ip_address(ipToTest)
-            logger.info(ip.version)
             return ip.version == 6 or ip.version == 4
 
         except ValueError:
