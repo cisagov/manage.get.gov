@@ -39,10 +39,10 @@ class GenericError(Exception):
     """
 
     _error_mapping = {
-        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: "Update failed. Cannot contact the registry.",
-        GenericErrorCodes.GENERIC_ERROR: (
-            "Value entered was wrong."
+        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
+            "Update failed. Cannot contact the registry."
         ),
+        GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
