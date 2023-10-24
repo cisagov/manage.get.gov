@@ -59,7 +59,7 @@ class Domain(TimeStampedModel, DomainHelper):
     G) Activation is controlled by the registry. It will happen automatically when the
        domain meets the required checks.
     """
-
+    # test comment for pushing to sandbox - will remove
     def __init__(self, *args, **kwargs):
         self._cache = {}
         super(Domain, self).__init__(*args, **kwargs)
