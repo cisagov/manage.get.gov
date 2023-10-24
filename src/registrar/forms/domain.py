@@ -75,10 +75,21 @@ class DomainNameserverForm(forms.Form):
                 if e.code == nsErrorCodes.GLUE_RECORD_NOT_ALLOWED:
                     self.add_error(
                         "server",
-                        NameserverError(code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED),
+                        NameserverError(
+                            code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED,
+                            nameserver=domain,
+                            ip=ip_list
+                        ),
                     )
                 elif e.code == nsErrorCodes.MISSING_IP:
-                    self.add_error("ip", NameserverError(code=nsErrorCodes.MISSING_IP))
+                    self.add_error(
+                        "ip",
+                        NameserverError(
+                            code=nsErrorCodes.MISSING_IP,
+                            nameserver=domain,
+                            ip=ip_list,
+                        )
+                    )
                 else:
                     self.add_error("ip", str(e))
 

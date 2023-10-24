@@ -24,7 +24,12 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
-from registrar.utility.errors import NameserverError
+from registrar.utility.errors import (
+    GenericError,
+    GenericErrorCodes,
+    NameserverError,
+    NameserverErrorCodes as nsErrorCodes,
+)
 from registrar.models.utility.contact_error import ContactError
 
 from ..forms import (
@@ -44,8 +49,6 @@ from epplibwrapper import (
     common,
     extensions,
     RegistryError,
-    CANNOT_CONTACT_REGISTRY,
-    GENERIC_ERROR,
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
@@ -311,18 +314,32 @@ class DomainNameserversView(DomainFormBaseView):
         try:
             self.object.nameservers = nameservers
         except NameserverError as Err:
-            # TODO: move into literal
-            messages.error(self.request, "Whoops, Nameservers Error")
-            #  messages.error(self.request, GENERIC_ERROR)
+            # NamserverErrors *should* be caught in form; if reached here,
+            # there was an uncaught error in submission (through EPP)
+            messages.error(
+                self.request,
+                NameserverError(
+                    code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN
+                )
+            )
             logger.error(f"Nameservers error: {Err}")
         # TODO: registry is not throwing an error when no connection
-        # TODO: merge 1103 and use literals
         except RegistryError as Err:
             if Err.is_connection_error():
-                messages.error(self.request, CANNOT_CONTACT_REGISTRY)
+                messages.error(
+                    self.request,
+                    GenericError(
+                        code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY
+                    )
+                )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, GENERIC_ERROR)
+                messages.error(
+                    self.request,
+                    GenericError(
+                        code=GenericErrorCodes.GENERIC_ERROR
+                    )
+                )
                 logger.error(f"Registry error: {Err}")
         else:
             messages.success(
@@ -688,7 +705,12 @@ class DomainSecurityEmailView(DomainFormBaseView):
         # If no default is created for security_contact,
         # then we cannot connect to the registry.
         if contact is None:
-            messages.error(self.request, CANNOT_CONTACT_REGISTRY)
+            messages.error(
+                self.request,
+                GenericError(
+                    code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY
+                )
+            )
             return redirect(self.get_success_url())
 
         contact.email = new_email
@@ -697,13 +719,28 @@ class DomainSecurityEmailView(DomainFormBaseView):
             contact.save()
         except RegistryError as Err:
             if Err.is_connection_error():
-                messages.error(self.request, CANNOT_CONTACT_REGISTRY)
+                messages.error(
+                    self.request,
+                    GenericError(
+                        code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY
+                    )
+                )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, GENERIC_ERROR)
+                messages.error(
+                    self.request,
+                    GenericError(
+                        code=GenericErrorCodes.GENERIC_ERROR
+                    )
+                )
                 logger.error(f"Registry error: {Err}")
         except ContactError as Err:
-            messages.error(self.request, GENERIC_ERROR)
+            messages.error(
+                self.request,
+                GenericError(
+                    code=GenericErrorCodes.GENERIC_ERROR
+                )
+            )
             logger.error(f"Generic registry error: {Err}")
         else:
             messages.success(

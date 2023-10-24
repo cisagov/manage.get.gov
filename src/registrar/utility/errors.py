@@ -20,6 +20,41 @@ class ActionNotAllowed(Exception):
     pass
 
 
+class GenericErrorCodes(IntEnum):
+    """Used across the registrar for
+    error mapping.
+    Overview of generic error codes:
+        - 1 GENERIC_ERROR a generic value error
+        - 2 CANNOT_CONTACT_REGISTRY a connection error w registry
+    """
+
+    GENERIC_ERROR = 1
+    CANNOT_CONTACT_REGISTRY = 2
+
+
+class GenericError(Exception):
+    """
+    GenericError class used to raise exceptions across
+    the registrar
+    """
+
+    _error_mapping = {
+        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: "Update failed. Cannot contact the registry.",
+        GenericErrorCodes.GENERIC_ERROR: (
+            "Value entered was wrong."
+        ),
+    }
+
+    def __init__(self, *args, code=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.code = code
+        if self.code in self._error_mapping:
+            self.message = self._error_mapping.get(self.code)
+
+    def __str__(self):
+        return f"{self.message}"
+
+
 class NameserverErrorCodes(IntEnum):
     """Used in the NameserverError class for
     error mapping.
@@ -29,6 +64,8 @@ class NameserverErrorCodes(IntEnum):
                                     value but is not a subdomain
         - 3 INVALID_IP  invalid ip address format or invalid version
         - 4 TOO_MANY_HOSTS  more than the max allowed host values
+        - 5 UNABLE_TO_UPDATE_DOMAIN unable to update the domain
+        - 6 MISSING_HOST host is missing for a nameserver
     """
 
     MISSING_IP = 1
