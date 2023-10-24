@@ -15,7 +15,6 @@ from django.shortcuts import redirect
 from django.template import RequestContext
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
-from django.forms import BaseFormSet
 
 from registrar.models import (
     Domain,
@@ -215,13 +214,13 @@ class DomainDNSView(DomainBaseView):
     template_name = "domain_dns.html"
 
 
-class DomainNameserversView(DomainFormBaseView, BaseFormSet):
+class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""
 
     template_name = "domain_nameservers.html"
     form_class = NameserverFormset
     model = Domain
-    
+
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
         nameservers = self.object.nameservers
@@ -229,7 +228,9 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
 
         if nameservers is not None:
             # Add existing nameservers as initial data
-            initial_data.extend({"server": name, "ip": ','.join(ip)} for name, ip in nameservers)
+            initial_data.extend(
+                {"server": name, "ip": ",".join(ip)} for name, ip in nameservers
+            )
 
         # Ensure at least 3 fields, filled or empty
         while len(initial_data) < 2:
@@ -251,8 +252,8 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
     def get_form(self, **kwargs):
         """Override the labels and required fields every time we get a formset."""
         # kwargs.update({"domain", self.object})
-        formset = super().get_form(**kwargs)    
-        
+        formset = super().get_form(**kwargs)
+
         for i, form in enumerate(formset):
             # form = self.get_form(self, **kwargs)
             form.fields["server"].label += f" {i+1}"
@@ -263,7 +264,7 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
             form.fields["domain"].initial = self.object.name
             print(f"domain in get_form {self.object.name}")
         return formset
-        
+
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view.
 
@@ -271,33 +272,33 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
         """
         self._get_domain(request)
         formset = self.get_form()
-        
+
         if "btn-cancel-click" in request.POST:
             url = self.get_success_url()
             return HttpResponseRedirect(url)
-        
+
         if formset.is_valid():
             return self.form_valid(formset)
         else:
             return self.form_invalid(formset)
-        
+
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
-        self.request.session['nameservers_form_domain'] = self.object
-        
+        self.request.session["nameservers_form_domain"] = self.object
+
         # Set the nameservers from the formset
         nameservers = []
         for form in formset:
             try:
                 ip_string = form.cleaned_data["ip"]
                 # Split the string into a list using a comma as the delimiter
-                ip_list = ip_string.split(',')
+                ip_list = ip_string.split(",")
                 # Remove any leading or trailing whitespace from each IP in the list
                 # this will return [''] if no ips have been entered, which is taken
                 # into account in the model in checkHostIPCombo
                 ip_list = [ip.strip() for ip in ip_list]
-    
+
                 as_tuple = (
                     form.cleaned_data["server"],
                     ip_list,
@@ -306,12 +307,12 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
             except KeyError:
                 # no server information in this field, skip it
                 pass
-        
+
         try:
             self.object.nameservers = nameservers
         except NameserverError as Err:
             # TODO: move into literal
-            messages.error(self.request, 'Whoops, Nameservers Error')
+            messages.error(self.request, "Whoops, Nameservers Error")
             #  messages.error(self.request, GENERIC_ERROR)
             logger.error(f"Nameservers error: {Err}")
         # TODO: registry is not throwing an error when no connection
@@ -325,7 +326,11 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
                 logger.error(f"Registry error: {Err}")
         else:
             messages.success(
-                self.request, "The name servers for this domain have been updated. Keep in mind that DNS changes may take some time to propagate across the internet. It can take anywhere from a few minutes to 48 hours for your changes to take place."
+                self.request,
+                "The name servers for this domain have been updated. "
+                "Keep in mind that DNS changes may take some time to "
+                "propagate across the internet. It can take anywhere "
+                "from a few minutes to 48 hours for your changes to take place.",
             )
 
         # superclass has the redirect

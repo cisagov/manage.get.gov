@@ -7,7 +7,7 @@ from django.forms import formset_factory
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
     NameserverError,
-    NameserverErrorCodes as nsErrorCodes
+    NameserverErrorCodes as nsErrorCodes,
 )
 
 from ..models import Contact, DomainInformation, Domain
@@ -26,25 +26,8 @@ class DomainAddUserForm(forms.Form):
 
 
 class IPAddressField(forms.CharField):
-    
-    
-        
-    def validate(self, value):    
+    def validate(self, value):
         super().validate(value)  # Run the default CharField validation
-
-        # ip_list = [ip.strip() for ip in value.split(",")]  # Split IPs and remove whitespace
-        
-        # # TODO: pass hostname from view?
-        
-        # hostname = self.form.cleaned_data.get("server", "")
-        
-        # print(f"hostname {hostname}")
-        
-        # # Call the IP validation method from Domain
-        # try:
-        #     Domain.checkHostIPCombo(hostname, ip_list)
-        # except NameserverError as e:
-        #     raise forms.ValidationError(str(e))
 
 
 class DomainNameserverForm(forms.Form):
@@ -62,12 +45,12 @@ class DomainNameserverForm(forms.Form):
         #     django.core.validators.validate_ipv46_address
         # ],
     )
-    
+
     def clean(self):
         cleaned_data = super().clean()
-        server = cleaned_data.get('server', '')
-        ip = cleaned_data.get('ip', '')
-        domain = cleaned_data.get('domain', '')
+        server = cleaned_data.get("server", "")
+        ip = cleaned_data.get("ip", "")
+        domain = cleaned_data.get("domain", "")
         print(f"clean is called on {domain} {server}")
 
         # make sure there's a nameserver if an ip is passed
@@ -75,30 +58,29 @@ class DomainNameserverForm(forms.Form):
             ip_list = [ip.strip() for ip in ip.split(",")]
             if not server and len(ip_list) > 0:
                 # If 'server' is empty, disallow 'ip' input
-                self.add_error('server', NameserverError(code=nsErrorCodes.MISSING_HOST))
-        
+                self.add_error(
+                    "server", NameserverError(code=nsErrorCodes.MISSING_HOST)
+                )
+
         # if there's a nameserver and an ip, validate nameserver/ip combo
-        
+
         if server:
             if ip:
                 ip_list = [ip.strip() for ip in ip.split(",")]
             else:
-                ip_list = ['']
+                ip_list = [""]
             try:
                 Domain.checkHostIPCombo(domain, server, ip_list)
             except NameserverError as e:
                 if e.code == nsErrorCodes.GLUE_RECORD_NOT_ALLOWED:
                     self.add_error(
-                        'server',
-                        NameserverError(code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED)
+                        "server",
+                        NameserverError(code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED),
                     )
                 elif e.code == nsErrorCodes.MISSING_IP:
-                    self.add_error(
-                        'ip',
-                        NameserverError(code=nsErrorCodes.MISSING_IP)
-                    )
+                    self.add_error("ip", NameserverError(code=nsErrorCodes.MISSING_IP))
                 else:
-                    self.add_error('ip', str(e))
+                    self.add_error("ip", str(e))
 
         return cleaned_data
 

@@ -314,15 +314,16 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if cls.isSubdomain(name, nameserver) and (ip is None or ip == [] or ip == ['']):
-
+        if cls.isSubdomain(name, nameserver) and (ip is None or ip == [] or ip == [""]):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
-        elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != [] and ip != ['']):
+        elif not cls.isSubdomain(name, nameserver) and (
+            ip is not None and ip != [] and ip != [""]
+        ):
             raise NameserverError(
                 code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip
             )
-        elif ip is not None and ip != [] and ip != ['']:
+        elif ip is not None and ip != [] and ip != [""]:
             for addr in ip:
                 if not cls._valid_ip_addr(addr):
                     raise NameserverError(
@@ -384,7 +385,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 if newHostDict[prevHost] is not None and set(
                     newHostDict[prevHost]
                 ) != set(addrs):
-                    self.__class__.checkHostIPCombo(name=self.name, nameserver=prevHost, ip=newHostDict[prevHost])
+                    self.__class__.checkHostIPCombo(
+                        name=self.name, nameserver=prevHost, ip=newHostDict[prevHost]
+                    )
                     updated_values.append((prevHost, newHostDict[prevHost]))
 
         new_values = {
@@ -394,7 +397,9 @@ class Domain(TimeStampedModel, DomainHelper):
         }
 
         for nameserver, ip in new_values.items():
-            self.__class__.checkHostIPCombo(name=self.name, nameserver=nameserver, ip=ip)
+            self.__class__.checkHostIPCombo(
+                name=self.name, nameserver=nameserver, ip=ip
+            )
 
         return (deleted_values, updated_values, new_values, previousHostDict)
 
@@ -605,7 +610,11 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(hosts) > 13:
             raise NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS)
 
-        if self.state not in [self.State.DNS_NEEDED, self.State.READY, self.State.UNKNOWN]:
+        if self.state not in [
+            self.State.DNS_NEEDED,
+            self.State.READY,
+            self.State.UNKNOWN,
+        ]:
             raise ActionNotAllowed("Nameservers can not be " "set in the current state")
 
         logger.info("Setting nameservers")
