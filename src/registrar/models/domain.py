@@ -257,7 +257,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
         hostList = []
         for host in hosts:
-            host_info_str = f'{host["name"]} {host["addrs"] if len(host["addrs"]) > 0 else ""}'
+            # can remove str conversion when EPP.IP address display changes from IP object -> IP address
+            host_addrs_stringified = [str(addr) for addr in host["addrs"]]
+            host_addrs_str = ""
+            host_addrs_str = f'({", ".join(obj for obj in host_addrs_stringified)})'
+            host_info_str = f'{host["name"]} {host_addrs_str if len(host["addrs"]) > 0 else ""}'
             hostList.append(host_info_str)
         return hostList
 
