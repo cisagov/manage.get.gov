@@ -84,6 +84,93 @@ FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain na
 FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
 FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
 
+## Load migration data onto a production or sandbox environment
+**WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
+Do not use this method to store data you want to keep around permanently.
+
+### STEP 1: Use scp to transfer data
+CloudFoundry supports scp as means of transferring data locally to our environment. If you are dealing with a batch of files, try sending across a tar.gz and unpacking that.
+
+**Login to Cloud.gov**
+
+```bash
+cf login -a api.fr.cloud.gov  --sso
+```
+
+**Target your workspace**
+
+```bash
+cf target -o cisa-dotgov -s {SANDBOX_NAME}
+```
+*SANDBOX_NAME* - Name of your sandbox, ex: za or ab
+
+**Run the scp command**
+
+Use the following command to transfer the desired file:
+```shell
+scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app {FULL_NAME_OF_YOUR_SANDBOX_HERE} --guid)/processes | jq -r '.resources[]
+| select(.type=="web") | .guid')/0 {LOCAL_PATH_TO_FILE} ssh.fr.cloud.gov:tmp/{DESIRED_NAME_OF_FILE}
+```
+The items in curly braces are the values that you will manually replace.
+These are as follows:
+* FULL_NAME_OF_YOUR_SANDBOX_HERE - Name of your sandbox, ex: getgov-za
+* LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
+* DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
+
+NOTE: If you'd wish to change what directory these files are uploaded to, you can change `ssh.fr.cloud.gov:tmp/` to `ssh.fr.cloud.gov:{DIRECTORY_YOU_WANT}/`, but be aware that this makes data migration more tricky than it has to be.
+
+**Get a temp auth code**
+
+The scp command requires a temporary authentication code. Open a new terminal instance (while keeping the current one open),
+and enter the following command:
+```shell
+cf ssh-code
+```
+Copy this code into the password prompt from earlier.
+
+NOTE: You can use different utilities to copy this onto the clipboard for you. If you are on Windows, try the command `cf ssh-code | clip`. On Mac, this will be `cf ssh-code | pbcopy`
+
+### STEP 2: Transfer uploaded files to the getgov directory
+Due to the nature of how Cloud.gov operates, the getgov directory is dynamically generated whenever the app is built under the tmp/ folder. We can directly upload files to the tmp/ folder but cannot target the generated getgov folder directly, as we need to spin up a shell to access this. From here, we can move those uploaded files into the getgov directory using the `cat` command. Note that you will have to repeat this for each file you want to move, so it is better to use a tar.gz for multiple, and unpack it inside of the `datamigration` folder.
+
+**SSH into your sandbox**
+
+```shell
+cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE}
+```
+
+**Open a shell**
+
+```shell
+/tmp/lifecycle/shell
+```
+
+From this directory, run the following command:
+```shell
+./manage.py cat_files_into_getgov --file_extension txt
+```
+
+NOTE: This will look for all files in /tmp with the .txt extension, but this can
+be changed if you are dealing with different extensions.
+
+#### Manual method
+If the `cat_files_into_getgov.py` script isn't working, follow these steps instead.
+
+**Move the desired file into the correct directory**
+
+```shell
+cat ../tmp/{filename} > migrationdata/{filename}
+```
+
+
+### STEP 3: Load Transition Domain data into TransitionDomain table
+Run the following script to transfer the existing data on our .txt files to our DB.
+```shell
+./manage.py load_transition_domain migrationdata/escrow_domain_contacts.daily.gov.GOV.txt migrationdata/escrow_contacts.daily.gov.GOV.txt migrationdata/escrow_domain_statuses.daily.gov.GOV.txt
+```
+
+## Load migration data onto our local environments
+
 Transferring this data from these files into our domain tables happens in two steps;
 
 ***IMPORTANT: only run the following locally, to avoid publicizing PII in our public repo.***
