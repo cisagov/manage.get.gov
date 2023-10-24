@@ -318,10 +318,10 @@ class DomainNameserversView(DomainFormBaseView, BaseFormSet):
         # TODO: merge 1103 and use literals
         except RegistryError as Err:
             if Err.is_connection_error():
-                messages.error(self.request, 'CANNOT_CONTACT_REGISTRY')
+                messages.error(self.request, CANNOT_CONTACT_REGISTRY)
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, 'GENERIC_ERROR')
+                messages.error(self.request, GENERIC_ERROR)
                 logger.error(f"Registry error: {Err}")
         else:
             messages.success(

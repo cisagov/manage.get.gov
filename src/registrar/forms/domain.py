@@ -75,7 +75,7 @@ class DomainNameserverForm(forms.Form):
             ip_list = [ip.strip() for ip in ip.split(",")]
             if not server and len(ip_list) > 0:
                 # If 'server' is empty, disallow 'ip' input
-                self.add_error('server', "Name server must be provided to enter IP address.")
+                self.add_error('server', NameserverError(code=nsErrorCodes.MISSING_HOST))
         
         # if there's a nameserver and an ip, validate nameserver/ip combo
         
@@ -88,9 +88,15 @@ class DomainNameserverForm(forms.Form):
                 Domain.checkHostIPCombo(domain, server, ip_list)
             except NameserverError as e:
                 if e.code == nsErrorCodes.GLUE_RECORD_NOT_ALLOWED:
-                    self.add_error('server', "Name server address does not match domain name")
+                    self.add_error(
+                        'server',
+                        NameserverError(code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED)
+                    )
                 elif e.code == nsErrorCodes.MISSING_IP:
-                    self.add_error('ip', "Subdomains require an IP address")
+                    self.add_error(
+                        'ip',
+                        NameserverError(code=nsErrorCodes.MISSING_IP)
+                    )
                 else:
                     self.add_error('ip', str(e))
 

@@ -36,6 +36,7 @@ class NameserverErrorCodes(IntEnum):
     INVALID_IP = 3
     TOO_MANY_HOSTS = 4
     UNABLE_TO_UPDATE_DOMAIN = 5
+    MISSING_HOST = 6
 
 
 class NameserverError(Exception):
@@ -45,10 +46,10 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: "Nameserver {} needs to have an "
-        "IP address because it is a subdomain",
-        NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: "Nameserver {} cannot be linked "
-        "because it is not a subdomain",
+        NameserverErrorCodes.MISSING_IP: "Subdomains require an IP address",
+        NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: (
+            "Name server address does not match domain name"
+        ),
         NameserverErrorCodes.INVALID_IP: "Nameserver {} has an invalid IP address: {}",
         NameserverErrorCodes.TOO_MANY_HOSTS: (
             "Too many hosts provided, you may not have more than 13 nameservers."
@@ -56,6 +57,9 @@ class NameserverError(Exception):
         NameserverErrorCodes.UNABLE_TO_UPDATE_DOMAIN: (
             "Unable to update domain, changes were not applied."
             "Check logs as a Registry Error is the likely cause"
+        ),
+        NameserverErrorCodes.MISSING_HOST: (
+            "Name server must be provided to enter IP address."
         ),
     }
 
