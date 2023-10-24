@@ -12,10 +12,8 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
-from django.template import RequestContext
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
-from django.shortcuts import render
 
 from registrar.models import (
     Domain,
@@ -371,18 +369,19 @@ class DomainDsDataView(DomainFormBaseView):
         formset = self.get_form()
         override = False
 
-        # This is called by the form cancel button, and also by the modal's X and cancel buttons
+        # This is called by the form cancel button,
+        # and also by the modal's X and cancel buttons
         if "btn-cancel-click" in request.POST:
             url = self.get_success_url()
             return HttpResponseRedirect(url)
-        
+
         # This is called by the Disable DNSSEC modal to override
         if "disable-override-click" in request.POST:
             override = True
-        
+
         # This is called when all DNSSEC data has been deleted and the
         # Save button is pressed
-        if len(formset) == 0 and formset.initial != [{}] and override == False:
+        if len(formset) == 0 and formset.initial != [{}] and override is False:
             # trigger the modal
             # get context data from super() rather than self
             # to preserve the context["form"]

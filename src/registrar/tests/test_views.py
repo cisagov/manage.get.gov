@@ -1125,7 +1125,7 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_multdsdata,
-            role=UserDomainRole.Roles.ADMIN,
+            role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
