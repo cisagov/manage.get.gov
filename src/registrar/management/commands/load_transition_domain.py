@@ -297,28 +297,19 @@ class Command(BaseCommand):
             )
             TransitionDomain.objects.all().delete()
 
-    def handle(  # noqa: C901
-        self,
+    def parse_files(self,  # noqa: C901
         domain_contacts_filename,
         contacts_filename,
         domain_statuses_filename,
-        **options,
-    ):
-        """Parse the data files and create TransitionDomains."""
-        sep = options.get("sep")
+        reset_table,
+        sep,
+        debug_on,
+        debug_max_entries_to_parse):
 
         # If --resetTable was used, prompt user to confirm
         # deletion of table data
-        if options.get("resetTable"):
+        if reset_table:
             self.prompt_table_reset()
-
-        # Get --debug argument
-        debug_on = options.get("debug")
-
-        # Get --LimitParse argument
-        debug_max_entries_to_parse = int(
-            options.get("limitParse")
-        )  # set to 0 to parse all entries
 
         # print message to terminal about which args are in use
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
@@ -522,3 +513,32 @@ class Command(BaseCommand):
             duplicate_domain_user_combos, duplicate_domains, users_without_email
         )
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
+
+    def handle(
+        self,
+        domain_contacts_filename,
+        contacts_filename,
+        domain_statuses_filename,
+        **options,
+    ):
+        """Parse the data files and create TransitionDomains."""
+        # Get --sep argument
+        sep = options.get("sep")
+
+        # Get --resetTable argument
+        reset_table = options.get("resetTable")
+
+        # Get --debug argument
+        debug_on = options.get("debug")
+
+        # Get --limitParse argument
+        debug_max_entries_to_parse = int(
+            options.get("limitParse")
+        )  # set to 0 to parse all entries
+        self.parse_files(domain_contacts_filename,
+                         contacts_filename,
+                         domain_statuses_filename,
+                         sep,
+                         reset_table,
+                         debug_on,
+                         debug_max_entries_to_parse)

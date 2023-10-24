@@ -35,26 +35,39 @@ class Command(BaseCommand):
         # The file arguments have default values for running in the sandbox
         parser.add_argument(
             "--loaderDirectory",
-            default="migrationData/",
+            default="migrationData",
             help="The location of the files used for load_transition_domain migration script"
         )
         parser.add_argument(
-            "domain_contacts_filename",
-            default="escrow_domain_contacts.daily.gov.GOV.txt",
-            help="Data file with domain contact information"
-        )
-        parser.add_argument(
-            "contacts_filename",
-            default="escrow_contacts.daily.gov.GOV.txt",
-            help="Data file with contact information",
-        )
-        parser.add_argument(
-            "domain_statuses_filename",
-            default="escrow_domain_statuses.daily.gov.GOV.txt",
-            help="Data file with domain status information"
+            "--loaderFilenames",
+            default="escrow_domain_contacts.daily.gov.GOV.txt escrow_contacts.daily.gov.GOV.txt escrow_domain_statuses.daily.gov.GOV.txt",
+            help="""The files used for load_transition_domain migration script.  
+            Must appear IN ORDER and separated by spaces: 
+            domain_contacts_filename.txt contacts_filename.txt domain_statuses_filename.txt
+            
+            where...
+            - domain_contacts_filename is the Data file with domain contact information
+            - contacts_filename is the Data file with contact information
+            - domain_statuses_filename is the Data file with domain status information"""
         )
 
-        parser.add_argument("--sep", default="|", help="Delimiter character")
+        # parser.add_argument(
+        #     "domain_contacts_filename",
+        #     default="escrow_domain_contacts.daily.gov.GOV.txt",
+        #     help="Data file with domain contact information"
+        # )
+        # parser.add_argument(
+        #     "contacts_filename",
+        #     default="escrow_contacts.daily.gov.GOV.txt",
+        #     help="Data file with contact information",
+        # )
+        # parser.add_argument(
+        #     "domain_statuses_filename",
+        #     default="escrow_domain_statuses.daily.gov.GOV.txt",
+        #     help="Data file with domain status information"
+        # )
+
+        parser.add_argument("--sep", default="|", help="Delimiter character for the loader files")
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
@@ -165,22 +178,39 @@ class Command(BaseCommand):
         )
     
     def run_migration_scripts(self,
-                            file_location, 
-                            domain_contacts_filename,
-                            contacts_filename,
-                            domain_statuses_filename):
+                            options):
+        
+        file_location = options.get("loaderDirectory")+"/"
+        filenames = options.get("loaderFilenames").split()
+        if len(filenames) < 3:
+            filenames_as_string = "{}".format(", ".join(map(str, filenames)))
+            logger.info(f"""
+            {TerminalColors.FAIL}
+            --loaderFilenames expected 3 filenames to follow it,
+            but only {len(filenames)} were given:
+            {filenames_as_string}
+
+            PLEASE MODIFY THE SCRIPT AND TRY RUNNING IT AGAIN
+            ============= TERMINATING =============
+            {TerminalColors.ENDC}
+            """)
+            return
+        domain_contacts_filename = filenames[0]
+        contacts_filename = filenames[1]
+        domain_statuses_filename = filenames[2]
 
         files_are_correct = TerminalHelper.query_yes_no(
             f"""
             {TerminalColors.YELLOW}
-            PLEASE CHECK: 
-            The loader scripts expect to find the following files:
+            *** IMPORTANT:  VERIFY THE FOLLOWING ***
+
+            The migration scripts are looking in directory....
+            {file_location}
+
+            ....for the following files:
             - domain contacts: {domain_contacts_filename}
             - contacts: {contacts_filename}
             - domain statuses: {domain_statuses_filename}
-
-            The files should be at the following directory;
-            {file_location}
 
             Does this look correct?{TerminalColors.ENDC}"""
         )
@@ -190,22 +220,37 @@ class Command(BaseCommand):
             logger.info(f"""
             {TerminalColors.YELLOW}
             PLEASE Re-Run the script with the correct file location and filenames: 
-            EXAMPLE:
             
+            EXAMPLE:
+            docker compose run -T app ./manage.py test_domain_migration --runLoaders --loaderDirectory /app/tmp --loaderFilenames escrow_domain_contacts.daily.gov.GOV.txt escrow_contacts.daily.gov.GOV.txt escrow_domain_statuses.daily.gov.GOV.txt
             
             """)
             return
-        load_transition_domain_command.handle(
-            domain_contacts_filename,
-            contacts_filename,
-            domain_statuses_filename
-        )
+        
+        # Get --sep argument
+        sep = options.get("sep")
+
+        # Get --resetTable argument
+        reset_table = options.get("resetTable")
+
+        # Get --debug argument
+        debug_on = options.get("debug")
+
+        # Get --limitParse argument
+        debug_max_entries_to_parse = int(
+            options.get("limitParse")
+        )  # set to 0 to parse all entries
+        load_transition_domain_command.parse_files(load_transition_domain_command,
+                                                domain_contacts_filename,
+                                                contacts_filename,
+                                                domain_statuses_filename,
+                                                sep,
+                                                reset_table,
+                                                debug_on,
+                                                debug_max_entries_to_parse)
 
     def handle(
         self,
-        # domain_contacts_filename,
-        # contacts_filename,
-        # domain_statuses_filename,
         **options,
     ):
         """
@@ -244,11 +289,7 @@ class Command(BaseCommand):
 
         # Run migration scripts if specified by user...
         if run_loaders_on:
-            file_location = options.get("loaderDirectory")
             # domain_contacts_filename = options.get("domain_contacts_filename")
             # contacts_filename = options.get("contacts_filename")
             # domain_statuses_filename = options.get("domain_statuses_filename")
-            # self.run_migration_scripts(file_location, 
-            #                            domain_contacts_filename,
-            #                            contacts_filename,
-            #                            domain_statuses_filename)
+            self.run_migration_scripts(options)
