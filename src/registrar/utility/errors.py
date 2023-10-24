@@ -87,7 +87,7 @@ class NameserverError(Exception):
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: (
             "Name server address does not match domain name"
         ),
-        NameserverErrorCodes.INVALID_IP: "Nameserver {} has an invalid IP address: {}",
+        NameserverErrorCodes.INVALID_IP: "{}: Enter an IP address in the required format.",
         NameserverErrorCodes.TOO_MANY_HOSTS: (
             "Too many hosts provided, you may not have more than 13 nameservers."
         ),
@@ -106,7 +106,7 @@ class NameserverError(Exception):
         if self.code in self._error_mapping:
             self.message = self._error_mapping.get(self.code)
             if nameserver is not None and ip is not None:
-                self.message = self.message.format(str(nameserver), str(ip))
+                self.message = self.message.format(str(nameserver))
             elif nameserver is not None:
                 self.message = self.message.format(str(nameserver))
             elif ip is not None:
