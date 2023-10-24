@@ -738,6 +738,7 @@ class MockEppLib(TestCase):
             "ns1.cats-are-superior3.com",
         ],
     )
+
     infoDomainNoHost = fakedEppObject(
         "my-nameserver.gov",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
@@ -804,13 +805,49 @@ class MockEppLib(TestCase):
     infoDomainHasIP = fakedEppObject(
         "nameserverwithip.gov",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
-        contacts=[],
+        contacts=[
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
+        ],
         hosts=[
             "ns1.nameserverwithip.gov",
             "ns2.nameserverwithip.gov",
             "ns3.nameserverwithip.gov",
         ],
         addrs=["1.2.3.4", "2.3.4.5"],
+    )
+
+    justNameserver = fakedEppObject(
+        "justnameserver.com",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
+        ],
+        hosts=[
+            "ns1.justnameserver.com",
+            "ns2.justnameserver.com",
+        ],
     )
 
     infoDomainCheckHostIPCombo = fakedEppObject(
@@ -931,6 +968,7 @@ class MockEppLib(TestCase):
             "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
+            "justnameserver.com": (self.justNameserver, None),
         }
 
         # Retrieve the corresponding values from the dictionary
