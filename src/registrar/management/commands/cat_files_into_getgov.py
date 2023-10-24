@@ -54,8 +54,10 @@ class Command(BaseCommand):
             if exit_status == 0:
                 logger.info(f"Successfully copied {filename}")
             else:
-                logger.info(f"Failed to copy {filename}")
+                logger.error(f"Failed to copy {filename}")
     
     def cat(self, copy_from, copy_to):
+        """Runs the cat command to 
+        copy_from a location to copy_to a location"""
         exit_status = os.system(f'cat {copy_from} > {copy_to}')
         return exit_status
