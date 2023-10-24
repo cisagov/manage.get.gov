@@ -11,8 +11,7 @@ class TestNameserverError(TestCase):
         """Test NameserverError when no ip address is passed"""
         nameserver = "nameserver val"
         expected = (
-            f"Nameserver {nameserver} needs to have an "
-            "IP address because it is a subdomain"
+            "Subdomains require an IP address"
         )
 
         nsException = NameserverError(
