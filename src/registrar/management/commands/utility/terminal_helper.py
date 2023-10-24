@@ -48,3 +48,12 @@ class TerminalHelper:
                 return valid[choice]
             else:
                 logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
+
+    def print_debug(print_condition: bool, print_statement: str):
+        """This function reduces complexity of debug statements
+        in other functions.
+        It uses the logger to write the given print_statement to the
+        terminal if print_condition is TRUE"""
+        # DEBUG:
+        if print_condition:
+            logger.info(print_statement)
