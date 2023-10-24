@@ -1,5 +1,4 @@
 from django.db import models
-
 from .utility.time_stamped_model import TimeStampedModel
 
 
@@ -42,6 +41,23 @@ class TransitionDomain(TimeStampedModel):
         default=False,
         verbose_name="email sent",
         help_text="indicates whether email was sent",
+    )
+    organization_type = models.TextField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Type of organization",
+    )
+    federal_type = models.TextField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Federal government branch",
+    )
+    federal_agency = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Federal agency",
     )
 
     def __str__(self):
