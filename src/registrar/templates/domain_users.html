@@ -1,10 +1,23 @@
 {% extends "domain_base.html" %}
-{% load static %}
+{% load static url_helpers %}
 
-{% block title %}User management | {{ domain.name }} | {% endblock %}
+{% block title %}Domain managers | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
-  <h1>User management</h1>
+  <h1>Domain managers</h1>
+
+  <p>
+  Domain managers can update all information related to a domain within the
+  .gov registrar, including contact details, authorizing official, security
+  email, and DNS name servers.
+  </p>
+
+  <ul>
+    <li>There is no limit to the number of domain managers you can add.</li>
+    <li>After adding a domain manager, an email invitation will be sent to that user with
+      instructions on how to set up an account.</li>
+    <li>To remove a domain manager, <a href="{% public_site_url 'contact/' %}" class="usa-link">contact us</a> for assistance.
+  </ul>
 
   {% if domain.permissions %}
   <section class="section--outlined">

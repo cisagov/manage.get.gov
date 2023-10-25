@@ -11,6 +11,7 @@ from registrar.admin import (
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
+    ContactAdmin,
 )
 from registrar.models import (
     Domain,
@@ -51,6 +52,26 @@ class TestDomainAdmin(MockEppLib):
         self.staffuser = create_user()
         self.factory = RequestFactory()
         super().setUp()
+
+    def test_short_org_name_in_domains_list(self):
+        """
+        Make sure the short name is displaying in admin on the list page
+        """
+        self.client.force_login(self.superuser)
+        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application.approve()
+
+        response = self.client.get("/admin/registrar/domain/")
+
+        # There are 3 template references to Federal (3) plus one reference in the table
+        # for our actual application
+        self.assertContains(response, "Federal", count=4)
+        # This may be a bit more robust
+        self.assertContains(
+            response, '<td class="field-organization_type">Federal</td>', count=1
+        )
+        # Now let's make sure the long description does not exist
+        self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
     @skip("Why did this test stop working, and is is a good test")
     def test_place_and_remove_hold(self):
@@ -243,8 +264,11 @@ class TestDomainAdmin(MockEppLib):
         raise
 
     def tearDown(self):
-        User.objects.all().delete()
         super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
 
 
 class TestDomainApplicationAdminForm(TestCase):
@@ -299,6 +323,23 @@ class TestDomainApplicationAdmin(MockEppLib):
         )
         self.superuser = create_superuser()
         self.staffuser = create_user()
+
+    def test_short_org_name_in_applications_list(self):
+        """
+        Make sure the short name is displaying in admin on the list page
+        """
+        self.client.force_login(self.superuser)
+        completed_application()
+        response = self.client.get("/admin/registrar/domainapplication/")
+        # There are 3 template references to Federal (3) plus one reference in the table
+        # for our actual application
+        self.assertContains(response, "Federal", count=4)
+        # This may be a bit more robust
+        self.assertContains(
+            response, '<td class="field-organization_type">Federal</td>', count=1
+        )
+        # Now let's make sure the long description does not exist
+        self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
     @boto3_mocking.patching
     def test_save_model_sends_submitted_email(self):
@@ -620,9 +661,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         expected_fields = [
             "creator",
             "about_your_organization",
-            "address_line1",
-            "address_line2",
-            "zipcode",
             "requested_domain",
             "alternative_domains",
             "purpose",
@@ -1313,3 +1351,38 @@ class DomainSessionVariableTest(TestCase):
             {"_edit_domain": "true"},
             follow=True,
         )
+
+
+class ContactAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.admin = ContactAdmin(model=get_user_model(), admin_site=None)
+        self.superuser = create_superuser()
+        self.staffuser = create_user()
+
+    def test_readonly_when_restricted_staffuser(self):
+        request = self.factory.get("/")
+        request.user = self.staffuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = [
+            "user",
+        ]
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_when_restricted_superuser(self):
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = []
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def tearDown(self):
+        User.objects.all().delete()
