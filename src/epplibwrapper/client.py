@@ -111,21 +111,21 @@ class EPPLibWrapper:
                 self.start_connection_pool()
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
-            logger.error(message, exc_info=True)
+            logger.error(f"{message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(message, exc_info=True)
+            logger.error(f"{message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         except LoginError as err:
-            # For linter
+            # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.error(message, exc_info=True)
+            logger.error(f"{message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.error(message, exc_info=True)
+            logger.error(f"{message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
@@ -155,6 +155,8 @@ class EPPLibWrapper:
             except RegistryError as err:
                 raise err
             finally:
+                # Code execution will halt after here.
+                # The end user will need to recall .send.
                 self.start_connection_pool()
 
         counter = 0  # we'll try 3 times

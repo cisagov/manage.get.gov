@@ -51,7 +51,8 @@ class EPPConnectionPool(ConnectionPool):
             self.keepalive = options["keepalive"]
 
         # Determines the period in which new
-        # gevent threads are spun up
+        # gevent threads are spun up. 
+        # This time period is in seconds. So for instance, .1 would be .1 seconds.
         self.spawn_frequency = 0.1
         if "spawn_frequency" in options:
             self.spawn_frequency = options["spawn_frequency"]
@@ -77,7 +78,7 @@ class EPPConnectionPool(ConnectionPool):
     def _keepalive(self, c):
         """Sends a command to the server to keep the connection alive."""
         try:
-            # Sends a ping to EPPLib
+            # Sends a ping to the registry via EPPLib
             c.send(Hello())
         except Exception as err:
             message = "Failed to keep the connection alive."
@@ -108,7 +109,7 @@ class EPPConnectionPool(ConnectionPool):
                 logger.info("No connections to kill.")
         except Exception as err:
             logger.error("Could not kill all connections.")
-            raise err
+            raise PoolError(code=PoolErrorCodes.KILL_ALL_FAILED) from err
 
     def populate_all_connections(self):
         """Generates the connection pool.

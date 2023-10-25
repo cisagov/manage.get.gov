@@ -28,6 +28,7 @@ class TestConnectionPool(TestCase):
     """Tests for our connection pooling behaviour"""
 
     def setUp(self):
+        # Mimic the settings added to settings.py
         self.pool_options = {
             # Current pool size
             "size": 1,

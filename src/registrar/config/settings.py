@@ -536,11 +536,12 @@ SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
 # Use this variable to set the size of our connection pool in client.py
 # WARNING: Setting this value too high could cause frequent app crashes!
+# Having too many connections open could cause the sandbox to timeout,
+# as the spinup time could exceed the timeout time.
 EPP_CONNECTION_POOL_SIZE = 1
 
 # Determines the interval in which we ping open connections in seconds
 # Calculated as POOL_KEEP_ALIVE / EPP_CONNECTION_POOL_SIZE
-# WARNING: Setting this value too high could cause frequent app crashes!
 POOL_KEEP_ALIVE = 60
 
 # Determines how long we try to keep a pool alive for,
