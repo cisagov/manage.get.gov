@@ -398,6 +398,9 @@ class Command(BaseCommand):
                     f"================== SIMULATING LOGINS =================="
                     f"{TerminalColors.ENDC}")
         
+        command_string = "python ./manage.py test registrar.tests.test_transition_domain_migrations_wiuth_logins.TestLogins.test_user_logins"
+        
+        
         # for invite in DomainInvitation.objects.all(): #TODO: limit to our stuff
         #     #DEBUG:
         #     TerminalHelper.print_conditional(debug_on,

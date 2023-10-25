@@ -21,7 +21,7 @@ from django_fsm import TransitionNotAllowed
 boto3_mocking.clients.register_handler("sesv2", MockSESClient)
 
 @boto3_mocking.patching
-class TestInvitations(TestCase):
+class TestLogins(TestCase):
 
     """Test the retrieval of invitations."""
 

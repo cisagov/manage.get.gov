@@ -6,13 +6,13 @@ body:
     id: title-help
     attributes:
       value: |
-        > Titles should be short, descriptive, and compelling.
+        > Titles should be short, descriptive, and compelling. Use sentence case.
   - type: textarea
     id: issue-description
     attributes:
-      label: Issue description and context
+      label: Issue description
       description: |
-        Describe the issue so that someone who wasn't present for its discovery can understand the problem and why it matters. Use full sentences, plain language, and good [formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax). Share desired outcomes or potential next steps. Images or links to other content/context (like documents or Slack discussions) are welcome.
+        Describe the issue so that someone who wasn't present for its discovery can understand why it matters. Use full sentences, plain language, and good [formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
     validations:
       required: true
   - type: textarea
@@ -20,16 +20,22 @@ body:
     attributes:
       label: Acceptance criteria
       description: "If known, share 1-3 statements that would need to be true for this issue to be considered resolved. Use a [task list](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists) if appropriate."
-      placeholder: "- [ ] The button does the thing."
+      placeholder: "- [ ]"
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: "Share any other thoughts, like how this might be implemented or fixed. Screenshots and links to documents/discussions are welcome."
   - type: textarea
     id: links-to-other-issues
     attributes:
       label: Links to other issues
       description: |
-        Add the issue #number of other issues this relates to and how (e.g., 🚧 Blocks, ⛔️ Is blocked by, 🔄 Relates to).
+        "Add issue #numbers this relates to and how (e.g., 🚧 :construction: Blocks, ⛔️ :no_entry: Is blocked by, 🔄 :repeat: Relates to)."
       placeholder: 🔄 Relates to... 
   - type: markdown
     id: note
     attributes:
       value: |
-        > We may edit this issue's text to document our understanding and clarify the product work.
+        > We may edit the text in this issue to document our understanding and clarify the product work.
+        

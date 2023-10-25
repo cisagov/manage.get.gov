@@ -52,7 +52,7 @@
       {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url %}
     {% endif %}
     {% url 'domain-users' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='User management' users='true' list=True value=domain.permissions.all edit_link=url %}
+    {% include "includes/summary_item.html" with title='Domain managers' users='true' list=True value=domain.permissions.all edit_link=url %}
 
   </div>
 {% endblock %}  {# domain_content #}

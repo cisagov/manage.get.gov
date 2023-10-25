@@ -24,7 +24,7 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "contact",
-                "permissions": ["view_contact"],
+                "permissions": ["change_contact"],
             },
             {
                 "app_label": "registrar",
@@ -55,6 +55,11 @@ class UserGroup(Group):
                 "app_label": "registrar",
                 "model": "domaininvitation",
                 "permissions": ["add_domaininvitation", "view_domaininvitation"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "website",
+                "permissions": ["change_website"],
             },
         ]
 
