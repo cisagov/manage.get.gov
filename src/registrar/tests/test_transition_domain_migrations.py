@@ -23,6 +23,14 @@ class TestLogins(TestCase):
         # clean out the roles each time
         UserDomainRole.objects.all().delete()
 
+    def test_migration_functions(self):
+        """ Run the master migration script using local test data """
+        
+        """ (analyze the tables just like the migration script does, but add assert statements) """
+        #TODO: finish me!
+        self.assertTrue(True)
+
+
     def test_user_logins(self):
         """A new user's first_login callback retrieves their invitations."""
         self.user.first_login()
