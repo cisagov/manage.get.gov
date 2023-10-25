@@ -260,7 +260,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """Creates the host object in the registry
         doesn't add the created host to the domain
         returns ErrorCode (int)"""
-        if addrs is not None:
+        if addrs is not None and addrs != []:
             addresses = [epp.Ip(addr=addr) for addr in addrs]
             request = commands.CreateHost(name=host, addrs=addresses)
         else:
@@ -314,16 +314,14 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if cls.isSubdomain(name, nameserver) and (ip is None or ip == [] or ip == [""]):
+        if cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
-        elif not cls.isSubdomain(name, nameserver) and (
-            ip is not None and ip != [] and ip != [""]
-        ):
+        elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != []):
             raise NameserverError(
                 code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip
             )
-        elif ip is not None and ip != [] and ip != [""]:
+        elif ip is not None and ip != []:
             for addr in ip:
                 if not cls._valid_ip_addr(addr):
                     raise NameserverError(

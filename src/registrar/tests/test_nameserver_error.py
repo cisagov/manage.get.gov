@@ -35,7 +35,7 @@ class TestNameserverError(TestCase):
         ip = "ip val"
         nameserver = "nameserver val"
 
-        expected = f"Nameserver {nameserver} has an invalid IP address: {ip}"
+        expected = f"{nameserver}: Enter an IP address in the required format."
         nsException = NameserverError(
             code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
         )

@@ -87,7 +87,9 @@ class NameserverError(Exception):
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: (
             "Name server address does not match domain name"
         ),
-        NameserverErrorCodes.INVALID_IP: "{}: Enter an IP address in the required format.",
+        NameserverErrorCodes.INVALID_IP: (
+            "{}: Enter an IP address in the required format."
+        ),
         NameserverErrorCodes.TOO_MANY_HOSTS: (
             "Too many hosts provided, you may not have more than 13 nameservers."
         ),
