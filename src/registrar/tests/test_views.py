@@ -1706,6 +1706,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page = self.app.get(
             reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
         )
+        # Assert that a hidden trigger for the modal does not exist.
+        # This hidden trigger will pop on the page when certain condition are met:
+        # 1) Initial form contained DS data, 2) All data is deleted and form is
+        # submitted.
         self.assertNotContains(add_data_page, "Trigger Disable DNSSEC Modal")
         # Simulate a delete all data
         form_data = {}
