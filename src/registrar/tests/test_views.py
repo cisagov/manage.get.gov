@@ -1448,8 +1448,6 @@ class TestDomainNameservers(TestDomainOverview):
         page = result.follow()
         self.assertContains(page, "The name servers for this domain have been updated")
 
-        # changed nameserver is reflected on domain overview page
-
     @skip("Broken by adding registry connection fix in ticket 848")
     def test_domain_nameservers_form_invalid(self):
         """Can change domain's nameservers.
