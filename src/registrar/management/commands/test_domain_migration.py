@@ -237,12 +237,17 @@ class Command(BaseCommand):
         if not proceed_execution:
             sys.exit()
         
+        self.execute_command(command_string)
+
+        return True
+    
+    def execute_command(self, command_string:str):
+        """Executes the given command string"""
+
         logger.info(f"""{TerminalColors.OKCYAN}
         ==== EXECUTING... ====
         {TerminalColors.ENDC}""")
         os.system(f"{command_string}")
-
-        return True
     
     def run_load_transition_domain_script(self,
                                           file_location: str,
@@ -252,6 +257,7 @@ class Command(BaseCommand):
                                           sep: str,
                                           reset_table: bool,
                                           debug_on: bool,
+                                          prompts_enabled: bool,
                                           debug_max_entries_to_parse: int):
         """Runs the load_transition_domain script"""
         # Create the command string
@@ -269,33 +275,51 @@ class Command(BaseCommand):
             command_string += f"--limitParse {debug_max_entries_to_parse} "
 
         # Execute the command string
-        self.prompt_for_execution(command_string, "Running load_transition_domain script")
+        if prompts_enabled:
+            self.prompt_for_execution(command_string, "Running load_transition_domain script")
+            return
+        self.execute_command(command_string)
         
     
-    def run_transfer_script(self, debug_on:bool):
+    def run_transfer_script(self, debug_on:bool, prompts_enabled: bool):
         """Runs the transfer_transition_domains_to_domains script"""
         # Create the command string
         command_string = "./manage.py transfer_transition_domains_to_domains "
         if debug_on:
             command_string += "--debug "
         # Execute the command string
-        self.prompt_for_execution(command_string, "Running transfer_transition_domains_to_domains script")
+        if prompts_enabled:
+            self.prompt_for_execution(command_string, "Running transfer_transition_domains_to_domains script")
+            return
+        self.execute_command(command_string)
 
 
-    def run_send_invites_script(self):
+    def run_send_invites_script(self, debug_on: bool, prompts_enabled: bool):
         """Runs the send_domain_invitations script"""
         # Create the command string...
         command_string = "./manage.py send_domain_invitations -s"
         # Execute the command string
-        self.prompt_for_execution(command_string, "Running send_domain_invitations script")
+        if prompts_enabled:
+            self.prompt_for_execution(command_string, "Running send_domain_invitations script")
+            return
+        self.execute_command(command_string)
 
 
     def run_migration_scripts(self,
+                            prompts_enabled: bool,
                             options):
         """Runs the following migration scripts (in order): 
                 1 - imports for trans domains
                 2 - transfer to domain & domain invitation"""
         
+        # Get arguments
+        sep = options.get("sep")
+        reset_table = options.get("resetTable")
+        debug_on = options.get("debug")
+        debug_max_entries_to_parse = int(
+            options.get("limitParse")
+        )
+
         # Grab filepath information from the arguments
         file_location = options.get("loaderDirectory")+"/"
         filenames = options.get("loaderFilenames").split()
@@ -311,56 +335,48 @@ class Command(BaseCommand):
             ============= TERMINATING =============
             {TerminalColors.ENDC}
             """)
-            return
+            sys.exit()
         domain_contacts_filename = filenames[0]
         contacts_filename = filenames[1]
         domain_statuses_filename = filenames[2]
 
-        # Allow the user to inspect the filepath
-        # data given in the arguments, and prompt
-        # the user to verify this info before proceeding
-        files_are_correct = TerminalHelper.query_yes_no(
-            f"""
-            {TerminalColors.OKCYAN}
-            *** IMPORTANT:  VERIFY THE FOLLOWING ***
+        if prompts_enabled:
+            # Allow the user to inspect the filepath
+            # data given in the arguments, and prompt
+            # the user to verify this info before proceeding
+            files_are_correct = TerminalHelper.query_yes_no(
+                f"""
+                {TerminalColors.OKCYAN}
+                *** IMPORTANT:  VERIFY THE FOLLOWING ***
 
-            The migration scripts are looking in directory....
-            {file_location}
+                The migration scripts are looking in directory....
+                {file_location}
 
-            ....for the following files:
-            - domain contacts: {domain_contacts_filename}
-            - contacts: {contacts_filename}
-            - domain statuses: {domain_statuses_filename}
+                ....for the following files:
+                - domain contacts: {domain_contacts_filename}
+                - contacts: {contacts_filename}
+                - domain statuses: {domain_statuses_filename}
 
-            {TerminalColors.FAIL}
-            Does this look correct?{TerminalColors.ENDC}"""
-        )
+                {TerminalColors.FAIL}
+                Does this look correct?{TerminalColors.ENDC}"""
+            )
 
-        # If the user rejected the filepath information
-        # as incorrect, prompt the user to provide 
-        # correct file inputs in their original command
-        # prompt and exit this subroutine
-        if not files_are_correct:
-            logger.info(f"""
-            {TerminalColors.YELLOW}
-            PLEASE Re-Run the script with the correct file location and filenames: 
-            
-            EXAMPLE:
-            docker compose run -T app ./manage.py test_domain_migration --runLoaders --loaderDirectory /app/tmp --loaderFilenames escrow_domain_contacts.daily.gov.GOV.txt escrow_contacts.daily.gov.GOV.txt escrow_domain_statuses.daily.gov.GOV.txt
-            
-            """)
-            return
+            # If the user rejected the filepath information
+            # as incorrect, prompt the user to provide 
+            # correct file inputs in their original command
+            # prompt and exit this subroutine
+            if not files_are_correct:
+                logger.info(f"""
+                {TerminalColors.YELLOW}
+                PLEASE Re-Run the script with the correct file location and filenames: 
+                
+                EXAMPLE:
+                docker compose run -T app ./manage.py test_domain_migration --runLoaders --loaderDirectory /app/tmp --loaderFilenames escrow_domain_contacts.daily.gov.GOV.txt escrow_contacts.daily.gov.GOV.txt escrow_domain_statuses.daily.gov.GOV.txt
+                
+                """)
+                return
         
-        # Proceed executing the migration scripts...
-        # ...First, Get all the arguments
-        sep = options.get("sep")
-        reset_table = options.get("resetTable")
-        debug_on = options.get("debug")
-        debug_max_entries_to_parse = int(
-            options.get("limitParse")
-        )
-
-        #...Second, Run the migration scripts in order
+        # Proceed executing the migration scripts
         self.run_load_transition_domain_script(file_location,
                                           domain_contacts_filename,
                                           contacts_filename,
@@ -368,8 +384,9 @@ class Command(BaseCommand):
                                           sep,
                                           reset_table,
                                           debug_on,
+                                          prompts_enabled,
                                           debug_max_entries_to_parse)
-        self.run_transfer_script(debug_on)
+        self.run_transfer_script(debug_on, prompts_enabled)
 
 
     def simulate_user_logins(self, debug_on):
@@ -380,52 +397,27 @@ class Command(BaseCommand):
                     f"{TerminalColors.OKCYAN}"
                     f"================== SIMULATING LOGINS =================="
                     f"{TerminalColors.ENDC}")
-        for invite in DomainInvitation.objects.all(): #TODO: limit to our stuff
-            #DEBUG:
-            TerminalHelper.print_conditional(debug_on,
-                                             f"{TerminalColors.OKCYAN}"
-                                             f"Processing invite: {invite}"
-                                             f"{TerminalColors.ENDC}")
-            # get a user with this email address
-            user, user_created = User.objects.get_or_create(email=invite.email, username=invite.email)
-            #DEBUG:
-            TerminalHelper.print_conditional(user_created,
-                                             f"""{TerminalColors.OKCYAN}No user found (creating temporary user object){TerminalColors.ENDC}""")
-            TerminalHelper.print_conditional(debug_on,
-                                             f"""{TerminalColors.OKCYAN}Executing first-time login for user: {user}{TerminalColors.ENDC}""")
-            user.first_login()
-            if user_created:
-                logger.info(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
-                user.delete()
+        
 
-        # get a user with this email address
-        # user_exists = User.objects.filter(email=invite.email).exists()
-        # if user_exists:
-        #     user = User.objects.get(email=invite.email)
-        #     TerminalHelper.print_conditional(debug_on,
-        #                                     f"""{TerminalColors.OKCYAN}Logging in user: {user}{TerminalColors.ENDC}""")
-        #     user.first_login()
-        # else:
-        #     logger.info(f"""{TerminalColors.YELLOW}No user found -- creating temp user object...{TerminalColors.ENDC}""")
-        #     user = User(email=invite.email)
-        #     user.save()
-        #     user.first_login()
-        #     logger.info(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
-        #     user.delete()
-
-        # for invite in DomainInvitation.objects.all():
+        
+        # for invite in DomainInvitation.objects.all(): #TODO: limit to our stuff
         #     #DEBUG:
-        #     TerminalHelper.print_debug(debug_on,f"""{TerminalColors.OKCYAN}Processing invite: {invite}{TerminalColors.ENDC}""")
-        #      # get a user with this email address
-        #     User = get_user_model()
-        #     try:
-        #         user = User.objects.get(email=invite.email)
-        #         #DEBUG:
-        #         TerminalHelper.print_debug(debug_on,f"""{TerminalColors.OKCYAN}Logging in user: {user}{TerminalColors.ENDC}""")
-        #         Client.force_login(user)
-        #     except User.DoesNotExist:
-        #         #TODO: how should we handle this?
-        #         logger.warn(f"""{TerminalColors.FAIL}No user found {invite.email}{TerminalColors.ENDC}""")
+        #     TerminalHelper.print_conditional(debug_on,
+        #                                      f"{TerminalColors.OKCYAN}"
+        #                                      f"Processing invite: {invite}"
+        #                                      f"{TerminalColors.ENDC}")
+        #     # get a user with this email address
+        #     user, user_created = User.objects.get_or_create(email=invite.email, username=invite.email)
+        #     #DEBUG:
+        #     TerminalHelper.print_conditional(user_created,
+        #                                      f"""{TerminalColors.OKCYAN}No user found (creating temporary user object){TerminalColors.ENDC}""")
+        #     TerminalHelper.print_conditional(debug_on,
+        #                                      f"""{TerminalColors.OKCYAN}Executing first-time login for user: {user}{TerminalColors.ENDC}""")
+        #     user.first_login()
+        #     if user_created:
+        #         logger.info(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
+        #         user.delete()
+
 
     def handle(
         self,
@@ -449,7 +441,8 @@ class Command(BaseCommand):
         # the terminal so the user knows what is
         # enabled.
         debug_on = options.get("debug")
-        run_loaders_on = options.get("runLoaders")
+        prompts_enabled = debug_on #TODO: add as argument?
+        run_loaders_enabled = options.get("runLoaders")
         simulate_user_login_enabled = options.get("triggerLogins")
         TerminalHelper.print_conditional(
                 debug_on,
@@ -460,7 +453,7 @@ class Command(BaseCommand):
                 """
             )
         TerminalHelper.print_conditional(
-                run_loaders_on,
+                run_loaders_enabled,
                 f"""{TerminalColors.OKCYAN}
                 ----------RUNNING LOADERS ON----------
                 All migration scripts will be run before
@@ -469,7 +462,7 @@ class Command(BaseCommand):
                 """
             )
         TerminalHelper.print_conditional(
-                run_loaders_on,
+                run_loaders_enabled,
                 f"""{TerminalColors.OKCYAN}
                 ----------TRIGGER LOGINS ON----------
                 Will be simulating user logins
@@ -489,8 +482,8 @@ class Command(BaseCommand):
 
         # STEP 1 -- RUN LOADERS
         # Run migration scripts if specified by user
-        if run_loaders_on:
-            self.run_migration_scripts(options)
+        if run_loaders_enabled:
+            self.run_migration_scripts(options, prompts_enabled)
             prompt_continuation_of_analysis = True
         
         # STEP 2 -- SIMULATE LOGINS
@@ -503,32 +496,34 @@ class Command(BaseCommand):
         # automatically execute this as the final step
         # to ensure Domain Information objects get added
         # to the database.)
-        if run_loaders_on:
-            simulate_user_login_enabled = TerminalHelper.query_yes_no(
-            f"""{TerminalColors.FAIL}
-            Proceed with simulating user logins?
-            {TerminalColors.ENDC}"""
-            )
-        if simulate_user_login_enabled:
+        if run_loaders_enabled:
+            if prompts_enabled:
+                simulate_user_login_enabled = TerminalHelper.query_yes_no(
+                f"""{TerminalColors.FAIL}
+                Proceed with simulating user logins?
+                {TerminalColors.ENDC}"""
+                )
+                if not simulate_user_login_enabled:
+                    return
             self.simulate_user_logins(debug_on)
             prompt_continuation_of_analysis = True
-        
        
         # STEP 3 -- SEND INVITES
-        proceed_with_sending_invites = TerminalHelper.query_yes_no(
-            f"""{TerminalColors.FAIL}
-            Proceed with sending user invites?
-            {TerminalColors.ENDC}"""
-            )
-        if proceed_with_sending_invites:
-            self.run_send_invites_script()
-            prompt_continuation_of_analysis = True
+        if prompts_enabled:
+            proceed_with_sending_invites = TerminalHelper.query_yes_no(
+                f"""{TerminalColors.FAIL}
+                Proceed with sending user invites?
+                {TerminalColors.ENDC}"""
+                )
+            if not proceed_with_sending_invites:
+                return
+        self.run_send_invites_script(debug_on)
+        prompt_continuation_of_analysis = True
 
         # STEP 4 -- ANALYZE TABLES & GENERATE REPORT
         # Analyze tables for corrupt data...
-        
-        # only prompt if we ran steps 1 and/or 2
-        if prompt_continuation_of_analysis:
+        if prompt_continuation_of_analysis & prompts_enabled:
+            # ^ (only prompt if we ran steps 1 and/or 2)
             analyze_tables = TerminalHelper.query_yes_no(
                 f"""{TerminalColors.FAIL}
                 Proceed with table analysis?
