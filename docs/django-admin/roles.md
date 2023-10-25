@@ -16,19 +16,19 @@ then they will need to be granted analyst ( `cisa_analysts_group`) or full acces
 To do this, do the following:
 
 1. The user in question will need to have a login.gov account and login into our system, this will create a `Users` table entry with their email address and name.
-2. On that `Users` table note that the `GROUP` column should be blank for them as they have no special permisisons yet.
+2. On that `Users` table note that the `GROUP` column should be blank for them as they have no special permissions yet.
 3. Click on their username, then scroll down to the `Permissions` section.
 4. Under `Permissions`, see the `Groups` table which has a column for `Available groups` and `Chosen groups`. Select the permission you want from the `Available groups` column and click the right arrow to move it to the  `Chosen groups`. Note, if you want this user to be an analyst select `cisa_analysts_group`, otherwise select the `full_access_group`.
 5. After clicking the right arrow in the previous step, scroll down and click `Save`
 
 ## Removing a user group permission via django-admin
 
-If an employee was given the wrong permissions or has had a change in roles that subesequently requires a permission change, then their permissions should be updated in django-admin. Much like in the previous section you can accomplish this by doing the following:
+If an employee was given the wrong permissions or has had a change in roles that subsequently requires a permission change, then their permissions should be updated in django-admin. Much like in the previous section you can accomplish this by doing the following:
 
 1. Go to the `Users` table an select the username for the user in question
 2. Scroll down to the `Permissions` section and find the `Groups` table which has a column for `Available groups` and `Chosen groups`.
 3. In this table, select the permission you want to remove from the `Chosen groups` and then click the left facing arrow to move the permission to `Available groups`.
-4. Depending on the scenario you may now need to add the opposite permission group to the `Chosen groups` section, please see the above section for instructions on how to do that.
+4. Depending on the scenario you may now need to add the opposite permission group to the `Chosen groups` section, please see the section above for instructions on how to do that.
 5. Click `Save` to apply all changes
 
 ## Editing group permissions through code
