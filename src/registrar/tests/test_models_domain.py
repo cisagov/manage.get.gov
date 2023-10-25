@@ -873,6 +873,7 @@ class TestRegistrantContacts(MockEppLib):
             contact_id="regContact",
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
         )
+
         self.assertEqual(
             self.domain_contact.registrant_contact.email, expected_contact.email
         )
