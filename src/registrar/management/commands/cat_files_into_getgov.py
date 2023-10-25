@@ -1,6 +1,5 @@
 """Loads files from /tmp into our sandboxes"""
 import glob
-import csv
 import logging
 
 import os
@@ -21,17 +20,19 @@ class Command(BaseCommand):
             default="txt",
             help="What file extensions to look for, like txt or gz",
         )
-        parser.add_argument("--directory", default="migrationdata", help="Desired directory")
+        parser.add_argument(
+            "--directory", default="migrationdata", help="Desired directory"
+        )
 
     def handle(self, **options):
-        file_extension: str = options.get("file_extension").lstrip('.')
+        file_extension: str = options.get("file_extension").lstrip(".")
         directory = options.get("directory")
 
         # file_extension is always coerced as str, Truthy is OK to use here.
         if not file_extension or not isinstance(file_extension, str):
             raise ValueError(f"Invalid file extension '{file_extension}'")
 
-        matching_extensions = glob.glob(f'../tmp/*.{file_extension}')
+        matching_extensions = glob.glob(f"../tmp/*.{file_extension}")
         if not matching_extensions:
             logger.error(f"No files with the extension {file_extension} found")
 
@@ -39,25 +40,27 @@ class Command(BaseCommand):
             filename = os.path.basename(src_file_path)
             do_command = True
             exit_status: int
-            
-            desired_file_path = f'{directory}/{filename}'
+
+            desired_file_path = f"{directory}/{filename}"
             if os.path.exists(desired_file_path):
-                replace = input(f'{desired_file_path} already exists. Do you want to replace it? (y/n) ')
-                if replace.lower() != 'y':
+                # For linter
+                prompt = " Do you want to replace it? (y/n) "
+                replace = input(f"{desired_file_path} already exists. {prompt}")
+                if replace.lower() != "y":
                     do_command = False
-    
+
             if do_command:
                 copy_from = f"../tmp/{filename}"
                 self.cat(copy_from, desired_file_path)
-                exit_status = os.system(f'cat ../tmp/{filename} > {desired_file_path}')
+                exit_status = os.system(f"cat ../tmp/{filename} > {desired_file_path}")
 
             if exit_status == 0:
                 logger.info(f"Successfully copied {filename}")
             else:
                 logger.error(f"Failed to copy {filename}")
-    
+
     def cat(self, copy_from, copy_to):
-        """Runs the cat command to 
+        """Runs the cat command to
         copy_from a location to copy_to a location"""
-        exit_status = os.system(f'cat {copy_from} > {copy_to}')
+        exit_status = os.system(f"cat {copy_from} > {copy_to}")
         return exit_status

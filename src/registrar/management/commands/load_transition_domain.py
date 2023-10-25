@@ -12,7 +12,7 @@ from registrar.models import TransitionDomain
 
 from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
-    TerminalHelper
+    TerminalHelper,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,26 +1,13 @@
 from django.test import TestCase
-from django.db.utils import IntegrityError
-from unittest.mock import patch
 
 from registrar.models import (
-    Contact,
-    DomainApplication,
-    DomainInformation,
     User,
-    Website,
     Domain,
-    DraftDomain,
     DomainInvitation,
     UserDomainRole,
 )
 
-import boto3_mocking  # type: ignore
-from .common import MockSESClient, less_console_noise, completed_application
-from django_fsm import TransitionNotAllowed
 
-boto3_mocking.clients.register_handler("sesv2", MockSESClient)
-
-@boto3_mocking.patching
 class TestLogins(TestCase):
 
     """Test the retrieval of invitations."""

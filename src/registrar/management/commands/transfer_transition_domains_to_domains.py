@@ -12,7 +12,7 @@ from registrar.models import DomainInvitation
 
 from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
-    TerminalHelper
+    TerminalHelper,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,6 @@ class Command(BaseCommand):
             {TerminalColors.ENDC}
             """,
         )
-
 
     def update_domain_status(
         self, transition_domain: TransitionDomain, target_domain: Domain, debug_on: bool
