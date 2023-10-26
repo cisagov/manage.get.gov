@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<epp xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xmlns:contact="urn:ietf:params:xml:ns:contact-1.0" xmlns:fee="urn:ietf:params:xml:ns:fee-0.6" xmlns:packageToken="urn:google:params:xml:ns:packageToken-1.0" xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:fee11="urn:ietf:params:xml:ns:fee-0.11" xmlns:fee12="urn:ietf:params:xml:ns:fee-0.12" xmlns:launch="urn:ietf:params:xml:ns:launch-1.0" xmlns:secDNS="urn:ietf:params:xml:ns:secDNS-1.1" xmlns:host="urn:ietf:params:xml:ns:host-1.0">
+   <response>
+       <result code="1000">
+           <msg>Command completed successfully</msg>
+       </result>
+       <resData>
+        <domain:infData>
+            <domain:name>test3.gov</domain:name>
+            <domain:roid>DF1340360-GOV</domain:roid>
+            <domain:status s="serverTransferProhibited"/>
+            <domain:status s="inactive"/>
+            <domain:registrant>TuaWnx9hnm84GCSU</domain:registrant>
+            <domain:contact type="security">CONT2</domain:contact>
+            <domain:contact type="tech">CONT3</domain:contact>
+            <domain:clID>gov2023-ote</domain:clID>
+            <domain:crID>gov2023-ote</domain:crID>
+            <domain:crDate>2023-08-15T23:56:36Z</domain:crDate>
+            <domain:upID>gov2023-ote</domain:upID>
+            <domain:upDate>2023-08-17T02:03:19Z</domain:upDate>
+            <domain:exDate>2024-08-15T23:56:36Z</domain:exDate>
+            <domain:authInfo>
+                <domain:pw>2fooBAR123fooBaz</domain:pw>
+            </domain:authInfo>
+        </domain:infData>
+    </resData>
+       <trID>
+           <svTRID>wRRNVhKhQW2m6wsUHbo/lA==-29a</svTRID>
+       </trID>
+   </response>
+
+</epp>

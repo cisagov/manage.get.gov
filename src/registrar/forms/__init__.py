@@ -8,6 +8,4 @@ from .domain import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
-    DomainKeydataFormset,
-    DomainKeydataForm,
 )

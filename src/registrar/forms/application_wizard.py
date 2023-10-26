@@ -153,7 +153,8 @@ class RegistrarFormSet(forms.BaseFormSet):
 
 class OrganizationTypeForm(RegistrarForm):
     organization_type = forms.ChoiceField(
-        choices=DomainApplication.OrganizationChoices.choices,
+        # use the long names in the application form
+        choices=DomainApplication.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,
         error_messages={"required": "Select the type of organization you represent."},
     )

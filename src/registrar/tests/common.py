@@ -774,12 +774,6 @@ class MockEppLib(TestCase):
         "digestType": 1,
         "digest": "ec0bdd990b39feead889f0ba613db4adecb4adec",
     }
-    keyDataDict = {
-        "flags": 257,
-        "protocol": 3,
-        "alg": 1,
-        "pubKey": "AQPJ////4Q==",
-    }
     dnssecExtensionWithDsData = extensions.DNSSECExtension(
         **{
             "dsData": [
@@ -793,11 +787,6 @@ class MockEppLib(TestCase):
                 common.DSData(**addDsData1),  # type: ignore
                 common.DSData(**addDsData2),  # type: ignore
             ],  # type: ignore
-        }
-    )
-    dnssecExtensionWithKeyData = extensions.DNSSECExtension(
-        **{
-            "keyData": [common.DNSSECKeyData(**keyDataDict)],  # type: ignore
         }
     )
     dnssecExtensionRemovingDsData = extensions.DNSSECExtension()
@@ -950,10 +939,6 @@ class MockEppLib(TestCase):
             "dnssec-multdsdata.gov": (
                 self.mockDataInfoDomain,
                 self.dnssecExtensionWithMultDsData,
-            ),
-            "dnssec-keydata.gov": (
-                self.mockDataInfoDomain,
-                self.dnssecExtensionWithKeyData,
             ),
             "dnssec-none.gov": (self.mockDataInfoDomain, None),
             "my-nameserver.gov": (
