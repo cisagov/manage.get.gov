@@ -4,47 +4,24 @@
 {% block title %}DS Data | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
-  {% for form in formset %}
-    {% include "includes/form_errors.html" with form=form %}
-  {% endfor %}
-
-  {% if domain.dnssecdata is None and not dnssec_ds_confirmed %}
+  {% if domain.dnssecdata is None %}
   <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
     <div class="usa-alert__body">
-    You have no DS Data added. Enable DNSSEC by adding DS Data or return to the DNSSEC page and click 'enable.'
+      You have no DS Data added. Enable DNSSEC by adding DS Data.
     </div>
   </div>
   {% endif %}
 
+  {% for form in formset %}
+    {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
+
   <h1>DS Data</h1>
 
-  {% if domain.dnssecdata is not None and domain.dnssecdata.keyData is not None %}
-  <div class="usa-alert usa-alert--warning usa-alert--slim margin-bottom-3">
-    <div class="usa-alert__body">
-      <h4 class="usa-alert__heading">Warning, you cannot add DS Data</h4>
-      <p class="usa-alert__text">
-        You cannot add DS Data because you have already added Key Data. Delete your Key Data records in order to add DS Data.
-      </p>
-    </div>
-  </div>
-  {% elif not dnssec_ds_confirmed %}
-    <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
-    <p>Enter the values given by your DNS provider for DS Data.</p>
-    <p>Required fields are marked with an asterisk (<abbr
-      title="required"
-      class="usa-hint usa-hint--required"
-      >*</abbr>).</p>
-    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
-      {% csrf_token %}
-      <button type="submit" class="usa-button usa-button--unstyled display-block" name="confirm-ds">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-          <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-        </svg><span class="margin-left-05">Add new record</span>
-      </button>
-    </form>
-  {% else %}
+  <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
 
   <p>Enter the values given by your DNS provider for DS Data.</p>
+
   {% include "includes/required_fields.html" %}
 
   <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
@@ -104,20 +81,40 @@
     </button>
 
     <button
+          id="save-ds-data"
           type="submit"
           class="usa-button"
       >Save
     </button>
-  </form>
 
-  <form aria-label="form to undo changes to the DS records">
     <button
           type="submit"
-          class="usa-button usa-button--outline btn-cancel"
+          class="usa-button usa-button--outline"
           name="btn-cancel-click"
           aria-label="Reset the data in the DS records to the registry state (undo changes)"
       >Cancel
     </button>
   </form>
+
+  {% if trigger_modal %}
+  <a
+      id="ds-toggle-dnssec-alert"
+      href="#toggle-dnssec-alert"
+      class="usa-button usa-button--outline margin-top-1 display-none"
+      aria-controls="toggle-dnssec-alert"
+      data-open-modal
+      >Trigger Disable DNSSEC Modal</a
+    >
   {% endif %}
+  {# Use data-force-action to take esc out of the equation and pass cancel_button_resets_ds_form to effectuate a reset in the view #}
+  <div
+    class="usa-modal"
+    id="toggle-dnssec-alert"
+    aria-labelledby="Are you sure you want to continue?"
+    aria-describedby="Your DNSSEC records will be deleted from the registry."
+    data-force-action
+  >
+      {% include 'includes/modal.html' with cancel_button_resets_ds_form=True modal_heading="Warning: You are about to delete all DS records on your domain" modal_description="To fully disable DNSSEC: In addition to deleting your DS records here you’ll also need to delete the DS records at your DNS host. To avoid causing your domain to appear offline you should wait to delete your DS records at your DNS host until the Time to Live (TTL) expires. This is often less than 24 hours, but confirm with your provider." modal_button=modal_button|safe %}
+  </div>
+
 {% endblock %}  {# domain_content #}
