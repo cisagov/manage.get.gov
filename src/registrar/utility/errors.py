@@ -83,7 +83,9 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: "Subdomains require an IP address",
+        NameserverErrorCodes.MISSING_IP: (
+            "Using your domain for a name server requires an IP address"
+        ),
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: (
             "Name server address does not match domain name"
         ),

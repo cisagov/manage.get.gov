@@ -254,18 +254,15 @@ class DomainNameserversView(DomainFormBaseView):
 
     def get_form(self, **kwargs):
         """Override the labels and required fields every time we get a formset."""
-        # kwargs.update({"domain", self.object})
         formset = super().get_form(**kwargs)
 
         for i, form in enumerate(formset):
-            # form = self.get_form(self, **kwargs)
             form.fields["server"].label += f" {i+1}"
             if i < 2:
                 form.fields["server"].required = True
             else:
                 form.fields["server"].required = False
             form.fields["domain"].initial = self.object.name
-            print(f"domain in get_form {self.object.name}")
         return formset
 
     def post(self, request, *args, **kwargs):

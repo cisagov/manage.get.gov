@@ -1440,7 +1440,7 @@ class TestDomainNameservers(TestDomainOverview):
             result,
             str(NameserverError(code=NameserverErrorCodes.MISSING_IP)),
             count=2,
-            status_code=200
+            status_code=200,
         )
 
     def test_domain_nameservers_form_submit_missing_host(self):
@@ -1466,7 +1466,7 @@ class TestDomainNameservers(TestDomainOverview):
             result,
             str(NameserverError(code=NameserverErrorCodes.MISSING_HOST)),
             count=2,
-            status_code=200
+            status_code=200,
         )
 
     def test_domain_nameservers_form_submit_glue_record_not_allowed(self):
@@ -1495,11 +1495,9 @@ class TestDomainNameservers(TestDomainOverview):
         # the required field.  nameserver has ip but missing host
         self.assertContains(
             result,
-            str(NameserverError(
-                code=NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED
-            )),
+            str(NameserverError(code=NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED)),
             count=2,
-            status_code=200
+            status_code=200,
         )
 
     def test_domain_nameservers_form_submit_invalid_ip(self):
@@ -1526,12 +1524,13 @@ class TestDomainNameservers(TestDomainOverview):
         # the required field.  nameserver has ip but missing host
         self.assertContains(
             result,
-            str(NameserverError(
-                code=NameserverErrorCodes.INVALID_IP,
-                nameserver=nameserver
-            )),
+            str(
+                NameserverError(
+                    code=NameserverErrorCodes.INVALID_IP, nameserver=nameserver
+                )
+            ),
             count=2,
-            status_code=200
+            status_code=200,
         )
 
     def test_domain_nameservers_form_submits_successfully(self):
@@ -1564,29 +1563,6 @@ class TestDomainNameservers(TestDomainOverview):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
         self.assertContains(page, "The name servers for this domain have been updated")
-
-        # self.assertContains(result, "This field is required.", count=2, status_code=200)
-        # add a second name server, which is a subdomain, but don't
-        # submit the required ip
-        # nameservers_page.form["form-1-server"] = "ns1.igorville.gov"
-        # with less_console_noise():  # swallow log warning message
-        #     result = nameservers_page.form.submit()
-        # # form submission was a post with an error, response should be a 200
-        # self.assertContains(
-        #     result,
-        #     str(NameserverError(code=NameserverErrorCodes.MISSING_IP)),
-        #     count=2,
-        #     status_code=200
-        # )
-        # form submission was a post, response should be a redirect
-        # self.assertEqual(result.status_code, 302)
-        # self.assertEqual(
-        #     result["Location"],
-        #     reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
-        # )
-        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # page = result.follow()
-        # self.assertContains(page, "The name servers for this domain have been updated")
 
     def test_domain_nameservers_form_invalid(self):
         """Can change domain's nameservers.

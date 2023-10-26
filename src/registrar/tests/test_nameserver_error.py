@@ -10,7 +10,7 @@ class TestNameserverError(TestCase):
     def test_with_no_ip(self):
         """Test NameserverError when no ip address is passed"""
         nameserver = "nameserver val"
-        expected = "Subdomains require an IP address"
+        expected = "Using your domain for a name server requires an IP address"
 
         nsException = NameserverError(
             code=nsErrorCodes.MISSING_IP, nameserver=nameserver
