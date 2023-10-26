@@ -311,13 +311,14 @@ function prepareDeleteButtons(formLabel) {
 
       // Remove the add more button if we have less than 13 forms
       if (isNameserversForm && forms.length <= 13) {
-        addButton.classList.remove("display-none")
+        addButton.classList.remove("display-none");
       }
 
       if (isNameserversForm && forms.length < 3) {
         // Hide the delete buttons on the remaining nameservers
         Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-          deleteButton.classList.add("display-none");
+          // deleteButton.classList.add("display-none");
+          deleteButton.setAttribute("disabled", "true");
         });
       }
     
@@ -381,11 +382,12 @@ function prepareDeleteButtons(formLabel) {
           });
         }
 
-        // If the source element we're copying has an invisible delete button,
-        // show that button
-        let deleteButtonNeedsCleanUp = newForm.querySelector('.delete-record').classList.contains("display-none");
-        if (deleteButtonNeedsCleanUp) {
-          newForm.querySelector('.delete-record').classList.remove("display-none");
+        // If the source element we're copying has an disabled delete button,
+        // enable that button
+        let deleteButton= newForm.querySelector('.delete-record');
+        if (deleteButton.hasAttribute("disabled")) {
+          // newForm.querySelector('.delete-record').classList.remove("display-none");
+          deleteButton.removeAttribute("disabled");
         }
       }
 
@@ -438,16 +440,18 @@ function prepareDeleteButtons(formLabel) {
       // Attach click event listener on the delete buttons of the new form
       prepareDeleteButtons(formLabel);
 
-      // Hide the add more button if we have 13 forms
+      // Disable the add more button if we have 13 forms
       if (isNameserversForm && formNum == 13) {
-        addButton.classList.add("display-none")
+        // addButton.classList.add("display-none");
+        addButton.setAttribute("disabled", "true");
       }
 
       if (isNameserversForm && forms.length >= 2) {
-        // Show the delete buttons on the nameservers
+        // Enable the delete buttons on the nameservers
         forms.forEach((form, index) => {
           Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-            deleteButton.classList.remove("display-none");
+            // deleteButton.classList.remove("display-none");
+            deleteButton.removeAttribute("disabled");
           });
         });
       }
