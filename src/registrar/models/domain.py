@@ -485,12 +485,11 @@ class Domain(TimeStampedModel, DomainHelper):
             addExtension: dict
             remExtension: dict
 
-        addExtension includes all dsData or keyData to be added
-        remExtension includes all dsData or keyData to be removed
+        addExtension includes all dsData to be added
+        remExtension includes all dsData to be removed
 
-        method operates on dsData OR keyData, never a mix of the two;
-        operates based on which is present in _dnssecdata;
-        if neither is present, addExtension will be empty dict, and
+        method operates on dsData;
+        if dsData is not present, addExtension will be empty dict, and
         remExtension will be all existing dnssecdata to be deleted
         """
 
@@ -523,32 +522,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 else:
                     addDnssecdata["dsData"] = None
 
-        elif _dnssecdata and _dnssecdata.keyData is not None:
-            # initialize addDnssecdata and remDnssecdata for keyData
-            addDnssecdata["keyData"] = _dnssecdata.keyData
-
-            if oldDnssecdata and len(oldDnssecdata.keyData) > 0:
-                # if existing keyData not in new keyData, mark for removal
-                keyDataForRemoval = [
-                    keyData
-                    for keyData in oldDnssecdata.keyData
-                    if keyData not in _dnssecdata.keyData
-                ]
-                if len(keyDataForRemoval) > 0:
-                    remDnssecdata["keyData"] = keyDataForRemoval
-
-                # if new keyData not in existing keyData, mark for add
-                keyDataForAdd = [
-                    keyData
-                    for keyData in _dnssecdata.keyData
-                    if keyData not in oldDnssecdata.keyData
-                ]
-                if len(keyDataForAdd) > 0:
-                    addDnssecdata["keyData"] = keyDataForAdd
         else:
-            # there are no new dsData or keyData, remove all
+            # there are no new dsData, remove all dsData from existing
             remDnssecdata["dsData"] = getattr(oldDnssecdata, "dsData", None)
-            remDnssecdata["keyData"] = getattr(oldDnssecdata, "keyData", None)
 
         return addDnssecdata, remDnssecdata
 
@@ -558,12 +534,10 @@ class Domain(TimeStampedModel, DomainHelper):
         addParams = {
             "maxSigLife": _addDnssecdata.get("maxSigLife", None),
             "dsData": _addDnssecdata.get("dsData", None),
-            "keyData": _addDnssecdata.get("keyData", None),
         }
         remParams = {
             "maxSigLife": _remDnssecdata.get("maxSigLife", None),
             "remDsData": _remDnssecdata.get("dsData", None),
-            "remKeyData": _remDnssecdata.get("keyData", None),
         }
         addRequest = commands.UpdateDomain(name=self.name)
         addExtension = commands.UpdateDomainDNSSECExtension(**addParams)
@@ -572,19 +546,9 @@ class Domain(TimeStampedModel, DomainHelper):
         remExtension = commands.UpdateDomainDNSSECExtension(**remParams)
         remRequest.add_extension(remExtension)
         try:
-            if (
-                "dsData" in _addDnssecdata
-                and _addDnssecdata["dsData"] is not None
-                or "keyData" in _addDnssecdata
-                and _addDnssecdata["keyData"] is not None
-            ):
+            if "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None:
                 registry.send(addRequest, cleaned=True)
-            if (
-                "dsData" in _remDnssecdata
-                and _remDnssecdata["dsData"] is not None
-                or "keyData" in _remDnssecdata
-                and _remDnssecdata["keyData"] is not None
-            ):
+            if "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None:
                 registry.send(remRequest, cleaned=True)
         except RegistryError as e:
             logger.error(
