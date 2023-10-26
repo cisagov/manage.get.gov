@@ -14,8 +14,6 @@ from ..models import Contact, DomainInformation, Domain
 from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
-    FLAG_CHOICES,
-    PROTOCOL_CHOICES,
 )
 
 
@@ -249,47 +247,6 @@ class DomainDsdataForm(forms.Form):
 
 DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
-    extra=0,
-    can_delete=True,
-)
-
-
-class DomainKeydataForm(forms.Form):
-    """Form for adding or editing DNSSEC Key Data to a domain."""
-
-    flag = forms.TypedChoiceField(
-        required=True,
-        label="Flag",
-        coerce=int,
-        choices=FLAG_CHOICES,
-        error_messages={"required": ("Flag is required.")},
-    )
-
-    protocol = forms.TypedChoiceField(
-        required=True,
-        label="Protocol",
-        coerce=int,
-        choices=PROTOCOL_CHOICES,
-        error_messages={"required": ("Protocol is required.")},
-    )
-
-    algorithm = forms.TypedChoiceField(
-        required=True,
-        label="Algorithm",
-        coerce=int,
-        choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
-        error_messages={"required": ("Algorithm is required.")},
-    )
-
-    pub_key = forms.CharField(
-        required=True,
-        label="Pub key",
-        error_messages={"required": ("Pub key is required.")},
-    )
-
-
-DomainKeydataFormset = formset_factory(
-    DomainKeydataForm,
     extra=0,
     can_delete=True,
 )

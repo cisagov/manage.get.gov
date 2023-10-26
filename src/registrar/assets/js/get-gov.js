@@ -406,3 +406,30 @@ function prepareDeleteButtons(formLabel) {
       }
   }
 })();
+
+/**
+ * An IIFE that triggers a modal on the DS Data Form under certain conditions
+ *
+ */
+(function triggerModalOnDsDataForm() {
+  let saveButon = document.querySelector("#save-ds-data");
+
+  // The view context will cause a hitherto hidden modal trigger to
+  // show up. On save, we'll test for that modal trigger appearing. We'll
+  // run that test once every 100 ms for 5 secs, which should balance performance
+  // while accounting for network or lag issues.
+  if (saveButon) {
+    let i = 0;
+    var tryToTriggerModal = setInterval(function() {
+        i++;
+        if (i > 100) {
+          clearInterval(tryToTriggerModal);
+        }
+        let modalTrigger = document.querySelector("#ds-toggle-dnssec-alert");
+        if (modalTrigger) {
+          modalTrigger.click()
+          clearInterval(tryToTriggerModal);
+        }
+    }, 50);
+  }
+})();
