@@ -1,5 +1,7 @@
+import csv
 import logging
 from django import forms
+from django.http import HttpResponse
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -747,7 +749,35 @@ class DomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
+    change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state"]
+    # actions = ['export_data']
+    
+    # Define a custom view for data export
+    def export_static_data(self, request):
+        # Your data export logic here
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="data_export.csv"'
+        writer = csv.writer(response)
+        # Write your data to the CSV here
+        writer.writerow(['Name', 'State', ...])  # Include the appropriate headers
+        # Loop through and write your data rows
+        for data_row in Domain.objects.all():
+            writer.writerow([data_row.name, data_row.state, ...])  # Include the appropriate fields
+        return response
+    
+    def get_urls(self):
+        from django.urls import path
+        
+        urlpatterns = super().get_urls()
+
+        info = self.model._meta.app_label, self.model._meta.model_name
+
+        my_url = [
+            path('export-static-data/', self.export_static_data, name='%s_%s_export_static_data' % info),
+        ]
+
+        return my_url + urlpatterns
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
