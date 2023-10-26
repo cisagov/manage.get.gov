@@ -9,6 +9,14 @@ from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignor
 
 from django.db import models
 from typing import Any
+
+
+from registrar.utility.errors import (
+    ActionNotAllowed,
+    NameserverError,
+    NameserverErrorCodes as nsErrorCodes,
+)
+
 from epplibwrapper import (
     CLIENT as registry,
     commands,
@@ -19,14 +27,7 @@ from epplibwrapper import (
     ErrorCode,
 )
 
-from registrar.utility.errors import (
-    ActionNotAllowed,
-    NameserverError,
-    NameserverErrorCodes as nsErrorCodes,
-)
-
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
-
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
