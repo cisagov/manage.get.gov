@@ -499,10 +499,15 @@ class DomainDsDataView(DomainFormBaseView):
             self.object.dnssecdata = dnssecdata
         except RegistryError as err:
             if err.is_connection_error():
-                messages.error(self.request, GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY))
+                messages.error(
+                    self.request,
+                    GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
+                )
                 logger.error(f"Registry connection error: {err}")
             else:
-                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+                messages.error(
+                    self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
+                )
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
