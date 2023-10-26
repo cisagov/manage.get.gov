@@ -174,3 +174,4 @@ docs/compliance/.trestle/cache
 src/migrationdata/20231009.domaintypes.adhoc.dotgov.txt
 src/migrationdata/20231009.domainadditionaldatalink.adhoc.dotgov.txt
 src/migrationdata/20231009.agency.adhoc.dotgov.txt
+src/migrationdata/20231009.organization.adhoc.dotgov.txt
