@@ -56,6 +56,14 @@
             {% for item in value %}
             {% if users %}
               <li>{{ item.user.email }}</li>
+            {% elif domains %}
+              <li>{{ item.0 }}
+                {% if item.1 %}
+                ({% for addr in item.1 %}
+                  {{addr}}
+                {% endfor %})
+                {% endif %}
+              </li>
             {% else %}
               <li>{{ item }}</li>
             {% endif %}
