@@ -1,6 +1,6 @@
 # common.py
 #
-# ALGORITHM_CHOICES are options for alg attribute in DS Data and Key Data
+# ALGORITHM_CHOICES are options for alg attribute in DS Data
 # reference:
 # https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml
 ALGORITHM_CHOICES = [
@@ -23,16 +23,4 @@ ALGORITHM_CHOICES = [
 DIGEST_TYPE_CHOICES = [
     (0, "(0) Reserved"),
     (1, "(1) SHA-256"),
-]
-# PROTOCOL_CHOICES are options for protocol attribute in Key Data
-# reference: https://datatracker.ietf.org/doc/html/rfc4034#section-2.1.2
-PROTOCOL_CHOICES = [
-    (3, "(3) DNSSEC"),
-]
-# FLAG_CHOICES are options for flags attribute in Key Data
-# reference: https://datatracker.ietf.org/doc/html/rfc4034#section-2.1.1
-FLAG_CHOICES = [
-    (0, "(0)"),
-    (256, "(256) ZSK"),
-    (257, "(257) KSK"),
 ]

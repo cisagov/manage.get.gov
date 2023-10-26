@@ -1,5 +1,4 @@
 from auditlog.registry import auditlog  # type: ignore
-
 from .contact import Contact
 from .domain_application import DomainApplication
 from .domain_information import DomainInformation

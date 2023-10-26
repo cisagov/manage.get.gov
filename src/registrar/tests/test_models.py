@@ -14,7 +14,8 @@ from registrar.models import (
     UserDomainRole,
 )
 
-import boto3_mocking  # type: ignore
+import boto3_mocking
+from registrar.models.transition_domain import TransitionDomain  # type: ignore
 from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
@@ -612,3 +613,48 @@ class TestInvitations(TestCase):
         """A new user's first_login callback retrieves their invitations."""
         self.user.first_login()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
+
+
+class TestUser(TestCase):
+    """For now, just test actions that
+    occur on user login."""
+
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.domain_name = "igorvilleInTransition.gov"
+        self.user, _ = User.objects.get_or_create(email=self.email)
+
+        # clean out the roles each time
+        UserDomainRole.objects.all().delete()
+
+        TransitionDomain.objects.get_or_create(
+            username="mayor@igorville.gov", domain_name=self.domain_name
+        )
+
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        TransitionDomain.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_check_transition_domains_on_login(self):
+        """A new user's first_login callback checks transition domains.
+        Makes DomainInformation object."""
+        self.domain, _ = Domain.objects.get_or_create(name=self.domain_name)
+
+        self.user.first_login()
+        self.assertTrue(DomainInformation.objects.get(domain=self.domain))
+
+    def test_check_transition_domains_without_domains_on_login(self):
+        """A new user's first_login callback checks transition domains.
+        This test makes sure that in the event a domain does not exist
+        for a given transition domain, both a domain and domain invitation
+        are created."""
+        self.user.first_login()
+        self.assertTrue(Domain.objects.get(name=self.domain_name))
+
+        domain = Domain.objects.get(name=self.domain_name)
+        self.assertTrue(DomainInvitation.objects.get(email=self.email, domain=domain))
+        self.assertTrue(DomainInformation.objects.get(domain=domain))
