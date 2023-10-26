@@ -256,7 +256,7 @@ function prepareDeleteButtons(formLabel) {
 
     let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
     let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
-    // For the eample on Nameservers
+    // For the example on Nameservers
     let formExampleRegex = RegExp(`ns(\\d+){1}`, 'g');
 
     forms.forEach((form, index) => {
@@ -275,31 +275,35 @@ function prepareDeleteButtons(formLabel) {
       // h2 and legend for DS form, label for nameservers  
       Array.from(form.querySelectorAll('h2, legend, label, p')).forEach((node) => {
         
-        // Ticket: 1192
-        // if (isNameserversForm && index <= 1 && !node.innerHTML.includes('*')) {
-        // // Create a new element
-        // const newElement = document.createElement('abbr');
-        // newElement.textContent = '*';
-        // // TODO: finish building abbr
+        // If the node is a nameserver label, one of the first 2 which was previously 3 and up (not required)
+        // inject the USWDS required markup and make sure the INPUT is required
+        if (isNameserversForm && index <= 1 && node.innerHTML.includes('server') && !node.innerHTML.includes('*')) {
+          // Create a new element
+          const newElement = document.createElement('abbr');
+          newElement.textContent = '*';
+          newElement.setAttribute("title", "required");
+          newElement.classList.add("usa-hint", "usa-hint--required");
 
-        // // Append the new element to the parent
-        // node.appendChild(newElement);
-        //   // Find the next sibling that is an input element
-        //   let nextInputElement = node.nextElementSibling;
+          // Append the new element to the label
+          node.appendChild(newElement);
+          // Find the next sibling that is an input element
+          let nextInputElement = node.nextElementSibling;
 
-        //   while (nextInputElement) {
-        //     if (nextInputElement.tagName === 'INPUT') {
-        //       // Found the next input element
-        //       console.log(nextInputElement);
-        //       break;
-        //     }
-        //     nextInputElement = nextInputElement.nextElementSibling;
-        //   }
-        //   nextInputElement.required = true;
-        // }
+          while (nextInputElement) {
+            if (nextInputElement.tagName === 'INPUT') {
+              // Found the next input element
+              nextInputElement.setAttribute("required", "")
+              break;
+            }
+            nextInputElement = nextInputElement.nextElementSibling;
+          }
+          nextInputElement.required = true;
+        }
 
-        // Ticket: 1192 - remove if
-        if (!(isNameserversForm && index <= 1)) {
+        let innerSpan = node.querySelector('span')
+        if (innerSpan) {
+          innerSpan.textContent = innerSpan.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
+        } else {
           node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
           node.textContent = node.textContent.replace(formExampleRegex, `ns${index + 1}`);
         }
@@ -308,6 +312,13 @@ function prepareDeleteButtons(formLabel) {
       // Remove the add more button if we have less than 13 forms
       if (isNameserversForm && forms.length <= 13) {
         addButton.classList.remove("display-none")
+      }
+
+      if (isNameserversForm && forms.length < 3) {
+        // Hide the delete buttons on the remaining nameservers
+        Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
+          deleteButton.classList.add("display-none");
+        });
       }
     
     });
@@ -350,6 +361,33 @@ function prepareDeleteButtons(formLabel) {
       let formLabelRegex = RegExp(`${formLabel} (\\d){1}`, 'g');
       // For the eample on Nameservers
       let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
+
+      // Some Nameserver form checks since the delete can mess up the source object we're copying
+      // in regards to required fileds and hidden delete buttons
+      if (isNameserversForm) {
+
+        // If the source element we're copying has required on an input,
+        // reset that input
+        let formRequiredNeedsCleanUp = newForm.innerHTML.includes('*');
+        if (formRequiredNeedsCleanUp) {
+          newForm.querySelector('label abbr').remove();
+          // Get all input elements within the container
+          const inputElements = newForm.querySelectorAll("input");
+          // Loop through each input element and remove the 'required' attribute
+          inputElements.forEach((input) => {
+            if (input.hasAttribute("required")) {
+              input.removeAttribute("required");
+            }
+          });
+        }
+
+        // If the source element we're copying has an invisible delete button,
+        // show that button
+        let deleteButtonNeedsCleanUp = newForm.querySelector('.delete-record').classList.contains("display-none");
+        if (deleteButtonNeedsCleanUp) {
+          newForm.querySelector('.delete-record').classList.remove("display-none");
+        }
+      }
 
       formNum++;
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum-1}-`);
@@ -403,6 +441,15 @@ function prepareDeleteButtons(formLabel) {
       // Hide the add more button if we have 13 forms
       if (isNameserversForm && formNum == 13) {
         addButton.classList.add("display-none")
+      }
+
+      if (isNameserversForm && forms.length >= 2) {
+        // Show the delete buttons on the nameservers
+        forms.forEach((form, index) => {
+          Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
+            deleteButton.classList.remove("display-none");
+          });
+        });
       }
   }
 })();
