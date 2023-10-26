@@ -51,7 +51,7 @@ class EPPConnectionPool(ConnectionPool):
             self.keepalive = options["keepalive"]
 
         # Determines the period in which new
-        # gevent threads are spun up. 
+        # gevent threads are spun up.
         # This time period is in seconds. So for instance, .1 would be .1 seconds.
         self.spawn_frequency = 0.1
         if "spawn_frequency" in options:
