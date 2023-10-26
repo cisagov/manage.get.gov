@@ -1,4 +1,6 @@
 import logging
+import os
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -59,3 +61,48 @@ class TerminalHelper:
         # DEBUG:
         if print_condition:
             logger.info(print_statement)
+
+
+    def execute_command(command_string:str):
+        """Executes the given command string"""
+
+        logger.info(f"""{TerminalColors.OKCYAN}
+        ==== EXECUTING... ====
+        {TerminalColors.ENDC}""")
+        os.system(f"{command_string}")
+    
+
+    def prompt_for_execution(system_exit_on_terminate: bool, command_string: str, prompt_title: str) -> bool:
+        """Prompts the user to inspect the given terminal command string
+        and asks if they wish to execute it.  If the user responds (y),
+        execute the command"""
+
+        action_description_for_selecting_no = "skip"
+        if system_exit_on_terminate:
+            action_description_for_selecting_no = "exit"
+
+        # Allow the user to inspect the command string
+        # and ask if they wish to proceed
+        proceed_execution = TerminalHelper.query_yes_no(
+            f"""{TerminalColors.OKCYAN}
+            =====================================================
+            {prompt_title}
+            =====================================================
+            *** IMPORTANT:  VERIFY THE FOLLOWING COMMAND LOOKS CORRECT ***
+
+            {command_string}
+            {TerminalColors.FAIL}
+            Proceed? (Y = proceed, N = {action_description_for_selecting_no})
+            {TerminalColors.ENDC}"""
+        )
+
+        # If the user decided to proceed executing the command,
+        # run the command for loading transition domains.
+        # Otherwise, exit this subroutine.
+        if not proceed_execution:
+            if system_exit_on_terminate:
+                sys.exit()
+            return False
+        
+        TerminalHelper.execute_command(command_string)
+        return True

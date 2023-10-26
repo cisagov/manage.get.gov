@@ -105,8 +105,8 @@ class Command(BaseCommand):
         logger.info(
             f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
-            Created {total_new_entries} transition domain entries,
-            Updated {total_updated_domain_entries} transition domain entries
+            Created {total_new_entries} domain entries,
+            Updated {total_updated_domain_entries} domain entries
 
             Created {total_domain_invitation_entries} domain invitation entries
             (NOTE: no invitations are SENT in this script)

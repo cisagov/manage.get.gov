@@ -2,5 +2,3 @@ Anomaly.gov|muahaha|
 TestDomain.gov|ok|
 NEHRP.GOV|serverHold|
 NELSONCOUNTY-VA.GOV|Hold|
-NEMI.GOV|clientHold|
-NERSC.GOV|ok|
