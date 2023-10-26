@@ -155,7 +155,18 @@ From this directory, run the following command:
 ```
 
 NOTE: This will look for all files in /tmp with the .txt extension, but this can
-be changed if you are dealing with different extensions.
+be changed if you are dealing with different extensions. For instance, a .tar.gz could be expressed
+as `--file_extension tar.gz`.
+
+If you are using a tar.gz file, you will need to perform one additional step to extract it.
+Run the following command from the same directory:
+```shell
+tar -xvf migrationdata/{FILE_NAME}.tar.gz -C migrationdata/ --strip-components=1
+```
+
+*FILE_NAME* - Name of the desired file, ex: exportdata
+
+
 
 #### Manual method
 If the `cat_files_into_getgov.py` script isn't working, follow these steps instead.
