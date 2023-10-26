@@ -261,7 +261,13 @@ class Domain(TimeStampedModel, DomainHelper):
         doesn't add the created host to the domain
         returns ErrorCode (int)"""
         if addrs is not None and addrs != []:
-            addresses = [epp.Ip(addr=addr) for addr in addrs]
+            addresses = [
+                epp.Ip(
+                    addr=addr,
+                    ip="v6" if self.is_ipv6(addr) else None
+                )
+                for addr in addrs
+            ]
             request = commands.CreateHost(name=host, addrs=addresses)
         else:
             request = commands.CreateHost(name=host)
@@ -1541,10 +1547,12 @@ class Domain(TimeStampedModel, DomainHelper):
             return []
 
         for ip_addr in ip_list:
-            if self.is_ipv6(ip_addr):
-                edited_ip_list.append(epp.Ip(addr=ip_addr, ip="v6"))
-            else:  # default ip addr is v4
-                edited_ip_list.append(epp.Ip(addr=ip_addr))
+            edited_ip_list.append(
+                epp.Ip(
+                    addr=ip_addr,
+                    ip="v6" if self.is_ipv6(ip_addr) else None
+                )
+            )
 
         return edited_ip_list
 
