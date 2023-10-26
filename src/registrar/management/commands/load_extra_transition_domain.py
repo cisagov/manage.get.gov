@@ -65,14 +65,19 @@ class Command(BaseCommand):
         )
         parser.add_argument("--sep", default="|", help="Delimiter character")
 
-    def handle(self, *args, **options):
-        self.data = ExtraTransitionDomain(
-            agency_adhoc_filename=options['agency_adhoc_filename'], 
-            domain_additional_filename=options['domain_additional_filename'], 
-            domain_adhoc_filename=options['domain_adhoc_filename'],
-            organization_adhoc_filename=options['organization_adhoc_filename'],
-            directory=options['directory'],
-            seperator=options['sep']
-        )
-        
+    def handle(self, **options):
+        try:
+            self.domain_object = ExtraTransitionDomain(
+                agency_adhoc_filename=options['agency_adhoc_filename'], 
+                domain_additional_filename=options['domain_additional_filename'], 
+                domain_adhoc_filename=options['domain_adhoc_filename'],
+                organization_adhoc_filename=options['organization_adhoc_filename'],
+                directory=options['directory'],
+                seperator=options['sep']
+            )
+            self.domain_object.parse_all_files()
+        except Exception as err:
+            logger.error(f"Could not load additional data. Error: {err}")
+        else:
+            
 
