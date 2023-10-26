@@ -10,15 +10,13 @@
     </a>
     </li>
     <li>
-        {% comment %} <button type="button" class="button" id="custom-button-1">Custom Button 1</button>
-        <input type="submit" value="Place hold" name="_place_client_hold"> {% endcomment %}
-        <a href="{% url 'admin:registrar_domain_export_static_data' %}" class="button">Export Data</a>
+        <a href="{% url 'admin:registrar_domain_export_data_type' %}" class="button">Export domains (type)</a>
     </li>
     <li>
-        <button type="button" class="button" id="custom-button-2">Custom Button 2</button>
+        <a href="{% url 'admin:registrar_domain_export_data_full' %}" class="button">Export domains (full)</a>
     </li>
     <li>
-        <button type="button" class="button" id="custom-button-3">Custom Button 3</button>
+        <a href="{% url 'admin:registrar_domain_export_data_federal' %}" class="button">Export domains (federal)</a>
     </li>
     {% endif %}
 </ul>

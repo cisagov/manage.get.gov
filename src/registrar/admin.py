@@ -11,6 +11,7 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
+from registrar.models.domain_information import DomainInformation
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from . import models
 from auditlog.models import LogEntry  # type: ignore
@@ -751,11 +752,70 @@ class DomainAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/domain_change_form.html"
     change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state"]
-    # actions = ['export_data']
     
-    # Define a custom view for data export
-    def export_static_data(self, request):
-        # Your data export logic here
+    def export_data_type(self, request):
+        # match the CSV example with all the fields
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="data_export.csv"'
+        writer = csv.writer(response)
+        # Write your data to the CSV here
+        writer.writerow(
+            [
+                'Domain name',
+                'Domain type',
+                'Federal agency',
+                'Organization name',
+                'City',
+                'State',
+                'AO',
+                'AO email',
+                'Submitter',
+                'Submitter title',
+                'Submitter email',
+                'Submitter phone',
+                'Security Contact Email',
+                'Status',
+                # 'Expiration Date'
+            ]
+        )  # Include the appropriate headers
+        # Loop through and write your data rows
+        for domain in Domain.objects.all():
+            domain_information, _ = DomainInformation.objects.get_or_create(domain=domain)
+            writer.writerow(
+                [
+                    domain.name,
+                    domain_information.federal_type,
+                    domain_information.federal_agency,
+                    domain_information.organization_name,
+                    domain_information.city,
+                    domain_information.state_territory,
+                    domain_information.authorizing_official.first_name + " " + domain_information.authorizing_official.last_name,
+                    domain_information.authorizing_official.email,
+                    domain_information.submitter.first_name + " " + domain_information.submitter.last_name,
+                    domain_information.submitter.title,
+                    domain_information.submitter.email,
+                    domain_information.submitter.phone,
+                    domain.security_contact.email if domain.security_contact else " ",
+                    domain.state,
+                    # domain.expiration_date,
+                ]
+            )  # Include the appropriate fields
+        return response
+    
+    def export_data_full(self, request):
+        # Smaller export based on 1
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="data_export.csv"'
+        writer = csv.writer(response)
+        # Write your data to the CSV here
+        writer.writerow(['Name', 'State', ...])  # Include the appropriate headers
+        # Loop through and write your data rows
+        for data_row in Domain.objects.all():
+            writer.writerow([data_row.name, data_row.state, ...])  # Include the appropriate fields
+        return response
+    
+    def export_data_federal(self, request):
+        # Federal only
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="data_export.csv"'
         writer = csv.writer(response)
@@ -774,7 +834,9 @@ class DomainAdmin(ListHeaderAdmin):
         info = self.model._meta.app_label, self.model._meta.model_name
 
         my_url = [
-            path('export-static-data/', self.export_static_data, name='%s_%s_export_static_data' % info),
+            path('export_data_type/', self.export_data_type, name='%s_%s_export_data_type' % info),
+            path('export_data_full/', self.export_data_full, name='%s_%s_export_data_full' % info),
+            path('export_data_federal/', self.export_data_federal, name='%s_%s_export_data_federal' % info),
         ]
 
         return my_url + urlpatterns
