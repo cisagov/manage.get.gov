@@ -115,8 +115,16 @@ class ExportDataTest(TestCase):
         # self.maxDiff = None
 
         # Normalize line endings and remove commas, spaces and leading/trailing whitespace
-        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip() #noqa
-        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip() #noqa
+        csv_content = (
+            csv_content.replace(",,", "")
+            .replace(",", "")
+            .replace(" ", "")
+            .replace("\r\n", "\n")
+            .strip()
+        )
+        expected_content = (
+            expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        )
 
         self.assertEqual(csv_content, expected_content)
 
@@ -162,7 +170,15 @@ class ExportDataTest(TestCase):
         )
 
         # Normalize line endings and remove commas, spaces and leading/trailing whitespace
-        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip() #noqa
-        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip() #noqa
+        csv_content = (
+            csv_content.replace(",,", "")
+            .replace(",", "")
+            .replace(" ", "")
+            .replace("\r\n", "\n")
+            .strip()
+        ) 
+        expected_content = (
+            expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        )
 
         self.assertEqual(csv_content, expected_content)
