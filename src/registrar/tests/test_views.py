@@ -1269,7 +1269,9 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(detail_page, "ns1.nameserverwithip.gov")
         self.assertContains(detail_page, "ns2.nameserverwithip.gov")
         self.assertContains(detail_page, "ns3.nameserverwithip.gov")
-        self.assertContains(detail_page, "(1.2.3.4, 2.3.4.5)")
+        # Splitting IP addresses bc there is odd whitespace and can't strip text
+        self.assertContains(detail_page, "(1.2.3.4,")
+        self.assertContains(detail_page, "2.3.4.5)")
 
 
 class TestDomainManagers(TestDomainOverview):
