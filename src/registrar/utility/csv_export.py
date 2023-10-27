@@ -1,4 +1,5 @@
 import csv
+from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
 from registrar.models.public_contact import PublicContact
 
@@ -25,16 +26,28 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             "State": domainInfo.state_territory,
             "AO": domainInfo.authorizing_official.first_name
             + " "
-            + domainInfo.authorizing_official.last_name,
-            "AO email": domainInfo.authorizing_official.email,
+            + domainInfo.authorizing_official.last_name
+            if domainInfo.authorizing_official
+            else " ",
+            "AO email": domainInfo.authorizing_official.email
+            if domainInfo.authorizing_official
+            else " ",
             "Submitter": domainInfo.submitter.first_name
             + " "
-            + domainInfo.submitter.last_name,
-            "Submitter title": domainInfo.submitter.title,
-            "Submitter email": domainInfo.submitter.email,
-            "Submitter phone": domainInfo.submitter.phone,
+            + domainInfo.submitter.last_name
+            if domainInfo.submitter
+            else " ",
+            "Submitter title": domainInfo.submitter.title
+            if domainInfo.submitter
+            else " ",
+            "Submitter email": domainInfo.submitter.email
+            if domainInfo.submitter
+            else " ",
+            "Submitter phone": domainInfo.submitter.phone
+            if domainInfo.submitter
+            else " ",
             "Security Contact Email": security_contacts[0].email
-            if security_contacts.exists()
+            if security_contacts
             else " ",
             "Status": domainInfo.domain.state,
         }
@@ -62,7 +75,7 @@ def export_data_type_to_csv(csv_file):
         # 'Expiration Date'
     ]
     sort_fields = ["domain__name"]
-    filter_condition = {}
+    filter_condition = {"domain__state": Domain.State.READY}
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)
 
 
@@ -79,7 +92,7 @@ def export_data_full_to_csv(csv_file):
         "Security Contact Email",
     ]
     sort_fields = ["domain__name", "federal_agency", "organization_type"]
-    filter_condition = {}
+    filter_condition = {"domain__state": Domain.State.READY}
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)
 
 
@@ -96,5 +109,5 @@ def export_data_federal_to_csv(csv_file):
         "Security Contact Email",
     ]
     sort_fields = ["domain__name", "federal_agency", "organization_type"]
-    filter_condition = {"organization_type__icontains": "federal"}
+    filter_condition = {"organization_type__icontains": "federal", "domain__state": Domain.State.READY}
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)
