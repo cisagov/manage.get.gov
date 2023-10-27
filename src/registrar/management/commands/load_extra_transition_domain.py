@@ -8,33 +8,17 @@ import os
 from typing import List
 from enum import Enum
 from django.core.management import BaseCommand
-from .utility.extra_transition_domain import ExtraTransitionDomain
 
+from registrar.models.transition_domain import TransitionDomain
+from .utility.extra_transition_domain import ExtraTransitionDomain
+from .utility.epp_data_containers import AgencyAdhoc, DomainAdditionalData, DomainTypeAdhoc, OrganizationAdhoc, EnumFilenames
 
 logger = logging.getLogger(__name__)
 
-class EnumFilenames(Enum):
-    AGENCY_ADHOC = "agency.adhoc.dotgov.txt"
-    DOMAIN_ADDITIONAL = "domainadditionaldatalink.adhoc.dotgov.txt"
-    DOMAIN_ADHOC = "domaintypes.adhoc.dotgov.txt"
-    ORGANIZATION_ADHOC = "organization.adhoc.dotgov.txt"
 
 class Command(BaseCommand):
     help = ""
-
     filenames = EnumFilenames
-
-    strip_date_regex = re.compile(r'\d+\.(.+)')
-    # While the prefix of these files typically includes the date,
-    # the rest of them following a predefined pattern. Define this here,
-    # and search for that to infer what is wanted.
-    filename_pattern_mapping = {
-        # filename - regex to use when encountered
-        filenames.AGENCY_ADHOC: strip_date_regex,
-        filenames.DOMAIN_ADDITIONAL: strip_date_regex,
-        filenames.DOMAIN_ADHOC: strip_date_regex,
-        filenames.ORGANIZATION_ADHOC: strip_date_regex
-    }
 
     def add_arguments(self, parser):
         """Add filename arguments."""
@@ -45,22 +29,22 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--agency_adhoc_filename",
-            default=self.filenames.AGENCY_ADHOC,
+            default=self.filenames.AGENCY_ADHOC[1],
             help="Defines the filename for agency adhocs",
         )
         parser.add_argument(
             "--domain_additional_filename",
-            default=self.filenames.DOMAIN_ADDITIONAL,
+            default=self.filenames.DOMAIN_ADDITIONAL[1],
             help="Defines the filename for additional domain data",
         )
         parser.add_argument(
             "--domain_adhoc_filename",
-            default=self.filenames.DOMAIN_ADHOC,
+            default=self.filenames.DOMAIN_ADHOC[1],
             help="Defines the filename for domain type adhocs",
         )
         parser.add_argument(
             "--organization_adhoc_filename",
-            default=self.filenames.ORGANIZATION_ADHOC,
+            default=self.filenames.ORGANIZATION_ADHOC[1],
             help="Defines the filename for domain type adhocs",
         )
         parser.add_argument("--sep", default="|", help="Delimiter character")
@@ -79,5 +63,30 @@ class Command(BaseCommand):
         except Exception as err:
             logger.error(f"Could not load additional data. Error: {err}")
         else:
-            
+            for transition_domain in TransitionDomain.objects.all():
+                transition_domain.organization_type
 
+    def get_organization_adhoc(self, desired_id):
+        """Grabs adhoc information for organizations. Returns an organization
+        dictionary
+        
+        returns: 
+        { 
+            "
+        }
+        """
+        return self.get_object_by_id(self.filenames.ORGANIZATION_ADHOC, desired_id)
+    
+    def get_domain_adhoc(self, desired_id):
+        """"""
+        return self.get_object_by_id(self.filenames.DOMAIN_ADHOC, desired_id)
+    
+    def get_agency_adhoc(self, desired_id):
+        """"""
+        return self.get_object_by_id(self.filenames.AGENCY_ADHOC, desired_id)
+    
+    def get_object_by_id(self, file_type: EnumFilenames, desired_id):
+        """"""
+        desired_type = self.domain_object.csv_data.get(file_type)
+        obj = desired_type.get(desired_id)
+        return obj

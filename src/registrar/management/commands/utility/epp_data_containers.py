@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 @dataclass
@@ -39,3 +40,13 @@ class OrganizationAdhoc():
     orgstate: Optional[str] = None
     orgzip: Optional[str] = None
     orgcountrycode: Optional[str] = None
+
+class EnumFilenames(Enum):
+    """Returns a tuple mapping for (filetype, default_file_name). 
+    
+    For instance, AGENCY_ADHOC = ("agency_adhoc", "agency.adhoc.dotgov.txt")
+    """
+    AGENCY_ADHOC = ("agency_adhoc", "agency.adhoc.dotgov.txt")
+    DOMAIN_ADDITIONAL = ("domain_additional", "domainadditionaldatalink.adhoc.dotgov.txt")
+    DOMAIN_ADHOC = ("domain_adhoc", "domaintypes.adhoc.dotgov.txt")
+    ORGANIZATION_ADHOC = ("organization_adhoc", "organization.adhoc.dotgov.txt")
