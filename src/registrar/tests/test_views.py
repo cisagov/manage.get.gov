@@ -1406,7 +1406,7 @@ class TestDomainNameservers(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  form requires a minimum of 2 name servers
-        self.assertContains(result, "This field is required.", count=2, status_code=200)
+        self.assertContains(result, "A minimum of 2 Name Servers are required.", count=2, status_code=200)
 
     def test_domain_nameservers_form_submit_subdomain_missing_ip(self):
         """Can change domain's nameservers.
@@ -1573,7 +1573,7 @@ class TestDomainNameservers(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears four times, twice at the top of the page,
         # once around each required field.
-        self.assertContains(result, "This field is required", count=4, status_code=200)
+        self.assertContains(result, "A minimum of 2 Name Servers are required.", count=4, status_code=200)
 
 
 class TestDomainAuthorizingOfficial(TestDomainOverview):
