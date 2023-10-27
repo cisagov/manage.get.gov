@@ -31,26 +31,24 @@ class DomainNameserverForm(forms.Form):
 
     domain = forms.CharField(widget=forms.HiddenInput, required=False)
 
-    server = forms.CharField(
-        label="Name server",
-        strip=True
-    
-    )
+    server = forms.CharField(label="Name server", strip=True)
 
     ip = forms.CharField(
         label="IP Address (IPv4 or IPv6)",
         strip=True,
         required=False,
     )
-    
+
     def __init__(self, *args, **kwargs):
         super(DomainNameserverForm, self).__init__(*args, **kwargs)
 
         # add custom error messages
-        self.fields['server'].error_messages.update({
-            'required': 'A minimum of 2 Name Servers are required.',
-        })
-        
+        self.fields["server"].error_messages.update(
+            {
+                "required": "A minimum of 2 Name Servers are required.",
+            }
+        )
+
     def clean(self):
         # clean is called from clean_forms, which is called from is_valid
         # after clean_fields.  it is used to determine form level errors.
