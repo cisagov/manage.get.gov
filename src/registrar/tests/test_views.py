@@ -1139,6 +1139,7 @@ class TestWithDomainPermissions(TestWithUser):
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
             DomainApplication.objects.all().delete()
+            DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
