@@ -176,7 +176,7 @@ class ExportDataTest(TestCase):
             .replace(" ", "")
             .replace("\r\n", "\n")
             .strip()
-        ) 
+        )
         expected_content = (
             expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
         )
