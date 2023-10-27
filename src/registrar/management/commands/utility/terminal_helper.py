@@ -2,6 +2,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class TerminalColors:
     """Colors for terminal outputs
     (makes reading the logs WAY easier)"""
@@ -17,8 +18,8 @@ class TerminalColors:
     UNDERLINE = "\033[4m"
     BackgroundLightYellow = "\033[103m"
 
-class TerminalHelper:
 
+class TerminalHelper:
     def query_yes_no(question: str, default="yes") -> bool:
         """Ask a yes/no question via raw_input() and return their answer.
 

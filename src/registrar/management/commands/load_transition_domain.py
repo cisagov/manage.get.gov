@@ -88,9 +88,6 @@ class Command(BaseCommand):
         parser.add_argument(
             "domain_statuses_filename", help="Data file with domain status information"
         )
-        parser.add_argument(
-            "--loadExtraData", default=True, help="Determines if additional metadata should be applied"
-        )
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
 
@@ -326,9 +323,6 @@ class Command(BaseCommand):
 
         # print message to terminal about which args are in use
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
-        
-        if load_extra_data:
-            
 
         # STEP 1:
         # Create mapping of domain name -> status
