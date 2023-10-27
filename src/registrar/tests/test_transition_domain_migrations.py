@@ -138,21 +138,21 @@ class TestLogins(TestCase):
         
         self.run_master_script()
 
-        # TODO: instead of patching....there has got to be a way of making sure subsequent commands use the django database
-        # Patch subroutines for migrations
-        def side_effect():
-            self.run_load_domains()
-            self.run_transfer_domains()
-        patcher = patch("registrar.management.commands.master_domain_migrations.Command.run_migration_scripts")
-        mocked_get = patcher.start()
-        mocked_get.side_effect = side_effect
-        # Patch subroutines for sending invitations
-        def side_effect():
-            # TODO: what should happen here?
-            return
-        patcher = patch("registrar.management.commands.master_domain_migrations.Command.run_send_invites_script")
-        mocked_get = patcher.start()
-        mocked_get.side_effect = side_effect
+        # # TODO: instead of patching....there has got to be a way of making sure subsequent commands use the django database
+        # # Patch subroutines for migrations
+        # def side_effect():
+        #     self.run_load_domains()
+        #     self.run_transfer_domains()
+        # patcher = patch("registrar.management.commands.master_domain_migrations.Command.run_migration_scripts")
+        # mocked_get = patcher.start()
+        # mocked_get.side_effect = side_effect
+        # # Patch subroutines for sending invitations
+        # def side_effect():
+        #     # TODO: what should happen here?
+        #     return
+        # patcher = patch("registrar.management.commands.master_domain_migrations.Command.run_send_invites_script")
+        # mocked_get = patcher.start()
+        # mocked_get.side_effect = side_effect
 
         # STEP 2: (analyze the tables just like the migration script does, but add assert statements)
         expected_total_transition_domains = 8

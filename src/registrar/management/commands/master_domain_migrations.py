@@ -296,7 +296,7 @@ class Command(BaseCommand):
         # TODO: make this somehow run inside TerminalHelper prompt
         call_command(
             command_script,
-            s=True
+            send_emails=True
             )
 
     def run_migration_scripts(self,

@@ -61,15 +61,6 @@ class TerminalHelper:
         # DEBUG:
         if print_condition:
             logger.info(print_statement)
-
-
-    def execute_command(command_string:str):
-        """Executes the given command string"""
-
-        logger.info(f"""{TerminalColors.OKCYAN}
-        ==== EXECUTING... ====
-        {TerminalColors.ENDC}""")
-        os.system(f"{command_string}")
     
 
     def prompt_for_execution(system_exit_on_terminate: bool, 
