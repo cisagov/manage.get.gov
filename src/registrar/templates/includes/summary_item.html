@@ -57,11 +57,14 @@
             {% if users %}
               <li>{{ item.user.email }}</li>
             {% elif domains %}
-              <li>{{ item.0 }}
+              <li>
+                {{ item.0 }}
                 {% if item.1 %}
-                ({% for addr in item.1 %}
-                  {{addr}}
-                {% endfor %})
+                  ({% spaceless %}
+                  {% for addr in item.1 %}
+                    {{addr}}{% if not forloop.last %}, {% endif %}
+                  {% endfor %}
+                  {% endspaceless %})
                 {% endif %}
               </li>
             {% else %}

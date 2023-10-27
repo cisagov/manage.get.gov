@@ -230,44 +230,6 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     @Cache
-    def format_nameservers(self):
-        """
-        Formatting nameservers for display for this domain.
-
-        Hosts are provided as a list of tuples, e.g.
-
-            [("ns1.example.com",), ("ns1.example.gov", ["0.0.0.0"])]
-
-        We want to display as:
-            ns1.example.gov
-            ns1.example.gov (0.0.0.0)
-
-        Subordinate hosts (something.your-domain.gov) MUST have IP addresses,
-        while non-subordinate hosts MUST NOT.
-
-
-        """
-        try:
-            hosts = self._get_property("hosts")
-        except Exception as err:
-            # Do not raise error when missing nameservers
-            # this is a standard occurence when a domain
-            # is first created
-            logger.info("Domain is missing nameservers %s" % err)
-            return []
-
-        hostList = []
-        for host in hosts:
-            # can remove str conversion when EPP.IP address display
-            # changes from IP object -> IP address
-            host_addrs_stringified = [str(addr) for addr in host["addrs"]]
-            host_addrs_str = f'({", ".join(obj for obj in host_addrs_stringified)})'
-            host_info_str = f'{host["name"]} \
-            {host_addrs_str if len(host["addrs"]) > 0 else ""}'
-            hostList.append(host_info_str)
-        return hostList
-
-    @Cache
     def nameservers(self) -> list[tuple[str, list]]:
         """
         Get or set a complete list of nameservers for this domain.
