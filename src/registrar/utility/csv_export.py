@@ -32,20 +32,6 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             "AO email": domainInfo.authorizing_official.email
             if domainInfo.authorizing_official
             else " ",
-            "Submitter": domainInfo.submitter.first_name
-            + " "
-            + domainInfo.submitter.last_name
-            if domainInfo.submitter
-            else " ",
-            "Submitter title": domainInfo.submitter.title
-            if domainInfo.submitter
-            else " ",
-            "Submitter email": domainInfo.submitter.email
-            if domainInfo.submitter
-            else " ",
-            "Submitter phone": domainInfo.submitter.phone
-            if domainInfo.submitter
-            else " ",
             "Security Contact Email": security_contacts[0].email
             if security_contacts
             else " ",
@@ -66,10 +52,6 @@ def export_data_type_to_csv(csv_file):
         "State",
         "AO",
         "AO email",
-        "Submitter",
-        "Submitter title",
-        "Submitter email",
-        "Submitter phone",
         "Security Contact Email",
         "Status",
         # 'Expiration Date'
