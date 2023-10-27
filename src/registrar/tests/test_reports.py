@@ -105,7 +105,7 @@ class ExportDataTest(TestCase):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Federal agency,Organization name,City,State,AO,"
-            "AO email, Submitter,Submitter title,Submitter email,Submitter phone,"
+            "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
             "Security Contact Email,Status\n"
             "adomain2.gov,interstate,,,,, , , , , , , ,ready\n"
             "cdomain1.gov,federal,World War I Centennial Commission,,,"
@@ -158,7 +158,7 @@ class ExportDataTest(TestCase):
         expected_content = (
             "Domain name,Domain type,Federal agency,Organization name,City,"
             "State,Security Contact Email\n"
-            "cdomain1.gov,federal,World War I Centennial Commission,,,,\n"
+            "cdomain1.gov,federal,World War I Centennial Commission,,,, \n"
             "ddomain3.gov,federal,Armed Forces Retirement Home,,,,\n"
         )
         # print(csv_content)
