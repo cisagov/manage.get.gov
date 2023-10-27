@@ -752,25 +752,24 @@ class DomainAdmin(ListHeaderAdmin):
     change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state"]
     
-    # TODO file names and function names specific to report type
     def export_data_type(self, request):
         # match the CSV example with all the fields
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="data_export.csv"'
+        response['Content-Disposition'] = 'attachment; filename="domains-by-type.csv"'
         csv_export.export_data_type_to_csv(response)
         return response
 
     def export_data_full(self, request):
         # Smaller export based on 1
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="data_export.csv"'
+        response['Content-Disposition'] = 'attachment; filename="domains-current-full.csv"'
         csv_export.export_data_full_to_csv(response)
         return response
     
     def export_data_federal(self, request):
         # Federal only
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="data_export.csv"'
+        response['Content-Disposition'] = 'attachment; filename="domains-current-federal.csv"'
         csv_export.export_data_federal_to_csv(response)
         return response
     
