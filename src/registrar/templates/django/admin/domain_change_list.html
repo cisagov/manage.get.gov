@@ -11,13 +11,13 @@
     </li>
     {% endif %}
     <li>
-        <a href="{% url 'admin:registrar_domain_export_data_type' %}" class="button">Export domains (type)</a>
+        <a href="{% url 'admin:registrar_domain_export_data_type' %}" class="button">Export all domain metadata</a>
     </li>
     <li>
-        <a href="{% url 'admin:registrar_domain_export_data_full' %}" class="button">Export domains (full)</a>
+        <a href="{% url 'admin:registrar_domain_export_data_full' %}" class="button">Export current-full.csv</a>
     </li>
     <li>
-        <a href="{% url 'admin:registrar_domain_export_data_federal' %}" class="button">Export domains (federal)</a>
+        <a href="{% url 'admin:registrar_domain_export_data_federal' %}" class="button">Export current-federal.csv</a>
     </li>
 </ul>
 {% endblock %}

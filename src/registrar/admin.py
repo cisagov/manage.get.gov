@@ -764,7 +764,7 @@ class DomainAdmin(ListHeaderAdmin):
         response = HttpResponse(content_type="text/csv")
         response[
             "Content-Disposition"
-        ] = 'attachment; filename="domains-current-full.csv"'
+        ] = 'attachment; filename="current-full.csv"'
         csv_export.export_data_full_to_csv(response)
         return response
 
@@ -773,7 +773,7 @@ class DomainAdmin(ListHeaderAdmin):
         response = HttpResponse(content_type="text/csv")
         response[
             "Content-Disposition"
-        ] = 'attachment; filename="domains-current-federal.csv"'
+        ] = 'attachment; filename="current-federal.csv"'
         csv_export.export_data_federal_to_csv(response)
         return response
 
