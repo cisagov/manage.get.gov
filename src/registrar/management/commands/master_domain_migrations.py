@@ -15,6 +15,7 @@ from django.test import Client
 from django_fsm import TransitionNotAllowed  # type: ignore
 
 from django.core.management import BaseCommand
+from django.core.management import call_command
 
 from registrar.models import (
     Domain,
@@ -98,7 +99,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--migrationFilenames",
-            default="escrow_domain_contacts.daily.gov.GOV.txt escrow_contacts.daily.gov.GOV.txt escrow_domain_statuses.daily.gov.GOV.txt",
+            default="escrow_domain_contacts.daily.gov.GOV.txt,escrow_contacts.daily.gov.GOV.txt,escrow_domain_statuses.daily.gov.GOV.txt",
             help="""The files used for load_transition_domain migration script.  
             Must appear IN ORDER and separated by commas: 
             domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
@@ -225,12 +226,16 @@ class Command(BaseCommand):
                                           debug_on: bool,
                                           prompts_enabled: bool,
                                           debug_max_entries_to_parse: int):
+       
         """Runs the load_transition_domain script"""
         # Create the command string
-        command_string = "./manage.py load_transition_domain "
-        command_string += file_location+domain_contacts_filename + " "
-        command_string += file_location+contacts_filename + " "
-        command_string += file_location+domain_statuses_filename + " "
+        command_script = "load_transition_domain"
+        command_string = (
+            f"./manage.py {command_script} "
+            f"{file_location+domain_contacts_filename} "
+            f"{file_location+contacts_filename} "
+            f"{file_location+domain_statuses_filename} "
+        )
         if sep is not None and sep != "|":
             command_string += f"--sep {sep} "
         if reset_table:
@@ -240,39 +245,59 @@ class Command(BaseCommand):
         if debug_max_entries_to_parse > 0:
             command_string += f"--limitParse {debug_max_entries_to_parse} "
 
+            
         # Execute the command string
         if prompts_enabled:
             system_exit_on_terminate = True
             TerminalHelper.prompt_for_execution(system_exit_on_terminate, command_string, "Running load_transition_domain script")
-            return
-        TerminalHelper.execute_command(command_string)
+
+        # TODO: make this somehow run inside TerminalHelper prompt
+        call_command(
+            command_script,
+            f"{file_location+domain_contacts_filename}",
+            f"{file_location+contacts_filename}",
+            f"{file_location+domain_statuses_filename}",
+            sep = sep,
+            resetTable = reset_table,
+            debug = debug_on,
+            limitParse = debug_max_entries_to_parse
+            )
+
+        
         
     
     def run_transfer_script(self, debug_on:bool, prompts_enabled: bool):
         """Runs the transfer_transition_domains_to_domains script"""
         # Create the command string
-        command_string = "./manage.py transfer_transition_domains_to_domains "
+        command_script = "transfer_transition_domains_to_domains"
+        command_string = f"./manage.py {command_script}"
         if debug_on:
             command_string += "--debug "
         # Execute the command string
         if prompts_enabled:
             system_exit_on_terminate = True
             TerminalHelper.prompt_for_execution(system_exit_on_terminate,command_string, "Running transfer_transition_domains_to_domains script")
-            return
-        TerminalHelper.execute_command(command_string)
-
+        
+        # TODO: make this somehow run inside TerminalHelper prompt
+        call_command(
+            command_script
+            )
 
     def run_send_invites_script(self, debug_on: bool, prompts_enabled: bool):
         """Runs the send_domain_invitations script"""
         # Create the command string...
-        command_string = "./manage.py send_domain_invitations -s"
+        command_script = "send_domain_invitations"
+        command_string = f"./manage.py {command_script} -s"
         # Execute the command string
         if prompts_enabled:
             system_exit_on_terminate = True
             TerminalHelper.prompt_for_execution(system_exit_on_terminate,command_string, "Running send_domain_invitations script")
-            return
-        TerminalHelper.execute_command(command_string)
-
+        
+        # TODO: make this somehow run inside TerminalHelper prompt
+        call_command(
+            command_script,
+            s=True
+            )
 
     def run_migration_scripts(self,
                             file_location,
@@ -288,7 +313,6 @@ class Command(BaseCommand):
                 1 - imports for trans domains
                 2 - transfer to domain & domain invitation"""
         
-
         if prompts_enabled:
             # Allow the user to inspect the filepath
             # data given in the arguments, and prompt
@@ -342,12 +366,12 @@ class Command(BaseCommand):
         """Simulates logins for users (this will add
         Domain Information objects to our tables)"""
 
-        logger.info(f""
-                    f"{TerminalColors.OKCYAN}"
-                    f"================== SIMULATING LOGINS =================="
-                    f"{TerminalColors.ENDC}")
+        # logger.info(f""
+        #             f"{TerminalColors.OKCYAN}"
+        #             f"================== SIMULATING LOGINS =================="
+        #             f"{TerminalColors.ENDC}")
         
-        # for invite in DomainInvitation.objects.all(): #TODO: limit to our stuff
+        # for invite in DomainInvitation.objects.all(): #TODO: move to unit test
         #     #DEBUG:
         #     TerminalHelper.print_conditional(debug_on,
         #                                      f"{TerminalColors.OKCYAN}"
@@ -393,32 +417,8 @@ class Command(BaseCommand):
         debug_on = options.get("debug")
         prompts_enabled = options.get("prompt")
         run_migrations_enabled = options.get("runMigrations")
-        # simulate_user_login_enabled = options.get("triggerLogins")
-        sep = options.get("sep")
-        reset_table = options.get("resetTable")
-        debug_max_entries_to_parse = int(
-            options.get("limitParse")
-        )
-
-        # Grab filepath information from the arguments
-        file_location = options.get("migrationDirectory")+"/"
-        filenames = options.get("migrationFilenames").split(",")
-        if len(filenames) < 3:
-            filenames_as_string = "{}".format(", ".join(map(str, filenames)))
-            logger.info(f"""
-            {TerminalColors.FAIL}
-            --migrationFilenames expected 3 filenames to follow it,
-            but only {len(filenames)} were given:
-            {filenames_as_string}
-
-            PLEASE MODIFY THE SCRIPT AND TRY RUNNING IT AGAIN
-            ============= TERMINATING =============
-            {TerminalColors.ENDC}
-            """)
-            sys.exit()
-        domain_contacts_filename = filenames[0]
-        contacts_filename = filenames[1]
-        domain_statuses_filename = filenames[2]
+        simulate_user_login_enabled = False # TODO: delete? Moving to unit test... options.get("triggerLogins")
+        
 
         TerminalHelper.print_conditional(
                 debug_on,
@@ -460,6 +460,34 @@ class Command(BaseCommand):
         # STEP 1 -- RUN MIGRATIONS
         # Run migration scripts if specified by user
         if run_migrations_enabled:
+            # grab arguments for running migrations
+            sep = options.get("sep")
+            reset_table = options.get("resetTable")
+            debug_max_entries_to_parse = int(
+                options.get("limitParse")
+            )
+
+            # Grab filepath information from the arguments
+            file_location = options.get("migrationDirectory")+"/"
+            filenames = options.get("migrationFilenames").split(",")
+            if len(filenames) < 3:
+                filenames_as_string = "{}".format(", ".join(map(str, filenames)))
+                logger.info(f"""
+                {TerminalColors.FAIL}
+                --migrationFilenames expected 3 filenames to follow it,
+                but only {len(filenames)} were given:
+                {filenames_as_string}
+
+                PLEASE MODIFY THE SCRIPT AND TRY RUNNING IT AGAIN
+                ============= TERMINATING =============
+                {TerminalColors.ENDC}
+                """)
+                sys.exit()
+            domain_contacts_filename = filenames[0]
+            contacts_filename = filenames[1]
+            domain_statuses_filename = filenames[2] 
+
+            # Run migration scripts
             self.run_migration_scripts(file_location,
                             domain_contacts_filename,
                             contacts_filename,
@@ -482,24 +510,24 @@ class Command(BaseCommand):
         # to ensure Domain Information objects get added
         # to the database.)
 
-        # if run_migrations_enabled:
-        #     if prompts_enabled:
-        #         simulate_user_login_enabled = TerminalHelper.query_yes_no(
-        #         f"""{TerminalColors.FAIL}
-        #         Proceed with simulating user logins?
-        #         {TerminalColors.ENDC}"""
-        #         )
-        #         if not simulate_user_login_enabled:
-        #             return
-        #     self.simulate_user_logins(debug_on)
-        #     prompt_continuation_of_analysis = True
+        if run_migrations_enabled and simulate_user_login_enabled:
+            if prompts_enabled:
+                simulate_user_login_enabled = TerminalHelper.query_yes_no(
+                f"""{TerminalColors.FAIL}
+                Proceed with simulating user logins?
+                {TerminalColors.ENDC}"""
+                )
+                if not simulate_user_login_enabled:
+                    return
+            self.simulate_user_logins(debug_on)
+            prompt_continuation_of_analysis = True
        
         # STEP 3 -- SEND INVITES
         proceed_with_sending_invites = run_migrations_enabled
         if prompts_enabled and run_migrations_enabled:
             proceed_with_sending_invites = TerminalHelper.query_yes_no(
                 f"""{TerminalColors.FAIL}
-                Proceed with sending user invites?
+                Proceed with sending user invites for all transition domains?
                 (Y = proceed, N = skip)
                 {TerminalColors.ENDC}"""
                 )

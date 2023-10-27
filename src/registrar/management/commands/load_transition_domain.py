@@ -9,7 +9,6 @@ from django.core.management import BaseCommand
 
 from registrar.models import TransitionDomain
 
-
 from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,

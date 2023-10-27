@@ -72,10 +72,14 @@ class TerminalHelper:
         os.system(f"{command_string}")
     
 
-    def prompt_for_execution(system_exit_on_terminate: bool, command_string: str, prompt_title: str) -> bool:
-        """Prompts the user to inspect the given terminal command string
-        and asks if they wish to execute it.  If the user responds (y),
-        execute the command"""
+    def prompt_for_execution(system_exit_on_terminate: bool, 
+                             info_to_inspect: str, 
+                             prompt_title: str) -> bool:
+        """Create to reduce code complexity.
+        Prompts the user to inspect the given string
+        and asks if they wish to execute it.  
+        Returns true if the user responds (y),
+        Returns false if the user responds (n)"""
 
         action_description_for_selecting_no = "skip"
         if system_exit_on_terminate:
@@ -88,21 +92,19 @@ class TerminalHelper:
             =====================================================
             {prompt_title}
             =====================================================
-            *** IMPORTANT:  VERIFY THE FOLLOWING COMMAND LOOKS CORRECT ***
+            *** IMPORTANT:  VERIFY THE FOLLOWING LOOKS CORRECT ***
 
-            {command_string}
+            {info_to_inspect}
             {TerminalColors.FAIL}
             Proceed? (Y = proceed, N = {action_description_for_selecting_no})
             {TerminalColors.ENDC}"""
         )
 
-        # If the user decided to proceed executing the command,
-        # run the command for loading transition domains.
-        # Otherwise, exit this subroutine.
+        # If the user decided to proceed return true.
+        # Otherwise, either return false or exit this subroutine.
         if not proceed_execution:
             if system_exit_on_terminate:
                 sys.exit()
             return False
         
-        TerminalHelper.execute_command(command_string)
         return True
