@@ -9,6 +9,7 @@
         Add Domain
     </a>
     </li>
+    {% endif %}
     <li>
         <a href="{% url 'admin:registrar_domain_export_data_type' %}" class="button">Export domains (type)</a>
     </li>
@@ -18,6 +19,5 @@
     <li>
         <a href="{% url 'admin:registrar_domain_export_data_federal' %}" class="button">Export domains (federal)</a>
     </li>
-    {% endif %}
 </ul>
 {% endblock %}
