@@ -752,6 +752,7 @@ class DomainAdmin(ListHeaderAdmin):
     change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state"]
     
+    # TODO file names and function names specific to report type
     def export_data_type(self, request):
         # match the CSV example with all the fields
         response = HttpResponse(content_type='text/csv')
