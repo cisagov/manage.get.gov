@@ -19,7 +19,8 @@ To do this, do the following:
 2. On that `Users` table note that the `GROUP` column should be blank for them as they have no special permissions yet.
 3. Click on their username, then scroll down to the `Permissions` section.
 4. Under `Permissions`, see the `Groups` table which has a column for `Available groups` and `Chosen groups`. Select the permission you want from the `Available groups` column and click the right arrow to move it to the  `Chosen groups`. Note, if you want this user to be an analyst select `cisa_analysts_group`, otherwise select the `full_access_group`.
-5. After clicking the right arrow in the previous step, scroll down and click `Save`
+5. (Optional) If the user needs access to django admin (such as an analyst), then you will also need to make sure "Staff Status" is checked. This can be found in the same `Permissions` section right below the checkbox for `Active`.
+6. Click `Save` to apply all changes
 
 ## Removing a user group permission via django-admin
 
@@ -29,7 +30,8 @@ If an employee was given the wrong permissions or has had a change in roles that
 2. Scroll down to the `Permissions` section and find the `Groups` table which has a column for `Available groups` and `Chosen groups`.
 3. In this table, select the permission you want to remove from the `Chosen groups` and then click the left facing arrow to move the permission to `Available groups`.
 4. Depending on the scenario you may now need to add the opposite permission group to the `Chosen groups` section, please see the section above for instructions on how to do that.
-5. Click `Save` to apply all changes
+5. If the user should no longer see the admin page, you must ensure that under `Permissions`, `Staff status` is NOT checked.
+6. Click `Save` to apply all changes
 
 ## Editing group permissions through code
 
