@@ -1,4 +1,6 @@
 import logging
+import os
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +14,7 @@ class TerminalColors:
     OKCYAN = "\033[96m"
     OKGREEN = "\033[92m"
     YELLOW = "\033[93m"
+    MAGENTA = "\033[35m"
     FAIL = "\033[91m"
     ENDC = "\033[0m"
     BOLD = "\033[1m"
@@ -50,7 +53,7 @@ class TerminalHelper:
             else:
                 logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
-    def print_debug(print_condition: bool, print_statement: str):
+    def print_conditional(print_condition: bool, print_statement: str):
         """This function reduces complexity of debug statements
         in other functions.
         It uses the logger to write the given print_statement to the
@@ -58,3 +61,41 @@ class TerminalHelper:
         # DEBUG:
         if print_condition:
             logger.info(print_statement)
+    
+
+    def prompt_for_execution(system_exit_on_terminate: bool, 
+                             info_to_inspect: str, 
+                             prompt_title: str) -> bool:
+        """Create to reduce code complexity.
+        Prompts the user to inspect the given string
+        and asks if they wish to execute it.  
+        Returns true if the user responds (y),
+        Returns false if the user responds (n)"""
+
+        action_description_for_selecting_no = "skip"
+        if system_exit_on_terminate:
+            action_description_for_selecting_no = "exit"
+
+        # Allow the user to inspect the command string
+        # and ask if they wish to proceed
+        proceed_execution = TerminalHelper.query_yes_no(
+            f"""{TerminalColors.OKCYAN}
+            =====================================================
+            {prompt_title}
+            =====================================================
+            *** IMPORTANT:  VERIFY THE FOLLOWING LOOKS CORRECT ***
+
+            {info_to_inspect}
+            {TerminalColors.FAIL}
+            Proceed? (Y = proceed, N = {action_description_for_selecting_no})
+            {TerminalColors.ENDC}"""
+        )
+
+        # If the user decided to proceed return true.
+        # Otherwise, either return false or exit this subroutine.
+        if not proceed_execution:
+            if system_exit_on_terminate:
+                sys.exit()
+            return False
+        
+        return True

@@ -9,54 +9,12 @@ from django.core.management import BaseCommand
 
 from registrar.models import TransitionDomain
 
+from registrar.management.commands.utility.terminal_helper import (
+    TerminalColors,
+    TerminalHelper,
+)
+
 logger = logging.getLogger(__name__)
-
-
-class termColors:
-    """Colors for terminal outputs
-    (makes reading the logs WAY easier)"""
-
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKCYAN = "\033[96m"
-    OKGREEN = "\033[92m"
-    YELLOW = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-    BackgroundLightYellow = "\033[103m"
-
-
-def query_yes_no(question: str, default="yes") -> bool:
-    """Ask a yes/no question via raw_input() and return their answer.
-
-    "question" is a string that is presented to the user.
-    "default" is the presumed answer if the user just hits <Enter>.
-            It must be "yes" (the default), "no" or None (meaning
-            an answer is required of the user).
-
-    The "answer" return value is True for "yes" or False for "no".
-    """
-    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError("invalid default answer: '%s'" % default)
-
-    while True:
-        logger.info(question + prompt)
-        choice = input().lower()
-        if default is not None and choice == "":
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
-            logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 
 class Command(BaseCommand):
@@ -110,20 +68,20 @@ class Command(BaseCommand):
         or --limitParse are in use"""
         if debug_on:
             logger.info(
-                f"""{termColors.OKCYAN}
+                f"""{TerminalColors.OKCYAN}
                 ----------DEBUG MODE ON----------
                 Detailed print statements activated.
-                {termColors.ENDC}
+                {TerminalColors.ENDC}
                 """
             )
         if debug_max_entries_to_parse > 0:
             logger.info(
-                f"""{termColors.OKCYAN}
+                f"""{TerminalColors.OKCYAN}
                 ----------LIMITER ON----------
                 Parsing of entries will be limited to
                 {debug_max_entries_to_parse} lines per file.")
                 Detailed print statements activated.
-                {termColors.ENDC}
+                {TerminalColors.ENDC}
                 """
             )
 
@@ -142,11 +100,12 @@ class Command(BaseCommand):
         return domain_status_dictionary
 
     def get_user_emails_dict(
-        self, contacts_filename: str, sep
+        self, 
+        contacts_filename: str, sep
     ) -> defaultdict[str, str]:
         """Creates mapping of userId -> emails"""
         user_emails_dictionary = defaultdict(str)
-        logger.info("Reading domain-contacts data file %s", contacts_filename)
+        logger.info("Reading contacts data file %s", contacts_filename)
         with open(contacts_filename, "r") as contacts_file:
             for row in csv.reader(contacts_file, delimiter=sep):
                 user_id = row[0]
@@ -195,7 +154,7 @@ class Command(BaseCommand):
                 ", ".join(map(str, duplicate_domain_user_combos))
             )
             logger.warning(
-                f"{termColors.YELLOW} No e-mails found for users: {users_without_email_as_string}"  # noqa
+                f"{TerminalColors.YELLOW} No e-mails found for users: {users_without_email_as_string}"  # noqa
             )
         if total_duplicate_pairs > 0 or total_duplicate_domains > 0:
             duplicate_pairs_as_string = "{}".format(
@@ -205,7 +164,7 @@ class Command(BaseCommand):
                 ", ".join(map(str, duplicate_domains))
             )
             logger.warning(
-                f"""{termColors.YELLOW}
+                f"""{TerminalColors.YELLOW}
 
                     ----DUPLICATES FOUND-----
 
@@ -218,7 +177,7 @@ class Command(BaseCommand):
                     the supplied data files;
 
                     {duplicate_domains_as_string}
-                    {termColors.ENDC}"""
+                    {TerminalColors.ENDC}"""
             )
 
     def print_summary_status_findings(
@@ -237,7 +196,7 @@ class Command(BaseCommand):
                 ", ".join(map(str, domains_without_status))
             )
             logger.warning(
-                f"""{termColors.YELLOW}
+                f"""{TerminalColors.YELLOW}
 
                 --------------------------------------------
                 Found {total_domains_without_status} domains
@@ -245,7 +204,7 @@ class Command(BaseCommand):
                 ---------------------------------------------
 
                 {domains_without_status_as_string}
-                {termColors.ENDC}"""
+                {TerminalColors.ENDC}"""
             )
 
         if total_outlier_statuses > 0:
@@ -253,7 +212,7 @@ class Command(BaseCommand):
                 ", ".join(map(str, outlier_statuses))
             )  # noqa
             logger.warning(
-                f"""{termColors.YELLOW}
+                f"""{TerminalColors.YELLOW}
 
                 --------------------------------------------
                 Found {total_outlier_statuses} unaccounted
@@ -264,36 +223,27 @@ class Command(BaseCommand):
                 (defaulted to Ready):
 
                 {domains_without_status_as_string}
-                {termColors.ENDC}"""
+                {TerminalColors.ENDC}"""
             )
-
-    def print_debug(self, print_condition: bool, print_statement: str):
-        """This function reduces complexity of debug statements
-        in other functions.
-        It uses the logger to write the given print_statement to the
-        terminal if print_condition is TRUE"""
-        # DEBUG:
-        if print_condition:
-            logger.info(print_statement)
 
     def prompt_table_reset(self):
         """Brings up a prompt in the terminal asking
         if the user wishes to delete data in the
         TransitionDomain table.  If the user confirms,
         deletes all the data in the TransitionDomain table"""
-        confirm_reset = query_yes_no(
+        confirm_reset = TerminalHelper.query_yes_no(
             f"""
-            {termColors.FAIL}
+            {TerminalColors.FAIL}
             WARNING: Resetting the table will permanently delete all
             the data!
-            Are you sure you want to continue?{termColors.ENDC}"""
+            Are you sure you want to continue?{TerminalColors.ENDC}"""
         )
         if confirm_reset:
             logger.info(
-                f"""{termColors.YELLOW}
+                f"""{TerminalColors.YELLOW}
             ----------Clearing Table Data----------
             (please wait)
-            {termColors.ENDC}"""
+            {TerminalColors.ENDC}"""
             )
             TransitionDomain.objects.all().delete()
 
@@ -429,18 +379,18 @@ class Command(BaseCommand):
                 )
                 if existing_domain is not None:
                     # DEBUG:
-                    self.print_debug(
+                    TerminalHelper.print_conditional(
                         debug_on,
-                        f"{termColors.YELLOW} DUPLICATE file entries found for domain: {new_entry_domain_name} {termColors.ENDC}",  # noqa
+                        f"{TerminalColors.YELLOW} DUPLICATE file entries found for domain: {new_entry_domain_name} {TerminalColors.ENDC}",  # noqa
                     )
                     if new_entry_domain_name not in duplicate_domains:
                         duplicate_domains.append(new_entry_domain_name)
                 if existing_domain_user_pair is not None:
                     # DEBUG:
-                    self.print_debug(
+                    TerminalHelper.print_conditional(
                         debug_on,
-                        f"""{termColors.YELLOW} DUPLICATE file entries found for domain - user {termColors.BackgroundLightYellow} PAIR {termColors.ENDC}{termColors.YELLOW}:  
-                        {new_entry_domain_name} - {new_entry_email} {termColors.ENDC}""",  # noqa
+                        f"""{TerminalColors.YELLOW} DUPLICATE file entries found for domain - user {TerminalColors.BackgroundLightYellow} PAIR {TerminalColors.ENDC}{TerminalColors.YELLOW}:  
+                        {new_entry_domain_name} - {new_entry_email} {TerminalColors.ENDC}""",  # noqa
                     )
                     if existing_domain_user_pair not in duplicate_domain_user_combos:
                         duplicate_domain_user_combos.append(existing_domain_user_pair)
@@ -457,20 +407,20 @@ class Command(BaseCommand):
 
                             if existing_entry.status != new_entry_status:
                                 # DEBUG:
-                                self.print_debug(
+                                TerminalHelper.print_conditional(
                                     debug_on,
-                                    f"{termColors.OKCYAN}"
+                                    f"{TerminalColors.OKCYAN}"
                                     f"Updating entry: {existing_entry}"
                                     f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
                                     f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
-                                    f"{termColors.ENDC}",
+                                    f"{TerminalColors.ENDC}",
                                 )
                                 existing_entry.status = new_entry_status
                             existing_entry.email_sent = new_entry_emailSent
                             existing_entry.save()
                         except TransitionDomain.MultipleObjectsReturned:
                             logger.info(
-                                f"{termColors.FAIL}"
+                                f"{TerminalColors.FAIL}"
                                 f"!!! ERROR: duplicate entries exist in the"
                                 f"transtion_domain table for domain:"
                                 f"{new_entry_domain_name}"
@@ -489,9 +439,9 @@ class Command(BaseCommand):
                         total_new_entries += 1
 
                         # DEBUG:
-                        self.print_debug(
+                        TerminalHelper.print_conditional(
                             debug_on,
-                            f"{termColors.OKCYAN} Adding entry {total_new_entries}: {new_entry} {termColors.ENDC}",  # noqa
+                            f"{TerminalColors.OKCYAN} Adding entry {total_new_entries}: {new_entry} {TerminalColors.ENDC}",  # noqa
                         )
 
                 # Check Parse limit and exit loop if needed
@@ -500,20 +450,20 @@ class Command(BaseCommand):
                     and debug_max_entries_to_parse != 0
                 ):
                     logger.info(
-                        f"{termColors.YELLOW}"
+                        f"{TerminalColors.YELLOW}"
                         f"----PARSE LIMIT REACHED.  HALTING PARSER.----"
-                        f"{termColors.ENDC}"
+                        f"{TerminalColors.ENDC}"
                     )
                     break
 
         TransitionDomain.objects.bulk_create(to_create)
 
         logger.info(
-            f"""{termColors.OKGREEN}
+            f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} transition domain entries,
             updated {total_updated_domain_entries} transition domain entries
-            {termColors.ENDC}
+            {TerminalColors.ENDC}
             """
         )
 

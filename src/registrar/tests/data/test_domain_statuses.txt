@@ -1,0 +1,4 @@
+Anomaly.gov|muahaha|
+TestDomain.gov|ok|
+NEHRP.GOV|serverHold|
+NELSONCOUNTY-VA.GOV|Hold|

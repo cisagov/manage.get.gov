@@ -1,6 +1,5 @@
 """Loads files from /tmp into our sandboxes"""
 import glob
-import csv
 import logging
 
 import os
@@ -44,9 +43,9 @@ class Command(BaseCommand):
 
             desired_file_path = f"{directory}/{filename}"
             if os.path.exists(desired_file_path):
-                replace = input(
-                    f"{desired_file_path} already exists. Do you want to replace it? (y/n) "
-                )
+                # For linter
+                prompt = " Do you want to replace it? (y/n) "
+                replace = input(f"{desired_file_path} already exists. {prompt}")
                 if replace.lower() != "y":
                     do_command = False
 
@@ -58,8 +57,10 @@ class Command(BaseCommand):
             if exit_status == 0:
                 logger.info(f"Successfully copied {filename}")
             else:
-                logger.info(f"Failed to copy {filename}")
+                logger.error(f"Failed to copy {filename}")
 
     def cat(self, copy_from, copy_to):
+        """Runs the cat command to
+        copy_from a location to copy_to a location"""
         exit_status = os.system(f"cat {copy_from} > {copy_to}")
         return exit_status

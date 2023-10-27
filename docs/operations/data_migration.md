@@ -84,6 +84,10 @@ FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain na
 FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
 FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
 
+We need to run a few scripts to parse these files into our domain tables.
+We can do this both locally and in a sandbox.
+
+## OPTION 1: SANDBOX
 ## Load migration data onto a production or sandbox environment
 **WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
 Do not use this method to store data you want to keep around permanently.
@@ -151,7 +155,18 @@ From this directory, run the following command:
 ```
 
 NOTE: This will look for all files in /tmp with the .txt extension, but this can
-be changed if you are dealing with different extensions.
+be changed if you are dealing with different extensions. For instance, a .tar.gz could be expressed
+as `--file_extension tar.gz`.
+
+If you are using a tar.gz file, you will need to perform one additional step to extract it.
+Run the following command from the same directory:
+```shell
+tar -xvf migrationdata/{FILE_NAME}.tar.gz -C migrationdata/ --strip-components=1
+```
+
+*FILE_NAME* - Name of the desired file, ex: exportdata
+
+
 
 #### Manual method
 If the `cat_files_into_getgov.py` script isn't working, follow these steps instead.
@@ -169,6 +184,7 @@ Run the following script to transfer the existing data on our .txt files to our 
 ./manage.py load_transition_domain migrationdata/escrow_domain_contacts.daily.gov.GOV.txt migrationdata/escrow_contacts.daily.gov.GOV.txt migrationdata/escrow_domain_statuses.daily.gov.GOV.txt
 ```
 
+## OPTION 2: LOCAL
 ## Load migration data onto our local environments
 
 Transferring this data from these files into our domain tables happens in two steps;
