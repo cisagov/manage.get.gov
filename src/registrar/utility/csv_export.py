@@ -109,5 +109,8 @@ def export_data_federal_to_csv(csv_file):
         "Security Contact Email",
     ]
     sort_fields = ["domain__name", "federal_agency", "organization_type"]
-    filter_condition = {"organization_type__icontains": "federal", "domain__state": Domain.State.READY}
+    filter_condition = {
+        "organization_type__icontains": "federal",
+        "domain__state": Domain.State.READY,
+    }
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)

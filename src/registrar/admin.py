@@ -762,18 +762,14 @@ class DomainAdmin(ListHeaderAdmin):
     def export_data_full(self, request):
         # Smaller export based on 1
         response = HttpResponse(content_type="text/csv")
-        response[
-            "Content-Disposition"
-        ] = 'attachment; filename="current-full.csv"'
+        response["Content-Disposition"] = 'attachment; filename="current-full.csv"'
         csv_export.export_data_full_to_csv(response)
         return response
 
     def export_data_federal(self, request):
         # Federal only
         response = HttpResponse(content_type="text/csv")
-        response[
-            "Content-Disposition"
-        ] = 'attachment; filename="current-federal.csv"'
+        response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
         csv_export.export_data_federal_to_csv(response)
         return response
 
