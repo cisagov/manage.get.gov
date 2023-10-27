@@ -947,8 +947,9 @@ class Domain(TimeStampedModel, DomainHelper):
     )
 
     expiration_date = DateField(
-        null = True,
-        help_text="Duplication of registry's expiration date saved for ease of reporting"
+        null=True,
+        help_text=("Duplication of registry's expiration" 
+        "date saved for ease of reporting"),
     )
 
     def isActive(self):
