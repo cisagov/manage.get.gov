@@ -7,7 +7,7 @@
   {% with sublabel_text="Please include the entire name of your tribe as recognized by the Bureau of Indian Affairs." %}
     {% with link_text="Bureau of Indian Affairs" %}
       {% with link_href="https://www.federalregister.gov/documents/2023/01/12/2023-00504/indian-entities-recognized-by-and-eligible-to-receive-services-from-the-united-states-bureau-of" %}
-        {% with target_blank="true" %}
+        {% with class="usa-link usa-link--external", rel="noopener noreferrer", target_blank="true" %}
           {% input_with_errors forms.0.tribe_name %}
         {% endwith %}
       {% endwith %}
