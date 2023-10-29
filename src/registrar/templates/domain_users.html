@@ -12,11 +12,13 @@
   email, and DNS name servers.
   </p>
 
-  <ul>
+  <ul class="usa-list">
     <li>There is no limit to the number of domain managers you can add.</li>
     <li>After adding a domain manager, an email invitation will be sent to that user with
       instructions on how to set up an account.</li>
-    <li>To remove a domain manager, <a href="{% public_site_url 'contact/' %}" class="usa-link">contact us</a> for assistance.
+    <li>To remove a domain manager, <a href="{% public_site_url 'contact/' %}"
+      target="_blank" rel="noopener noreferrer" class="usa-link">contact us</a> for
+      assistance.</li>
   </ul>
 
   {% if domain.permissions %}
