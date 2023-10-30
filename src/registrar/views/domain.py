@@ -295,10 +295,6 @@ class DomainNameserversView(DomainFormBaseView):
                 if ip_string:
                     # Split the string into a list using a comma as the delimiter
                     ip_list = ip_string.split(",")
-                # Remove any leading or trailing whitespace from each IP in the list
-                # this will return [] if no ips have been entered, which is taken
-                # into account in the model in checkHostIPCombo
-                ip_list = [ip.strip() for ip in ip_list]
 
                 as_tuple = (
                     form.cleaned_data["server"],
