@@ -46,7 +46,7 @@ This is a standard Django secret key. See Django documentation for tips on gener
 
 This is the base64 encoded private key used in the OpenID Connect authentication flow with Login.gov. It is used to sign a token during user login; the signature is examined by Login.gov before their API grants access to user data.
 
-Generate a new key using this command (or whatever is most recently recommended by Login.gov):
+Generate a new key using this command (or whatever is most recently [recommended by Login.gov](https://developers.login.gov/testing/#creating-a-public-certificate)):
 
 ```bash
 openssl req -nodes -x509 -days 365 -newkey rsa:2048 -keyout private.pem -out public.crt
