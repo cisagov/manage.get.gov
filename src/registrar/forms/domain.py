@@ -5,8 +5,12 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.forms import formset_factory
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
+from registrar.utility.errors import (
+    NameserverError,
+    NameserverErrorCodes as nsErrorCodes,
+)
 
-from ..models import Contact, DomainInformation
+from ..models import Contact, DomainInformation, Domain
 from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
@@ -19,16 +23,78 @@ class DomainAddUserForm(forms.Form):
     email = forms.EmailField(label="Email")
 
 
+class IPAddressField(forms.CharField):
+    def validate(self, value):
+        super().validate(value)  # Run the default CharField validation
+
+
 class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
 
+    domain = forms.CharField(widget=forms.HiddenInput, required=False)
+
     server = forms.CharField(label="Name server", strip=True)
-    # when adding IPs to this form ensure they are stripped as well
+
+    ip = forms.CharField(label="IP Address (IPv4 or IPv6)", strip=True, required=False)
+
+    def clean(self):
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        self.clean_empty_strings(cleaned_data)
+        server = cleaned_data.get("server", "")
+        ip = cleaned_data.get("ip", None)
+        # remove ANY spaces in the ip field
+        ip = ip.replace(" ", "")
+        domain = cleaned_data.get("domain", "")
+
+        ip_list = self.extract_ip_list(ip)
+
+        if ip and not server and ip_list:
+            self.add_error("server", NameserverError(code=nsErrorCodes.MISSING_HOST))
+        elif server:
+            self.validate_nameserver_ip_combo(domain, server, ip_list)
+
+        return cleaned_data
+
+    def clean_empty_strings(self, cleaned_data):
+        ip = cleaned_data.get("ip", "")
+        if ip and len(ip.strip()) == 0:
+            cleaned_data["ip"] = None
+
+    def extract_ip_list(self, ip):
+        return [ip.strip() for ip in ip.split(",")] if ip else []
+
+    def validate_nameserver_ip_combo(self, domain, server, ip_list):
+        try:
+            Domain.checkHostIPCombo(domain, server, ip_list)
+        except NameserverError as e:
+            if e.code == nsErrorCodes.GLUE_RECORD_NOT_ALLOWED:
+                self.add_error(
+                    "server",
+                    NameserverError(
+                        code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED,
+                        nameserver=domain,
+                        ip=ip_list,
+                    ),
+                )
+            elif e.code == nsErrorCodes.MISSING_IP:
+                self.add_error(
+                    "ip",
+                    NameserverError(
+                        code=nsErrorCodes.MISSING_IP, nameserver=domain, ip=ip_list
+                    ),
+                )
+            else:
+                self.add_error("ip", str(e))
 
 
 NameserverFormset = formset_factory(
     DomainNameserverForm,
     extra=1,
+    max_num=13,
+    validate_max=True,
 )
 
 
