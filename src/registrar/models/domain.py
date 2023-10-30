@@ -277,7 +277,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return response.code
         except RegistryError as e:
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
-            return e.code
+            raise e
 
     def _convert_list_to_dict(self, listToConvert: list[tuple[str, list]]):
         """converts a list of hosts into a dictionary
@@ -1593,7 +1593,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return response.code
         except RegistryError as e:
             logger.error("Error _update_host, code was %s error was %s" % (e.code, e))
-            return e.code
+            raise e
 
     def addAndRemoveHostsFromDomain(
         self, hostsToAdd: list[str], hostsToDelete: list[str]
