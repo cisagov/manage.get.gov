@@ -146,8 +146,8 @@ class ExtraTransitionDomain:
         """
         self.clear_file_data()
         for name, value in self.file_data.items():
-            filename = f"{value.filename}"
 
+            filename = f"{value.filename}"
             if filename in self.all_files_set:
                 _file = f"{self.directory}{value.filename}"
                 value.data = self._read_csv_file(
@@ -194,6 +194,19 @@ class ExtraTransitionDomain:
     def _read_csv_file(self, file, seperator, dataclass_type, id_field):
         with open(file, "r", encoding="utf-8-sig") as requested_file:
             reader = csv.DictReader(requested_file, delimiter=seperator)
-            dict_data = {row[id_field]: dataclass_type(**row) for row in reader}
-            logger.debug(f"it is finally here {dict_data}")
+            """
+            for row in reader:
+                print({key: type(key) for key in row.keys()})  # print out the keys and their types
+                test = {row[id_field]: dataclass_type(**row)}
+            """
+            dict_data = {}
+            for row in reader:
+                if None in row:
+                    print("Skipping row with None key")
+                    #for key, value in row.items():
+                        #print(f"key: {key} value: {value}")
+                    continue
+                row_id = row[id_field]
+                dict_data[row_id] = dataclass_type(**row)
+            #dict_data = {row[id_field]: dataclass_type(**row) for row in reader}
             return dict_data

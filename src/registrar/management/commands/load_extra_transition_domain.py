@@ -89,8 +89,7 @@ class FileTransitionLog:
         for log in self.logs.get(file_type):
             match log.code:
                 case LogCode.ERROR:
-                    if log.domain_name is None:
-                        logger.error(log.message)
+                    logger.error(log.message)
                 case LogCode.WARNING:
                     logger.warning(log.message)
                 case LogCode.INFO:
@@ -149,11 +148,9 @@ class Command(BaseCommand):
             all_transition_domains = TransitionDomain.objects.all()
             if not all_transition_domains.exists():
                 raise Exception("No TransitionDomain objects exist.")
-
             for transition_domain in all_transition_domains:
-                domain_name = transition_domain.domain_name
+                domain_name = transition_domain.domain_name.upper()
                 updated_transition_domain = transition_domain
-
                 # STEP 1: Parse organization data
                 updated_transition_domain = self.parse_org_data(
                     domain_name, transition_domain
@@ -166,7 +163,7 @@ class Command(BaseCommand):
                 )
                 self.parse_logs.display_logs(EnumFilenames.DOMAIN_ADHOC)
 
-                # STEP 3: Parse agency data - TODO
+                # STEP 3: Parse agency data
                 updated_transition_domain = self.parse_agency_data(
                     domain_name, transition_domain
                 )
@@ -257,8 +254,9 @@ class Command(BaseCommand):
         # For all other records, it is stored as so: Interstate
         # We can infer if it is federal or not based on this fact.
         domain_type = info.domaintype.split("-")
-        if domain_type.count != 1 or domain_type.count != 2:
-            raise ValueError("Found invalid data in DOMAIN_ADHOC")
+        domain_type_length = len(domain_type)
+        if domain_type_length < 1 or domain_type_length > 2:
+            raise ValueError("Found invalid data on DOMAIN_ADHOC")
 
         # Then, just grab the organization type.
         new_organization_type = domain_type[0].strip()
@@ -276,9 +274,9 @@ class Command(BaseCommand):
 
         # Are we updating data that already exists,
         # or are we adding new data in its place?
-        federal_agency_exists = (
+        organization_type_exists = (
             transition_domain.organization_type is not None
-            and transition_domain.federal_agency.strip() != ""
+            and transition_domain.organization_type.strip() != ""
         )
         federal_type_exists = (
             transition_domain.federal_type is not None
@@ -287,7 +285,7 @@ class Command(BaseCommand):
 
         # If we get two records, then we know it is federal.
         # needs to be lowercase for federal type
-        is_federal = domain_type.count() == 2
+        is_federal = domain_type_length == 2
         if is_federal:
             new_federal_type = domain_type[1].strip()
             transition_domain.organization_type = new_organization_type
@@ -300,10 +298,10 @@ class Command(BaseCommand):
         # or modified it.
         self._add_or_change_message(
             EnumFilenames.DOMAIN_ADHOC,
-            "federal_agency",
-            transition_domain.federal_agency,
+            "organization_type",
+            transition_domain.organization_type,
             domain_name,
-            federal_agency_exists,
+            organization_type_exists,
         )
 
         self._add_or_change_message(
@@ -358,7 +356,7 @@ class Command(BaseCommand):
             self.parse_logs.create_log_item(
                 file_type,
                 LogCode.DEBUG,
-                f"Added {file_type} as '{var_name}' on {domain_name}",
+                f"Added {var_name} as '{changed_value}' on {domain_name}",
                 domain_name
             )
         else:

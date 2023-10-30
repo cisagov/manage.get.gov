@@ -7,7 +7,7 @@ By keeping it as a dataclass instead of a dictionary, we can maintain data consi
 """
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -26,7 +26,7 @@ class DomainAdditionalData:
     domaintypeid: Optional[int] = None
     authorityid: Optional[int] = None
     orgid: Optional[int] = None
-    securitycontact_email: Optional[str] = None
+    securitycontactemail: Optional[str] = None
     dnsseckeymonitor: Optional[str] = None
     domainpurpose: Optional[str] = None
 
@@ -62,7 +62,7 @@ class AuthorityAdhoc:
     email: Optional[str] = None
     phonenumber: Optional[str] = None
     agencyid: Optional[int] = None
-    addlinfo: Optional[str] = None
+    addlinfo: Optional[List[str]] = None
 
 
 
