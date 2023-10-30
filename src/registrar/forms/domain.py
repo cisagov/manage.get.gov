@@ -51,9 +51,8 @@ class DomainNameserverForm(forms.Form):
 
         ip_list = self.extract_ip_list(ip)
 
-        if ip and not server and ip_list:
-            self.add_error("server", NameserverError(code=nsErrorCodes.MISSING_HOST))
-        elif server:
+        # validate if the form has a server or an ip
+        if ip and ip_list or server:
             self.validate_nameserver_ip_combo(domain, server, ip_list)
 
         return cleaned_data
@@ -84,6 +83,20 @@ class DomainNameserverForm(forms.Form):
                     "ip",
                     NameserverError(
                         code=nsErrorCodes.MISSING_IP, nameserver=domain, ip=ip_list
+                    ),
+                )
+            elif e.code == nsErrorCodes.MISSING_HOST:
+                self.add_error(
+                    "server",
+                    NameserverError(
+                        code=nsErrorCodes.MISSING_HOST, nameserver=domain, ip=ip_list
+                    ),
+                )
+            elif e.code == nsErrorCodes.INVALID_HOST:
+                self.add_error(
+                    "server",
+                    NameserverError(
+                        code=nsErrorCodes.INVALID_HOST, nameserver=server, ip=ip_list
                     ),
                 )
             else:

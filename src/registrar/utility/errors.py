@@ -66,6 +66,7 @@ class NameserverErrorCodes(IntEnum):
         - 4 TOO_MANY_HOSTS  more than the max allowed host values
         - 5 UNABLE_TO_UPDATE_DOMAIN unable to update the domain
         - 6 MISSING_HOST host is missing for a nameserver
+        - 7 INVALID_HOST host is invalid for a nameserver
     """
 
     MISSING_IP = 1
@@ -74,6 +75,7 @@ class NameserverErrorCodes(IntEnum):
     TOO_MANY_HOSTS = 4
     UNABLE_TO_UPDATE_DOMAIN = 5
     MISSING_HOST = 6
+    INVALID_HOST = 7
 
 
 class NameserverError(Exception):
@@ -102,6 +104,7 @@ class NameserverError(Exception):
         NameserverErrorCodes.MISSING_HOST: (
             "Name server must be provided to enter IP address."
         ),
+        NameserverErrorCodes.INVALID_HOST: ("Name server, {}, is not valid."),
     }
 
     def __init__(self, *args, code=None, nameserver=None, ip=None, **kwargs):

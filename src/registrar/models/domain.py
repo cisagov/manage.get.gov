@@ -305,12 +305,33 @@ class Domain(TimeStampedModel, DomainHelper):
         return bool(regex.match(nameserver))
 
     @classmethod
+    def isValidDomain(cls, nameserver: str):
+        """Checks for validity of nameserver string based on these rules:
+        - first character is alpha
+        - last character is not - or .
+        - all characters alpha, 0-9, -, or .
+        - 2 character min, 24 character max
+        """
+        # pattern to test for valid domain
+        # pattern = r'^[a-zA-Z][a-zA-Z0-9-.]{0,22}[a-zA-Z0-9]$'
+        pattern = r"^[a-zA-Z][a-zA-Z0-9-.]*(\.[a-zA-Z0-9-]+){2}[a-zA-Z0-9]$"
+
+        # attempt to match the pattern
+        match = re.match(pattern, nameserver)
+
+        # return true if nameserver matches, and length less than 25;
+        # otherwise false
+        return bool(match) and len(nameserver) < 25
+
+    @classmethod
     def checkHostIPCombo(cls, name: str, nameserver: str, ip: list[str]):
         """Checks the parameters past for a valid combination
         raises error if:
             - nameserver is a subdomain but is missing ip
             - nameserver is not a subdomain but has ip
             - nameserver is a subdomain but an ip passed is invalid
+            - nameserver is not a valid domain
+            - ip is provided but is missing domain
 
         Args:
             hostname (str)- nameserver or subdomain
@@ -319,7 +340,11 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
+        if ip and not nameserver:
+            raise NameserverError(code=nsErrorCodes.MISSING_HOST)
+        elif nameserver and not cls.isValidDomain(nameserver):
+            raise NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=nameserver)
+        elif cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
         elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != []):
