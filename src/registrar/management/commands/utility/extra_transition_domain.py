@@ -7,7 +7,7 @@ import logging
 
 import os
 from typing import List
-from epp_data_containers import (
+from .epp_data_containers import (
     AgencyAdhoc,
     DomainAdditionalData,
     DomainTypeAdhoc,
@@ -45,23 +45,26 @@ class PatternMap:
         regex: re.Pattern,
         data_type: type,
         id_field: str,
-        data: dict = {},
     ):
         self.regex = regex
         self.data_type = data_type
         self.id_field = id_field
-        self.data = data
+        self.data = {}
+        self.filename = filename
+        self.could_infer = False
 
+    def try_infer_filename(self, current_file_name, default_file_name):
+        """Tries to match a given filename to a regex, 
+        then uses that match to generate the filename."""
         # returns (filename, inferred_successfully)
-        _infer = self._infer_filename(self.regex, filename)
-        self.filename = _infer[0]
-        self.could_infer = _infer[1]
+        return self._infer_filename(self.regex, current_file_name, default_file_name)
 
-    def _infer_filename(self, regex: re.Pattern, default_file_name):
+    def _infer_filename(self, regex: re.Pattern, matched_file_name, default_file_name):
         if not isinstance(regex, re.Pattern):
             return (self.filename, False)
-
-        match = regex.match(self.filename)
+        
+        match = regex.match(matched_file_name)
+        
         if not match:
             return (self.filename, False)
 
@@ -74,7 +77,7 @@ class PatternMap:
             return (self.filename, False)
 
         # If so, note that and return the inferred name
-        full_filename = date + filename_without_date
+        full_filename = date + "." + filename_without_date
         return (full_filename, can_infer)
 
 
@@ -82,25 +85,28 @@ class ExtraTransitionDomain:
     """Helper class to aid in storing TransitionDomain data spread across
     multiple files."""
     filenames = EnumFilenames
-    strip_date_regex = re.compile(r"\d+\.(.+)")
+    #strip_date_regex = re.compile(r"\d+\.(.+)")
+    strip_date_regex = re.compile(r"(?:.*\/)?(\d+)\.(.+)")
 
     def __init__(
         self,
-        agency_adhoc_filename=filenames.AGENCY_ADHOC[1],
-        domain_additional_filename=filenames.DOMAIN_ADDITIONAL[1],
-        domain_adhoc_filename=filenames.DOMAIN_ADHOC[1],
-        organization_adhoc_filename=filenames.ORGANIZATION_ADHOC[1],
-        authority_adhoc_filename=filenames.AUTHORITY_ADHOC[1],
+        agency_adhoc_filename=filenames.AGENCY_ADHOC.value[1],
+        domain_additional_filename=filenames.DOMAIN_ADDITIONAL.value[1],
+        domain_adhoc_filename=filenames.DOMAIN_ADHOC.value[1],
+        organization_adhoc_filename=filenames.ORGANIZATION_ADHOC.value[1],
+        authority_adhoc_filename=filenames.AUTHORITY_ADHOC.value[1],
         directory="migrationdata",
         seperator="|",
     ):
+        # Add a slash if the last character isn't one
+        if directory and directory[-1] != "/":
+            directory += "/"
         self.directory = directory
         self.seperator = seperator
 
-        _all_files = glob.glob(f"{directory}/*")
+        self.all_files = glob.glob(f"{directory}*")
         # Create a set with filenames as keys for quick lookup
-        self.all_files_set = {os.path.basename(file) for file in _all_files}
-
+        self.all_files_set = {os.path.basename(file) for file in self.all_files}
         self.file_data = {
             # (filename, default_url): metadata about the desired file
             self.filenames.AGENCY_ADHOC: PatternMap(
@@ -132,34 +138,62 @@ class ExtraTransitionDomain:
             ),
         }
 
-    def parse_all_files(self):
+    def parse_all_files(self, infer_filenames=True):
         """Clears all preexisting data then parses each related CSV file.
 
         overwrite_existing_data: bool -> Determines if we should clear
         file_data.data if it already exists
         """
         self.clear_file_data()
-        for item in self.file_data:
-            file_type: PatternMap = item.value
-            filename = file_type.filename
+        for name, value in self.file_data.items():
+            filename = f"{value.filename}"
 
             if filename in self.all_files_set:
-                file_type.data = self._read_csv_file(
-                    self.all_files_set[filename],
+                _file = f"{self.directory}{value.filename}"
+                value.data = self._read_csv_file(
+                    _file,
                     self.seperator,
-                    file_type.data_type,
-                    file_type.id_field,
+                    value.data_type,
+                    value.id_field,
                 )
             else:
+                if not infer_filenames:
+                    logger.error(f"Could not find file: {filename}")
+                    continue
+                
+                logger.warning(
+                    "Attempting to infer filename" 
+                    f" for file: {filename}."
+                )
+                for filename in self.all_files:
+                    default_name = name.value[1]
+                    match = value.try_infer_filename(filename, default_name)
+                    filename = match[0]
+                    can_infer = match[1]
+                    if can_infer:
+                        break
+
+                if filename in self.all_files_set:
+                    logger.info(f"Infer success. Found file {filename}")
+                    _file = f"{self.directory}{filename}"
+                    value.data = self._read_csv_file(
+                        _file,
+                        self.seperator,
+                        value.data_type,
+                        value.id_field,
+                    )
+                    continue
                 # Log if we can't find the desired file
                 logger.error(f"Could not find file: {filename}")
 
     def clear_file_data(self):
-        for item in self.file_data:
-            file_type: PatternMap = item.value
+        for item in self.file_data.values():
+            file_type: PatternMap = item
             file_type.data = {}
 
     def _read_csv_file(self, file, seperator, dataclass_type, id_field):
-        with open(file, "r", encoding="utf-8") as requested_file:
+        with open(file, "r", encoding="utf-8-sig") as requested_file:
             reader = csv.DictReader(requested_file, delimiter=seperator)
-            return {row[id_field]: dataclass_type(**row) for row in reader}
+            dict_data = {row[id_field]: dataclass_type(**row) for row in reader}
+            logger.debug(f"it is finally here {dict_data}")
+            return dict_data

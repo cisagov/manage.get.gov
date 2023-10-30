@@ -51,14 +51,14 @@ class FileTransitionLog:
         }
 
     class LogItem:
-        """Used for storing data about logger information.
-        Intended for use in"""
-        def __init__(self, file_type, code, message):
+        """Used for storing data about logger information."""
+        def __init__(self, file_type, code, message, domain_name):
             self.file_type = file_type
             self.code = code
             self.message = message
+            self.domain_name = domain_name
 
-    def add_log(self, file_type, code, message):
+    def add_log(self, file_type, code, message, domain_name):
         """Adds a log item to self.logs
 
         file_type -> Which array to add to, 
@@ -68,18 +68,18 @@ class FileTransitionLog:
 
         message -> Message to display
         """
-        self.logs[file_type] = self.LogItem(file_type, code, message)
+        self.logs[file_type].append(self.LogItem(file_type, code, message, domain_name))
 
-    def create_log_item(self, file_type, code, message, add_to_list=True):
+    def create_log_item(self, file_type, code, message, domain_name=None, add_to_list=True):
         """Creates and returns an LogItem object.
 
         add_to_list: bool -> If enabled, add it to the logs array.
         """
-        log = self.LogItem(file_type, code, message)
+        log = self.LogItem(file_type, code, message, domain_name)
         if not add_to_list:
             return log
         else:
-            self.logs[file_type] = log
+            self.logs[file_type].append(log)
         return log
 
     def display_logs(self, file_type):
@@ -89,7 +89,8 @@ class FileTransitionLog:
         for log in self.logs.get(file_type):
             match log.code:
                 case LogCode.ERROR:
-                    logger.error(log.message)
+                    if log.domain_name is None:
+                        logger.error(log.message)
                 case LogCode.WARNING:
                     logger.warning(log.message)
                 case LogCode.INFO:
@@ -110,22 +111,22 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--agency_adhoc_filename",
-            default=EnumFilenames.AGENCY_ADHOC[1],
+            default=EnumFilenames.AGENCY_ADHOC.value[1],
             help="Defines the filename for agency adhocs",
         )
         parser.add_argument(
             "--domain_additional_filename",
-            default=EnumFilenames.DOMAIN_ADDITIONAL[1],
+            default=EnumFilenames.DOMAIN_ADDITIONAL.value[1],
             help="Defines the filename for additional domain data",
         )
         parser.add_argument(
             "--domain_adhoc_filename",
-            default=EnumFilenames.DOMAIN_ADHOC[1],
+            default=EnumFilenames.DOMAIN_ADHOC.value[1],
             help="Defines the filename for domain type adhocs",
         )
         parser.add_argument(
             "--organization_adhoc_filename",
-            default=EnumFilenames.ORGANIZATION_ADHOC[1],
+            default=EnumFilenames.ORGANIZATION_ADHOC.value[1],
             help="Defines the filename for domain type adhocs",
         )
         parser.add_argument("--sep", default="|", help="Delimiter character")
@@ -143,6 +144,7 @@ class Command(BaseCommand):
             self.domain_object.parse_all_files()
         except Exception as err:
             logger.error(f"Could not load additional data. Error: {err}")
+            raise err
         else:
             all_transition_domains = TransitionDomain.objects.all()
             if not all_transition_domains.exists():
@@ -190,8 +192,9 @@ class Command(BaseCommand):
         if info is None:
             self.parse_logs.create_log_item(
                 EnumFilenames.AGENCY_ADHOC,
-                LogCode.INFO,
-                f"Could not add federal_agency on {domain_name}, no data exists."
+                LogCode.ERROR,
+                f"Could not add federal_agency on {domain_name}, no data exists.",
+                domain_name
             )
             return transition_domain
 
@@ -205,6 +208,7 @@ class Command(BaseCommand):
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
                 f"Could not add inactive agency {info.agencyname} on {domain_name}",
+                domain_name
             )
             return transition_domain
         
@@ -213,6 +217,7 @@ class Command(BaseCommand):
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
                 f"Could not add non-federal agency {info.agencyname} on {domain_name}",
+                domain_name
             )
             return transition_domain
         
@@ -242,8 +247,9 @@ class Command(BaseCommand):
         if info is None:
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
-                LogCode.INFO,
+                LogCode.ERROR,
                 f"Could not add domain_type on {domain_name}, no data exists.",
+                domain_name
             )
             return transition_domain
 
@@ -264,6 +270,7 @@ class Command(BaseCommand):
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
                 f"Could not add inactive domain_type {domain_type[0]} on {domain_name}",
+                domain_name
             )
             return transition_domain
 
@@ -317,8 +324,9 @@ class Command(BaseCommand):
         if org_info is None:
             self.parse_logs.create_log_item(
                 EnumFilenames.ORGANIZATION_ADHOC,
-                LogCode.INFO,
+                LogCode.ERROR,
                 f"Could not add organization_name on {domain_name}, no data exists.",
+                domain_name
             )
             return transition_domain
 
@@ -351,32 +359,42 @@ class Command(BaseCommand):
                 file_type,
                 LogCode.DEBUG,
                 f"Added {file_type} as '{var_name}' on {domain_name}",
+                domain_name
             )
         else:
             self.parse_logs.create_log_item(
                 file_type,
                 LogCode.INFO,
                 f"Updated existing {var_name} to '{changed_value}' on {domain_name}",
+                domain_name
             )
 
     # Property getters, i.e. orgid or domaintypeid
     def get_org_info(self, domain_name) -> OrganizationAdhoc:
         domain_info = self.get_domain_data(domain_name)
+        if domain_info is None:
+            return None
         org_id = domain_info.orgid
         return self.get_organization_adhoc(org_id)
 
     def get_domain_type_info(self, domain_name) -> DomainTypeAdhoc:
         domain_info = self.get_domain_data(domain_name)
+        if domain_info is None:
+            return None
         type_id = domain_info.domaintypeid
         return self.get_domain_adhoc(type_id)
 
     def get_agency_info(self, domain_name) -> AgencyAdhoc:
         domain_info = self.get_domain_data(domain_name)
+        if domain_info is None:
+            return None
         type_id = domain_info.orgid
         return self.get_domain_adhoc(type_id)
     
     def get_authority_info(self, domain_name):
         domain_info = self.get_domain_data(domain_name)
+        if domain_info is None:
+            return None
         type_id = domain_info.authorityid
         return self.get_authority_adhoc(type_id)
 
@@ -441,10 +459,9 @@ class Command(BaseCommand):
 
         # Grab the value given an Id within that file_type dict. 
         # For example, "igorville.gov".
-        obj = desired_type.get(desired_id)
+        obj = desired_type.data.get(desired_id)
         if obj is None:
             self.parse_logs.create_log_item(
                 file_type, LogCode.ERROR, f"Id {desired_id} does not exist"
             )
-
         return obj

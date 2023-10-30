@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0042_create_groups_v03"),
+        ("registrar", "0043_domain_expiration_date"),
     ]
 
     operations = [
@@ -29,6 +29,13 @@ class Migration(migrations.Migration):
             name="organization_type",
             field=models.TextField(
                 blank=True, help_text="Type of organization", max_length=255, null=True
+            ),
+        ),
+        migrations.AddField(
+            model_name="transitiondomain",
+            name="organization_name",
+            field=models.TextField(
+                blank=True, db_index=True, help_text="Organization name", null=True
             ),
         ),
     ]
