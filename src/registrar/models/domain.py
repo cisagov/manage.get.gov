@@ -310,7 +310,7 @@ class Domain(TimeStampedModel, DomainHelper):
         - first character is alpha
         - last character is not - or .
         - all characters alpha, 0-9, -, or .
-        - 2 character min, 24 character max
+        - 2 character min, 24 character max (not including dashes/periods)
         """
         # pattern to test for valid domain
         # pattern = r'^[a-zA-Z][a-zA-Z0-9-.]{0,22}[a-zA-Z0-9]$'
@@ -319,9 +319,16 @@ class Domain(TimeStampedModel, DomainHelper):
         # attempt to match the pattern
         match = re.match(pattern, nameserver)
 
+        # length of nameserver, not including - or .
+        characters_to_exclude = "-."
+        filtered_nameserver = "".join(
+            char for char in nameserver if char not in characters_to_exclude
+        )
+        nameserverLength = len(filtered_nameserver)
+
         # return true if nameserver matches, and length less than 25;
         # otherwise false
-        return bool(match) and len(nameserver) < 25
+        return bool(match) and nameserverLength < 25
 
     @classmethod
     def checkHostIPCombo(cls, name: str, nameserver: str, ip: list[str]):
