@@ -298,7 +298,7 @@ class DomainNameserversView(DomainFormBaseView):
                 # Remove any leading or trailing whitespace from each IP in the list
                 # this will return [] if no ips have been entered, which is taken
                 # into account in the model in checkHostIPCombo
-                ip_list = [ip.strip() for ip in ip_list]
+                ip_list = [ip.replace(" ", "") for ip in ip_list]
 
                 as_tuple = (
                     form.cleaned_data["server"],
