@@ -36,6 +36,7 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             if security_contacts
             else " ",
             "Status": domainInfo.domain.state,
+            "Expiration Date": domainInfo.domain.expiration_date,
         }
         writer.writerow([FIELDS.get(column, "") for column in columns])
 
@@ -54,7 +55,7 @@ def export_data_type_to_csv(csv_file):
         "AO email",
         "Security Contact Email",
         "Status",
-        # 'Expiration Date'
+        "Expiration Date",
     ]
     sort_fields = ["domain__name"]
     filter_condition = {

@@ -22,10 +22,10 @@ class ExportDataTest(TestCase):
             name="cdomain1.gov", state=Domain.State.READY
         )
         self.domain_2, _ = Domain.objects.get_or_create(
-            name="adomain2.gov", state=Domain.State.READY
+            name="adomain2.gov", state=Domain.State.DNS_NEEDED
         )
         self.domain_3, _ = Domain.objects.get_or_create(
-            name="ddomain3.gov", state=Domain.State.READY
+            name="ddomain3.gov", state=Domain.State.ON_HOLD
         )
         self.domain_4, _ = Domain.objects.get_or_create(
             name="bdomain4.gov", state=Domain.State.UNKNOWN
@@ -90,7 +90,13 @@ class ExportDataTest(TestCase):
             "Status",
         ]
         sort_fields = ["domain__name"]
-        filter_condition = {"domain__state": Domain.State.READY}
+        filter_condition = {
+            "domain__state__in": [
+                Domain.State.READY,
+                Domain.State.DNS_NEEDED,
+                Domain.State.ON_HOLD,
+            ],
+        }
 
         # Call the export function
         export_domains_to_writer(writer, columns, sort_fields, filter_condition)
@@ -107,12 +113,10 @@ class ExportDataTest(TestCase):
             "Domain name,Domain type,Federal agency,Organization name,City,State,AO,"
             "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
             "Security Contact Email,Status\n"
-            "adomain2.gov,interstate,ready\n"
+            "adomain2.gov,interstate,dnsneeded\n"
             "cdomain1.gov,federal,World War I Centennial Commission,ready\n"
-            "ddomain3.gov,federal,Armed Forces Retirement Home,ready\n"
+            "ddomain3.gov,federal,Armed Forces Retirement Home,onhold\n"
         )
-        # print(csv_content)
-        # self.maxDiff = None
 
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
@@ -148,7 +152,11 @@ class ExportDataTest(TestCase):
         sort_fields = ["domain__name", "federal_agency", "organization_type"]
         filter_condition = {
             "organization_type__icontains": "federal",
-            "domain__state": Domain.State.READY,
+            "domain__state__in": [
+                Domain.State.READY,
+                Domain.State.DNS_NEEDED,
+                Domain.State.ON_HOLD,
+            ],
         }
 
         # Call the export function
