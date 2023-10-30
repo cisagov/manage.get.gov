@@ -238,10 +238,8 @@ function handleValidationClick(e) {
 function prepareDeleteButtons(formLabel) {
   let deleteButtons = document.querySelectorAll(".delete-record");
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
-  let isNameserversForm = false;
+  let isNameserversForm = document.title.includes("DNS name servers |");
   let addButton = document.querySelector("#add-form");
-  if (document.title.includes("DNS name servers |"))
-    isNameserversForm = true;
 
   // Loop through each delete button and attach the click event listener
   deleteButtons.forEach((deleteButton) => {
@@ -256,7 +254,7 @@ function prepareDeleteButtons(formLabel) {
 
     let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
     let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
-    // For the eample on Nameservers
+    // For the example on Nameservers
     let formExampleRegex = RegExp(`ns(\\d+){1}`, 'g');
 
     forms.forEach((form, index) => {
@@ -305,7 +303,7 @@ function prepareDeleteButtons(formLabel) {
         }
       });
 
-      // Remove the add more button if we have less than 13 forms
+      // Display the add more button if we have less than 13 forms
       if (isNameserversForm && forms.length <= 13) {
         addButton.classList.remove("display-none")
       }
@@ -327,9 +325,8 @@ function prepareDeleteButtons(formLabel) {
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
   let cloneIndex = 0;
   let formLabel = '';
-  let isNameserversForm = false;
-  if (document.title.includes("DNS name servers |")) {
-    isNameserversForm = true;
+  let isNameserversForm = document.title.includes("DNS name servers |");
+  if (isNameserversForm) {
     cloneIndex = 2;
     formLabel = "Name server";
   } else if ((document.title.includes("DS Data |")) || (document.title.includes("Key Data |"))) {
