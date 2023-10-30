@@ -58,9 +58,11 @@ def export_data_type_to_csv(csv_file):
     ]
     sort_fields = ["domain__name"]
     filter_condition = {
-        "domain__state": Domain.State.READY,
-        "domain__state": Domain.State.DNS_NEEDED,
-        "domain__state": Domain.State.ON_HOLD,
+        "domain__state__in": [
+            Domain.State.READY,
+            Domain.State.DNS_NEEDED,
+            Domain.State.ON_HOLD,
+        ],
     }
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)
 
@@ -79,9 +81,11 @@ def export_data_full_to_csv(csv_file):
     ]
     sort_fields = ["domain__name", "federal_agency", "organization_type"]
     filter_condition = {
-        "domain__state": Domain.State.READY,
-        "domain__state": Domain.State.DNS_NEEDED,
-        "domain__state": Domain.State.ON_HOLD,
+        "domain__state__in": [
+            Domain.State.READY,
+            Domain.State.DNS_NEEDED,
+            Domain.State.ON_HOLD,
+        ],
     }
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)
 
@@ -101,8 +105,10 @@ def export_data_federal_to_csv(csv_file):
     sort_fields = ["domain__name", "federal_agency", "organization_type"]
     filter_condition = {
         "organization_type__icontains": "federal",
-        "domain__state": Domain.State.READY,
-        "domain__state": Domain.State.DNS_NEEDED,
-        "domain__state": Domain.State.ON_HOLD,
+        "domain__state__in": [
+            Domain.State.READY,
+            Domain.State.DNS_NEEDED,
+            Domain.State.ON_HOLD,
+        ],
     }
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)

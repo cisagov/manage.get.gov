@@ -114,7 +114,8 @@ class ExportDataTest(TestCase):
         # print(csv_content)
         # self.maxDiff = None
 
-        # Normalize line endings and remove commas, spaces and leading/trailing whitespace
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
         csv_content = (
             csv_content.replace(",,", "")
             .replace(",", "")
@@ -169,7 +170,8 @@ class ExportDataTest(TestCase):
             "ddomain3.gov,federal,Armed Forces Retirement Home\n"
         )
 
-        # Normalize line endings and remove commas, spaces and leading/trailing whitespace
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
         csv_content = (
             csv_content.replace(",,", "")
             .replace(",", "")
