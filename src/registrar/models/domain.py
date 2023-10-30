@@ -256,7 +256,6 @@ class Domain(TimeStampedModel, DomainHelper):
         hostList = []
         for host in hosts:
             hostList.append((host["name"], host["addrs"]))
-
         return hostList
 
     def _create_host(self, host, addrs):

@@ -1099,6 +1099,13 @@ class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.domain_with_ip, _ = Domain.objects.get_or_create(
+            name="nameserverwithip.gov"
+        )
+        self.domain_just_nameserver, _ = Domain.objects.get_or_create(
+            name="justnameserver.com"
+        )
+
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         self.domain_multdsdata, _ = Domain.objects.get_or_create(
             name="dnssec-multdsdata.gov"
@@ -1108,9 +1115,11 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(
             name="dnssec-none.gov"
         )
+
         self.domain_information, _ = DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain
         )
+
         DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain_dsdata
         )
@@ -1120,9 +1129,17 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain_dnssec_none
         )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain_with_ip
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain_just_nameserver
+        )
+
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
+
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.MANAGER
         )
@@ -1134,6 +1151,16 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_dnssec_none,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_ip,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_just_nameserver,
             role=UserDomainRole.Roles.MANAGER,
         )
 
@@ -1218,6 +1245,37 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         with less_console_noise():
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
+
+    def test_domain_see_just_nameserver(self):
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "justnameserver.com")
+
+        # View nameserver on Domain Overview page
+        detail_page = self.app.get(
+            reverse("domain", kwargs={"pk": self.domain_just_nameserver.id})
+        )
+
+        self.assertContains(detail_page, "justnameserver.com")
+        self.assertContains(detail_page, "ns1.justnameserver.com")
+        self.assertContains(detail_page, "ns2.justnameserver.com")
+
+    def test_domain_see_nameserver_and_ip(self):
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "nameserverwithip.gov")
+
+        # View nameserver on Domain Overview page
+        detail_page = self.app.get(
+            reverse("domain", kwargs={"pk": self.domain_with_ip.id})
+        )
+
+        self.assertContains(detail_page, "nameserverwithip.gov")
+
+        self.assertContains(detail_page, "ns1.nameserverwithip.gov")
+        self.assertContains(detail_page, "ns2.nameserverwithip.gov")
+        self.assertContains(detail_page, "ns3.nameserverwithip.gov")
+        # Splitting IP addresses bc there is odd whitespace and can't strip text
+        self.assertContains(detail_page, "(1.2.3.4,")
+        self.assertContains(detail_page, "2.3.4.5)")
 
 
 class TestDomainManagers(TestDomainOverview):
