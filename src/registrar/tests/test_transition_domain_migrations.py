@@ -10,8 +10,11 @@ from registrar.models import (
     UserDomainRole,
 )
 
-from registrar.management.commands.master_domain_migrations import Command as master_migration_command
+from registrar.management.commands.master_domain_migrations import (
+    Command as master_migration_command,
+)
 from django.core.management import call_command
+
 
 class TestLogins(TestCase):
 
@@ -27,7 +30,7 @@ class TestLogins(TestCase):
         self.test_domain_contact_filename = "test_domain_contacts.txt"
         self.test_contact_filename = "test_contacts.txt"
         self.test_domain_status_filename = "test_domain_statuses.txt"
-    
+
     def tearDown(self):
         super().tearDown()
         TransitionDomain.objects.all().delete()
@@ -43,49 +46,57 @@ class TestLogins(TestCase):
             f"{self.test_data_file_location}/{self.test_domain_contact_filename}",
             f"{self.test_data_file_location}/{self.test_contact_filename}",
             f"{self.test_data_file_location}/{self.test_domain_status_filename}",
-            )
+        )
 
     def run_transfer_domains(self):
         call_command("transfer_transition_domains_to_domains")
 
     def run_master_script(self):
         command = call_command(
-            "master_domain_migrations", 
-            runMigrations=True, 
-            migrationDirectory=f"{self.test_data_file_location}", 
-            migrationFilenames=(f"{self.test_domain_contact_filename},"
-                                f"{self.test_contact_filename},"
-                                f"{self.test_domain_status_filename}"),
-            )
+            "master_domain_migrations",
+            runMigrations=True,
+            migrationDirectory=f"{self.test_data_file_location}",
+            migrationFilenames=(
+                f"{self.test_domain_contact_filename},"
+                f"{self.test_contact_filename},"
+                f"{self.test_domain_status_filename}"
+            ),
+        )
 
-    def compare_tables(self,
-                       expected_total_transition_domains,
-                       expected_total_domains,
-                       expected_total_domain_informations,
-                       expected_total_domain_invitations,
-                       expected_missing_domains,
-                       expected_duplicate_domains,
-                       expected_missing_domain_informations,
-                       expected_missing_domain_invitations):
-        """Does a diff between the transition_domain and the following tables: 
-        domain, domain_information and the domain_invitation. 
+    def compare_tables(
+        self,
+        expected_total_transition_domains,
+        expected_total_domains,
+        expected_total_domain_informations,
+        expected_total_domain_invitations,
+        expected_missing_domains,
+        expected_duplicate_domains,
+        expected_missing_domain_informations,
+        expected_missing_domain_invitations,
+    ):
+        """Does a diff between the transition_domain and the following tables:
+        domain, domain_information and the domain_invitation.
         Verifies that the data loaded correctly."""
 
         missing_domains = []
         duplicate_domains = []
         missing_domain_informations = []
         missing_domain_invites = []
-        for transition_domain in TransitionDomain.objects.all():# DEBUG:
+        for transition_domain in TransitionDomain.objects.all():  # DEBUG:
             transition_domain_name = transition_domain.domain_name
             transition_domain_email = transition_domain.username
 
             # Check Domain table
             matching_domains = Domain.objects.filter(name=transition_domain_name)
             # Check Domain Information table
-            matching_domain_informations = DomainInformation.objects.filter(domain__name=transition_domain_name)
+            matching_domain_informations = DomainInformation.objects.filter(
+                domain__name=transition_domain_name
+            )
             # Check Domain Invitation table
-            matching_domain_invitations = DomainInvitation.objects.filter(email=transition_domain_email.lower(), 
-                                                                          domain__name=transition_domain_name)
+            matching_domain_invitations = DomainInvitation.objects.filter(
+                email=transition_domain_email.lower(),
+                domain__name=transition_domain_name,
+            )
 
             if len(matching_domains) == 0:
                 missing_domains.append(transition_domain_name)
@@ -106,7 +117,8 @@ class TestLogins(TestCase):
         total_domain_informations = len(DomainInformation.objects.all())
         total_domain_invitations = len(DomainInvitation.objects.all())
 
-        print(f"""
+        print(
+            f"""
         total_missing_domains = {len(missing_domains)}
         total_duplicate_domains = {len(duplicate_domains)}
         total_missing_domain_informations = {len(missing_domain_informations)}
@@ -116,26 +128,30 @@ class TestLogins(TestCase):
         total_domains = {len(Domain.objects.all())}
         total_domain_informations = {len(DomainInformation.objects.all())}
         total_domain_invitations = {len(DomainInvitation.objects.all())}
-        """)
+        """
+        )
 
         self.assertTrue(total_missing_domains == expected_missing_domains)
         self.assertTrue(total_duplicate_domains == expected_duplicate_domains)
-        self.assertTrue(total_missing_domain_informations == expected_missing_domain_informations)
-        self.assertTrue(total_missing_domain_invitations == expected_missing_domain_invitations)
+        self.assertTrue(
+            total_missing_domain_informations == expected_missing_domain_informations
+        )
+        self.assertTrue(
+            total_missing_domain_invitations == expected_missing_domain_invitations
+        )
 
         self.assertTrue(total_transition_domains == expected_total_transition_domains)
         self.assertTrue(total_domains == expected_total_domains)
         self.assertTrue(total_domain_informations == expected_total_domain_informations)
         self.assertTrue(total_domain_invitations == expected_total_domain_invitations)
-    
-     
+
     def test_master_migration_functions(self):
-        """ Run the full master migration script using local test data.
-         NOTE: This is more of an integration test and so far does not
-         follow best practice of limiting the number of assertions per test.
-         But for now, this will double-check that the script
-         works as intended. """
-        
+        """Run the full master migration script using local test data.
+        NOTE: This is more of an integration test and so far does not
+        follow best practice of limiting the number of assertions per test.
+        But for now, this will double-check that the script
+        works as intended."""
+
         self.run_master_script()
 
         # # TODO: instead of patching....there has got to be a way of making sure subsequent commands use the django database
@@ -162,22 +178,22 @@ class TestLogins(TestCase):
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
-         # we expect 8 missing domain invites since the migration does not auto-login new users
+        # we expect 8 missing domain invites since the migration does not auto-login new users
         expected_missing_domain_informations = 8
         # we expect 1 missing invite from anomaly.gov (an injected error)
         expected_missing_domain_invitations = 1
-        self.compare_tables(expected_total_transition_domains,
-                            expected_total_domains,
-                            expected_total_domain_informations,
-                            expected_total_domain_invitations,
-                            expected_missing_domains,
-                            expected_duplicate_domains,
-                            expected_missing_domain_informations,
-                            expected_missing_domain_invitations,
-                            )
-        
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
+
     def test_load_transition_domain(self):
-        
         self.run_load_domains()
 
         # STEP 2: (analyze the tables just like the migration script does, but add assert statements)
@@ -190,18 +206,18 @@ class TestLogins(TestCase):
         expected_duplicate_domains = 0
         expected_missing_domain_informations = 8
         expected_missing_domain_invitations = 8
-        self.compare_tables(expected_total_transition_domains,
-                            expected_total_domains,
-                            expected_total_domain_informations,
-                            expected_total_domain_invitations,
-                            expected_missing_domains,
-                            expected_duplicate_domains,
-                            expected_missing_domain_informations,
-                            expected_missing_domain_invitations,
-                            )
-    
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
+
     def test_transfer_transition_domains_to_domains(self):
-        
         # TODO: setup manually instead of calling other script
         self.run_load_domains()
         self.run_transfer_domains()
@@ -216,28 +232,30 @@ class TestLogins(TestCase):
         expected_duplicate_domains = 0
         expected_missing_domain_informations = 8
         expected_missing_domain_invitations = 1
-        self.compare_tables(expected_total_transition_domains,
-                            expected_total_domains,
-                            expected_total_domain_informations,
-                            expected_total_domain_invitations,
-                            expected_missing_domains,
-                            expected_duplicate_domains,
-                            expected_missing_domain_informations,
-                            expected_missing_domain_invitations,
-                            )
-
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
 
     def test_logins(self):
-         # TODO: setup manually instead of calling other scripts
+        # TODO: setup manually instead of calling other scripts
         self.run_load_domains()
         self.run_transfer_domains()
-        
+
         # Simluate Logins
         for invite in DomainInvitation.objects.all():
             # get a user with this email address
-            user, user_created = User.objects.get_or_create(email=invite.email, username=invite.email)
+            user, user_created = User.objects.get_or_create(
+                email=invite.email, username=invite.email
+            )
             user.first_login()
-        
+
         # Analyze the tables
         expected_total_transition_domains = 8
         expected_total_domains = 4
@@ -248,12 +266,13 @@ class TestLogins(TestCase):
         expected_duplicate_domains = 0
         expected_missing_domain_informations = 1
         expected_missing_domain_invitations = 1
-        self.compare_tables(expected_total_transition_domains,
-                            expected_total_domains,
-                            expected_total_domain_informations,
-                            expected_total_domain_invitations,
-                            expected_missing_domains,
-                            expected_duplicate_domains,
-                            expected_missing_domain_informations,
-                            expected_missing_domain_invitations,
-                            )
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
