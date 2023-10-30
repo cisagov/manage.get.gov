@@ -1466,7 +1466,7 @@ class TestDomainNameservers(TestDomainOverview):
         # the required field.  form requires a minimum of 2 name servers
         self.assertContains(
             result,
-            "A minimum of 2 Name Servers are required.",
+            "A minimum of 2 name servers are required.",
             count=2,
             status_code=200,
         )
@@ -1639,7 +1639,7 @@ class TestDomainNameservers(TestDomainOverview):
         # once around each required field.
         self.assertContains(
             result,
-            "A minimum of 2 Name Servers are required.",
+            "A minimum of 2 name servers are required.",
             count=4,
             status_code=200,
         )
@@ -1810,7 +1810,11 @@ class TestDomainSecurityEmail(TestDomainOverview):
             (
                 "RegistryError",
                 form_data_registry_error,
-                "Update failed. Cannot contact the registry.",
+                """
+We’re experiencing a system connection error. Please wait a few minutes
+and try again. If you continue to receive this error after a few tries,
+contact help@get.gov
+                """,
             ),
             ("ContactError", form_data_contact_error, "Value entered was wrong."),
             (
@@ -1845,7 +1849,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
             self.assertEqual(len(messages), 1)
             message = messages[0]
             self.assertEqual(message.tags, message_tag)
-            self.assertEqual(message.message, expected_message)
+            self.assertEqual(message.message.strip(), expected_message.strip())
 
     def test_domain_overview_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management

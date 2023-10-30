@@ -315,7 +315,6 @@ function prepareDeleteButtons(formLabel) {
       if (isNameserversForm && forms.length < 3) {
         // Hide the delete buttons on the remaining nameservers
         Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-          // deleteButton.classList.add("display-none");
           deleteButton.setAttribute("disabled", "true");
         });
       }
@@ -345,6 +344,11 @@ function prepareDeleteButtons(formLabel) {
     formLabel = "DS Data record";
   }
 
+  // On load: Disable the add more button if we have 13 forms
+  if (isNameserversForm && document.querySelectorAll(".repeatable-form").length == 13) {
+    addButton.setAttribute("disabled", "true");
+  }
+
   // Attach click event listener on the delete buttons of the existing forms
   prepareDeleteButtons(formLabel);
 
@@ -361,7 +365,7 @@ function prepareDeleteButtons(formLabel) {
       let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
 
       // Some Nameserver form checks since the delete can mess up the source object we're copying
-      // in regards to required fileds and hidden delete buttons
+      // in regards to required fields and hidden delete buttons
       if (isNameserversForm) {
 
         // If the source element we're copying has required on an input,
@@ -383,7 +387,6 @@ function prepareDeleteButtons(formLabel) {
         // enable that button
         let deleteButton= newForm.querySelector('.delete-record');
         if (deleteButton.hasAttribute("disabled")) {
-          // newForm.querySelector('.delete-record').classList.remove("display-none");
           deleteButton.removeAttribute("disabled");
         }
       }
@@ -439,7 +442,6 @@ function prepareDeleteButtons(formLabel) {
 
       // Disable the add more button if we have 13 forms
       if (isNameserversForm && formNum == 13) {
-        // addButton.classList.add("display-none");
         addButton.setAttribute("disabled", "true");
       }
 
@@ -447,7 +449,6 @@ function prepareDeleteButtons(formLabel) {
         // Enable the delete buttons on the nameservers
         forms.forEach((form, index) => {
           Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-            // deleteButton.classList.remove("display-none");
             deleteButton.removeAttribute("disabled");
           });
         });
