@@ -5,6 +5,7 @@ import re
 from datetime import date
 from string import digits
 from typing import Optional
+
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
@@ -29,6 +30,7 @@ from epplibwrapper import (
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
+from django.db.models import DateField
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
@@ -209,12 +211,12 @@ class Domain(TimeStampedModel, DomainHelper):
         return self._get_property("up_date")
 
     @Cache
-    def expiration_date(self) -> date:
+    def registry_expiration_date(self) -> date:
         """Get or set the `ex_date` element from the registry."""
         return self._get_property("ex_date")
 
-    @expiration_date.setter  # type: ignore
-    def expiration_date(self, ex_date: date):
+    @registry_expiration_date.setter  # type: ignore
+    def registry_expiration_date(self, ex_date: date):
         pass
 
     @Cache
@@ -254,7 +256,6 @@ class Domain(TimeStampedModel, DomainHelper):
         hostList = []
         for host in hosts:
             hostList.append((host["name"], host["addrs"]))
-
         return hostList
 
     def _create_host(self, host, addrs):
@@ -942,6 +943,13 @@ class Domain(TimeStampedModel, DomainHelper):
         default=State.UNKNOWN,
         protected=True,  # cannot change state directly, particularly in Django admin
         help_text="Very basic info about the lifecycle of this domain object",
+    )
+
+    expiration_date = DateField(
+        null=True,
+        help_text=(
+            "Duplication of registry's expiration" "date saved for ease of reporting"
+        ),
     )
 
     def isActive(self):

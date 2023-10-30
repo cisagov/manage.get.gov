@@ -1,6 +1,6 @@
 import re
 
-from api.views import in_domains
+from api.views import check_domain_available
 from registrar.utility import errors
 
 
@@ -44,7 +44,7 @@ class DomainHelper:
             raise errors.ExtraDotsError()
         if not DomainHelper.string_could_be_domain(domain + ".gov"):
             raise ValueError()
-        if in_domains(domain):
+        if not check_domain_available(domain):
             raise errors.DomainUnavailableError()
         return domain
 
