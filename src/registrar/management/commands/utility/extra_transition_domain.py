@@ -12,6 +12,7 @@ from epp_data_containers import (
     DomainAdditionalData,
     DomainTypeAdhoc,
     OrganizationAdhoc,
+    AuthorityAdhoc,
     EnumFilenames,
 )
 
@@ -67,15 +68,19 @@ class PatternMap:
         date = match.group(1)
         filename_without_date = match.group(2)
 
+        # Can the supplied self.regex do a match on the filename?
         can_infer = filename_without_date == default_file_name
         if not can_infer:
             return (self.filename, False)
 
+        # If so, note that and return the inferred name
         full_filename = date + filename_without_date
         return (full_filename, can_infer)
 
 
 class ExtraTransitionDomain:
+    """Helper class to aid in storing TransitionDomain data spread across
+    multiple files."""
     filenames = EnumFilenames
     strip_date_regex = re.compile(r"\d+\.(.+)")
 
@@ -85,16 +90,18 @@ class ExtraTransitionDomain:
         domain_additional_filename=filenames.DOMAIN_ADDITIONAL[1],
         domain_adhoc_filename=filenames.DOMAIN_ADHOC[1],
         organization_adhoc_filename=filenames.ORGANIZATION_ADHOC[1],
+        authority_adhoc_filename=filenames.AUTHORITY_ADHOC[1],
         directory="migrationdata",
         seperator="|",
     ):
         self.directory = directory
         self.seperator = seperator
-        self.all_files = glob.glob(f"{directory}/*")
-        # Create a set with filenames as keys for quick lookup
-        self.all_files_set = {os.path.basename(file) for file in self.all_files}
 
-        self.csv_data = {
+        _all_files = glob.glob(f"{directory}/*")
+        # Create a set with filenames as keys for quick lookup
+        self.all_files_set = {os.path.basename(file) for file in _all_files}
+
+        self.file_data = {
             # (filename, default_url): metadata about the desired file
             self.filenames.AGENCY_ADHOC: PatternMap(
                 agency_adhoc_filename, self.strip_date_regex, AgencyAdhoc, "agencyid"
@@ -117,16 +124,22 @@ class ExtraTransitionDomain:
                 OrganizationAdhoc,
                 "orgid",
             ),
+            self.filenames.AUTHORITY_ADHOC: PatternMap(
+                authority_adhoc_filename,
+                self.strip_date_regex,
+                AuthorityAdhoc,
+                "authorityid",
+            ),
         }
 
-    def parse_all_files(self, overwrite_existing_data=True):
+    def parse_all_files(self):
         """Clears all preexisting data then parses each related CSV file.
 
         overwrite_existing_data: bool -> Determines if we should clear
-        csv_data.data if it already exists
+        file_data.data if it already exists
         """
-        self.clear_csv_data()
-        for item in self.csv_data:
+        self.clear_file_data()
+        for item in self.file_data:
             file_type: PatternMap = item.value
             filename = file_type.filename
 
@@ -141,8 +154,8 @@ class ExtraTransitionDomain:
                 # Log if we can't find the desired file
                 logger.error(f"Could not find file: {filename}")
 
-    def clear_csv_data(self):
-        for item in self.csv_data:
+    def clear_file_data(self):
+        for item in self.file_data:
             file_type: PatternMap = item.value
             file_type.data = {}
 

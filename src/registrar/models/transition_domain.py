@@ -48,6 +48,12 @@ class TransitionDomain(TimeStampedModel):
         blank=True,
         help_text="Type of organization",
     )
+    organization_name = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Organization name",
+        db_index=True,
+    )
     federal_type = models.TextField(
         max_length=50,
         null=True,

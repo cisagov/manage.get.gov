@@ -216,17 +216,18 @@ class Command(BaseCommand):
             """
         )
     
-    def run_load_transition_domain_script(self,
-                                          file_location: str,
-                                          domain_contacts_filename: str,
-                                          contacts_filename: str,
-                                          domain_statuses_filename: str,
-                                          sep: str,
-                                          reset_table: bool,
-                                          debug_on: bool,
-                                          prompts_enabled: bool,
-                                          debug_max_entries_to_parse: int):
-       
+    def run_load_transition_domain_script(
+        self,
+        file_location: str,
+        domain_contacts_filename: str,
+        contacts_filename: str,
+        domain_statuses_filename: str,
+        sep: str,
+        reset_table: bool,
+        debug_on: bool,
+        prompts_enabled: bool,
+        debug_max_entries_to_parse: int
+    ):
         """Runs the load_transition_domain script"""
         # Create the command string
         command_script = "load_transition_domain"
