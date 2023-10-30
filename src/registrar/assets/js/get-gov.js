@@ -309,7 +309,7 @@ function prepareDeleteButtons(formLabel) {
 
       // Display the add more button if we have less than 13 forms
       if (isNameserversForm && forms.length <= 13) {
-        addButton.classList.remove("display-none");
+        addButton.classList.removeAttribute("disabled");
       }
 
       if (isNameserversForm && forms.length < 3) {
