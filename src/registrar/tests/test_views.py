@@ -1447,7 +1447,7 @@ class TestDomainNameservers(TestDomainOverview):
         self.assertContains(page, "DNS name servers")
 
     def test_domain_nameservers_form_submit_one_nameserver(self):
-        """Can change domain's nameservers.
+        """Nameserver form submitted with one nameserver throws error.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1467,7 +1467,7 @@ class TestDomainNameservers(TestDomainOverview):
         self.assertContains(result, "This field is required.", count=2, status_code=200)
 
     def test_domain_nameservers_form_submit_subdomain_missing_ip(self):
-        """Can change domain's nameservers.
+        """Nameserver form catches missing ip error on subdomain.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1493,7 +1493,7 @@ class TestDomainNameservers(TestDomainOverview):
         )
 
     def test_domain_nameservers_form_submit_missing_host(self):
-        """Can change domain's nameservers.
+        """Nameserver form catches error when host is missing.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1519,7 +1519,8 @@ class TestDomainNameservers(TestDomainOverview):
         )
 
     def test_domain_nameservers_form_submit_glue_record_not_allowed(self):
-        """Can change domain's nameservers.
+        """Nameserver form catches error when IP is present
+        but host not subdomain.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1550,7 +1551,7 @@ class TestDomainNameservers(TestDomainOverview):
         )
 
     def test_domain_nameservers_form_submit_invalid_ip(self):
-        """Can change domain's nameservers.
+        """Nameserver form catches invalid IP on submission.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1583,7 +1584,7 @@ class TestDomainNameservers(TestDomainOverview):
         )
 
     def test_domain_nameservers_form_submits_successfully(self):
-        """Can change domain's nameservers.
+        """Nameserver form submits successfully with valid input.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1614,7 +1615,7 @@ class TestDomainNameservers(TestDomainOverview):
         self.assertContains(page, "The name servers for this domain have been updated")
 
     def test_domain_nameservers_form_invalid(self):
-        """Can change domain's nameservers.
+        """Nameserver form does not submit with invalid data.
 
         Uses self.app WebTest because we need to interact with forms.
         """
