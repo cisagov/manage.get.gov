@@ -1,11 +1,8 @@
 """Forms for domain management."""
 
-from collections.abc import Mapping
-from typing import Any
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.forms import formset_factory
-from django.forms.utils import ErrorList
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
