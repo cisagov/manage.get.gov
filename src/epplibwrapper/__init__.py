@@ -45,7 +45,7 @@ except NameError:
 # Attn: these imports should NOT be at the top of the file
 try:
     from .client import CLIENT, commands
-    from .errors import RegistryError, ErrorCode, CANNOT_CONTACT_REGISTRY, GENERIC_ERROR
+    from .errors import RegistryError, ErrorCode
     from epplib.models import common, info
     from epplib.responses import extensions
     from epplib import responses
@@ -61,6 +61,4 @@ __all__ = [
     "info",
     "ErrorCode",
     "RegistryError",
-    "CANNOT_CONTACT_REGISTRY",
-    "GENERIC_ERROR",
 ]

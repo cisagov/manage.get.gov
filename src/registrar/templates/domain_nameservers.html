@@ -11,40 +11,79 @@
 
   <h1>DNS name servers</h1>
 
-  <p>Before your domain can be used we'll need information about your domain
-  name servers.</p>
+  <p>Before your domain can be used we’ll need information about your domain name servers. Name server records indicate which DNS server is authoritative for your domain.</p>
+
+  <p>Add a name server record by entering the address (e.g., ns1.nameserver.com) in the name server fields below. You must add at least two name servers (13 max).</p>
+
+  <div class="usa-alert usa-alert--slim usa-alert--info">
+    <div class="usa-alert__body">
+      <p class="margin-top-0">Add an IP address only when your name server's address includes your domain name (e.g., if your domain name is "example.gov" and your name server is "ns1.example.gov,” then an IP address is required.) To add multiple IP addresses, separate them with commas.</p>
+      <p class="margin-bottom-0">This step is uncommon unless you self-host your DNS or use custom addresses for your nameserver.</p>
+    </div>
+  </div>
 
   {% include "includes/required_fields.html" %}
 
-  <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+  <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
 
     {% for form in formset %}
-    <div class="server-form">
-    {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
-      {% if forloop.counter <= 2 %}
-        {% with attr_required=True %}
-          {% input_with_errors form.server %}
-        {% endwith %}
-      {% else %}
-        {% input_with_errors form.server %}
-      {% endif %}
-    {% endwith %}
+    <div class="repeatable-form">
+      <div class="grid-row grid-gap-2 flex-end">
+        <div class="tablet:grid-col-5">
+          {{ form.domain }}
+          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+            {% if forloop.counter <= 2 %}
+              {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
+                {% input_with_errors form.server %}
+              {% endwith %}
+            {% else %}
+              {% input_with_errors form.server %}
+            {% endif %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-5">
+          {% with sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" %}
+            {% input_with_errors form.ip %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-2">
+          {% comment %} TODO: remove this if for 1192 {% endcomment %}
+          {% if forloop.counter > 2 %}
+            <button type="button" class="usa-button usa-button--unstyled display-block delete-record margin-bottom-075">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+              </svg><span class="margin-left-05">Delete</span>
+            </button>
+          {% endif %}
+        </div>
+      </div>
     </div>
     {% endfor %}
 
-    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-nameserver-form">
+    <button type="button" class="usa-button usa-button--unstyled display-block" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another name server</span>
     </button>
 
-    <button
-          type="submit"
-          class="usa-button"
-      >Save
-    </button>
-  </form>
+    {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
+    This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
+    <div class="margin-top-2">
+      <button
+            type="submit"
+            class="usa-button"
+        >Save
+      </button>
 
+      <button
+            type="submit"
+            class="usa-button usa-button--outline"
+            name="btn-cancel-click"
+            aria-label="Reset the data in the Name Server form to the registry state (undo changes)"
+        >Cancel
+      </button>
+    </div>
+  </form>
 {% endblock %}  {# domain_content #}

@@ -5,14 +5,13 @@ import json
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 
-from ..views import available, in_domains
+from ..views import available, check_domain_available
 from .common import less_console_noise
 from registrar.tests.common import MockEppLib
 from unittest.mock import call
 
 from epplibwrapper import (
     commands,
-    RegistryError,
 )
 
 API_BASE_PATH = "/api/v1/available/"
@@ -37,10 +36,10 @@ class AvailableViewTest(MockEppLib):
         response_object = json.loads(response.content)
         self.assertIn("available", response_object)
 
-    def test_in_domains_makes_calls_(self):
+    def test_domain_available_makes_calls_(self):
         """Domain searches successfully make correct mock EPP calls"""
-        gsa_available = in_domains("gsa.gov")
-        igorville_available = in_domains("igorvilleremixed.gov")
+        gsa_available = check_domain_available("gsa.gov")
+        igorville_available = check_domain_available("igorville.gov")
 
         """Domain searches successfully make mock EPP calls"""
         self.mockedSendFunction.assert_has_calls(
@@ -53,29 +52,32 @@ class AvailableViewTest(MockEppLib):
                 ),
                 call(
                     commands.CheckDomain(
-                        ["igorvilleremixed.gov"],
+                        ["igorville.gov"],
                     ),
                     cleaned=True,
                 ),
             ]
         )
         """Domain searches return correct availability results"""
-        self.assertTrue(gsa_available)
-        self.assertFalse(igorville_available)
+        self.assertFalse(gsa_available)
+        self.assertTrue(igorville_available)
 
-    def test_in_domains_capitalized(self):
+    def test_domain_available_capitalized(self):
         """Domain searches work without case sensitivity"""
-        self.assertTrue(in_domains("gsa.gov"))
-        # input is lowercased so GSA.GOV should be found
-        self.assertTrue(in_domains("GSA.gov"))
+        self.assertFalse(check_domain_available("gsa.gov"))
+        self.assertTrue(check_domain_available("igorville.gov"))
+        # input is lowercased so GSA.GOV should also not be available
+        self.assertFalse(check_domain_available("GSA.gov"))
+        # input is lowercased so IGORVILLE.GOV should also not be available
+        self.assertFalse(check_domain_available("IGORVILLE.gov"))
 
-    def test_in_domains_dotgov(self):
+    def test_domain_available_dotgov(self):
         """Domain searches work without trailing .gov"""
-        self.assertTrue(in_domains("gsa"))
+        self.assertFalse(check_domain_available("gsa"))
         # input is lowercased so GSA.GOV should be found
-        self.assertTrue(in_domains("GSA"))
-        # This domain should not have been registered
-        self.assertFalse(in_domains("igorvilleremixed"))
+        self.assertFalse(check_domain_available("GSA"))
+        # This domain should be available to register
+        self.assertTrue(check_domain_available("igorville"))
 
     def test_not_available_domain(self):
         """gsa.gov is not available"""
@@ -85,17 +87,17 @@ class AvailableViewTest(MockEppLib):
         self.assertFalse(json.loads(response.content)["available"])
 
     def test_available_domain(self):
-        """igorvilleremixed.gov is still available"""
-        request = self.factory.get(API_BASE_PATH + "igorvilleremixed.gov")
+        """igorville.gov is still available"""
+        request = self.factory.get(API_BASE_PATH + "igorville.gov")
         request.user = self.user
-        response = available(request, domain="igorvilleremixed.gov")
+        response = available(request, domain="igorville.gov")
         self.assertTrue(json.loads(response.content)["available"])
 
     def test_available_domain_dotgov(self):
-        """igorvilleremixed.gov is still available even without the .gov suffix"""
-        request = self.factory.get(API_BASE_PATH + "igorvilleremixed")
+        """igorville.gov is still available even without the .gov suffix"""
+        request = self.factory.get(API_BASE_PATH + "igorville")
         request.user = self.user
-        response = available(request, domain="igorvilleremixed")
+        response = available(request, domain="igorville")
         self.assertTrue(json.loads(response.content)["available"])
 
     def test_error_handling(self):
@@ -105,10 +107,9 @@ class AvailableViewTest(MockEppLib):
         request.user = self.user
         response = available(request, domain=bad_string)
         self.assertFalse(json.loads(response.content)["available"])
-        # domain set to raise error successfully raises error
-        with self.assertRaises(RegistryError):
-            error_domain_available = available(request, "errordomain.gov")
-            self.assertFalse(json.loads(error_domain_available.content)["available"])
+        # domain set to raise error returns false for availability
+        error_domain_available = available(request, "errordomain.gov")
+        self.assertFalse(json.loads(error_domain_available.content)["available"])
 
 
 class AvailableAPITest(MockEppLib):
