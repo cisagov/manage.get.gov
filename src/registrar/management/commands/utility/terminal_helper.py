@@ -61,14 +61,13 @@ class TerminalHelper:
         # DEBUG:
         if print_condition:
             logger.info(print_statement)
-    
 
-    def prompt_for_execution(system_exit_on_terminate: bool, 
-                             info_to_inspect: str, 
-                             prompt_title: str) -> bool:
+    def prompt_for_execution(
+        system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str
+    ) -> bool:
         """Create to reduce code complexity.
         Prompts the user to inspect the given string
-        and asks if they wish to execute it.  
+        and asks if they wish to execute it.
         Returns true if the user responds (y),
         Returns false if the user responds (n)"""
 
@@ -97,5 +96,5 @@ class TerminalHelper:
             if system_exit_on_terminate:
                 sys.exit()
             return False
-        
+
         return True

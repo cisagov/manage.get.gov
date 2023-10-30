@@ -100,8 +100,7 @@ class Command(BaseCommand):
         return domain_status_dictionary
 
     def get_user_emails_dict(
-        self, 
-        contacts_filename: str, sep
+        self, contacts_filename: str, sep
     ) -> defaultdict[str, str]:
         """Creates mapping of userId -> emails"""
         user_emails_dictionary = defaultdict(str)
