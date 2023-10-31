@@ -279,8 +279,8 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             # OBJECT_EXISTS is an expected error code that should not raise
             # an exception, rather return the code to be handled separately
-            if response and response.code == ErrorCode.OBJECT_EXISTS:
-                return response.code
+            if e.code == ErrorCode.OBJECT_EXISTS:
+                return e.code
             else:
                 raise e
 
@@ -312,28 +312,27 @@ class Domain(TimeStampedModel, DomainHelper):
     @classmethod
     def isValidDomain(cls, nameserver: str):
         """Checks for validity of nameserver string based on these rules:
-        - first character is alpha
-        - last character is not - or .
-        - all characters alpha, 0-9, -, or .
-        - 2 character min, 24 character max (not including dashes/periods)
+        - first character is alpha or digit
+        - first and last character in each label is alpha or digit
+        - all characters alpha (lowercase), digit, -, or .
+        - each label has a min length of 1 and a max length of 63
+        - total host name has a max length of 253
         """
         # pattern to test for valid domain
-        # pattern = r'^[a-zA-Z][a-zA-Z0-9-.]{0,22}[a-zA-Z0-9]$'
-        pattern = r"^[a-zA-Z][a-zA-Z0-9-.]*(\.[a-zA-Z0-9-]+){2}[a-zA-Z0-9]$"
+        # label pattern for each section of the host name, separated by .
+        labelpattern = r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?"
+        # lookahead pattern ensures first character not - and total length < 254
+        lookaheadpatterns = r"^((?!-))(?=.{1,253}\.?$)"
+        # pattern assembles lookaheadpatterns and ensures there are at least
+        # 3 labels in the host name
+        pattern = lookaheadpatterns + labelpattern + r"(\." + labelpattern + r"){2,}$"
 
         # attempt to match the pattern
         match = re.match(pattern, nameserver)
 
-        # length of nameserver, not including - or .
-        characters_to_exclude = "-."
-        filtered_nameserver = "".join(
-            char for char in nameserver if char not in characters_to_exclude
-        )
-        nameserverLength = len(filtered_nameserver)
-
-        # return true if nameserver matches, and length less than 25;
+        # return true if nameserver matches
         # otherwise false
-        return bool(match) and nameserverLength < 25
+        return bool(match)
 
     @classmethod
     def checkHostIPCombo(cls, name: str, nameserver: str, ip: list[str]):
@@ -1632,8 +1631,8 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error _update_host, code was %s error was %s" % (e.code, e))
             # OBJECT_EXISTS is an expected error code that should not raise
             # an exception, rather return the code to be handled separately
-            if response and response.code == ErrorCode.OBJECT_EXISTS:
-                return response.code
+            if e.code == ErrorCode.OBJECT_EXISTS:
+                return e.code
             else:
                 raise e
 
