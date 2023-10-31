@@ -238,7 +238,9 @@ Directs the script to load only the first 100 entries into the table.  You can a
 #### STEP 3: Send Domain invitations
 
 To send invitations for every transition domain in the transition domain table, execute the following command:
-`docker compose run -T app send_domain_invitations -s`
+```shell
+docker compose run -T app send_domain_invitations -s
+```
 
 #### STEP 4: Test the results
 
@@ -249,12 +251,16 @@ This script's main function is to scan the transition domain and domain tables f
 ##### OPTION 1 - ANALYZE ONLY
 
 To analyze our database without running migrations, execute the script without any optional arguments:
-`docker compose run -T app ./manage.py master_domain_migrations --debug`
+```shell
+docker compose run -T app ./manage.py master_domain_migrations --debug
+```
 
 ##### OPTION 2 - RUN MIGRATIONS FEATURE
 
 To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug and --prompt allow you to step through the migration process and exit it after each step if you need to.  It is recommended that you use these arguments when using the --runMigrations feature:
-`docker compose run -T app ./manage.py master_domain_migrations --runMigrations --debug --prompt`
+```shell
+docker compose run -T app ./manage.py master_domain_migrations --runMigrations --debug --prompt
+```
 
 ##### COMMAND LINE ARGUMENTS
 
