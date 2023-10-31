@@ -23,6 +23,12 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
+from registrar.utility.errors import (
+    GenericError,
+    GenericErrorCodes,
+    NameserverError,
+    NameserverErrorCodes as nsErrorCodes,
+)
 from registrar.models.utility.contact_error import ContactError
 
 from ..forms import (
@@ -40,8 +46,6 @@ from epplibwrapper import (
     common,
     extensions,
     RegistryError,
-    CANNOT_CONTACT_REGISTRY,
-    GENERIC_ERROR,
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
@@ -215,6 +219,7 @@ class DomainNameserversView(DomainFormBaseView):
 
     template_name = "domain_nameservers.html"
     form_class = NameserverFormset
+    model = Domain
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
@@ -223,7 +228,9 @@ class DomainNameserversView(DomainFormBaseView):
 
         if nameservers is not None:
             # Add existing nameservers as initial data
-            initial_data.extend({"server": name} for name, *ip in nameservers)
+            initial_data.extend(
+                {"server": name, "ip": ",".join(ip)} for name, ip in nameservers
+            )
 
         # Ensure at least 3 fields, filled or empty
         while len(initial_data) < 2:
@@ -252,25 +259,82 @@ class DomainNameserversView(DomainFormBaseView):
                 form.fields["server"].required = True
             else:
                 form.fields["server"].required = False
+            form.fields["domain"].initial = self.object.name
         return formset
+
+    def post(self, request, *args, **kwargs):
+        """Form submission posts to this view.
+
+        This post method harmonizes using DomainBaseView and FormMixin
+        """
+        self._get_domain(request)
+        formset = self.get_form()
+
+        if "btn-cancel-click" in request.POST:
+            url = self.get_success_url()
+            return HttpResponseRedirect(url)
+
+        if formset.is_valid():
+            return self.form_valid(formset)
+        else:
+            return self.form_invalid(formset)
 
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
+
+        self.request.session["nameservers_form_domain"] = self.object
 
         # Set the nameservers from the formset
         nameservers = []
         for form in formset:
             try:
-                as_tuple = (form.cleaned_data["server"],)
+                ip_string = form.cleaned_data["ip"]
+                # ip_string will be None or a string of IP addresses
+                # comma-separated
+                ip_list = []
+                if ip_string:
+                    # Split the string into a list using a comma as the delimiter
+                    ip_list = ip_string.split(",")
+
+                as_tuple = (
+                    form.cleaned_data["server"],
+                    ip_list,
+                )
                 nameservers.append(as_tuple)
             except KeyError:
                 # no server information in this field, skip it
                 pass
-        self.object.nameservers = nameservers
 
-        messages.success(
-            self.request, "The name servers for this domain have been updated."
-        )
+        try:
+            self.object.nameservers = nameservers
+        except NameserverError as Err:
+            # NamserverErrors *should* be caught in form; if reached here,
+            # there was an uncaught error in submission (through EPP)
+            messages.error(
+                self.request, NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN)
+            )
+            logger.error(f"Nameservers error: {Err}")
+        # TODO: registry is not throwing an error when no connection
+        except RegistryError as Err:
+            if Err.is_connection_error():
+                messages.error(
+                    self.request,
+                    GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
+                )
+                logger.error(f"Registry connection error: {Err}")
+            else:
+                messages.error(
+                    self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
+                )
+                logger.error(f"Registry error: {Err}")
+        else:
+            messages.success(
+                self.request,
+                "The name servers for this domain have been updated. "
+                "Keep in mind that DNS changes may take some time to "
+                "propagate across the internet. It can take anywhere "
+                "from a few minutes to 48 hours for your changes to take place.",
+            )
 
         # superclass has the redirect
         return super().form_valid(formset)
@@ -431,10 +495,15 @@ class DomainDsDataView(DomainFormBaseView):
             self.object.dnssecdata = dnssecdata
         except RegistryError as err:
             if err.is_connection_error():
-                messages.error(self.request, CANNOT_CONTACT_REGISTRY)
+                messages.error(
+                    self.request,
+                    GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
+                )
                 logger.error(f"Registry connection error: {err}")
             else:
-                messages.error(self.request, GENERIC_ERROR)
+                messages.error(
+                    self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
+                )
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
@@ -510,7 +579,10 @@ class DomainSecurityEmailView(DomainFormBaseView):
         # If no default is created for security_contact,
         # then we cannot connect to the registry.
         if contact is None:
-            messages.error(self.request, CANNOT_CONTACT_REGISTRY)
+            messages.error(
+                self.request,
+                GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
+            )
             return redirect(self.get_success_url())
 
         contact.email = new_email
@@ -519,13 +591,20 @@ class DomainSecurityEmailView(DomainFormBaseView):
             contact.save()
         except RegistryError as Err:
             if Err.is_connection_error():
-                messages.error(self.request, CANNOT_CONTACT_REGISTRY)
+                messages.error(
+                    self.request,
+                    GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
+                )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, GENERIC_ERROR)
+                messages.error(
+                    self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
+                )
                 logger.error(f"Registry error: {Err}")
         except ContactError as Err:
-            messages.error(self.request, GENERIC_ERROR)
+            messages.error(
+                self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
+            )
             logger.error(f"Generic registry error: {Err}")
         else:
             messages.success(

@@ -231,41 +231,15 @@ function handleValidationClick(e) {
 
 
 /**
- * An IIFE that attaches a click handler for our dynamic nameservers form
- *
- * Only does something on a single page, but it should be fast enough to run
- * it everywhere.
+ * Prepare the namerservers and DS data forms delete buttons
+ * We will call this on the forms init, and also every time we add a form
+ * 
  */
-(function prepareNameserverForms() {
-  let serverForm = document.querySelectorAll(".server-form");
-  let container = document.querySelector("#form-container");
-  let addButton = document.querySelector("#add-nameserver-form");
-  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
-
-  let formNum = serverForm.length-1;
-  if (addButton)
-    addButton.addEventListener('click', addForm);
-
-  function addForm(e){
-      let newForm = serverForm[2].cloneNode(true);
-      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
-      let formLabelRegex = RegExp(`Name server (\\d){1}`, 'g');
-      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
-
-      formNum++;
-      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum}-`);
-      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Name server ${formNum+1}`);
-      newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum+1}`);
-      container.insertBefore(newForm, addButton);
-      newForm.querySelector("input").value = "";
-
-      totalForms.setAttribute('value', `${formNum+1}`);
-  }
-})();
-
-function prepareDeleteButtons() {
+function prepareDeleteButtons(formLabel) {
   let deleteButtons = document.querySelectorAll(".delete-record");
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+  let isNameserversForm = document.title.includes("DNS name servers |");
+  let addButton = document.querySelector("#add-form");
 
   // Loop through each delete button and attach the click event listener
   deleteButtons.forEach((deleteButton) => {
@@ -273,13 +247,15 @@ function prepareDeleteButtons() {
   });
 
   function removeForm(e){
-    let formToRemove = e.target.closest(".ds-record");
+    let formToRemove = e.target.closest(".repeatable-form");
     formToRemove.remove();
-    let forms = document.querySelectorAll(".ds-record");
+    let forms = document.querySelectorAll(".repeatable-form");
     totalForms.setAttribute('value', `${forms.length}`);
 
     let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
-    let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
+    let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
+    // For the example on Nameservers
+    let formExampleRegex = RegExp(`ns(\\d+){1}`, 'g');
 
     forms.forEach((form, index) => {
       // Iterate over child nodes of the current element
@@ -294,48 +270,88 @@ function prepareDeleteButtons() {
         });
       });
 
-      Array.from(form.querySelectorAll('h2, legend')).forEach((node) => {
-        node.textContent = node.textContent.replace(formLabelRegex, `DS Data record ${index + 1}`);
+      // h2 and legend for DS form, label for nameservers  
+      Array.from(form.querySelectorAll('h2, legend, label, p')).forEach((node) => {
+        
+        // Ticket: 1192
+        // if (isNameserversForm && index <= 1 && !node.innerHTML.includes('*')) {
+        // // Create a new element
+        // const newElement = document.createElement('abbr');
+        // newElement.textContent = '*';
+        // // TODO: finish building abbr
+
+        // // Append the new element to the parent
+        // node.appendChild(newElement);
+        //   // Find the next sibling that is an input element
+        //   let nextInputElement = node.nextElementSibling;
+
+        //   while (nextInputElement) {
+        //     if (nextInputElement.tagName === 'INPUT') {
+        //       // Found the next input element
+        //       console.log(nextInputElement);
+        //       break;
+        //     }
+        //     nextInputElement = nextInputElement.nextElementSibling;
+        //   }
+        //   nextInputElement.required = true;
+        // }
+
+        // Ticket: 1192 - remove if
+        if (!(isNameserversForm && index <= 1)) {
+          node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
+          node.textContent = node.textContent.replace(formExampleRegex, `ns${index + 1}`);
+        }
       });
+
+      // Display the add more button if we have less than 13 forms
+      if (isNameserversForm && forms.length <= 13) {
+        addButton.classList.remove("display-none")
+      }
     
     });
   }
 }
 
 /**
- * An IIFE that attaches a click handler for our dynamic DNSSEC forms
+ * An IIFE that attaches a click handler for our dynamic formsets
  *
+ * Only does something on a few pages, but it should be fast enough to run
+ * it everywhere.
  */
-(function prepareDNSSECForms() {
-  let serverForm = document.querySelectorAll(".ds-record");
+(function prepareFormsetsForms() {
+  let repeatableForm = document.querySelectorAll(".repeatable-form");
   let container = document.querySelector("#form-container");
-  let addButton = document.querySelector("#add-ds-form");
+  let addButton = document.querySelector("#add-form");
   let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+  let cloneIndex = 0;
+  let formLabel = '';
+  let isNameserversForm = document.title.includes("DNS name servers |");
+  if (isNameserversForm) {
+    cloneIndex = 2;
+    formLabel = "Name server";
+  } else if ((document.title.includes("DS Data |")) || (document.title.includes("Key Data |"))) {
+    formLabel = "DS Data record";
+  }
 
   // Attach click event listener on the delete buttons of the existing forms
-  prepareDeleteButtons();
+  prepareDeleteButtons(formLabel);
 
-  // Attack click event listener on the add button
   if (addButton)
     addButton.addEventListener('click', addForm);
 
-  /*
-   * Add a formset to the end of the form.
-   * For each element in the added formset, name the elements with the prefix,
-   * form-{#}-{element_name} where # is the index of the formset and element_name
-   * is the element's name.
-   * Additionally, update the form element's metadata, including totalForms' value.
-   */
   function addForm(e){
-      let forms = document.querySelectorAll(".ds-record");
+      let forms = document.querySelectorAll(".repeatable-form");
       let formNum = forms.length;
-      let newForm = serverForm[0].cloneNode(true);
+      let newForm = repeatableForm[cloneIndex].cloneNode(true);
       let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
-      let formLabelRegex = RegExp(`DS Data record (\\d){1}`, 'g');
+      let formLabelRegex = RegExp(`${formLabel} (\\d){1}`, 'g');
+      // For the eample on Nameservers
+      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
 
       formNum++;
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum-1}-`);
-      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `DS Data record ${formNum}`);
+      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
+      newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum}`);
       container.insertBefore(newForm, addButton);
 
       let inputs = newForm.querySelectorAll("input");
@@ -379,9 +395,13 @@ function prepareDeleteButtons() {
       totalForms.setAttribute('value', `${formNum}`);
 
       // Attach click event listener on the delete buttons of the new form
-      prepareDeleteButtons();
-  }
+      prepareDeleteButtons(formLabel);
 
+      // Hide the add more button if we have 13 forms
+      if (isNameserversForm && formNum == 13) {
+        addButton.classList.add("display-none")
+      }
+  }
 })();
 
 /**

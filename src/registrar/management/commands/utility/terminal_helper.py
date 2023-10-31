@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 
 logger = logging.getLogger(__name__)
@@ -23,6 +22,7 @@ class TerminalColors:
 
 
 class TerminalHelper:
+    @staticmethod
     def query_yes_no(question: str, default="yes") -> bool:
         """Ask a yes/no question via raw_input() and return their answer.
 
@@ -53,6 +53,7 @@ class TerminalHelper:
             else:
                 logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
+    @staticmethod
     def print_conditional(print_condition: bool, print_statement: str):
         """This function reduces complexity of debug statements
         in other functions.
@@ -62,12 +63,13 @@ class TerminalHelper:
         if print_condition:
             logger.info(print_statement)
 
+    @staticmethod
     def prompt_for_execution(
         system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str
     ) -> bool:
         """Create to reduce code complexity.
         Prompts the user to inspect the given string
-        and asks if they wish to execute it.
+        and asks if they wish to proceed.
         Returns true if the user responds (y),
         Returns false if the user responds (n)"""
 

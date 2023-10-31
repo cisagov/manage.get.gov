@@ -262,8 +262,11 @@ class Domain(TimeStampedModel, DomainHelper):
         """Creates the host object in the registry
         doesn't add the created host to the domain
         returns ErrorCode (int)"""
-        if addrs is not None:
-            addresses = [epp.Ip(addr=addr) for addr in addrs]
+        if addrs is not None and addrs != []:
+            addresses = [
+                epp.Ip(addr=addr, ip="v6" if self.is_ipv6(addr) else None)
+                for addr in addrs
+            ]
             request = commands.CreateHost(name=host, addrs=addresses)
         else:
             request = commands.CreateHost(name=host)
@@ -274,7 +277,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return response.code
         except RegistryError as e:
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
-            return e.code
+            raise e
 
     def _convert_list_to_dict(self, listToConvert: list[tuple[str, list]]):
         """converts a list of hosts into a dictionary
@@ -293,14 +296,16 @@ class Domain(TimeStampedModel, DomainHelper):
                 newDict[tup[0]] = tup[1]
         return newDict
 
-    def isSubdomain(self, nameserver: str):
+    @classmethod
+    def isSubdomain(cls, name: str, nameserver: str):
         """Returns boolean if the domain name is found in the argument passed"""
         subdomain_pattern = r"([\w-]+\.)*"
-        full_pattern = subdomain_pattern + self.name
+        full_pattern = subdomain_pattern + name
         regex = re.compile(full_pattern)
         return bool(regex.match(nameserver))
 
-    def checkHostIPCombo(self, nameserver: str, ip: list[str]):
+    @classmethod
+    def checkHostIPCombo(cls, name: str, nameserver: str, ip: list[str]):
         """Checks the parameters past for a valid combination
         raises error if:
             - nameserver is a subdomain but is missing ip
@@ -314,22 +319,23 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if self.isSubdomain(nameserver) and (ip is None or ip == []):
+        if cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
-        elif not self.isSubdomain(nameserver) and (ip is not None and ip != []):
+        elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != []):
             raise NameserverError(
                 code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip
             )
         elif ip is not None and ip != []:
             for addr in ip:
-                if not self._valid_ip_addr(addr):
+                if not cls._valid_ip_addr(addr):
                     raise NameserverError(
                         code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
                     )
         return None
 
-    def _valid_ip_addr(self, ipToTest: str):
+    @classmethod
+    def _valid_ip_addr(cls, ipToTest: str):
         """returns boolean if valid ip address string
         We currently only accept v4 or v6 ips
         returns:
@@ -382,7 +388,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 if newHostDict[prevHost] is not None and set(
                     newHostDict[prevHost]
                 ) != set(addrs):
-                    self.checkHostIPCombo(nameserver=prevHost, ip=newHostDict[prevHost])
+                    self.__class__.checkHostIPCombo(
+                        name=self.name, nameserver=prevHost, ip=newHostDict[prevHost]
+                    )
                     updated_values.append((prevHost, newHostDict[prevHost]))
 
         new_values = {
@@ -392,7 +400,9 @@ class Domain(TimeStampedModel, DomainHelper):
         }
 
         for nameserver, ip in new_values.items():
-            self.checkHostIPCombo(nameserver=nameserver, ip=ip)
+            self.__class__.checkHostIPCombo(
+                name=self.name, nameserver=nameserver, ip=ip
+            )
 
         return (deleted_values, updated_values, new_values, previousHostDict)
 
@@ -567,7 +577,11 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(hosts) > 13:
             raise NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS)
 
-        if self.state not in [self.State.DNS_NEEDED, self.State.READY]:
+        if self.state not in [
+            self.State.DNS_NEEDED,
+            self.State.READY,
+            self.State.UNKNOWN,
+        ]:
             raise ActionNotAllowed("Nameservers can not be " "set in the current state")
 
         logger.info("Setting nameservers")
@@ -1351,7 +1365,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @transition(
         field="state",
-        source=[State.DNS_NEEDED],
+        source=[State.DNS_NEEDED, State.READY],
         target=State.READY,
         # conditions=[dns_not_needed]
     )
@@ -1514,7 +1528,7 @@ class Domain(TimeStampedModel, DomainHelper):
             data = registry.send(req, cleaned=True).res_data[0]
             host = {
                 "name": name,
-                "addrs": getattr(data, "addrs", ...),
+                "addrs": [item.addr for item in getattr(data, "addrs", [])],
                 "cr_date": getattr(data, "cr_date", ...),
                 "statuses": getattr(data, "statuses", ...),
                 "tr_date": getattr(data, "tr_date", ...),
@@ -1539,10 +1553,9 @@ class Domain(TimeStampedModel, DomainHelper):
             return []
 
         for ip_addr in ip_list:
-            if self.is_ipv6(ip_addr):
-                edited_ip_list.append(epp.Ip(addr=ip_addr, ip="v6"))
-            else:  # default ip addr is v4
-                edited_ip_list.append(epp.Ip(addr=ip_addr))
+            edited_ip_list.append(
+                epp.Ip(addr=ip_addr, ip="v6" if self.is_ipv6(ip_addr) else None)
+            )
 
         return edited_ip_list
 
@@ -1580,7 +1593,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return response.code
         except RegistryError as e:
             logger.error("Error _update_host, code was %s error was %s" % (e.code, e))
-            return e.code
+            raise e
 
     def addAndRemoveHostsFromDomain(
         self, hostsToAdd: list[str], hostsToDelete: list[str]
