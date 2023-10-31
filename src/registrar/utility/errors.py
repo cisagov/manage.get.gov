@@ -39,9 +39,11 @@ class GenericError(Exception):
     """
 
     _error_mapping = {
-        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
-            "Update failed. Cannot contact the registry."
-        ),
+        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: """
+We’re experiencing a system connection error. Please wait a few minutes
+and try again. If you continue to receive this error after a few tries,
+contact help@get.gov
+        """,
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }
 
