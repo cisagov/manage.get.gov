@@ -24,7 +24,7 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             + domainInfo.get_federal_type_display()
             if domainInfo.federal_type
             else domainInfo.get_organization_type_display(),
-            "Federal agency": domainInfo.federal_agency,
+            "Agency": domainInfo.federal_agency,
             "Organization name": domainInfo.organization_name,
             "City": domainInfo.city,
             "State": domainInfo.state_territory,
@@ -51,7 +51,7 @@ def export_data_type_to_csv(csv_file):
     columns = [
         "Domain name",
         "Domain type",
-        "Federal agency",
+        "Agency",
         "Organization name",
         "City",
         "State",
@@ -78,7 +78,7 @@ def export_data_full_to_csv(csv_file):
     columns = [
         "Domain name",
         "Domain type",
-        "Federal agency",
+        "Agency",
         "Organization name",
         "City",
         "State",
@@ -101,7 +101,7 @@ def export_data_federal_to_csv(csv_file):
     columns = [
         "Domain name",
         "Domain type",
-        "Federal agency",
+        "Agency",
         "Organization name",
         "City",
         "State",

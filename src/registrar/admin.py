@@ -778,6 +778,8 @@ class DomainAdmin(ListHeaderAdmin):
 
         urlpatterns = super().get_urls()
 
+        #Used to extrapolate a path name, for instance
+        # name="{app_label}_{model_name}_export_data_type"
         info = self.model._meta.app_label, self.model._meta.model_name
 
         my_url = [

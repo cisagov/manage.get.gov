@@ -180,3 +180,48 @@ h1, h2, h3 {
     background: var(--primary);
     color: var(--header-link-color);
 }
+
+// Font mismatch issue due to conflicts between django and uswds,
+// rough overrides for consistency and readability. May want to revise
+// in the future
+.object-tools li a,
+.object-tools p a {
+    font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    text-transform: capitalize!important;
+    font-size: 14px!important;
+}
+
+// For consistency, make the overrided p a
+// object tool buttons the same size as the ul li a
+.object-tools p {
+    line-height: 1.25rem;
+}
+
+// Fix margins in mobile view
+@media (max-width: 767px) {
+    .object-tools li {
+        // our CSS is read before django's, so need !important
+        // to override
+        margin-left: 0!important;
+        margin-right: 15px;
+    }
+}
+
+// Fix height of buttons
+.object-tools li {
+    height: auto;
+}
+
+// Fixing height of buttons breaks layout because
+// object-tools and changelist are siblings with
+// flexbox positioning
+#changelist {
+    clear: both;
+}
+
+// Account for the h2, roughly 90px
+@include at-media(tablet) {
+    .object-tools {
+        padding-left: 90px;
+    }
+}

@@ -77,7 +77,7 @@ class ExportDataTest(TestCase):
         columns = [
             "Domain name",
             "Domain type",
-            "Federal agency",
+            "Agency",
             "Organization name",
             "City",
             "State",
@@ -111,7 +111,7 @@ class ExportDataTest(TestCase):
         # We expect READY domains,
         # sorted alphabetially by domain name
         expected_content = (
-            "Domain name,Domain type,Federal agency,Organization name,City,State,AO,"
+            "Domain name,Domain type,Agency,Organization name,City,State,AO,"
             "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
             "Security Contact Email,Status\n"
             "adomain2.gov,Interstate,dnsneeded\n"
@@ -134,7 +134,7 @@ class ExportDataTest(TestCase):
 
         self.assertEqual(csv_content, expected_content)
 
-    def test_export_domains_to_writer_2(self):
+    def test_export_domains_to_writer_additional(self):
         """An additional test for filters and multi-column sort"""
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -144,7 +144,7 @@ class ExportDataTest(TestCase):
         columns = [
             "Domain name",
             "Domain type",
-            "Federal agency",
+            "Agency",
             "Organization name",
             "City",
             "State",
@@ -173,7 +173,7 @@ class ExportDataTest(TestCase):
         # federal only
         # sorted alphabetially by domain name
         expected_content = (
-            "Domain name,Domain type,Federal agency,Organization name,City,"
+            "Domain name,Domain type,Agency,Organization name,City,"
             "State,Security Contact Email\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home\n"
