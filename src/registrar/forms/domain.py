@@ -31,7 +31,7 @@ class DomainNameserverForm(forms.Form):
     server = forms.CharField(label="Name server", strip=True)
 
     ip = forms.CharField(
-        label="IP Address (IPv4 or IPv6)",
+        label="IP address (IPv4 or IPv6)",
         strip=True,
         required=False,
     )
