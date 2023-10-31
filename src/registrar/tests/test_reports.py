@@ -113,9 +113,9 @@ class ExportDataTest(TestCase):
             "Domain name,Domain type,Federal agency,Organization name,City,State,AO,"
             "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
             "Security Contact Email,Status\n"
-            "adomain2.gov,interstate,dnsneeded\n"
-            "cdomain1.gov,federal,World War I Centennial Commission,ready\n"
-            "ddomain3.gov,federal,Armed Forces Retirement Home,onhold\n"
+            "adomain2.gov,Interstate,dnsneeded\n"
+            "cdomain1.gov,Federal,World War I Centennial Commission,ready\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,onhold\n"
         )
 
         # Normalize line endings and remove commas,
@@ -174,8 +174,8 @@ class ExportDataTest(TestCase):
         expected_content = (
             "Domain name,Domain type,Federal agency,Organization name,City,"
             "State,Security Contact Email\n"
-            "cdomain1.gov,federal,World War I Centennial Commission\n"
-            "ddomain3.gov,federal,Armed Forces Retirement Home\n"
+            "cdomain1.gov,Federal,World War I Centennial Commission\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home\n"
         )
 
         # Normalize line endings and remove commas,

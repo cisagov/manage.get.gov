@@ -19,7 +19,10 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
         # create a dictionary of fields which can be included in output
         FIELDS = {
             "Domain name": domainInfo.domain.name,
-            "Domain type": domainInfo.organization_type,
+            "Domain type": domainInfo.get_organization_type_display()
+            + " - " + domainInfo.federal_type
+            if domainInfo.federal_type
+            else domainInfo.get_organization_type_display(),
             "Federal agency": domainInfo.federal_agency,
             "Organization name": domainInfo.organization_name,
             "City": domainInfo.city,
