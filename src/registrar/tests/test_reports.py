@@ -39,6 +39,7 @@ class ExportDataTest(TestCase):
             domain=self.domain_1,
             organization_type="federal",
             federal_agency="World War I Centennial Commission",
+            federal_type="executive",
         )
         self.domain_information_2, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -114,7 +115,7 @@ class ExportDataTest(TestCase):
             "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
             "Security Contact Email,Status\n"
             "adomain2.gov,Interstate,dnsneeded\n"
-            "cdomain1.gov,Federal,World War I Centennial Commission,ready\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,ready\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,onhold\n"
         )
 
@@ -174,7 +175,7 @@ class ExportDataTest(TestCase):
         expected_content = (
             "Domain name,Domain type,Federal agency,Organization name,City,"
             "State,Security Contact Email\n"
-            "cdomain1.gov,Federal,World War I Centennial Commission\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home\n"
         )
 

@@ -20,7 +20,8 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
         FIELDS = {
             "Domain name": domainInfo.domain.name,
             "Domain type": domainInfo.get_organization_type_display()
-            + " - " + domainInfo.federal_type
+            + " - "
+            + domainInfo.get_federal_type_display()
             if domainInfo.federal_type
             else domainInfo.get_organization_type_display(),
             "Federal agency": domainInfo.federal_agency,
