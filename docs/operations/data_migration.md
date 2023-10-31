@@ -78,11 +78,12 @@ An example script using this technique is in
 docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_contacts.daily.dotgov.GOV.txt /app/escrow_contacts.daily.dotgov.GOV.txt
 ```
 
-## Transition Domains
+## Transition Domains (Part 1) - Setup Files for Import
 We are provided with information about Transition Domains in 3 files:
-FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
-FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
-FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
+
+- FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
+- FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
+- FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
 
 We need to run a few scripts to parse these files into our domain tables.
 We can do this both locally and in a sandbox.
@@ -195,11 +196,11 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 *You are now ready to run migration scripts (see "Running the Migration Scripts")*
 
-### SECTION 3 - RUNNING THE MIGRATION SCRIPTS
+## Transition Domains (Part 2) - Running the Migration Scripts
 
 *NOTE: While we recommend executing the following scripts individually (Steps 1-3), migrations can also be done 'all at once' using the "Run Migration Feature" in step 4.  Use with discretion.*
 
-#### STEP 1: Load Transition Domains
+### STEP 1: Load Transition Domains
 
 Run the following command, making sure the filepaths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. (NOTE: If working in the sandbox, change "/app/tmp" to point to the sandbox directory)
 ```shell
@@ -218,7 +219,7 @@ Directs the script to load only the first 100 entries into the table.  You can a
 This will delete all the data in transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
 
 
-#### STEP 2: Transfer Transition Domain data into main Domain tables
+### STEP 2: Transfer Transition Domain data into main Domain tables
 
 Now that we've loaded all the data into TransitionDomain, we need to update the main Domain and DomainInvitation tables with this information.  
 In the same terminal as used in STEP 1, run the command below; 
@@ -235,25 +236,25 @@ This will print out additional, detailed logs.
 `--limitParse 100` 
 Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
 
-#### STEP 3: Send Domain invitations
+### STEP 3: Send Domain invitations
 
 To send invitations for every transition domain in the transition domain table, execute the following command:
 ```shell
 docker compose run -T app send_domain_invitations -s
 ```
 
-#### STEP 4: Test the results (Run the analyzer script)
+### STEP 4: Test the results (Run the analyzer script)
 
 This script's main function is to scan the transition domain and domain tables for any anomalies.  It produces a simple report of missing or duplicate data.  NOTE: some missing data might be expected depending on the nature of our migrations so use best judgement when evaluating the results.
 
-##### OPTION 1 - ANALYZE ONLY
+#### OPTION 1 - ANALYZE ONLY
 
 To analyze our database without running migrations, execute the script without any optional arguments:
 ```shell
 docker compose run -T app ./manage.py master_domain_migrations --debug
 ```
 
-##### OPTION 2 - RUN MIGRATIONS FEATURE
+#### OPTION 2 - RUN MIGRATIONS FEATURE
 
 To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug and --prompt allow you to step through the migration process and exit it after each step if you need to.  It is recommended that you use these arguments when using the --runMigrations feature:
 ```shell
