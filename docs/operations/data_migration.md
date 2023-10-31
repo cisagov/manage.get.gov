@@ -198,18 +198,20 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 ### RUNNING THE MIGRATION SCRIPTS
 
-**NOTE: Whil we recommend executing the following scripts individually (Steps 1-3), migrations can also be done 'all at once' using the "Run Migration Feature" in step 4.  Use with discretion.**
+**NOTE: While we recommend executing the following scripts individually (Steps 1-3), migrations can also be done 'all at once' using the "Run Migration Feature" in step 4.  Use with discretion.**
 
-#### 1 - Load Transition Domains
+#### STEP 1 - Load Transition Domains
 Run the following command  (This will parse the three files in your `tmp` folder and load the information into the TransitionDomain table);
 ```shell
 docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt --debug
 ```
 
 **For Sandbox**:
+
 Change "/app/tmp" to point to the sandbox directory
 
 **OPTIONAL COMMAND LINE ARGUMENTS**: 
+
 `--debug`
 This will print out additional, detailed logs.
 
@@ -220,7 +222,7 @@ Directs the script to load only the first 100 entries into the table.  You can a
 This will delete all the data in transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
 
 
-### STEP 2: Transfer Transition Domain data into main Domain tables
+#### STEP 2: Transfer Transition Domain data into main Domain tables
 
 Now that we've loaded all the data into TransitionDomain, we need to update the main Domain and DomainInvitation tables with this information.  
 
@@ -237,23 +239,27 @@ This will print out additional, detailed logs.
 `--limitParse 100` 
 Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
 
-### STEP 3: Send Domain invitations
-### Run the send invitations script
+#### STEP 3: Send Domain invitations
+Run the send invitations script
 
 To send invitations for every transition domain in the transition domain table, execute the following command:
 `docker compose run -T app send_domain_invitations -s`
 
-### STEP 4: Test the results
-### Run the migration analyzer
+#### STEP 4: Test the results
+Run the migration analyzer
 
 This script's main function is to scan the transition domain and domain tables for any anomalies.  It produces a simple report of missing or duplicate data.  NOTE: some missing data might be expected depending on the nature of our migrations so use best judgement when evaluating the results.
 
-**ANALYZE ONLY**
+OPTION 1 - analyze only
+
 To analyze our database without running migrations, execute the script without any optional arguments:
+
 `docker compose run -T app ./manage.py master_domain_migrations --debug`
 
-**RUN MIGRATIONS FEATURE**
+OPTION 2 - run migrations
+
 To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug and --prompt allow you to step through the migration process and exit it after each step if you need to.  It is recommended that you use these arguments when using the --runMigrations feature:
+
 `docker compose run -T app ./manage.py master_domain_migrations --runMigrations --debug --prompt`
 
 #### OPTIONAL ARGUMENTS
@@ -262,17 +268,24 @@ A boolean (default to true), which triggers running
 all scripts (in sequence) for transition domain migrations
 
 `--migrationDirectory`
+
 **default="migrationData"** (<--This is the sandbox directory)
+
 The location of the files used for load_transition_domain migration script
 EXAMPLE USAGE:
 --migrationDirectory /app/tmp
 
 `--migrationFilenames`
+
 **default=escrow_domain_contacts.daily.gov.GOV.txt,escrow_contacts.daily.gov.GOV.txt,escrow_domain_statuses.daily.gov.GOV.txt** (<--These are the usual names for the files.  The script will throw a warning if it cannot find these exact files, in which case you will need to supply the correct filenames)
+
 The files used for load_transition_domain migration script.
 Must appear IN ORDER and comma-delimited: 
+
 EXAMPLE USAGE:
+
 --migrationFilenames domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
+
 where...
 - domain_contacts_filename is the Data file with domain contact information
 - contacts_filename is the Data file with contact information
