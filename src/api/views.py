@@ -5,6 +5,8 @@ from django.http import JsonResponse
 
 import requests
 
+from login_required import login_not_required
+
 from cachetools.func import ttl_cache
 
 
@@ -23,6 +25,7 @@ DOMAIN_API_MESSAGES = {
     "invalid": "Enter a domain using only letters,"
     " numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
+    "error": "Error finding domain availability.",
 }
 
 
@@ -50,22 +53,26 @@ def _domains():
     return domains
 
 
-def in_domains(domain):
-    """Return true if the given domain is in the domains list.
+def check_domain_available(domain):
+    """Return true if the given domain is available.
 
     The given domain is lowercased to match against the domains list. If the
     given domain doesn't end with .gov, ".gov" is added when looking for
     a match.
     """
     Domain = apps.get_model("registrar.Domain")
-    if domain.endswith(".gov"):
-        return Domain.available(domain)
-    else:
-        # domain search string doesn't end with .gov, add it on here
-        return Domain.available(domain + ".gov")
+    try:
+        if domain.endswith(".gov"):
+            return Domain.available(domain)
+        else:
+            # domain search string doesn't end with .gov, add it on here
+            return Domain.available(domain + ".gov")
+    except Exception:
+        return False
 
 
 @require_http_methods(["GET"])
+@login_not_required
 def available(request, domain=""):
     """Is a given domain available or not.
 
@@ -83,11 +90,16 @@ def available(request, domain=""):
             {"available": False, "message": DOMAIN_API_MESSAGES["invalid"]}
         )
     # a domain is available if it is NOT in the list of current domains
-    if in_domains(domain):
+    try:
+        if check_domain_available(domain):
+            return JsonResponse(
+                {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
+            )
+        else:
+            return JsonResponse(
+                {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
+            )
+    except Exception:
         return JsonResponse(
-            {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
-        )
-    else:
-        return JsonResponse(
-            {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
+            {"available": False, "message": DOMAIN_API_MESSAGES["error"]}
         )

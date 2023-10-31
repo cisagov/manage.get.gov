@@ -10,6 +10,10 @@ from .common import MockEppLib, completed_application  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
+from registrar.utility.errors import (
+    NameserverError,
+    NameserverErrorCodes,
+)
 
 from registrar.models import (
     DomainApplication,
@@ -1095,6 +1099,13 @@ class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.domain_with_ip, _ = Domain.objects.get_or_create(
+            name="nameserverwithip.gov"
+        )
+        self.domain_just_nameserver, _ = Domain.objects.get_or_create(
+            name="justnameserver.com"
+        )
+
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         self.domain_multdsdata, _ = Domain.objects.get_or_create(
             name="dnssec-multdsdata.gov"
@@ -1104,9 +1115,11 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(
             name="dnssec-none.gov"
         )
+
         self.domain_information, _ = DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain
         )
+
         DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain_dsdata
         )
@@ -1116,9 +1129,17 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(
             creator=self.user, domain=self.domain_dnssec_none
         )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain_with_ip
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain_just_nameserver
+        )
+
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
+
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_dsdata, role=UserDomainRole.Roles.MANAGER
         )
@@ -1130,6 +1151,16 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_dnssec_none,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_ip,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_just_nameserver,
             role=UserDomainRole.Roles.MANAGER,
         )
 
@@ -1214,6 +1245,37 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         with less_console_noise():
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
+
+    def test_domain_see_just_nameserver(self):
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "justnameserver.com")
+
+        # View nameserver on Domain Overview page
+        detail_page = self.app.get(
+            reverse("domain", kwargs={"pk": self.domain_just_nameserver.id})
+        )
+
+        self.assertContains(detail_page, "justnameserver.com")
+        self.assertContains(detail_page, "ns1.justnameserver.com")
+        self.assertContains(detail_page, "ns2.justnameserver.com")
+
+    def test_domain_see_nameserver_and_ip(self):
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "nameserverwithip.gov")
+
+        # View nameserver on Domain Overview page
+        detail_page = self.app.get(
+            reverse("domain", kwargs={"pk": self.domain_with_ip.id})
+        )
+
+        self.assertContains(detail_page, "nameserverwithip.gov")
+
+        self.assertContains(detail_page, "ns1.nameserverwithip.gov")
+        self.assertContains(detail_page, "ns2.nameserverwithip.gov")
+        self.assertContains(detail_page, "ns3.nameserverwithip.gov")
+        # Splitting IP addresses bc there is odd whitespace and can't strip text
+        self.assertContains(detail_page, "(1.2.3.4,")
+        self.assertContains(detail_page, "2.3.4.5)")
 
 
 class TestDomainManagers(TestDomainOverview):
@@ -1384,20 +1446,165 @@ class TestDomainNameservers(TestDomainOverview):
         )
         self.assertContains(page, "DNS name servers")
 
-    @skip("Broken by adding registry connection fix in ticket 848")
-    def test_domain_nameservers_form(self):
-        """Can change domain's nameservers.
+    def test_domain_nameservers_form_submit_one_nameserver(self):
+        """Nameserver form submitted with one nameserver throws error.
 
         Uses self.app WebTest because we need to interact with forms.
         """
+        # initial nameservers page has one server with two ips
         nameservers_page = self.app.get(
             reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
         )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form with only one nameserver, should error
+        # regarding required fields
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
-        # form submission was a post, response should be a redirect
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  form requires a minimum of 2 name servers
+        self.assertContains(result, "This field is required.", count=2, status_code=200)
+
+    def test_domain_nameservers_form_submit_subdomain_missing_ip(self):
+        """Nameserver form catches missing ip error on subdomain.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without two hosts, both subdomains,
+        # only one has ips
+        nameservers_page.form["form-1-server"] = "ns2.igorville.gov"
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  subdomain missing an ip
+        self.assertContains(
+            result,
+            str(NameserverError(code=NameserverErrorCodes.MISSING_IP)),
+            count=2,
+            status_code=200,
+        )
+
+    def test_domain_nameservers_form_submit_missing_host(self):
+        """Nameserver form catches error when host is missing.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without two hosts, both subdomains,
+        # only one has ips
+        nameservers_page.form["form-1-ip"] = "127.0.0.1"
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  nameserver has ip but missing host
+        self.assertContains(
+            result,
+            str(NameserverError(code=NameserverErrorCodes.MISSING_HOST)),
+            count=2,
+            status_code=200,
+        )
+
+    def test_domain_nameservers_form_submit_glue_record_not_allowed(self):
+        """Nameserver form catches error when IP is present
+        but host not subdomain.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameserver1 = "ns1.igorville.gov"
+        nameserver2 = "ns2.igorville.com"
+        valid_ip = "127.0.0.1"
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without two hosts, both subdomains,
+        # only one has ips
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = valid_ip
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  nameserver has ip but missing host
+        self.assertContains(
+            result,
+            str(NameserverError(code=NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED)),
+            count=2,
+            status_code=200,
+        )
+
+    def test_domain_nameservers_form_submit_invalid_ip(self):
+        """Nameserver form catches invalid IP on submission.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameserver = "ns2.igorville.gov"
+        invalid_ip = "123"
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without two hosts, both subdomains,
+        # only one has ips
+        nameservers_page.form["form-1-server"] = nameserver
+        nameservers_page.form["form-1-ip"] = invalid_ip
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  nameserver has ip but missing host
+        self.assertContains(
+            result,
+            str(
+                NameserverError(
+                    code=NameserverErrorCodes.INVALID_IP, nameserver=nameserver
+                )
+            ),
+            count=2,
+            status_code=200,
+        )
+
+    def test_domain_nameservers_form_submits_successfully(self):
+        """Nameserver form submits successfully with valid input.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameserver1 = "ns1.igorville.gov"
+        nameserver2 = "ns2.igorville.gov"
+        invalid_ip = "127.0.0.1"
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without two hosts, both subdomains,
+        # only one has ips
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-1-server"] = nameserver2
+        nameservers_page.form["form-1-ip"] = invalid_ip
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
@@ -1407,9 +1614,8 @@ class TestDomainNameservers(TestDomainOverview):
         page = result.follow()
         self.assertContains(page, "The name servers for this domain have been updated")
 
-    @skip("Broken by adding registry connection fix in ticket 848")
     def test_domain_nameservers_form_invalid(self):
-        """Can change domain's nameservers.
+        """Nameserver form does not submit with invalid data.
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1424,9 +1630,9 @@ class TestDomainNameservers(TestDomainOverview):
         with less_console_noise():  # swallow logged warning message
             result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
-        # error text appears twice, once at the top of the page, once around
-        # the field.
-        self.assertContains(result, "This field is required", count=2, status_code=200)
+        # error text appears four times, twice at the top of the page,
+        # once around each required field.
+        self.assertContains(result, "This field is required", count=4, status_code=200)
 
 
 class TestDomainAuthorizingOfficial(TestDomainOverview):

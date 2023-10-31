@@ -56,7 +56,7 @@ class TestDomainCache(MockEppLib):
         self.assertFalse("avail" in domain._cache.keys())
 
         # using a setter should clear the cache
-        domain.expiration_date = datetime.date.today()
+        domain.registry_expiration_date = datetime.date.today()
         self.assertEquals(domain._cache, {})
 
         # send should have been called only once
@@ -107,7 +107,7 @@ class TestDomainCache(MockEppLib):
         }
         expectedHostsDict = {
             "name": self.mockDataInfoDomain.hosts[0],
-            "addrs": self.mockDataInfoHosts.addrs,
+            "addrs": [item.addr for item in self.mockDataInfoHosts.addrs],
             "cr_date": self.mockDataInfoHosts.cr_date,
         }
 
