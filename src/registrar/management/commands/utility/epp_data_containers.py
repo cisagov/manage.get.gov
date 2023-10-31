@@ -65,7 +65,6 @@ class AuthorityAdhoc:
     addlinfo: Optional[List[str]] = None
 
 
-
 class EnumFilenames(Enum):
     """Returns a tuple mapping for (filetype, default_file_name).
 
