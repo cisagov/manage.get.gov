@@ -316,5 +316,4 @@ purposes
 `--resetTable`
 
 Used by the migration scripts to trigger a prompt for deleting all table entries.  
-Useful for testing purposes, but USE WITH CAUTION
-```
+Useful for testing purposes, but *use with caution*
