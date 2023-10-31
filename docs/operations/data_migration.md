@@ -242,9 +242,7 @@ To send invitations for every transition domain in the transition domain table, 
 docker compose run -T app send_domain_invitations -s
 ```
 
-#### STEP 4: Test the results
-
-Run the migration analyzer.
+#### STEP 4: Test the results (Run the analyzer script)
 
 This script's main function is to scan the transition domain and domain tables for any anomalies.  It produces a simple report of missing or duplicate data.  NOTE: some missing data might be expected depending on the nature of our migrations so use best judgement when evaluating the results.
 
