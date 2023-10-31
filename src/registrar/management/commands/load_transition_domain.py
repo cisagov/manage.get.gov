@@ -6,6 +6,7 @@ import argparse
 from collections import defaultdict
 
 from django.core.management import BaseCommand
+from registrar.management.commands.utility.epp_data_containers import EnumFilenames
 
 from registrar.models import TransitionDomain
 
@@ -13,6 +14,9 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,
 )
+
+from .utility.transition_domain_arguments import TransitionDomainArguments
+from .utility.extra_transition_domain import LoadExtraTransitionDomain
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +63,31 @@ class Command(BaseCommand):
             "--resetTable",
             help="Deletes all data in the TransitionDomain table",
             action=argparse.BooleanOptionalAction,
+        )
+
+        # TODO - Narrow this down
+        parser.add_argument(
+            "--directory", default="migrationdata", help="Desired directory"
+        )
+        parser.add_argument(
+            "--agency_adhoc_filename",
+            default=EnumFilenames.AGENCY_ADHOC.value[1],
+            help="Defines the filename for agency adhocs",
+        )
+        parser.add_argument(
+            "--domain_additional_filename",
+            default=EnumFilenames.DOMAIN_ADDITIONAL.value[1],
+            help="Defines the filename for additional domain data",
+        )
+        parser.add_argument(
+            "--domain_adhoc_filename",
+            default=EnumFilenames.DOMAIN_ADHOC.value[1],
+            help="Defines the filename for domain type adhocs",
+        )
+        parser.add_argument(
+            "--organization_adhoc_filename",
+            default=EnumFilenames.ORGANIZATION_ADHOC.value[1],
+            help="Defines the filename for domain type adhocs",
         )
 
     def print_debug_mode_statements(
@@ -255,7 +284,6 @@ class Command(BaseCommand):
     ):
         """Parse the data files and create TransitionDomains."""
         sep = options.get("sep")
-        load_extra_data = options.get("loadExtraData")
 
         # If --resetTable was used, prompt user to confirm
         # deletion of table data
@@ -286,7 +314,6 @@ class Command(BaseCommand):
         # STEP 3:
         # Parse the domain_contacts file and create TransitionDomain objects,
         # using the dictionaries from steps 1 & 2 to lookup needed information.
-
         to_create = []
 
         # keep track of statuses that don't match our available
@@ -472,3 +499,17 @@ class Command(BaseCommand):
             duplicate_domain_user_combos, duplicate_domains, users_without_email
         )
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
+
+        # Prompt the user if they want to load additional data on the domains
+        # TODO - add this logic into the core of this file
+        arguments = TransitionDomainArguments(**options)
+        
+        do_parse_extra = TerminalHelper.prompt_for_execution(
+            True,
+            "./manage.py test",
+            "Running load_extra_transition_domains script",
+        )
+        if do_parse_extra:
+            extra = LoadExtraTransitionDomain(arguments)
+            extra_logs = extra.parse_logs.logs
+

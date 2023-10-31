@@ -6,6 +6,7 @@ Not intended to be used as models but rather as an alternative to storing as a d
 By keeping it as a dataclass instead of a dictionary, we can maintain data consistency.
 """
 from dataclasses import dataclass
+from datetime import date
 from enum import Enum
 from typing import List, Optional
 
@@ -64,6 +65,13 @@ class AuthorityAdhoc:
     agencyid: Optional[int] = None
     addlinfo: Optional[List[str]] = None
 
+@dataclass
+class DomainEscrow:
+    """Defines the structure given in the DOMAIN_ESCROW file"""
+    domainname: Optional[str] = None
+    creationdate: Optional[date] = None
+    expirationdate: Optional[date] = None
+
 
 class EnumFilenames(Enum):
     """Returns a tuple mapping for (filetype, default_file_name).
@@ -79,6 +87,7 @@ class EnumFilenames(Enum):
         "domain_additional",
         "domainadditionaldatalink.adhoc.dotgov.txt",
     )
+    DOMAIN_ESCROW = ("domain_escrow", "escrow_domains.daily.dotgov.GOV.txt")
     DOMAIN_ADHOC = ("domain_adhoc", "domaintypes.adhoc.dotgov.txt")
     ORGANIZATION_ADHOC = ("organization_adhoc", "organization.adhoc.dotgov.txt")
     AUTHORITY_ADHOC = ("authority_adhoc", "authority.adhoc.dotgov.txt")

@@ -1,26 +1,35 @@
-from dataclasses import dataclass
 
 
-@dataclass
 class TransitionDomainArguments:
     """Stores arguments for load_transition_domain"""
-    # Settings #
-    directory: str
-    seperator: str
-    limit_parse: int
+
+    def __init__(self, **options):
+        # Settings #
+        self.directory = options.get('directory')
+        self.sep = options.get('sep')
+        self.limitParse = options.get('limitParse')
+        
+        # Filenames #
+        ## Adhocs ##
+        self.agency_adhoc_filename = options.get('agency_adhoc_filename')
+        self.domain_adhoc_filename = options.get('domain_adhoc_filename')
+        self.organization_adhoc_filename = options.get('organization_adhoc_filename')
+
+        ## Data files ##
+        self.domain_additional_filename = options.get('domain_additional_filename')
+        self.domain_contacts_filename = options.get('domain_contacts_filename')
+        self.domain_statuses_filename = options.get('domain_statuses_filename')
+
+        # Flags #
+        self.debug = options.get('debug')
+        self.resetTable = options.get('resetTable')
     
-    # Filenames #
-    ## Adhocs ##
-    agency_adhoc_filename: str
-    domain_adhoc_filename: str
-    organization_adhoc_filename: str
-
-    ## Data files ##
-    domain_additional_filename: str
-    domain_contacts_filename: str
-    domain_statuses_filename: str
-
-    # Flags #
-    debug: bool
-    reset_table: bool
-    load_extra: bool
+    def args_extra_transition_domain(self):
+        return {
+            "agency_adhoc_filename": self.agency_adhoc_filename,
+            "domain_adhoc_filename": self.domain_adhoc_filename,
+            "organization_adhoc_filename": self.organization_adhoc_filename,
+            "domain_additional_filename": self.domain_additional_filename,
+            "directory": self.directory,
+            "sep": self.sep,
+        }
