@@ -1,4 +1,3 @@
-from unittest.mock import patch
 from django.test import TestCase
 
 from registrar.models import (
@@ -10,9 +9,6 @@ from registrar.models import (
     UserDomainRole,
 )
 
-from registrar.management.commands.master_domain_migrations import (
-    Command as master_migration_command,
-)
 from django.core.management import call_command
 
 
@@ -52,7 +48,7 @@ class TestLogins(TestCase):
         call_command("transfer_transition_domains_to_domains")
 
     def run_master_script(self):
-        command = call_command(
+        call_command(
             "master_domain_migrations",
             runMigrations=True,
             migrationDirectory=f"{self.test_data_file_location}",
@@ -154,23 +150,8 @@ class TestLogins(TestCase):
 
         self.run_master_script()
 
-        # # TODO: instead of patching....there has got to be a way of making sure subsequent commands use the django database
-        # # Patch subroutines for migrations
-        # def side_effect():
-        #     self.run_load_domains()
-        #     self.run_transfer_domains()
-        # patcher = patch("registrar.management.commands.master_domain_migrations.Command.run_migration_scripts")
-        # mocked_get = patcher.start()
-        # mocked_get.side_effect = side_effect
-        # # Patch subroutines for sending invitations
-        # def side_effect():
-        #     # TODO: what should happen here?
-        #     return
-        # patcher = patch("registrar.management.commands.master_domain_migrations.Command.run_send_invites_script")
-        # mocked_get = patcher.start()
-        # mocked_get.side_effect = side_effect
-
-        # STEP 2: (analyze the tables just like the migration script does, but add assert statements)
+        # STEP 2: (analyze the tables just like the
+        # migration script does, but add assert statements)
         expected_total_transition_domains = 8
         expected_total_domains = 4
         expected_total_domain_informations = 0
@@ -178,7 +159,8 @@ class TestLogins(TestCase):
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
-        # we expect 8 missing domain invites since the migration does not auto-login new users
+        # we expect 8 missing domain invites since the
+        # migration does not auto-login new users
         expected_missing_domain_informations = 8
         # we expect 1 missing invite from anomaly.gov (an injected error)
         expected_missing_domain_invitations = 1
@@ -196,7 +178,8 @@ class TestLogins(TestCase):
     def test_load_transition_domain(self):
         self.run_load_domains()
 
-        # STEP 2: (analyze the tables just like the migration script does, but add assert statements)
+        # STEP 2: (analyze the tables just like the migration
+        # script does, but add assert statements)
         expected_total_transition_domains = 8
         expected_total_domains = 0
         expected_total_domain_informations = 0

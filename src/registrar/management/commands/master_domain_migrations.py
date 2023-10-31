@@ -8,11 +8,6 @@
 import logging
 import argparse
 import sys
-import os
-
-from django.test import Client
-
-from django_fsm import TransitionNotAllowed  # type: ignore
 
 from django.core.management import BaseCommand
 from django.core.management import call_command
@@ -22,7 +17,6 @@ from registrar.models import (
     DomainInformation,
     DomainInvitation,
     TransitionDomain,
-    User,
 )
 
 from registrar.management.commands.utility.terminal_helper import (
@@ -100,19 +94,26 @@ class Command(BaseCommand):
         parser.add_argument(
             "--migrationDirectory",
             default="migrationData",
-            help="The location of the files used for load_transition_domain migration script",
+            help=(
+                "The location of the files used for"
+                "load_transition_domain migration script"
+            ),
         )
         parser.add_argument(
             "--migrationFilenames",
-            default="escrow_domain_contacts.daily.gov.GOV.txt,escrow_contacts.daily.gov.GOV.txt,escrow_domain_statuses.daily.gov.GOV.txt",
-            help="""The files used for load_transition_domain migration script.  
-            Must appear IN ORDER and separated by commas: 
+            default="""escrow_domain_contacts.daily.gov.GOV.txt,
+            escrow_contacts.daily.gov.GOV.txt,
+            escrow_domain_statuses.daily.gov.GOV.txt""",
+            help="""The files used for load_transition_domain migration script.
+            Must appear IN ORDER and separated by commas:
             domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
-            
+
             where...
-            - domain_contacts_filename is the Data file with domain contact information
+            - domain_contacts_filename is the Data file with domain contact
+            information
             - contacts_filename is the Data file with contact information
-            - domain_statuses_filename is the Data file with domain status information""",
+            - domain_statuses_filename is the Data file with domain status
+            information""",
         )
 
         parser.add_argument(
@@ -196,13 +197,15 @@ class Command(BaseCommand):
             if len(matching_domain_informations) == 0:
                 TerminalHelper.print_conditional(
                     debug_on,
-                    f"""{TerminalColors.YELLOW}Missing Domain Information{TerminalColors.ENDC}""",
+                    f"""{TerminalColors.YELLOW}Missing Domain Information
+                    {TerminalColors.ENDC}""",
                 )
                 missing_domain_informations.append(transition_domain_name)
             if len(matching_domain_invitations) == 0:
                 TerminalHelper.print_conditional(
                     debug_on,
-                    f"""{TerminalColors.YELLOW}Missing Domain Invitation{TerminalColors.ENDC}""",
+                    f"""{TerminalColors.YELLOW}Missing Domain Invitation
+                    {TerminalColors.ENDC}""",
                 )
                 missing_domain_invites.append(transition_domain_name)
 
@@ -225,22 +228,26 @@ class Command(BaseCommand):
         logger.info(
             f"""{TerminalColors.OKGREEN}
             ============= FINISHED ANALYSIS ===============
-            
+
             {total_missing_domains} Missing Domains:
             (These are transition domains that are missing from the Domain Table)
-            {TerminalColors.YELLOW}{missing_domains_as_string}{TerminalColors.OKGREEN}
-
+            {TerminalColors.YELLOW}{missing_domains_as_string}
+            {TerminalColors.OKGREEN}
             {total_duplicate_domains} Duplicate Domains:
-            (These are transition domains which have duplicate entries in the Domain Table)
-            {TerminalColors.YELLOW}{duplicate_domains_as_string}{TerminalColors.OKGREEN}
-
+            (These are transition domains which have duplicate
+            entries in the Domain Table)
+            {TerminalColors.YELLOW}{duplicate_domains_as_string}
+            {TerminalColors.OKGREEN}
             {total_missing_domain_informations} Domain Information Entries missing:
-            (These are transition domains which have no entries in the Domain Information Table)
-            {TerminalColors.YELLOW}{missing_domain_informations_as_string}{TerminalColors.OKGREEN}
-
+            (These are transition domains which have no entries
+            in the Domain Information Table)
+            {TerminalColors.YELLOW}{missing_domain_informations_as_string}
+            {TerminalColors.OKGREEN}
             {total_missing_domain_invitations} Domain Invitations missing:
-            (These are transition domains which have no entires in the Domain Invitation Table)
-            {TerminalColors.YELLOW}{missing_domain_invites_as_string}{TerminalColors.OKGREEN}
+            (These are transition domains which have no entires in
+            the Domain Invitation Table)
+            {TerminalColors.YELLOW}{missing_domain_invites_as_string}
+            {TerminalColors.OKGREEN}
             {TerminalColors.ENDC}
             """
         )
@@ -377,13 +384,10 @@ class Command(BaseCommand):
                 logger.info(
                     f"""
                 {TerminalColors.YELLOW}
-                PLEASE Re-Run the script with the correct file location and filenames: 
-                
-                EXAMPLE:
-                docker compose run -T app ./manage.py test_domain_migration --runMigrations --migrationDirectory /app/tmp --migrationFilenames escrow_domain_contacts.daily.gov.GOV.txt escrow_contacts.daily.gov.GOV.txt escrow_domain_statuses.daily.gov.GOV.txt
-                
+                PLEASE Re-Run the script with the correct
+                file location and filenames:
                 """
-                )  # noqa
+                )
                 return
 
         # Proceed executing the migration scripts
@@ -399,33 +403,6 @@ class Command(BaseCommand):
             debug_max_entries_to_parse,
         )
         self.run_transfer_script(debug_on, prompts_enabled)
-
-    def simulate_user_logins(self, debug_on):
-        """Simulates logins for users (this will add
-        Domain Information objects to our tables)"""
-
-        # logger.info(f""
-        #             f"{TerminalColors.OKCYAN}"
-        #             f"================== SIMULATING LOGINS =================="
-        #             f"{TerminalColors.ENDC}")
-
-        # for invite in DomainInvitation.objects.all(): #TODO: move to unit test
-        #     #DEBUG:
-        #     TerminalHelper.print_conditional(debug_on,
-        #                                      f"{TerminalColors.OKCYAN}"
-        #                                      f"Processing invite: {invite}"
-        #                                      f"{TerminalColors.ENDC}")
-        #     # get a user with this email address
-        #     user, user_created = User.objects.get_or_create(email=invite.email, username=invite.email)
-        #     #DEBUG:
-        #     TerminalHelper.print_conditional(user_created,
-        #                                      f"""{TerminalColors.OKCYAN}No user found (creating temporary user object){TerminalColors.ENDC}""")
-        #     TerminalHelper.print_conditional(debug_on,
-        #                                      f"""{TerminalColors.OKCYAN}Executing first-time login for user: {user}{TerminalColors.ENDC}""")
-        #     user.first_login()
-        #     if user_created:
-        #         logger.info(f"""{TerminalColors.YELLOW}(Deleting temporary user object){TerminalColors.ENDC}""")
-        #         user.delete()
 
     def handle(
         self,
@@ -453,9 +430,6 @@ class Command(BaseCommand):
         debug_on = options.get("debug")
         prompts_enabled = options.get("prompt")
         run_migrations_enabled = options.get("runMigrations")
-        simulate_user_login_enabled = (
-            False  # TODO: delete? Moving to unit test... options.get("triggerLogins")
-        )
 
         TerminalHelper.print_conditional(
             debug_on,
@@ -538,30 +512,7 @@ class Command(BaseCommand):
             )
             prompt_continuation_of_analysis = True
 
-        # STEP 2 -- SIMULATE LOGINS
-        # Simulate user login for each user in domain
-        # invitation if specified by user OR if running
-        # migration scripts.
-        # (NOTE: Although users can choose to run login
-        # simulations separately (for testing purposes),
-        # if we are running all migration scripts, we should
-        # automatically execute this as the final step
-        # to ensure Domain Information objects get added
-        # to the database.)
-
-        if run_migrations_enabled and simulate_user_login_enabled:
-            if prompts_enabled:
-                simulate_user_login_enabled = TerminalHelper.query_yes_no(
-                    f"""{TerminalColors.FAIL}
-                Proceed with simulating user logins?
-                {TerminalColors.ENDC}"""
-                )
-                if not simulate_user_login_enabled:
-                    return
-            self.simulate_user_logins(debug_on)
-            prompt_continuation_of_analysis = True
-
-        # STEP 3 -- SEND INVITES
+        # STEP 2 -- SEND INVITES
         proceed_with_sending_invites = run_migrations_enabled
         if prompts_enabled and run_migrations_enabled:
             proceed_with_sending_invites = TerminalHelper.query_yes_no(
@@ -574,7 +525,7 @@ class Command(BaseCommand):
             self.run_send_invites_script(debug_on, prompts_enabled)
             prompt_continuation_of_analysis = True
 
-        # STEP 4 -- ANALYZE TABLES & GENERATE REPORT
+        # STEP 3 -- ANALYZE TABLES & GENERATE REPORT
         # Analyze tables for corrupt data...
         if prompt_continuation_of_analysis and prompts_enabled:
             # ^ (only prompt if we ran steps 1 and/or 2)
