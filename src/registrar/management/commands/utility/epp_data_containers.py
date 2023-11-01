@@ -5,7 +5,7 @@ Regarding our dataclasses:
 Not intended to be used as models but rather as an alternative to storing as a dictionary.
 By keeping it as a dataclass instead of a dictionary, we can maintain data consistency.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
 from typing import List, Optional
@@ -15,69 +15,69 @@ from typing import List, Optional
 class AgencyAdhoc:
     """Defines the structure given in the AGENCY_ADHOC file"""
 
-    agencyid: Optional[int] = None
-    agencyname: Optional[str] = None
-    active: Optional[str] = None
-    isfederal: Optional[str] = None
+    agencyid: Optional[int] = field(default=None, repr=True) 
+    agencyname: Optional[str] = field(default=None, repr=True) 
+    active: Optional[str] = field(default=None, repr=True) 
+    isfederal: Optional[str] = field(default=None, repr=True) 
 
 
 @dataclass
 class DomainAdditionalData:
     """Defines the structure given in the DOMAIN_ADDITIONAL file"""
 
-    domainname: Optional[str] = None
-    domaintypeid: Optional[int] = None
-    authorityid: Optional[int] = None
-    orgid: Optional[int] = None
-    securitycontactemail: Optional[str] = None
-    dnsseckeymonitor: Optional[str] = None
-    domainpurpose: Optional[str] = None
+    domainname: Optional[str] = field(default=None, repr=True) 
+    domaintypeid: Optional[int] = field(default=None, repr=True) 
+    authorityid: Optional[int] = field(default=None, repr=True) 
+    orgid: Optional[int] = field(default=None, repr=True) 
+    securitycontactemail: Optional[str] = field(default=None, repr=True) 
+    dnsseckeymonitor: Optional[str] = field(default=None, repr=True) 
+    domainpurpose: Optional[str] = field(default=None, repr=True) 
 
 
 @dataclass
 class DomainTypeAdhoc:
     """Defines the structure given in the DOMAIN_ADHOC file"""
 
-    domaintypeid: Optional[int] = None
-    domaintype: Optional[str] = None
-    code: Optional[str] = None
-    active: Optional[str] = None
+    domaintypeid: Optional[int] = field(default=None, repr=True) 
+    domaintype: Optional[str] = field(default=None, repr=True) 
+    code: Optional[str] = field(default=None, repr=True) 
+    active: Optional[str] = field(default=None, repr=True) 
 
 
 @dataclass
 class OrganizationAdhoc:
     """Defines the structure given in the ORGANIZATION_ADHOC file"""
 
-    orgid: Optional[int] = None
-    orgname: Optional[str] = None
-    orgstreet: Optional[str] = None
-    orgcity: Optional[str] = None
-    orgstate: Optional[str] = None
-    orgzip: Optional[str] = None
-    orgcountrycode: Optional[str] = None
+    orgid: Optional[int] = field(default=None, repr=True) 
+    orgname: Optional[str] = field(default=None, repr=True) 
+    orgstreet: Optional[str] = field(default=None, repr=True) 
+    orgcity: Optional[str] = field(default=None, repr=True) 
+    orgstate: Optional[str] = field(default=None, repr=True) 
+    orgzip: Optional[str] = field(default=None, repr=True) 
+    orgcountrycode: Optional[str] = field(default=None, repr=True) 
 
 
 @dataclass
 class AuthorityAdhoc:
     """Defines the structure given in the AUTHORITY_ADHOC file"""
 
-    authorityid: Optional[int] = None
-    firstname: Optional[str] = None
-    middlename: Optional[str] = None
-    lastname: Optional[str] = None
-    email: Optional[str] = None
-    phonenumber: Optional[str] = None
-    agencyid: Optional[int] = None
-    addlinfo: Optional[List[str]] = None
+    authorityid: Optional[int] = field(default=None, repr=True) 
+    firstname: Optional[str] = field(default=None, repr=True) 
+    middlename: Optional[str] = field(default=None, repr=True) 
+    lastname: Optional[str] = field(default=None, repr=True) 
+    email: Optional[str] = field(default=None, repr=True) 
+    phonenumber: Optional[str] = field(default=None, repr=True) 
+    agencyid: Optional[int] = field(default=None, repr=True) 
+    addlinfo: Optional[List[str]] = field(default=None, repr=True) 
 
 
 @dataclass
 class DomainEscrow:
     """Defines the structure given in the DOMAIN_ESCROW file"""
 
-    domainname: Optional[str] = None
-    creationdate: Optional[date] = None
-    expirationdate: Optional[date] = None
+    domainname: Optional[str] = field(default=None, repr=True) 
+    creationdate: Optional[date] = field(default=None, repr=True) 
+    expirationdate: Optional[date] = field(default=None, repr=True) 
 
 
 class EnumFilenames(Enum):
