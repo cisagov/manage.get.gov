@@ -14,6 +14,7 @@ from typing import List, Optional
 @dataclass
 class AgencyAdhoc:
     """Defines the structure given in the AGENCY_ADHOC file"""
+
     agencyid: Optional[int] = None
     agencyname: Optional[str] = None
     active: Optional[str] = None
@@ -23,6 +24,7 @@ class AgencyAdhoc:
 @dataclass
 class DomainAdditionalData:
     """Defines the structure given in the DOMAIN_ADDITIONAL file"""
+
     domainname: Optional[str] = None
     domaintypeid: Optional[int] = None
     authorityid: Optional[int] = None
@@ -35,6 +37,7 @@ class DomainAdditionalData:
 @dataclass
 class DomainTypeAdhoc:
     """Defines the structure given in the DOMAIN_ADHOC file"""
+
     domaintypeid: Optional[int] = None
     domaintype: Optional[str] = None
     code: Optional[str] = None
@@ -44,6 +47,7 @@ class DomainTypeAdhoc:
 @dataclass
 class OrganizationAdhoc:
     """Defines the structure given in the ORGANIZATION_ADHOC file"""
+
     orgid: Optional[int] = None
     orgname: Optional[str] = None
     orgstreet: Optional[str] = None
@@ -56,6 +60,7 @@ class OrganizationAdhoc:
 @dataclass
 class AuthorityAdhoc:
     """Defines the structure given in the AUTHORITY_ADHOC file"""
+
     authorityid: Optional[int] = None
     firstname: Optional[str] = None
     middlename: Optional[str] = None
@@ -65,9 +70,11 @@ class AuthorityAdhoc:
     agencyid: Optional[int] = None
     addlinfo: Optional[List[str]] = None
 
+
 @dataclass
 class DomainEscrow:
     """Defines the structure given in the DOMAIN_ESCROW file"""
+
     domainname: Optional[str] = None
     creationdate: Optional[date] = None
     expirationdate: Optional[date] = None

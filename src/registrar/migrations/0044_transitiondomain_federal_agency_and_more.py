@@ -38,4 +38,20 @@ class Migration(migrations.Migration):
                 blank=True, db_index=True, help_text="Organization name", null=True
             ),
         ),
+        migrations.AddField(
+            model_name="transitiondomain",
+            name="epp_creation_date",
+            field=models.DateField(
+                help_text="Duplication of registry's creation date saved for ease of reporting",
+                null=True,
+            ),
+        ),
+        migrations.AddField(
+            model_name="transitiondomain",
+            name="epp_expiration_date",
+            field=models.DateField(
+                help_text="Duplication of registry's expiration date saved for ease of reporting",
+                null=True,
+            ),
+        ),
     ]

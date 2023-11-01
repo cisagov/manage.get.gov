@@ -16,7 +16,7 @@ from registrar.management.commands.utility.terminal_helper import (
 )
 
 from .utility.transition_domain_arguments import TransitionDomainArguments
-from .utility.extra_transition_domain import LoadExtraTransitionDomain
+from .utility.extra_transition_domain_helper import LoadExtraTransitionDomain
 
 logger = logging.getLogger(__name__)
 
@@ -503,7 +503,7 @@ class Command(BaseCommand):
         # Prompt the user if they want to load additional data on the domains
         # TODO - add this logic into the core of this file
         arguments = TransitionDomainArguments(**options)
-        
+
         do_parse_extra = TerminalHelper.prompt_for_execution(
             True,
             "./manage.py test",
@@ -512,4 +512,3 @@ class Command(BaseCommand):
         if do_parse_extra:
             extra = LoadExtraTransitionDomain(arguments)
             extra_logs = extra.parse_logs.logs
-
