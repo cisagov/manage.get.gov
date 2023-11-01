@@ -104,6 +104,7 @@ cat {LOCAL_PATH_TO_FILE} | cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE} -c "cat > /ho
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
 
+**TROUBLESHOOTING:** Depending on your operating system (Windows for instance), this command may upload corrupt data. If you encounter the error `gzip: prfiles.tar.gz: not in gzip format` when trying to unzip a .tar.gz file, use the scp command instead.
 
 #### STEP 1 (Alternative): Using scp to transfer data to sandboxes
 **IMPORTANT:** Only follow these steps if cat does not work as expected. If it does, skip to step 2.
