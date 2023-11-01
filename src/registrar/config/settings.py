@@ -504,6 +504,7 @@ OIDC_PROVIDERS = {
             "token_endpoint_auth_method": ["private_key_jwt"],
             "sp_private_key": secret_login_key,
         },
+    },
     "login.gov production": {
         "srv_discovery_url": "https://secure.login.gov",
         "behaviour": {
