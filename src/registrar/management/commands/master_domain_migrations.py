@@ -93,7 +93,7 @@ class Command(BaseCommand):
         # The following file arguments have default values for running in the sandbox
         parser.add_argument(
             "--migrationDirectory",
-            default="migrationData",
+            default="migrationdata",
             help=(
                 "The location of the files used for"
                 "load_transition_domain migration script"
