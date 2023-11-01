@@ -93,7 +93,7 @@ class Command(BaseCommand):
         # The following file arguments have default values for running in the sandbox
         parser.add_argument(
             "--migrationDirectory",
-            default="migrationData",
+            default="migrationdata",
             help=(
                 "The location of the files used for"
                 "load_transition_domain migration script"
@@ -101,9 +101,9 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--migrationFilenames",
-            default="""escrow_domain_contacts.daily.gov.GOV.txt,
-            escrow_contacts.daily.gov.GOV.txt,
-            escrow_domain_statuses.daily.gov.GOV.txt""",
+            default="escrow_domain_contacts.daily.gov.GOV.txt,"
+            "escrow_contacts.daily.gov.GOV.txt,"
+            "escrow_domain_statuses.daily.gov.GOV.txt",
             help="""The files used for load_transition_domain migration script.
             Must appear IN ORDER and separated by commas:
             domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
