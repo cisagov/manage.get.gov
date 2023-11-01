@@ -2,12 +2,8 @@
   class="{% if label_classes %} {{ label_classes }}{% endif %}{% if label_tag == 'legend' %} {{ legend_classes }}{% endif %}"
   {% if not field.use_fieldset %}for="{{ widget.attrs.id }}"{% endif %}
 >
-  {% if span_for_text %}
-    <span>{{ field.label }}</span>
-  {% else %}
-    {{ field.label }}
-  {% endif %}
-  {% if widget.attrs.required %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-  {% endif %}
+{{ field.label }}
+{% if widget.attrs.required %}
+  <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+{% endif %}
 </{{ label_tag }}>

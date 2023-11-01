@@ -49,7 +49,6 @@ env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_base_url = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
-env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
 
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
@@ -371,7 +370,8 @@ LOGGING = {
     # each handler has its choice of format
     "formatters": {
         "verbose": {
-            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] "
+            "%(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {
@@ -482,12 +482,11 @@ OIDC_ALLOW_DYNAMIC_OP = False
 
 # which provider to use if multiple are available
 # (code does not currently support user selection)
-# See above for the default value if the env variable is missing
-OIDC_ACTIVE_PROVIDER = env_oidc_active_provider
+OIDC_ACTIVE_PROVIDER = "login.gov"
 
 
 OIDC_PROVIDERS = {
-    "identity sandbox": {
+    "login.gov": {
         "srv_discovery_url": "https://idp.int.identitysandbox.gov",
         "behaviour": {
             # the 'code' workflow requires direct connectivity from us to Login.gov
@@ -503,26 +502,7 @@ OIDC_PROVIDERS = {
             "token_endpoint_auth_method": ["private_key_jwt"],
             "sp_private_key": secret_login_key,
         },
-    },
-    "login.gov production": {
-        "srv_discovery_url": "https://secure.login.gov",
-        "behaviour": {
-            # the 'code' workflow requires direct connectivity from us to Login.gov
-            "response_type": "code",
-            "scope": ["email", "profile:name", "phone"],
-            "user_info_request": ["email", "first_name", "last_name", "phone"],
-            "acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
-        },
-        "client_registration": {
-            "client_id": (
-                "urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"
-            ),
-            "redirect_uris": [f"{env_base_url}/openid/callback/login/"],
-            "post_logout_redirect_uris": [f"{env_base_url}/openid/callback/logout/"],
-            "token_endpoint_auth_method": ["private_key_jwt"],
-            "sp_private_key": secret_login_key,
-        },
-    },
+    }
 }
 
 # endregion

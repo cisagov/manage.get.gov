@@ -1,6 +1,5 @@
 import logging
 from django import forms
-from django.http import HttpResponse
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -11,7 +10,6 @@ from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
 from registrar.models.utility.admin_sort_fields import AdminSortFields
-from registrar.utility import csv_export
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
@@ -749,58 +747,7 @@ class DomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
-    change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state"]
-
-    def export_data_type(self, request):
-        # match the CSV example with all the fields
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="domains-by-type.csv"'
-        csv_export.export_data_type_to_csv(response)
-        return response
-
-    def export_data_full(self, request):
-        # Smaller export based on 1
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-full.csv"'
-        csv_export.export_data_full_to_csv(response)
-        return response
-
-    def export_data_federal(self, request):
-        # Federal only
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
-        csv_export.export_data_federal_to_csv(response)
-        return response
-
-    def get_urls(self):
-        from django.urls import path
-
-        urlpatterns = super().get_urls()
-
-        # Used to extrapolate a path name, for instance
-        # name="{app_label}_{model_name}_export_data_type"
-        info = self.model._meta.app_label, self.model._meta.model_name
-
-        my_url = [
-            path(
-                "export_data_type/",
-                self.export_data_type,
-                name="%s_%s_export_data_type" % info,
-            ),
-            path(
-                "export_data_full/",
-                self.export_data_full,
-                name="%s_%s_export_data_full" % info,
-            ),
-            path(
-                "export_data_federal/",
-                self.export_data_federal,
-                name="%s_%s_export_data_federal" % info,
-            ),
-        ]
-
-        return my_url + urlpatterns
 
     def response_change(self, request, obj):
         # Create dictionary of action functions

@@ -35,14 +35,11 @@
           {{ form.domain }}
           {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
             {% if forloop.counter <= 2 %}
-              {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-              {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
+              {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
                 {% input_with_errors form.server %}
               {% endwith %}
             {% else %}
-              {% with span_for_text=True %}
-                {% input_with_errors form.server %}
-                {% endwith %}
+              {% input_with_errors form.server %}
             {% endif %}
           {% endwith %}
         </div>
@@ -52,11 +49,14 @@
           {% endwith %}
         </div>
         <div class="tablet:grid-col-2">
-          <button type="button" class="usa-button usa-button--unstyled display-block delete-record margin-bottom-075">
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-            </svg><span class="margin-left-05">Delete</span>
-          </button>
+          {% comment %} TODO: remove this if for 1192 {% endcomment %}
+          {% if forloop.counter > 2 %}
+            <button type="button" class="usa-button usa-button--unstyled display-block delete-record margin-bottom-075">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+              </svg><span class="margin-left-05">Delete</span>
+            </button>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@
             type="submit"
             class="usa-button usa-button--outline"
             name="btn-cancel-click"
-            aria-label="Reset the data in the name server form to the registry state (undo changes)"
+            aria-label="Reset the data in the Name Server form to the registry state (undo changes)"
         >Cancel
       </button>
     </div>
