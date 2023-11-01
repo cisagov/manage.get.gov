@@ -80,6 +80,12 @@ class Command(BaseCommand):
             help="Defines the filename for additional domain data",
         )
         parser.add_argument(
+            "--domain_escrow_filename",
+            default=EnumFilenames.DOMAIN_ADDITIONAL.value[1],
+            help="Defines the filename for creation/expiration domain data",
+        )
+        #domain_escrow_filename
+        parser.add_argument(
             "--domain_adhoc_filename",
             default=EnumFilenames.DOMAIN_ADHOC.value[1],
             help="Defines the filename for domain type adhocs",
@@ -275,6 +281,19 @@ class Command(BaseCommand):
             )
             TransitionDomain.objects.all().delete()
 
+    def parse_extra(self, options):
+        """Loads additional information for each TransitionDomain
+        object based off supplied files."""
+        try:
+            # Parse data from files
+            extra_data = LoadExtraTransitionDomain(options)
+
+            # Update every TransitionDomain object where applicable
+            extra_data.update_transition_domain_models()
+        except Exception as err:
+            logger.error("Could not load additional TransitionDomain data.")
+            raise err
+
     def handle(  # noqa: C901
         self,
         domain_contacts_filename,
@@ -297,6 +316,24 @@ class Command(BaseCommand):
         debug_max_entries_to_parse = int(
             options.get("limitParse")
         )  # set to 0 to parse all entries
+
+        ## Variables for Additional TransitionDomain Information ##
+        
+        # Desired directory for additional TransitionDomain data
+        # (In the event they are stored seperately)
+        directory = options.get("directory")
+
+        # Agency information
+        agency_adhoc_filename = options.get("agency_adhoc_filename")
+        # Federal agency / organization type information
+        domain_adhoc_filename = options.get("domain_adhoc_filename")
+        # Organization name information
+        organization_adhoc_filename = options.get("organization_adhoc_filename")
+        # Creation date / expiration date information
+        domain_escrow_filename = options.get("domain_escrow_filename")
+
+        # Container for all additional TransitionDomain information
+        domain_additional_filename = options.get("domain_additional_filename")
 
         # print message to terminal about which args are in use
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
@@ -501,14 +538,26 @@ class Command(BaseCommand):
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
 
         # Prompt the user if they want to load additional data on the domains
-        # TODO - add this logic into the core of this file
-        arguments = TransitionDomainArguments(**options)
-
+        title = "Do you wish to load additional data for TransitionDomains?"
         do_parse_extra = TerminalHelper.prompt_for_execution(
-            True,
-            "./manage.py test",
-            "Running load_extra_transition_domains script",
+            system_exit_on_terminate=True,
+            info_to_inspect=f"""
+            !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
+
+            == ==
+            agency_adhoc_filename: {agency_adhoc_filename}
+
+            ==Federal agency / organization type information==
+            domain_adhoc_filename: {domain_adhoc_filename}
+
+            organization_adhoc_filename: {organization_adhoc_filename}
+            domain_escrow_filename: {domain_escrow_filename}
+            domain_additional_filename: {domain_additional_filename}
+            ==
+            directory: {directory}
+            """,
+            prompt_title=title,
         )
         if do_parse_extra:
-            extra = LoadExtraTransitionDomain(arguments)
-            extra_logs = extra.parse_logs.logs
+            arguments = TransitionDomainArguments(**options)
+            self.parse_extra(arguments)

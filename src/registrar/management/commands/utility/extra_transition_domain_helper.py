@@ -121,10 +121,6 @@ class LoadExtraTransitionDomain:
         self.domain_object = ExtraTransitionDomain(**arguments)
         self.domain_object.parse_all_files()
 
-        # Given the data we just parsed, update each
-        # transition domain object with that data.
-        self.update_transition_domain_models()
-
     def update_transition_domain_models(self):
         """Updates TransitionDomain objects based off the file content
         given in self.domain_object"""
