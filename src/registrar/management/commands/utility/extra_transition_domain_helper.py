@@ -811,8 +811,8 @@ class ExtraTransitionDomain:
                 domain_name = row[0]
                 date_format = "%Y-%m-%dT%H:%M:%SZ"
                 # TODO - add error handling
-                creation_date = datetime.strptime(row[8], date_format)
-                expiration_date = datetime.strptime(row[10], date_format)
+                creation_date = datetime.strptime(row[7], date_format)
+                expiration_date = datetime.strptime(row[11], date_format)
 
                 dict_data[domain_name] = DomainEscrow(
                     domain_name, creation_date, expiration_date
