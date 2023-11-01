@@ -371,8 +371,7 @@ LOGGING = {
     # each handler has its choice of format
     "formatters": {
         "verbose": {
-            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] "
-            "%(message)s",
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {
@@ -515,13 +514,15 @@ OIDC_PROVIDERS = {
             "acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
         },
         "client_registration": {
-            "client_id": "urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar",
+            "client_id": (
+                "urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"
+            ),
             "redirect_uris": [f"{env_base_url}/openid/callback/login/"],
             "post_logout_redirect_uris": [f"{env_base_url}/openid/callback/logout/"],
             "token_endpoint_auth_method": ["private_key_jwt"],
             "sp_private_key": secret_login_key,
         },
-    }
+    },
 }
 
 # endregion
