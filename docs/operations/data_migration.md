@@ -135,7 +135,7 @@ scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app {FULL_NAME_OF_YOUR_SANDBOX_HE
 ```
 The items in curly braces are the values that you will manually replace.
 These are as follows:
-* FULL_NAME_OF_YOUR_SANDBOX_HERE - Name of your sandbox, ex: getgov-za
+* APP_NAME_IN_ENVIRONMENT - Name of the app running in your environment, e.g. getgov-za or getgov-stable
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
 
