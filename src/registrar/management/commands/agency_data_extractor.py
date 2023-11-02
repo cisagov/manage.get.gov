@@ -9,6 +9,7 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalHelper,
 )
 from registrar.models.domain_application import DomainApplication
+from registrar.models.transition_domain import TransitionDomain
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +33,15 @@ class Command(BaseCommand):
 
         parser.add_argument("--debug", help="Prints additional debug statements to the terminal", action=argparse.BooleanOptionalAction)
 
+    @staticmethod
     def extract_agencies(
-        self, 
         agency_data_filepath: str, 
         sep: str,
         debug: bool
     ) -> [str]:
-        """Extracts all the agency names from the provided agency file"""
+        """Extracts all the agency names from the provided 
+        agency file (skips any duplicates) and returns those
+        names in an array"""
         agency_names = []
         logger.info(f"{TerminalColors.OKCYAN}Reading agency data file {agency_data_filepath}{TerminalColors.ENDC}")
         with open(agency_data_filepath, "r") as agency_data_filepath:  # noqa
@@ -50,24 +53,27 @@ class Command(BaseCommand):
         logger.info(f"{TerminalColors.OKCYAN}Checked {len(agency_names)} agencies{TerminalColors.ENDC}")
         return agency_names
     
-    def compare_lists(self, new_agency_list: [str], current_agency_list: [str], debug: bool):
+    @staticmethod
+    def compare_agency_lists(provided_agencies: [str],
+                      existing_agencies: [str],
+                      debug: bool):
         """
-        Compares the new agency list with the current
-        agency list and provides the equivalent of
-        an outer-join on the two (printed to the terminal)
+        Compares new_agencies with existing_agencies and 
+        provides the equivalent of an outer-join on the two
+        (printed to the terminal)
         """
 
         new_agencies = []
         # 1 - Get all new agencies that we don't already have (We might want to ADD these to our list)
-        for agency in new_agency_list:
-            if agency not in current_agency_list and agency not in new_agencies:
+        for agency in provided_agencies:
+            if agency not in existing_agencies and agency not in new_agencies:
                 new_agencies.append(agency)
                 TerminalHelper.print_conditional(debug, f"{TerminalColors.YELLOW}Found new agency: {agency}{TerminalColors.ENDC}")
 
         possibly_unused_agencies = []
         # 2 - Get all new agencies that we don't already have (We might want to ADD these to our list)
-        for agency in current_agency_list:
-            if agency not in new_agency_list and agency not in possibly_unused_agencies:
+        for agency in existing_agencies:
+            if agency not in provided_agencies and agency not in possibly_unused_agencies:
                 possibly_unused_agencies.append(agency)
                 TerminalHelper.print_conditional(debug, f"{TerminalColors.YELLOW}Possibly unused agency detected: {agency}{TerminalColors.ENDC}")
 
@@ -84,10 +90,10 @@ class Command(BaseCommand):
         logger.info(f"""
         {TerminalColors.OKGREEN}
         ======================== SUMMARY OF FINDINGS ============================
-        {len(new_agency_list)} AGENCIES WERE PROVIDED in the agency file.
-        {len(current_agency_list)} AGENCIES ARE CURRENTLY IN OUR SYSTEM.
+        {len(provided_agencies)} AGENCIES WERE PROVIDED in the agency file.
+        {len(existing_agencies)} AGENCIES ARE CURRENTLY IN OUR SYSTEM.
 
-        {len(new_agency_list)-len(new_agencies)} AGENCIES MATCHED
+        {len(provided_agencies)-len(new_agencies)} AGENCIES MATCHED
         (These are agencies that are in the given agency file AND in our system already)
         
         {len(new_agencies)} AGENCIES TO ADD:
@@ -101,20 +107,17 @@ class Command(BaseCommand):
         {TerminalColors.ENDC}
         """)
         
-        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the full list of agencies from the given agency file?{TerminalColors.ENDC}")
-        if print_full_list:
-            full_agency_list_as_string = "{}".format(
-                ",\n".join(map(str, new_agency_list))
-            )
-            logger.info(
-                f"\n{TerminalColors.OKGREEN}"
-                f"\n======================== FULL LIST OF AGENCIES ============================"
-                f"\nThese are all the agencies provided by the given agency file."
-                f"\n{TerminalColors.YELLOW}"
-                f"\n{full_agency_list_as_string}"
-                f"{TerminalColors.OKGREEN}"
-            )
-    
+    @staticmethod
+    def print_agency_list(agencies):
+        full_agency_list_as_string = "{}".format(
+            ",\n".join(map(str, agencies))
+        )
+        logger.info(
+            f"\n{TerminalColors.YELLOW}"
+            f"\n{full_agency_list_as_string}"
+            f"{TerminalColors.OKGREEN}"
+        )
+
     def handle(
         self,
         agency_data_filename,
@@ -130,5 +133,26 @@ class Command(BaseCommand):
         agency_data_file = dir+"/"+agency_data_filename
 
         new_agencies = self.extract_agencies(agency_data_file, sep, debug)
-        existing_agencies = DomainApplication.AGENCIES
-        self.compare_lists(new_agencies, existing_agencies, debug)
+        hard_coded_agencies = DomainApplication.AGENCIES
+        transition_domain_agencies = TransitionDomain.objects.all().values_list('federal_agency')
+        print(transition_domain_agencies)
+
+        # OPTION to compare the agency file to our hard-coded list
+        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to check {agency_data_filename} against our hard-coded list of agencies?{TerminalColors.ENDC}")
+        if print_full_list:
+            self.compare_agency_lists(new_agencies, hard_coded_agencies, debug)
+        
+        # OPTION to compare the agency file to Transition Domains
+        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to check {agency_data_filename} against Transition Domain contents?{TerminalColors.ENDC}")
+        if print_full_list:
+            self.compare_agency_lists(new_agencies, transition_domain_agencies, debug)
+
+        # OPTION to print out the full list of agencies from the agency file
+        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the full list of agencies from the given agency file?{TerminalColors.ENDC}")
+        if print_full_list:
+            logger.info(
+            f"\n{TerminalColors.OKGREEN}"
+            f"\n======================== FULL LIST OF IMPORTED AGENCIES ============================"
+            f"\nThese are all the agencies provided by the given agency file."
+            )
+            self.print_agency_list(new_agencies)
