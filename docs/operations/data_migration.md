@@ -92,7 +92,7 @@ We can do this both locally and in a sandbox.
 Load migration data onto a production or sandbox environment
 
 **WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
-Do not use this method to store data you want to keep around permanently.
+Do not use these environments to store data you want to keep around permanently. We don't want sensitive data to be accidentally present in our application environments.
 
 #### STEP 1: Using cat to transfer data to sandboxes
 
