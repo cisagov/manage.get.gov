@@ -97,10 +97,10 @@ Do not use these environments to store data you want to keep around permanently.
 #### STEP 1: Using cat to transfer data to sandboxes
 
 ```bash
-cat {LOCAL_PATH_TO_FILE} | cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
+cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
 ```
 
-* FULL_NAME_OF_YOUR_SANDBOX_HERE - Name of your sandbox, ex: getgov-za
+* APP_NAME_IN_ENVIRONMENT - Name of the app running in your environment, e.g. getgov-za or getgov-stable
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
 
@@ -130,7 +130,7 @@ cf target -o cisa-dotgov -s {SANDBOX_NAME}
 
 Use the following command to transfer the desired file:
 ```shell
-scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app {FULL_NAME_OF_YOUR_SANDBOX_HERE} --guid)/processes | jq -r '.resources[]
+scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app {APP_NAME_IN_ENVIRONMENT} --guid)/processes | jq -r '.resources[]
 | select(.type=="web") | .guid')/0 {LOCAL_PATH_TO_FILE} ssh.fr.cloud.gov:tmp/{DESIRED_NAME_OF_FILE}
 ```
 The items in curly braces are the values that you will manually replace.
@@ -138,8 +138,6 @@ These are as follows:
 * APP_NAME_IN_ENVIRONMENT - Name of the app running in your environment, e.g. getgov-za or getgov-stable
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
-
-NOTE: If you'd wish to change what directory these files are uploaded to, you can change `ssh.fr.cloud.gov:tmp/` to `ssh.fr.cloud.gov:{DIRECTORY_YOU_WANT}/`, but be aware that this makes data migration more tricky than it has to be.
 
 ##### Get a temp auth code
 
@@ -158,7 +156,7 @@ Due to the nature of how Cloud.gov operates, the getgov directory is dynamically
 ##### SSH into your sandbox
 
 ```shell
-cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE}
+cf ssh {APP_NAME_IN_ENVIRONMENT}
 ```
 
 ##### Open a shell
@@ -196,7 +194,7 @@ cat ../tmp/{filename} > migrationdata/{filename}
 ```
 
 
-*You are now ready to run migration scripts (see "Running the Migration Scripts")*
+*You are now ready to run migration scripts (see [Running the Migration Scripts](running-the-migration-scripts))*
 
 ### SECTION 2 - LOCAL MIGRATION SETUP (TESTING PURPOSES ONLY)
 
