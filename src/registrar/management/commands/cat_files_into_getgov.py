@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
         for src_file_path in matching_files:
             filename = os.path.basename(src_file_path)
-            
+
             desired_file_path = os.path.join(directory, filename)
             if os.path.exists(desired_file_path):
                 # For linter
@@ -52,7 +52,6 @@ class Command(BaseCommand):
                 replace = f"{desired_file_path} already exists. {prompt}"
                 if not helper.query_yes_no(replace):
                     continue
-            
+
             src_file_path = f"../tmp/{filename}"
             shutil.copy(src_file_path, desired_file_path)
-
