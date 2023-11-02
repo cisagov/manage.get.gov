@@ -45,7 +45,8 @@ class Command(BaseCommand):
             for row in csv.reader(agency_data_filepath, delimiter=sep):
                 agency_name = row[1]
                 TerminalHelper.print_conditional(debug, f"Checking: {agency_name}")
-                agency_names.append(agency_name)
+                if agency_name not in agency_names:
+                    agency_names.append(agency_name)
         logger.info(f"{TerminalColors.OKCYAN}Checked {len(agency_names)} agencies{TerminalColors.ENDC}")
         return agency_names
     
@@ -59,14 +60,14 @@ class Command(BaseCommand):
         new_agencies = []
         # 1 - Get all new agencies that we don't already have (We might want to ADD these to our list)
         for agency in new_agency_list:
-            if agency not in current_agency_list:
+            if agency not in current_agency_list and agency not in new_agencies:
                 new_agencies.append(agency)
                 TerminalHelper.print_conditional(debug, f"{TerminalColors.YELLOW}Found new agency: {agency}{TerminalColors.ENDC}")
 
         possibly_unused_agencies = []
         # 2 - Get all new agencies that we don't already have (We might want to ADD these to our list)
         for agency in current_agency_list:
-            if agency not in new_agency_list:
+            if agency not in new_agency_list and agency not in possibly_unused_agencies:
                 possibly_unused_agencies.append(agency)
                 TerminalHelper.print_conditional(debug, f"{TerminalColors.YELLOW}Possibly unused agency detected: {agency}{TerminalColors.ENDC}")
 
@@ -99,7 +100,21 @@ class Command(BaseCommand):
         {TerminalColors.YELLOW}{possibly_unused_agencies_as_string}
         {TerminalColors.ENDC}
         """)
-
+        
+        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the full list of agencies from the given agency file?{TerminalColors.ENDC}")
+        if print_full_list:
+            full_agency_list_as_string = "{}".format(
+                ",\n".join(map(str, new_agency_list))
+            )
+            logger.info(
+                f"\n{TerminalColors.OKGREEN}"
+                f"\n======================== FULL LIST OF AGENCIES ============================"
+                f"\nThese are all the agencies provided by the given agency file."
+                f"\n{TerminalColors.YELLOW}"
+                f"\n{full_agency_list_as_string}"
+                f"{TerminalColors.OKGREEN}"
+            )
+    
     def handle(
         self,
         agency_data_filename,
