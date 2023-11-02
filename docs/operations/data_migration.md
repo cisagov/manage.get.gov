@@ -215,7 +215,7 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 ### STEP 1: Load Transition Domains
 
-Run the following command, making sure the filepaths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. (NOTE: If working in the sandbox, change "/app/tmp" to point to the sandbox directory)
+Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. (NOTE: If working in cloud.gov, change "/app/tmp" to point to the `migrationdata/` directory)
 ```shell
 docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt --debug
 ```
