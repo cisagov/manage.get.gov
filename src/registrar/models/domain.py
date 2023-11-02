@@ -3,7 +3,6 @@ import logging
 import ipaddress
 import re
 from datetime import date
-from string import digits
 from typing import Optional
 
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore

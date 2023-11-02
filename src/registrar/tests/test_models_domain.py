@@ -1635,18 +1635,21 @@ class TestNameserverValidation(TestCase):
 
     def test_255_chars_is_too_long(self):
         """Test that domain of 255 chars or longer is invalid"""
-        domain_too_long = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
-        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
-        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
-        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
-        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
-        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.gov"
+        domain_too_long = (
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.gov"
+        )
         self.assertFalse(Domain.isValidHost(domain_too_long))
 
     def test_64_char_label_too_long(self):
         """Test that label of 64 characters or longer is invalid"""
-        label_too_long = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
-        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        label_too_long = (
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        )
         domain_label_too_long = "www." + label_too_long + ".gov"
         self.assertFalse(Domain.isValidHost(domain_label_too_long))
 
