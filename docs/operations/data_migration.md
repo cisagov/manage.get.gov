@@ -97,10 +97,10 @@ Do not use these environments to store data you want to keep around permanently.
 #### STEP 1: Using cat to transfer data to sandboxes
 
 ```bash
-cat {LOCAL_PATH_TO_FILE} | cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
+cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
 ```
 
-* FULL_NAME_OF_YOUR_SANDBOX_HERE - Name of your sandbox, ex: getgov-za
+* APP_NAME_IN_ENVIRONMENT - Name of your sandbox, ex: getgov-za
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
 
