@@ -91,7 +91,7 @@ class Command(BaseCommand):
         {TerminalColors.OKGREEN}
         ======================== SUMMARY OF FINDINGS ============================
         {len(provided_agencies)} AGENCIES WERE PROVIDED in the agency file.
-        {len(existing_agencies)} AGENCIES ARE CURRENTLY IN OUR SYSTEM.
+        {len(existing_agencies)} AGENCIES FOUND IN THE TARGETED SYSTEM.
 
         {len(provided_agencies)-len(new_agencies)} AGENCIES MATCHED
         (These are agencies that are in the given agency file AND in our system already)
