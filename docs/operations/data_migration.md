@@ -122,9 +122,9 @@ cf login -a api.fr.cloud.gov  --sso
 ##### Target your workspace
 
 ```bash
-cf target -o cisa-dotgov -s {SANDBOX_NAME}
+cf target -o cisa-dotgov -s {ENVIRONMENT_NAME}
 ```
-*SANDBOX_NAME* - Name of your sandbox, ex: za or ab
+*ENVIRONMENT_NAME* - Name of your sandbox, ex: za or ab
 
 ##### Run the scp command
 
@@ -203,8 +203,7 @@ cat ../tmp/{filename} > migrationdata/{filename}
 In order to run the scripts locally, we need to add the files to a folder under `src/`.
 This will allow Docker to mount the files to a container (under `/app`) for our use.  
 
- - Create a folder called `tmp` underneath `src/`
- - Add the above files to this folder
+ - Add the above files to the `migrationdata/` folder
  - Open a terminal and navigate to `src/`
 
 
