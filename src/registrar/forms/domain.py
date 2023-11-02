@@ -44,6 +44,8 @@ class DomainNameserverForm(forms.Form):
         cleaned_data = super().clean()
         self.clean_empty_strings(cleaned_data)
         server = cleaned_data.get("server", "")
+        # remove ANY spaces in the server field
+        server = server.replace(" ", "")
         ip = cleaned_data.get("ip", None)
         # remove ANY spaces in the ip field
         ip = ip.replace(" ", "")
