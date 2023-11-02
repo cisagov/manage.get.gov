@@ -23,11 +23,6 @@ class DomainAddUserForm(forms.Form):
     email = forms.EmailField(label="Email")
 
 
-class IPAddressField(forms.CharField):
-    def validate(self, value):
-        super().validate(value)  # Run the default CharField validation
-
-
 class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
 
@@ -35,7 +30,21 @@ class DomainNameserverForm(forms.Form):
 
     server = forms.CharField(label="Name server", strip=True)
 
-    ip = forms.CharField(label="IP Address (IPv4 or IPv6)", strip=True, required=False)
+    ip = forms.CharField(
+        label="IP address (IPv4 or IPv6)",
+        strip=True,
+        required=False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(DomainNameserverForm, self).__init__(*args, **kwargs)
+
+        # add custom error messages
+        self.fields["server"].error_messages.update(
+            {
+                "required": "A minimum of 2 name servers are required.",
+            }
+        )
 
     def clean(self):
         # clean is called from clean_forms, which is called from is_valid
