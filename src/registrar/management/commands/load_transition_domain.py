@@ -543,17 +543,19 @@ class Command(BaseCommand):
             system_exit_on_terminate=True,
             info_to_inspect=f"""
             !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
-
-            == ==
+            ==Federal agency information==
             agency_adhoc_filename: {agency_adhoc_filename}
 
-            ==Federal agency / organization type information==
+            ==Federal type / organization type information==
             domain_adhoc_filename: {domain_adhoc_filename}
 
+            ==Organization name information==
             organization_adhoc_filename: {organization_adhoc_filename}
+
+            ==Creation date / expiration date information==
             domain_escrow_filename: {domain_escrow_filename}
+
             domain_additional_filename: {domain_additional_filename}
-            ==
             directory: {directory}
             """,
             prompt_title=title,

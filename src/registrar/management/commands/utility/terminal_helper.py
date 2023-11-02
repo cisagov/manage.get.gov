@@ -1,8 +1,25 @@
+from enum import Enum
 import logging
 import sys
 
 logger = logging.getLogger(__name__)
 
+class LogCode(Enum):
+    """Stores the desired log severity
+    
+    Overview of error codes:
+    - 1 ERROR
+    - 2 WARNING
+    - 3 INFO
+    - 4 DEBUG
+    - 5 DEFAULT
+    """
+
+    ERROR = 1
+    WARNING = 2
+    INFO = 3
+    DEBUG = 4
+    DEFAULT = 5
 
 class TerminalColors:
     """Colors for terminal outputs
@@ -54,14 +71,35 @@ class TerminalHelper:
                 logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
     @staticmethod
-    def print_conditional(print_condition: bool, print_statement: str):
+    def print_conditional(
+        print_condition: bool, 
+        print_statement: str, 
+        log_severity: LogCode = LogCode.DEFAULT
+    ):
         """This function reduces complexity of debug statements
         in other functions.
         It uses the logger to write the given print_statement to the
-        terminal if print_condition is TRUE"""
+        terminal if print_condition is TRUE.
+        
+        print_condition: bool -> Prints if print_condition is TRUE
+
+        print_statement: str -> The statement to print
+
+        log_severity: str -> Determines the severity to log at
+        """
         # DEBUG:
         if print_condition:
-            logger.info(print_statement)
+            match log_severity:
+                case LogCode.ERROR:
+                    logger.error(print_statement)
+                case LogCode.WARNING:
+                    logger.warning(print_statement)
+                case LogCode.INFO:
+                    logger.info(print_statement)
+                case LogCode.DEBUG:
+                    logger.debug(print_statement)
+                case _:
+                    logger.info(print_statement)
 
     @staticmethod
     def prompt_for_execution(
@@ -100,3 +138,4 @@ class TerminalHelper:
             return False
 
         return True
+
