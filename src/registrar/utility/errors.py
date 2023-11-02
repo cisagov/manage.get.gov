@@ -106,7 +106,9 @@ class NameserverError(Exception):
         NameserverErrorCodes.MISSING_HOST: (
             "Name server must be provided to enter IP address."
         ),
-        NameserverErrorCodes.INVALID_HOST: ("Name server, {}, is not valid."),
+        NameserverErrorCodes.INVALID_HOST: (
+            "Enter a name server in the required format, like ns1.example.com"
+        ),
     }
 
     def __init__(self, *args, code=None, nameserver=None, ip=None, **kwargs):

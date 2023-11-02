@@ -365,7 +365,9 @@ class Domain(TimeStampedModel, DomainHelper):
             for addr in ip:
                 if not cls._valid_ip_addr(addr):
                     raise NameserverError(
-                        code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
+                        code=nsErrorCodes.INVALID_IP,
+                        nameserver=nameserver[:40],
+                        ip=ip
                     )
         return None
 
