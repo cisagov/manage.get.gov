@@ -1630,6 +1630,53 @@ class TestRegistrantNameservers(MockEppLib):
         return super().tearDown()
 
 
+class TestNameserverValidation(TestCase):
+    """Test the isValidDomain method which validates nameservers"""
+
+    def test_255_chars_is_too_long(self):
+        """Test that domain of 255 chars or longer is invalid"""
+        domain_too_long = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
+        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
+        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
+        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
+        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" \
+        ".bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.gov"
+        self.assertFalse(Domain.isValidHost(domain_too_long))
+
+    def test_64_char_label_too_long(self):
+        """Test that label of 64 characters or longer is invalid"""
+        label_too_long = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        domain_label_too_long = "www." + label_too_long + ".gov"
+        self.assertFalse(Domain.isValidHost(domain_label_too_long))
+
+    def test_only_tld_and_sld(self):
+        """Test that host with only a tld and sld is invalid"""
+        tld = "gov"
+        sld = "example"
+        domain_with_sld_and_tld = sld + "." + tld
+        self.assertFalse(Domain.isValidHost(domain_with_sld_and_tld))
+
+    def test_improper_chars_in_nameserver(self):
+        """Test that host with improper chars is invalid"""
+        invalid_chars = "*&^"
+        domain_with_invalid_chars = "www.bad--" + invalid_chars + ".gov"
+        self.assertFalse(Domain.isValidHost(domain_with_invalid_chars))
+
+    def test_misplaced_dashes(self):
+        """Test that misplaced dashes are invalid"""
+        self.assertFalse(Domain.isValidHost("-www.example.gov"))
+        self.assertFalse(Domain.isValidHost("www.example-.gov"))
+        self.assertTrue(Domain.isValidHost("www.ex-ample.gov"))
+
+    def test_valid_hostname(self):
+        """Test that valid hostnames are valid"""
+        self.assertTrue(Domain.isValidHost("www.tld.sld.gov"))
+        self.assertTrue(Domain.isValidHost("www.valid.c"))
+        self.assertTrue(Domain.isValidHost("2ww.valid.gov"))
+        self.assertTrue(Domain.isValidHost("w.t.g"))
+
+
 class TestRegistrantDNSSEC(MockEppLib):
     """Rule: Registrants may modify their secure DNS data"""
 

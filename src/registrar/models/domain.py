@@ -310,7 +310,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return bool(regex.match(nameserver))
 
     @classmethod
-    def isValidDomain(cls, nameserver: str):
+    def isValidHost(cls, nameserver: str):
         """Checks for validity of nameserver string based on these rules:
         - first character is alpha or digit
         - first and last character in each label is alpha or digit
@@ -353,7 +353,7 @@ class Domain(TimeStampedModel, DomainHelper):
             None"""
         if ip and not nameserver:
             raise NameserverError(code=nsErrorCodes.MISSING_HOST)
-        elif nameserver and not cls.isValidDomain(nameserver):
+        elif nameserver and not cls.isValidHost(nameserver):
             raise NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=nameserver)
         elif cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
