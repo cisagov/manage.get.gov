@@ -4,7 +4,6 @@ import logging
 
 import os
 import shutil
-import string
 
 from django.core.management import BaseCommand
 
