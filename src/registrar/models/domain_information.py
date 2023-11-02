@@ -54,7 +54,6 @@ class DomainInformation(TimeStampedModel):
         blank=True,
         help_text="Type of Organization",
     )
-
     federally_recognized_tribe = models.BooleanField(
         null=True,
         help_text="Is the tribe federally recognized",

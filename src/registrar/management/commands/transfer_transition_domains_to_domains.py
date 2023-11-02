@@ -14,6 +14,9 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,
 )
+from registrar.models.domain_application import DomainApplication
+from registrar.models.domain_information import DomainInformation
+from registrar.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +60,23 @@ class Command(BaseCommand):
             """,
         )
 
+    def update_domain_information(self, current: DomainInformation, target: DomainInformation, debug_on: bool) -> bool:
+        updated = False
+
+        fields_to_update = [
+            'organization_type', 
+            'federal_type', 
+            'federal_agency',
+            "organization_name"
+        ] 
+        defaults = {field: getattr(target, field) for field in fields_to_update}
+        if current != target:
+            current = target
+            DomainInformation.objects.filter(domain=current.domain).update(**defaults)
+            updated = True
+
+        return updated
+
     def update_domain_status(
         self, transition_domain: TransitionDomain, target_domain: Domain, debug_on: bool
     ) -> bool:
@@ -93,6 +113,8 @@ class Command(BaseCommand):
         updated_domain_entries,
         domain_invitations_to_create,
         skipped_domain_entries,
+        domain_information_to_create,
+        updated_domain_information,
         debug_on,
     ):
         """Prints to terminal a summary of findings from
@@ -102,11 +124,17 @@ class Command(BaseCommand):
         total_updated_domain_entries = len(updated_domain_entries)
         total_domain_invitation_entries = len(domain_invitations_to_create)
 
+        total_new_domain_information_entries = len(domain_information_to_create)
+        total_updated_domain_information_entries = len(updated_domain_information)
+
         logger.info(
             f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} domain entries,
             Updated {total_updated_domain_entries} domain entries
+
+            Created {total_new_domain_information_entries} domain information entries,
+            Updated {total_updated_domain_information_entries} domain information entries,
 
             Created {total_domain_invitation_entries} domain invitation entries
             (NOTE: no invitations are SENT in this script)
@@ -152,6 +180,9 @@ class Command(BaseCommand):
             {TerminalColors.ENDC}
             """,
         )
+
+    def try_add_domain_information(self):
+        pass
 
     def try_add_domain_invitation(
         self, domain_email: str, associated_domain: Domain
@@ -211,11 +242,17 @@ class Command(BaseCommand):
 
         # domains to ADD
         domains_to_create = []
+        domain_information_to_create = []
+
         domain_invitations_to_create = []
         # domains we UPDATED
         updated_domain_entries = []
+        updated_domain_information = []
+
         # domains we SKIPPED
         skipped_domain_entries = []
+        skipped_domain_information_entries = []
+
         # if we are limiting our parse (for testing purposes, keep
         # track of total rows parsed)
         total_rows_parsed = 0
@@ -232,13 +269,17 @@ class Command(BaseCommand):
             transition_domain_name = transition_domain.domain_name
             transition_domain_status = transition_domain.status
             transition_domain_email = transition_domain.username
+            transition_domain_creation_date = transition_domain.epp_creation_date
+            transition_domain_expiration_date = transition_domain.epp_expiration_date
 
             # DEBUG:
             TerminalHelper.print_conditional(
                 debug_on,
-                f"""{TerminalColors.OKCYAN}
-                Processing Transition Domain: {transition_domain_name}, {transition_domain_status}, {transition_domain_email}
-                {TerminalColors.ENDC}""",  # noqa
+                f"{TerminalColors.OKCYAN}"
+                "Processing Transition Domain: " 
+                f"{transition_domain_name}, {transition_domain_status}, {transition_domain_email}"
+                f", {transition_domain_creation_date}, {transition_domain_expiration_date}"
+                f"{TerminalColors.ENDC}",  # noqa
             )
 
             new_domain_invitation = None
@@ -261,6 +302,11 @@ class Command(BaseCommand):
                     update_made = self.update_domain_status(
                         transition_domain, domain_to_update, debug_on
                     )
+
+                    domain_to_update.created_at = transition_domain_creation_date
+                    domain_to_update.expiration_date = transition_domain_expiration_date
+                    domain_to_update.save()
+
                     if update_made:
                         # keep track of updated domains for data analysis purposes
                         updated_domain_entries.append(transition_domain.domain_name)
@@ -339,8 +385,12 @@ class Command(BaseCommand):
                 else:
                     # no matching entry, make one
                     new_domain = Domain(
-                        name=transition_domain_name, state=transition_domain_status
+                        name=transition_domain_name,
+                        state=transition_domain_status,
+                        expiration_date=transition_domain_expiration_date,
                     )
+
+                    
                     domains_to_create.append(new_domain)
                     # DEBUG:
                     TerminalHelper.print_conditional(
@@ -378,6 +428,136 @@ class Command(BaseCommand):
                 break
 
         Domain.objects.bulk_create(domains_to_create)
+
+        for transition_domain in TransitionDomain.objects.all():
+            transition_domain_name = transition_domain.domain_name
+
+            # Create associated domain information objects
+            domain_data = Domain.objects.filter(name=transition_domain.domain_name)
+            if not domain_data.exists():
+                raise ValueError("No domain exists")
+            
+            domain = domain_data.get()
+
+            org_type = transition_domain.organization_type
+            fed_type = transition_domain.federal_type
+            fed_agency = transition_domain.federal_agency
+
+
+
+            valid_org_type = org_type in [choice_value for choice_value, _ in DomainApplication.OrganizationChoices.choices]
+            valid_fed_type = fed_type in [choice_value for choice_value, _ in DomainApplication.BranchChoices.choices]
+            valid_fed_agency = fed_agency in DomainApplication.AGENCIES
+
+            default_creator, _ = User.objects.get_or_create(username="System")
+
+            new_domain_info_data = {
+                'domain': domain,
+                'organization_name': transition_domain.organization_name,
+                "creator": default_creator,
+            }
+
+            new_domain_info_data['federal_type'] = None
+            for item in DomainApplication.BranchChoices.choices:
+                print(f"it is this: {item}")
+                name, _ = item
+                if fed_type is not None and fed_type.lower() == name:
+                    new_domain_info_data['federal_type'] = item
+            
+            new_domain_info_data['organization_type'] = org_type
+            new_domain_info_data['federal_agency'] = fed_agency
+            if valid_org_type:
+                new_domain_info_data['organization_type'] = org_type
+            else:
+                logger.debug(f"No org type found on {domain.name}")
+
+            if valid_fed_type:
+                new_domain_info_data['federal_type'] = fed_type
+            else:
+                logger.debug(f"No federal type found on {domain.name}")
+
+            if valid_fed_agency:
+                new_domain_info_data['federal_agency'] = fed_agency
+            else:
+                logger.debug(f"No federal agency found on {domain.name}")
+
+            new_domain_info = DomainInformation(**new_domain_info_data)
+
+            domain_information_exists = DomainInformation.objects.filter(domain=domain).exists()
+            
+            if domain_information_exists:
+                try:
+                    # get the existing domain information object
+                    domain_info_to_update = DomainInformation.objects.get(domain=domain)
+                    # DEBUG:
+                    TerminalHelper.print_conditional(
+                        debug_on,
+                        f"""{TerminalColors.YELLOW}
+                        > Found existing entry in Domain Information table for: {transition_domain_name}
+                        {TerminalColors.ENDC}""",  # noqa
+                    )
+
+                    # for existing entry, update the status to
+                    # the transition domain status
+                    update_made = self.update_domain_information(
+                        domain_info_to_update, new_domain_info, debug_on
+                    )
+                    if update_made:
+                        # keep track of updated domains for data analysis purposes
+                        updated_domain_information.append(transition_domain.domain_name)
+                except DomainInformation.MultipleObjectsReturned:
+                    # This exception was thrown once before during testing.
+                    # While the circumstances that led to corrupt data in
+                    # the domain table was a freak accident, and the possibility of it
+                    # happening again is safe-guarded by a key constraint,
+                    # better to keep an eye out for it since it would require
+                    # immediate attention.
+                    logger.warning(
+                        f"""
+                        {TerminalColors.FAIL}
+                        !!! ERROR: duplicate entries already exist in the
+                        Domain Information table for the following domain:
+                        {transition_domain_name}
+
+                        RECOMMENDATION:
+                        This means the Domain Information table is corrupt.  Please
+                        check the Domain Information table data as there should be a key
+                        constraint which prevents duplicate entries.
+
+                        ----------TERMINATING----------"""
+                    )
+                    sys.exit()
+            else:
+                # no entry was found in the domain table
+                # for the given domain.  Create a new entry.
+
+                # first see if we are already adding an entry for this domain.
+                # The unique key constraint does not allow duplicate domain entries
+                # even if there are different users.
+                existing_domain_info_in_to_create = next(
+                    (x for x in domain_information_to_create if x.domain.name == transition_domain_name),
+                    None,
+                )
+                if existing_domain_info_in_to_create is not None:
+                    TerminalHelper.print_conditional(
+                        debug_on,
+                        f"""{TerminalColors.YELLOW}
+                        Duplicate Detected: {transition_domain_name}.
+                        Cannot add duplicate entry.
+                        Violates Unique Key constraint.
+                        {TerminalColors.ENDC}""",
+                    )
+                else:
+                    # no matching entry, make one
+                    domain_information_to_create.append(new_domain_info)
+                    # DEBUG:
+                    TerminalHelper.print_conditional(
+                        debug_on,
+                        f"{TerminalColors.OKCYAN} Adding domain information on: {new_domain_info.domain.name} {TerminalColors.ENDC}",  # noqa
+                    )
+
+        DomainInformation.objects.bulk_create(domain_information_to_create)
+
         DomainInvitation.objects.bulk_create(domain_invitations_to_create)
 
         self.print_summary_of_findings(
@@ -385,5 +565,7 @@ class Command(BaseCommand):
             updated_domain_entries,
             domain_invitations_to_create,
             skipped_domain_entries,
+            domain_information_to_create,
+            updated_domain_information,
             debug_on,
         )

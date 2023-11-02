@@ -99,8 +99,12 @@ class DomainPermission(PermissionsLoginMixin):
         requested_domain = None
         if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
+        
+        domain_application = requested_domain.domain_application
+        if not hasattr(domain_application, "status"):
+            return True
 
-        if requested_domain.domain_application.status not in valid_domain_statuses:
+        if domain_application.status not in valid_domain_statuses:
             return False
 
         # Valid session keys exist,
