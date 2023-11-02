@@ -1232,34 +1232,6 @@ class Domain(TimeStampedModel, DomainHelper):
     # ForeignKey on DomainInvitation creates an "invitations" member for
     # all of the invitations that have been sent for this domain
 
-    def _validate_host_tuples(self, hosts: list[tuple[str]]):
-        """
-        Helper function. Validate hostnames and IP addresses.
-
-        Raises:
-            ValueError if hostname or IP address appears invalid or mismatched.
-        """
-        for host in hosts:
-            hostname = host[0].lower()
-            addresses: tuple[str] = host[1:]  # type: ignore
-            if not bool(Domain.HOST_REGEX.match(hostname)):
-                raise ValueError("Invalid hostname: %s." % hostname)
-            if len(hostname) > Domain.MAX_LENGTH:
-                raise ValueError("Too long hostname: %s" % hostname)
-
-            is_subordinate = hostname.split(".", 1)[-1] == self.name
-            if is_subordinate and len(addresses) == 0:
-                raise ValueError(
-                    "Must supply IP addresses for subordinate host %s" % hostname
-                )
-            if not is_subordinate and len(addresses) > 0:
-                raise ValueError("Must not supply IP addresses for %s" % hostname)
-
-            for address in addresses:
-                allow = set(":." + digits)
-                if any(c not in allow for c in address):
-                    raise ValueError("Invalid IP address: %s." % address)
-
     def _get_or_create_domain(self):
         """Try to fetch info about this domain. Create it if it does not exist."""
         already_tried_to_create = False

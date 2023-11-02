@@ -52,7 +52,7 @@ class DomainNameserverForm(forms.Form):
         ip_list = self.extract_ip_list(ip)
 
         # validate if the form has a server or an ip
-        if ip and ip_list or server:
+        if (ip and ip_list) or server:
             self.validate_nameserver_ip_combo(domain, server, ip_list)
 
         return cleaned_data
