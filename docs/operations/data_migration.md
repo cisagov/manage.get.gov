@@ -207,7 +207,7 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
  - Open a terminal and navigate to `src/`
 
 
-*You are now ready to run migration scripts (see "Running the Migration Scripts")*
+*You are now ready to run migration scripts.*
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
 
