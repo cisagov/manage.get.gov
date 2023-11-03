@@ -689,7 +689,7 @@ class Command(BaseCommand):
             # DEBUG:
             TerminalHelper.print_conditional(
                 debug_on,
-                (f"{TerminalColors.OKCYAN} {debug_string} {TerminalColors.ENDC}"),
+                (f"{TerminalColors.OKCYAN}{debug_string}{TerminalColors.ENDC}"),
             )  
 
             # ------------------ Parse limit reached? ------------------
