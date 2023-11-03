@@ -31,16 +31,13 @@ a.usa-button.disabled-link {
 }
 
 a.usa-button.disabled-link:hover {
-  color: #ccc !important;
+  background-color: #ccc !important;
   cursor: not-allowed !important;
-  text-decoration: none !important;
-  
 }
 
 a.usa-button.disabled-link:focus {
-  color: #ccc !important;
+  background-color: #ccc !important;
   cursor: not-allowed !important;
-  text-decoration: none !important;
   outline: none !important;
 }
 
