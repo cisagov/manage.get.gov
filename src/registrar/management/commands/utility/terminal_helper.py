@@ -70,6 +70,13 @@ class TerminalHelper:
             else:
                 logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
+    # @staticmethod
+    # def array_as_string(array_to_convert: []) -> str:
+    #     array_as_string = "{}".format(
+    #         ", ".join(map(str, array_to_convert))
+    #     )
+    #     return array_as_string
+
     @staticmethod
     def print_conditional(
         print_condition: bool, 

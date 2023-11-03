@@ -28,8 +28,12 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = """ """
+    help = """ """ # TODO: update this!
 
+
+    # ======================================================
+    # ==================    ARGUMENTS    ===================
+    # ======================================================
     def add_arguments(self, parser):
         """
         OPTIONAL ARGUMENTS:
@@ -133,6 +137,11 @@ class Command(BaseCommand):
             help="Deletes all data in the TransitionDomain table",
             action=argparse.BooleanOptionalAction,
         )
+
+
+    # ======================================================
+    # ===============    DATA ANALYSIS    ==================
+    # ======================================================
 
     def compare_tables(self, debug_on: bool):
         """Does a diff between the transition_domain and the following tables:
@@ -252,6 +261,10 @@ class Command(BaseCommand):
             """
         )
 
+
+    # ======================================================
+    # =================    MIGRATIONS    ===================
+    # ======================================================
     def run_load_transition_domain_script(
         self,
         file_location: str,

@@ -66,6 +66,8 @@ class Command(BaseCommand):
         )
 
         # TODO - Narrow this down
+        # TODO - this isn't pulling in the directory from the master script.  Needs to be corrected @Nicolle - todo
+        # default="/app/tmp"
         parser.add_argument(
             "--directory", default="migrationdata", help="Desired directory"
         )
@@ -291,8 +293,9 @@ class Command(BaseCommand):
             # Update every TransitionDomain object where applicable
             extra_data.update_transition_domain_models()
         except Exception as err:
-            logger.error("Could not load additional TransitionDomain data.")
+            logger.error(f"Could not load additional TransitionDomain data. {err}")
             raise err
+            # TODO: handle this better...needs more logging
 
     def handle(  # noqa: C901
         self,
@@ -540,7 +543,7 @@ class Command(BaseCommand):
         # Prompt the user if they want to load additional data on the domains
         title = "Do you wish to load additional data for TransitionDomains?"
         do_parse_extra = TerminalHelper.prompt_for_execution(
-            system_exit_on_terminate=True,
+            system_exit_on_terminate=False,
             info_to_inspect=f"""
             !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
             ==Federal agency information==
