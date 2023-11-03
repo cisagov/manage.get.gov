@@ -26,6 +26,12 @@ a.usa-button {
   text-decoration: none;
 }
 
+a.usa-button.disabled-link {
+  pointer-events: none !important;
+  cursor: default !important;
+  background-color: #ccc !important;
+}
+
 a.usa-button:not(.usa-button--unstyled, .usa-button--outline) {
   color: color('white');
 }
