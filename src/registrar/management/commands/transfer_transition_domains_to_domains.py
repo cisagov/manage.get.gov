@@ -367,12 +367,29 @@ class Command(BaseCommand):
     def create_new_domain_info(self,
                                transition_domain: TransitionDomain,
                                domain: Domain) -> DomainInformation:
+
         org_type = transition_domain.organization_type
         fed_type = transition_domain.federal_type
         fed_agency = transition_domain.federal_agency
-
-        valid_org_type = org_type in [choice_value for choice_value, _ in DomainApplication.OrganizationChoices.choices]
-        valid_fed_type = fed_type in [choice_value for choice_value, _ in DomainApplication.BranchChoices.choices]
+        
+        match org_type:
+            case "Federal":
+                org_type = ("federal", "Federal")
+            case "Interstate":
+                org_type = ("interstate", "Interstate")
+            case "State":
+                org_type = ("state_or_territory", "State or territory")
+            case "Tribal":
+                org_type = ("tribal", "Tribal")
+            case "County":
+                org_type = ("county", "County")
+            case "City":
+                org_type = ("city", "City")
+            case "Independent Intrastate":
+                org_type = ("special_district", "Special district")
+            
+        valid_org_type = org_type in [(name, value) for name, value in DomainApplication.OrganizationChoices.choices]
+        valid_fed_type = fed_type in [value for name, value in DomainApplication.BranchChoices.choices]
         valid_fed_agency = fed_agency in DomainApplication.AGENCIES
 
         default_creator, _ = User.objects.get_or_create(username="System")
@@ -382,23 +399,15 @@ class Command(BaseCommand):
             'organization_name': transition_domain.organization_name,
             "creator": default_creator,
         }
-
-        new_domain_info_data['federal_type'] = None
-        for item in DomainApplication.BranchChoices.choices:
-            print(f"it is this: {item}")
-            name, _ = item
-            if fed_type is not None and fed_type.lower() == name:
-                new_domain_info_data['federal_type'] = item
         
-        new_domain_info_data['organization_type'] = org_type
-        new_domain_info_data['federal_agency'] = fed_agency
         if valid_org_type:
-            new_domain_info_data['organization_type'] = org_type
+            new_domain_info_data['organization_type'] = org_type[0]
         else:
             logger.debug(f"No org type found on {domain.name}")
 
         if valid_fed_type:
-            new_domain_info_data['federal_type'] = fed_type
+            new_domain_info_data['federal_type'] = fed_type.lower()
+            pass
         else:
             logger.debug(f"No federal type found on {domain.name}")
 
@@ -413,7 +422,7 @@ class Command(BaseCommand):
         TerminalHelper.print_conditional(
             True,
             (f"{TerminalColors.MAGENTA}"
-            f"Created template: {new_domain_info}"
+            f"Created Domain Information template for: {new_domain_info}"
             f"{TerminalColors.ENDC}"),  # noqa
         )
         return new_domain_info
@@ -485,7 +494,7 @@ class Command(BaseCommand):
             TerminalHelper.print_conditional(
                 debug_on,
                 (f"{TerminalColors.OKCYAN}"
-                f" Adding domain information for:"
+                f"Adding domain information for: "
                 f"{transition_domain_name}"
                 f"{TerminalColors.ENDC}"),
             )
@@ -585,8 +594,6 @@ class Command(BaseCommand):
                         Duplicate Detected: {transition_domain_name}.
                         Cannot add duplicate entry for another username.
                         Violates Unique Key constraint.
-
-                        Checking for unique user e-mail for Domain Invitations...
                         {TerminalColors.ENDC}"""
                 else:
                     # ---------------- CREATED ----------------
