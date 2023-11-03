@@ -2,7 +2,7 @@ from django.db.models import F
 from django.shortcuts import render
 
 from registrar.models import DomainApplication
-
+from django.conf import settings
 
 def index(request):
     """This page is available to anyone without logging in."""
@@ -22,4 +22,5 @@ def index(request):
             state=F("domain__state"),
         )
         context["domains"] = domains
+        context["is_production"] = settings.IS_PRODUCTION
     return render(request, "home.html", context)
