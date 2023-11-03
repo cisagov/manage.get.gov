@@ -43,11 +43,11 @@ For ease of use, you can run the `deploy.sh <sandbox name>` script in the `/src`
 
 Your sandbox space should've been setup as part of the onboarding process. If this was not the case, please have an admin follow the instructions [here](../../.github/ISSUE_TEMPLATE/developer-onboarding.md#setting-up-developer-sandbox).
 
-## Rules for making Stable and Staging Releases
+## Stable and Staging Release Rules
 
-Releases will be made for staging and stable every week starting on the first day of the sprint (Wednesday), with the second release of the sprint occuring halfway through the sprint. With the excpetion of the first time going into production (see below), these releases will NOT have the same code. The release to stable will be the same commit that was tagged for staging one week prior, making stable one week behind staging. Further, this means staging can be up to a week behind the main branch of code.
+Releases will be made for staging and stable every week starting on the first day of the sprint (Wednesday), with the second release of the sprint occuring halfway through the sprint. With the exception of first time going into production, these releases will NOT have the same code. The release to stable will be the same commit that was tagged for staging one week prior, making stable one week behind staging. Further, this means staging can be up to a week behind the main branch of code.
 
-If a bug fix needs to be made to stable, the code fix branch will need to be branched NOT off of main, but of of the same commit as the most recent stable commit. Then, after PR review, the code will be merged to main and a new release must be made to stable.
+If a bug fix or feature needs to be made to stable out of the normal cycle, this can only be done at CISA's request. In this case, the code fix branch will need to be branched NOT off of main, but off of the same commit as the most recent stable commit. Then, after PR review, the code will be merged to main and a new release must be made to stable. This bug fix or feature must be added to staging immediately as well.
 
 ## Serving static assets
 We are using [WhiteNoise](http://whitenoise.evans.io/en/stable/index.html) plugin to serve our static assets on cloud.gov. This plugin is added to the `MIDDLEWARE` list in our apps `settings.py`.
