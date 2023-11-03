@@ -672,7 +672,7 @@ class Command(BaseCommand):
                 existing_domain_info =  DomainInformation.objects.filter(domain__name=target_domain_information.domain.name).exists()
                 if existing_domain_information_in_to_create is not None or existing_domain_info:
                     debug_string = f"""{TerminalColors.YELLOW}
-                        Duplicate Detected: {domain_information_to_create}.
+                        Duplicate Detected: {existing_domain_information_in_to_create}.
                         Cannot add duplicate Domain Information object
                         {TerminalColors.ENDC}"""
                 else:

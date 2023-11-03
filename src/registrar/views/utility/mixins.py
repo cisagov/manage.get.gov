@@ -99,7 +99,7 @@ class DomainPermission(PermissionsLoginMixin):
         requested_domain = None
         if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
-        
+
         domain_application = requested_domain.domain_application
         if not hasattr(domain_application, "status"):
             return True
