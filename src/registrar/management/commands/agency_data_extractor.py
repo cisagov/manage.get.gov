@@ -32,6 +32,7 @@ class Command(BaseCommand):
         parser.add_argument("--sep", default="|", help="Delimiter character")
 
         parser.add_argument("--debug", help="Prints additional debug statements to the terminal", action=argparse.BooleanOptionalAction)
+        parser.add_argument("--prompt", action=argparse.BooleanOptionalAction)
 
     @staticmethod
     def extract_agencies(
@@ -108,7 +109,7 @@ class Command(BaseCommand):
         """)
         
     @staticmethod
-    def print_agency_list(agencies):
+    def print_agency_list(agencies, filename):
         full_agency_list_as_string = "{}".format(
             ",\n".join(map(str, agencies))
         )
@@ -117,6 +118,9 @@ class Command(BaseCommand):
             f"\n{full_agency_list_as_string}"
             f"{TerminalColors.OKGREEN}"
         )
+        logger.info(f"{TerminalColors.MAGENTA}Writing to file...{TerminalColors.ENDC}")
+        with open(f"tmp/[{filename}].txt", "w+") as f:
+            f.write(full_agency_list_as_string)
 
     def handle(
         self,
@@ -128,31 +132,80 @@ class Command(BaseCommand):
         # Get all the arguments
         sep = options.get("sep")
         debug = options.get("debug")
+        prompt = options.get("prompt")
         dir = options.get("dir")
 
         agency_data_file = dir+"/"+agency_data_filename
 
         new_agencies = self.extract_agencies(agency_data_file, sep, debug)
         hard_coded_agencies = DomainApplication.AGENCIES
-        transition_domain_agencies = TransitionDomain.objects.all().values_list('federal_agency')
+        merged_agencies = new_agencies
+        for agency in hard_coded_agencies:
+            if agency not in merged_agencies:
+                merged_agencies.append(agency)
+
+        transition_domain_agencies = TransitionDomain.objects.all().values_list('federal_agency').distinct()
         print(transition_domain_agencies)
 
+        prompt_successful = False
+
         # OPTION to compare the agency file to our hard-coded list
-        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to check {agency_data_filename} against our hard-coded list of agencies?{TerminalColors.ENDC}")
-        if print_full_list:
+        if prompt:
+            prompt_successful = TerminalHelper.query_yes_no(f"\n\n{TerminalColors.FAIL}Check {agency_data_filename} against our (hard-coded) dropdown list of agencies?{TerminalColors.ENDC}")
+        if prompt_successful or not prompt:
             self.compare_agency_lists(new_agencies, hard_coded_agencies, debug)
         
         # OPTION to compare the agency file to Transition Domains
-        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to check {agency_data_filename} against Transition Domain contents?{TerminalColors.ENDC}")
-        if print_full_list:
+        if prompt:
+            prompt_successful = TerminalHelper.query_yes_no(f"\n\n{TerminalColors.FAIL}Check {agency_data_filename} against Transition Domain contents?{TerminalColors.ENDC}")
+        if prompt_successful or not prompt:
             self.compare_agency_lists(new_agencies, transition_domain_agencies, debug)
 
         # OPTION to print out the full list of agencies from the agency file
-        print_full_list = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the full list of agencies from the given agency file?{TerminalColors.ENDC}")
-        if print_full_list:
+        if prompt:
+            prompt_successful = TerminalHelper.query_yes_no(f"\n\n{TerminalColors.FAIL}Would you like to print the full list of agencies from the given agency file?{TerminalColors.ENDC}")
+        if prompt_successful or not prompt:
             logger.info(
             f"\n{TerminalColors.OKGREEN}"
             f"\n======================== FULL LIST OF IMPORTED AGENCIES ============================"
             f"\nThese are all the agencies provided by the given agency file."
+            f"\n\n{len(new_agencies)} TOTAL\n\n"
             )
-            self.print_agency_list(new_agencies)
+            self.print_agency_list(new_agencies, "Imported_Agencies")
+        
+        # OPTION to print out the full list of agencies from the agency file
+        if prompt:
+            prompt_successful = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the full list of agencies from the dropdown?{TerminalColors.ENDC}")
+        if prompt_successful or not prompt:
+            logger.info(
+            f"\n{TerminalColors.OKGREEN}"
+            f"\n======================== FULL LIST OF AGENCIES IN DROPDOWN ============================"
+            f"\nThese are all the agencies hard-coded in our system for the dropdown list."
+            f"\n\n{len(hard_coded_agencies)} TOTAL\n\n"
+            )
+            self.print_agency_list(hard_coded_agencies, "Dropdown_Agencies")
+        
+        # OPTION to print out the full list of agencies from the agency file
+        if prompt:
+            prompt_successful = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the full list of agencies from the dropdown?{TerminalColors.ENDC}")
+        if prompt_successful or not prompt:
+            logger.info(
+            f"\n{TerminalColors.OKGREEN}"
+            f"\n======================== FULL LIST OF AGENCIES IN TRANSITION DOMAIN ============================"
+            f"\nThese are all the agencies in the Transition Domains table."
+            f"\n\n{len(transition_domain_agencies)} TOTAL\n\n"
+            )
+            self.print_agency_list(transition_domain_agencies, "Transition_Domain_Agencies")
+
+        
+        # OPTION to print out the full list of agencies from the agency file
+        if prompt:
+            prompt_successful = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the MERGED list of agencies (dropdown + agency file)?{TerminalColors.ENDC}")
+        if prompt_successful or not prompt:
+            logger.info(
+            f"\n{TerminalColors.OKGREEN}"
+            f"\n======================== MERGED LISTS (dropdown + agency file) ============================"
+            f"\nThese are all the agencies our dropdown plus all the agencies in the agency file."
+            f"\n\n{len(merged_agencies)} TOTAL\n\n"
+            )
+            self.print_agency_list(merged_agencies, "Merged_Dropdown_Agency_List")
