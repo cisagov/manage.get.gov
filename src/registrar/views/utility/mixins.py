@@ -100,7 +100,15 @@ class DomainPermission(PermissionsLoginMixin):
         if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
 
-        if requested_domain.domain_application.status not in valid_domain_statuses:
+        # if no domain information or domain application exist, the user
+        # should be able to manage the domain; however, if domain information
+        # and domain application exist, and application is not in valid status,
+        # user should not be able to manage domain
+        if (
+            requested_domain
+            and requested_domain.domain_application
+            and requested_domain.domain_application.status not in valid_domain_statuses
+        ):
             return False
 
         # Valid session keys exist,
