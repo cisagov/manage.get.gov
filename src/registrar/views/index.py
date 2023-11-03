@@ -4,6 +4,7 @@ from django.shortcuts import render
 from registrar.models import DomainApplication
 from django.conf import settings
 
+
 def index(request):
     """This page is available to anyone without logging in."""
     context = {}

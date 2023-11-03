@@ -27,9 +27,14 @@ a.usa-button {
 }
 
 a.usa-button.disabled-link {
-  pointer-events: none !important;
   cursor: default !important;
   background-color: #ccc !important;
+}
+
+a.usa-button.disabled-domain-request-link:hover {
+  color: #ccc !important;
+  cursor: not-allowed !important;
+  text-decoration: none !important;
 }
 
 a.usa-button:not(.usa-button--unstyled, .usa-button--outline) {
