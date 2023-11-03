@@ -1105,6 +1105,9 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(
             name="justnameserver.com"
         )
+        self.domain_no_information, _ = Domain.objects.get_or_create(
+            name="noinformation.gov"
+        )
 
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         self.domain_multdsdata, _ = Domain.objects.get_or_create(
@@ -1277,6 +1280,15 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         # Splitting IP addresses bc there is odd whitespace and can't strip text
         self.assertContains(detail_page, "(1.2.3.4,")
         self.assertContains(detail_page, "2.3.4.5)")
+
+    def test_domain_with_no_information_or_application(self):
+        """Test that domain management page returns 200 when no
+        domain information or domain application exist"""
+        detail_page = self.app.get(
+            reverse("domain", kwargs={"pk": self.domain_no_information.id})
+        )
+
+        self.assertContains(detail_page, "noinformation.gov")
 
 
 class TestDomainManagers(TestDomainOverview):
