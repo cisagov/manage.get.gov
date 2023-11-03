@@ -142,9 +142,10 @@ class Command(BaseCommand):
         logger.info("Reading contacts data file %s", contacts_filename)
         with open(contacts_filename, "r") as contacts_file:
             for row in csv.reader(contacts_file, delimiter=sep):
-                user_id = row[0]
-                user_email = row[6]
-                user_emails_dictionary[user_id] = user_email
+                if row != []:
+                    user_id = row[0]
+                    user_email = row[6]
+                    user_emails_dictionary[user_id] = user_email
         logger.info("Loaded emails for %d users", len(user_emails_dictionary))
         return user_emails_dictionary
 
