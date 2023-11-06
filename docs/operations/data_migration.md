@@ -255,7 +255,7 @@ Directs the script to load only the first 100 entries into the table.  You can a
 
 ### STEP 3: Send Domain invitations
 
-To send invitations for every transition domain in the transition domain table, execute the following command:
+To send invitation emails for every transition domain in the transition domain table, execute the following command:
 
 (NOTE: If working in cloud.gov, remove "./manage.py" from the command)
 ```shell
