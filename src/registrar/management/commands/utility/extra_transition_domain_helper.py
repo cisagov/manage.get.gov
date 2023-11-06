@@ -149,7 +149,7 @@ class LoadExtraTransitionDomain:
         if not all_transition_domains.exists():
             raise ValueError("No TransitionDomain objects exist.")
 
-        updated_trasition_domains = []
+        updated_transition_domains = []
         for transition_domain in all_transition_domains:
             domain_name = transition_domain.domain_name.upper()
             updated_transition_domain = transition_domain
@@ -181,7 +181,7 @@ class LoadExtraTransitionDomain:
                     f"Successfully updated {domain_name}"
                     f"{TerminalColors.ENDC}"
                 )
-                updated_trasition_domains.append(updated_transition_domain)
+                updated_transition_domains.append(updated_transition_domain)
                 
 
             # If we run into an exception on this domain,
@@ -197,7 +197,7 @@ class LoadExtraTransitionDomain:
         logger.info(
             f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
-            updated {len(updated_trasition_domains)} transition domain entries
+            updated {len(updated_transition_domains)} transition domain entries
             {TerminalColors.ENDC}
             """
         )
