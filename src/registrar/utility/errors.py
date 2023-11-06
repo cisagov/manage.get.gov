@@ -39,9 +39,11 @@ class GenericError(Exception):
     """
 
     _error_mapping = {
-        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
-            "Update failed. Cannot contact the registry."
-        ),
+        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: """
+We’re experiencing a system connection error. Please wait a few minutes
+and try again. If you continue to receive this error after a few tries,
+contact help@get.gov
+        """,
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }
 
@@ -104,7 +106,9 @@ class NameserverError(Exception):
         NameserverErrorCodes.MISSING_HOST: (
             "Name server must be provided to enter IP address."
         ),
-        NameserverErrorCodes.INVALID_HOST: ("Name server, {}, is not valid."),
+        NameserverErrorCodes.INVALID_HOST: (
+            "Enter a name server in the required format, like ns1.example.com"
+        ),
     }
 
     def __init__(self, *args, code=None, nameserver=None, ip=None, **kwargs):

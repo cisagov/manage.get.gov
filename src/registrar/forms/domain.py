@@ -23,11 +23,6 @@ class DomainAddUserForm(forms.Form):
     email = forms.EmailField(label="Email")
 
 
-class IPAddressField(forms.CharField):
-    def validate(self, value):
-        super().validate(value)  # Run the default CharField validation
-
-
 class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
 
@@ -35,7 +30,21 @@ class DomainNameserverForm(forms.Form):
 
     server = forms.CharField(label="Name server", strip=True)
 
-    ip = forms.CharField(label="IP Address (IPv4 or IPv6)", strip=True, required=False)
+    ip = forms.CharField(
+        label="IP address (IPv4 or IPv6)",
+        strip=True,
+        required=False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(DomainNameserverForm, self).__init__(*args, **kwargs)
+
+        # add custom error messages
+        self.fields["server"].error_messages.update(
+            {
+                "required": "A minimum of 2 name servers are required.",
+            }
+        )
 
     def clean(self):
         # clean is called from clean_forms, which is called from is_valid
@@ -44,6 +53,11 @@ class DomainNameserverForm(forms.Form):
         cleaned_data = super().clean()
         self.clean_empty_strings(cleaned_data)
         server = cleaned_data.get("server", "")
+        # remove ANY spaces in the server field
+        server = server.replace(" ", "")
+        # lowercase the server
+        server = server.lower()
+        cleaned_data["server"] = server
         ip = cleaned_data.get("ip", None)
         # remove ANY spaces in the ip field
         ip = ip.replace(" ", "")
@@ -52,7 +66,7 @@ class DomainNameserverForm(forms.Form):
         ip_list = self.extract_ip_list(ip)
 
         # validate if the form has a server or an ip
-        if ip and ip_list or server:
+        if (ip and ip_list) or server:
             self.validate_nameserver_ip_combo(domain, server, ip_list)
 
         return cleaned_data
