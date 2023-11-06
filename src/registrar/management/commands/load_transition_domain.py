@@ -381,8 +381,10 @@ class Command(BaseCommand):
 
         # Start parsing the main file and create TransitionDomain objects
         logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
+        total_lines = TerminalHelper.get_file_line_count(domain_contacts_filename)
         with open(domain_contacts_filename, "r") as domain_contacts_file:
             for row in csv.reader(domain_contacts_file, delimiter=sep):
+                # TerminalHelper.printProgressBar(total_rows_parsed, total_lines)
                 total_rows_parsed += 1
 
                 # fields are just domain, userid, role
@@ -393,6 +395,8 @@ class Command(BaseCommand):
                 new_entry_status = TransitionDomain.StatusChoices.READY
                 new_entry_email = ""
                 new_entry_emailSent = False  # set to False by default
+
+                TerminalHelper.print_conditional(debug_on, f"Processing item {total_rows_parsed}: {new_entry_domain_name}")
 
                 # PART 1: Get the status
                 if new_entry_domain_name not in domain_status_dictionary:

@@ -197,7 +197,8 @@ class LoadExtraTransitionDomain:
         logger.info(
             f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
-            updated {len(updated_transition_domains)} transition domain entries
+            updated {len(updated_trasition_domains)} transition domain entries:
+            {TerminalHelper.array_as_string(updated_trasition_domains)}
             {TerminalColors.ENDC}
             """
         )
