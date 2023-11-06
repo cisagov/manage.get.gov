@@ -11,10 +11,6 @@ class DomainHelper:
     # begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
     DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.[A-Za-z]{2,6}$")
 
-    # a domain name is alphanumeric or hyphen, has at least 2 dots, doesn't
-    # begin or end with a hyphen, followed by a TLD of 2-6 alphabetic characters
-    HOST_REGEX = re.compile(r"^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.){2,}([A-Za-z]){2,6}$")
-
     # a domain can be no longer than 253 characters in total
     MAX_LENGTH = 253
 

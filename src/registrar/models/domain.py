@@ -3,7 +3,6 @@ import logging
 import ipaddress
 import re
 from datetime import date
-from string import digits
 from typing import Optional
 
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
@@ -277,7 +276,12 @@ class Domain(TimeStampedModel, DomainHelper):
             return response.code
         except RegistryError as e:
             logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
-            raise e
+            # OBJECT_EXISTS is an expected error code that should not raise
+            # an exception, rather return the code to be handled separately
+            if e.code == ErrorCode.OBJECT_EXISTS:
+                return e.code
+            else:
+                raise e
 
     def _convert_list_to_dict(self, listToConvert: list[tuple[str, list]]):
         """converts a list of hosts into a dictionary
@@ -305,12 +309,39 @@ class Domain(TimeStampedModel, DomainHelper):
         return bool(regex.match(nameserver))
 
     @classmethod
+    def isValidHost(cls, nameserver: str):
+        """Checks for validity of nameserver string based on these rules:
+        - first character is alpha or digit
+        - first and last character in each label is alpha or digit
+        - all characters alpha (lowercase), digit, -, or .
+        - each label has a min length of 1 and a max length of 63
+        - total host name has a max length of 253
+        """
+        # pattern to test for valid domain
+        # label pattern for each section of the host name, separated by .
+        labelpattern = r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?"
+        # lookahead pattern ensures first character not - and total length < 254
+        lookaheadpatterns = r"^((?!-))(?=.{1,253}\.?$)"
+        # pattern assembles lookaheadpatterns and ensures there are at least
+        # 3 labels in the host name
+        pattern = lookaheadpatterns + labelpattern + r"(\." + labelpattern + r"){2,}$"
+
+        # attempt to match the pattern
+        match = re.match(pattern, nameserver)
+
+        # return true if nameserver matches
+        # otherwise false
+        return bool(match)
+
+    @classmethod
     def checkHostIPCombo(cls, name: str, nameserver: str, ip: list[str]):
         """Checks the parameters past for a valid combination
         raises error if:
             - nameserver is a subdomain but is missing ip
             - nameserver is not a subdomain but has ip
             - nameserver is a subdomain but an ip passed is invalid
+            - nameserver is not a valid domain
+            - ip is provided but is missing domain
 
         Args:
             hostname (str)- nameserver or subdomain
@@ -319,7 +350,11 @@ class Domain(TimeStampedModel, DomainHelper):
             NameserverError (if exception hit)
         Returns:
             None"""
-        if cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
+        if ip and not nameserver:
+            raise NameserverError(code=nsErrorCodes.MISSING_HOST)
+        elif nameserver and not cls.isValidHost(nameserver):
+            raise NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=nameserver)
+        elif cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
 
         elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != []):
@@ -330,7 +365,7 @@ class Domain(TimeStampedModel, DomainHelper):
             for addr in ip:
                 if not cls._valid_ip_addr(addr):
                     raise NameserverError(
-                        code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
+                        code=nsErrorCodes.INVALID_IP, nameserver=nameserver[:40], ip=ip
                     )
         return None
 
@@ -1196,34 +1231,6 @@ class Domain(TimeStampedModel, DomainHelper):
     # ForeignKey on DomainInvitation creates an "invitations" member for
     # all of the invitations that have been sent for this domain
 
-    def _validate_host_tuples(self, hosts: list[tuple[str]]):
-        """
-        Helper function. Validate hostnames and IP addresses.
-
-        Raises:
-            ValueError if hostname or IP address appears invalid or mismatched.
-        """
-        for host in hosts:
-            hostname = host[0].lower()
-            addresses: tuple[str] = host[1:]  # type: ignore
-            if not bool(Domain.HOST_REGEX.match(hostname)):
-                raise ValueError("Invalid hostname: %s." % hostname)
-            if len(hostname) > Domain.MAX_LENGTH:
-                raise ValueError("Too long hostname: %s" % hostname)
-
-            is_subordinate = hostname.split(".", 1)[-1] == self.name
-            if is_subordinate and len(addresses) == 0:
-                raise ValueError(
-                    "Must supply IP addresses for subordinate host %s" % hostname
-                )
-            if not is_subordinate and len(addresses) > 0:
-                raise ValueError("Must not supply IP addresses for %s" % hostname)
-
-            for address in addresses:
-                allow = set(":." + digits)
-                if any(c not in allow for c in address):
-                    raise ValueError("Invalid IP address: %s." % address)
-
     def _get_or_create_domain(self):
         """Try to fetch info about this domain. Create it if it does not exist."""
         already_tried_to_create = False
@@ -1593,7 +1600,12 @@ class Domain(TimeStampedModel, DomainHelper):
             return response.code
         except RegistryError as e:
             logger.error("Error _update_host, code was %s error was %s" % (e.code, e))
-            raise e
+            # OBJECT_EXISTS is an expected error code that should not raise
+            # an exception, rather return the code to be handled separately
+            if e.code == ErrorCode.OBJECT_EXISTS:
+                return e.code
+            else:
+                raise e
 
     def addAndRemoveHostsFromDomain(
         self, hostsToAdd: list[str], hostsToDelete: list[str]
