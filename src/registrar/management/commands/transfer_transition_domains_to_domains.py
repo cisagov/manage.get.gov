@@ -640,8 +640,20 @@ class Command(BaseCommand):
             {TerminalColors.ENDC}"""
         )
 
+        # First, save all Domain objects to the database
         Domain.objects.bulk_create(domains_to_create)
-        DomainInvitation.objects.bulk_create(domain_invitations_to_create)
+        #DomainInvitation.objects.bulk_create(domain_invitations_to_create)
+
+        # Then, create DomainInvitation objects
+        for invitation in domain_invitations_to_create:
+            existing_domain = Domain.objects.filter(name=invitation.domain.name)
+            # Make sure the related Domain object is saved
+            if existing_domain.exists():
+                invitation.domain = existing_domain.get()
+            else:
+                # Raise an err for now
+                raise Exception(f"Domain {existing_domain} wants to be added but doesn't exist in the DB")
+            invitation.save()
 
         # ======================================================
         # ================= DOMAIN INFORMATION =================

@@ -150,6 +150,7 @@ class LoadExtraTransitionDomain:
             raise ValueError("No TransitionDomain objects exist.")
 
         updated_transition_domains = []
+        failed_transition_domains = []
         for transition_domain in all_transition_domains:
             domain_name = transition_domain.domain_name.upper()
             updated_transition_domain = transition_domain
@@ -174,33 +175,47 @@ class LoadExtraTransitionDomain:
                     domain_name, transition_domain
                 )
 
+                # Check if the instance has changed before saving
+                #if updated_transition_domain.__dict__ != transition_domain.__dict__:
                 updated_transition_domain.save()
+                updated_transition_domains.append(updated_transition_domain)
+
                 self.parse_logs.display_logs_by_domain_name(domain_name)
                 logger.info(
                     f"{TerminalColors.OKCYAN}"
                     f"Successfully updated {domain_name}"
                     f"{TerminalColors.ENDC}"
                 )
-                updated_transition_domains.append(updated_transition_domain)
-                
 
             # If we run into an exception on this domain,
             # Just skip over it and log that it happened.
             except Exception as err:
                 logger.debug(err)
-                logger.info(
+                logger.error(
                     f"{TerminalColors.FAIL}"
                     f"Exception encountered on {domain_name}. Could not update."
                     f"{TerminalColors.ENDC}"
                 )
-                raise err
-        logger.info(
-            f"""{TerminalColors.OKGREEN}
-            ============= FINISHED ===============
-            updated {len(updated_transition_domains)} transition domain entries
-            {TerminalColors.ENDC}
-            """
-        )
+                failed_transition_domains.append(domain_name)
+
+        failed_count = len(failed_transition_domains)
+        if failed_count == 0:
+            logger.info(
+                f"""{TerminalColors.OKGREEN}
+                ============= FINISHED ===============
+                Updated {len(updated_transition_domains)} transition domain entries
+                {TerminalColors.ENDC}
+                """
+            )
+        else:
+            logger.error(
+                f"""{TerminalColors.FAIL}
+                ============= FINISHED WITH ERRORS ===============
+                Updated {len(updated_transition_domains)} transition domain entries,
+                Failed to update {failed_count} transition domain entries
+                {TerminalColors.ENDC}
+                """
+            )
 
     def parse_creation_expiration_data(self, domain_name, transition_domain):
         """Grabs expiration_date from the parsed files and associates it
