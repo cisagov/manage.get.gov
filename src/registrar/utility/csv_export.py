@@ -2,6 +2,8 @@ import csv
 from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
 from registrar.models.public_contact import PublicContact
+from django.db.models import Value
+from django.db.models.functions import Coalesce
 
 
 def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
@@ -61,7 +63,13 @@ def export_data_type_to_csv(csv_file):
         "Status",
         "Expiration Date",
     ]
-    sort_fields = ["organization_type", "federal_type", "federal_agency", "domain__name"]
+    # Coalesce is used to replace federal_type of None with ZZZZZ
+    sort_fields = [
+        "organization_type",
+        Coalesce("federal_type", Value("ZZZZZ")),
+        "federal_agency",
+        "domain__name",
+    ]
     filter_condition = {
         "domain__state__in": [
             Domain.State.READY,
@@ -84,7 +92,13 @@ def export_data_full_to_csv(csv_file):
         "State",
         "Security Contact Email",
     ]
-    sort_fields = ["organization_type", "federal_type", "federal_agency", "domain__name"]
+    # Coalesce is used to replace federal_type of None with ZZZZZ
+    sort_fields = [
+        "organization_type",
+        Coalesce("federal_type", Value("ZZZZZ")),
+        "federal_agency",
+        "domain__name",
+    ]
     filter_condition = {
         "domain__state__in": [
             Domain.State.READY,
@@ -107,7 +121,13 @@ def export_data_federal_to_csv(csv_file):
         "State",
         "Security Contact Email",
     ]
-    sort_fields = ["organization_type", "federal_type", "federal_agency", "domain__name"]
+    # Coalesce is used to replace federal_type of None with ZZZZZ
+    sort_fields = [
+        "organization_type",
+        Coalesce("federal_type", Value("ZZZZZ")),
+        "federal_agency",
+        "domain__name",
+    ]
     filter_condition = {
         "organization_type__icontains": "federal",
         "domain__state__in": [
