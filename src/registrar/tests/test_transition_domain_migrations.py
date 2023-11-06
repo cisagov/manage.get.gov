@@ -1,3 +1,4 @@
+from io import StringIO
 from django.test import TestCase
 
 from registrar.models import (
@@ -10,9 +11,9 @@ from registrar.models import (
 )
 
 from django.core.management import call_command
+from unittest.mock import patch
 
-
-class TestLogins(TestCase):
+class TestMigrations(TestCase):
 
     """ """
 
@@ -27,37 +28,49 @@ class TestLogins(TestCase):
         self.test_contact_filename = "test_contacts.txt"
         self.test_domain_status_filename = "test_domain_statuses.txt"
 
+        # Files for parsing additional TransitionDomain data
+        self.test_agency_adhoc_filename = "test_agency_adhoc.txt"
+        self.test_authority_adhoc_filename = "test_authority_adhoc.txt"
+        self.test_domain_additional = "test_domain_additional.txt"
+        self.test_domain_types_adhoc = "test_domain_types_adhoc.txt"
+        self.test_escrow_domains_daily = "test_escrow_domains_daily"
+        self.test_organization_adhoc = "test_organization_adhoc.txt"
+
     def tearDown(self):
-        super().tearDown()
+        # Delete domain information
         TransitionDomain.objects.all().delete()
         Domain.objects.all().delete()
         DomainInvitation.objects.all().delete()
         DomainInformation.objects.all().delete()
+
+        # Delete users
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
     def run_load_domains(self):
-        call_command(
-            "load_transition_domain",
-            f"{self.test_data_file_location}/{self.test_domain_contact_filename}",
-            f"{self.test_data_file_location}/{self.test_contact_filename}",
-            f"{self.test_data_file_location}/{self.test_domain_status_filename}",
-        )
+        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no', return_value=True):
+            call_command(
+                "load_transition_domain",
+                f"{self.test_data_file_location}/{self.test_domain_contact_filename}",
+                f"{self.test_data_file_location}/{self.test_contact_filename}",
+                f"{self.test_data_file_location}/{self.test_domain_status_filename}",
+            )
 
     def run_transfer_domains(self):
         call_command("transfer_transition_domains_to_domains")
 
     def run_master_script(self):
-        call_command(
-            "master_domain_migrations",
-            runMigrations=True,
-            migrationDirectory=f"{self.test_data_file_location}",
-            migrationFilenames=(
-                f"{self.test_domain_contact_filename},"
-                f"{self.test_contact_filename},"
-                f"{self.test_domain_status_filename}"
-            ),
-        )
+        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no', return_value=True):
+            call_command(
+                "master_domain_migrations",
+                runMigrations=True,
+                migrationDirectory=f"{self.test_data_file_location}",
+                migrationFilenames=(
+                    f"{self.test_domain_contact_filename},"
+                    f"{self.test_contact_filename},"
+                    f"{self.test_domain_status_filename}"
+                ),
+            )
 
     def compare_tables(
         self,
