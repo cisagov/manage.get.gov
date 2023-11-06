@@ -278,7 +278,6 @@ docker compose run -T app ./manage.py master_domain_migrations --debug
 
 To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug and --prompt allow you to step through the migration process and exit it after each step if you need to.  It is recommended that you use these arguments when using the --runMigrations feature:
 
-
 (NOTE: If working in cloud.gov, remove "./manage.py" from the command)
 ```shell
 docker compose run -T app ./manage.py master_domain_migrations --runMigrations --debug --prompt
