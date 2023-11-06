@@ -211,7 +211,6 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
 
-*NOTE: While we recommend executing the following scripts individually (Steps 1-3), migrations can also be done 'all at once' using the "Run Migration Feature" in step 4.  Use with discretion.*
 
 ### STEP 1: Load Transition Domains
 
