@@ -78,6 +78,12 @@ class Command(BaseCommand):
                 possibly_unused_agencies.append(agency)
                 TerminalHelper.print_conditional(debug, f"{TerminalColors.YELLOW}Possibly unused agency detected: {agency}{TerminalColors.ENDC}")
 
+        matched_agencies = []
+        for agency in provided_agencies:
+            if agency in existing_agencies:
+                matched_agencies.append(agency)
+                TerminalHelper.print_conditional(debug, f"{TerminalColors.YELLOW}Matched agencies: {agency}{TerminalColors.ENDC}")
+
         # Print the summary of findings
         # 1 - Print the list of agencies in the NEW list, which we do not already have
         # 2 - Print the list of agencies that we currently have, which are NOT in the new list (these might be eligible for removal?) TODO: would we ever want to remove existing agencies?
@@ -86,6 +92,9 @@ class Command(BaseCommand):
         )
         possibly_unused_agencies_as_string = "{}".format(
             ",\n        ".join(map(str, possibly_unused_agencies))
+        )
+        matched_agencies_as_string = "{}".format(
+            ",\n        ".join(map(str, matched_agencies))
         )
 
         logger.info(f"""
@@ -96,6 +105,8 @@ class Command(BaseCommand):
 
         {len(provided_agencies)-len(new_agencies)} AGENCIES MATCHED
         (These are agencies that are in the given agency file AND in our system already)
+        {TerminalColors.YELLOW}{matched_agencies_as_string}
+        {TerminalColors.OKGREEN}
         
         {len(new_agencies)} AGENCIES TO ADD:
         These agencies were in the provided agency file, but are not in our system.
@@ -139,13 +150,19 @@ class Command(BaseCommand):
 
         new_agencies = self.extract_agencies(agency_data_file, sep, debug)
         hard_coded_agencies = DomainApplication.AGENCIES
+        transition_domain_agencies = TransitionDomain.objects.all().values_list('federal_agency', flat=True).distinct()
+        print(transition_domain_agencies)
+
+
         merged_agencies = new_agencies
         for agency in hard_coded_agencies:
             if agency not in merged_agencies:
                 merged_agencies.append(agency)
-
-        transition_domain_agencies = TransitionDomain.objects.all().values_list('federal_agency').distinct()
-        print(transition_domain_agencies)
+        
+        merged_transition_agencies = new_agencies
+        for agency in transition_domain_agencies:
+            if agency not in merged_transition_agencies:
+                merged_transition_agencies.append(agency)
 
         prompt_successful = False
 
@@ -209,3 +226,15 @@ class Command(BaseCommand):
             f"\n\n{len(merged_agencies)} TOTAL\n\n"
             )
             self.print_agency_list(merged_agencies, "Merged_Dropdown_Agency_List")
+        
+         # OPTION to print out the full list of agencies from the agency file
+        if prompt:
+            prompt_successful = TerminalHelper.query_yes_no(f"{TerminalColors.FAIL}Would you like to print the MERGED list of agencies (dropdown + agency file)?{TerminalColors.ENDC}")
+        if prompt_successful or not prompt:
+            logger.info(
+            f"\n{TerminalColors.OKGREEN}"
+            f"\n======================== MERGED LISTS (transition domain + agency file) ============================"
+            f"\nThese are all the agencies our transition domains table plus all the agencies in the agency file."
+            f"\n\n{len(merged_agencies)} TOTAL\n\n"
+            )
+            self.print_agency_list(merged_transition_agencies, "Merged_Transition_Domain_Agency_List")

@@ -296,25 +296,27 @@ class Command(BaseCommand):
             command_string += f"--limitParse {debug_max_entries_to_parse} "
 
         # Execute the command string
+        proceed = False
         if prompts_enabled:
-            system_exit_on_terminate = True
-            TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate,
+            proceed = TerminalHelper.prompt_for_execution(
+                False,
                 command_string,
                 "Running load_transition_domain script",
             )
 
         # TODO: make this somehow run inside TerminalHelper prompt
-        call_command(
-            command_script,
-            f"{file_location+domain_contacts_filename}",
-            f"{file_location+contacts_filename}",
-            f"{file_location+domain_statuses_filename}",
-            sep=sep,
-            resetTable=reset_table,
-            debug=debug_on,
-            limitParse=debug_max_entries_to_parse,
-        )
+        if proceed:
+            call_command(
+                command_script,
+                f"{file_location+domain_contacts_filename}",
+                f"{file_location+contacts_filename}",
+                f"{file_location+domain_statuses_filename}",
+                sep=sep,
+                resetTable=reset_table,
+                debug=debug_on,
+                limitParse=debug_max_entries_to_parse,
+                directory=file_location
+            )
 
     def run_transfer_script(self, debug_on: bool, prompts_enabled: bool):
         """Runs the transfer_transition_domains_to_domains script"""
@@ -324,16 +326,16 @@ class Command(BaseCommand):
         if debug_on:
             command_string += "--debug "
         # Execute the command string
+        proceed = False
         if prompts_enabled:
-            system_exit_on_terminate = True
-            TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate,
+            proceed = TerminalHelper.prompt_for_execution(
+                False,
                 command_string,
                 "Running transfer_transition_domains_to_domains script",
             )
-
         # TODO: make this somehow run inside TerminalHelper prompt
-        call_command(command_script)
+        if proceed:
+                call_command(command_script)
 
     def run_send_invites_script(self, debug_on: bool, prompts_enabled: bool):
         """Runs the send_domain_invitations script"""
@@ -341,16 +343,17 @@ class Command(BaseCommand):
         command_script = "send_domain_invitations"
         command_string = f"./manage.py {command_script} -s"
         # Execute the command string
+        proceed = False
         if prompts_enabled:
-            system_exit_on_terminate = True
-            TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate,
+            proceed = TerminalHelper.prompt_for_execution(
+                False,
                 command_string,
                 "Running send_domain_invitations script",
             )
 
         # TODO: make this somehow run inside TerminalHelper prompt
-        call_command(command_script, send_emails=True)
+        if proceed:
+            call_command(command_script, send_emails=True)
 
     def run_migration_scripts(
         self,

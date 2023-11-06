@@ -70,12 +70,45 @@ class TerminalHelper:
             else:
                 logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
+    @staticmethod
+    def query_yes_no_exit(question: str, default="yes") -> bool:
+        """Ask a yes/no question via raw_input() and return their answer.
+
+        "question" is a string that is presented to the user.
+        "default" is the presumed answer if the user just hits <Enter>.
+                It must be "yes" (the default), "no" or None (meaning
+                an answer is required of the user).
+
+        The "answer" return value is True for "yes" or False for "no".
+        """
+        valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False, "e": "exit", "s": "skip"}
+        if default is None:
+            prompt = " [y/n] "
+        elif default == "yes":
+            prompt = " [Y/n] "
+        elif default == "no":
+            prompt = " [y/N] "
+        else:
+            raise ValueError("invalid default answer: '%s'" % default)
+
+        while True:
+            logger.info(question + prompt)
+            choice = input().lower()
+            if default is not None and choice == "":
+                return valid[default]
+            elif choice in valid:
+                if valid[choice] == "exit":
+                    sys.exit()
+                return valid[choice]
+            else:
+                logger.info("Please respond with a valid selection.\n")
+
     # @staticmethod
-    # def array_as_string(array_to_convert: []) -> str:
-    #     array_as_string = "{}".format(
-    #         ", ".join(map(str, array_to_convert))
-    #     )
-    #     return array_as_string
+    def array_as_string(array_to_convert: []) -> str:
+        array_as_string = "{}".format(
+            "\n".join(map(str, array_to_convert))
+        )
+        return array_as_string
 
     @staticmethod
     def print_conditional(
@@ -118,13 +151,13 @@ class TerminalHelper:
         Returns true if the user responds (y),
         Returns false if the user responds (n)"""
 
-        action_description_for_selecting_no = "skip"
+        action_description_for_selecting_no = "skip, E = exit"
         if system_exit_on_terminate:
-            action_description_for_selecting_no = "exit"
+            action_description_for_selecting_no = "exit, S = skip"
 
         # Allow the user to inspect the command string
         # and ask if they wish to proceed
-        proceed_execution = TerminalHelper.query_yes_no(
+        proceed_execution = TerminalHelper.query_yes_no_exit(
             f"""{TerminalColors.OKCYAN}
             =====================================================
             {prompt_title}
@@ -139,10 +172,52 @@ class TerminalHelper:
 
         # If the user decided to proceed return true.
         # Otherwise, either return false or exit this subroutine.
-        if not proceed_execution:
+        if proceed_execution == False:
             if system_exit_on_terminate:
                 sys.exit()
             return False
-
+        if proceed_execution == "skip":
+            return False
         return True
 
+    @staticmethod
+    def get_file_line_count(filepath: str) -> int:
+        with open(filepath,'r') as file:
+            li = file.readlines()
+        total_line = len(li)
+        return total_line
+    
+
+
+    @staticmethod
+    def printProgressBar (iteration, total, prefix = 'Progress:', suffix = 'Complete', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+        """
+        Call in a loop to create terminal progress bar
+        @params:
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            decimals    - Optional  : positive number of decimals in percent complete (Int)
+            length      - Optional  : character length of bar (Int)
+            fill        - Optional  : bar fill character (Str)
+            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+        """
+
+        """
+        # Initial call to print 0% progress
+        printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        for i, item in enumerate(items):
+            # Do stuff...
+            time.sleep(0.1)
+            # Update Progress Bar
+            printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        """
+
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + '-' * (length - filledLength)
+        print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+        # Print New Line on Complete
+        if iteration == total: 
+            print()
