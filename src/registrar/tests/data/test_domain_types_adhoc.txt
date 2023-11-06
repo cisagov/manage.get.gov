@@ -1,0 +1,18 @@
+domaintypeid|domaintype|code|active
+14|Federal - Legislative|FL|Y
+15|Federal - Judicial|FJ|Y
+16|Interstate|IA|Y
+1|Commercial|CO|N
+2|Courts|CT|N
+3|Federal Government Program|FD|N
+4|Federal - Executive|FE|Y
+5|Foreign|FO|N
+6|Individual|IN|N
+7|Military|MI|N
+8|Not Top-Level|NT|N
+9|State|ST|Y
+10|Tribal|TN|Y
+11|Domain type 1|1|N
+12|County|CY|Y
+13|City|CI|Y
+17|Independent Intrastate|II|Y
