@@ -92,15 +92,15 @@ We can do this both locally and in a sandbox.
 Load migration data onto a production or sandbox environment
 
 **WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
-Do not use this method to store data you want to keep around permanently.
+Do not use these environments to store data you want to keep around permanently. We don't want sensitive data to be accidentally present in our application environments.
 
 #### STEP 1: Using cat to transfer data to sandboxes
 
 ```bash
-cat {LOCAL_PATH_TO_FILE} | cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
+cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
 ```
 
-* FULL_NAME_OF_YOUR_SANDBOX_HERE - Name of your sandbox, ex: getgov-za
+* APP_NAME_IN_ENVIRONMENT - Name of the app running in your environment, e.g. getgov-za or getgov-stable
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
 
@@ -122,24 +122,22 @@ cf login -a api.fr.cloud.gov  --sso
 ##### Target your workspace
 
 ```bash
-cf target -o cisa-dotgov -s {SANDBOX_NAME}
+cf target -o cisa-dotgov -s {ENVIRONMENT_NAME}
 ```
-*SANDBOX_NAME* - Name of your sandbox, ex: za or ab
+*ENVIRONMENT_NAME* - Name of your sandbox, ex: za or ab
 
 ##### Run the scp command
 
 Use the following command to transfer the desired file:
 ```shell
-scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app {FULL_NAME_OF_YOUR_SANDBOX_HERE} --guid)/processes | jq -r '.resources[]
+scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app {APP_NAME_IN_ENVIRONMENT} --guid)/processes | jq -r '.resources[]
 | select(.type=="web") | .guid')/0 {LOCAL_PATH_TO_FILE} ssh.fr.cloud.gov:tmp/{DESIRED_NAME_OF_FILE}
 ```
 The items in curly braces are the values that you will manually replace.
 These are as follows:
-* FULL_NAME_OF_YOUR_SANDBOX_HERE - Name of your sandbox, ex: getgov-za
+* APP_NAME_IN_ENVIRONMENT - Name of the app running in your environment, e.g. getgov-za or getgov-stable
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
-
-NOTE: If you'd wish to change what directory these files are uploaded to, you can change `ssh.fr.cloud.gov:tmp/` to `ssh.fr.cloud.gov:{DIRECTORY_YOU_WANT}/`, but be aware that this makes data migration more tricky than it has to be.
 
 ##### Get a temp auth code
 
@@ -158,7 +156,7 @@ Due to the nature of how Cloud.gov operates, the getgov directory is dynamically
 ##### SSH into your sandbox
 
 ```shell
-cf ssh {FULL_NAME_OF_YOUR_SANDBOX_HERE}
+cf ssh {APP_NAME_IN_ENVIRONMENT}
 ```
 
 ##### Open a shell
@@ -196,7 +194,7 @@ cat ../tmp/{filename} > migrationdata/{filename}
 ```
 
 
-*You are now ready to run migration scripts (see "Running the Migration Scripts")*
+*You are now ready to run migration scripts (see [Running the Migration Scripts](running-the-migration-scripts))*
 
 ### SECTION 2 - LOCAL MIGRATION SETUP (TESTING PURPOSES ONLY)
 
@@ -205,12 +203,11 @@ cat ../tmp/{filename} > migrationdata/{filename}
 In order to run the scripts locally, we need to add the files to a folder under `src/`.
 This will allow Docker to mount the files to a container (under `/app`) for our use.  
 
- - Create a folder called `tmp` underneath `src/`
- - Add the above files to this folder
+ - Add the above files to the `migrationdata/` folder
  - Open a terminal and navigate to `src/`
 
 
-*You are now ready to run migration scripts (see "Running the Migration Scripts")*
+*You are now ready to run migration scripts.*
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
 
@@ -218,7 +215,7 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 ### STEP 1: Load Transition Domains
 
-Run the following command, making sure the filepaths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. (NOTE: If working in the sandbox, change "/app/tmp" to point to the sandbox directory)
+Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. (NOTE: If working in cloud.gov, change "/app/tmp" to point to the `migrationdata/` directory)
 ```shell
 docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt --debug
 ```

@@ -1,4 +1,4 @@
 Anomaly.gov|muahaha|
 TestDomain.gov|ok|
-NEHRP.GOV|serverHold|
-NELSONCOUNTY-VA.GOV|Hold|
+FakeWebsite1.GOV|serverHold|
+FakeWebsite2.GOV|Hold|
