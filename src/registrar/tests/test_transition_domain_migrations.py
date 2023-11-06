@@ -48,7 +48,7 @@ class TestMigrations(TestCase):
         UserDomainRole.objects.all().delete()
 
     def run_load_domains(self):
-        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no', return_value=True):
+        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit', return_value=True):
             call_command(
                 "load_transition_domain",
                 f"{self.test_data_file_location}/{self.test_domain_contact_filename}",
@@ -60,7 +60,7 @@ class TestMigrations(TestCase):
         call_command("transfer_transition_domains_to_domains")
 
     def run_master_script(self):
-        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no', return_value=True):
+        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit', return_value=True):
             call_command(
                 "master_domain_migrations",
                 runMigrations=True,
@@ -131,7 +131,7 @@ class TestMigrations(TestCase):
         total_missing_domains = {len(missing_domains)}
         total_duplicate_domains = {len(duplicate_domains)}
         total_missing_domain_informations = {len(missing_domain_informations)}
-        total_missing_domain_invitations = {len(missing_domain_invites)}
+        total_missing_domain_invitations = {total_missing_domain_invitations}
 
         total_transition_domains = {len(TransitionDomain.objects.all())}
         total_domains = {len(Domain.objects.all())}
