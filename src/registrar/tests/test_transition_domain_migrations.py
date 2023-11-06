@@ -54,6 +54,13 @@ class TestMigrations(TestCase):
                 f"{self.test_data_file_location}/{self.test_domain_contact_filename}",
                 f"{self.test_data_file_location}/{self.test_contact_filename}",
                 f"{self.test_data_file_location}/{self.test_domain_status_filename}",
+                directory=self.test_data_file_location,
+                agency_adhoc_filename=self.test_agency_adhoc_filename,
+                domain_additional_filename=self.test_domain_additional,
+                domain_escrow_filename=self.test_escrow_domains_daily,
+                domain_adhoc_filename=self.test_domain_types_adhoc,
+                organization_adhoc_filename=self.test_organization_adhoc,
+                authority_adhoc_filename=self.test_authority_adhoc_filename,
             )
 
     def run_transfer_domains(self):
@@ -185,7 +192,8 @@ class TestMigrations(TestCase):
             expected_missing_domain_invitations,
         )
 
-    def test_load_transition_domain(self):
+    def test_load_empty_transition_domain(self):
+        """Loads TransitionDomains without additional data"""
         self.run_load_domains()
 
         # STEP 2: (analyze the tables just like the migration
@@ -209,6 +217,9 @@ class TestMigrations(TestCase):
             expected_missing_domain_informations,
             expected_missing_domain_invitations,
         )
+    
+    def test_load_full_transition_domain(self):
+        pass
 
     def test_transfer_transition_domains_to_domains(self):
         # TODO: setup manually instead of calling other script

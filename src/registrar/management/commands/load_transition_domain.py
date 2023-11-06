@@ -72,6 +72,9 @@ class Command(BaseCommand):
             "--directory", default="migrationdata", help="Desired directory"
         )
         parser.add_argument(
+            "--infer_filenames", default=False, help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting."
+        )
+        parser.add_argument(
             "--agency_adhoc_filename",
             default=EnumFilenames.AGENCY_ADHOC.value[1],
             help="Defines the filename for agency adhocs",
@@ -95,6 +98,11 @@ class Command(BaseCommand):
         parser.add_argument(
             "--organization_adhoc_filename",
             default=EnumFilenames.ORGANIZATION_ADHOC.value[1],
+            help="Defines the filename for domain type adhocs",
+        )
+        parser.add_argument(
+            "--authority_adhoc_filename",
+            default=EnumFilenames.AUTHORITY_ADHOC.value[1],
             help="Defines the filename for domain type adhocs",
         )
 
@@ -551,6 +559,9 @@ class Command(BaseCommand):
             system_exit_on_terminate=False,
             info_to_inspect=f"""
             !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
+            ==Master data file==
+            domain_additional_filename: {domain_additional_filename}
+
             ==Federal agency information==
             agency_adhoc_filename: {agency_adhoc_filename}
 
@@ -563,7 +574,7 @@ class Command(BaseCommand):
             ==Creation date / expiration date information==
             domain_escrow_filename: {domain_escrow_filename}
 
-            domain_additional_filename: {domain_additional_filename}
+            ==Containing directory==
             directory: {directory}
             """,
             prompt_title=title,

@@ -136,11 +136,10 @@ class LoadExtraTransitionDomain:
     def __init__(self, options: TransitionDomainArguments):
         # Globally stores event logs and organizes them
         self.parse_logs = FileTransitionLog()
-
         arguments = options.args_extra_transition_domain()
         # Reads and parses migration files
         self.parsed_data_container = ExtraTransitionDomain(**arguments)
-        self.parsed_data_container.parse_all_files()
+        self.parsed_data_container.parse_all_files(options.infer_filenames)
 
     def update_transition_domain_models(self):
         """Updates TransitionDomain objects based off the file content
@@ -683,24 +682,14 @@ class ExtraTransitionDomain:
 
     strip_date_regex = re.compile(r"(?:.*\/)?(\d+)\.(.+)")
 
-    def __init__(
-        self,
-        agency_adhoc_filename=EnumFilenames.AGENCY_ADHOC.value[1],
-        domain_additional_filename=EnumFilenames.DOMAIN_ADDITIONAL.value[1],
-        domain_escrow_filename=EnumFilenames.DOMAIN_ESCROW.value[1],
-        domain_adhoc_filename=EnumFilenames.DOMAIN_ADHOC.value[1],
-        organization_adhoc_filename=EnumFilenames.ORGANIZATION_ADHOC.value[1],
-        authority_adhoc_filename=EnumFilenames.AUTHORITY_ADHOC.value[1],
-        directory="migrationdata",
-        sep="|",
-    ):
+    def __init__(self, options: TransitionDomainArguments):
         # Add a slash if the last character isn't one
-        if directory and directory[-1] != "/":
-            directory += "/"
-        self.directory = directory
-        self.seperator = sep
+        if options.directory and options.directory[-1] != "/":
+            options.directory += "/"
+        self.directory = options.directory
+        self.seperator = options.sep
 
-        self.all_files = glob.glob(f"{directory}*")
+        self.all_files = glob.glob(f"{self.directory}*")
 
         # Create a set with filenames as keys for quick lookup
         self.all_files_set = {os.path.basename(file) for file in self.all_files}
@@ -713,37 +702,37 @@ class ExtraTransitionDomain:
         pattern_map_params = [
             (
                 EnumFilenames.AGENCY_ADHOC,
-                agency_adhoc_filename,
+                options.agency_adhoc_filename,
                 AgencyAdhoc,
                 "agencyid",
             ),
             (
                 EnumFilenames.DOMAIN_ADDITIONAL,
-                domain_additional_filename,
+                options.domain_additional_filename,
                 DomainAdditionalData,
                 "domainname",
             ),
             (
                 EnumFilenames.DOMAIN_ESCROW,
-                domain_escrow_filename,
+                options.domain_escrow_filename,
                 DomainEscrow,
                 "domainname",
             ),
             (
                 EnumFilenames.DOMAIN_ADHOC,
-                domain_adhoc_filename,
+                options.domain_adhoc_filename,
                 DomainTypeAdhoc,
                 "domaintypeid",
             ),
             (
                 EnumFilenames.ORGANIZATION_ADHOC,
-                organization_adhoc_filename,
+                options.organization_adhoc_filename,
                 OrganizationAdhoc,
                 "orgid",
             ),
             (
                 EnumFilenames.AUTHORITY_ADHOC,
-                authority_adhoc_filename,
+                options.authority_adhoc_filename,
                 AuthorityAdhoc,
                 "authorityid",
             ),
@@ -758,7 +747,7 @@ class ExtraTransitionDomain:
 
         pattern_map_params must adhere to this format:
             [
-                (field_type, filename, data_type, id_field),
+                (file_type, filename, data_type, id_field),
             ]
 
         vars:
@@ -800,8 +789,8 @@ class ExtraTransitionDomain:
     def parse_all_files(self, infer_filenames=True):
         """Clears all preexisting data then parses each related CSV file.
 
-        overwrite_existing_data: bool -> Determines if we should clear
-        file_data.data if it already exists
+        infer_filenames: bool -> Determines if we should try to
+        infer the filename if a default is passed in
         """
         self.clear_file_data()
         for name, value in self.file_data.items():
@@ -822,13 +811,13 @@ class ExtraTransitionDomain:
                     continue
                 
                 # Infer filename logic #
-                # This mode is used for development and testing only. Rather than having
+                # This mode is used for internal development use and testing only. Rather than having
                 # to manually define the filename each time, we can infer what the filename
                 # actually is.
 
                 # Not intended for use outside of that, as it is better to assume
                 # the end-user wants to be specific.
-                logger.warning("Attempting to infer filename" f" for file: {filename}.")
+                logger.warning(f"Attempting to infer filename: {filename}")
                 for filename in self.all_files:
                     default_name = name.value[1]
                     match = value.try_infer_filename(filename, default_name)

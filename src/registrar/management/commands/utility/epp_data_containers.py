@@ -89,12 +89,27 @@ class EnumFilenames(Enum):
     # We are sourcing data from many different locations, so its better to track this
     # as an Enum rather than multiple spread out variables.
     # We store the "type" as [0], and we store the "default_filepath" as [1].
-    AGENCY_ADHOC = ("agency_adhoc", "agency.adhoc.dotgov.txt")
+    AGENCY_ADHOC = (
+        "agency_adhoc", 
+        "agency.adhoc.dotgov.txt"
+    )
     DOMAIN_ADDITIONAL = (
         "domain_additional",
         "domainadditionaldatalink.adhoc.dotgov.txt",
     )
-    DOMAIN_ESCROW = ("domain_escrow", "escrow_domains.daily.dotgov.GOV.txt")
-    DOMAIN_ADHOC = ("domain_adhoc", "domaintypes.adhoc.dotgov.txt")
-    ORGANIZATION_ADHOC = ("organization_adhoc", "organization.adhoc.dotgov.txt")
-    AUTHORITY_ADHOC = ("authority_adhoc", "authority.adhoc.dotgov.txt")
+    DOMAIN_ESCROW = (
+        "domain_escrow", 
+        "escrow_domains.daily.dotgov.GOV.txt"
+    )
+    DOMAIN_ADHOC = (
+        "domain_adhoc", 
+        "domaintypes.adhoc.dotgov.txt"
+    )
+    ORGANIZATION_ADHOC = (
+        "organization_adhoc", 
+        "organization.adhoc.dotgov.txt"
+    )
+    AUTHORITY_ADHOC = (
+        "authority_adhoc", 
+        "authority.adhoc.dotgov.txt"
+    )
