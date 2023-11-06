@@ -1170,6 +1170,7 @@ class TestWithDomainPermissions(TestWithUser):
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
             DomainApplication.objects.all().delete()
+            DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
@@ -1464,7 +1465,12 @@ class TestDomainNameservers(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the required field.  form requires a minimum of 2 name servers
-        self.assertContains(result, "This field is required.", count=2, status_code=200)
+        self.assertContains(
+            result,
+            "A minimum of 2 name servers are required.",
+            count=2,
+            status_code=200,
+        )
 
     def test_domain_nameservers_form_submit_subdomain_missing_ip(self):
         """Nameserver form catches missing ip error on subdomain.
@@ -1583,6 +1589,39 @@ class TestDomainNameservers(TestDomainOverview):
             status_code=200,
         )
 
+    def test_domain_nameservers_form_submit_invalid_host(self):
+        """Nameserver form catches invalid host on submission.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameserver = "invalid-nameserver.gov"
+        valid_ip = "123.2.45.111"
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
+        )
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without two hosts, both subdomains,
+        # only one has ips
+        nameservers_page.form["form-1-server"] = nameserver
+        nameservers_page.form["form-1-ip"] = valid_ip
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  nameserver has invalid host
+        self.assertContains(
+            result,
+            str(
+                NameserverError(
+                    code=NameserverErrorCodes.INVALID_HOST, nameserver=nameserver
+                )
+            ),
+            count=2,
+            status_code=200,
+        )
+
     def test_domain_nameservers_form_submits_successfully(self):
         """Nameserver form submits successfully with valid input.
 
@@ -1632,7 +1671,12 @@ class TestDomainNameservers(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears four times, twice at the top of the page,
         # once around each required field.
-        self.assertContains(result, "This field is required", count=4, status_code=200)
+        self.assertContains(
+            result,
+            "A minimum of 2 name servers are required.",
+            count=4,
+            status_code=200,
+        )
 
 
 class TestDomainAuthorizingOfficial(TestDomainOverview):
@@ -1800,7 +1844,11 @@ class TestDomainSecurityEmail(TestDomainOverview):
             (
                 "RegistryError",
                 form_data_registry_error,
-                "Update failed. Cannot contact the registry.",
+                """
+We’re experiencing a system connection error. Please wait a few minutes
+and try again. If you continue to receive this error after a few tries,
+contact help@get.gov
+                """,
             ),
             ("ContactError", form_data_contact_error, "Value entered was wrong."),
             (
@@ -1835,7 +1883,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
             self.assertEqual(len(messages), 1)
             message = messages[0]
             self.assertEqual(message.tags, message_tag)
-            self.assertEqual(message.message, expected_message)
+            self.assertEqual(message.message.strip(), expected_message.strip())
 
     def test_domain_overview_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management

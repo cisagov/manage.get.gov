@@ -45,8 +45,10 @@ class Command(BaseCommand):
         self.transition_domains = TransitionDomain.objects.filter(
             email_sent=False,
         ).order_by("username")
+        logger.info("Found %d transition domains", len(self.transition_domains))
 
         self.build_emails_to_send_array()
+        logger.info("Prepared %d emails to send", len(self.emails_to_send))
 
         if options["send_emails"]:
             logger.info("about to send emails")
@@ -58,6 +60,12 @@ class Command(BaseCommand):
             logger.info("done sending emails and updating transition_domains")
         else:
             logger.info("not sending emails")
+            for email_context in self.emails_to_send:
+                logger.info(
+                    "would send email to %s for %s",
+                    email_context["email"],
+                    email_context["domains"],
+                )
 
     def build_emails_to_send_array(self):
         """this method sends emails to distinct usernames"""
