@@ -139,20 +139,19 @@ class TestMigrations(TestCase):
         total_domain_invitations = {len(DomainInvitation.objects.all())}
         """
         )
-
-        self.assertTrue(total_missing_domains == expected_missing_domains)
-        self.assertTrue(total_duplicate_domains == expected_duplicate_domains)
-        self.assertTrue(
-            total_missing_domain_informations == expected_missing_domain_informations
+        self.assertEqual(total_missing_domains, expected_missing_domains)
+        self.assertEqual(total_duplicate_domains, expected_duplicate_domains)
+        self.assertEqual(
+            total_missing_domain_informations, expected_missing_domain_informations
         )
-        self.assertTrue(
-            total_missing_domain_invitations == expected_missing_domain_invitations
+        self.assertEqual(
+            total_missing_domain_invitations, expected_missing_domain_invitations
         )
 
-        self.assertTrue(total_transition_domains == expected_total_transition_domains)
-        self.assertTrue(total_domains == expected_total_domains)
-        self.assertTrue(total_domain_informations == expected_total_domain_informations)
-        self.assertTrue(total_domain_invitations == expected_total_domain_invitations)
+        self.assertEqual(total_transition_domains, expected_total_transition_domains)
+        self.assertEqual(total_domains, expected_total_domains)
+        self.assertEqual(total_domain_informations, expected_total_domain_informations)
+        self.assertEqual(total_domain_invitations, expected_total_domain_invitations)
 
     def test_master_migration_functions(self):
         """Run the full master migration script using local test data.
@@ -167,14 +166,12 @@ class TestMigrations(TestCase):
         # migration script does, but add assert statements)
         expected_total_transition_domains = 8
         expected_total_domains = 4
-        expected_total_domain_informations = 0
+        expected_total_domain_informations = 4
         expected_total_domain_invitations = 7
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
-        # we expect 8 missing domain invites since the
-        # migration does not auto-login new users
-        expected_missing_domain_informations = 8
+        expected_missing_domain_informations = 0
         # we expect 1 missing invite from anomaly.gov (an injected error)
         expected_missing_domain_invitations = 1
         self.compare_tables(
@@ -221,12 +218,12 @@ class TestMigrations(TestCase):
         # Analyze the tables
         expected_total_transition_domains = 8
         expected_total_domains = 4
-        expected_total_domain_informations = 0
+        expected_total_domain_informations = 4
         expected_total_domain_invitations = 7
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
-        expected_missing_domain_informations = 8
+        expected_missing_domain_informations = 0
         expected_missing_domain_invitations = 1
         self.compare_tables(
             expected_total_transition_domains,
@@ -255,12 +252,12 @@ class TestMigrations(TestCase):
         # Analyze the tables
         expected_total_transition_domains = 8
         expected_total_domains = 4
-        expected_total_domain_informations = 3
+        expected_total_domain_informations = 4
         expected_total_domain_invitations = 7
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
-        expected_missing_domain_informations = 1
+        expected_missing_domain_informations = 0
         expected_missing_domain_invitations = 1
         self.compare_tables(
             expected_total_transition_domains,
