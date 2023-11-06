@@ -6,6 +6,11 @@ from registrar.management.commands.utility.epp_data_containers import EnumFilena
 @dataclass
 class TransitionDomainArguments:
     """Stores arguments for load_transition_domain"""
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
 
     # Settings #
     directory: Optional[str] = field(default="migrationdata", repr=True)
@@ -20,7 +25,8 @@ class TransitionDomainArguments:
     authority_adhoc_filename: Optional[str] = field(default=EnumFilenames.AUTHORITY_ADHOC.value[1], repr=True)
 
     ## Data files ##
-    domain_additional_filename: Optional[str] = field(default=None, repr=True)
+    domain_escrow_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ESCROW.value[1], repr=True)
+    domain_additional_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADDITIONAL.value[1], repr=True)
     domain_contacts_filename: Optional[str] = field(default=None, repr=True)
     domain_statuses_filename: Optional[str] = field(default=None, repr=True)
 

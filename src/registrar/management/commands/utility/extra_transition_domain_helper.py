@@ -136,9 +136,9 @@ class LoadExtraTransitionDomain:
     def __init__(self, options: TransitionDomainArguments):
         # Globally stores event logs and organizes them
         self.parse_logs = FileTransitionLog()
-        arguments = options.args_extra_transition_domain()
+        print(f"options correct? {options.agency_adhoc_filename}")
         # Reads and parses migration files
-        self.parsed_data_container = ExtraTransitionDomain(**arguments)
+        self.parsed_data_container = ExtraTransitionDomain(options)
         self.parsed_data_container.parse_all_files(options.infer_filenames)
 
     def update_transition_domain_models(self):

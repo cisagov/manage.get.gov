@@ -14,9 +14,6 @@ from django.core.management import call_command
 from unittest.mock import patch
 
 class TestMigrations(TestCase):
-
-    """ """
-
     def setUp(self):
         """ """
         # self.load_transition_domain_script = "load_transition_domain",
