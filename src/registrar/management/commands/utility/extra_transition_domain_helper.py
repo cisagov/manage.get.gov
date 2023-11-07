@@ -518,7 +518,6 @@ class LoadExtraTransitionDomain:
         """Grabs a corresponding row within the DOMAIN_ADDITIONAL file,
         based off a desired_id"""
         l = self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id.lower())
-        print(f"is it happening here? {l} for id {desired_id}")
         return self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id)
 
     def get_organization_adhoc(self, desired_id) -> OrganizationAdhoc:

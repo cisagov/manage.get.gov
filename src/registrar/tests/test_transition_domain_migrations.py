@@ -366,9 +366,76 @@ class TestMigrations(TestCase):
 
                 # Each TransitionDomain should have the correct data
                 self.assertEqual(domain, expected)
+    
+    def test_load_full_transfer_domain(self):
+        self.run_load_domains()
+        self.run_transfer_domains()
+
+        # Analyze the tables
+        expected_total_transition_domains = 9
+        expected_total_domains = 5
+        expected_total_domain_informations = 5
+        expected_total_domain_invitations = 8
+
+        expected_missing_domains = 0
+        expected_duplicate_domains = 0
+        expected_missing_domain_informations = 0
+        expected_missing_domain_invitations = 1
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
+
+        expected_domains = [
+            Domain(
+                expiration_date=None,
+                name="anomaly.gov",
+                state="ready",
+            ),
+            Domain(
+                expiration_date=None,
+                name="testdomain.gov",
+                state="ready",
+            ),
+            Domain(
+                expiration_date=None,
+                name="fakewebsite1.gov",
+                state="on hold",
+            ),
+            Domain(
+                expiration_date=None,
+                name="fakewebsite2.gov",
+                state="on hold",
+            ),
+            Domain(
+                expiration_date=None,
+                name="fakewebsite3.gov",
+                state="ready",
+            ),
+        ]
+
+        for domain in Domain.objects.all():
+            print(f"""
+            Domain(
+                expiration_date={domain.expiration_date},
+                name="{domain.name}",
+                state="{domain.state}",
+            ),
+            """
+            )
+            for expected in expected_domains:
+                expected.id = domain.id
+                expected.created_at = domain.created_at
+                expected.updated_at = domain.updated_at
+                self.assertEqual(domain, expected)
 
     def test_transfer_transition_domains_to_domains(self):
-        # TODO: setup manually instead of calling other script
         self.run_load_domains()
         self.run_transfer_domains()
 

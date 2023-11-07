@@ -79,20 +79,6 @@ class TransitionDomain(TimeStampedModel):
     )
 
     def __str__(self):
-
-        return f"""
-        username="{self.username}",
-        domain_name="{self.domain_name}",
-        status="{self.status}",
-        email_sent={self.email_sent},
-        organization_type="{self.organization_type}",
-        organization_name="{self.organization_name}",
-        federal_type="{self.federal_type}",
-        federal_agency="{self.federal_agency}",
-        epp_creation_date={self.epp_creation_date},
-        epp_expiration_date={self.epp_expiration_date}
-        """
-        """
         return (
             f"\n-----TRANSITION DOMAIN------\n"
             f"domainName: {self.domain_name}, \n"
@@ -105,4 +91,4 @@ class TransitionDomain(TimeStampedModel):
             f"federal_agency: {self.federal_agency}, \n"
             f"epp_creation_date: {self.epp_creation_date}, \n"
             f"epp_expiration_date: {self.epp_expiration_date}, \n"
-        )"""
+        )
