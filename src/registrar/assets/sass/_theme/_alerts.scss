@@ -5,7 +5,11 @@
     font-size: units(3);
   }
 }
-  
+
+.usa-alert__text.measure-none {
+  max-width: measure(none);
+}
+
 // The icon was off center for some reason
 // Fixes that issue
 @media (min-width: 64em){
