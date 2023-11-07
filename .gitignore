@@ -171,3 +171,14 @@ node_modules
 
 # Compliance/trestle related
 docs/compliance/.trestle/cache
+src/migrationdata/20231009.agency.adhoc.dotgov.txt
+src/migrationdata/20231009.authority.adhoc.dotgov.txt
+src/migrationdata/20231009.domainadditionaldatalink.adhoc.dotgov.txt
+src/migrationdata/20231009.domaindocumentdatalink.adhoc.dotgov.txt
+src/migrationdata/20231009.domaintypes.adhoc.dotgov.txt
+src/migrationdata/20231009.organization.adhoc.dotgov.txt
+src/migrationdata/escrow_contacts.daily.dotgov.GOV.txt
+src/migrationdata/escrow_domain_contacts.daily.dotgov.GOV.txt
+src/migrationdata/escrow_domain_statuses.daily.dotgov.GOV.txt
+src/migrationdata/escrow_domains.daily.dotgov.GOV.txt
+src/migrationdata/migrationFilepaths.json
