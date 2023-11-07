@@ -1431,8 +1431,8 @@ class TestDomainManagers(TestDomainOverview):
         new_user = User.objects.create(username=EMAIL, email=EMAIL)
         # log them in to `self.app`
         self.app.set_user(new_user.username)
-        # and manually call the first login callback
-        new_user.first_login()
+        # and manually call the on each login callback
+        new_user.on_each_login()
 
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
