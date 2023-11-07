@@ -136,6 +136,6 @@ in the form $setting: value,
   /*----------------------------
   # Tooltip Settings
   -----------------------------*/
-  $theme-tooltip-background-color: "accent-cool-lighter",
+  $theme-tooltip-background-color: $theme-color-accent-cool-lightest,
   $theme-tooltip-font-color: "black"
 );
