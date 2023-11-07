@@ -1,51 +1,6 @@
 domainname|domaintypeid|authorityid|orgid|securitycontactemail|dnsseckeymonitor|domainpurpose
-indiegogo.com|1|1|1|ggennrich0@utexas.edu|N|Praesent id massa id nisl venenatis lacinia.
-gravatar.com|2|2|2|lrome1@uol.com.br|Y|In tempor, turpis nec euismod scelerisque, quam turpis adipiscing lorem, vitae mattis nibh ligula nec sem.
-multiply.com|3|3|3|ybrommage2@vistaprint.com|Y|In hac habitasse platea dictumst.
-free.fr|4|4|4|plarderot3@t.co|Y|Morbi quis tortor id nulla ultrices aliquet. Maecenas leo odio, condimentum id, luctus nec, molestie sed, justo. Pellentesque viverra pede ac diam.
-washingtonpost.com|5|5|5|dchaim4@yahoo.co.jp|N|Maecenas tincidunt lacus at velit. Vivamus vel nulla eget eros elementum pellentesque. Quisque porta volutpat erat.
-simplemachines.org|6|6|6|iyaxley5@slashdot.org|N|Phasellus in felis.
-ted.com|7|7|7|ktresler6@netscape.com|N|Integer pede justo, lacinia eget, tincidunt eget, tempus vel, pede. Morbi porttitor lorem id ligula. Suspendisse ornare consequat lectus.
-diigo.com|8|8|8|dfiggures7@opera.com|Y|
-cafepress.com|9|9|9|npowys8@psu.edu|N|Integer a nibh. In quis justo.
-slashdot.org|10|10|10||N|Curabitur at ipsum ac tellus semper interdum. Mauris ullamcorper purus sit amet nulla. Quisque arcu libero, rutrum ac, lobortis vel, dapibus at, diam.
-shop-pro.jp|11|11|11|laspina@e-recht24.de|N|Aliquam non mauris. Morbi non lectus.
-nature.com|12|12|12|wlanonb@bloomberg.com|Y|Praesent id massa id nisl venenatis lacinia.
-comsenz.com|13|13|13|jhalloranc@wiley.com|Y|Morbi ut odio.
-ed.gov|14|14|14|lpatemand@mit.edu|N|Donec odio justo, sollicitudin ut, suscipit a, feugiat et, eros. Vestibulum ac est lacinia nisi venenatis tristique.
-webnode.com|15|15|15|nhirthe@storify.com|Y|Mauris lacinia sapien quis libero. Nullam sit amet turpis elementum ligula vehicula consequat. Morbi a ipsum.
-nature.com|16|16|16|nnussiif@yale.edu|N|Ut tellus. Nulla ut erat id mauris vulputate elementum. Nullam varius.
-prweb.com|17|17|17||Y|Morbi ut odio. Cras mi pede, malesuada in, imperdiet et, commodo vulputate, justo. In blandit ultrices enim.
-economist.com|18|18|18|klarkbyh@usnews.com|N|Nulla suscipit ligula in lacus.
-i2i.jp|19|19|19|rharrisi@foxnews.com|N|Ut at dolor quis odio consequat varius. Integer ac leo.
-discuz.net|20|20|20|bmeaj@miibeian.gov.cn|N|Morbi quis tortor id nulla ultrices aliquet.
-google.de|21|21|21|ubakesefk@4shared.com|Y|Etiam vel augue. Vestibulum rutrum rutrum neque.
-trellian.com|22|22|22|ekleimtl@amazon.co.jp|N|Duis bibendum. Morbi non quam nec dui luctus rutrum. Nulla tellus.
-hhs.gov|23|23|23|mbulmanm@nymag.com|Y|Vestibulum rutrum rutrum neque.
-whitehouse.gov|24|24|24|cstudden@fc2.com|N|Quisque erat eros, viverra eget, congue eget, semper rutrum, nulla. Nunc purus. Phasellus in felis.
-cbc.ca|25|25|25|kbuskeo@shutterfly.com|Y|
-prweb.com|26|26|26|hcoldbathp@reddit.com|N|Nullam varius. Nulla facilisi. Cras non velit nec nisi vulputate nonummy.
-wunderground.com|27|27|27|nmessinghamq@macromedia.com|Y|Aliquam erat volutpat. In congue.
-netlog.com|28|28|28|rthawr@ow.ly|Y|Nunc purus. Phasellus in felis.
-biblegateway.com|29|29|29|whurlstons@github.com|Y|
-istockphoto.com|30|30|30|mjiroutekt@un.org|N|Pellentesque eget nunc. Donec quis orci eget orci vehicula condimentum. Curabitur in libero ut massa volutpat convallis.
-nyu.edu|31|31|31|kpatmoreu@hhs.gov|N|Morbi odio odio, elementum eu, interdum eu, tincidunt in, leo. Maecenas pulvinar lobortis est. Phasellus sit amet erat.
-github.io|32|32|32|tgaberv@businessweek.com|N|Quisque erat eros, viverra eget, congue eget, semper rutrum, nulla.
-globo.com|33|33|33|tmidlarw@google.com.br|N|Maecenas rhoncus aliquam lacus.
-constantcontact.com|34|34|34|plaverenzx@cdbaby.com|Y|Aenean lectus. Pellentesque eget nunc. Donec quis orci eget orci vehicula condimentum.
-howstuffworks.com|35|35|35|agermainy@bloomberg.com|N|Nullam molestie nibh in lectus. Pellentesque at nulla. Suspendisse potenti.
-stanford.edu|36|36|36|ndabornz@smh.com.au|Y|Cras non velit nec nisi vulputate nonummy. Maecenas tincidunt lacus at velit. Vivamus vel nulla eget eros elementum pellentesque.
-csmonitor.com|37|37|37||Y|Nulla justo. Aliquam quis turpis eget elit sodales scelerisque.
-dagondesign.com|38|38|38|emiller11@adobe.com|Y|Donec odio justo, sollicitudin ut, suscipit a, feugiat et, eros. Vestibulum ac est lacinia nisi venenatis tristique.
-macromedia.com|39|39|39|bjosephov12@youtube.com|Y|Nulla ac enim. In tempor, turpis nec euismod scelerisque, quam turpis adipiscing lorem, vitae mattis nibh ligula nec sem.
-virginia.edu|40|40|40|bashbe13@xinhuanet.com|Y|Proin risus.
-wsj.com|41|41|41||Y|Praesent lectus. Vestibulum quam sapien, varius ut, blandit non, interdum in, ante. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Duis faucibus accumsan odio.
-dedecms.com|42|42|42|brain15@sourceforge.net|Y|Sed ante.
-ovh.net|43|43|43|gbrehat16@livejournal.com|N|Ut tellus. Nulla ut erat id mauris vulputate elementum. Nullam varius.
-nyu.edu|44|44|44|fguarnier17@weebly.com|N|Nullam orci pede, venenatis non, sodales sed, tincidunt eu, felis.
-kickstarter.com|45|45|45|byes18@google.pl|Y|Pellentesque eget nunc.
-about.com|46|46|46|tweine19@wikispaces.com|Y|Integer ac neque. Duis bibendum.
-prlog.org|47|47|47|cweeden1a@cocolog-nifty.com|N|Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Donec pharetra, magna vestibulum aliquet ultrices, erat tortor sollicitudin mi, sit amet lobortis sapien sapien non mi. Integer ac neque.
-sciencedaily.com|48|48|48|wforcade1b@sciencedaily.com|N|Etiam justo. Etiam pretium iaculis justo.
-plala.or.jp|49|49|49|gcarleton1c@quantcast.com|Y|Phasellus sit amet erat. Nulla tempus.
-psu.edu|50|50|50|jabbati1d@omniture.com|N|Morbi non quam nec dui luctus rutrum. Nulla tellus. In sagittis dui vel nisl.
+Anomaly.gov|1|1|1|ggennrich0@utexas.edu|N|Praesent id massa id nisl venenatis lacinia.
+TESTDOMAIN.GOV|2|2|2|lrome1@uol.com.br|Y|In tempor, turpis nec euismod scelerisque, quam turpis adipiscing lorem, vitae mattis nibh ligula nec sem.
+FakeWebsite1.gov|3|3|3|ybrommage2@vistaprint.com|Y|In hac habitasse platea dictumst.
+FakeWebsite2.gov|4|4|4|plarderot3@t.co|Y|Morbi quis tortor id nulla ultrices aliquet. Maecenas leo odio, condimentum id, luctus nec, molestie sed, justo. Pellentesque viverra pede ac diam.
+FakeWebsite3.gov|13|5|5|ybrommage2@vistaprint.com|Y|In hac habitasse platea dictumst.

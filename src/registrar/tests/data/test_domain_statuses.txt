@@ -1,4 +1,5 @@
 Anomaly.gov|muahaha|
 TestDomain.gov|ok|
-FakeWebsite1.GOV|serverHold|
-FakeWebsite2.GOV|Hold|
+FakeWebsite1.gov|serverHold|
+FakeWebsite2.gov|Hold|
+FakeWebsite3.gov|ok|

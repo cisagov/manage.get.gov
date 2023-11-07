@@ -1,51 +1,6 @@
 orgid|orgname|orgstreet|orgcity|orgstate|orgzip|orgcountrycode
 1|Flashdog|298 Monument Hill|Lakeland|Florida|33805|US
 2|Gigaclub|782 Mosinee Lane|Alexandria|Louisiana|71307|US
-3|Midel|376 Donald Pass|Waco|Texas|76705|US
+3|Midel|376 Joe Pass|Waco|Texas|76705|US
 4|Fanoodle|93001 Arizona Drive|Columbus|Ohio|43268|US
-5|Kwideo|01 Lotheville Place|Beaumont|Texas|77713|US
-6|Brainverse|8 Jenifer Point|Fort Myers|Florida|33994|US
-7|Brainsphere|74264 Reinke Place|Flint|Michigan|48550|US
-8|Pixoboo|40090 Lillian Avenue|Metairie|Louisiana|70033|US
-9|Topicshots|99331 Quincy Alley|Cleveland|Ohio|44177|US
-10|Eayo|17364 Vahlen Avenue|El Paso|Texas|88558|US
-11|Myworks|961 Kim Park|Honolulu|Hawaii|96845|US
-12|Flashset|262 Mcguire Parkway|Rochester|New York|14683|US
-13|Quatz|8 Forest Street|Warren|Ohio|44485|US
-14|Kazio|928 Carey Plaza|Miami|Florida|33196|US
-15|DabZ|05350 Claremont Circle|Lexington|Kentucky|40581|US
-16|Livepath|698 5th Crossing|Boca Raton|Florida|33499|US
-17|Centimia|82 Packers Court|Simi Valley|California|93094|US
-18|Avavee|4 Old Gate Center|Tucson|Arizona|85710|US
-19|Wikizz|74785 Oak Valley Crossing|Phoenix|Arizona|85040|US
-20|Wikivu|877 Gulseth Park|Tallahassee|Florida|32309|US
-21|Brainbox|8 Esker Lane|Lexington|Kentucky|40524|US
-22|Jaxworks|2 Prairieview Street|Young America|Minnesota|55573|US
-23|Youfeed|191 Ramsey Junction|Suffolk|Virginia|23436|US
-24|Ntags|24 Melby Court|Kansas City|Missouri|64136|US
-25|Realblab|119 Butternut Avenue|Dallas|Texas|75323|US
-26|Trudeo|69 Cordelia Park|Palmdale|California|93591|US
-27|Wordware|74540 Jenifer Pass|Lake Charles|Louisiana|70607|US
-28|Jaxnation|80974 Homewood Avenue|Philadelphia|Pennsylvania|19160|US
-29|Latz|01989 Red Cloud Hill|Columbus|Ohio|43226|US
-30|Fivespan|0 Ryan Plaza|Honolulu|Hawaii|96805|US
-31|Youfeed|24930 Hoard Park|San Antonio|Texas|78260|US
-32|Browsetype|49 Waxwing Circle|Oklahoma City|Oklahoma|73119|US
-33|Oba|8426 Thompson Parkway|Anaheim|California|92825|US
-34|Yodo|64815 Thackeray Crossing|Salinas|California|93907|US
-35|Thoughtstorm|79 Del Sol Drive|Evansville|Indiana|47719|US
-36|Yamia|2 Marquette Junction|Newark|New Jersey|07195|US
-37|Demimbu|14 American Ash Trail|Bronx|New York|10474|US
-38|Rhybox|6234 Cambridge Drive|Fort Lauderdale|Florida|33305|US
-39|Fivespan|4 Fair Oaks Terrace|Phoenix|Arizona|85040|US
-40|Skipfire|4 Dayton Circle|Mesquite|Texas|75185|US
-41|Thoughtmix|52 Claremont Avenue|Indianapolis|Indiana|46207|US
-42|Meembee|59 Green Ridge Park|Gainesville|Georgia|30506|US
-43|Trudeo|54 Schurz Place|Chicago|Illinois|60609|US
-44|Tazz|722 Bunker Hill Place|Bronx|New York|10454|US
-45|Skiba|8776 Pennsylvania Way|Fayetteville|North Carolina|28314|US
-46|Zoomlounge|56 Sloan Circle|Evansville|Indiana|47712|US
-47|Cogilith|7 American Ash Trail|Houston|Texas|77255|US
-48|Browsebug|15903 Stephen Hill|Arlington|Virginia|22244|US
-49|Yamia|9144 Graedel Crossing|Lehigh Acres|Florida|33972|US
-501|Lazzy|4958 Kensington Alley|Fayetteville|North Carolina|28305|US
+5|Sushi|9999 Sushi Way|Columbus|Ohio|43268|US
