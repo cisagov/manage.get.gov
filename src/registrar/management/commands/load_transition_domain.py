@@ -1,3 +1,4 @@
+import json
 import sys
 import csv
 import logging
@@ -41,7 +42,7 @@ class Command(BaseCommand):
         for testing purposes, but USE WITH CAUTION
         """
         parser.add_argument(
-            "migration_Json_filename",
+            "migration_json_filename",
             help=(
                 "A JSON file that holds the location and filenames"
                 "of all the data files used for migrations"
@@ -319,10 +320,32 @@ class Command(BaseCommand):
 
     def handle(  # noqa: C901
         self,
-        migration_Json_filename,
+        migration_json_filename,
         **options,
     ):
         """Parse the data files and create TransitionDomains."""
+        ### Process JSON file ###
+        # If a JSON was provided, use its values instead of defaults.
+        # TODO: there is no way to discern user overrides from those arg’s defaults.
+        with open(migration_json_filename, "r") as jsonFile:
+            # load JSON object as a dictionary
+            try:
+                data = json.load(jsonFile)
+                # Create an instance of TransitionDomainArguments
+                args = TransitionDomainArguments()
+                # Iterate over the data from the JSON file
+                for key, value in data.items():
+                    # Check if the key exists in TransitionDomainArguments
+                    if hasattr(args, key):
+                        # If it does, update the options
+                        options[key] = value
+            except Exception as err:
+                logger.error(f"""{TerminalColors.FAIL}There was an error loading the JSON responsible
+                for providing filepaths.
+                {TerminalColors.ENDC}
+                """)
+                raise err
+
         sep = options.get("sep")
 
         # If --resetTable was used, prompt user to confirm
@@ -346,9 +369,9 @@ class Command(BaseCommand):
 
         # Main script filenames
         # TODO: @ZANDER to replace this with new TransitionDomainArgument object
-        domain_contacts_filename = directory+ options.get("domain_contacts_filename")
-        contacts_filename = directory+ options.get("contacts_filename")
-        domain_statuses_filename = directory+ options.get("domain_statuses_filename")
+        domain_contacts_filename = directory + "/" + options.get("domain_contacts_filename")
+        contacts_filename = directory + "/" + options.get("contacts_filename")
+        domain_statuses_filename = directory + "/" + options.get("domain_statuses_filename")
 
         # Agency information
         agency_adhoc_filename = options.get("agency_adhoc_filename")
