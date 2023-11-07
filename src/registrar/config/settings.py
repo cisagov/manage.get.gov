@@ -300,7 +300,7 @@ CSP_FORM_ACTION = allowed_sources
 # Sets clients that allow access control to manage.get.gov
 # TODO: remove :8080 to see if we can have all localhost access
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://beta.get.gov"]
-
+CORS_ALLOWED_ORIGIN_REGEXES = [r"https://\w+\.sites\.pages\.cloud\.gov/"]
 
 # Content-Length header is set by django.middleware.common.CommonMiddleware
 
