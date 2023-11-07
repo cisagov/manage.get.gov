@@ -119,8 +119,6 @@ INSTALLED_APPS = [
     "api",
     # Only for generating documentation, uncomment to run manage.py generate_puml
     # "puml_generator",
-    # supports necessary headers for Django cross origin
-    "corsheaders",
 ]
 
 # Middleware are routines for processing web requests.
@@ -129,8 +127,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # django-allow-cidr: enable use of CIDR IP ranges in ALLOWED_HOSTS
     "allow_cidr.middleware.AllowCIDRMiddleware",
-    # django-cors-headers: listen to cors responses
-    "corsheaders.middleware.CorsMiddleware",
     # serve static assets in production
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
@@ -295,11 +291,6 @@ CSP_DEFAULT_SRC = allowed_sources
 # explicitly set
 CSP_FRAME_ANCESTORS = allowed_sources
 CSP_FORM_ACTION = allowed_sources
-
-# Cross-Origin Resource Sharing (CORS) configuration
-# Sets clients that allow access control to manage.get.gov
-# TODO: remove :8080 to see if we can have all localhost access
-CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://beta.get.gov"]
 
 
 # Content-Length header is set by django.middleware.common.CommonMiddleware

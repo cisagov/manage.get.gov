@@ -76,24 +76,16 @@ These are the client certificate and its private key used to identify the regist
 
 The private key is protected by a passphrase for safer transport and storage.
 
-These were generated with the following steps:
-
-### Step 1: Generate an unencrypted private key with a named curve
+These were generated with:
 
 ```bash
-openssl ecparam -name prime256v1 -genkey -out client_unencrypted.key
-```
+openssl genpkey -out client.key \
+  -algorithm EC -pkeyopt ec_paramgen_curve:P-256 \
+  -aes-256-cbc
+openssl req -new -x509 -days 365 \
+  -key client.key -out client.crt \
+  -subj "/C=US/ST=DC/L=Washington/O=GSA/OU=18F/CN=GOV Prototype Registrar"
 
-### Step 2: Create an encrypted private key with a passphrase
-
-```bash
-openssl pkcs8 -topk8 -v2 aes-256-cbc -in client_unencrypted.key -out client.key
-```
-
-### Generate the certificate
-
-```bash
-openssl req -new -x509 -days 365 -key client.key -out client.crt -subj "/C=US/ST=DC/L=Washington/O=GSA/OU=18F/CN=GOV Prototype Registrar"
 ```
 
 (If you can't use openssl on your computer directly, you can access it using Docker as `docker run --platform=linux/amd64 -it --rm -v $(pwd):/apps -w /apps alpine/openssl`.)
@@ -105,14 +97,7 @@ base64 client.key
 base64 client.crt
 ```
 
-Note depending on your system you may need to instead run:
-
-```bash
-base64 -i client.key
-base64 -i client.crt
-```
-
-You'll need to give the new certificate to the registry vendor _before_ rotating it in production. Once it has been accepted by the vender, make sure to update the kdbx file on Google Drive.
+You'll need to give the new certificate to the registry vendor _before_ rotating it in production.
 
 ## REGISTRY_HOSTNAME
 

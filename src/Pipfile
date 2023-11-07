@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 django = "*"
 cfenv = "*"
-django-cors-headers = "*"
 pycryptodomex = "*"
 django-allow-cidr = "*"
 django-auditlog = "*"
