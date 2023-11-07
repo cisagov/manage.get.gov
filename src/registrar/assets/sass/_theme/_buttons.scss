@@ -28,17 +28,20 @@ a.usa-button {
 
 a.usa-button.disabled-link {
   background-color: #ccc !important;
+  color: #454545 !important
 }
 
 a.usa-button.disabled-link:hover {
   background-color: #ccc !important;
   cursor: not-allowed !important;
+  color: #454545 !important
 }
 
 a.usa-button.disabled-link:focus {
   background-color: #ccc !important;
   cursor: not-allowed !important;
   outline: none !important;
+  color: #454545 !important
 }
 
 a.usa-button:not(.usa-button--unstyled, .usa-button--outline) {
