@@ -15,12 +15,13 @@ You can’t use your old credentials to access the new registrar. Access is now 
 
 When creating an account, you’ll need to provide the same email address you used to log in to the old registrar. That will ensure your domains are linked to your Login.gov account. 
 
-If you need help finding the email you used in the past, let us know in a reply to this email.
+If you need help finding the email address you used in the past, let us know in a reply to this email.
 
 
 CHECK YOUR .GOV DOMAIN CONTACTS
 
-This is a good time to check who has access to your .gov domain{% if domains|length > 1 %}s{% endif %}. The admin, technical, and billing contacts listed for your domain{% if domains|length > 1 %}s{% endif %} in our old system also received this email. However, in our new registrar, these contacts are all considered “domain managers.” We no longer have the admin, technical, and billing roles, and you aren’t limited to three domain managers like in the old system. 
+This is a good time to check who has access to your .gov domain{% if domains|length > 1 %}s{% endif %}. The admin, technical, and billing contacts listed for your domain{% if domains|length > 1 %}s{% endif %} in our old system also received this email. In our new registrar, these contacts are all considered “domain managers"
+
     1. Once you have your Login.gov account, sign in to the new registrar at <https://manage.get.gov>
     2. Click the “Manage” link next to your .gov domain, then click on “Domain managers” to see who has access to your domain. 
     3. If any of these users should not have access to your domain, let us know in a reply to this email.
