@@ -41,14 +41,11 @@ class Command(BaseCommand):
         for testing purposes, but USE WITH CAUTION
         """
         parser.add_argument(
-            "domain_contacts_filename", help="Data file with domain contact information"
-        )
-        parser.add_argument(
-            "contacts_filename",
-            help="Data file with contact information",
-        )
-        parser.add_argument(
-            "domain_statuses_filename", help="Data file with domain status information"
+            "migration_Json_filename",
+            help=(
+                "A JSON file that holds the location and filenames"
+                "of all the data files used for migrations"
+            ),
         )
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
@@ -70,6 +67,19 @@ class Command(BaseCommand):
         # default="/app/tmp"
         parser.add_argument(
             "--directory", default="migrationdata", help="Desired directory"
+        )
+
+        parser.add_argument(
+            "--domain_contacts_filename",
+            help="Data file with domain contact information"
+        )
+        parser.add_argument(
+            "--contacts_filename",
+            help="Data file with contact information",
+        )
+        parser.add_argument(
+            "--domain_statuses_filename",
+            help="Data file with domain status information"
         )
         parser.add_argument(
             "--infer_filenames", 
@@ -309,9 +319,7 @@ class Command(BaseCommand):
 
     def handle(  # noqa: C901
         self,
-        domain_contacts_filename,
-        contacts_filename,
-        domain_statuses_filename,
+        migration_Json_filename,
         **options,
     ):
         """Parse the data files and create TransitionDomains."""
@@ -335,6 +343,12 @@ class Command(BaseCommand):
         # Desired directory for additional TransitionDomain data
         # (In the event they are stored seperately)
         directory = options.get("directory")
+
+        # Main script filenames
+        # TODO: @ZANDER to replace this with new TransitionDomainArgument object
+        domain_contacts_filename = directory+ options.get("domain_contacts_filename")
+        contacts_filename = directory+ options.get("contacts_filename")
+        domain_statuses_filename = directory+ options.get("domain_statuses_filename")
 
         # Agency information
         agency_adhoc_filename = options.get("agency_adhoc_filename")

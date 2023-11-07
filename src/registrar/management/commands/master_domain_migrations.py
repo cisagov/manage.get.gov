@@ -99,7 +99,7 @@ class Command(BaseCommand):
         # TODO: make this a mandatory argument (if/when we strip out defaults, it will be mandatory)
         # TODO: use the migration directory arg or force user to type FULL filepath?
         parser.add_argument(
-            "migrationJson",
+            "migration_Json_filename",
             help=(
                 "A JSON file that holds the location and filenames"
                 "of all the data files used for migrations"
@@ -281,7 +281,7 @@ class Command(BaseCommand):
     # ======================================================
     def run_load_transition_domain_script(
         self,
-        migrationJson: str,
+        migration_Json_filename: str,
         file_location: str,
         domain_contacts_filename: str,
         contacts_filename: str,
@@ -297,9 +297,7 @@ class Command(BaseCommand):
         command_script = "load_transition_domain"
         command_string = (
             f"./manage.py {command_script} "
-            f"{file_location+domain_contacts_filename} "
-            f"{file_location+contacts_filename} "
-            f"{file_location+domain_statuses_filename} "
+            f"{file_location+migration_Json_filename}"
         )
         if sep is not None and sep != "|":
             command_string += f"--sep {sep} "
@@ -323,9 +321,7 @@ class Command(BaseCommand):
         if proceed:
             call_command(
                 command_script,
-                f"{file_location+domain_contacts_filename}",
-                f"{file_location+contacts_filename}",
-                f"{file_location+domain_statuses_filename}",
+                f"{file_location+migration_Json_filename}",
                 sep=sep,
                 resetTable=reset_table,
                 debug=debug_on,
@@ -372,7 +368,7 @@ class Command(BaseCommand):
 
     def run_migration_scripts(
         self,
-        migrationJson,
+        migration_Json_filename,
         file_location,
         domain_contacts_filename,
         contacts_filename,
@@ -424,7 +420,7 @@ class Command(BaseCommand):
 
         # Proceed executing the migration scripts
         self.run_load_transition_domain_script(
-            migrationJson,
+            migration_Json_filename,
             file_location,
             domain_contacts_filename,
             contacts_filename,
@@ -439,7 +435,7 @@ class Command(BaseCommand):
 
     def handle(
         self,
-        migrationJson,
+        migration_Json_filename,
         **options,
     ):
         """
@@ -534,7 +530,7 @@ class Command(BaseCommand):
 
             # Run migration scripts
             self.run_migration_scripts(
-                migrationJson,
+                migration_Json_filename,
                 file_location,
                 domain_contacts_filename,
                 contacts_filename,
