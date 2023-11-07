@@ -136,7 +136,7 @@ class LoadExtraTransitionDomain:
     def __init__(self, options: TransitionDomainArguments):
         # Globally stores event logs and organizes them
         self.parse_logs = FileTransitionLog()
-        print(f"options correct? {options.agency_adhoc_filename}")
+        self.debug = options.debug
         # Reads and parses migration files
         self.parsed_data_container = ExtraTransitionDomain(options)
         self.parsed_data_container.parse_all_files(options.infer_filenames)
@@ -178,8 +178,9 @@ class LoadExtraTransitionDomain:
                 #if updated_transition_domain.__dict__ != transition_domain.__dict__:
                 updated_transition_domain.save()
                 updated_transition_domains.append(updated_transition_domain)
-
-                self.parse_logs.display_logs_by_domain_name(domain_name)
+                if self.debug:
+                    # Display errors for this specific domain
+                    self.parse_logs.display_logs_by_domain_name(domain_name)
                 logger.info(
                     f"{TerminalColors.OKCYAN}"
                     f"Successfully updated {domain_name}"
@@ -197,6 +198,10 @@ class LoadExtraTransitionDomain:
                     f"{TerminalColors.ENDC}"
                 )
                 failed_transition_domains.append(domain_name)
+
+        if self.debug:
+            # Display misc errors (not associated to a domain)
+            self.parse_logs.display_logs_by_domain_name(None)
 
         failed_count = len(failed_transition_domains)
         if failed_count == 0:
