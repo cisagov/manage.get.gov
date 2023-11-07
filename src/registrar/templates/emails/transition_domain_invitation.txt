@@ -20,7 +20,7 @@ If you need help finding the email address you used in the past, let us know in 
 
 CHECK YOUR .GOV DOMAIN CONTACTS
 
-This is a good time to check who has access to your .gov domain{% if domains|length > 1 %}s{% endif %}. The admin, technical, and billing contacts listed for your domain{% if domains|length > 1 %}s{% endif %} in our old system also received this email. In our new registrar, these contacts are all considered “domain managers"
+This is a good time to check who has access to your .gov domain{% if domains|length > 1 %}s{% endif %}. The admin, technical, and billing contacts listed for your domain{% if domains|length > 1 %}s{% endif %} in our old system also received this email. In our new registrar, these contacts are all considered “domain managers."
 
     1. Once you have your Login.gov account, sign in to the new registrar at <https://manage.get.gov>
     2. Click the “Manage” link next to your .gov domain, then click on “Domain managers” to see who has access to your domain. 
@@ -49,6 +49,5 @@ The .gov team
 
 .Gov blog <https://get.gov/updates/> 
 Domain management <https://manage.get.gov>
-Contact us <https://get.gov/help/#contact-us> 
 Get.gov <https://get.gov>
 {% endautoescape %}
