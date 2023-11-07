@@ -1,8 +1,11 @@
 Anomaly.gov|ANOMALY|tech
 TestDomain.gov|TESTUSER|admin
-FakeWebsite1|USER1|admin
-FakeWebsite1|USER2|tech
-FakeWebsite1|USER3|billing
-FakeWebsite2.GOV|USER4|admin
-FakeWebsite2.GOV|USER5|billing
-FakeWebsite2.GOV|USER6|tech
+FakeWebsite1.gov|USER1|admin
+FakeWebsite1.gov|USER2|tech
+FakeWebsite1.gov|USER3|billing
+FakeWebsite2.gov|USER4|admin
+FakeWebsite2.gov|USER5|billing
+FakeWebsite2.gov|USER6|tech
+FakeWebsite3.gov|USER7|admin
+FakeWebsite3.gov|USER8|billing
+FakeWebsite3.gov|USER9|tech

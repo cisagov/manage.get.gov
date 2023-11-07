@@ -371,7 +371,7 @@ class Command(BaseCommand):
         org_type = transition_domain.organization_type
         fed_type = transition_domain.federal_type
         fed_agency = transition_domain.federal_agency
-        
+
         match org_type:
             case "Federal":
                 org_type = ("federal", "Federal")

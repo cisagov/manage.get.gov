@@ -72,7 +72,9 @@ class Command(BaseCommand):
             "--directory", default="migrationdata", help="Desired directory"
         )
         parser.add_argument(
-            "--infer_filenames", default=False, help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting."
+            "--infer_filenames", 
+            action=argparse.BooleanOptionalAction,
+            help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting."
         )
         parser.add_argument(
             "--agency_adhoc_filename",
@@ -86,10 +88,9 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--domain_escrow_filename",
-            default=EnumFilenames.DOMAIN_ADDITIONAL.value[1],
+            default=EnumFilenames.DOMAIN_ESCROW.value[1],
             help="Defines the filename for creation/expiration domain data",
         )
-        #domain_escrow_filename
         parser.add_argument(
             "--domain_adhoc_filename",
             default=EnumFilenames.DOMAIN_ADHOC.value[1],

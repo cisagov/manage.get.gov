@@ -151,7 +151,7 @@ class LoadExtraTransitionDomain:
         updated_transition_domains = []
         failed_transition_domains = []
         for transition_domain in all_transition_domains:
-            domain_name = transition_domain.domain_name.upper()
+            domain_name = transition_domain.domain_name
             updated_transition_domain = transition_domain
             try:
                 # STEP 1: Parse organization data
@@ -188,6 +188,7 @@ class LoadExtraTransitionDomain:
 
             # If we run into an exception on this domain,
             # Just skip over it and log that it happened.
+            # Q: Should we just throw an exception?
             except Exception as err:
                 logger.debug(err)
                 logger.error(
@@ -511,6 +512,8 @@ class LoadExtraTransitionDomain:
     def get_domain_data(self, desired_id) -> DomainAdditionalData:
         """Grabs a corresponding row within the DOMAIN_ADDITIONAL file,
         based off a desired_id"""
+        l = self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id.lower())
+        print(f"is it happening here? {l} for id {desired_id}")
         return self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id)
 
     def get_organization_adhoc(self, desired_id) -> OrganizationAdhoc:
@@ -889,11 +892,6 @@ class ExtraTransitionDomain:
     def _read_csv_file(self, file, seperator, dataclass_type, id_field):
         with open(file, "r", encoding="utf-8-sig") as requested_file:
             reader = csv.DictReader(requested_file, delimiter=seperator)
-            """
-            for row in reader:
-                print({key: type(key) for key in row.keys()})  # print out the keys and their types
-                test = {row[id_field]: dataclass_type(**row)}
-            """
             dict_data = {}
             for row in reader:
                 if None in row:
@@ -903,6 +901,11 @@ class ExtraTransitionDomain:
                         print(f"key: {key} value: {value}")
                     continue
                 row_id = row[id_field]
+
+                # To maintain pairity with the load_transition_domain
+                # script, we store this data in lowercase.
+                if id_field == "domainname" and row_id is not None:
+                    row_id = row_id.lower()
                 dict_data[row_id] = dataclass_type(**row)
             # dict_data = {row[id_field]: dataclass_type(**row) for row in reader}
             return dict_data

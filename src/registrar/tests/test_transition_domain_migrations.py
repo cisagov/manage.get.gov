@@ -216,7 +216,58 @@ class TestMigrations(TestCase):
         )
     
     def test_load_full_transition_domain(self):
-        pass
+        # Load command
+        self.run_load_domains()
+
+        # We should get a consistent number
+        # of records
+        expected_total_transition_domains = 8
+        expected_total_domains = 0
+        expected_total_domain_informations = 0
+        expected_total_domain_invitations = 0
+
+        expected_missing_domains = 8
+        expected_duplicate_domains = 0
+        expected_missing_domain_informations = 8
+        expected_missing_domain_invitations = 8
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
+
+        expected_transition_domains = [
+            TransitionDomain(
+                username="",
+                domain_name="anomaly.gov",
+                status="ready",
+                email_sent=False,
+                organization_type="None",
+                organization_name="Flashdog",
+                federal_type="None",
+                federal_agency="None",
+                epp_creation_date=None,
+                epp_expiration_date=None
+            ),
+            TransitionDomain(
+                username="",
+                domain_name="anomaly.gov",
+                status="ready",
+                email_sent=False,
+                organization_type="None",
+                organization_name="Flashdog",
+                federal_type="None",
+                federal_agency="None",
+                epp_creation_date=None,
+                epp_expiration_date=None
+            ),
+        ]
+        # Afterwards, their values should be what we expect
 
     def test_transfer_transition_domains_to_domains(self):
         # TODO: setup manually instead of calling other script

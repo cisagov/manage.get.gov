@@ -5,12 +5,29 @@ from registrar.management.commands.utility.epp_data_containers import EnumFilena
 
 @dataclass
 class TransitionDomainArguments:
-    """Stores arguments for load_transition_domain"""
+    """Stores arguments for load_transition_domain, structurally a mix
+    of a dataclass and a regular class, meaning we get a hardcoded 
+    representation of the values we want, while maintaining flexiblity
+    and reducing boilerplate.
+    
+    All pre-defined fields are optional but will remain on the model definition.
+    In this event, they are provided a default value if none is given.
+    """
+
+    # Maintains an internal kwargs list and sets values
+    # that match the class definition. 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
+
+    # These all use field() to minimize typing and/or lambda.
+    # Since this file is bound to expand, we can save time
+    # by reducing the line count from 2-3 to just 1 line
+    # each time we want to add a new filename or option.
+
+    # This approach is also used in EppLib internally for similar reasons.
 
     # Settings #
     directory: Optional[str] = field(default="migrationdata", repr=True)
