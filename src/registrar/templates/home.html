@@ -13,13 +13,12 @@
   <h1>Manage your domains</h2>
 
   <p class="margin-top-4">
-    {% if is_production %}
+    {% if not is_production %}
     <a href="javascript:void(0)" 
     class="usa-button usa-tooltip disabled-link"
     data-position="right"
     title="Coming in 2024"
     aria-disabled="true"
-    aria-label="Coming in 2024" 
     data-tooltip="true"
     >
       Start a new domain request
