@@ -46,6 +46,7 @@ class TransitionDomainArguments:
     domain_additional_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADDITIONAL.value[1], repr=True)
     domain_contacts_filename: Optional[str] = field(default=None, repr=True)
     domain_statuses_filename: Optional[str] = field(default=None, repr=True)
+    contacts_filename: Optional[str] = field(default=None, repr=True)
 
     # Flags #
     debug: Optional[bool] = field(default=False, repr=True)
