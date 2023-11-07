@@ -38,8 +38,8 @@ class Command(BaseCommand):
         """
         OPTIONAL ARGUMENTS:
         --runMigrations
-        A boolean (default to true), which triggers running
-        all scripts (in sequence) for transition domain migrations
+        Triggers running all scripts (in sequence)
+        for transition domain migrations
 
         --migrationDirectory
         The location of the files used for load_transition_domain migration script
@@ -61,11 +61,11 @@ class Command(BaseCommand):
         (usually this can remain at default value of |)
 
         --debug
-        A boolean (default to true), which activates additional print statements
+        Activates additional print statements
 
         --prompt
-        A boolean (default to true), which activates terminal prompts
-        that allows the user to step through each portion of this
+        Activates terminal prompts that allows
+        the user to step through each portion of this
         script.
 
         --limitParse
