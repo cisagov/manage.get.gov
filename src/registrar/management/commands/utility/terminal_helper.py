@@ -81,7 +81,7 @@ class TerminalHelper:
 
         The "answer" return value is True for "yes" or False for "no".
         """
-        valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False, "e": "exit", "s": "skip"}
+        valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False, "e": "exit"}
         if default is None:
             prompt = " [y/n] "
         elif default == "yes":
@@ -148,12 +148,13 @@ class TerminalHelper:
         """Create to reduce code complexity.
         Prompts the user to inspect the given string
         and asks if they wish to proceed.
-        Returns true if the user responds (y),
-        Returns false if the user responds (n)"""
+        If the user responds (y), returns TRUE
+        If the user responds (n), either returns FALSE
+        or exits the system if system_exit_on_terminate = TRUE"""
 
         action_description_for_selecting_no = "skip, E = exit"
         if system_exit_on_terminate:
-            action_description_for_selecting_no = "exit, S = skip"
+            action_description_for_selecting_no = "exit"
 
         # Allow the user to inspect the command string
         # and ask if they wish to proceed
@@ -175,8 +176,6 @@ class TerminalHelper:
         if proceed_execution == False:
             if system_exit_on_terminate:
                 sys.exit()
-            return False
-        if proceed_execution == "skip":
             return False
         return True
 

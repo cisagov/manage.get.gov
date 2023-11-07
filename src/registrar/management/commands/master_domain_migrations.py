@@ -95,6 +95,19 @@ class Command(BaseCommand):
         )
 
         # The following file arguments have default values for running in the sandbox
+
+        # TODO: make this a mandatory argument (if/when we strip out defaults, it will be mandatory)
+        # TODO: use the migration directory arg or force user to type FULL filepath?
+        parser.add_argument(
+            "--migrationJson",
+            default="/app/management/commands/utility/dataFile.json", # TODO: Get rid of this once done? Or leave it as defaults??
+            help=(
+                "A JSON file that holds the location and filenames"
+                "of all the data files used for migrations"
+            ),
+        )
+
+        # TODO: deprecate this once JSON module is done? (or keep as an override)
         parser.add_argument(
             "--migrationDirectory",
             default="migrationdata",
@@ -103,6 +116,8 @@ class Command(BaseCommand):
                 "load_transition_domain migration script"
             ),
         )
+
+        # TODO: deprecate this once JSON module is done? (or keep as an override)
         parser.add_argument(
             "--migrationFilenames",
             default="escrow_domain_contacts.daily.gov.GOV.txt,"
