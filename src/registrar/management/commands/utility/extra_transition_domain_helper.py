@@ -895,14 +895,16 @@ class ExtraTransitionDomain:
 
     def _read_csv_file(self, file, seperator, dataclass_type, id_field):
         with open(file, "r", encoding="utf-8-sig") as requested_file:
-            reader = csv.DictReader(requested_file, delimiter=seperator)
+            reader = csv.DictReader(requested_file, skipinitialspace=True, delimiter=seperator)
             dict_data = {}
             for row in reader:
+                # cleaned_row, cleaning_was_needed = self.clean_delimiters()
                 if None in row:
-                    print("Skipping row with None key")
-                    print(dataclass_type)
+                    logger.info("Skipping row with None key")
+                    logger.info(dataclass_type)
                     for key, value in row.items():
-                        print(f"key: {key} value: {value}")
+                        logger.info(f"key: {key} value: {value}")
+                    TerminalHelper.prompt_for_execution(False, "COnintue?", "DEBUG")
                     continue
                 row_id = row[id_field]
 
@@ -914,3 +916,16 @@ class ExtraTransitionDomain:
             # dict_data = {row[id_field]: dataclass_type(**row) for row in reader}
             return dict_data
 
+    # def clean_delimiters(self, data_row) -> (str, bool):
+    #     """ This function was created to prevent errors where data files had spaces
+    #     erroneously injected around the delimiters.  """
+
+    #     cleaning_was_needed = False
+
+
+    #     TerminalHelper.print_conditional(cleaning_was_needed, 
+    #                                         (f"{TerminalColors.YELLOW}"
+    #                                         f"WARNING: Data file has spaces"
+    #                                         f"around the delimiters. Removing"
+    #                                         f"erroneous spaces..."
+    #                                         f"{TerminalColors.ENDC}"))
