@@ -309,7 +309,7 @@ class Command(BaseCommand):
         proceed = False
         if prompts_enabled:
             proceed = TerminalHelper.prompt_for_execution(
-                False,
+                True,
                 command_string,
                 "Running load_transition_domain script",
             )
@@ -337,7 +337,7 @@ class Command(BaseCommand):
         proceed = False
         if prompts_enabled:
             proceed = TerminalHelper.prompt_for_execution(
-                False,
+                True,
                 command_string,
                 "Running transfer_transition_domains_to_domains script",
             )

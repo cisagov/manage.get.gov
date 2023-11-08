@@ -185,9 +185,23 @@ class TerminalHelper:
             li = file.readlines()
         total_line = len(li)
         return total_line
-    
 
+    @staticmethod
+    def print_to_file_conditional(print_condition: bool, filename: str, file_directory: str, file_contents: str):
+        """Sometimes logger outputs get insanely huge.
+        """
+        if (print_condition):
+            # Add a slash if the last character isn't one
+            if file_directory and file_directory[-1] != "/":
+                file_directory += "/"
+            # Assemble filepath
+            filepath = f"{file_directory}{filename}.txt"
+            # Write to file
+            logger.info(f"{TerminalColors.MAGENTA}Writing to file {filepath}...{TerminalColors.ENDC}")
+            with open(f"{filepath}", "w+") as f:
+                f.write(file_contents)
 
+        
     @staticmethod
     def printProgressBar (iteration, total, prefix = 'Progress:', suffix = 'Complete', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
         """
