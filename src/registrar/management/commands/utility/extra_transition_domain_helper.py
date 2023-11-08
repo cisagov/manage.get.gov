@@ -2,7 +2,7 @@
 import csv
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+import io
 import glob
 import re
 import logging
@@ -911,8 +911,6 @@ class ExtraTransitionDomain:
         dict_data = {}
         with open(file, "r", encoding="utf-8-sig") as requested_file:
             reader = csv.reader(requested_file, delimiter=seperator)
-            # clean the rows of any whitespace around delimiters
-            for row in reader: yield (c.strip() for c in row)
             for row in reader:
                 domain_name = row[0]
                 date_format = "%Y-%m-%dT%H:%M:%SZ"
@@ -926,19 +924,24 @@ class ExtraTransitionDomain:
         return dict_data
 
     def _read_csv_file(self, file, seperator, dataclass_type, id_field):
+        dict_data = {}
+        # Used when we encounter bad data
+        updated_file_content = None
         with open(file, "r", encoding="utf-8-sig") as requested_file:
             reader = csv.DictReader(requested_file, delimiter=seperator)
-            dict_data = {}
-            # clean the rows of any whitespace around delimiters
-            for row in reader: yield (c.strip() for c in row)
             for row in reader:
+                # Checks if we encounter any bad data.
+                # If we do, we (non-destructively) clean the file     
                 if None in row:
-                    logger.info("Skipping row with None key")
-                    logger.info(dataclass_type)
-                    for key, value in row.items():
-                        logger.info(f"key: {key} value: {value}")
-                    TerminalHelper.prompt_for_execution(False, "COnintue?", "DEBUG")
-                    continue
+                    logger.warning(
+                        f"{TerminalColors.YELLOW}"
+                        f"Found bad data in {file}. Attempting to clean."
+                        f"{TerminalColors.ENDC}"
+                    )
+                    updated_file_content = self.replace_bad_seperators(file, f"{seperator}", ";badseperator;")
+                    dict_data = {}
+                    break
+
                 row_id = row[id_field]
 
                 # To maintain pairity with the load_transition_domain
@@ -946,5 +949,45 @@ class ExtraTransitionDomain:
                 if id_field == "domainname" and row_id is not None:
                     row_id = row_id.lower()
                 dict_data[row_id] = dataclass_type(**row)
-            # dict_data = {row[id_field]: dataclass_type(**row) for row in reader}
-            return dict_data
+        
+        # After we clean the data, try to parse it again
+        if updated_file_content:
+            logger.info(
+                f"{TerminalColors.MAGENTA}"
+                f"Retrying load for {file}"
+                f"{TerminalColors.ENDC}"
+            )
+            # Store the file locally rather than writing to the file.
+            # This is to avoid potential data corruption.
+            updated_file = io.StringIO(updated_file_content)
+            reader = csv.DictReader(updated_file, delimiter=seperator)
+            for row in reader:
+                row_id = row[id_field]
+                # If the key is still none, something
+                # is wrong with the file.
+                if None in row:
+                    logger.error(
+                        f"{TerminalColors.FAIL}"
+                        f"Corrupt data found for {row_id}. Skipping."
+                        f"{TerminalColors.ENDC}"
+                    )
+                    continue
+
+                for key, value in row.items():
+                    if value is not None and isinstance(value, str):
+                        value = value.replace(";badseperator;", f" {seperator} ")
+                    row[key] = value
+
+                # To maintain pairity with the load_transition_domain
+                # script, we store this data in lowercase.
+                if id_field == "domainname" and row_id is not None:
+                    row_id = row_id.lower()
+                dict_data[row_id] = dataclass_type(**row)
+        return dict_data
+    
+    def replace_bad_seperators(self, filename, delimiter, special_character):
+        with open(filename, "r", encoding="utf-8-sig") as file:
+            contents = file.read()
+
+        new_content = re.sub(rf" \{delimiter} ", special_character, contents)
+        return new_content

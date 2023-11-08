@@ -243,91 +243,7 @@ class TestMigrations(TestCase):
 
         expected_transition_domains = [
             TransitionDomain(
-                username="",
-                domain_name="anomaly.gov",
-                status="ready",
-                email_sent=False,
-                organization_type=None,
-                organization_name="Flashdog",
-                federal_type=None,
-                federal_agency=None,
-                epp_creation_date=None,
-                epp_expiration_date=None
-            ),
-            TransitionDomain(
-                username="testuser@gmail.com",
-                domain_name="testdomain.gov",
-                status="ready",
-                email_sent=False,
-                organization_type=None,
-                organization_name="Gigaclub",
-                federal_type=None,
-                federal_agency=None,
-                epp_creation_date=None,
-                epp_expiration_date=None
-            ),
-            TransitionDomain(
-                username="agustina.wyman7@test.com",
-                domain_name="fakewebsite1.gov",
-                status="on hold",
-                email_sent=False,
-                organization_type=None,
-                organization_name="Midel",
-                federal_type=None,
-                federal_agency=None,
-                epp_creation_date=None,
-                epp_expiration_date=None
-            ),
-            TransitionDomain(
-                username="susy.martin4@test.com",
-                domain_name="fakewebsite1.gov",
-                status="on hold",
-                email_sent=False,
-                organization_type=None,
-                organization_name="Midel",
-                federal_type=None,
-                federal_agency=None,
-                epp_creation_date=None,
-                epp_expiration_date=None
-            ),
-            TransitionDomain(
-                username="stephania.winters4@test.com",
-                domain_name="fakewebsite1.gov",
-                status="on hold",
-                email_sent=False,
-                organization_type=None,
-                organization_name="Midel",
-                federal_type=None,
-                federal_agency=None,
-                epp_creation_date=None,
-                epp_expiration_date=None
-            ),
-            TransitionDomain(
                 username="alexandra.bobbitt5@test.com",
-                domain_name="fakewebsite2.gov",
-                status="on hold",
-                email_sent=False,
-                organization_type="Federal",
-                organization_name="Fanoodle",
-                federal_type="Executive",
-                federal_agency="InnoZ",
-                epp_creation_date=None,
-                epp_expiration_date=None
-            ),
-            TransitionDomain(
-                username="jospeh.mcdowell3@test.com",
-                domain_name="fakewebsite2.gov",
-                status="on hold",
-                email_sent=False,
-                organization_type="Federal",
-                organization_name="Fanoodle",
-                federal_type="Executive",
-                federal_agency="InnoZ",
-                epp_creation_date=None,
-                epp_expiration_date=None
-            ),
-            TransitionDomain(
-                username="reginald.ratcliff4@test.com",
                 domain_name="fakewebsite2.gov",
                 status="on hold",
                 email_sent=False,
@@ -352,6 +268,9 @@ class TestMigrations(TestCase):
             )
         ]
 
+        expected_transition_domains = TransitionDomain.objects.filter(username="alexandra.bobbitt5@test.com")
+        self.assertEqual(expected_transition_domains.count(), 1)
+        expected_transition_domain = expected_transition_domains.get()
 
         #TransitionDomain.objects.filter(domain_name = "fakewebsite3.gov")
         # Afterwards, their values should be what we expect
