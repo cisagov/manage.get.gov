@@ -894,6 +894,8 @@ class ExtraTransitionDomain:
         dict_data = {}
         with open(file, "r", encoding="utf-8-sig") as requested_file:
             reader = csv.reader(requested_file, delimiter=seperator)
+            # clean the rows of any whitespace around delimiters
+            for row in reader: yield (c.strip() for c in row)
             for row in reader:
                 domain_name = row[0]
                 date_format = "%Y-%m-%dT%H:%M:%SZ"
@@ -908,10 +910,11 @@ class ExtraTransitionDomain:
 
     def _read_csv_file(self, file, seperator, dataclass_type, id_field):
         with open(file, "r", encoding="utf-8-sig") as requested_file:
-            reader = csv.DictReader(requested_file, skipinitialspace=True, delimiter=seperator)
+            reader = csv.DictReader(requested_file, delimiter=seperator)
             dict_data = {}
+            # clean the rows of any whitespace around delimiters
+            for row in reader: yield (c.strip() for c in row)
             for row in reader:
-                # cleaned_row, cleaning_was_needed = self.clean_delimiters()
                 if None in row:
                     logger.info("Skipping row with None key")
                     logger.info(dataclass_type)
@@ -928,17 +931,3 @@ class ExtraTransitionDomain:
                 dict_data[row_id] = dataclass_type(**row)
             # dict_data = {row[id_field]: dataclass_type(**row) for row in reader}
             return dict_data
-
-    # def clean_delimiters(self, data_row) -> (str, bool):
-    #     """ This function was created to prevent errors where data files had spaces
-    #     erroneously injected around the delimiters.  """
-
-    #     cleaning_was_needed = False
-
-
-    #     TerminalHelper.print_conditional(cleaning_was_needed, 
-    #                                         (f"{TerminalColors.YELLOW}"
-    #                                         f"WARNING: Data file has spaces"
-    #                                         f"around the delimiters. Removing"
-    #                                         f"erroneous spaces..."
-    #                                         f"{TerminalColors.ENDC}"))
