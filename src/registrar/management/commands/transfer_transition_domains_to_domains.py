@@ -634,18 +634,16 @@ class Command(BaseCommand):
                 break
 
 
-        logger.info(
-            f"""{TerminalColors.OKCYAN}
-            ========= Adding Domains Information Objects =========
-            {TerminalColors.ENDC}"""
-        )
-
         # First, save all Domain objects to the database
         Domain.objects.bulk_create(domains_to_create)
         #DomainInvitation.objects.bulk_create(domain_invitations_to_create)
 
+        # TODO: this is to resolve an error where bulk_create
+        # doesn't save to database in a way that invitation objects can
+        # utilize. 
         # Then, create DomainInvitation objects
         for invitation in domain_invitations_to_create:
+            logger.info(f"Pairing invite to its domain...{invitation}")
             existing_domain = Domain.objects.filter(name=invitation.domain.name)
             # Make sure the related Domain object is saved
             if existing_domain.exists():
@@ -657,6 +655,11 @@ class Command(BaseCommand):
 
         # ======================================================
         # ================= DOMAIN INFORMATION =================
+        logger.info(
+            f"""{TerminalColors.OKCYAN}
+            ========= Adding Domains Information Objects =========
+            {TerminalColors.ENDC}"""
+        )
         for transition_domain in TransitionDomain.objects.all():
             target_domain_information, associated_domain, was_created = self.update_or_create_domain_information(transition_domain, debug_on)
 
