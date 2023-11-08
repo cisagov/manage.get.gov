@@ -72,6 +72,8 @@ secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 BASE_DIR = path.resolve().parent.parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# TODO - Investigate the behaviour of this flag. Does not appear
+# to function for the IS_PRODUCTION flag.
 DEBUG = env_debug
 
 # Controls production specific feature toggles
