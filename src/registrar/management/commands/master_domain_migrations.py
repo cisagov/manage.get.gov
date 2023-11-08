@@ -294,7 +294,7 @@ class Command(BaseCommand):
         command_script = "load_transition_domain"
         command_string = (
             f"./manage.py {command_script} "
-            f"{file_location+migration_json_filename}"
+            f"{file_location+migration_json_filename} "
         )
         if sep is not None and sep != "|":
             command_string += f"--sep {sep} "
