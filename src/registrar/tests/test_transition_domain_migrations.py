@@ -49,7 +49,7 @@ class TestMigrations(TestCase):
         with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit', return_value=True):
             call_command(
                 "load_transition_domain",
-                f"{self.test_data_file_location}/{self.migration_json_filename}",
+                self.migration_json_filename,
                 directory=self.test_data_file_location
             )
 
@@ -62,7 +62,7 @@ class TestMigrations(TestCase):
                 "master_domain_migrations",
                 runMigrations=True,
                 migrationDirectory=self.test_data_file_location,
-                migration_json_filename=self.migration_json_filename,
+                migrationJSON=self.migration_json_filename,
                 disablePrompts=True
             )
 
@@ -190,10 +190,10 @@ class TestMigrations(TestCase):
         expected_total_domain_informations = 0
         expected_total_domain_invitations = 0
 
-        expected_missing_domains = 8
+        expected_missing_domains = 9
         expected_duplicate_domains = 0
-        expected_missing_domain_informations = 8
-        expected_missing_domain_invitations = 8
+        expected_missing_domain_informations = 9
+        expected_missing_domain_invitations = 9
         self.compare_tables(
             expected_total_transition_domains,
             expected_total_domains,
@@ -371,15 +371,15 @@ class TestMigrations(TestCase):
         self.assertEqual(Users.count(), 1)
         self.assertEqual(anomaly.creator, Users.get())
 
-        domain = Domain.objects.filter(name="fakewebsite2.gov")
+        domain = Domain.objects.filter(name="fakewebsite2.gov").get()
         fakewebsite_domain_infos = DomainInformation.objects.filter(domain=domain)
         self.assertEqual(fakewebsite_domain_infos.count(), 1)
 
         fakewebsite = fakewebsite_domain_infos.get()
-        self.assertEqual(fakewebsite.organization_name, "Flashdog")
-        self.assertEqual(fakewebsite.organization_type, None)
-        self.assertEqual(fakewebsite.federal_agency, None)
-        self.assertEqual(fakewebsite.federal_type, None)
+        self.assertEqual(fakewebsite.organization_name, "Fanoodle")
+        self.assertEqual(fakewebsite.organization_type, "federal")
+        self.assertEqual(fakewebsite.federal_agency, "Department of Commerce")
+        self.assertEqual(fakewebsite.federal_type, "executive")
         
         # Check for the "system" creator user
         Users = User.objects.filter(username="System")
@@ -393,9 +393,9 @@ class TestMigrations(TestCase):
 
         # Analyze the tables
         expected_total_transition_domains = 9
-        expected_total_domains = 4
-        expected_total_domain_informations = 4
-        expected_total_domain_invitations = 7
+        expected_total_domains = 5
+        expected_total_domain_informations = 5
+        expected_total_domain_invitations = 8
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
@@ -426,10 +426,10 @@ class TestMigrations(TestCase):
             user.first_login()
 
         # Analyze the tables
-        expected_total_transition_domains = 8
-        expected_total_domains = 4
-        expected_total_domain_informations = 4
-        expected_total_domain_invitations = 7
+        expected_total_transition_domains = 9
+        expected_total_domains = 5
+        expected_total_domain_informations = 5
+        expected_total_domain_invitations = 8
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
