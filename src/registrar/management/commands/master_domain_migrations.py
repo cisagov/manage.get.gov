@@ -45,27 +45,21 @@ class Command(BaseCommand):
         The location of the files used for load_transition_domain migration script
         EXAMPLE USAGE:
         > --migrationDirectory /app/tmp
-
-        --migrationFilenames
-        The files used for load_transition_domain migration script.
-        Must appear IN ORDER and comma-delimiteds:
+ 
+        --migrationJSON
+        The name of the JSON file used for load_transition_domain migration script
         EXAMPLE USAGE:
-        > --migrationFilenames domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
-        where...
-        - domain_contacts_filename is the Data file with domain contact information
-        - contacts_filename is the Data file with contact information
-        - domain_statuses_filename is the Data file with domain status information
+        > --migrationJSON migrationFilepaths.json
 
         --sep
         Delimiter for the migration scripts to correctly parse the given text files.
         (usually this can remain at default value of |)
 
         --debug
-        A boolean (default to true), which activates additional print statements
+        Activates additional print statements
 
-        --prompt
-        A boolean (default to true), which activates terminal prompts
-        that allows the user to step through each portion of this
+        --disablePrompts
+        Disables terminal prompts that allows the user to step through each portion of this
         script.
 
         --limitParse
@@ -99,7 +93,8 @@ class Command(BaseCommand):
         # TODO: make this a mandatory argument (if/when we strip out defaults, it will be mandatory)
         # TODO: use the migration directory arg or force user to type FULL filepath?
         parser.add_argument(
-            "migration_json_filename",
+            "--migrationJSON",
+            default="migrationFilepaths.json",
             help=(
                 "A JSON file that holds the location and filenames"
                 "of all the data files used for migrations"
@@ -116,31 +111,13 @@ class Command(BaseCommand):
             ),
         )
 
-        # TODO: deprecate this once JSON module is done? (or keep as an override)
-        parser.add_argument(
-            "--migrationFilenames",
-            default="escrow_domain_contacts.daily.gov.GOV.txt,"
-            "escrow_contacts.daily.gov.GOV.txt,"
-            "escrow_domain_statuses.daily.gov.GOV.txt",
-            help="""The files used for load_transition_domain migration script.
-            Must appear IN ORDER and separated by commas:
-            domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
-
-            where...
-            - domain_contacts_filename is the Data file with domain contact
-            information
-            - contacts_filename is the Data file with contact information
-            - domain_statuses_filename is the Data file with domain status
-            information""",
-        )
-
         parser.add_argument(
             "--sep", default="|", help="Delimiter character for the migration files"
         )
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
-        parser.add_argument("--prompt", action=argparse.BooleanOptionalAction)
+        parser.add_argument("--disablePrompts", action=argparse.BooleanOptionalAction)
 
         parser.add_argument(
             "--limitParse", default=0, help="Sets max number of entries to load"
@@ -282,19 +259,23 @@ class Command(BaseCommand):
     def run_load_transition_domain_script(
         self,
         migration_json_filename: str,
-        file_location: str,
+        file_directory: str,
         sep: str,
         reset_table: bool,
         debug_on: bool,
         prompts_enabled: bool,
         debug_max_entries_to_parse: int,
     ):
+        
+        if file_directory and file_directory[-1] != "/":
+            file_directory += "/"
+        json_filepath = file_directory+migration_json_filename
         """Runs the load_transition_domain script"""
         # Create the command string
         command_script = "load_transition_domain"
         command_string = (
             f"./manage.py {command_script} "
-            f"{file_location+migration_json_filename} "
+            f"{json_filepath} "
         )
         if sep is not None and sep != "|":
             command_string += f"--sep {sep} "
@@ -318,12 +299,12 @@ class Command(BaseCommand):
         if proceed or not prompts_enabled:
             call_command(
                 command_script,
-                f"{file_location+migration_json_filename}",
+                json_filepath,
                 sep=sep,
                 resetTable=reset_table,
                 debug=debug_on,
                 limitParse=debug_max_entries_to_parse,
-                directory=file_location
+                directory=file_directory
             )
 
     def run_transfer_script(self, debug_on: bool, prompts_enabled: bool):
@@ -367,9 +348,6 @@ class Command(BaseCommand):
         self,
         migration_json_filename,
         file_location,
-        domain_contacts_filename,
-        contacts_filename,
-        domain_statuses_filename,
         sep,
         reset_table,
         debug_on,
@@ -392,10 +370,8 @@ class Command(BaseCommand):
                 The migration scripts are looking in directory....
                 {file_location}
 
-                ....for the following files:
-                - domain contacts: {domain_contacts_filename}
-                - contacts: {contacts_filename}
-                - domain statuses: {domain_statuses_filename}
+                ....for the following JSON:
+                {migration_json_filename}
 
                 {TerminalColors.FAIL}
                 Does this look correct?{TerminalColors.ENDC}"""
@@ -410,7 +386,7 @@ class Command(BaseCommand):
                     f"""
                 {TerminalColors.YELLOW}
                 PLEASE Re-Run the script with the correct
-                file location and filenames:
+                JSON filename and directory:
                 """
                 )
                 return
@@ -429,7 +405,6 @@ class Command(BaseCommand):
 
     def handle(
         self,
-        migration_json_filename,
         **options,
     ):
         """
@@ -452,7 +427,7 @@ class Command(BaseCommand):
 
         # Get arguments
         debug_on = options.get("debug")
-        prompts_enabled = options.get("prompt")
+        prompts_enabled = not options.get("disablePrompts")
         run_migrations_enabled = options.get("runMigrations")
 
         TerminalHelper.print_conditional(
@@ -501,34 +476,13 @@ class Command(BaseCommand):
             debug_max_entries_to_parse = int(options.get("limitParse"))
 
             # Grab filepath information from the arguments
-            file_location = options.get("migrationDirectory") + "/"
-            filenames = options.get("migrationFilenames").split(",")
-            if len(filenames) < 3:
-                filenames_as_string = "{}".format(", ".join(map(str, filenames)))
-                logger.info(
-                    f"""
-                {TerminalColors.FAIL}
-                --migrationFilenames expected 3 filenames to follow it,
-                but only {len(filenames)} were given:
-                {filenames_as_string}
-
-                PLEASE MODIFY THE SCRIPT AND TRY RUNNING IT AGAIN
-                ============= TERMINATING =============
-                {TerminalColors.ENDC}
-                """
-                )
-                sys.exit()
-            domain_contacts_filename = filenames[0]
-            contacts_filename = filenames[1]
-            domain_statuses_filename = filenames[2]
+            file_location = options.get("migrationDirectory")
+            migration_json_filename = options.get("migrationJSON")
 
             # Run migration scripts
             self.run_migration_scripts(
                 migration_json_filename,
                 file_location,
-                domain_contacts_filename,
-                contacts_filename,
-                domain_statuses_filename,
                 sep,
                 reset_table,
                 debug_on,

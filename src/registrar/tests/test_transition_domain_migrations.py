@@ -63,6 +63,7 @@ class TestMigrations(TestCase):
                 runMigrations=True,
                 migrationDirectory=self.test_data_file_location,
                 migration_json_filename=self.migration_json_filename,
+                disablePrompts=True
             )
 
     def compare_tables(

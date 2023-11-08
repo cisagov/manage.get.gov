@@ -63,9 +63,6 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-        # TODO - Narrow this down
-        # TODO - this isn't pulling in the directory from the master script.  Needs to be corrected @Nicolle - todo
-        # default="/app/tmp"
         parser.add_argument(
             "--directory", default="migrationdata", help="Desired directory"
         )

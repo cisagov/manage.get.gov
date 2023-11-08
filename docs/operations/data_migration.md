@@ -79,11 +79,36 @@ docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_co
 ```
 
 ## Transition Domains (Part 1) - Setup Files for Import
-We are provided with information about Transition Domains in 3 files:
+
+#### STEP 1: obtain data files
+We are provided with information about Transition Domains in the following files:
 
 - FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
 - FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
 - FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
+- FILE 4: **escrow_domains.daily.dotgov.GOV.txt** -> has basic domain data
+- FILE 5: **domainadditionaldatalink.adhoc.dotgov.txt** -> has the map of domains to other data like authority, organization, & domain type
+- FILE 6: **domaintypes.adhoc.dotgov.txt** -> has domain type data
+- FILE 7: **organization.adhoc.dotgov.txt** -> has organization data
+- FILE 8: **authority.adhoc.dotgov.txt** -> has authority data
+- FILE 9: **agency.adhoc.dotgov.txt** -> has agency data
+
+#### STEP 2: obtain JSON file (for file locations)
+Add a JSON file called "migrationFilepaths.json" with the following contents (update filenames and directory as needed):
+```
+{
+    "directory": "migrationdata",
+    "contacts_filename": "escrow_contacts.daily.dotgov.GOV.txt",
+    "domain_contacts_filename": "escrow_domain_contacts.daily.dotgov.GOV.txt",
+    "domain_statuses_filename": "escrow_domain_statuses.daily.dotgov.GOV.txt",
+    "domain_escrow_filename": "escrow_domains.daily.dotgov.GOV.txt",
+    "domain_additional_filename": "domainadditionaldatalink.adhoc.dotgov.txt",
+    "domain_adhoc_filename": "domaintypes.adhoc.dotgov.txt",
+    "organization_adhoc_filename": "organization.adhoc.dotgov.txt"
+    "authority_adhoc_filename": "authority.adhoc.dotgov.txt",
+    "agency_adhoc_filename": "agency.adhoc.dotgov.txt",
+}
+```
 
 We need to run a few scripts to parse these files into our domain tables.
 We can do this both locally and in a sandbox.
@@ -203,7 +228,7 @@ cat ../tmp/{filename} > migrationdata/{filename}
 In order to run the scripts locally, we need to add the files to a folder under `src/`.
 This will allow Docker to mount the files to a container (under `/app`) for our use.  
 
- - Add the above files to the `migrationdata/` folder
+ - Add the same files from section 1 to a TEMPORARY `tmp/` folder under `src/` (do not check this folder into our repo)
  - Open a terminal and navigate to `src/`
 
 
@@ -216,9 +241,13 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. 
 
-(NOTE: If working in cloud.gov, change "/app/tmp" to point to the `migrationdata/` directory and and remove "docker compose run -T app" from the command)
+##### LOCAL COMMAND
 ```shell
-docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt --debug
+docker-compose exec app ./manage.py load_transition_domain migrationFilepaths.json --directory /app/tmp --debug
+```
+##### SANDBOX COMMAND
+```shell
+./manage.py load_transition_domain migrationFilepaths.json --debug
 ```
 
 ##### COMMAND LINE ARGUMENTS:
@@ -232,6 +261,41 @@ Directs the script to load only the first 100 entries into the table.  You can a
 `--resetTable`
 This will delete all the data in transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
 
+###### (arguments that override filepaths and directories if needed)
+`--infer_filenames`
+Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting..
+
+`--directory`
+Defines the directory where all data files and the JSON are stored.
+
+`--domain_contacts_filename`
+Defines the filename for domain contact information.
+
+`--contacts_filename`
+Defines the filename for contact information.
+
+`--domain_statuses_filename`
+Defines the filename for domain status information.
+            
+`--agency_adhoc_filename`
+Defines the filename for agency adhocs.
+
+`--domain_additional_filename`
+Defines the filename for additional domain data.
+
+`--domain_escrow_filename`
+Defines the filename for creation/expiration domain data.
+
+`--domain_adhoc_filename`
+Defines the filename for domain type adhocs.
+
+`--organization_adhoc_filename`
+Defines the filename for domain type adhocs.
+
+`--authority_adhoc_filename`
+Defines the filename for domain type adhocs.
+
+
 
 ### STEP 2: Transfer Transition Domain data into main Domain tables
 
@@ -239,9 +303,13 @@ Now that we've loaded all the data into TransitionDomain, we need to update the 
 In the same terminal as used in STEP 1, run the command below; 
 (This will parse the data in TransitionDomain and either create a corresponding Domain object, OR, if a corresponding Domain already exists, it will update that Domain with the incoming status. It will also create DomainInvitation objects for each user associated with the domain):
 
-(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
+##### LOCAL COMMAND
 ```shell
 docker compose run -T app ./manage.py transfer_transition_domains_to_domains --debug
+```
+##### SANDBOX COMMAND
+```shell
+./manage.py transfer_transition_domains_to_domains --debug
 ```
 
 ##### COMMAND LINE ARGUMENTS:
@@ -256,9 +324,13 @@ Directs the script to load only the first 100 entries into the table.  You can a
 
 To send invitation emails for every transition domain in the transition domain table, execute the following command:
 
-(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
+##### LOCAL COMMAND
 ```shell
 docker compose run -T app ./manage.py send_domain_invitations -s
+```
+##### SANDBOX COMMAND
+```shell
+./manage.py send_domain_invitations -s
 ```
 
 ### STEP 4: Test the results (Run the analyzer script)
@@ -269,18 +341,27 @@ This script's main function is to scan the transition domain and domain tables f
 
 To analyze our database without running migrations, execute the script without any optional arguments:
 
-(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
+##### LOCAL COMMAND
 ```shell
 docker compose run -T app ./manage.py master_domain_migrations --debug
+```
+##### SANDBOX COMMAND
+```shell
+./manage.py master_domain_migrations --debug
 ```
 
 #### OPTION 2 - RUN MIGRATIONS FEATURE
 
-To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug and --prompt allow you to step through the migration process and exit it after each step if you need to.  It is recommended that you use these arguments when using the --runMigrations feature:
+To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug provides detailed logging statements during the migration.  It is recommended that you use this argument when using the --runMigrations feature:
 
-(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
+(NOTE: If you named your JSON file something other than "migrationFilepaths.json" (all the way back in the "file setup" section).  You will want to utilize the `--migrationJSON` argument in the following commands...)
+##### LOCAL COMMAND
 ```shell
-docker compose run -T app ./manage.py master_domain_migrations --runMigrations --debug --prompt
+docker compose run -T app ./manage.py master_domain_migrations --migrationDirectory /app/tmp --runMigrations --debug
+```
+##### SANDBOX COMMAND
+```shell
+./manage.py master_domain_migrations --runMigrations --debug
 ```
 
 ##### COMMAND LINE ARGUMENTS
@@ -291,25 +372,18 @@ Runs all scripts (in sequence) for transition domain migrations
 
 `--migrationDirectory`
 
-The location of the files used for load_transition_domain migration script.
+The location of both the JSON file and all files needed for migration.
 (default is "migrationdata" (This is the sandbox directory))
 
 Example Usage:
 *--migrationDirectory /app/tmp*
 
-`--migrationFilenames` 
+`--migrationJSON` 
 
-The filenames used for load_transition_domain migration script.
-Must appear *in oprder* and comma-delimited: 
-default is "escrow_domain_contacts.daily.gov.GOV.txt,escrow_contacts.daily.gov.GOV.txt,escrow_domain_statuses.daily.gov.GOV.txt"
-where...
-- domain_contacts_filename is the Data file with domain contact information
-- contacts_filename is the Data file with contact information
-- domain_statuses_filename is the Data file with domain status information
+The filename of the JSON that holds all the filepath info needed for migrations.
 
 Example Usage:
-*--migrationFilenames domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt*
-
+*--migrationJSON migrationFilepaths.json*
 
 `--sep`
 
@@ -320,9 +394,10 @@ Delimiter for the migration scripts to correctly parse the given text files.
 
 Activates additional print statements
 
-`--prompt`
+`--disablePrompts`
 
-Activates terminal prompts that allows the user to step through each portion of this script.
+Disables the terminal prompts that allows the user to step through each portion of this script.
+*used to facilitate unit tests.  Not recommended for everyday use*
 
 `--limitParse`
 
