@@ -1293,8 +1293,8 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         # in the session to emulate user clicking Manage Domain
         # in the admin interface
         session = self.client.session
-        session['analyst_action'] = 'foo'
-        session['analyst_action_location'] = self.domain_no_information.id
+        session["analyst_action"] = "foo"
+        session["analyst_action_location"] = self.domain_no_information.id
         session.save()
 
         detail_page = self.client.get(
@@ -1302,7 +1302,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         )
 
         self.assertContains(detail_page, "noinformation.gov")
-        self.assertContains(detail_page, "Error")
+        self.assertContains(detail_page, "Domain missing domain information")
 
 
 class TestDomainManagers(TestDomainOverview):
