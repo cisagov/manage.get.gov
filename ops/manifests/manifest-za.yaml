@@ -23,9 +23,6 @@ applications:
     DJANGO_LOG_LEVEL: INFO
     # default public site location
     GETGOV_PUBLIC_SITE_URL: https://beta.get.gov
-    # NOTE: This needs to go in manifest-staging
-    # This is here for PR purposes only!
-    IS_PRODUCTION: True
   routes:
     - route: getgov-za.app.cloud.gov
   services:
