@@ -355,27 +355,37 @@ class TestMigrations(TestCase):
         # Test created Domain Information objects
         domain = Domain.objects.filter(name="anomaly.gov").get()
         anomaly_domain_infos = DomainInformation.objects.filter(domain=domain)
+        
         self.assertEqual(anomaly_domain_infos.count(), 1)
+
+        # This domain should be pretty barebones. Something isnt
+        # parsing right if we get a lot of data.
         anomaly = anomaly_domain_infos.get()
+        self.assertEqual(anomaly.organization_name, "Flashdog")
+        self.assertEqual(anomaly.organization_type, None)
+        self.assertEqual(anomaly.federal_agency, None)
+        self.assertEqual(anomaly.federal_type, None)
+        
+        # Check for the "system" creator user
+        Users = User.objects.filter(username="System")
+        self.assertEqual(Users.count(), 1)
+        self.assertEqual(anomaly.creator, Users.get())
 
-        self.assertEqual(anomaly.expiration_date, datetime.date(2023, 3, 9))
-        """
-        self.assertEqual(
-            anomaly.created_at, datetime.datetime(2023, 11, 8, 17, 23, 46, 764663, tzinfo=datetime.timezone.utc)
-        )
-        """
-        self.assertEqual(anomaly.name, "anomaly.gov")
-        self.assertEqual(anomaly.state, "ready")
+        domain = Domain.objects.filter(name="fakewebsite2.gov")
+        fakewebsite_domain_infos = DomainInformation.objects.filter(domain=domain)
+        self.assertEqual(fakewebsite_domain_infos.count(), 1)
 
-        testdomain_domains = Domain.objects.filter(name="fakewebsite2.gov")
-        self.assertEqual(testdomain_domains.count(), 1)
+        fakewebsite = fakewebsite_domain_infos.get()
+        self.assertEqual(fakewebsite.organization_name, "Flashdog")
+        self.assertEqual(fakewebsite.organization_type, None)
+        self.assertEqual(fakewebsite.federal_agency, None)
+        self.assertEqual(fakewebsite.federal_type, None)
+        
+        # Check for the "system" creator user
+        Users = User.objects.filter(username="System")
+        self.assertEqual(Users.count(), 1)
+        self.assertEqual(anomaly.creator, Users.get())
 
-        testdomain = testdomain_domains.get()
-
-        self.assertEqual(testdomain.expiration_date, datetime.date(2023, 9, 30))
-        #self.assertEqual(testdomain.created_at, "test")
-        self.assertEqual(testdomain.name, "fakewebsite2.gov")
-        self.assertEqual(testdomain.state, "on hold")
 
     def test_transfer_transition_domains_to_domains(self):
         self.run_load_domains()
