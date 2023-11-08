@@ -315,7 +315,7 @@ class Command(BaseCommand):
             )
 
         # TODO: make this somehow run inside TerminalHelper prompt
-        if proceed:
+        if proceed or not prompts_enabled:
             call_command(
                 command_script,
                 f"{file_location+migration_json_filename}",
@@ -342,7 +342,7 @@ class Command(BaseCommand):
                 "Running transfer_transition_domains_to_domains script",
             )
         # TODO: make this somehow run inside TerminalHelper prompt
-        if proceed:
+        if proceed or not prompts_enabled:
                 call_command(command_script)
 
     def run_send_invites_script(self, debug_on: bool, prompts_enabled: bool):
@@ -360,7 +360,7 @@ class Command(BaseCommand):
             )
 
         # TODO: make this somehow run inside TerminalHelper prompt
-        if proceed:
+        if proceed or not prompts_enabled:
             call_command(command_script, send_emails=True)
 
     def run_migration_scripts(
