@@ -46,4 +46,4 @@ Bugs on production software need to be documented quickly and triaged to determi
 3. In the case where the engineering lead is is unresponsive or unavailable to assign the ticket immediately, the product team will make sure an engineer volunteers or is assigned to the ticket/PR review ASAP.
 
 4. Once done, the developer must make a PR and should tag the assigned PR reviewers in our Slack dev channel stating that the PR is now waiting on their review. These reviewers should drop other tasks in order to review this promptly.
-5. See the Making bug fixes on stable during production readme for how to push changes to stable once the PR is approved
+5. See the [Making bug fixes on stable during production readme](../operations/README.md) for how to push changes to stable once the PR is approved
