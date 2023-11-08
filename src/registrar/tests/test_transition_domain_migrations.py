@@ -161,7 +161,7 @@ class TestMigrations(TestCase):
         expected_total_transition_domains = 9
         expected_total_domains = 5
         expected_total_domain_informations = 5
-        expected_total_domain_invitations = 7
+        expected_total_domain_invitations = 8
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
