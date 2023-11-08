@@ -394,6 +394,25 @@ class TestMigrations(TestCase):
             expected_missing_domain_invitations,
         )
 
+        expected_anomaly_domains = Domain.objects.filter(name="anomaly.gov")
+        self.assertEqual(expected_anomaly_domains.count(), 1)
+        expected_anomaly = expected_anomaly_domains.get()
+
+        self.assertEqual(expected_anomaly.expiration_date, "test")
+        self.assertEqual(expected_anomaly.creation_date, "test")
+        self.assertEqual(expected_anomaly.name, "anomaly.gov")
+        self.assertEqual(expected_anomaly.state, "ready")
+
+        expected_testdomain_domains = Domain.objects.filter(name="anomaly.gov")
+        self.assertEqual(expected_testdomain_domains.count(), 1)
+
+        expected_testdomain = expected_testdomain_domains.get()
+
+        self.assertEqual(expected_testdomain.expiration_date, "test")
+        self.assertEqual(expected_testdomain.creation_date, "test")
+        self.assertEqual(expected_testdomain.name, "anomaly.gov")
+        self.assertEqual(expected_testdomain.state, "ready")
+
         expected_domains = [
             Domain(
                 expiration_date=None,
@@ -405,32 +424,9 @@ class TestMigrations(TestCase):
                 name="testdomain.gov",
                 state="ready",
             ),
-            Domain(
-                expiration_date=None,
-                name="fakewebsite1.gov",
-                state="on hold",
-            ),
-            Domain(
-                expiration_date=None,
-                name="fakewebsite2.gov",
-                state="on hold",
-            ),
-            Domain(
-                expiration_date=None,
-                name="fakewebsite3.gov",
-                state="ready",
-            ),
         ]
-
+        
         for domain in Domain.objects.all():
-            print(f"""
-            Domain(
-                expiration_date={domain.expiration_date},
-                name="{domain.name}",
-                state="{domain.state}",
-            ),
-            """
-            )
             for expected in expected_domains:
                 expected.id = domain.id
                 expected.created_at = domain.created_at

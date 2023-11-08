@@ -71,7 +71,7 @@ class FileTransitionLog:
         
 
     def create_log_item(
-        self, file_type, code, message, domain_name=None, add_to_list=True
+        self, file_type, code, message, domain_name=None, add_to_list=True, minimal_logging=True
     ):
         """Creates and returns an LogItem object.
 
@@ -83,6 +83,15 @@ class FileTransitionLog:
         
         dict_name = (file_type, domain_name)
         self._add_to_log_list(dict_name, log)
+        
+        restrict_type = []
+        if minimal_logging:
+            restrict_type = [LogCode.INFO, LogCode.WARNING]
+        TerminalHelper.print_conditional(
+            log.code not in restrict_type,
+            log.message,
+            log.code,
+        )
 
         return log
 
@@ -179,9 +188,7 @@ class LoadExtraTransitionDomain:
                 
                 updated_transition_domain.save()
                 updated_transition_domains.append(updated_transition_domain)
-                if self.debug:
-                    # Display errors for this specific domain
-                    self.parse_logs.display_logs_by_domain_name(domain_name)
+
                 logger.info(
                     f"{TerminalColors.OKCYAN}"
                     f"Successfully updated {domain_name}"
@@ -242,6 +249,7 @@ class LoadExtraTransitionDomain:
                 "Could not add epp_creation_date and epp_expiration_date " 
                 f"on {domain_name}, no data exists.",
                 domain_name,
+                not self.debug
             )
             return transition_domain
 
@@ -287,6 +295,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add federal_agency on {domain_name}, no data exists.",
                 domain_name,
+                not self.debug
             )
             return transition_domain
 
@@ -301,6 +310,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add inactive agency {info.agencyname} on {domain_name}",
                 domain_name,
+                not self.debug
             )
             return transition_domain
 
@@ -310,6 +320,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add non-federal agency {info.agencyname} on {domain_name}",
                 domain_name,
+                not self.debug
             )
             return transition_domain
 
@@ -342,6 +353,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add domain_type on {domain_name}, no data exists.",
                 domain_name,
+                not self.debug
             )
             return transition_domain
 
@@ -364,6 +376,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add inactive domain_type {domain_type[0]} on {domain_name}",
                 domain_name,
+                not self.debug
             )
             return transition_domain
 
@@ -424,6 +437,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add organization_name on {domain_name}, no data exists.",
                 domain_name,
+                not self.debug
             )
             return transition_domain
 
@@ -457,6 +471,7 @@ class LoadExtraTransitionDomain:
                 LogCode.INFO,
                 f"Added {var_name} as '{changed_value}' on {domain_name}",
                 domain_name,
+                not self.debug
             )
         else:
             self.parse_logs.create_log_item(
@@ -464,6 +479,7 @@ class LoadExtraTransitionDomain:
                 LogCode.WARNING,
                 f"Updated existing {var_name} to '{changed_value}' on {domain_name}",
                 domain_name,
+                not self.debug
             )
 
     # Property getters, i.e. orgid or domaintypeid
@@ -583,7 +599,7 @@ class LoadExtraTransitionDomain:
         desired_type = self.parsed_data_container.file_data.get(file_type)
         if desired_type is None:
             self.parse_logs.create_log_item(
-                file_type, LogCode.ERROR, f"Type {file_type} does not exist"
+                file_type, LogCode.ERROR, f"Type {file_type} does not exist",
             )
             return None
 
