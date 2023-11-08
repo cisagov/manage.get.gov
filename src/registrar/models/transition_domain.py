@@ -79,6 +79,10 @@ class TransitionDomain(TimeStampedModel):
     )
 
     def __str__(self):
+        return f"{self.username}, {self.domain_name}"
+
+    def display_transition_domain(self):
+        """Displays all information about a TransitionDomain in string format"""
         return (
             f"\n-----TRANSITION DOMAIN------\n"
             f"domainName: {self.domain_name}, \n"

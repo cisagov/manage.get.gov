@@ -185,11 +185,8 @@ class LoadExtraTransitionDomain:
                 )
 
                 # Check if the instance has changed before saving
-                #if updated_transition_domain.__dict__ != transition_domain.__dict__:
-                
                 updated_transition_domain.save()
                 updated_transition_domains.append(updated_transition_domain)
-
                 logger.info(
                     f"{TerminalColors.OKCYAN}"
                     f"Successfully updated {domain_name}"
@@ -208,17 +205,16 @@ class LoadExtraTransitionDomain:
                 )
                 failed_transition_domains.append(domain_name)
 
-        if self.debug:
-            # Display misc errors (not associated to a domain)
-            self.parse_logs.display_logs_by_domain_name(None)
-
         failed_count = len(failed_transition_domains)
         if failed_count == 0:
-            TerminalHelper.print_conditional(self.debug, f"{TerminalHelper.array_as_string(updated_transition_domains)}")
+            if self.debug:
+                for domain in updated_transition_domains:
+                    logger.debug(domain.display_transition_domain())
             logger.info(
                 f"""{TerminalColors.OKGREEN}
                 ============= FINISHED ===============
                 Updated {len(updated_transition_domains)} transition domain entries:
+                {[domain for domain in updated_transition_domains]}
                 {TerminalColors.ENDC}
                 """
             )
@@ -228,18 +224,20 @@ class LoadExtraTransitionDomain:
             logger.error(
                 f"""{TerminalColors.FAIL}
                 ============= FINISHED WITH ERRORS ===============
-                Updated {len(updated_transition_domains)} transition domain entries,
-                Failed to update {failed_count} transition domain entries
+                Updated {len(updated_transition_domains)} transition domain entries:
+                {[domain for domain in updated_transition_domains]}
+                Failed to update {failed_count} transition domain entries:
+                {[domain for domain in failed_transition_domains]}
                 {TerminalColors.ENDC}
                 """
             )
 
         # DATA INTEGRITY CHECK
         # Make sure every Transition Domain got updated
-        total_transition_domains = TransitionDomain.objects.all().count()
+        total_transition_domains = len(updated_transition_domains)
         total_updates_made = TransitionDomain.objects.all().count()
         if total_transition_domains != total_updates_made:
-            logger.error(f"""{TerminalColors.Fail}
+            logger.error(f"""{TerminalColors.FAIL}
                             WARNING: something went wrong processing domain information data.
                             
                             Total Transition Domains expecting a data update: {total_transition_domains}

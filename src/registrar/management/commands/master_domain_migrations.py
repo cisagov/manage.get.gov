@@ -269,7 +269,7 @@ class Command(BaseCommand):
         
         if file_directory and file_directory[-1] != "/":
             file_directory += "/"
-        json_filepath = file_directory+migration_json_filename
+        json_filepath = migration_json_filename
         """Runs the load_transition_domain script"""
         # Create the command string
         command_script = "load_transition_domain"
@@ -285,6 +285,8 @@ class Command(BaseCommand):
             command_string += "--debug "
         if debug_max_entries_to_parse > 0:
             command_string += f"--limitParse {debug_max_entries_to_parse} "
+        if file_directory:
+            command_string += f"--directory {file_directory}"
 
         # Execute the command string
         proceed = False

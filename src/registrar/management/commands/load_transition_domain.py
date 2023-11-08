@@ -339,7 +339,7 @@ class Command(BaseCommand):
             try:
                 data = json.load(jsonFile)
                 # Create an instance of TransitionDomainArguments
-                
+                has_desired_args = False
                 # Iterate over the data from the JSON file
                 for key, value in data.items():
                     # Check if the key exists in TransitionDomainArguments

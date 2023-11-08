@@ -159,8 +159,8 @@ class TestMigrations(TestCase):
         # STEP 2: (analyze the tables just like the
         # migration script does, but add assert statements)
         expected_total_transition_domains = 9
-        expected_total_domains = 4
-        expected_total_domain_informations = 4
+        expected_total_domains = 5
+        expected_total_domain_informations = 5
         expected_total_domain_invitations = 7
 
         expected_missing_domains = 0
