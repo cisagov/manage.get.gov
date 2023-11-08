@@ -453,7 +453,7 @@ def create_user():
     p = "userpass"
     user = User.objects.create_user(
         username="staffuser",
-        email="user@example.com",
+        email="staff@example.com",
         is_staff=True,
         password=p,
     )
