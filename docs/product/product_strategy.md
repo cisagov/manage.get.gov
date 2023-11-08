@@ -35,14 +35,15 @@ Bugs on production software need to be documented quickly and triaged to determi
 ### Steps for Triaging
 
 1. When a bug is found, whether by a developer/designer or from feedback from an end user, a ticket should be made immediately. The actual maker of the ticket can be a member of the product team as needed.
-2. This bug ticket immediately gets a priority added Critical/High/Medium/Low, with Critcal requiring the product owner's request.
-3. Anything marked as `critical` should be refined immediately and engineering should be notified via Slack that a Critical ticket has been created (if not already notified)
-4. All items not marked as `critical` by the product owner, can wait until refinement to be refined and may have their prioirty level changed during that meeting.
+2. This bug ticket immediately gets a priority added Critical/High/Medium/Low, with Critical requiring the product owner's consent.
+3. Anything marked as `critical` should be refined immediately and engineering should be notified in our Slack dev channel that a Critical ticket has been created (if not already notified)
+4. All items not marked as `critical` by the product owner can wait until refinement to be refined and may have their prioirty level changed during that meeting.
 
 ### Steps for dealing with Critical Bugs
 
 1. Once the critical bug ticket is refined and the bug is clear, an engineer should be assigned to work on it. (No ticket, no work)
 2. At the same point, two other engineers should be assigned to review the PR once it's made. One of the reviewing engineers can be subsititued for a designer if this is a design/content/other user facing bug fix.
-3. In the case where the engineering lead is not responsive/ unavailable to assign the ticket immediatley, other engineers should see the public slack message and volunteer as needed. The product team will be backup to make sure someone is assigned or volunteers for the ticket/PR review ASAP.
-4. Once done the developer, now needs to make a PR as usual but should tag the assigned PR reviewers in a public slack message stating that the PR is now waiting on their review. These reviewers should drop other tasks in order to review this promptly.
+3. In the case where the engineering lead is is unresponsive or unavailable to assign the ticket immediately, the product team will make sure an engineer volunteers or is assigned to the ticket/PR review ASAP.
+
+4. Once done, the developer must make a PR and should tag the assigned PR reviewers in our Slack dev channel stating that the PR is now waiting on their review. These reviewers should drop other tasks in order to review this promptly.
 5. See the Making bug fixes on stable during production readme for how to push changes to stable once the PR is approved
