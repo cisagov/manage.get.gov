@@ -8,6 +8,7 @@ import re
 import logging
 
 import os
+import sys
 from typing import List, Tuple
 
 from registrar.models.transition_domain import TransitionDomain
@@ -232,9 +233,25 @@ class LoadExtraTransitionDomain:
                 {TerminalColors.ENDC}
                 """
             )
-        # TODO
-        if TransitionDomain.objects.all().count() != len(updated_transition_domains):
-            logger.error("Something bad happened")
+
+        # DATA INTEGRITY CHECK
+        # Make sure every Transition Domain got updated
+        total_transition_domains = TransitionDomain.objects.all().count()
+        total_updates_made = TransitionDomain.objects.all().count()
+        if total_transition_domains != total_updates_made:
+            logger.error(f"""{TerminalColors.Fail}
+                            WARNING: something went wrong processing domain information data.
+                            
+                            Total Transition Domains expecting a data update: {total_transition_domains}
+                            Total updates made: {total_updates_made}
+
+                            ^ These totals should match, but they don't.  This
+                            error should never occur, but could indicate
+                            corrupt data.  Please check logs to diagnose.
+
+                            ----- TERMINATING ----
+                            """)
+            sys.exit()
 
     def parse_creation_expiration_data(self, domain_name, transition_domain):
         """Grabs expiration_date from the parsed files and associates it

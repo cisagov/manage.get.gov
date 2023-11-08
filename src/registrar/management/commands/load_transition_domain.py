@@ -63,9 +63,6 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-        # TODO - Narrow this down
-        # TODO - this isn't pulling in the directory from the master script.  Needs to be corrected @Nicolle - todo
-        # default="/app/tmp"
         parser.add_argument(
             "--directory", default="migrationdata", help="Desired directory"
         )
@@ -273,7 +270,7 @@ class Command(BaseCommand):
 
                 --------------------------------------------
                 Found {total_outlier_statuses} unaccounted
-                for statuses-
+                for statuses
                 --------------------------------------------
 
                 No mappings found for the following statuses
@@ -601,15 +598,6 @@ class Command(BaseCommand):
 
         TransitionDomain.objects.bulk_create(to_create)
 
-        logger.info(
-            f"""{TerminalColors.OKGREEN}
-            ============= FINISHED ===============
-            Created {total_new_entries} transition domain entries,
-            updated {total_updated_domain_entries} transition domain entries
-            {TerminalColors.ENDC}
-            """
-        )
-
         # Print a summary of findings (duplicate entries,
         # missing data..etc.)
         self.print_summary_duplications(
@@ -617,10 +605,32 @@ class Command(BaseCommand):
         )
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
 
+
+        logger.info(
+            f"""{TerminalColors.OKGREEN}
+            ============= FINISHED ===============
+            Created {total_new_entries} transition domain entries,
+            Updated {total_updated_domain_entries} transition domain entries
+
+            {TerminalColors.YELLOW}
+            ----- DUPLICATES FOUND -----
+            {len(duplicate_domain_user_combos)} DOMAIN - USER pairs
+            were NOT unique in the supplied data files.
+            {len(duplicate_domains)} DOMAINS were NOT unique in
+            the supplied data files.
+
+            ----- STATUSES -----
+            {len(domains_without_status)} DOMAINS had NO status (defaulted to READY).
+            {len(outlier_statuses)} Statuses were invalid (defaulted to READY).
+
+            {TerminalColors.ENDC}
+            """
+        )
+
         # Prompt the user if they want to load additional data on the domains
         title = "Do you wish to load additional data for TransitionDomains?"
         proceed = TerminalHelper.prompt_for_execution(
-            system_exit_on_terminate=False,
+            system_exit_on_terminate=True,
             info_to_inspect=f"""
             !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
             ==Master data file==
