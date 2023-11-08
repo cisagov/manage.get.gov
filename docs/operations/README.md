@@ -43,6 +43,21 @@ For ease of use, you can run the `deploy.sh <sandbox name>` script in the `/src`
 
 Your sandbox space should've been setup as part of the onboarding process. If this was not the case, please have an admin follow the instructions [here](../../.github/ISSUE_TEMPLATE/developer-onboarding.md#setting-up-developer-sandbox).
 
+## Stable and Staging Release Rules
+
+Releases will be made for staging and stable every week starting on the first day of the sprint (Wednesday), with the second release of the sprint occuring halfway through the sprint. With the exception of first time going into production, these releases will NOT have the same code. The release to stable will be the same commit that was tagged for staging one week prior, making stable one week behind staging. Further, this means staging can be up to a week behind the main branch of code.
+
+If a bug fix or feature needs to be made to stable out of the normal cycle, this can only be done at the product owner's request.
+
+## Making bug fixes on stable during production
+
+In the case where a bug fix or feature needs to be added outside of the normal cycle, the code-fix branch and release will be handled differently than normal:
+
+1. Code will need to be branched NOT off of main, but off of the same commit as the most recent stable commit. This should be the one tagged with the most recent vX.XX.XX value.
+2. After making the bug fix, the approved PR will branch will be tagged with a new release tag, incrementing the patch value from the last commit number.
+3. This branch then needs to be merged to main per the usual process.
+4. This same branch should be merged into staging.
+
 ## Serving static assets
 We are using [WhiteNoise](http://whitenoise.evans.io/en/stable/index.html) plugin to serve our static assets on cloud.gov. This plugin is added to the `MIDDLEWARE` list in our apps `settings.py`.
 
