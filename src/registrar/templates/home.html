@@ -13,9 +13,22 @@
   <h1>Manage your domains</h2>
 
   <p class="margin-top-4">
-    <a href="{% url 'application:' %}" class="usa-button">
+    {% if is_production %}
+    <a href="javascript:void(0)" 
+    class="usa-button usa-tooltip disabled-link"
+    data-position="right"
+    title="Coming in 2024"
+    aria-disabled="true"
+    data-tooltip="true"
+    >
       Start a new domain request
     </a>
+    {% else %}
+    <a href="{% url 'application:' %}" class="usa-button"
+    >
+      Start a new domain request
+    </a>
+    {% endif %}
   </p>
 
   <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
@@ -130,7 +143,7 @@
     {% endif %}
   </section>
 
-  {# Note: Reimplement this after MVP.. #}
+  {# Note: Reimplement this after MVP #}
   <!--
   <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
     <h2>Archived domains</h2>
