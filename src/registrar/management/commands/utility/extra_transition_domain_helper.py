@@ -609,7 +609,7 @@ class LoadExtraTransitionDomain:
         obj = desired_type.data.get(desired_id)
         if obj is None:
             self.parse_logs.create_log_item(
-                file_type, LogCode.ERROR, f"Id {desired_id} does not exist"
+                file_type, LogCode.ERROR, f"Id {desired_id} does not exist for {file_type.value[0]}"
             )
         return obj
 

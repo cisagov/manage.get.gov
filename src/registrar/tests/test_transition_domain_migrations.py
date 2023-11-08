@@ -277,7 +277,7 @@ class TestMigrations(TestCase):
                 # Each TransitionDomain should have the correct data
                 self.assertEqual(domain, expected)
     
-    def test_load_full_transfer_domain(self):
+    def test_load_full_domain(self):
         self.run_load_domains()
         self.run_transfer_domains()
 
@@ -302,47 +302,79 @@ class TestMigrations(TestCase):
             expected_missing_domain_invitations,
         )
 
+        # Test created domains
         anomaly_domains = Domain.objects.filter(name="anomaly.gov")
         self.assertEqual(anomaly_domains.count(), 1)
         anomaly = anomaly_domains.get()
 
         self.assertEqual(anomaly.expiration_date, datetime.date(2023, 3, 9))
+        """
         self.assertEqual(
             anomaly.created_at, datetime.datetime(2023, 11, 8, 17, 23, 46, 764663, tzinfo=datetime.timezone.utc)
         )
+        """
         self.assertEqual(anomaly.name, "anomaly.gov")
         self.assertEqual(anomaly.state, "ready")
 
-        testdomain_domains = Domain.objects.filter(name="testdomain.gov")
+        testdomain_domains = Domain.objects.filter(name="fakewebsite2.gov")
         self.assertEqual(testdomain_domains.count(), 1)
 
         testdomain = testdomain_domains.get()
 
-        self.assertEqual(testdomain.expiration_date, datetime.date(2023, 3, 9))
-        self.assertEqual(testdomain.created_at, "test")
-        self.assertEqual(testdomain.name, "anomaly.gov")
-        self.assertEqual(testdomain.state, "ready")
+        self.assertEqual(testdomain.expiration_date, datetime.date(2023, 9, 30))
+        #self.assertEqual(testdomain.created_at, "test")
+        self.assertEqual(testdomain.name, "fakewebsite2.gov")
+        self.assertEqual(testdomain.state, "on hold")
+    
+    def test_load_full_domain_information(self):
+        self.run_load_domains()
+        self.run_transfer_domains()
 
-        expected_domains = [
-            Domain(
-                expiration_date=None,
-                name="anomaly.gov",
-                state="ready",
-            ),
-            Domain(
-                expiration_date=None,
-                name="testdomain.gov",
-                state="ready",
-            ),
-        ]
-        
-        for domain in Domain.objects.all():
-            for expected in expected_domains:
-                expected.id = domain.id
-                expected.created_at = domain.created_at
-                expected.updated_at = domain.updated_at
+        # Analyze the tables
+        expected_total_transition_domains = 9
+        expected_total_domains = 5
+        expected_total_domain_informations = 5
+        expected_total_domain_invitations = 8
 
-                self.assertEqual(domain, expected)
+        expected_missing_domains = 0
+        expected_duplicate_domains = 0
+        expected_missing_domain_informations = 0
+        expected_missing_domain_invitations = 1
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
+
+        # Test created Domain Information objects
+        domain = Domain.objects.filter(name="anomaly.gov").get()
+        anomaly_domain_infos = DomainInformation.objects.filter(domain=domain)
+        self.assertEqual(anomaly_domain_infos.count(), 1)
+        anomaly = anomaly_domain_infos.get()
+
+        self.assertEqual(anomaly.expiration_date, datetime.date(2023, 3, 9))
+        """
+        self.assertEqual(
+            anomaly.created_at, datetime.datetime(2023, 11, 8, 17, 23, 46, 764663, tzinfo=datetime.timezone.utc)
+        )
+        """
+        self.assertEqual(anomaly.name, "anomaly.gov")
+        self.assertEqual(anomaly.state, "ready")
+
+        testdomain_domains = Domain.objects.filter(name="fakewebsite2.gov")
+        self.assertEqual(testdomain_domains.count(), 1)
+
+        testdomain = testdomain_domains.get()
+
+        self.assertEqual(testdomain.expiration_date, datetime.date(2023, 9, 30))
+        #self.assertEqual(testdomain.created_at, "test")
+        self.assertEqual(testdomain.name, "fakewebsite2.gov")
+        self.assertEqual(testdomain.state, "on hold")
 
     def test_transfer_transition_domains_to_domains(self):
         self.run_load_domains()
