@@ -64,9 +64,14 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--directory", default="migrationdata", help="Desired directory"
+            "--infer_filenames", 
+            action=argparse.BooleanOptionalAction,
+            help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting."
         )
 
+        parser.add_argument(
+            "--directory", default="migrationdata", help="Desired directory"
+        )
         parser.add_argument(
             "--domain_contacts_filename",
             help="Data file with domain contact information"
@@ -78,11 +83,6 @@ class Command(BaseCommand):
         parser.add_argument(
             "--domain_statuses_filename",
             help="Data file with domain status information"
-        )
-        parser.add_argument(
-            "--infer_filenames", 
-            action=argparse.BooleanOptionalAction,
-            help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting."
         )
         parser.add_argument(
             "--agency_adhoc_filename",
@@ -322,10 +322,19 @@ class Command(BaseCommand):
     ):
         """Parse the data files and create TransitionDomains."""
         args = TransitionDomainArguments(**options)
+
+        # Desired directory for additional TransitionDomain data
+        # (In the event they are stored seperately)
+        directory = args.directory
+        # Add a slash if the last character isn't one
+        if directory and directory[-1] != "/":
+            directory += "/"
+
+        json_filepath = directory + migration_json_filename
         ### Process JSON file ###
         # If a JSON was provided, use its values instead of defaults.
         # TODO: there is no way to discern user overrides from those arg’s defaults.
-        with open(migration_json_filename, "r") as jsonFile:
+        with open(json_filepath, "r") as jsonFile:
             # load JSON object as a dictionary
             try:
                 data = json.load(jsonFile)
@@ -361,12 +370,6 @@ class Command(BaseCommand):
 
         ## Variables for Additional TransitionDomain Information ##
         
-        # Desired directory for additional TransitionDomain data
-        # (In the event they are stored seperately)
-        directory = args.directory
-        # Add a slash if the last character isn't one
-        if directory and directory[-1] != "/":
-            directory += "/"
 
         # Main script filenames - these do not have defaults
         domain_contacts_filename = None

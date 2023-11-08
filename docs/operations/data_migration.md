@@ -243,7 +243,7 @@ Run the following command, making sure the file paths point to the right locatio
 
 ##### LOCAL COMMAND
 ```shell
-docker-compose exec app ./manage.py load_transition_domain migrationFilepaths.json --directory /app/tmp --debug
+docker-compose exec app ./manage.py load_transition_domain migrationFilepaths.json --directory /app/tmp/ --debug --limitParse 10
 ```
 ##### SANDBOX COMMAND
 ```shell
