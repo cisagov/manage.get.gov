@@ -632,8 +632,8 @@ class LoadExtraTransitionDomain:
 
 # TODO - change name
 @dataclass
-class PatternMap:
-    """Helper class that holds data and metadata about a requested file.
+class FileDataHolder:
+    """Helper class that holds data about a requested file.
 
     filename: str -> The desired filename to target. If no filename is given,
     it is assumed that you are passing in a filename pattern and it will look
@@ -823,7 +823,7 @@ class ExtraTransitionDomain:
             a list of values.
 
         return example:
-            EnumFilenames.AUTHORITY_ADHOC: PatternMap(
+            EnumFilenames.AUTHORITY_ADHOC: FileDataHolder(
                 authority_adhoc_filename,
                 self.strip_date_regex,
                 AuthorityAdhoc,
@@ -832,7 +832,7 @@ class ExtraTransitionDomain:
         """
         file_data = {}
         for file_type, filename, data_type, id_field in pattern_map_params:
-            file_data[file_type] = PatternMap(
+            file_data[file_type] = FileDataHolder(
                 filename,
                 self.strip_date_regex,
                 data_type,
@@ -896,7 +896,7 @@ class ExtraTransitionDomain:
 
     def clear_file_data(self):
         for item in self.file_data.values():
-            file_type: PatternMap = item
+            file_type: FileDataHolder = item
             file_type.data = {}
 
     def parse_csv_file(

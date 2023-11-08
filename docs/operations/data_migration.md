@@ -211,11 +211,12 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
 
-*NOTE: While we recommend executing the following scripts individually (Steps 1-3), migrations can also be done 'all at once' using the "Run Migration Feature" in step 4.  Use with discretion.*
 
 ### STEP 1: Load Transition Domains
 
-Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. (NOTE: If working in cloud.gov, change "/app/tmp" to point to the `migrationdata/` directory)
+Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. 
+
+(NOTE: If working in cloud.gov, change "/app/tmp" to point to the `migrationdata/` directory and and remove "docker compose run -T app" from the command)
 ```shell
 docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt --debug
 ```
@@ -237,6 +238,8 @@ This will delete all the data in transtion_domain.  It is helpful if you want to
 Now that we've loaded all the data into TransitionDomain, we need to update the main Domain and DomainInvitation tables with this information.  
 In the same terminal as used in STEP 1, run the command below; 
 (This will parse the data in TransitionDomain and either create a corresponding Domain object, OR, if a corresponding Domain already exists, it will update that Domain with the incoming status. It will also create DomainInvitation objects for each user associated with the domain):
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
 ```shell
 docker compose run -T app ./manage.py transfer_transition_domains_to_domains --debug
 ```
@@ -251,9 +254,11 @@ Directs the script to load only the first 100 entries into the table.  You can a
 
 ### STEP 3: Send Domain invitations
 
-To send invitations for every transition domain in the transition domain table, execute the following command:
+To send invitation emails for every transition domain in the transition domain table, execute the following command:
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
 ```shell
-docker compose run -T app send_domain_invitations -s
+docker compose run -T app ./manage.py send_domain_invitations -s
 ```
 
 ### STEP 4: Test the results (Run the analyzer script)
@@ -263,6 +268,8 @@ This script's main function is to scan the transition domain and domain tables f
 #### OPTION 1 - ANALYZE ONLY
 
 To analyze our database without running migrations, execute the script without any optional arguments:
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
 ```shell
 docker compose run -T app ./manage.py master_domain_migrations --debug
 ```
@@ -270,6 +277,8 @@ docker compose run -T app ./manage.py master_domain_migrations --debug
 #### OPTION 2 - RUN MIGRATIONS FEATURE
 
 To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug and --prompt allow you to step through the migration process and exit it after each step if you need to.  It is recommended that you use these arguments when using the --runMigrations feature:
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
 ```shell
 docker compose run -T app ./manage.py master_domain_migrations --runMigrations --debug --prompt
 ```
@@ -278,13 +287,12 @@ docker compose run -T app ./manage.py master_domain_migrations --runMigrations -
 
 `--runMigrations`
 
-A boolean (default to true), which triggers running
-all scripts (in sequence) for transition domain migrations
+Runs all scripts (in sequence) for transition domain migrations
 
 `--migrationDirectory`
 
 The location of the files used for load_transition_domain migration script.
-(default is "migrationData" (This is the sandbox directory))
+(default is "migrationdata" (This is the sandbox directory))
 
 Example Usage:
 *--migrationDirectory /app/tmp*
@@ -310,13 +318,11 @@ Delimiter for the migration scripts to correctly parse the given text files.
 
 `--debug`
 
-A boolean (default to true), which activates additional print statements
+Activates additional print statements
 
 `--prompt`
 
-A boolean (default to true), which activates terminal prompts
-that allows the user to step through each portion of this
-script.
+Activates terminal prompts that allows the user to step through each portion of this script.
 
 `--limitParse`
 

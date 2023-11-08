@@ -1,0 +1,12 @@
+{
+    "directory": "registrar/tests/data",
+    "agency_adhoc_filename": "test_agency_adhoc.txt",
+    "authority_adhoc_filename": "test_authority_adhoc.txt",
+    "organization_adhoc_filename": "test_organization_adhoc.txt",
+    "domain_adhoc_filename": "test_domain_types_adhoc.txt",
+    "domain_additional_filename": "test_domain_additional.txt",
+    "domain_contacts_filename": "test_domain_contacts.txt",
+    "domain_escrow_filename": "test_escrow_domains_daily.txt",
+    "domain_statuses_filename": "test_domain_statuses.txt",
+    "contacts_filename": "test_contacts.txt"
+}

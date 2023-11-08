@@ -1,4 +1,4 @@
-from io import StringIO
+import datetime
 from django.test import TestCase
 
 from registrar.models import (
@@ -20,7 +20,7 @@ class TestMigrations(TestCase):
         # self.transfer_script = "transfer_transition_domains_to_domains",
         # self.master_script = "load_transition_domain",
 
-        self.test_data_file_location = "/app/registrar/tests/data"
+        self.test_data_file_location = "registrar/tests/data"
         self.test_domain_contact_filename = "test_domain_contacts.txt"
         self.test_contact_filename = "test_contacts.txt"
         self.test_domain_status_filename = "test_domain_statuses.txt"
@@ -32,6 +32,7 @@ class TestMigrations(TestCase):
         self.test_domain_types_adhoc = "test_domain_types_adhoc.txt"
         self.test_escrow_domains_daily = "test_escrow_domains_daily"
         self.test_organization_adhoc = "test_organization_adhoc.txt"
+        self.migration_json_filename = "test_migrationFilepaths.json"
 
     def tearDown(self):
         # Delete domain information
@@ -48,16 +49,8 @@ class TestMigrations(TestCase):
         with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit', return_value=True):
             call_command(
                 "load_transition_domain",
-                f"{self.test_data_file_location}/{self.test_domain_contact_filename}",
-                f"{self.test_data_file_location}/{self.test_contact_filename}",
-                f"{self.test_data_file_location}/{self.test_domain_status_filename}",
-                directory=self.test_data_file_location,
-                agency_adhoc_filename=self.test_agency_adhoc_filename,
-                domain_additional_filename=self.test_domain_additional,
-                domain_escrow_filename=self.test_escrow_domains_daily,
-                domain_adhoc_filename=self.test_domain_types_adhoc,
-                organization_adhoc_filename=self.test_organization_adhoc,
-                authority_adhoc_filename=self.test_authority_adhoc_filename,
+                f"{self.test_data_file_location}/{self.migration_json_filename}",
+                directory=self.test_data_file_location
             )
 
     def run_transfer_domains(self):
@@ -68,12 +61,8 @@ class TestMigrations(TestCase):
             call_command(
                 "master_domain_migrations",
                 runMigrations=True,
-                migrationDirectory=f"{self.test_data_file_location}",
-                migrationFilenames=(
-                    f"{self.test_domain_contact_filename},"
-                    f"{self.test_contact_filename},"
-                    f"{self.test_domain_status_filename}"
-                ),
+                migrationDirectory=self.test_data_file_location,
+                migration_json_filename=self.migration_json_filename,
             )
 
     def compare_tables(
@@ -313,24 +302,26 @@ class TestMigrations(TestCase):
             expected_missing_domain_invitations,
         )
 
-        expected_anomaly_domains = Domain.objects.filter(name="anomaly.gov")
-        self.assertEqual(expected_anomaly_domains.count(), 1)
-        expected_anomaly = expected_anomaly_domains.get()
+        anomaly_domains = Domain.objects.filter(name="anomaly.gov")
+        self.assertEqual(anomaly_domains.count(), 1)
+        anomaly = anomaly_domains.get()
 
-        self.assertEqual(expected_anomaly.expiration_date, "test")
-        self.assertEqual(expected_anomaly.creation_date, "test")
-        self.assertEqual(expected_anomaly.name, "anomaly.gov")
-        self.assertEqual(expected_anomaly.state, "ready")
+        self.assertEqual(anomaly.expiration_date, datetime.date(2023, 3, 9))
+        self.assertEqual(
+            anomaly.created_at, datetime.datetime(2023, 11, 8, 17, 23, 46, 764663, tzinfo=datetime.timezone.utc)
+        )
+        self.assertEqual(anomaly.name, "anomaly.gov")
+        self.assertEqual(anomaly.state, "ready")
 
-        expected_testdomain_domains = Domain.objects.filter(name="anomaly.gov")
-        self.assertEqual(expected_testdomain_domains.count(), 1)
+        testdomain_domains = Domain.objects.filter(name="testdomain.gov")
+        self.assertEqual(testdomain_domains.count(), 1)
 
-        expected_testdomain = expected_testdomain_domains.get()
+        testdomain = testdomain_domains.get()
 
-        self.assertEqual(expected_testdomain.expiration_date, "test")
-        self.assertEqual(expected_testdomain.creation_date, "test")
-        self.assertEqual(expected_testdomain.name, "anomaly.gov")
-        self.assertEqual(expected_testdomain.state, "ready")
+        self.assertEqual(testdomain.expiration_date, datetime.date(2023, 3, 9))
+        self.assertEqual(testdomain.created_at, "test")
+        self.assertEqual(testdomain.name, "anomaly.gov")
+        self.assertEqual(testdomain.state, "ready")
 
         expected_domains = [
             Domain(
