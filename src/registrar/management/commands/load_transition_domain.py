@@ -324,6 +324,7 @@ class Command(BaseCommand):
         **options,
     ):
         """Parse the data files and create TransitionDomains."""
+        args = TransitionDomainArguments(**options)
         ### Process JSON file ###
         # If a JSON was provided, use its values instead of defaults.
         # TODO: there is no way to discern user overrides from those arg’s defaults.
@@ -332,7 +333,7 @@ class Command(BaseCommand):
             try:
                 data = json.load(jsonFile)
                 # Create an instance of TransitionDomainArguments
-                args = TransitionDomainArguments()
+                
                 # Iterate over the data from the JSON file
                 for key, value in data.items():
                     # Check if the key exists in TransitionDomainArguments
@@ -346,32 +347,57 @@ class Command(BaseCommand):
                 """)
                 raise err
 
-        sep = options.get("sep")
+        sep = args.sep
 
         # If --resetTable was used, prompt user to confirm
         # deletion of table data
-        if options.get("resetTable"):
+        if args.resetTable:
             self.prompt_table_reset()
 
         # Get --debug argument
-        debug_on = options.get("debug")
+        debug_on = args.debug
 
         # Get --LimitParse argument
         debug_max_entries_to_parse = int(
-            options.get("limitParse")
+            args.limitParse
         )  # set to 0 to parse all entries
 
         ## Variables for Additional TransitionDomain Information ##
         
         # Desired directory for additional TransitionDomain data
         # (In the event they are stored seperately)
-        directory = options.get("directory")
+        directory = args.directory
+        # Add a slash if the last character isn't one
+        if directory and directory[-1] != "/":
+            directory += "/"
 
-        # Main script filenames
-        # TODO: @ZANDER to replace this with new TransitionDomainArgument object
-        domain_contacts_filename = directory + "/" + options.get("domain_contacts_filename")
-        contacts_filename = directory + "/" + options.get("contacts_filename")
-        domain_statuses_filename = directory + "/" + options.get("domain_statuses_filename")
+        # Main script filenames - these do not have defaults
+        domain_contacts_filename = None
+        try:
+            domain_contacts_filename = directory + options.get("domain_contacts_filename")
+        except TypeError as err:
+            logger.error(
+                f"Invalid filename of '{args.domain_contacts_filename}'" 
+                " was provided for domain_contacts_filename"
+            )
+        
+        contacts_filename = None
+        try:
+            contacts_filename = directory + options.get("contacts_filename")
+        except TypeError as err:
+            logger.error(
+                f"Invalid filename of '{args.contacts_filename}'" 
+                " was provided for contacts_filename"
+            )
+
+        domain_statuses_filename = None
+        try:
+            domain_statuses_filename = directory + options.get("domain_statuses_filename")
+        except TypeError as err:
+            logger.error(
+                f"Invalid filename of '{args.domain_statuses_filename}'" 
+                " was provided for domain_statuses_filename"
+            )
 
         # Agency information
         agency_adhoc_filename = options.get("agency_adhoc_filename")
@@ -593,7 +619,7 @@ class Command(BaseCommand):
 
         # Prompt the user if they want to load additional data on the domains
         title = "Do you wish to load additional data for TransitionDomains?"
-        do_parse_extra = TerminalHelper.prompt_for_execution(
+        proceed = TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=False,
             info_to_inspect=f"""
             !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
@@ -617,6 +643,6 @@ class Command(BaseCommand):
             """,
             prompt_title=title,
         )
-        if do_parse_extra:
+        if proceed:
             arguments = TransitionDomainArguments(**options)
             self.parse_extra(arguments)

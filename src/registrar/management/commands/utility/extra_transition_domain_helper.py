@@ -176,6 +176,7 @@ class LoadExtraTransitionDomain:
 
                 # Check if the instance has changed before saving
                 #if updated_transition_domain.__dict__ != transition_domain.__dict__:
+                
                 updated_transition_domain.save()
                 updated_transition_domains.append(updated_transition_domain)
                 if self.debug:
@@ -214,6 +215,7 @@ class LoadExtraTransitionDomain:
                 """
             )
         else:
+            # TODO - update
             logger.error(
                 f"""{TerminalColors.FAIL}
                 ============= FINISHED WITH ERRORS ===============
@@ -222,6 +224,9 @@ class LoadExtraTransitionDomain:
                 {TerminalColors.ENDC}
                 """
             )
+        # TODO
+        if TransitionDomain.objects.all().count() != len(updated_transition_domains):
+            logger.error("Something bad happened")
 
     def parse_creation_expiration_data(self, domain_name, transition_domain):
         """Grabs expiration_date from the parsed files and associates it
@@ -517,7 +522,6 @@ class LoadExtraTransitionDomain:
     def get_domain_data(self, desired_id) -> DomainAdditionalData:
         """Grabs a corresponding row within the DOMAIN_ADDITIONAL file,
         based off a desired_id"""
-        l = self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id.lower())
         return self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id)
 
     def get_organization_adhoc(self, desired_id) -> OrganizationAdhoc:
@@ -545,6 +549,7 @@ class LoadExtraTransitionDomain:
         based off a desired_id"""
         return self.get_object_by_id(EnumFilenames.DOMAIN_ESCROW, desired_id)
 
+    # TODO - renamed / needs a return section
     def get_object_by_id(self, file_type: EnumFilenames, desired_id):
         """Returns a field in a dictionary based off the type and id.
 
@@ -591,7 +596,7 @@ class LoadExtraTransitionDomain:
             )
         return obj
 
-
+# TODO - change name
 @dataclass
 class PatternMap:
     """Helper class that holds data and metadata about a requested file.
@@ -612,7 +617,6 @@ class PatternMap:
             id_field: data_type(...),
             ...
         }
-
     """
 
     def __init__(
@@ -635,6 +639,7 @@ class PatternMap:
         self.data_type = data_type
 
         ### What the id should be in the holding dict ###
+        # TODO - rename to id_field_name
         self.id_field = id_field
 
         # Object data #
@@ -743,9 +748,17 @@ class ExtraTransitionDomain:
                 AuthorityAdhoc,
                 "authorityid",
             ),
+            (
+                EnumFilenames.AUTHORITY_ADHOC,
+                options.authority_adhoc_filename,
+                AuthorityAdhoc,
+                "authorityid",
+            ),
         ]
+
         self.file_data = self.populate_file_data(pattern_map_params)
 
+    # TODO - revise comment
     def populate_file_data(
         self, pattern_map_params: List[Tuple[EnumFilenames, str, type, str]]
     ):

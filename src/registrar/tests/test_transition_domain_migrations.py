@@ -352,6 +352,8 @@ class TestMigrations(TestCase):
             )
         ]
 
+
+        #TransitionDomain.objects.filter(domain_name = "fakewebsite3.gov")
         # Afterwards, their values should be what we expect
         all_transition_domains = TransitionDomain.objects.all()
         for domain in all_transition_domains:
@@ -433,6 +435,7 @@ class TestMigrations(TestCase):
                 expected.id = domain.id
                 expected.created_at = domain.created_at
                 expected.updated_at = domain.updated_at
+
                 self.assertEqual(domain, expected)
 
     def test_transfer_transition_domains_to_domains(self):
