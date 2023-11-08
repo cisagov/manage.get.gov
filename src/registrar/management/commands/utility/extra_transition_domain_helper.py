@@ -213,16 +213,17 @@ class LoadExtraTransitionDomain:
 
         failed_count = len(failed_transition_domains)
         if failed_count == 0:
+            TerminalHelper.print_conditional(self.debug, f"{TerminalHelper.array_as_string(updated_transition_domains)}")
             logger.info(
                 f"""{TerminalColors.OKGREEN}
                 ============= FINISHED ===============
                 Updated {len(updated_transition_domains)} transition domain entries:
-                {TerminalHelper.array_as_string(updated_transition_domains)}
                 {TerminalColors.ENDC}
                 """
             )
         else:
             # TODO - update
+            TerminalHelper.print_conditional(self.debug, f"{TerminalHelper.array_as_string(updated_transition_domains)}")
             logger.error(
                 f"""{TerminalColors.FAIL}
                 ============= FINISHED WITH ERRORS ===============

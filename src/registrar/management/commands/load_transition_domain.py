@@ -468,7 +468,7 @@ class Command(BaseCommand):
                 new_entry_email = ""
                 new_entry_emailSent = False  # set to False by default
 
-                TerminalHelper.print_conditional(debug_on, f"Processing item {total_rows_parsed}: {new_entry_domain_name}")
+                TerminalHelper.print_conditional(True, f"Processing item {total_rows_parsed}: {new_entry_domain_name}")
 
                 # PART 1: Get the status
                 if new_entry_domain_name not in domain_status_dictionary:
