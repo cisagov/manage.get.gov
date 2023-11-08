@@ -53,6 +53,11 @@ class DomainNameserverForm(forms.Form):
         cleaned_data = super().clean()
         self.clean_empty_strings(cleaned_data)
         server = cleaned_data.get("server", "")
+        # remove ANY spaces in the server field
+        server = server.replace(" ", "")
+        # lowercase the server
+        server = server.lower()
+        cleaned_data["server"] = server
         ip = cleaned_data.get("ip", None)
         # remove ANY spaces in the ip field
         ip = ip.replace(" ", "")
@@ -60,9 +65,8 @@ class DomainNameserverForm(forms.Form):
 
         ip_list = self.extract_ip_list(ip)
 
-        if ip and not server and ip_list:
-            self.add_error("server", NameserverError(code=nsErrorCodes.MISSING_HOST))
-        elif server:
+        # validate if the form has a server or an ip
+        if (ip and ip_list) or server:
             self.validate_nameserver_ip_combo(domain, server, ip_list)
 
         return cleaned_data
@@ -93,6 +97,20 @@ class DomainNameserverForm(forms.Form):
                     "ip",
                     NameserverError(
                         code=nsErrorCodes.MISSING_IP, nameserver=domain, ip=ip_list
+                    ),
+                )
+            elif e.code == nsErrorCodes.MISSING_HOST:
+                self.add_error(
+                    "server",
+                    NameserverError(
+                        code=nsErrorCodes.MISSING_HOST, nameserver=domain, ip=ip_list
+                    ),
+                )
+            elif e.code == nsErrorCodes.INVALID_HOST:
+                self.add_error(
+                    "server",
+                    NameserverError(
+                        code=nsErrorCodes.INVALID_HOST, nameserver=server, ip=ip_list
                     ),
                 )
             else:

@@ -78,32 +78,151 @@ An example script using this technique is in
 docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_contacts.daily.dotgov.GOV.txt /app/escrow_contacts.daily.dotgov.GOV.txt
 ```
 
-## Transition Domains
+## Transition Domains (Part 1) - Setup Files for Import
 We are provided with information about Transition Domains in 3 files:
-FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
-FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
-FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
 
-Transferring this data from these files into our domain tables happens in two steps;
+- FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
+- FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
+- FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
 
-***IMPORTANT: only run the following locally, to avoid publicizing PII in our public repo.***
+We need to run a few scripts to parse these files into our domain tables.
+We can do this both locally and in a sandbox.
 
-### STEP 1: Load Transition Domain data into TransitionDomain table
+### SECTION 1 - SANDBOX MIGRATION SETUP
+Load migration data onto a production or sandbox environment
 
-**SETUP**
-In order to use the management command, we need to add the files to a folder under `src/`.
-This will allow Docker to mount the files to a container (under `/app`) for our use.  
+**WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
+Do not use these environments to store data you want to keep around permanently. We don't want sensitive data to be accidentally present in our application environments.
 
- - Create a folder called `tmp` underneath `src/`
- - Add the above files to this folder
- - Open a terminal and navigate to `src/`
+#### STEP 1: Using cat to transfer data to sandboxes
 
-Then run the following command  (This will parse the three files in your `tmp` folder and load the information into the TransitionDomain table);
-```shell
-docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt
+```bash
+cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
 ```
 
-**OPTIONAL COMMAND LINE ARGUMENTS**: 
+* APP_NAME_IN_ENVIRONMENT - Name of the app running in your environment, e.g. getgov-za or getgov-stable
+* LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
+* DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
+
+**TROUBLESHOOTING:** Depending on your operating system (Windows for instance), this command may upload corrupt data. If you encounter the error `gzip: prfiles.tar.gz: not in gzip format` when trying to unzip a .tar.gz file, use the scp command instead.
+
+#### STEP 1 (Alternative): Using scp to transfer data to sandboxes
+**IMPORTANT:** Only follow these steps if cat does not work as expected. If it does, skip to step 2.
+
+CloudFoundry supports scp as means of transferring data locally to our environment. If you are dealing with a batch of files, try sending across a tar.gz and unpacking that.
+
+
+
+##### Login to Cloud.gov
+
+```bash
+cf login -a api.fr.cloud.gov  --sso
+```
+
+##### Target your workspace
+
+```bash
+cf target -o cisa-dotgov -s {ENVIRONMENT_NAME}
+```
+*ENVIRONMENT_NAME* - Name of your sandbox, ex: za or ab
+
+##### Run the scp command
+
+Use the following command to transfer the desired file:
+```shell
+scp -P 2222 -o User=cf:$(cf curl /v3/apps/$(cf app {APP_NAME_IN_ENVIRONMENT} --guid)/processes | jq -r '.resources[]
+| select(.type=="web") | .guid')/0 {LOCAL_PATH_TO_FILE} ssh.fr.cloud.gov:tmp/{DESIRED_NAME_OF_FILE}
+```
+The items in curly braces are the values that you will manually replace.
+These are as follows:
+* APP_NAME_IN_ENVIRONMENT - Name of the app running in your environment, e.g. getgov-za or getgov-stable
+* LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
+* DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
+
+##### Get a temp auth code
+
+The scp command requires a temporary authentication code. Open a new terminal instance (while keeping the current one open),
+and enter the following command:
+```shell
+cf ssh-code
+```
+Copy this code into the password prompt from earlier.
+
+NOTE: You can use different utilities to copy this onto the clipboard for you. If you are on Windows, try the command `cf ssh-code | clip`. On Mac, this will be `cf ssh-code | pbcopy`
+
+#### STEP 2: Transfer uploaded files to the getgov directory
+Due to the nature of how Cloud.gov operates, the getgov directory is dynamically generated whenever the app is built under the tmp/ folder. We can directly upload files to the tmp/ folder but cannot target the generated getgov folder directly, as we need to spin up a shell to access this. From here, we can move those uploaded files into the getgov directory using the `cat` command. Note that you will have to repeat this for each file you want to move, so it is better to use a tar.gz for multiple, and unpack it inside of the `datamigration` folder.
+
+##### SSH into your sandbox
+
+```shell
+cf ssh {APP_NAME_IN_ENVIRONMENT}
+```
+
+##### Open a shell
+
+```shell
+/tmp/lifecycle/shell
+```
+
+##### From this directory, run the following command:
+```shell
+./manage.py cat_files_into_getgov --file_extension txt
+```
+
+NOTE: This will look for all files in /tmp with the .txt extension, but this can
+be changed if you are dealing with different extensions. For instance, a .tar.gz could be expressed
+as `--file_extension tar.gz`.
+
+If you are using a tar.gz file, you will need to perform one additional step to extract it.
+Run the following command from the same directory:
+```shell
+tar -xvf migrationdata/{FILE_NAME}.tar.gz -C migrationdata/ --strip-components=1
+```
+
+*FILE_NAME* - Name of the desired file, ex: exportdata
+
+
+
+#### Manual method
+If the `cat_files_into_getgov.py` script isn't working, follow these steps instead.
+
+##### Move the desired file into the correct directory
+
+```shell
+cat ../tmp/{filename} > migrationdata/{filename}
+```
+
+
+*You are now ready to run migration scripts (see [Running the Migration Scripts](running-the-migration-scripts))*
+
+### SECTION 2 - LOCAL MIGRATION SETUP (TESTING PURPOSES ONLY)
+
+***IMPORTANT: only use test data, to avoid publicizing PII in our public repo.***
+
+In order to run the scripts locally, we need to add the files to a folder under `src/`.
+This will allow Docker to mount the files to a container (under `/app`) for our use.  
+
+ - Add the above files to the `migrationdata/` folder
+ - Open a terminal and navigate to `src/`
+
+
+*You are now ready to run migration scripts.*
+
+## Transition Domains (Part 2) - Running the Migration Scripts
+
+
+### STEP 1: Load Transition Domains
+
+Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. 
+
+(NOTE: If working in cloud.gov, change "/app/tmp" to point to the `migrationdata/` directory and and remove "docker compose run -T app" from the command)
+```shell
+docker compose run -T app ./manage.py load_transition_domain /app/tmp/escrow_domain_contacts.daily.gov.GOV.txt /app/tmp/escrow_contacts.daily.gov.GOV.txt /app/tmp/escrow_domain_statuses.daily.gov.GOV.txt --debug
+```
+
+##### COMMAND LINE ARGUMENTS:
+
 `--debug`
 This will print out additional, detailed logs.
 
@@ -111,22 +230,108 @@ This will print out additional, detailed logs.
 Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
 
 `--resetTable`
-This will delete all the data loaded into transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
+This will delete all the data in transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
 
 
 ### STEP 2: Transfer Transition Domain data into main Domain tables
 
 Now that we've loaded all the data into TransitionDomain, we need to update the main Domain and DomainInvitation tables with this information.  
-
 In the same terminal as used in STEP 1, run the command below; 
 (This will parse the data in TransitionDomain and either create a corresponding Domain object, OR, if a corresponding Domain already exists, it will update that Domain with the incoming status. It will also create DomainInvitation objects for each user associated with the domain):
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
 ```shell
-docker compose run -T app ./manage.py transfer_transition_domains_to_domains
+docker compose run -T app ./manage.py transfer_transition_domains_to_domains --debug
 ```
 
-**OPTIONAL COMMAND LINE ARGUMENTS**: 
+##### COMMAND LINE ARGUMENTS:
+
 `--debug`
 This will print out additional, detailed logs.
 
 `--limitParse 100` 
 Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
+
+### STEP 3: Send Domain invitations
+
+To send invitation emails for every transition domain in the transition domain table, execute the following command:
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
+```shell
+docker compose run -T app ./manage.py send_domain_invitations -s
+```
+
+### STEP 4: Test the results (Run the analyzer script)
+
+This script's main function is to scan the transition domain and domain tables for any anomalies.  It produces a simple report of missing or duplicate data.  NOTE: some missing data might be expected depending on the nature of our migrations so use best judgement when evaluating the results.
+
+#### OPTION 1 - ANALYZE ONLY
+
+To analyze our database without running migrations, execute the script without any optional arguments:
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
+```shell
+docker compose run -T app ./manage.py master_domain_migrations --debug
+```
+
+#### OPTION 2 - RUN MIGRATIONS FEATURE
+
+To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug and --prompt allow you to step through the migration process and exit it after each step if you need to.  It is recommended that you use these arguments when using the --runMigrations feature:
+
+(NOTE: If working in cloud.gov, and remove "docker compose run -T app" from the command)
+```shell
+docker compose run -T app ./manage.py master_domain_migrations --runMigrations --debug --prompt
+```
+
+##### COMMAND LINE ARGUMENTS
+
+`--runMigrations`
+
+Runs all scripts (in sequence) for transition domain migrations
+
+`--migrationDirectory`
+
+The location of the files used for load_transition_domain migration script.
+(default is "migrationdata" (This is the sandbox directory))
+
+Example Usage:
+*--migrationDirectory /app/tmp*
+
+`--migrationFilenames` 
+
+The filenames used for load_transition_domain migration script.
+Must appear *in oprder* and comma-delimited: 
+default is "escrow_domain_contacts.daily.gov.GOV.txt,escrow_contacts.daily.gov.GOV.txt,escrow_domain_statuses.daily.gov.GOV.txt"
+where...
+- domain_contacts_filename is the Data file with domain contact information
+- contacts_filename is the Data file with contact information
+- domain_statuses_filename is the Data file with domain status information
+
+Example Usage:
+*--migrationFilenames domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt*
+
+
+`--sep`
+
+Delimiter for the migration scripts to correctly parse the given text files.
+(usually this can remain at default value of |)
+
+`--debug`
+
+Activates additional print statements
+
+`--prompt`
+
+Activates terminal prompts that allows the user to step through each portion of this script.
+
+`--limitParse`
+
+Used by the migration scripts (load_transition_domain) to set the limit for the
+number of data entries to insert.  Set to 0 (or just don't use this
+argument) to parse every entry. This was provided primarily for testing
+purposes
+
+`--resetTable`
+
+Used by the migration scripts to trigger a prompt for deleting all table entries.  
+Useful for testing purposes, but *use with caution*
