@@ -1,3 +1,5 @@
+from io import StringIO
+
 from django.test import TestCase
 
 from registrar.models import (
@@ -10,6 +12,8 @@ from registrar.models import (
 )
 
 from django.core.management import call_command
+
+from .common import less_console_noise
 
 
 class TestLogins(TestCase):
@@ -259,3 +263,20 @@ class TestLogins(TestCase):
             expected_missing_domain_informations,
             expected_missing_domain_invitations,
         )
+
+    def test_send_domain_invitations_email(self):
+        """Can send only a single domain invitation email."""
+        with less_console_noise():
+            self.run_load_domains()
+            self.run_transfer_domains()
+
+        # this is one of the email addresses in data/test_contacts.txt
+        output_stream = StringIO()
+        call_command("send_domain_invitations", 
+                     stdout=output_stream)
+
+        # Check that we had the right numbers in our output
+        output = output_stream.getvalue()
+        print("Output:", output)
+        self.assertIn("Found 1 transition domains", output)
+        self.assertTrue("would send email to testuser@gmail.com", output)

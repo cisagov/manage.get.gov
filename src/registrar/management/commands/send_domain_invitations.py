@@ -37,14 +37,28 @@ class Command(BaseCommand):
             help="Send emails ",
         )
 
+        parser.add_argument(
+            "emails",
+            nargs="*",
+            help="Email addresses to send invitations to"
+        )
+
     def handle(self, **options):
         """Process the objects in TransitionDomain."""
 
         logger.info("checking domains and preparing emails")
-        # Get all TransitionDomain objects
-        self.transition_domains = TransitionDomain.objects.filter(
-            email_sent=False,
-        ).order_by("username")
+
+        if options["emails"]:
+            # this option is a list of email addresses
+            self.transition_domains = TransitionDomain.objects.filter(
+                username__in=options["emails"],
+                email_sent=False,
+            ).order_by("username")
+        else:
+            # Get all TransitionDomain objects
+            self.transition_domains = TransitionDomain.objects.filter(
+                email_sent=False,
+            ).order_by("username")
         logger.info("Found %d transition domains", len(self.transition_domains))
 
         self.build_emails_to_send_array()
