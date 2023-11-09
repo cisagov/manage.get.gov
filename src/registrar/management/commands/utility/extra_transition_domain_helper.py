@@ -334,12 +334,11 @@ class LoadExtraTransitionDomain:
         if not isinstance(info.isfederal, str) or not info.isfederal.lower() == "y":
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
-                LogCode.ERROR,
-                f"Could not add non-federal agency {info.agencyname} on {domain_name}",
+                LogCode.INFO,
+                f"Adding non-federal agency {info.agencyname} on {domain_name}",
                 domain_name,
                 not self.debug,
             )
-            return transition_domain
 
         transition_domain.federal_agency = info.agencyname
 
@@ -685,6 +684,10 @@ class FileDataHolder:
         # Object data #
         self.data: Dict[str, type] = {}
 
+    # This is used ONLY for development purposes. This behaviour
+    # is controlled by the --infer_filename flag which is defaulted
+    # to false. The purpose of this check is to speed up development,
+    # but it cannot be used by the enduser
     def try_infer_filename(self, current_file_name, default_file_name):
         """Tries to match a given filename to a regex,
         then uses that match to generate the filename."""
@@ -850,7 +853,6 @@ class ExtraTransitionDomain:
         infer_filenames: bool -> Determines if we should try to
         infer the filename if a default is passed in
         """
-        self.clear_file_data()
         for name, value in self.file_data.items():
             is_domain_escrow = name == EnumFilenames.DOMAIN_ESCROW
             filename = f"{value.filename}"

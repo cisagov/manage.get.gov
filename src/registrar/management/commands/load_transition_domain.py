@@ -5,6 +5,7 @@ import logging
 import argparse
 
 from collections import defaultdict
+from django.conf import settings
 
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.epp_data_containers import EnumFilenames
@@ -63,12 +64,15 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-        parser.add_argument(
-            "--infer_filenames",
-            action=argparse.BooleanOptionalAction,
-            help="Determines if we should infer filenames or not."
-            "Recommended to be enabled only in a development or testing setting.",
-        )
+        # This option should only be available when developing locally.
+        # This should not be available to the end user.
+        if settings.DEBUG:
+            parser.add_argument(
+                "--infer_filenames",
+                action=argparse.BooleanOptionalAction,
+                help="Determines if we should infer filenames or not."
+                "Recommended to be enabled only in a development or testing setting.",
+            )
 
         parser.add_argument(
             "--directory", default="migrationdata", help="Desired directory"
@@ -322,6 +326,9 @@ class Command(BaseCommand):
         **options,
     ):
         """Parse the data files and create TransitionDomains."""
+        if not settings.DEBUG:
+            options["infer_filenames"] = False
+
         args = TransitionDomainArguments(**options)
 
         # Desired directory for additional TransitionDomain data

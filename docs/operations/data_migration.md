@@ -246,7 +246,7 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 *You are now ready to run migration scripts.*
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
-While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands. If you run into the error that. If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
+While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands.If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
 
 ### STEP 1: Load Transition Domains
 
