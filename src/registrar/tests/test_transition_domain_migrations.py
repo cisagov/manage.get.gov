@@ -272,11 +272,12 @@ class TestLogins(TestCase):
 
         # this is one of the email addresses in data/test_contacts.txt
         output_stream = StringIO()
-        call_command("send_domain_invitations", 
-                     stdout=output_stream)
+        # also have to re-point the logging handlers to output_stream
+        with less_console_noise(output_stream):
+            call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
 
         # Check that we had the right numbers in our output
         output = output_stream.getvalue()
-        print("Output:", output)
+        # should only be one domain we send email for
         self.assertIn("Found 1 transition domains", output)
         self.assertTrue("would send email to testuser@gmail.com", output)
