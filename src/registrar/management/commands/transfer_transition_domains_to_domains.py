@@ -377,11 +377,19 @@ class Command(BaseCommand):
         org_choices,
         debug_on,
     ) -> DomainInformation:
-        org_type_current = transition_domain.organization_type
+        org_type = ("", "")
         fed_type = transition_domain.federal_type
         fed_agency = transition_domain.federal_agency
 
-        org_type = ("", "")
+        # = AO Information = #
+        first_name = transition_domain.first_name
+        middle_name = transition_domain.middle_name
+        last_name = transition_domain.last_name
+        email = transition_domain.email
+        phone = transition_domain.phone
+        
+        
+        org_type_current = transition_domain.organization_type
         match org_type_current:
             case "Federal":
                 org_type = ("federal", "Federal")
@@ -408,6 +416,7 @@ class Command(BaseCommand):
             "domain": domain,
             "organization_name": transition_domain.organization_name,
             "creator": default_creator,
+            "authorizing_official": 
         }
 
         if valid_org_type:
