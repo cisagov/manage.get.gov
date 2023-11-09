@@ -9,7 +9,7 @@ import logging
 
 import os
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict
 
 from registrar.models.transition_domain import TransitionDomain
 
@@ -321,10 +321,7 @@ class LoadExtraTransitionDomain:
             and transition_domain.federal_agency.strip() != ""
         )
 
-        if (
-            not isinstance(info.active, str) or
-            not info.active.lower() == "y"
-        ):
+        if not isinstance(info.active, str) or not info.active.lower() == "y":
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
@@ -334,10 +331,7 @@ class LoadExtraTransitionDomain:
             )
             return transition_domain
 
-        if (
-            not isinstance(info.isfederal, str) or 
-            not info.isfederal.lower() == "y"
-        ):
+        if not isinstance(info.isfederal, str) or not info.isfederal.lower() == "y":
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
@@ -395,10 +389,7 @@ class LoadExtraTransitionDomain:
 
         # Check if this domain_type is active or not.
         # If not, we don't want to add this.
-        if (
-            not isinstance(info.active, str) or
-            not info.active.lower() == "y"
-        ):
+        if not isinstance(info.active, str) or not info.active.lower() == "y":
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
@@ -808,9 +799,7 @@ class ExtraTransitionDomain:
         self.file_data = self.populate_file_data(pattern_map_params)
 
     # TODO - revise comment
-    def populate_file_data(
-        self, pattern_map_params
-    ):
+    def populate_file_data(self, pattern_map_params):
         """Populates the self.file_data field given a set
         of tuple params.
 
@@ -981,7 +970,7 @@ class ExtraTransitionDomain:
                     )
                     dict_data = {}
                     break
-                
+
                 row_id = self._grab_row_id(row, id_field, file, dataclass_type)
 
                 # To maintain pairity with the load_transition_domain
