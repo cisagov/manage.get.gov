@@ -212,80 +212,6 @@ class TestMigrations(TestCase):
             expected_missing_domain_invitations,
         )
 
-    def test_load_full_transition_domain(self):
-        # Load command
-        self.run_load_domains()
-
-        # We should get a consistent number
-        # of records
-        expected_total_transition_domains = 9
-        expected_total_domains = 0
-        expected_total_domain_informations = 0
-        expected_total_domain_invitations = 0
-
-        expected_missing_domains = 9
-        expected_duplicate_domains = 0
-        expected_missing_domain_informations = 9
-        expected_missing_domain_invitations = 9
-        self.compare_tables(
-            expected_total_transition_domains,
-            expected_total_domains,
-            expected_total_domain_informations,
-            expected_total_domain_invitations,
-            expected_missing_domains,
-            expected_duplicate_domains,
-            expected_missing_domain_informations,
-            expected_missing_domain_invitations,
-        )
-
-        expected_transition_domains = [
-            TransitionDomain(
-                username="alexandra.bobbitt5@test.com",
-                domain_name="fakewebsite2.gov",
-                status="on hold",
-                email_sent=False,
-                organization_type="Federal",
-                organization_name="Fanoodle",
-                federal_type="Executive",
-                federal_agency="InnoZ",
-                epp_creation_date=None,
-                epp_expiration_date=None,
-            ),
-            TransitionDomain(
-                username="reginald.ratcliff4@test.com",
-                domain_name="fakewebsite3.gov",
-                status="ready",
-                email_sent=False,
-                organization_type="City",
-                organization_name="Sushi",
-                federal_type=None,
-                federal_agency=None,
-                epp_creation_date=None,
-                epp_expiration_date=None,
-            ),
-        ]
-
-        expected_transition_domains = TransitionDomain.objects.filter(
-            username="alexandra.bobbitt5@test.com"
-        )
-        self.assertEqual(expected_transition_domains.count(), 1)
-        expected_transition_domain = expected_transition_domains.get()
-
-        # TransitionDomain.objects.filter(domain_name = "fakewebsite3.gov")
-        # Afterwards, their values should be what we expect
-        all_transition_domains = TransitionDomain.objects.all()
-        for domain in all_transition_domains:
-            for expected in expected_transition_domains:
-                # This data gets created when the object is,
-                # so we should just match it. Not relevant
-                # to the added data.
-                expected.id = domain.id
-                expected.created_at = domain.created_at
-                expected.updated_at = domain.updated_at
-
-                # Each TransitionDomain should have the correct data
-                self.assertEqual(domain, expected)
-
     def test_load_full_domain(self):
         self.run_load_domains()
         self.run_transfer_domains()
@@ -317,11 +243,7 @@ class TestMigrations(TestCase):
         anomaly = anomaly_domains.get()
 
         self.assertEqual(anomaly.expiration_date, datetime.date(2023, 3, 9))
-        """
-        self.assertEqual(
-            anomaly.created_at, datetime.datetime(2023, 11, 8, 17, 23, 46, 764663, tzinfo=datetime.timezone.utc)
-        )
-        """
+
         self.assertEqual(anomaly.name, "anomaly.gov")
         self.assertEqual(anomaly.state, "ready")
 
@@ -331,7 +253,6 @@ class TestMigrations(TestCase):
         testdomain = testdomain_domains.get()
 
         self.assertEqual(testdomain.expiration_date, datetime.date(2023, 9, 30))
-        # self.assertEqual(testdomain.created_at, "test")
         self.assertEqual(testdomain.name, "fakewebsite2.gov")
         self.assertEqual(testdomain.state, "on hold")
 

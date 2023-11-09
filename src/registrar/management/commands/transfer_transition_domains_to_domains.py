@@ -114,7 +114,7 @@ class Command(BaseCommand):
             Created {total_domain_invitation_entries} domain invitation entries
             (NOTE: no invitations are SENT in this script)
             {TerminalColors.ENDC}
-            """
+            """ # noqa
         )
         if len(skipped_domain_entries) > 0:
             logger.info(
@@ -192,15 +192,19 @@ class Command(BaseCommand):
 
                 # ---- UPDATE THE DOMAIN
                 # update the status
-                update_made = self.update_domain_status(
+                self.update_domain_status(
                     transition_domain, target_domain, debug_on
                 )
-                # TODO: not all domains need to be updated (the information is the same).  Need to bubble this up to the final report.
+                # TODO: not all domains need to be updated (the information is the same).
+                # Need to bubble this up to the final report.
 
                 # update dates (creation and expiration)
                 if transition_domain_creation_date is not None:
-                    # TODO: added this because I ran into a situation where the created_at date was null (violated a key constraint).  How do we want to handle this case?
+                    # TODO: added this because I ran into a situation where 
+                    # the created_at date was null (violated a key constraint). 
+                    # How do we want to handle this case?
                     target_domain.created_at = transition_domain_creation_date
+
                 if transition_domain_expiration_date is not None:
                     target_domain.expiration_date = transition_domain_expiration_date
                 target_domain.save()
@@ -486,7 +490,7 @@ class Command(BaseCommand):
 
                 # for existing entry, update the status to
                 # the transition domain status
-                update_made = self.update_domain_information(
+                self.update_domain_information(
                     target_domain_information, template_domain_information, debug_on
                 )
                 # TODO: not all domains need to be updated (the information is the same).  Need to bubble this up to the final report.

@@ -66,7 +66,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--infer_filenames",
             action=argparse.BooleanOptionalAction,
-            help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting.",
+            help="Determines if we should infer filenames or not." 
+            "Recommended to be enabled only in a development or testing setting.",
         )
 
         parser.add_argument(
@@ -331,7 +332,7 @@ class Command(BaseCommand):
             directory += "/"
 
         json_filepath = directory + migration_json_filename
-        ### Process JSON file ###
+        # Process JSON file #
         # If a JSON was provided, use its values instead of defaults.
         # TODO: there is no way to discern user overrides from those arg’s defaults.
         with open(json_filepath, "r") as jsonFile:
@@ -339,7 +340,6 @@ class Command(BaseCommand):
             try:
                 data = json.load(jsonFile)
                 # Create an instance of TransitionDomainArguments
-                has_desired_args = False
                 # Iterate over the data from the JSON file
                 for key, value in data.items():
                     # Check if the key exists in TransitionDomainArguments
@@ -348,10 +348,10 @@ class Command(BaseCommand):
                         options[key] = value
             except Exception as err:
                 logger.error(
-                    f"""{TerminalColors.FAIL}There was an error loading the JSON responsible
-                for providing filepaths.
-                {TerminalColors.ENDC}
-                """
+                    f"{TerminalColors.FAIL}"
+                    "There was an error loading "
+                    "the JSON responsible for providing filepaths."
+                    f"{TerminalColors.ENDC}"
                 )
                 raise err
 
@@ -370,7 +370,7 @@ class Command(BaseCommand):
             args.limitParse
         )  # set to 0 to parse all entries
 
-        ## Variables for Additional TransitionDomain Information ##
+        # Variables for Additional TransitionDomain Information #
 
         # Main script filenames - these do not have defaults
         domain_contacts_filename = None
@@ -378,7 +378,7 @@ class Command(BaseCommand):
             domain_contacts_filename = directory + options.get(
                 "domain_contacts_filename"
             )
-        except TypeError as err:
+        except TypeError:
             logger.error(
                 f"Invalid filename of '{args.domain_contacts_filename}'"
                 " was provided for domain_contacts_filename"
@@ -387,7 +387,7 @@ class Command(BaseCommand):
         contacts_filename = None
         try:
             contacts_filename = directory + options.get("contacts_filename")
-        except TypeError as err:
+        except TypeError:
             logger.error(
                 f"Invalid filename of '{args.contacts_filename}'"
                 " was provided for contacts_filename"
@@ -398,7 +398,7 @@ class Command(BaseCommand):
             domain_statuses_filename = directory + options.get(
                 "domain_statuses_filename"
             )
-        except TypeError as err:
+        except TypeError:
             logger.error(
                 f"Invalid filename of '{args.domain_statuses_filename}'"
                 " was provided for domain_statuses_filename"
@@ -458,7 +458,6 @@ class Command(BaseCommand):
 
         # Start parsing the main file and create TransitionDomain objects
         logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
-        total_lines = TerminalHelper.get_file_line_count(domain_contacts_filename)
         with open(domain_contacts_filename, "r") as domain_contacts_file:
             for row in csv.reader(domain_contacts_file, delimiter=sep):
                 # TerminalHelper.printProgressBar(total_rows_parsed, total_lines)
