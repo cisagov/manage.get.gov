@@ -446,7 +446,7 @@ class Command(BaseCommand):
         fed_choices,
         org_choices,
         debug_on: bool,
-    ) -> Tuple[DomainInformation, bool]:
+    ):
         transition_domain_name = transition_domain.domain_name
 
         # Get associated domain
