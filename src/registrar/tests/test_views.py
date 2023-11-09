@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .common import MockEppLib, completed_application  # type: ignore
+from .common import MockEppLib, completed_application, create_user  # type: ignore
 
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -1105,6 +1105,9 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(
             name="justnameserver.com"
         )
+        self.domain_no_information, _ = Domain.objects.get_or_create(
+            name="noinformation.gov"
+        )
 
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         self.domain_multdsdata, _ = Domain.objects.get_or_create(
@@ -1277,6 +1280,29 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         # Splitting IP addresses bc there is odd whitespace and can't strip text
         self.assertContains(detail_page, "(1.2.3.4,")
         self.assertContains(detail_page, "2.3.4.5)")
+
+    def test_domain_with_no_information_or_application(self):
+        """Test that domain management page returns 200 and displays error
+        when no domain information or domain application exist"""
+        # have to use staff user for this test
+        staff_user = create_user()
+        # staff_user.save()
+        self.client.force_login(staff_user)
+
+        # need to set the analyst_action and analyst_action_location
+        # in the session to emulate user clicking Manage Domain
+        # in the admin interface
+        session = self.client.session
+        session["analyst_action"] = "foo"
+        session["analyst_action_location"] = self.domain_no_information.id
+        session.save()
+
+        detail_page = self.client.get(
+            reverse("domain", kwargs={"pk": self.domain_no_information.id})
+        )
+
+        self.assertContains(detail_page, "noinformation.gov")
+        self.assertContains(detail_page, "Domain missing domain information")
 
 
 class TestDomainManagers(TestDomainOverview):

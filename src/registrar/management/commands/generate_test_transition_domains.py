@@ -15,7 +15,7 @@ class Command(BaseCommand):
     # Running this script removes all existing transition domains, so use with caution.
     # Transition domains are created with email addresses provided as command line
     # argument. Email addresses for testing are passed as comma delimited list of
-    # email addresses, and are required to be provided.  Email addresses from the list
+    # email addresses, and are required to be provided. Email addresses from the list
     # are assigned to transition domains at time of creation.
 
     def add_arguments(self, parser):
