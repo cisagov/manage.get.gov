@@ -1,7 +1,6 @@
 import logging
 import argparse
 import sys
-from typing import Tuple
 
 from django_fsm import TransitionNotAllowed  # type: ignore
 
