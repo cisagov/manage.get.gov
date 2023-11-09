@@ -114,13 +114,17 @@ Add a JSON file called "migrationFilepaths.json" with the following contents (up
 This JSON file can exist anywhere, but to keep things simple, add it to the same folder as used in step 1.  `src/migrationdata`. 
 Directory specifies the directory that the given `filenames` exist in. For instance, a `contacts_filename` of `test.txt` with a `directory` of `migrationdata` would need to exist under `migrationdata/test.txt`.
 
+Later on, we will bundle this file along with the others into its own folder. Keep it within the `migrationdata/` directory if you are passing data to your sandbox, for simplicity.
+
 We need to run a few scripts to parse these files into our domain tables.
 We can do this both locally and in a sandbox.
 
-#### STEP 3: Bundle all relevant data files into one file
-Move all the files specified in Step 1 into a shared folder, and create a tar.gz
+#### STEP 3: Bundle all relevant data files into an archive
+Move all the files specified in Step 1 into a shared folder, and create a tar.gz.
 
 Create a folder on your desktop called `datafiles` and move all of the obtained files into that. Add these files to a tar.gz archive using any method. See (here)[https://stackoverflow.com/questions/53283240/how-to-create-tar-file-with-7zip].
+
+After this is created, move this archive into `src/migrationdata`.
 
 
 ### SECTION 1 - SANDBOX MIGRATION SETUP
