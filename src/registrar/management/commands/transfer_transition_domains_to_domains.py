@@ -254,7 +254,7 @@ class Command(BaseCommand):
             # ----------------------- CREATE DOMAIN -----------------------
             # no matching entry, make one
             target_domain = Domain(
-                name=transition_domain_name,
+                name=str(transition_domain_name),
                 state=transition_domain_status,
                 expiration_date=transition_domain_expiration_date,
             )
@@ -377,11 +377,12 @@ class Command(BaseCommand):
         org_choices,
         debug_on,
     ) -> DomainInformation:
-        org_type = transition_domain.organization_type
+        org_type_current = transition_domain.organization_type
         fed_type = transition_domain.federal_type
         fed_agency = transition_domain.federal_agency
 
-        match org_type:
+        org_type = ("", "")
+        match org_type_current:
             case "Federal":
                 org_type = ("federal", "Federal")
             case "Interstate":
@@ -414,7 +415,7 @@ class Command(BaseCommand):
         elif debug_on:
             logger.debug(f"No org type found on {domain.name}")
 
-        if valid_fed_type:
+        if valid_fed_type and isinstance(fed_type, str):
             new_domain_info_data["federal_type"] = fed_type.lower()
         elif debug_on:
             logger.debug(f"No federal type found on {domain.name}")

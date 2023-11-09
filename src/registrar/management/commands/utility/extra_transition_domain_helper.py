@@ -9,7 +9,7 @@ import logging
 
 import os
 import sys
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from registrar.models.transition_domain import TransitionDomain
 
@@ -321,7 +321,10 @@ class LoadExtraTransitionDomain:
             and transition_domain.federal_agency.strip() != ""
         )
 
-        if not info.active.lower() == "y":
+        if (
+            not isinstance(info.active, str) or
+            not info.active.lower() == "y"
+        ):
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
@@ -331,7 +334,10 @@ class LoadExtraTransitionDomain:
             )
             return transition_domain
 
-        if not info.isfederal.lower() == "y":
+        if (
+            not isinstance(info.isfederal, str) or 
+            not info.isfederal.lower() == "y"
+        ):
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
@@ -377,7 +383,9 @@ class LoadExtraTransitionDomain:
         # This data is stored as follows: FEDERAL - Judicial
         # For all other records, it is stored as so: Interstate
         # We can infer if it is federal or not based on this fact.
-        domain_type = info.domaintype.split("-")
+        domain_type = []
+        if isinstance(info.domaintype, str):
+            domain_type = info.domaintype.split("-")
         domain_type_length = len(domain_type)
         if domain_type_length < 1 or domain_type_length > 2:
             raise ValueError("Found invalid data on DOMAIN_ADHOC")
@@ -387,7 +395,10 @@ class LoadExtraTransitionDomain:
 
         # Check if this domain_type is active or not.
         # If not, we don't want to add this.
-        if not info.active.lower() == "y":
+        if (
+            not isinstance(info.active, str) or
+            not info.active.lower() == "y"
+        ):
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ADHOC,
                 LogCode.ERROR,
@@ -681,7 +692,7 @@ class FileDataHolder:
         self.id_field = id_field
 
         # Object data #
-        self.data = {}
+        self.data: Dict[str, type] = {}
 
     def try_infer_filename(self, current_file_name, default_file_name):
         """Tries to match a given filename to a regex,
@@ -798,7 +809,7 @@ class ExtraTransitionDomain:
 
     # TODO - revise comment
     def populate_file_data(
-        self, pattern_map_params: List[Tuple[EnumFilenames, str, type, str]]
+        self, pattern_map_params
     ):
         """Populates the self.file_data field given a set
         of tuple params.
@@ -935,6 +946,21 @@ class ExtraTransitionDomain:
                 )
         return dict_data
 
+    def _grab_row_id(self, row, id_field, file, dataclass_type):
+        try:
+            row_id = row[id_field]
+        except KeyError as err:
+            logger.error(
+                f"{TerminalColors.FAIL}"
+                "\n Key mismatch! Did you upload the wrong file?"
+                f"\n File: {file}"
+                f"\n Expected type: {dataclass_type}"
+                f"{TerminalColors.ENDC}"
+            )
+            raise err
+        else:
+            return row_id
+
     def _read_csv_file(self, file, seperator, dataclass_type, id_field):
         dict_data = {}
         # Used when we encounter bad data
@@ -955,8 +981,8 @@ class ExtraTransitionDomain:
                     )
                     dict_data = {}
                     break
-
-                row_id = row[id_field]
+                
+                row_id = self._grab_row_id(row, id_field, file, dataclass_type)
 
                 # To maintain pairity with the load_transition_domain
                 # script, we store this data in lowercase.

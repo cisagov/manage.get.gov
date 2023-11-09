@@ -1,6 +1,7 @@
 from enum import Enum
 import logging
 import sys
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class TerminalColors:
 
 class TerminalHelper:
     @staticmethod
-    def query_yes_no(question: str, default="yes") -> bool:
+    def query_yes_no(question: str, default="yes"):
         """Ask a yes/no question via raw_input() and return their answer.
 
         "question" is a string that is presented to the user.
@@ -73,7 +74,7 @@ class TerminalHelper:
                 logger.info("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
     @staticmethod
-    def query_yes_no_exit(question: str, default="yes") -> bool:
+    def query_yes_no_exit(question: str, default="yes"):
         """Ask a yes/no question via raw_input() and return their answer.
 
         "question" is a string that is presented to the user.
@@ -113,7 +114,7 @@ class TerminalHelper:
                 logger.info("Please respond with a valid selection.\n")
 
     # @staticmethod
-    def array_as_string(array_to_convert: []) -> str:
+    def array_as_string(array_to_convert: List[str]) -> str:
         array_as_string = "{}".format("\n".join(map(str, array_to_convert)))
         return array_as_string
 
