@@ -162,7 +162,7 @@ class Command(BaseCommand):
     # ======================================================
     def update_or_create_domain(
         self, transition_domain: TransitionDomain, debug_on: bool
-    ) -> Tuple[Domain, bool]:
+    ):
         """Given a transition domain, either finds & updates an existing
         corresponding domain, or creates a new corresponding domain in
         the Domain table.
