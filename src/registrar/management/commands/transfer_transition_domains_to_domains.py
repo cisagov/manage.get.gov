@@ -14,6 +14,7 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,
 )
+from registrar.models.contact import Contact
 from registrar.models.domain_application import DomainApplication
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user import User
@@ -387,7 +388,25 @@ class Command(BaseCommand):
         last_name = transition_domain.last_name
         email = transition_domain.email
         phone = transition_domain.phone
-        
+
+        contact = None
+        contacts = Contact.objects.filter(email=email)
+        contact_count = contacts.count() 
+        # Create a new one
+        if contact_count == 0:
+            contact = Contact(
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                email=email,
+                phone=phone
+            )
+            contact.save()
+        elif contact_count == 1:
+            # TODO
+            contact = contacts.get()
+        else:
+            logger.error("duplicates found")
         
         org_type_current = transition_domain.organization_type
         match org_type_current:
@@ -416,7 +435,7 @@ class Command(BaseCommand):
             "domain": domain,
             "organization_name": transition_domain.organization_name,
             "creator": default_creator,
-            "authorizing_official": 
+            "authorizing_official": contact
         }
 
         if valid_org_type:
