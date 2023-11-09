@@ -47,8 +47,10 @@ class TestMigrations(TestCase):
         UserDomainRole.objects.all().delete()
 
     def run_load_domains(self):
+        # noqa here because splitting this up makes it confusing.
+        # ES501
         with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
             return_value=True,
         ):
             call_command(
@@ -61,8 +63,10 @@ class TestMigrations(TestCase):
         call_command("transfer_transition_domains_to_domains")
 
     def run_master_script(self):
+        # noqa here (E501) because splitting this up makes it
+        # confusing to read.
         with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
             return_value=True,
         ):
             call_command(

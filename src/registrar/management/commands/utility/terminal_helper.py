@@ -180,7 +180,7 @@ class TerminalHelper:
 
         # If the user decided to proceed return true.
         # Otherwise, either return false or exit this subroutine.
-        if proceed_execution == False:
+        if not proceed_execution:
             if system_exit_on_terminate:
                 sys.exit()
             return False
@@ -206,7 +206,9 @@ class TerminalHelper:
             filepath = f"{file_directory}{filename}.txt"
             # Write to file
             logger.info(
-                f"{TerminalColors.MAGENTA}Writing to file {filepath}...{TerminalColors.ENDC}"
+                f"{TerminalColors.MAGENTA}Writing to file "
+                f" {filepath}..."
+                f"{TerminalColors.ENDC}"
             )
             with open(f"{filepath}", "w+") as f:
                 f.write(file_contents)
@@ -233,7 +235,7 @@ class TerminalHelper:
             length      - Optional  : character length of bar (Int)
             fill        - Optional  : bar fill character (Str)
             printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-        """
+        """  # noqa
 
         """
         # Initial call to print 0% progress
@@ -243,7 +245,7 @@ class TerminalHelper:
             time.sleep(0.1)
             # Update Progress Bar
             printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        """
+        """  # noqa
 
         percent = ("{0:." + str(decimals) + "f}").format(
             100 * (iteration / float(total))

@@ -36,7 +36,7 @@ class TransitionDomainArguments:
     limitParse: Optional[int] = field(default=None, repr=True)
 
     # Filenames #
-    ## Adhocs ##
+    # = Adhocs =#
     agency_adhoc_filename: Optional[str] = field(
         default=EnumFilenames.AGENCY_ADHOC.value[1], repr=True
     )
@@ -50,7 +50,7 @@ class TransitionDomainArguments:
         default=EnumFilenames.AUTHORITY_ADHOC.value[1], repr=True
     )
 
-    ## Data files ##
+    # = Data files =#
     domain_escrow_filename: Optional[str] = field(
         default=EnumFilenames.DOMAIN_ESCROW.value[1], repr=True
     )

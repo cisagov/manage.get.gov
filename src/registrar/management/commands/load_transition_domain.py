@@ -66,7 +66,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--infer_filenames",
             action=argparse.BooleanOptionalAction,
-            help="Determines if we should infer filenames or not." 
+            help="Determines if we should infer filenames or not."
             "Recommended to be enabled only in a development or testing setting.",
         )
 

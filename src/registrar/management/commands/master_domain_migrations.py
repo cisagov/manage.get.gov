@@ -88,7 +88,7 @@ class Command(BaseCommand):
 
         # The following file arguments have default values for running in the sandbox
 
-        # TODO: make this a mandatory argument 
+        # TODO: make this a mandatory argument
         # (if/when we strip out defaults, it will be mandatory)
         # TODO: use the migration directory arg or force user to type FULL filepath?
         parser.add_argument(

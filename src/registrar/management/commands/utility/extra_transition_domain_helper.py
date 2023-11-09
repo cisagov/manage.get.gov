@@ -239,6 +239,7 @@ class LoadExtraTransitionDomain:
         total_transition_domains = len(updated_transition_domains)
         total_updates_made = TransitionDomain.objects.all().count()
         if total_transition_domains != total_updates_made:
+            # noqa here for line length
             logger.error(
                 f"""{TerminalColors.FAIL}
                             WARNING: something went wrong processing domain information data.
@@ -251,7 +252,7 @@ class LoadExtraTransitionDomain:
                             corrupt data.  Please check logs to diagnose.
 
                             ----- TERMINATING ----
-                            """
+                            """  # noqa
             )
             sys.exit()
 
@@ -654,7 +655,7 @@ class FileDataHolder:
             id_field: data_type(...),
             ...
         }
-    """
+    """  # noqa
 
     def __init__(
         self,
@@ -664,18 +665,18 @@ class FileDataHolder:
         id_field: str,
     ):
         # Metadata #
-        ## Filename inference metadata ##
+        # = Filename inference metadata =#
         self.regex = regex
         self.could_infer = False
 
-        ## "data" object metadata ##
-        ### Where the data is sourced from ###
+        # = "data" object metadata =#
+        # == Where the data is sourced from ==#
         self.filename = filename
 
-        ### What type the data is ###
+        # == What type the data is ==#
         self.data_type = data_type
 
-        ### What the id should be in the holding dict ###
+        # == What the id should be in the holding dict ==#
         # TODO - rename to id_field_name
         self.id_field = id_field
 
@@ -868,8 +869,10 @@ class ExtraTransitionDomain:
                     continue
 
                 # Infer filename logic #
-                # This mode is used for internal development use and testing only. Rather than having
-                # to manually define the filename each time, we can infer what the filename
+                # This mode is used for
+                # internal development use and testing only.
+                # Rather than havingto manually define the
+                # filename each time, we can infer what the filename
                 # actually is.
 
                 # Not intended for use outside of that, as it is better to assume

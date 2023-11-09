@@ -114,7 +114,7 @@ class Command(BaseCommand):
             Created {total_domain_invitation_entries} domain invitation entries
             (NOTE: no invitations are SENT in this script)
             {TerminalColors.ENDC}
-            """ # noqa
+            """  # noqa
         )
         if len(skipped_domain_entries) > 0:
             logger.info(
@@ -192,16 +192,15 @@ class Command(BaseCommand):
 
                 # ---- UPDATE THE DOMAIN
                 # update the status
-                self.update_domain_status(
-                    transition_domain, target_domain, debug_on
-                )
-                # TODO: not all domains need to be updated (the information is the same).
+                self.update_domain_status(transition_domain, target_domain, debug_on)
+                # TODO: not all domains need to be updated
+                # (the information is the same).
                 # Need to bubble this up to the final report.
 
                 # update dates (creation and expiration)
                 if transition_domain_creation_date is not None:
-                    # TODO: added this because I ran into a situation where 
-                    # the created_at date was null (violated a key constraint). 
+                    # TODO: added this because I ran into a situation where
+                    # the created_at date was null (violated a key constraint).
                     # How do we want to handle this case?
                     target_domain.created_at = transition_domain_creation_date
 
@@ -493,7 +492,9 @@ class Command(BaseCommand):
                 self.update_domain_information(
                     target_domain_information, template_domain_information, debug_on
                 )
-                # TODO: not all domains need to be updated (the information is the same).  Need to bubble this up to the final report.
+                # TODO: not all domains need to be updated
+                # (the information is the same).
+                # Need to bubble this up to the final report.
 
                 return (target_domain_information, domain, False)
             except DomainInformation.MultipleObjectsReturned:
@@ -594,8 +595,11 @@ class Command(BaseCommand):
                 debug_on,
                 f"{TerminalColors.OKCYAN}"
                 "Processing Transition Domain: "
-                f"{transition_domain_name}, {transition_domain_status}, {transition_domain_email}"
-                f", {transition_domain_creation_date}, {transition_domain_expiration_date}"
+                f"{transition_domain_name},"
+                f" {transition_domain_status},"
+                f" {transition_domain_email}"
+                f", {transition_domain_creation_date}, "
+                f"{transition_domain_expiration_date}"
                 f"{TerminalColors.ENDC}",  # noqa
             )
 
@@ -680,7 +684,8 @@ class Command(BaseCommand):
             else:
                 # Raise an err for now
                 raise Exception(
-                    f"Domain {existing_domain} wants to be added but doesn't exist in the DB"
+                    f"Domain {existing_domain} wants to be added"
+                    "but doesn't exist in the DB"
                 )
             invitation.save()
 
@@ -740,7 +745,9 @@ class Command(BaseCommand):
                     ),
                     None,
                 )
-                # TODO: this is redundant.  Currently debugging....running into unique key constraint error....
+                # TODO: this is redundant.
+                # Currently debugging....
+                # running into unique key constraint error....
                 existing_domain_info = DomainInformation.objects.filter(
                     domain__name=target_domain_information.domain.name
                 ).exists()
@@ -765,7 +772,8 @@ class Command(BaseCommand):
                     f"updated domain information: {target_domain_information}"
                 )
             else:
-                debug_string = f"domain information already exists and matches incoming data (NO CHANGES MADE): {target_domain_information}"
+                debug_string = "domain information already exists and "
+                f"matches incoming data (NO CHANGES MADE): {target_domain_information}"
 
             # DEBUG:
             TerminalHelper.print_conditional(
