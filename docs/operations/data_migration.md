@@ -86,12 +86,13 @@ We are provided with information about Transition Domains in the following files
 - FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
 - FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
 - FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
-- FILE 4: **escrow_domains.daily.dotgov.GOV.txt** -> has basic domain data
+- FILE 4: **escrow_domains.daily.dotgov.GOV.txt** -> has a map of domainname, expiration and creation dates
 - FILE 5: **domainadditionaldatalink.adhoc.dotgov.txt** -> has the map of domains to other data like authority, organization, & domain type
-- FILE 6: **domaintypes.adhoc.dotgov.txt** -> has domain type data
-- FILE 7: **organization.adhoc.dotgov.txt** -> has organization data
-- FILE 8: **authority.adhoc.dotgov.txt** -> has authority data
-- FILE 9: **agency.adhoc.dotgov.txt** -> has agency data
+- FILE 6: **domaintypes.adhoc.dotgov.txt** -> has data on federal type and organization type
+- FILE 7: **organization.adhoc.dotgov.txt** -> has organization name data
+- FILE 8: **authority.adhoc.dotgov.txt** -> has authority data which maps to an agency
+- FILE 9: **agency.adhoc.dotgov.txt** -> has federal agency data
+- FILE 10: **migrationFilepaths.json** -> A JSON which points towards all given filenames. Specified below.
 
 #### STEP 2: obtain JSON file (for file locations)
 Add a JSON file called "migrationFilepaths.json" with the following contents (update filenames and directory as needed):
@@ -110,8 +111,17 @@ Add a JSON file called "migrationFilepaths.json" with the following contents (up
 }
 ```
 
+This JSON file can exist anywhere, but to keep things simple, add it to the same folder as used in step 1.  `src/migrationdata`. 
+Directory specifies the directory that the given `filenames` exist in. For instance, a `contacts_filename` of `test.txt` with a `directory` of `migrationdata` would need to exist under `migrationdata/test.txt`.
+
 We need to run a few scripts to parse these files into our domain tables.
 We can do this both locally and in a sandbox.
+
+#### STEP 3: Bundle all relevant data files into one file
+Move all the files specified in Step 1 into a shared folder, and create a tar.gz
+
+Create a folder on your desktop called `datafiles` and move all of the obtained files into that. Add these files to a tar.gz archive using any method. See (here)[https://stackoverflow.com/questions/53283240/how-to-create-tar-file-with-7zip].
+
 
 ### SECTION 1 - SANDBOX MIGRATION SETUP
 Load migration data onto a production or sandbox environment
@@ -135,8 +145,6 @@ cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap
 **IMPORTANT:** Only follow these steps if cat does not work as expected. If it does, skip to step 2.
 
 CloudFoundry supports scp as means of transferring data locally to our environment. If you are dealing with a batch of files, try sending across a tar.gz and unpacking that.
-
-
 
 ##### Login to Cloud.gov
 
@@ -208,7 +216,6 @@ tar -xvf migrationdata/{FILE_NAME}.tar.gz -C migrationdata/ --strip-components=1
 *FILE_NAME* - Name of the desired file, ex: exportdata
 
 
-
 #### Manual method
 If the `cat_files_into_getgov.py` script isn't working, follow these steps instead.
 
@@ -235,27 +242,12 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 *You are now ready to run migration scripts.*
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
-
+While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands. If you run into the error that. If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
 
 ### STEP 1: Load Transition Domains
 
-Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. 
-##### Create a JSON file
-In your chosen directory (either `src/tmp` or `src/migrationdata` depending on preference), create a json file called `migrationFilepaths.json`. This file will map to other urls
-Example
-```
-{
-    "directory": "migrationdata/",
-    "agency_adhoc_filename": "20231009.agency.adhoc.dotgov.txt",
-    "authority_adhoc_filename": "authority.adhoc.dotgov.txt",
-    "contacts_filename": "escrow_contacts.daily.dotgov.GOV.txt",
-    "domain_adhoc_filename": "20231009.domaintypes.adhoc.dotgov.txt",
-    "domain_additional_filename": "20231009.domainadditionaldatalink.adhoc.dotgov.txt",
-    "domain_contacts_filename": "escrow_domain_contacts.daily.dotgov.GOV.txt",
-    "domain_escrow_filename": "escrow_domains.daily.dotgov.GOV.txt",
-    "domain_statuses_filename": "escrow_domain_statuses.daily.dotgov.GOV.txt",
-    "organization_adhoc_filename": "20231009.organization.adhoc.dotgov.txt"
-}
+Run the following command, making sure the file paths point to the right location. This will parse all given files and load the information into the TransitionDomain table. Make sure you have your migrationFilepaths.json file in the same directory.
+
 ```
 ##### LOCAL COMMAND
 ```shell
