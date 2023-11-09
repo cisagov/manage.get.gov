@@ -4,9 +4,10 @@ import sys
 
 logger = logging.getLogger(__name__)
 
+
 class LogCode(Enum):
     """Stores the desired log severity
-    
+
     Overview of error codes:
     - 1 ERROR
     - 2 WARNING
@@ -20,6 +21,7 @@ class LogCode(Enum):
     INFO = 3
     DEBUG = 4
     DEFAULT = 5
+
 
 class TerminalColors:
     """Colors for terminal outputs
@@ -81,7 +83,14 @@ class TerminalHelper:
 
         The "answer" return value is True for "yes" or False for "no".
         """
-        valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False, "e": "exit"}
+        valid = {
+            "yes": True,
+            "y": True,
+            "ye": True,
+            "no": False,
+            "n": False,
+            "e": "exit",
+        }
         if default is None:
             prompt = " [y/n] "
         elif default == "yes":
@@ -105,22 +114,20 @@ class TerminalHelper:
 
     # @staticmethod
     def array_as_string(array_to_convert: []) -> str:
-        array_as_string = "{}".format(
-            "\n".join(map(str, array_to_convert))
-        )
+        array_as_string = "{}".format("\n".join(map(str, array_to_convert)))
         return array_as_string
 
     @staticmethod
     def print_conditional(
-        print_condition: bool, 
-        print_statement: str, 
-        log_severity: LogCode = LogCode.DEFAULT
+        print_condition: bool,
+        print_statement: str,
+        log_severity: LogCode = LogCode.DEFAULT,
     ):
         """This function reduces complexity of debug statements
         in other functions.
         It uses the logger to write the given print_statement to the
         terminal if print_condition is TRUE.
-        
+
         print_condition: bool -> Prints if print_condition is TRUE
 
         print_statement: str -> The statement to print
@@ -181,29 +188,40 @@ class TerminalHelper:
 
     @staticmethod
     def get_file_line_count(filepath: str) -> int:
-        with open(filepath,'r') as file:
+        with open(filepath, "r") as file:
             li = file.readlines()
         total_line = len(li)
         return total_line
 
     @staticmethod
-    def print_to_file_conditional(print_condition: bool, filename: str, file_directory: str, file_contents: str):
-        """Sometimes logger outputs get insanely huge.
-        """
-        if (print_condition):
+    def print_to_file_conditional(
+        print_condition: bool, filename: str, file_directory: str, file_contents: str
+    ):
+        """Sometimes logger outputs get insanely huge."""
+        if print_condition:
             # Add a slash if the last character isn't one
             if file_directory and file_directory[-1] != "/":
                 file_directory += "/"
             # Assemble filepath
             filepath = f"{file_directory}{filename}.txt"
             # Write to file
-            logger.info(f"{TerminalColors.MAGENTA}Writing to file {filepath}...{TerminalColors.ENDC}")
+            logger.info(
+                f"{TerminalColors.MAGENTA}Writing to file {filepath}...{TerminalColors.ENDC}"
+            )
             with open(f"{filepath}", "w+") as f:
                 f.write(file_contents)
 
-        
     @staticmethod
-    def printProgressBar (iteration, total, prefix = 'Progress:', suffix = 'Complete', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    def printProgressBar(
+        iteration,
+        total,
+        prefix="Progress:",
+        suffix="Complete",
+        decimals=1,
+        length=100,
+        fill="█",
+        printEnd="\r",
+    ):
         """
         Call in a loop to create terminal progress bar
         @params:
@@ -227,10 +245,12 @@ class TerminalHelper:
             printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
         """
 
-        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        percent = ("{0:." + str(decimals) + "f}").format(
+            100 * (iteration / float(total))
+        )
         filledLength = int(length * iteration // total)
-        bar = fill * filledLength + '-' * (length - filledLength)
-        print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+        bar = fill * filledLength + "-" * (length - filledLength)
+        print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=printEnd)
         # Print New Line on Complete
-        if iteration == total: 
+        if iteration == total:
             print()

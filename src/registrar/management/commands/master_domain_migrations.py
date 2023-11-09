@@ -28,8 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = """ """ # TODO: update this!
-
+    help = """ """  # TODO: update this!
 
     # ======================================================
     # ==================    ARGUMENTS    ===================
@@ -45,7 +44,7 @@ class Command(BaseCommand):
         The location of the files used for load_transition_domain migration script
         EXAMPLE USAGE:
         > --migrationDirectory /app/tmp
- 
+
         --migrationJSON
         The name of the JSON file used for load_transition_domain migration script
         EXAMPLE USAGE:
@@ -128,7 +127,6 @@ class Command(BaseCommand):
             help="Deletes all data in the TransitionDomain table",
             action=argparse.BooleanOptionalAction,
         )
-
 
     # ======================================================
     # ===============    DATA ANALYSIS    ==================
@@ -252,7 +250,6 @@ class Command(BaseCommand):
             """
         )
 
-
     # ======================================================
     # =================    MIGRATIONS    ===================
     # ======================================================
@@ -266,17 +263,13 @@ class Command(BaseCommand):
         prompts_enabled: bool,
         debug_max_entries_to_parse: int,
     ):
-        
         if file_directory and file_directory[-1] != "/":
             file_directory += "/"
         json_filepath = migration_json_filename
         """Runs the load_transition_domain script"""
         # Create the command string
         command_script = "load_transition_domain"
-        command_string = (
-            f"./manage.py {command_script} "
-            f"{json_filepath} "
-        )
+        command_string = f"./manage.py {command_script} " f"{json_filepath} "
         if sep is not None and sep != "|":
             command_string += f"--sep {sep} "
         if reset_table:
@@ -306,7 +299,7 @@ class Command(BaseCommand):
                 resetTable=reset_table,
                 debug=debug_on,
                 limitParse=debug_max_entries_to_parse,
-                directory=file_directory
+                directory=file_directory,
             )
 
     def run_transfer_script(self, debug_on: bool, prompts_enabled: bool):
@@ -326,7 +319,7 @@ class Command(BaseCommand):
             )
         # TODO: make this somehow run inside TerminalHelper prompt
         if proceed or not prompts_enabled:
-                call_command(command_script)
+            call_command(command_script)
 
     def run_send_invites_script(self, debug_on: bool, prompts_enabled: bool):
         """Runs the send_domain_invitations script"""

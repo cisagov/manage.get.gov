@@ -240,7 +240,23 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 ### STEP 1: Load Transition Domains
 
 Run the following command, making sure the file paths point to the right location.  This will parse the three given files and load the information into the TransitionDomain table. 
-
+##### Create a JSON file
+In your chosen directory (either `src/tmp` or `src/migrationdata` depending on preference), create a json file called `migrationFilepaths.json`. This file will map to other urls
+Example
+```
+{
+    "directory": "migrationdata/",
+    "agency_adhoc_filename": "20231009.agency.adhoc.dotgov.txt",
+    "authority_adhoc_filename": "authority.adhoc.dotgov.txt",
+    "contacts_filename": "escrow_contacts.daily.dotgov.GOV.txt",
+    "domain_adhoc_filename": "20231009.domaintypes.adhoc.dotgov.txt",
+    "domain_additional_filename": "20231009.domainadditionaldatalink.adhoc.dotgov.txt",
+    "domain_contacts_filename": "escrow_domain_contacts.daily.dotgov.GOV.txt",
+    "domain_escrow_filename": "escrow_domains.daily.dotgov.GOV.txt",
+    "domain_statuses_filename": "escrow_domain_statuses.daily.dotgov.GOV.txt",
+    "organization_adhoc_filename": "20231009.organization.adhoc.dotgov.txt"
+}
+```
 ##### LOCAL COMMAND
 ```shell
 docker-compose exec app ./manage.py load_transition_domain migrationFilepaths.json --directory /app/tmp/ --debug --limitParse 10

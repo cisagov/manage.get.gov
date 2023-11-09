@@ -64,9 +64,9 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--infer_filenames", 
+            "--infer_filenames",
             action=argparse.BooleanOptionalAction,
-            help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting."
+            help="Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting.",
         )
 
         parser.add_argument(
@@ -74,7 +74,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--domain_contacts_filename",
-            help="Data file with domain contact information"
+            help="Data file with domain contact information",
         )
         parser.add_argument(
             "--contacts_filename",
@@ -82,7 +82,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--domain_statuses_filename",
-            help="Data file with domain status information"
+            help="Data file with domain status information",
         )
         parser.add_argument(
             "--agency_adhoc_filename",
@@ -347,10 +347,12 @@ class Command(BaseCommand):
                         # If it does, update the options
                         options[key] = value
             except Exception as err:
-                logger.error(f"""{TerminalColors.FAIL}There was an error loading the JSON responsible
+                logger.error(
+                    f"""{TerminalColors.FAIL}There was an error loading the JSON responsible
                 for providing filepaths.
                 {TerminalColors.ENDC}
-                """)
+                """
+                )
                 raise err
 
         sep = args.sep
@@ -369,33 +371,36 @@ class Command(BaseCommand):
         )  # set to 0 to parse all entries
 
         ## Variables for Additional TransitionDomain Information ##
-        
 
         # Main script filenames - these do not have defaults
         domain_contacts_filename = None
         try:
-            domain_contacts_filename = directory + options.get("domain_contacts_filename")
+            domain_contacts_filename = directory + options.get(
+                "domain_contacts_filename"
+            )
         except TypeError as err:
             logger.error(
-                f"Invalid filename of '{args.domain_contacts_filename}'" 
+                f"Invalid filename of '{args.domain_contacts_filename}'"
                 " was provided for domain_contacts_filename"
             )
-        
+
         contacts_filename = None
         try:
             contacts_filename = directory + options.get("contacts_filename")
         except TypeError as err:
             logger.error(
-                f"Invalid filename of '{args.contacts_filename}'" 
+                f"Invalid filename of '{args.contacts_filename}'"
                 " was provided for contacts_filename"
             )
 
         domain_statuses_filename = None
         try:
-            domain_statuses_filename = directory + options.get("domain_statuses_filename")
+            domain_statuses_filename = directory + options.get(
+                "domain_statuses_filename"
+            )
         except TypeError as err:
             logger.error(
-                f"Invalid filename of '{args.domain_statuses_filename}'" 
+                f"Invalid filename of '{args.domain_statuses_filename}'"
                 " was provided for domain_statuses_filename"
             )
 
@@ -468,7 +473,10 @@ class Command(BaseCommand):
                 new_entry_email = ""
                 new_entry_emailSent = False  # set to False by default
 
-                TerminalHelper.print_conditional(True, f"Processing item {total_rows_parsed}: {new_entry_domain_name}")
+                TerminalHelper.print_conditional(
+                    True,
+                    f"Processing item {total_rows_parsed}: {new_entry_domain_name}",
+                )
 
                 # PART 1: Get the status
                 if new_entry_domain_name not in domain_status_dictionary:
@@ -607,7 +615,6 @@ class Command(BaseCommand):
             duplicate_domain_user_combos, duplicate_domains, users_without_email
         )
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
-
 
         logger.info(
             f"""{TerminalColors.OKGREEN}

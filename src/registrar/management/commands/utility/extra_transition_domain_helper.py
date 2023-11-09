@@ -69,10 +69,15 @@ class FileTransitionLog:
         log = self.LogItem(file_type, code, message, domain_name)
         dict_name = (file_type, domain_name)
         self._add_to_log_list(dict_name, log)
-        
 
     def create_log_item(
-        self, file_type, code, message, domain_name=None, add_to_list=True, minimal_logging=True
+        self,
+        file_type,
+        code,
+        message,
+        domain_name=None,
+        add_to_list=True,
+        minimal_logging=True,
     ):
         """Creates and returns an LogItem object.
 
@@ -81,10 +86,10 @@ class FileTransitionLog:
         log = self.LogItem(file_type, code, message, domain_name)
         if not add_to_list:
             return log
-        
+
         dict_name = (file_type, domain_name)
         self._add_to_log_list(dict_name, log)
-        
+
         restrict_type = []
         if minimal_logging:
             restrict_type = [LogCode.INFO, LogCode.WARNING]
@@ -99,7 +104,7 @@ class FileTransitionLog:
     def _add_to_log_list(self, log_name, log):
         if log_name not in self.logs:
             self.logs[log_name] = [log]
-        else: 
+        else:
             self.logs[log_name].append(log)
 
     def display_all_logs(self):
@@ -107,9 +112,7 @@ class FileTransitionLog:
         for parent_log in self.logs:
             for child_log in parent_log:
                 TerminalHelper.print_conditional(
-                    True,
-                    child_log.message,
-                    child_log.severity
+                    True, child_log.message, child_log.severity
                 )
 
     def display_logs_by_domain_name(self, domain_name, restrict_type=LogCode.DEFAULT):
@@ -125,16 +128,14 @@ class FileTransitionLog:
             domain_logs = self.get_logs(file_type, domain_name)
             if domain_logs is None:
                 return None
-            
+
             for log in domain_logs:
                 TerminalHelper.print_conditional(
-                    restrict_type != log.code,
-                    log.message,
-                    log.code
+                    restrict_type != log.code, log.message, log.code
                 )
 
     def get_logs(self, file_type, domain_name):
-        """Grabs the logs associated with 
+        """Grabs the logs associated with
         a particular file_type and domain_name"""
         log_name = (file_type, domain_name)
         return self.logs.get(log_name)
@@ -213,19 +214,20 @@ class LoadExtraTransitionDomain:
             logger.info(
                 f"""{TerminalColors.OKGREEN}
                 ============= FINISHED ===============
-                Updated {len(updated_transition_domains)} transition domain entries:
-                {[domain for domain in updated_transition_domains]}
+                Updated {len(updated_transition_domains)} transition domain entries
                 {TerminalColors.ENDC}
                 """
             )
         else:
             # TODO - update
-            TerminalHelper.print_conditional(self.debug, f"{TerminalHelper.array_as_string(updated_transition_domains)}")
+            TerminalHelper.print_conditional(
+                self.debug,
+                f"{TerminalHelper.array_as_string(updated_transition_domains)}",
+            )
             logger.error(
                 f"""{TerminalColors.FAIL}
                 ============= FINISHED WITH ERRORS ===============
-                Updated {len(updated_transition_domains)} transition domain entries:
-                {[domain for domain in updated_transition_domains]}
+                Updated {len(updated_transition_domains)} transition domain entries,
                 Failed to update {failed_count} transition domain entries:
                 {[domain for domain in failed_transition_domains]}
                 {TerminalColors.ENDC}
@@ -237,7 +239,8 @@ class LoadExtraTransitionDomain:
         total_transition_domains = len(updated_transition_domains)
         total_updates_made = TransitionDomain.objects.all().count()
         if total_transition_domains != total_updates_made:
-            logger.error(f"""{TerminalColors.FAIL}
+            logger.error(
+                f"""{TerminalColors.FAIL}
                             WARNING: something went wrong processing domain information data.
                             
                             Total Transition Domains expecting a data update: {total_transition_domains}
@@ -248,7 +251,8 @@ class LoadExtraTransitionDomain:
                             corrupt data.  Please check logs to diagnose.
 
                             ----- TERMINATING ----
-                            """)
+                            """
+            )
             sys.exit()
 
     def parse_creation_expiration_data(self, domain_name, transition_domain):
@@ -262,19 +266,15 @@ class LoadExtraTransitionDomain:
             self.parse_logs.create_log_item(
                 EnumFilenames.DOMAIN_ESCROW,
                 LogCode.ERROR,
-                "Could not add epp_creation_date and epp_expiration_date " 
+                "Could not add epp_creation_date and epp_expiration_date "
                 f"on {domain_name}, no data exists.",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
             return transition_domain
 
-        creation_exists = (
-            transition_domain.epp_creation_date is not None
-        )
-        expiration_exists = (
-            transition_domain.epp_expiration_date is not None
-        )
+        creation_exists = transition_domain.epp_creation_date is not None
+        expiration_exists = transition_domain.epp_expiration_date is not None
 
         transition_domain.epp_creation_date = info.creationdate
         transition_domain.epp_expiration_date = info.expirationdate
@@ -311,7 +311,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add federal_agency on {domain_name}, no data exists.",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
             return transition_domain
 
@@ -326,7 +326,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add inactive agency {info.agencyname} on {domain_name}",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
             return transition_domain
 
@@ -336,7 +336,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add non-federal agency {info.agencyname} on {domain_name}",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
             return transition_domain
 
@@ -369,7 +369,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add domain_type on {domain_name}, no data exists.",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
             return transition_domain
 
@@ -392,7 +392,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add inactive domain_type {domain_type[0]} on {domain_name}",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
             return transition_domain
 
@@ -453,7 +453,7 @@ class LoadExtraTransitionDomain:
                 LogCode.ERROR,
                 f"Could not add organization_name on {domain_name}, no data exists.",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
             return transition_domain
 
@@ -487,7 +487,7 @@ class LoadExtraTransitionDomain:
                 LogCode.INFO,
                 f"Added {var_name} as '{changed_value}' on {domain_name}",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
         else:
             self.parse_logs.create_log_item(
@@ -495,7 +495,7 @@ class LoadExtraTransitionDomain:
                 LogCode.WARNING,
                 f"Updated existing {var_name} to '{changed_value}' on {domain_name}",
                 domain_name,
-                not self.debug
+                not self.debug,
             )
 
     # Property getters, i.e. orgid or domaintypeid
@@ -523,7 +523,7 @@ class LoadExtraTransitionDomain:
         domain_info = self.get_domain_data(domain_name)
         if domain_info is None:
             return None
-        
+
         # The agency record is within the authority adhoc
         authority_id = domain_info.authorityid
         authority = self.get_authority_adhoc(authority_id)
@@ -542,14 +542,14 @@ class LoadExtraTransitionDomain:
             return None
         type_id = domain_info.authorityid
         return self.get_authority_adhoc(type_id)
-    
+
     def get_domain_escrow_info(self, domain_name):
         domain_info = self.get_domain_data(domain_name)
         if domain_info is None:
             return None
         type_id = domain_info.domainname
         return self.get_domain_escrow(type_id)
-    
+
     # Object getters, i.e. DomainAdditionalData or OrganizationAdhoc
     def get_domain_data(self, desired_id) -> DomainAdditionalData:
         """Grabs a corresponding row within the DOMAIN_ADDITIONAL file,
@@ -575,7 +575,7 @@ class LoadExtraTransitionDomain:
         """Grabs a corresponding row within the AUTHORITY_ADHOC file,
         based off a desired_id"""
         return self.get_object_by_id(EnumFilenames.AUTHORITY_ADHOC, desired_id)
-    
+
     def get_domain_escrow(self, desired_id) -> DomainEscrow:
         """Grabs a corresponding row within the DOMAIN_ESCROW file,
         based off a desired_id"""
@@ -615,7 +615,9 @@ class LoadExtraTransitionDomain:
         desired_type = self.parsed_data_container.file_data.get(file_type)
         if desired_type is None:
             self.parse_logs.create_log_item(
-                file_type, LogCode.ERROR, f"Type {file_type} does not exist",
+                file_type,
+                LogCode.ERROR,
+                f"Type {file_type} does not exist",
             )
             return None
 
@@ -624,9 +626,12 @@ class LoadExtraTransitionDomain:
         obj = desired_type.data.get(desired_id)
         if obj is None:
             self.parse_logs.create_log_item(
-                file_type, LogCode.ERROR, f"Id {desired_id} does not exist for {file_type.value[0]}"
+                file_type,
+                LogCode.ERROR,
+                f"Id {desired_id} does not exist for {file_type.value[0]}",
             )
         return obj
+
 
 # TODO - change name
 @dataclass
@@ -698,18 +703,18 @@ class FileDataHolder:
         # matches, then we shouldn't infer
         if total_groups == 0 or total_groups > 2:
             return (self.filename, False)
-        
+
         # If only one match is returned,
         # it means that our default matches our request
         if total_groups == 1:
             return (self.filename, True)
-        
+
         # Otherwise, if two are returned, then
         # its likely the pattern we want
         date = match.group(1)
         filename_without_date = match.group(2)
 
-        # After stripping out the date, 
+        # After stripping out the date,
         # do the two filenames match?
         can_infer = filename_without_date == default_file_name
         if not can_infer:
@@ -861,7 +866,7 @@ class ExtraTransitionDomain:
                 if not infer_filenames:
                     logger.error(f"Could not find file: {filename}")
                     continue
-                
+
                 # Infer filename logic #
                 # This mode is used for internal development use and testing only. Rather than having
                 # to manually define the filename each time, we can infer what the filename
@@ -898,26 +903,15 @@ class ExtraTransitionDomain:
             file_type.data = {}
 
     def parse_csv_file(
-        self,
-        file,
-        seperator,
-        dataclass_type,
-        id_field,
-        is_domain_escrow=False
+        self, file, seperator, dataclass_type, id_field, is_domain_escrow=False
     ):
         # Domain escrow is an edge case
         if is_domain_escrow:
-            item_to_return = self._read_domain_escrow(
-                file,
-                seperator
-            )
+            item_to_return = self._read_domain_escrow(file, seperator)
             return item_to_return
         else:
             item_to_return = self._read_csv_file(
-                file,
-                seperator,
-                dataclass_type,
-                id_field
+                file, seperator, dataclass_type, id_field
             )
             return item_to_return
 
@@ -946,14 +940,16 @@ class ExtraTransitionDomain:
             reader = csv.DictReader(requested_file, delimiter=seperator)
             for row in reader:
                 # Checks if we encounter any bad data.
-                # If we do, we (non-destructively) clean the file     
+                # If we do, we (non-destructively) clean the file
                 if None in row:
                     logger.warning(
                         f"{TerminalColors.YELLOW}"
                         f"Found bad data in {file}. Attempting to clean."
                         f"{TerminalColors.ENDC}"
                     )
-                    updated_file_content = self.replace_bad_seperators(file, f"{seperator}", ";badseperator;")
+                    updated_file_content = self.replace_bad_seperators(
+                        file, f"{seperator}", ";badseperator;"
+                    )
                     dict_data = {}
                     break
 
@@ -964,7 +960,7 @@ class ExtraTransitionDomain:
                 if id_field == "domainname" and row_id is not None:
                     row_id = row_id.lower()
                 dict_data[row_id] = dataclass_type(**row)
-        
+
         # After we clean the data, try to parse it again
         if updated_file_content:
             logger.info(
@@ -999,7 +995,7 @@ class ExtraTransitionDomain:
                     row_id = row_id.lower()
                 dict_data[row_id] = dataclass_type(**row)
         return dict_data
-    
+
     def replace_bad_seperators(self, filename, delimiter, special_character):
         with open(filename, "r", encoding="utf-8-sig") as file:
             contents = file.read()

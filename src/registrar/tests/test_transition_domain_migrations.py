@@ -13,6 +13,7 @@ from registrar.models import (
 from django.core.management import call_command
 from unittest.mock import patch
 
+
 class TestMigrations(TestCase):
     def setUp(self):
         """ """
@@ -46,24 +47,30 @@ class TestMigrations(TestCase):
         UserDomainRole.objects.all().delete()
 
     def run_load_domains(self):
-        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit', return_value=True):
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
             call_command(
                 "load_transition_domain",
                 self.migration_json_filename,
-                directory=self.test_data_file_location
+                directory=self.test_data_file_location,
             )
 
     def run_transfer_domains(self):
         call_command("transfer_transition_domains_to_domains")
 
     def run_master_script(self):
-        with patch('registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit', return_value=True):
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
             call_command(
                 "master_domain_migrations",
                 runMigrations=True,
                 migrationDirectory=self.test_data_file_location,
                 migrationJSON=self.migration_json_filename,
-                disablePrompts=True
+                disablePrompts=True,
             )
 
     def compare_tables(
@@ -204,7 +211,7 @@ class TestMigrations(TestCase):
             expected_missing_domain_informations,
             expected_missing_domain_invitations,
         )
-    
+
     def test_load_full_transition_domain(self):
         # Load command
         self.run_load_domains()
@@ -242,7 +249,7 @@ class TestMigrations(TestCase):
                 federal_type="Executive",
                 federal_agency="InnoZ",
                 epp_creation_date=None,
-                epp_expiration_date=None
+                epp_expiration_date=None,
             ),
             TransitionDomain(
                 username="reginald.ratcliff4@test.com",
@@ -254,20 +261,21 @@ class TestMigrations(TestCase):
                 federal_type=None,
                 federal_agency=None,
                 epp_creation_date=None,
-                epp_expiration_date=None
-            )
+                epp_expiration_date=None,
+            ),
         ]
 
-        expected_transition_domains = TransitionDomain.objects.filter(username="alexandra.bobbitt5@test.com")
+        expected_transition_domains = TransitionDomain.objects.filter(
+            username="alexandra.bobbitt5@test.com"
+        )
         self.assertEqual(expected_transition_domains.count(), 1)
         expected_transition_domain = expected_transition_domains.get()
 
-        #TransitionDomain.objects.filter(domain_name = "fakewebsite3.gov")
+        # TransitionDomain.objects.filter(domain_name = "fakewebsite3.gov")
         # Afterwards, their values should be what we expect
         all_transition_domains = TransitionDomain.objects.all()
         for domain in all_transition_domains:
             for expected in expected_transition_domains:
-
                 # This data gets created when the object is,
                 # so we should just match it. Not relevant
                 # to the added data.
@@ -277,7 +285,7 @@ class TestMigrations(TestCase):
 
                 # Each TransitionDomain should have the correct data
                 self.assertEqual(domain, expected)
-    
+
     def test_load_full_domain(self):
         self.run_load_domains()
         self.run_transfer_domains()
@@ -323,10 +331,10 @@ class TestMigrations(TestCase):
         testdomain = testdomain_domains.get()
 
         self.assertEqual(testdomain.expiration_date, datetime.date(2023, 9, 30))
-        #self.assertEqual(testdomain.created_at, "test")
+        # self.assertEqual(testdomain.created_at, "test")
         self.assertEqual(testdomain.name, "fakewebsite2.gov")
         self.assertEqual(testdomain.state, "on hold")
-    
+
     def test_load_full_domain_information(self):
         self.run_load_domains()
         self.run_transfer_domains()
@@ -355,7 +363,7 @@ class TestMigrations(TestCase):
         # Test created Domain Information objects
         domain = Domain.objects.filter(name="anomaly.gov").get()
         anomaly_domain_infos = DomainInformation.objects.filter(domain=domain)
-        
+
         self.assertEqual(anomaly_domain_infos.count(), 1)
 
         # This domain should be pretty barebones. Something isnt
@@ -365,7 +373,7 @@ class TestMigrations(TestCase):
         self.assertEqual(anomaly.organization_type, None)
         self.assertEqual(anomaly.federal_agency, None)
         self.assertEqual(anomaly.federal_type, None)
-        
+
         # Check for the "system" creator user
         Users = User.objects.filter(username="System")
         self.assertEqual(Users.count(), 1)
@@ -380,12 +388,11 @@ class TestMigrations(TestCase):
         self.assertEqual(fakewebsite.organization_type, "federal")
         self.assertEqual(fakewebsite.federal_agency, "Department of Commerce")
         self.assertEqual(fakewebsite.federal_type, "executive")
-        
+
         # Check for the "system" creator user
         Users = User.objects.filter(username="System")
         self.assertEqual(Users.count(), 1)
         self.assertEqual(anomaly.creator, Users.get())
-
 
     def test_transfer_transition_domains_to_domains(self):
         self.run_load_domains()
