@@ -16,49 +16,60 @@
   </div>
   <div class="grid-row grid-gap">
     <div class="tablet:grid-col-3">
-      {% include 'domain_sidebar.html' %}
+      {% if domain.domain_info %}
+        {% include 'domain_sidebar.html' %}
+      {% endif %}
     </div>
 
     <div class="tablet:grid-col-9">
       <main id="main-content" class="grid-container">
-
-      {% if is_analyst_or_superuser and analyst_action == 'edit' and analyst_action_location == domain.pk %}
-      <div class="usa-alert usa-alert--warning margin-bottom-2">
-        <div class="usa-alert__body">
-          <h4 class="usa-alert__heading larger-font-sizing">Attention!</h4>
-          <p class="usa-alert__text ">
-            You are making changes to a registrant’s domain. When finished making changes, close this tab and inform the registrant of your updates.
-          </p>
-        </div>
-      </div>
-      {% else %}
-      <a href="{% url 'home' %}" class="breadcrumb__back">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-        </svg>
-
-        <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-        Back to manage your domains
-        </p>
-      </a>
-      {% endif %}
-      {# messages block is under the back breadcrumb link #}
-      {% if messages %}
-      {% for message in messages %}
-      <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+      {% if not domain.domain_info %}
+        <div class="usa-alert usa-alert--error margin-bottom-2">
           <div class="usa-alert__body">
-          {{ message }}
+            <h4 class="usa-alert__heading larger-font-sizing">Domain missing domain information</h4>
+            <p class="usa-alert__text ">
+              You are attempting to manage a domain, {{ domain.name }}, which does not have a domain information object. Please correct this in the admin by editing the domain, and adding domain information, as appropriate.
+            </p>
           </div>
-      </div>
-      {% endfor %}
+        </div>
+      {% else %}
+        {% if is_analyst_or_superuser and analyst_action == 'edit' and analyst_action_location == domain.pk %}
+        <div class="usa-alert usa-alert--warning margin-bottom-2">
+          <div class="usa-alert__body">
+            <h4 class="usa-alert__heading larger-font-sizing">Attention!</h4>
+            <p class="usa-alert__text ">
+              You are making changes to a registrant’s domain. When finished making changes, close this tab and inform the registrant of your updates.
+            </p>
+          </div>
+        </div>
+        {% else %}
+        <a href="{% url 'home' %}" class="breadcrumb__back">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+          <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+          </svg>
+
+          <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+          Back to manage your domains
+          </p>
+        </a>
+        {% endif %}
+        {# messages block is under the back breadcrumb link #}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+            <div class="usa-alert__body">
+            {{ message }}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% block domain_content %}
+
+        <h1 class="break-word">{{ domain.name }}</h1>
+
+        {% endblock %}  {# domain_content #}
       {% endif %}
-
-      {% block domain_content %}
-
-      <h1 class="break-word">{{ domain.name }}</h1>
-
-      {% endblock %}  {# domain_content #}
-
       </main>
     </div>
   </div>
