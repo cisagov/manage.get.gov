@@ -27,6 +27,8 @@ services:
       - DJANGO_DEBUG=True
       # Tell Django where it is being hosted
       - DJANGO_BASE_URL=http://localhost:8080
+      # Is this a production environment
+      - IS_PRODUCTION
       # Public site URL link
       - GETGOV_PUBLIC_SITE_URL=https://beta.get.gov
       # Set a username for accessing the registry
