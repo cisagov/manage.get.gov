@@ -100,13 +100,7 @@ class DomainPermission(PermissionsLoginMixin):
         if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
 
-        # If no domain_application object exists and we are
-        # coming from the manage_domain dashboard, this is likely
-        # a transition domain.
         domain_application = requested_domain.domain_application
-        if not hasattr(domain_application, "status"):
-            return True
-
         if domain_application.status not in valid_domain_statuses:
             return False
 
