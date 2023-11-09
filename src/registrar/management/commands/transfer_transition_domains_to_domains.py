@@ -1,6 +1,7 @@
 import logging
 import argparse
 import sys
+from typing import Tuple
 
 from django_fsm import TransitionNotAllowed  # type: ignore
 
@@ -161,7 +162,7 @@ class Command(BaseCommand):
     # ======================================================
     def update_or_create_domain(
         self, transition_domain: TransitionDomain, debug_on: bool
-    ) -> (Domain, bool):
+    ) -> Tuple[Domain, bool]:
         """Given a transition domain, either finds & updates an existing
         corresponding domain, or creates a new corresponding domain in
         the Domain table.
@@ -445,7 +446,7 @@ class Command(BaseCommand):
         fed_choices,
         org_choices,
         debug_on: bool,
-    ) -> (DomainInformation, bool):
+    ) -> Tuple[DomainInformation, bool]:
         transition_domain_name = transition_domain.domain_name
 
         # Get associated domain

@@ -460,7 +460,6 @@ class Command(BaseCommand):
         logger.info("Reading domain-contacts data file %s", domain_contacts_filename)
         with open(domain_contacts_filename, "r") as domain_contacts_file:
             for row in csv.reader(domain_contacts_file, delimiter=sep):
-                # TerminalHelper.printProgressBar(total_rows_parsed, total_lines)
                 total_rows_parsed += 1
 
                 # fields are just domain, userid, role

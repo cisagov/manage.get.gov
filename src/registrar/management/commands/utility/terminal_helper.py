@@ -113,7 +113,7 @@ class TerminalHelper:
             else:
                 logger.info("Please respond with a valid selection.\n")
 
-    # @staticmethod
+    @staticmethod
     def array_as_string(array_to_convert: List[str]) -> str:
         array_as_string = "{}".format("\n".join(map(str, array_to_convert)))
         return array_as_string
