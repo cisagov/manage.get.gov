@@ -531,57 +531,117 @@ class Command(BaseCommand):
             )
             return (target_domain_information, domain, True)
 
-    # ======================================================
-    # ===================== HANDLE  ========================
-    # ======================================================
-    def handle(
+    # C901 'Command.handle' is too complex
+    def process_domain_information(
         self,
-        **options,
+        valid_agency_choices,
+        valid_fed_choices,
+        valid_org_choices,
+        debug_on,
+        skipped_domain_information_entries,
+        domain_information_to_create,
+        updated_domain_information,
+        debug_max_entries_to_parse,
+        total_rows_parsed,
     ):
-        """Parse entries in TransitionDomain table
-        and create (or update) corresponding entries in the
-        Domain and DomainInvitation tables."""
+        for transition_domain in TransitionDomain.objects.all():
+            (
+                target_domain_information,
+                associated_domain,
+                was_created,
+            ) = self.update_or_create_domain_information(
+                transition_domain,
+                valid_agency_choices,
+                valid_fed_choices,
+                valid_org_choices,
+                debug_on,
+            )
 
-        # grab command line arguments and store locally...
-        debug_on = options.get("debug")
-        debug_max_entries_to_parse = int(
-            options.get("limitParse")
-        )  # set to 0 to parse all entries
+            debug_string = ""
+            if target_domain_information is None:
+                # ---------------- SKIPPED ----------------
+                skipped_domain_information_entries.append(target_domain_information)
+                debug_string = (
+                    f"skipped domain information: {target_domain_information}"
+                )
+            elif was_created:
+                # DEBUG:
+                TerminalHelper.print_conditional(
+                    debug_on,
+                    (
+                        f"{TerminalColors.OKCYAN}"
+                        f"Checking duplicates for: {target_domain_information}"
+                        f"{TerminalColors.ENDC}"
+                    ),  # noqa
+                )
+                # ---------------- DUPLICATE ----------------
+                # The unique key constraint does not allow multiple domain
+                # information objects to share the same domain
+                existing_domain_information_in_to_create = next(
+                    (
+                        x
+                        for x in domain_information_to_create
+                        if x.domain.name == target_domain_information.domain.name
+                    ),
+                    None,
+                )
+                # TODO: this is redundant.
+                # Currently debugging....
+                # running into unique key constraint error....
+                existing_domain_info = DomainInformation.objects.filter(
+                    domain__name=target_domain_information.domain.name
+                ).exists()
+                if (
+                    existing_domain_information_in_to_create is not None
+                    or existing_domain_info
+                ):
+                    debug_string = f"""{TerminalColors.YELLOW}
+                        Duplicate Detected: {existing_domain_information_in_to_create}.
+                        Cannot add duplicate Domain Information object
+                        {TerminalColors.ENDC}"""
+                else:
+                    # ---------------- CREATED ----------------
+                    domain_information_to_create.append(target_domain_information)
+                    debug_string = (
+                        f"created domain information: {target_domain_information}"
+                    )
+            elif not was_created:
+                # ---------------- UPDATED ----------------
+                updated_domain_information.append(target_domain_information)
+                debug_string = (
+                    f"updated domain information: {target_domain_information}"
+                )
+            else:
+                debug_string = "domain information already exists and "
+                f"matches incoming data (NO CHANGES MADE): {target_domain_information}"
 
-        self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
+            # DEBUG:
+            TerminalHelper.print_conditional(
+                debug_on,
+                (f"{TerminalColors.OKCYAN}{debug_string}{TerminalColors.ENDC}"),
+            )
 
-        # domains to ADD
-        domains_to_create = []
-        domain_information_to_create = []
-
-        # domains we UPDATED
-        updated_domain_entries = []
-        updated_domain_information = []
-
-        # domains we SKIPPED
-        skipped_domain_entries = []
-        skipped_domain_information_entries = []
-
-        # domain invitations to ADD
-        domain_invitations_to_create = []
-
-        # if we are limiting our parse (for testing purposes, keep
-        # track of total rows parsed)
-        total_rows_parsed = 0
-
-        logger.info(
-            f"""{TerminalColors.OKCYAN}
-            ==========================
-            Beginning Data Transfer
-            ==========================
-            {TerminalColors.ENDC}"""
+            # ------------------ Parse limit reached? ------------------
+            # Check parse limit and exit loop if parse limit has been reached
+            if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
+                break
+        return (
+            skipped_domain_information_entries,
+            domain_information_to_create,
+            updated_domain_information,
         )
 
-        logger.info(
-            f"""{TerminalColors.OKCYAN}
-            ========= Adding Domains and Domain Invitations =========
-            {TerminalColors.ENDC}"""
-        )
+    # C901 'Command.handle' is too complex
+    def process_domain_and_invitations(
+        self,
+        debug_on,
+        skipped_domain_entries,
+        domains_to_create,
+        updated_domain_entries,
+        domain_invitations_to_create,
+        debug_max_entries_to_parse,
+        total_rows_parsed,
+    ):
         for transition_domain in TransitionDomain.objects.all():
             # Create some local variables to make data tracing easier
             transition_domain_name = transition_domain.domain_name
@@ -665,6 +725,78 @@ class Command(BaseCommand):
             # Check parse limit and exit loop if parse limit has been reached
             if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
                 break
+        return (
+            skipped_domain_entries,
+            domains_to_create,
+            updated_domain_entries,
+            domain_invitations_to_create,
+        )
+
+    # ======================================================
+    # ===================== HANDLE  ========================
+    # ======================================================
+    def handle(
+        self,
+        **options,
+    ):
+        """Parse entries in TransitionDomain table
+        and create (or update) corresponding entries in the
+        Domain and DomainInvitation tables."""
+
+        # grab command line arguments and store locally...
+        debug_on = options.get("debug")
+        debug_max_entries_to_parse = int(
+            options.get("limitParse")
+        )  # set to 0 to parse all entries
+
+        self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
+
+        # domains to ADD
+        domains_to_create = []
+        domain_information_to_create = []
+
+        # domains we UPDATED
+        updated_domain_entries = []
+        updated_domain_information = []
+
+        # domains we SKIPPED
+        skipped_domain_entries = []
+        skipped_domain_information_entries = []
+
+        # domain invitations to ADD
+        domain_invitations_to_create = []
+
+        # if we are limiting our parse (for testing purposes, keep
+        # track of total rows parsed)
+        total_rows_parsed = 0
+
+        logger.info(
+            f"""{TerminalColors.OKCYAN}
+            ==========================
+            Beginning Data Transfer
+            ==========================
+            {TerminalColors.ENDC}"""
+        )
+
+        logger.info(
+            f"""{TerminalColors.OKCYAN}
+            ========= Adding Domains and Domain Invitations =========
+            {TerminalColors.ENDC}"""
+        )
+        (
+            skipped_domain_entries,
+            domains_to_create,
+            updated_domain_entries,
+            domain_invitations_to_create,
+        ) = self.process_domain_and_invitations(
+            debug_on,
+            skipped_domain_entries,
+            domains_to_create,
+            updated_domain_entries,
+            domain_invitations_to_create,
+            debug_max_entries_to_parse,
+            total_rows_parsed,
+        )
 
         # First, save all Domain objects to the database
         Domain.objects.bulk_create(domains_to_create)
@@ -704,87 +836,22 @@ class Command(BaseCommand):
             ========= Adding Domains Information Objects =========
             {TerminalColors.ENDC}"""
         )
-        for transition_domain in TransitionDomain.objects.all():
-            (
-                target_domain_information,
-                associated_domain,
-                was_created,
-            ) = self.update_or_create_domain_information(
-                transition_domain,
-                valid_agency_choices,
-                valid_fed_choices,
-                valid_org_choices,
-                debug_on,
-            )
 
-            debug_string = ""
-            if target_domain_information is None:
-                # ---------------- SKIPPED ----------------
-                skipped_domain_information_entries.append(target_domain_information)
-                debug_string = (
-                    f"skipped domain information: {target_domain_information}"
-                )
-            elif was_created:
-                # DEBUG:
-                TerminalHelper.print_conditional(
-                    debug_on,
-                    (
-                        f"{TerminalColors.OKCYAN}"
-                        f"Checking duplicates for: {target_domain_information}"
-                        f"{TerminalColors.ENDC}"
-                    ),  # noqa
-                )
-                # ---------------- DUPLICATE ----------------
-                # The unique key constraint does not allow multiple domain
-                # information objects to share the same domain
-                existing_domain_information_in_to_create = next(
-                    (
-                        x
-                        for x in domain_information_to_create
-                        if x.domain.name == target_domain_information.domain.name
-                    ),
-                    None,
-                )
-                # TODO: this is redundant.
-                # Currently debugging....
-                # running into unique key constraint error....
-                existing_domain_info = DomainInformation.objects.filter(
-                    domain__name=target_domain_information.domain.name
-                ).exists()
-                if (
-                    existing_domain_information_in_to_create is not None
-                    or existing_domain_info
-                ):
-                    debug_string = f"""{TerminalColors.YELLOW}
-                        Duplicate Detected: {existing_domain_information_in_to_create}.
-                        Cannot add duplicate Domain Information object
-                        {TerminalColors.ENDC}"""
-                else:
-                    # ---------------- CREATED ----------------
-                    domain_information_to_create.append(target_domain_information)
-                    debug_string = (
-                        f"created domain information: {target_domain_information}"
-                    )
-            elif not was_created:
-                # ---------------- UPDATED ----------------
-                updated_domain_information.append(target_domain_information)
-                debug_string = (
-                    f"updated domain information: {target_domain_information}"
-                )
-            else:
-                debug_string = "domain information already exists and "
-                f"matches incoming data (NO CHANGES MADE): {target_domain_information}"
-
-            # DEBUG:
-            TerminalHelper.print_conditional(
-                debug_on,
-                (f"{TerminalColors.OKCYAN}{debug_string}{TerminalColors.ENDC}"),
-            )
-
-            # ------------------ Parse limit reached? ------------------
-            # Check parse limit and exit loop if parse limit has been reached
-            if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
-                break
+        (
+            skipped_domain_information_entries,
+            domain_information_to_create,
+            updated_domain_information,
+        ) = self.process_domain_information(
+            valid_agency_choices,
+            valid_fed_choices,
+            valid_org_choices,
+            debug_on,
+            skipped_domain_information_entries,
+            domain_information_to_create,
+            updated_domain_information,
+            debug_max_entries_to_parse,
+            total_rows_parsed,
+        )
 
         TerminalHelper.print_conditional(
             debug_on,
