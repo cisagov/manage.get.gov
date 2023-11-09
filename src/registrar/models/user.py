@@ -154,10 +154,10 @@ class User(AbstractUser):
                 new_domain_info = DomainInformation(creator=self, domain=domain)
                 new_domain_info.save()
 
-    def first_login(self):
-        """Callback when the user is authenticated for the very first time.
+    def on_each_login(self):
+        """Callback each time the user is authenticated.
 
-        When a user first arrives on the site, we need to retrieve any domain
+        When a user arrives on the site each time, we need to retrieve any domain
         invitations that match their email address.
 
         We also need to check if they are logging in with the same e-mail

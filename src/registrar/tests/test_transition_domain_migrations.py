@@ -237,7 +237,7 @@ class TestLogins(TestCase):
             user, user_created = User.objects.get_or_create(
                 email=invite.email, username=invite.email
             )
-            user.first_login()
+            user.on_each_login()
 
         # Analyze the tables
         expected_total_transition_domains = 8
