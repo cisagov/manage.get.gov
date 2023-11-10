@@ -131,8 +131,7 @@ class DomainApplication(TimeStampedModel):
 
         FEDERAL = (
             "federal",
-            "Federal: an agency of the U.S. government's executive, "
-            "legislative, or judicial branches",
+            "Federal: an agency of the U.S. government's executive, legislative, or judicial branches",
         )
         INTERSTATE = "interstate", "Interstate: an organization of two or more states"
         STATE_OR_TERRITORY = (
@@ -143,8 +142,7 @@ class DomainApplication(TimeStampedModel):
         )
         TRIBAL = (
             "tribal",
-            "Tribal: a tribal government recognized by the federal or a state "
-            "government",
+            "Tribal: a tribal government recognized by the federal or a state government",
         )
         COUNTY = "county", "County: a county, parish, or borough"
         CITY = "city", "City: a city, town, township, village, etc."
@@ -154,8 +152,7 @@ class DomainApplication(TimeStampedModel):
         )
         SCHOOL_DISTRICT = (
             "school_district",
-            "School district: a school district that is not part of a local "
-            "government",
+            "School district: a school district that is not part of a local government",
         )
 
     class BranchChoices(models.TextChoices):
@@ -168,10 +165,7 @@ class DomainApplication(TimeStampedModel):
         "Advisory Council on Historic Preservation",
         "American Battle Monuments Commission",
         "Appalachian Regional Commission",
-        (
-            "Appraisal Subcommittee of the Federal Financial "
-            "Institutions Examination Council"
-        ),
+        ("Appraisal Subcommittee of the Federal Financial Institutions Examination Council"),
         "Armed Forces Retirement Home",
         "Barry Goldwater Scholarship and Excellence in Education Program",
         "Central Intelligence Agency",
@@ -507,9 +501,7 @@ class DomainApplication(TimeStampedModel):
             return not self.approved_domain.is_active()
         return True
 
-    def _send_status_update_email(
-        self, new_status, email_template, email_template_subject
-    ):
+    def _send_status_update_email(self, new_status, email_template, email_template_subject):
         """Send a atatus update email to the submitter.
 
         The email goes to the email address that the submitter gave as their
@@ -518,9 +510,7 @@ class DomainApplication(TimeStampedModel):
         """
 
         if self.submitter is None or self.submitter.email is None:
-            logger.warning(
-                f"Cannot send {new_status} email, no submitter email address."
-            )
+            logger.warning(f"Cannot send {new_status} email, no submitter email address.")
             return
         try:
             send_templated_email(
@@ -533,9 +523,7 @@ class DomainApplication(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
-    @transition(
-        field="status", source=[STARTED, ACTION_NEEDED, WITHDRAWN], target=SUBMITTED
-    )
+    @transition(field="status", source=[STARTED, ACTION_NEEDED, WITHDRAWN], target=SUBMITTED)
     def submit(self):
         """Submit an application that is started.
 

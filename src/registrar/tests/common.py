@@ -317,9 +317,7 @@ class AuditedAdminMockData:
             of either DomainApplication, DomainInvitation, or DomainInformation
             based on the 'domain_type' field.
         """  # noqa
-        common_args = self.get_common_domain_arg_dictionary(
-            item_name, org_type, federal_type, purpose
-        )
+        common_args = self.get_common_domain_arg_dictionary(item_name, org_type, federal_type, purpose)
         full_arg_dict = None
         match domain_type:
             case self.APPLICATION:
@@ -344,40 +342,22 @@ class AuditedAdminMockData:
                 )
         return full_arg_dict
 
-    def create_full_dummy_domain_application(
-        self, item_name, status=DomainApplication.STARTED
-    ):
+    def create_full_dummy_domain_application(self, item_name, status=DomainApplication.STARTED):
         """Creates a dummy domain application object"""
-        domain_application_kwargs = self.dummy_kwarg_boilerplate(
-            self.APPLICATION, item_name, status
-        )
-        application = DomainApplication.objects.get_or_create(
-            **domain_application_kwargs
-        )[0]
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.APPLICATION, item_name, status)
+        application = DomainApplication.objects.get_or_create(**domain_application_kwargs)[0]
         return application
 
-    def create_full_dummy_domain_information(
-        self, item_name, status=DomainApplication.STARTED
-    ):
+    def create_full_dummy_domain_information(self, item_name, status=DomainApplication.STARTED):
         """Creates a dummy domain information object"""
-        domain_application_kwargs = self.dummy_kwarg_boilerplate(
-            self.INFORMATION, item_name, status
-        )
-        application = DomainInformation.objects.get_or_create(
-            **domain_application_kwargs
-        )[0]
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, item_name, status)
+        application = DomainInformation.objects.get_or_create(**domain_application_kwargs)[0]
         return application
 
-    def create_full_dummy_domain_invitation(
-        self, item_name, status=DomainApplication.STARTED
-    ):
+    def create_full_dummy_domain_invitation(self, item_name, status=DomainApplication.STARTED):
         """Creates a dummy domain invitation object"""
-        domain_application_kwargs = self.dummy_kwarg_boilerplate(
-            self.INVITATION, item_name, status
-        )
-        application = DomainInvitation.objects.get_or_create(
-            **domain_application_kwargs
-        )[0]
+        domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, item_name, status)
+        application = DomainInvitation.objects.get_or_create(**domain_application_kwargs)[0]
 
         return application
 
@@ -394,17 +374,11 @@ class AuditedAdminMockData:
         application = None
         match domain_type:
             case self.APPLICATION:
-                application = self.create_full_dummy_domain_application(
-                    item_name, status
-                )
+                application = self.create_full_dummy_domain_application(item_name, status)
             case self.INVITATION:
-                application = self.create_full_dummy_domain_invitation(
-                    item_name, status
-                )
+                application = self.create_full_dummy_domain_invitation(item_name, status)
             case self.INFORMATION:
-                application = self.create_full_dummy_domain_information(
-                    item_name, status
-                )
+                application = self.create_full_dummy_domain_information(item_name, status)
             case _:
                 raise ValueError("Invalid domain_type, must conform to given constants")
 
@@ -527,9 +501,7 @@ def completed_application(
     if has_anything_else:
         domain_application_kwargs["anything_else"] = "There is more"
 
-    application, _ = DomainApplication.objects.get_or_create(
-        **domain_application_kwargs
-    )
+    application, _ = DomainApplication.objects.get_or_create(**domain_application_kwargs)
 
     if has_other_contacts:
         application.other_contacts.add(other)
@@ -631,11 +603,7 @@ class MockEppLib(TestCase):
     mockDataInfoDomain = fakedEppObject(
         "fakePw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
-        contacts=[
-            common.DomainContact(
-                contact="123", type=PublicContact.ContactTypeChoices.SECURITY
-            )
-        ],
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
@@ -705,21 +673,11 @@ class MockEppLib(TestCase):
     mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
         "defaultTech", "dotgov@cisa.dhs.gov"
     )
-    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "defaultSec", "dotgov@cisa.dhs.gov"
-    )
-    mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "securityContact", "security@mail.gov"
-    )
-    mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "technicalContact", "tech@mail.gov"
-    )
-    mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "adminContact", "admin@mail.gov"
-    )
-    mockRegistrantContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "regContact", "registrant@mail.gov"
-    )
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "dotgov@cisa.dhs.gov")
+    mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("securityContact", "security@mail.gov")
+    mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("technicalContact", "tech@mail.gov")
+    mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData("adminContact", "admin@mail.gov")
+    mockRegistrantContact = InfoDomainWithContacts.dummyInfoContactResultData("regContact", "registrant@mail.gov")
 
     infoDomainNoContact = fakedEppObject(
         "security",
@@ -759,9 +717,7 @@ class MockEppLib(TestCase):
         addrs=[common.Ip(addr="1.2.3.4"), common.Ip(addr="2.3.4.5")],
     )
 
-    mockDataHostChange = fakedEppObject(
-        "lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35)
-    )
+    mockDataHostChange = fakedEppObject("lastPw", cr_date=datetime.datetime(2023, 8, 25, 19, 45, 35))
     addDsData1 = {
         "keyTag": 1234,
         "alg": 3,
@@ -852,9 +808,7 @@ class MockEppLib(TestCase):
     def _mockDomainName(self, _name, _avail=False):
         return MagicMock(
             res_data=[
-                responses.check.CheckDomainResultData(
-                    name=_name, avail=_avail, reason=None
-                ),
+                responses.check.CheckDomainResultData(name=_name, avail=_avail, reason=None),
             ]
         )
 
@@ -927,9 +881,7 @@ class MockEppLib(TestCase):
             name = getattr(_request, "name", None)
             fake_nameserver = "ns1.failDelete.gov"
             if name in fake_nameserver:
-                raise RegistryError(
-                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION
-                )
+                raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
         return None
 
     def mockInfoDomainCommands(self, _request, cleaned):
@@ -948,9 +900,7 @@ class MockEppLib(TestCase):
             ),
             "dnssec-none.gov": (self.mockDataInfoDomain, None),
             "my-nameserver.gov": (
-                self.infoDomainTwoHosts
-                if self.mockedSendFunction.call_count == 5
-                else self.infoDomainNoHost,
+                self.infoDomainTwoHosts if self.mockedSendFunction.call_count == 5 else self.infoDomainNoHost,
                 None,
             ),
             "nameserverwithip.gov": (self.infoDomainHasIP, None),
@@ -963,9 +913,7 @@ class MockEppLib(TestCase):
         }
 
         # Retrieve the corresponding values from the dictionary
-        res_data, extensions = request_mappings.get(
-            request_name, (self.mockDataInfoDomain, None)
-        )
+        res_data, extensions = request_mappings.get(request_name, (self.mockDataInfoDomain, None))
 
         return MagicMock(
             res_data=[res_data],
@@ -996,10 +944,7 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[mocked_result])
 
     def mockCreateContactCommands(self, _request, cleaned):
-        if (
-            getattr(_request, "id", None) == "fail"
-            and self.mockedSendFunction.call_count == 3
-        ):
+        if getattr(_request, "id", None) == "fail" and self.mockedSendFunction.call_count == 3:
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
@@ -1019,9 +964,7 @@ class MockEppLib(TestCase):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-    def _convertPublicContactToEpp(
-        self, contact: PublicContact, disclose_email=False, createContact=True
-    ):
+    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
         DF = common.DiscloseField
         fields = {DF.EMAIL}
 
@@ -1033,9 +976,7 @@ class MockEppLib(TestCase):
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(
             [
-                getattr(contact, street)
-                for street in ["street1", "street2", "street3"]
-                if hasattr(contact, street)
+                getattr(contact, street) for street in ["street1", "street2", "street3"] if hasattr(contact, street)
             ],  # type: ignore
             city=contact.city,
             pc=contact.pc,

@@ -87,14 +87,10 @@ class UserGroup(Group):
                 permissions = permission["permissions"]
 
                 # Retrieve the content type for the app and model
-                content_type = ContentType.objects.get(
-                    app_label=app_label, model=model_name
-                )
+                content_type = ContentType.objects.get(app_label=app_label, model=model_name)
 
                 # Retrieve the permissions based on their codenames
-                permissions = Permission.objects.filter(
-                    content_type=content_type, codename__in=permissions
-                )
+                permissions = Permission.objects.filter(content_type=content_type, codename__in=permissions)
 
                 # Assign the permissions to the group
                 cisa_analysts_group.permissions.add(*permissions)
@@ -113,9 +109,7 @@ class UserGroup(Group):
                 )
 
                 cisa_analysts_group.save()
-                logger.debug(
-                    "CISA Analyt permissions added to group " + cisa_analysts_group.name
-                )
+                logger.debug("CISA Analyt permissions added to group " + cisa_analysts_group.name)
         except Exception as e:
             logger.error(f"Error creating analyst permissions group: {e}")
 

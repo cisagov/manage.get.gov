@@ -76,9 +76,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="publiccontact",
             name="org",
-            field=models.TextField(
-                help_text="Contact's organization (null ok)", null=True
-            ),
+            field=models.TextField(help_text="Contact's organization (null ok)", null=True),
         ),
         migrations.AlterField(
             model_name="publiccontact",
@@ -88,9 +86,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="publiccontact",
             name="pw",
-            field=models.TextField(
-                help_text="Contact's authorization code. 16 characters minimum."
-            ),
+            field=models.TextField(help_text="Contact's authorization code. 16 characters minimum."),
         ),
         migrations.AlterField(
             model_name="publiccontact",
@@ -115,8 +111,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="publiccontact",
             name="voice",
-            field=models.TextField(
-                help_text="Contact's phone number. Must be in ITU.E164.2005 format"
-            ),
+            field=models.TextField(help_text="Contact's phone number. Must be in ITU.E164.2005 format"),
         ),
     ]

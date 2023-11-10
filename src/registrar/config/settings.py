@@ -526,9 +526,7 @@ OIDC_PROVIDERS = {
             "acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
         },
         "client_registration": {
-            "client_id": (
-                "urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"
-            ),
+            "client_id": ("urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"),
             "redirect_uris": [f"{env_base_url}/openid/callback/login/"],
             "post_logout_redirect_uris": [f"{env_base_url}/openid/callback/logout/"],
             "token_endpoint_auth_method": ["private_key_jwt"],

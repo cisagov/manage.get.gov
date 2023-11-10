@@ -97,9 +97,7 @@ class DomainApplicationFixture:
     def _set_non_foreign_key_fields(cls, da: DomainApplication, app: dict):
         """Helper method used by `load`."""
         da.status = app["status"] if "status" in app else "started"
-        da.organization_type = (
-            app["organization_type"] if "organization_type" in app else "federal"
-        )
+        da.organization_type = app["organization_type"] if "organization_type" in app else "federal"
         da.federal_agency = (
             app["federal_agency"]
             if "federal_agency" in app
@@ -112,40 +110,25 @@ class DomainApplicationFixture:
             if "federal_type" in app
             else random.choice(["executive", "judicial", "legislative"])  # nosec
         )
-        da.address_line1 = (
-            app["address_line1"] if "address_line1" in app else fake.street_address()
-        )
+        da.address_line1 = app["address_line1"] if "address_line1" in app else fake.street_address()
         da.address_line2 = app["address_line2"] if "address_line2" in app else None
         da.city = app["city"] if "city" in app else fake.city()
-        da.state_territory = (
-            app["state_territory"] if "state_territory" in app else fake.state_abbr()
-        )
+        da.state_territory = app["state_territory"] if "state_territory" in app else fake.state_abbr()
         da.zipcode = app["zipcode"] if "zipcode" in app else fake.postalcode()
         da.urbanization = app["urbanization"] if "urbanization" in app else None
         da.purpose = app["purpose"] if "purpose" in app else fake.paragraph()
         da.anything_else = app["anything_else"] if "anything_else" in app else None
-        da.is_policy_acknowledged = (
-            app["is_policy_acknowledged"] if "is_policy_acknowledged" in app else True
-        )
+        da.is_policy_acknowledged = app["is_policy_acknowledged"] if "is_policy_acknowledged" in app else True
 
     @classmethod
     def _set_foreign_key_fields(cls, da: DomainApplication, app: dict, user: User):
         """Helper method used by `load`."""
         if not da.investigator:
-            da.investigator = (
-                User.objects.get(username=user.username)
-                if "investigator" in app
-                else None
-            )
+            da.investigator = User.objects.get(username=user.username) if "investigator" in app else None
 
         if not da.authorizing_official:
-            if (
-                "authorizing_official" in app
-                and app["authorizing_official"] is not None
-            ):
-                da.authorizing_official, _ = Contact.objects.get_or_create(
-                    **app["authorizing_official"]
-                )
+            if "authorizing_official" in app and app["authorizing_official"] is not None:
+                da.authorizing_official, _ = Contact.objects.get_or_create(**app["authorizing_official"])
             else:
                 da.authorizing_official = Contact.objects.create(**cls.fake_contact())
 
@@ -157,13 +140,9 @@ class DomainApplicationFixture:
 
         if not da.requested_domain:
             if "requested_domain" in app and app["requested_domain"] is not None:
-                da.requested_domain, _ = DraftDomain.objects.get_or_create(
-                    name=app["requested_domain"]
-                )
+                da.requested_domain, _ = DraftDomain.objects.get_or_create(name=app["requested_domain"])
             else:
-                da.requested_domain = DraftDomain.objects.create(
-                    name=cls.fake_dot_gov()
-                )
+                da.requested_domain = DraftDomain.objects.create(name=cls.fake_dot_gov())
 
     @classmethod
     def _set_many_to_many_relations(cls, da: DomainApplication, app: dict):
@@ -173,32 +152,25 @@ class DomainApplicationFixture:
                 da.other_contacts.add(Contact.objects.get_or_create(**contact)[0])
         elif not da.other_contacts.exists():
             other_contacts = [
-                Contact.objects.create(**cls.fake_contact())
-                for _ in range(random.randint(0, 3))  # nosec
+                Contact.objects.create(**cls.fake_contact()) for _ in range(random.randint(0, 3))  # nosec
             ]
             da.other_contacts.add(*other_contacts)
 
         if "current_websites" in app:
             for website in app["current_websites"]:
-                da.current_websites.add(
-                    Website.objects.get_or_create(website=website)[0]
-                )
+                da.current_websites.add(Website.objects.get_or_create(website=website)[0])
         elif not da.current_websites.exists():
             current_websites = [
-                Website.objects.create(website=fake.uri())
-                for _ in range(random.randint(0, 3))  # nosec
+                Website.objects.create(website=fake.uri()) for _ in range(random.randint(0, 3))  # nosec
             ]
             da.current_websites.add(*current_websites)
 
         if "alternative_domains" in app:
             for domain in app["alternative_domains"]:
-                da.alternative_domains.add(
-                    Website.objects.get_or_create(website=domain)[0]
-                )
+                da.alternative_domains.add(Website.objects.get_or_create(website=domain)[0])
         elif not da.alternative_domains.exists():
             alternative_domains = [
-                Website.objects.create(website=cls.fake_dot_gov())
-                for _ in range(random.randint(0, 3))  # nosec
+                Website.objects.create(website=cls.fake_dot_gov()) for _ in range(random.randint(0, 3))  # nosec
             ]
             da.alternative_domains.add(*alternative_domains)
 
@@ -242,9 +214,7 @@ class DomainFixture(DomainApplicationFixture):
 
         for user in users:
             # approve one of each users in review status domains
-            application = DomainApplication.objects.filter(
-                creator=user, status=DomainApplication.IN_REVIEW
-            ).last()
+            application = DomainApplication.objects.filter(creator=user, status=DomainApplication.IN_REVIEW).last()
             logger.debug(f"Approving {application} for {user}")
             application.approve()
             application.save()
