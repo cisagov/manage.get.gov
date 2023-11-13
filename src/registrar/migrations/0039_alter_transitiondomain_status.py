@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
             name="status",
             field=models.CharField(
                 blank=True,
-                choices=[("ready", "Ready"), ("on hold", "On Hold")],
+                choices=[("ready", "Ready"), ("on hold", "On hold")],
                 default="ready",
                 help_text="domain status during the transfer",
                 max_length=255,
