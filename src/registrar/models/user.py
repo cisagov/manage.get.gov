@@ -68,9 +68,7 @@ class User(AbstractUser):
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
         invitations that match their email address."""
-        for invitation in DomainInvitation.objects.filter(
-            email=self.email, status=DomainInvitation.INVITED
-        ):
+        for invitation in DomainInvitation.objects.filter(email=self.email, status=DomainInvitation.INVITED):
             try:
                 invitation.retrieve()
                 invitation.save()
@@ -78,9 +76,7 @@ class User(AbstractUser):
                 # retrieving should not fail because of a missing user, but
                 # if it does fail, log the error so a new user can continue
                 # logging in
-                logger.warn(
-                    "Failed to retrieve invitation %s", invitation, exc_info=True
-                )
+                logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
 
     def create_domain_and_invite(self, transition_domain: TransitionDomain):
         transition_domain_name = transition_domain.domain_name
@@ -89,9 +85,7 @@ class User(AbstractUser):
 
         # type safety check.  name should never be none
         if transition_domain_name is not None:
-            new_domain = Domain(
-                name=transition_domain_name, state=transition_domain_status
-            )
+            new_domain = Domain(name=transition_domain_name, state=transition_domain_status)
             new_domain.save()
             # check that a domain invitation doesn't already
             # exist for this e-mail / Domain pair
@@ -100,9 +94,7 @@ class User(AbstractUser):
             ).exists()
             if not domain_email_already_in_domain_invites:
                 # Create new domain invitation
-                new_domain_invitation = DomainInvitation(
-                    email=transition_domain_email.lower(), domain=new_domain
-                )
+                new_domain_invitation = DomainInvitation(email=transition_domain_email.lower(), domain=new_domain)
                 new_domain_invitation.save()
 
     def check_transition_domains_on_login(self):
@@ -129,9 +121,7 @@ class User(AbstractUser):
             # with our data and migrations need to be run again.
 
             # Get the domain that corresponds with this transition domain
-            domain_exists = Domain.objects.filter(
-                name=transition_domain.domain_name
-            ).exists()
+            domain_exists = Domain.objects.filter(name=transition_domain.domain_name).exists()
             if not domain_exists:
                 logger.warn(
                     """There are transition domains without
@@ -147,17 +137,15 @@ class User(AbstractUser):
 
             # Create a domain information object, if one doesn't
             # already exist
-            domain_info_exists = DomainInformation.objects.filter(
-                domain=domain
-            ).exists()
+            domain_info_exists = DomainInformation.objects.filter(domain=domain).exists()
             if not domain_info_exists:
                 new_domain_info = DomainInformation(creator=self, domain=domain)
                 new_domain_info.save()
 
-    def first_login(self):
-        """Callback when the user is authenticated for the very first time.
+    def on_each_login(self):
+        """Callback each time the user is authenticated.
 
-        When a user first arrives on the site, we need to retrieve any domain
+        When a user arrives on the site each time, we need to retrieve any domain
         invitations that match their email address.
 
         We also need to check if they are logging in with the same e-mail

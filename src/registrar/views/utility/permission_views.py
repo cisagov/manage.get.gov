@@ -33,9 +33,9 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context["is_analyst_or_superuser"] = user.has_perm(
-            "registrar.analyst_access_permission"
-        ) or user.has_perm("registrar.full_access_permission")
+        context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
+            "registrar.full_access_permission"
+        )
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
@@ -74,9 +74,7 @@ class DomainApplicationPermissionView(DomainApplicationPermission, DetailView, a
         raise NotImplementedError
 
 
-class ApplicationWizardPermissionView(
-    ApplicationWizardPermission, TemplateView, abc.ABC
-):
+class ApplicationWizardPermissionView(ApplicationWizardPermission, TemplateView, abc.ABC):
 
     """Abstract base view for the application form that enforces permissions
 
@@ -91,9 +89,7 @@ class ApplicationWizardPermissionView(
         raise NotImplementedError
 
 
-class DomainInvitationPermissionDeleteView(
-    DomainInvitationPermission, DeleteView, abc.ABC
-):
+class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteView, abc.ABC):
 
     """Abstract view for deleting a domain invitation.
 

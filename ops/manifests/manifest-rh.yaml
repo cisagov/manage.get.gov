@@ -23,6 +23,8 @@ applications:
     DJANGO_LOG_LEVEL: INFO
     # default public site location
     GETGOV_PUBLIC_SITE_URL: https://beta.get.gov
+    # Flag to disable/enable features in prod environments
+    IS_PRODUCTION: False
   routes:
     - route: getgov-rh.app.cloud.gov
   services:

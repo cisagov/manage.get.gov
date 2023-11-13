@@ -49,9 +49,7 @@ class DomainPermission(PermissionsLoginMixin):
             return True
 
         # user needs to have a role on the domain
-        if not UserDomainRole.objects.filter(
-            user=self.request.user, domain__id=pk
-        ).exists():
+        if not UserDomainRole.objects.filter(user=self.request.user, domain__id=pk).exists():
             return False
 
         # if we need to check more about the nature of role, do it here.
@@ -100,7 +98,15 @@ class DomainPermission(PermissionsLoginMixin):
         if DomainInformation.objects.filter(id=pk).exists():
             requested_domain = DomainInformation.objects.get(id=pk)
 
-        if requested_domain.domain_application.status not in valid_domain_statuses:
+        # if no domain information or application exist, the user
+        # should be able to manage the domain; however, if domain information
+        # and domain application exist, and application is not in valid status,
+        # user should not be able to manage domain
+        if (
+            requested_domain
+            and requested_domain.domain_application
+            and requested_domain.domain_application.status not in valid_domain_statuses
+        ):
             return False
 
         # Valid session keys exist,
@@ -125,9 +131,7 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         # user needs to be the creator of the application
         # this query is empty if there isn't a domain application with this
         # id and this user as creator
-        if not DomainApplication.objects.filter(
-            creator=self.request.user, id=self.kwargs["pk"]
-        ).exists():
+        if not DomainApplication.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
             return False
 
         return True

@@ -33,9 +33,7 @@ class Command(BaseCommand):
             help="Sets max number of entries to load, set to 0 to load all entries",
         )
 
-    def print_debug_mode_statements(
-        self, debug_on: bool, debug_max_entries_to_parse: int
-    ):
+    def print_debug_mode_statements(self, debug_on: bool, debug_max_entries_to_parse: int):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
         TerminalHelper.print_conditional(
@@ -57,9 +55,7 @@ class Command(BaseCommand):
             """,
         )
 
-    def update_domain_status(
-        self, transition_domain: TransitionDomain, target_domain: Domain, debug_on: bool
-    ) -> bool:
+    def update_domain_status(self, transition_domain: TransitionDomain, target_domain: Domain, debug_on: bool) -> bool:
         """Given a transition domain that matches an existing domain,
         updates the existing domain object with that status of
         the transition domain.
@@ -153,9 +149,7 @@ class Command(BaseCommand):
             """,
         )
 
-    def try_add_domain_invitation(
-        self, domain_email: str, associated_domain: Domain
-    ) -> DomainInvitation | None:
+    def try_add_domain_invitation(self, domain_email: str, associated_domain: Domain) -> DomainInvitation | None:
         """If no domain invitation exists for the given domain and
         e-mail, create and return a new domain invitation object.
         If one already exists, or if the email is invalid, return NONE"""
@@ -187,9 +181,7 @@ class Command(BaseCommand):
             ).exists()
             if not domain_email_already_in_domain_invites:
                 # Create new domain invitation
-                new_domain_invitation = DomainInvitation(
-                    email=domain_email.lower(), domain=associated_domain
-                )
+                new_domain_invitation = DomainInvitation(email=domain_email.lower(), domain=associated_domain)
                 return new_domain_invitation
         return None
 
@@ -203,9 +195,7 @@ class Command(BaseCommand):
 
         # grab command line arguments and store locally...
         debug_on = options.get("debug")
-        debug_max_entries_to_parse = int(
-            options.get("limitParse")
-        )  # set to 0 to parse all entries
+        debug_max_entries_to_parse = int(options.get("limitParse"))  # set to 0 to parse all entries
 
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
 
@@ -258,18 +248,14 @@ class Command(BaseCommand):
 
                     # for existing entry, update the status to
                     # the transition domain status
-                    update_made = self.update_domain_status(
-                        transition_domain, domain_to_update, debug_on
-                    )
+                    update_made = self.update_domain_status(transition_domain, domain_to_update, debug_on)
                     if update_made:
                         # keep track of updated domains for data analysis purposes
                         updated_domain_entries.append(transition_domain.domain_name)
 
                     # check if we need to add a domain invitation
                     # (eg. for a new user)
-                    new_domain_invitation = self.try_add_domain_invitation(
-                        transition_domain_email, domain_to_update
-                    )
+                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, domain_to_update)
 
                 except Domain.MultipleObjectsReturned:
                     # This exception was thrown once before during testing.
@@ -338,18 +324,14 @@ class Command(BaseCommand):
                     )
                 else:
                     # no matching entry, make one
-                    new_domain = Domain(
-                        name=transition_domain_name, state=transition_domain_status
-                    )
+                    new_domain = Domain(name=transition_domain_name, state=transition_domain_status)
                     domains_to_create.append(new_domain)
                     # DEBUG:
                     TerminalHelper.print_conditional(
                         debug_on,
                         f"{TerminalColors.OKCYAN} Adding domain: {new_domain} {TerminalColors.ENDC}",  # noqa
                     )
-                    new_domain_invitation = self.try_add_domain_invitation(
-                        transition_domain_email, new_domain
-                    )
+                    new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, new_domain)
 
             if new_domain_invitation is None:
                 logger.info(
@@ -365,10 +347,7 @@ class Command(BaseCommand):
                 domain_invitations_to_create.append(new_domain_invitation)
 
             # Check parse limit and exit loop if parse limit has been reached
-            if (
-                debug_max_entries_to_parse > 0
-                and total_rows_parsed >= debug_max_entries_to_parse
-            ):
+            if debug_max_entries_to_parse > 0 and total_rows_parsed >= debug_max_entries_to_parse:
                 logger.info(
                     f"""{TerminalColors.YELLOW}
                     ----PARSE LIMIT REACHED.  HALTING PARSER.----

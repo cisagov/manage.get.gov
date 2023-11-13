@@ -46,6 +46,7 @@ path = Path(__file__)
 
 env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
+env_is_production = env.bool("IS_PRODUCTION", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_base_url = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
@@ -73,6 +74,8 @@ BASE_DIR = path.resolve().parent.parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_debug
 
+# Controls production specific feature toggles
+IS_PRODUCTION = env_is_production
 
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.
@@ -207,6 +210,7 @@ TEMPLATES = [
                 "registrar.context_processors.language_code",
                 "registrar.context_processors.canonical_path",
                 "registrar.context_processors.is_demo_site",
+                "registrar.context_processors.is_production",
             ],
         },
     },
@@ -300,7 +304,7 @@ CSP_FORM_ACTION = allowed_sources
 # Sets clients that allow access control to manage.get.gov
 # TODO: remove :8080 to see if we can have all localhost access
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://beta.get.gov"]
-
+CORS_ALLOWED_ORIGIN_REGEXES = [r"https://[\w-]+\.sites\.pages\.cloud\.gov"]
 
 # Content-Length header is set by django.middleware.common.CommonMiddleware
 
@@ -523,9 +527,7 @@ OIDC_PROVIDERS = {
             "acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
         },
         "client_registration": {
-            "client_id": (
-                "urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"
-            ),
+            "client_id": ("urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"),
             "redirect_uris": [f"{env_base_url}/openid/callback/login/"],
             "post_logout_redirect_uris": [f"{env_base_url}/openid/callback/logout/"],
             "token_endpoint_auth_method": ["private_key_jwt"],

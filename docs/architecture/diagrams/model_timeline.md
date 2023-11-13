@@ -136,7 +136,7 @@ class DomainInvitation {
   --
 }
 DomainInvitation -- Domain
-DomainInvitation .[#green].> UserDomainRole : User.first_login()
+DomainInvitation .[#green].> UserDomainRole : User.on_each_login()
 
 actor applicant #Red
 applicant -d-> DomainApplication : **/register**

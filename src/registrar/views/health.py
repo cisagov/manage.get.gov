@@ -7,6 +7,4 @@ from login_required import login_not_required
 # PaaS orchestrator can make sure the app has come up properly
 @login_not_required
 def health(request):
-    return HttpResponse(
-        '<html lang="en"><head><title>OK - Get.gov</title></head><body>OK</body>'
-    )
+    return HttpResponse('<html lang="en"><head><title>OK - Get.gov</title></head><body>OK</body>')
