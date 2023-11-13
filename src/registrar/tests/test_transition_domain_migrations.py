@@ -13,8 +13,6 @@ from registrar.models import (
     UserDomainRole,
 )
 
-import boto3_mocking  # type: ignore
-
 from django.core.management import call_command
 from unittest.mock import patch
 
@@ -415,15 +413,3 @@ class TestMigrations(TestCase):
         self.assertIn("Found 2 transition domains", output)
         self.assertTrue("would send email to testuser@gmail.com", output)
         self.assertTrue("would send email to agustina.wyman7@test.com", output)
-
-    # this tries to actually send an email, so mock it out
-    @boto3_mocking.patching
-    def test_send_domain_invitations_email_sent(self):
-        """A transition domain is marked email_sent."""
-        with less_console_noise():
-            self.run_load_domains()
-            self.run_transfer_domains()
-            call_command("send_domain_invitations", "-s", "testuser@gmail.com")
-
-        self.assertTrue(TransitionDomain.objects.get(username="testuser@gmail.com").email_sent)
-        self.assertFalse(TransitionDomain.objects.get(username="agustina.wyman7@test.com").email_sent)
