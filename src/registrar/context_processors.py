@@ -31,3 +31,8 @@ def is_demo_site(request):
     should not appear.
     """
     return {"IS_DEMO_SITE": settings.IS_DEMO_SITE}
+
+
+def is_production(request):
+    """Add a boolean if this is our production site."""
+    return {"IS_PRODUCTION": settings.IS_PRODUCTION}

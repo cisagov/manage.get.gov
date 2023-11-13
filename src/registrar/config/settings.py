@@ -210,6 +210,7 @@ TEMPLATES = [
                 "registrar.context_processors.language_code",
                 "registrar.context_processors.canonical_path",
                 "registrar.context_processors.is_demo_site",
+                "registrar.context_processors.is_production",
             ],
         },
     },
