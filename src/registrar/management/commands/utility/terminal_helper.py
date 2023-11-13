@@ -193,9 +193,7 @@ class TerminalHelper:
         return total_line
 
     @staticmethod
-    def print_to_file_conditional(
-        print_condition: bool, filename: str, file_directory: str, file_contents: str
-    ):
+    def print_to_file_conditional(print_condition: bool, filename: str, file_directory: str, file_contents: str):
         """Sometimes logger outputs get insanely huge."""
         if print_condition:
             # Add a slash if the last character isn't one
@@ -204,10 +202,6 @@ class TerminalHelper:
             # Assemble filepath
             filepath = f"{file_directory}{filename}.txt"
             # Write to file
-            logger.info(
-                f"{TerminalColors.MAGENTA}Writing to file "
-                f" {filepath}..."
-                f"{TerminalColors.ENDC}"
-            )
+            logger.info(f"{TerminalColors.MAGENTA}Writing to file " f" {filepath}..." f"{TerminalColors.ENDC}")
             with open(f"{filepath}", "w+") as f:
                 f.write(file_contents)
