@@ -1,11 +1,15 @@
+import json
+import os
 import sys
 import csv
 import logging
 import argparse
 
 from collections import defaultdict
+from django.conf import settings
 
 from django.core.management import BaseCommand
+from registrar.management.commands.utility.epp_data_containers import EnumFilenames
 
 from registrar.models import TransitionDomain
 
@@ -13,6 +17,9 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,
 )
+
+from .utility.transition_domain_arguments import TransitionDomainArguments
+from .utility.extra_transition_domain_helper import LoadExtraTransitionDomain
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +43,10 @@ class Command(BaseCommand):
         Use this to trigger a prompt for deleting all table entries.  Useful
         for testing purposes, but USE WITH CAUTION
         """
-        parser.add_argument("domain_contacts_filename", help="Data file with domain contact information")
         parser.add_argument(
-            "contacts_filename",
-            help="Data file with contact information",
+            "migration_json_filename",
+            help=("A JSON file that holds the location and filenames" "of all the data files used for migrations"),
         )
-        parser.add_argument("domain_statuses_filename", help="Data file with domain status information")
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
 
@@ -53,6 +58,60 @@ class Command(BaseCommand):
             "--resetTable",
             help="Deletes all data in the TransitionDomain table",
             action=argparse.BooleanOptionalAction,
+        )
+
+        # This option should only be available when developing locally.
+        # This should not be available to the end user.
+        if settings.DEBUG:
+            parser.add_argument(
+                "--infer_filenames",
+                action=argparse.BooleanOptionalAction,
+                help="Determines if we should infer filenames or not."
+                "Recommended to be enabled only in a development or testing setting.",
+            )
+
+        parser.add_argument("--directory", default="migrationdata", help="Desired directory")
+        parser.add_argument(
+            "--domain_contacts_filename",
+            help="Data file with domain contact information",
+        )
+        parser.add_argument(
+            "--contacts_filename",
+            help="Data file with contact information",
+        )
+        parser.add_argument(
+            "--domain_statuses_filename",
+            help="Data file with domain status information",
+        )
+        parser.add_argument(
+            "--agency_adhoc_filename",
+            default=EnumFilenames.AGENCY_ADHOC.value[1],
+            help="Defines the filename for agency adhocs",
+        )
+        parser.add_argument(
+            "--domain_additional_filename",
+            default=EnumFilenames.DOMAIN_ADDITIONAL.value[1],
+            help="Defines the filename for additional domain data",
+        )
+        parser.add_argument(
+            "--domain_escrow_filename",
+            default=EnumFilenames.DOMAIN_ESCROW.value[1],
+            help="Defines the filename for creation/expiration domain data",
+        )
+        parser.add_argument(
+            "--domain_adhoc_filename",
+            default=EnumFilenames.DOMAIN_ADHOC.value[1],
+            help="Defines the filename for domain type adhocs",
+        )
+        parser.add_argument(
+            "--organization_adhoc_filename",
+            default=EnumFilenames.ORGANIZATION_ADHOC.value[1],
+            help="Defines the filename for domain type adhocs",
+        )
+        parser.add_argument(
+            "--authority_adhoc_filename",
+            default=EnumFilenames.AUTHORITY_ADHOC.value[1],
+            help="Defines the filename for domain type adhocs",
         )
 
     def print_debug_mode_statements(self, debug_on: bool, debug_max_entries_to_parse: int):
@@ -95,9 +154,10 @@ class Command(BaseCommand):
         logger.info("Reading contacts data file %s", contacts_filename)
         with open(contacts_filename, "r") as contacts_file:
             for row in csv.reader(contacts_file, delimiter=sep):
-                user_id = row[0]
-                user_email = row[6]
-                user_emails_dictionary[user_id] = user_email
+                if row != []:
+                    user_id = row[0]
+                    user_email = row[6]
+                    user_emails_dictionary[user_id] = user_email
         logger.info("Loaded emails for %d users", len(user_emails_dictionary))
         return user_emails_dictionary
 
@@ -191,7 +251,7 @@ class Command(BaseCommand):
 
                 --------------------------------------------
                 Found {total_outlier_statuses} unaccounted
-                for statuses-
+                for statuses
                 --------------------------------------------
 
                 No mappings found for the following statuses
@@ -222,29 +282,130 @@ class Command(BaseCommand):
             )
             TransitionDomain.objects.all().delete()
 
+    def parse_extra(self, options):
+        """Loads additional information for each TransitionDomain
+        object based off supplied files."""
+        try:
+            # Parse data from files
+            extra_data = LoadExtraTransitionDomain(options)
+
+            # Update every TransitionDomain object where applicable
+            extra_data.update_transition_domain_models()
+        except Exception as err:
+            logger.error(f"Could not load additional TransitionDomain data. {err}")
+            raise err
+            # TODO: handle this better...needs more logging
+
     def handle(  # noqa: C901
         self,
-        domain_contacts_filename,
-        contacts_filename,
-        domain_statuses_filename,
+        migration_json_filename,
         **options,
     ):
         """Parse the data files and create TransitionDomains."""
-        sep = options.get("sep")
+        if not settings.DEBUG:
+            options["infer_filenames"] = False
+
+        args = TransitionDomainArguments(**options)
+
+        # Desired directory for additional TransitionDomain data
+        # (In the event they are stored seperately)
+        directory = args.directory
+        # Add a slash if the last character isn't one
+        if directory and directory[-1] != "/":
+            directory += "/"
+
+        json_filepath = directory + migration_json_filename
+        # Process JSON file #
+        # If a JSON was provided, use its values instead of defaults.
+        # TODO: there is no way to discern user overrides from those arg’s defaults.
+        with open(json_filepath, "r") as jsonFile:
+            # load JSON object as a dictionary
+            try:
+                data = json.load(jsonFile)
+                # Create an instance of TransitionDomainArguments
+                # Iterate over the data from the JSON file
+                for key, value in data.items():
+                    # Check if the key exists in TransitionDomainArguments
+                    if hasattr(args, key):
+                        # If it does, update the options
+                        options[key] = value
+            except Exception as err:
+                logger.error(
+                    f"{TerminalColors.FAIL}"
+                    "There was an error loading "
+                    "the JSON responsible for providing filepaths."
+                    f"{TerminalColors.ENDC}"
+                )
+                raise err
+
+        sep = args.sep
 
         # If --resetTable was used, prompt user to confirm
         # deletion of table data
-        if options.get("resetTable"):
+        if args.resetTable:
             self.prompt_table_reset()
 
         # Get --debug argument
-        debug_on = options.get("debug")
+        debug_on = args.debug
 
         # Get --LimitParse argument
-        debug_max_entries_to_parse = int(options.get("limitParse"))  # set to 0 to parse all entries
+        debug_max_entries_to_parse = int(args.limitParse)  # set to 0 to parse all entries
+
+        # Variables for Additional TransitionDomain Information #
+
+        # Main script filenames - these do not have defaults
+        domain_contacts_filename = None
+        try:
+            domain_contacts_filename = directory + options.get("domain_contacts_filename")
+        except TypeError:
+            logger.error(
+                f"Invalid filename of '{args.domain_contacts_filename}'" " was provided for domain_contacts_filename"
+            )
+
+        contacts_filename = None
+        try:
+            contacts_filename = directory + options.get("contacts_filename")
+        except TypeError:
+            logger.error(f"Invalid filename of '{args.contacts_filename}'" " was provided for contacts_filename")
+
+        domain_statuses_filename = None
+        try:
+            domain_statuses_filename = directory + options.get("domain_statuses_filename")
+        except TypeError:
+            logger.error(
+                f"Invalid filename of '{args.domain_statuses_filename}'" " was provided for domain_statuses_filename"
+            )
+
+        # Agency information
+        agency_adhoc_filename = options.get("agency_adhoc_filename")
+        # Federal agency / organization type information
+        domain_adhoc_filename = options.get("domain_adhoc_filename")
+        # Organization name information
+        organization_adhoc_filename = options.get("organization_adhoc_filename")
+        # Creation date / expiration date information
+        domain_escrow_filename = options.get("domain_escrow_filename")
+
+        # Container for all additional TransitionDomain information
+        domain_additional_filename = options.get("domain_additional_filename")
 
         # print message to terminal about which args are in use
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
+
+        filenames = [
+            agency_adhoc_filename,
+            domain_adhoc_filename,
+            organization_adhoc_filename,
+            domain_escrow_filename,
+            domain_additional_filename,
+        ]
+
+        # Do a top-level check to see if these files exist
+        for filename in filenames:
+            if not isinstance(filename, str):
+                raise TypeError(f"Filename must be a string, got {type(filename).__name__}")
+            full_path = os.path.join(directory, filename)
+            if not os.path.isfile(full_path):
+                raise FileNotFoundError(full_path)
 
         # STEP 1:
         # Create mapping of domain name -> status
@@ -257,7 +418,6 @@ class Command(BaseCommand):
         # STEP 3:
         # Parse the domain_contacts file and create TransitionDomain objects,
         # using the dictionaries from steps 1 & 2 to lookup needed information.
-
         to_create = []
 
         # keep track of statuses that don't match our available
@@ -296,6 +456,11 @@ class Command(BaseCommand):
                 new_entry_status = TransitionDomain.StatusChoices.READY
                 new_entry_email = ""
                 new_entry_emailSent = False  # set to False by default
+
+                TerminalHelper.print_conditional(
+                    True,
+                    f"Processing item {total_rows_parsed}: {new_entry_domain_name}",
+                )
 
                 # PART 1: Get the status
                 if new_entry_domain_name not in domain_status_dictionary:
@@ -419,12 +584,28 @@ class Command(BaseCommand):
                     break
 
         TransitionDomain.objects.bulk_create(to_create)
+        # Print a summary of findings (duplicate entries,
+        # missing data..etc.)
+        self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
+        self.print_summary_status_findings(domains_without_status, outlier_statuses)
 
         logger.info(
             f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} transition domain entries,
-            updated {total_updated_domain_entries} transition domain entries
+            Updated {total_updated_domain_entries} transition domain entries
+
+            {TerminalColors.YELLOW}
+            ----- DUPLICATES FOUND -----
+            {len(duplicate_domain_user_combos)} DOMAIN - USER pairs
+            were NOT unique in the supplied data files.
+            {len(duplicate_domains)} DOMAINS were NOT unique in
+            the supplied data files.
+
+            ----- STATUSES -----
+            {len(domains_without_status)} DOMAINS had NO status (defaulted to READY).
+            {len(outlier_statuses)} Statuses were invalid (defaulted to READY).
+
             {TerminalColors.ENDC}
             """
         )
@@ -433,3 +614,54 @@ class Command(BaseCommand):
         # missing data..etc.)
         self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
+
+        logger.info(
+            f"""{TerminalColors.OKGREEN}
+            ============= FINISHED ===============
+            Created {total_new_entries} transition domain entries,
+            Updated {total_updated_domain_entries} transition domain entries
+
+            {TerminalColors.YELLOW}
+            ----- DUPLICATES FOUND -----
+            {len(duplicate_domain_user_combos)} DOMAIN - USER pairs
+            were NOT unique in the supplied data files.
+            {len(duplicate_domains)} DOMAINS were NOT unique in
+            the supplied data files.
+
+            ----- STATUSES -----
+            {len(domains_without_status)} DOMAINS had NO status (defaulted to READY).
+            {len(outlier_statuses)} Statuses were invalid (defaulted to READY).
+
+            {TerminalColors.ENDC}
+            """
+        )
+
+        # Prompt the user if they want to load additional data on the domains
+        title = "Do you wish to load additional data for TransitionDomains?"
+        proceed = TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=True,
+            info_to_inspect=f"""
+            !!! ENSURE THAT ALL FILENAMES ARE CORRECT BEFORE PROCEEDING
+            ==Master data file==
+            domain_additional_filename: {domain_additional_filename}
+
+            ==Federal agency information==
+            agency_adhoc_filename: {agency_adhoc_filename}
+
+            ==Federal type / organization type information==
+            domain_adhoc_filename: {domain_adhoc_filename}
+
+            ==Organization name information==
+            organization_adhoc_filename: {organization_adhoc_filename}
+
+            ==Creation date / expiration date information==
+            domain_escrow_filename: {domain_escrow_filename}
+
+            ==Containing directory==
+            directory: {directory}
+            """,
+            prompt_title=title,
+        )
+        if proceed:
+            arguments = TransitionDomainArguments(**options)
+            self.parse_extra(arguments)

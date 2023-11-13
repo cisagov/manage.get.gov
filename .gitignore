@@ -171,3 +171,6 @@ node_modules
 
 # Compliance/trestle related
 docs/compliance/.trestle/cache
+
+src/migrationdata/*
+

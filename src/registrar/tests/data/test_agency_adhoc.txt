@@ -1,0 +1,6 @@
+agencyid|agencyname|active|isfederal
+1|Thoughtstorm|N|Y
+2|Minyx|Y|N
+3|Demivee|N|Y
+4|Department of Commerce|Y|Y
+5|InnoZ|Y|Y

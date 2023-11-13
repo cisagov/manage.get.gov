@@ -1,0 +1,6 @@
+domainname|domaintypeid|authorityid|orgid|securitycontactemail|dnsseckeymonitor|domainpurpose
+Anomaly.gov|1|1|1|ggennrich0@utexas.edu|N|Praesent id massa id nisl venenatis lacinia.
+TESTDOMAIN.GOV|2|2|2|lrome1@uol.com.br|Y|In tempor, turpis nec euismod scelerisque, quam turpis adipiscing lorem, vitae mattis nibh ligula nec sem.
+FakeWebsite1.gov|3|3|3|ybrommage2@vistaprint.com|Y|In hac habitasse platea dictumst.
+FakeWebsite2.gov|4|4|4|plarderot3@t.co|Y|Morbi quis tortor id nulla ultrices aliquet. Maecenas leo odio, condimentum id, luctus nec, molestie sed, justo. Pellentesque viverra pede ac diam.
+FakeWebsite3.gov|13|5|5|ybrommage2@vistaprint.com|Y|In hac habitasse platea dictumst.
