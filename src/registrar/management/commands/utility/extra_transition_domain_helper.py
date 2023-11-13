@@ -9,7 +9,7 @@ import logging
 
 import os
 import sys
-from typing import Dict, List
+from typing import Dict
 
 from registrar.models.transition_domain import TransitionDomain
 
