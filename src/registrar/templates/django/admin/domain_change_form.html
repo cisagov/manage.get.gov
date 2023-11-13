@@ -8,15 +8,19 @@
 
 {% block field_sets %}
     <div class="submit-row">
-        {% if original.state == original.State.READY %}
-          <input type="submit" value="Place hold" name="_place_client_hold">
-        {% elif original.state == original.State.ON_HOLD %}
-          <input type="submit" value="Remove hold" name="_remove_client_hold">
-        {% endif %}
         <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
         <input type="submit" value="Get registry status" name="_get_status">
+        <div class="spacer"></div>
+        {% if original.state == original.State.READY %}
+        <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
+        {% elif original.state == original.State.ON_HOLD %}
+        <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
+        {% endif %}
+        {% if original.state == original.State.READY or original.state == original.State.ON_HOLD %}
+        <span> | </span>
+        {% endif %}
         {% if original.state != original.State.DELETED %}
-        <input type="submit" value="Delete domain in registry" name="_delete_domain">
+        <input type="submit" value="Remove from registry" name="_delete_domain" class="custom-link-button">
         {% endif %}
     </div>
     {{ block.super }}
