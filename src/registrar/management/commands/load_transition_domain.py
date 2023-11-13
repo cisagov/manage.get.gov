@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import csv
 import logging
@@ -425,6 +426,22 @@ class Command(BaseCommand):
 
         # print message to terminal about which args are in use
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
+
+        filenames = [
+            agency_adhoc_filename,
+            domain_adhoc_filename,
+            organization_adhoc_filename,
+            domain_escrow_filename,
+            domain_additional_filename,
+        ]
+
+        # Do a top-level check to see if these files exist
+        for filename in filenames:
+            if not isinstance(filename, str):
+                raise TypeError(f"Filename must be a string, got {type(filename).__name__}")
+            full_path = os.path.join(directory, filename)
+            if not os.path.isfile(full_path):
+                raise FileNotFoundError(full_path)
 
         # STEP 1:
         # Create mapping of domain name -> status

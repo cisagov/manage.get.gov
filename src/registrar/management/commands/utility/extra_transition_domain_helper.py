@@ -867,8 +867,11 @@ class ExtraTransitionDomain:
                 )
             else:
                 if not infer_filenames:
-                    logger.error(f"Could not find file: {filename}")
-                    continue
+                    raise FileNotFoundError(
+                        f"{TerminalColors.FAIL}"
+                        f"Could not find file {filename} for {name}"
+                        f"{TerminalColors.ENDC}"
+                    )
 
                 # Infer filename logic #
                 # This mode is used for
@@ -899,8 +902,11 @@ class ExtraTransitionDomain:
                         is_domain_escrow,
                     )
                     continue
-                # Log if we can't find the desired file
-                logger.error(f"Could not find file: {filename}")
+                raise FileNotFoundError(
+                    f"{TerminalColors.FAIL}"
+                    f"Could not find file {filename} for {name}"
+                    f"{TerminalColors.ENDC}"
+                )
 
     def clear_file_data(self):
         for item in self.file_data.values():
