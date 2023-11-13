@@ -24,7 +24,7 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             "Organization name": domainInfo.organization_name,
             "City": domainInfo.city,
             "State": domainInfo.state_territory,
-            "AO": domainInfo.authorizing_official.first_name + " " + domainInfo.authorizing_official.last_name
+            "AO": (domainInfo.authorizing_official.first_name or "") + " " + (domainInfo.authorizing_official.last_name or "")
             if domainInfo.authorizing_official
             else " ",
             "AO email": domainInfo.authorizing_official.email if domainInfo.authorizing_official else " ",

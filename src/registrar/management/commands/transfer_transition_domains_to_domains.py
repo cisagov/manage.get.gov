@@ -345,26 +345,7 @@ class Command(BaseCommand):
 
         return updated
 
-    def create_new_domain_info(
-        self,
-        transition_domain: TransitionDomain,
-        domain: Domain,
-        agency_choices,
-        fed_choices,
-        org_choices,
-        debug_on,
-    ) -> DomainInformation:
-        org_type = ("", "")
-        fed_type = transition_domain.federal_type
-        fed_agency = transition_domain.federal_agency
-
-        # = AO Information = #
-        first_name = transition_domain.first_name
-        middle_name = transition_domain.middle_name
-        last_name = transition_domain.last_name
-        email = transition_domain.email
-        phone = transition_domain.phone
-
+    def update_contact_info(self, first_name, middle_name, last_name, email, phone):
         contact = None
         contacts = Contact.objects.filter(email=email)
         contact_count = contacts.count()
@@ -392,6 +373,29 @@ class Command(BaseCommand):
                 c.phone = phone
                 c.save()
             contact = c.first()
+        return contact
+
+    def create_new_domain_info(
+        self,
+        transition_domain: TransitionDomain,
+        domain: Domain,
+        agency_choices,
+        fed_choices,
+        org_choices,
+        debug_on,
+    ) -> DomainInformation:
+        org_type = ("", "")
+        fed_type = transition_domain.federal_type
+        fed_agency = transition_domain.federal_agency
+
+        # = AO Information = #
+        first_name = transition_domain.first_name
+        middle_name = transition_domain.middle_name
+        last_name = transition_domain.last_name
+        email = transition_domain.email
+        phone = transition_domain.phone
+
+        contact = self.update_contact_info(first_name, middle_name, last_name, email, phone)
 
         if debug_on:
             logger.info(f"Contact created: {contact}")
