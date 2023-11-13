@@ -52,20 +52,15 @@ class Command(BaseCommand):
                 if result.returncode:
                     self.stderr.write(
                         self.style.NOTICE(
-                            "[manage.py lint] Re-try with: [docker-compose exec app] "
-                            f"{' '.join(linter['args'])}"
+                            "[manage.py lint] Re-try with: [docker-compose exec app] " f"{' '.join(linter['args'])}"
                         )
                     )
                     errors.append(CalledProcessError(result.returncode, linter["args"]))
                 else:
-                    self.stdout.write(
-                        f"[manage.py lint] {linter['purpose']} completed with success!"
-                    )
+                    self.stdout.write(f"[manage.py lint] {linter['purpose']} completed with success!")
             if errors:
                 self.stdout.write(f"[manage.py lint] {len(errors)} linter(s) failed.")
                 raise LinterError(errors)
         except (CalledProcessError, LinterError) as e:
             raise CommandError(e)
-        self.stdout.write(
-            self.style.SUCCESS("[manage.py lint] All linters ran successfully.")
-        )
+        self.stdout.write(self.style.SUCCESS("[manage.py lint] All linters ran successfully."))

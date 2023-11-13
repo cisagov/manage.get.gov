@@ -21,9 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="contact",
             name="created_at",
-            field=models.DateTimeField(
-                auto_now_add=True, default=django.utils.timezone.now
-            ),
+            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
@@ -34,9 +32,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="website",
             name="created_at",
-            field=models.DateTimeField(
-                auto_now_add=True, default=django.utils.timezone.now
-            ),
+            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(

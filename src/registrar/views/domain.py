@@ -170,9 +170,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         """The form is valid, save the organization name and mailing address."""
         form.save()
 
-        messages.success(
-            self.request, "The organization name and mailing address has been updated."
-        )
+        messages.success(self.request, "The organization name and mailing address has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -200,9 +198,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
         """The form is valid, save the authorizing official."""
         form.save()
 
-        messages.success(
-            self.request, "The authorizing official for this domain has been updated."
-        )
+        messages.success(self.request, "The authorizing official for this domain has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -228,9 +224,7 @@ class DomainNameserversView(DomainFormBaseView):
 
         if nameservers is not None:
             # Add existing nameservers as initial data
-            initial_data.extend(
-                {"server": name, "ip": ",".join(ip)} for name, ip in nameservers
-            )
+            initial_data.extend({"server": name, "ip": ",".join(ip)} for name, ip in nameservers)
 
         # Ensure at least 3 fields, filled or empty
         while len(initial_data) < 2:
@@ -310,9 +304,7 @@ class DomainNameserversView(DomainFormBaseView):
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
             # there was an uncaught error in submission (through EPP)
-            messages.error(
-                self.request, NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN)
-            )
+            messages.error(self.request, NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN))
             logger.error(f"Nameservers error: {Err}")
         # TODO: registry is not throwing an error when no connection
         except RegistryError as Err:
@@ -323,9 +315,7 @@ class DomainNameserversView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(
-                    self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
-                )
+                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
                 logger.error(f"Registry error: {Err}")
         else:
             messages.success(
@@ -501,15 +491,11 @@ class DomainDsDataView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {err}")
             else:
-                messages.error(
-                    self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
-                )
+                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
-            messages.success(
-                self.request, "The DS Data records for this domain have been updated."
-            )
+            messages.success(self.request, "The DS Data records for this domain have been updated.")
             # superclass has the redirect
             return super().form_valid(formset)
 
@@ -536,9 +522,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
         # Post to DB using values from the form
         form.save()
 
-        messages.success(
-            self.request, "Your contact information for this domain has been updated."
-        )
+        messages.success(self.request, "Your contact information for this domain has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -597,19 +581,13 @@ class DomainSecurityEmailView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(
-                    self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
-                )
+                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
                 logger.error(f"Registry error: {Err}")
         except ContactError as Err:
-            messages.error(
-                self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR)
-            )
+            messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
             logger.error(f"Generic registry error: {Err}")
         else:
-            messages.success(
-                self.request, "The security email for this domain has been updated."
-            )
+            messages.success(self.request, "The security email for this domain has been updated.")
 
         # superclass has the redirect
         return redirect(self.get_success_url())
@@ -636,15 +614,11 @@ class DomainAddUserView(DomainFormBaseView):
 
     def _domain_abs_url(self):
         """Get an absolute URL for this domain."""
-        return self.request.build_absolute_uri(
-            reverse("domain", kwargs={"pk": self.object.id})
-        )
+        return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
     def _make_invitation(self, email_address):
         """Make a Domain invitation for this email and redirect with a message."""
-        invitation, created = DomainInvitation.objects.get_or_create(
-            email=email_address, domain=self.object
-        )
+        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         if not created:
             # that invitation already existed
             messages.warning(
@@ -678,9 +652,7 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
             else:
-                messages.success(
-                    self.request, f"Invited {email_address} to this domain."
-                )
+                messages.success(self.request, f"Invited {email_address} to this domain.")
 
         return redirect(self.get_success_url())
 
@@ -709,9 +681,7 @@ class DomainAddUserView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
 
-class DomainInvitationDeleteView(
-    DomainInvitationPermissionDeleteView, SuccessMessageMixin
-):
+class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMessageMixin):
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
     def get_success_url(self):
