@@ -58,7 +58,7 @@ def get_handlers():
 
 
 @contextmanager
-def less_console_noise():
+def less_console_noise(output_stream=None):
     """
     Context manager to use in tests to silence console logging.
 
@@ -66,14 +66,19 @@ def less_console_noise():
     (such as errors) which are normal and expected.
 
     It can easily be removed to debug a failing test.
+
+    Arguments:
+        `output_stream`: a stream to redirect every handler to. If it's
+        not provided, use /dev/null.
     """
     restore = {}
     handlers = get_handlers()
-    devnull = open(os.devnull, "w")
+    if output_stream is None:
+        output_stream = open(os.devnull, "w")
 
     # redirect all the streams
     for handler in handlers.values():
-        prior = handler.setStream(devnull)
+        prior = handler.setStream(output_stream)
         restore[handler.name] = prior
     try:
         # run the test
@@ -82,8 +87,9 @@ def less_console_noise():
         # restore the streams
         for handler in handlers.values():
             handler.setStream(restore[handler.name])
-        # close the file we opened
-        devnull.close()
+        if output_stream is None:
+            # we opened output_stream so we have to close it
+            output_stream.close()
 
 
 class MockUserLogin:
