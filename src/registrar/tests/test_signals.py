@@ -58,9 +58,7 @@ class TestUserPostSave(TestCase):
         """Expect 1 Contact containing data copied from User."""
         # create the user
         self.assertEqual(len(Contact.objects.all()), 0)
-        user = get_user_model().objects.create(
-            username=self.username, first_name="", last_name="", email="", phone=""
-        )
+        user = get_user_model().objects.create(username=self.username, first_name="", last_name="", email="", phone="")
         # delete the contact
         Contact.objects.all().delete()
         self.assertEqual(len(Contact.objects.all()), 0)

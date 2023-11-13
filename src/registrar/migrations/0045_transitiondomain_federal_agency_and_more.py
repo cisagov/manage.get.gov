@@ -27,16 +27,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="transitiondomain",
             name="organization_type",
-            field=models.TextField(
-                blank=True, help_text="Type of organization", max_length=255, null=True
-            ),
+            field=models.TextField(blank=True, help_text="Type of organization", max_length=255, null=True),
         ),
         migrations.AddField(
             model_name="transitiondomain",
             name="organization_name",
-            field=models.TextField(
-                blank=True, db_index=True, help_text="Organization name", null=True
-            ),
+            field=models.TextField(blank=True, db_index=True, help_text="Organization name", null=True),
         ),
         migrations.AddField(
             model_name="transitiondomain",

@@ -10,9 +10,7 @@ from .utility.time_stamped_model import TimeStampedModel
 def get_id():
     """Generate a 16 character registry ID with a low probability of collision."""
     day = datetime.today().strftime("%A")[:2]
-    rand = "".join(
-        choices(ascii_uppercase + ascii_lowercase + digits, k=14)  # nosec B311
-    )
+    rand = "".join(choices(ascii_uppercase + ascii_lowercase + digits, k=14))  # nosec B311
     return f"{day}{rand}"
 
 
@@ -69,16 +67,12 @@ class PublicContact(TimeStampedModel):
     pc = models.TextField(null=False, help_text="Contact's postal code")
     cc = models.TextField(null=False, help_text="Contact's country code")
     email = models.TextField(null=False, help_text="Contact's email address")
-    voice = models.TextField(
-        null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format"
-    )
+    voice = models.TextField(null=False, help_text="Contact's phone number. Must be in ITU.E164.2005 format")
     fax = models.TextField(
         null=True,
         help_text="Contact's fax number (null ok). Must be in ITU.E164.2005 format.",
     )
-    pw = models.TextField(
-        null=False, help_text="Contact's authorization code. 16 characters minimum."
-    )
+    pw = models.TextField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
     @classmethod
     def get_default_registrant(cls):
@@ -154,8 +148,4 @@ class PublicContact(TimeStampedModel):
         return cls._meta.get_field("registry_id").max_length
 
     def __str__(self):
-        return (
-            f"{self.name} <{self.email}>"
-            f"id: {self.registry_id} "
-            f"type: {self.contact_type}"
-        )
+        return f"{self.name} <{self.email}>" f"id: {self.registry_id} " f"type: {self.contact_type}"

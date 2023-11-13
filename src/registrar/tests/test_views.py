@@ -79,9 +79,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/")
         self.assertNotContains(response, "igorville.gov")
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=self.user, requested_domain=site
-        )
+        application = DomainApplication.objects.create(creator=self.user, requested_domain=site)
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
         self.assertContains(response, "igorville.gov", count=2)
@@ -92,9 +90,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/")
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.assertNotContains(response, "igorville.gov")
-        role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER
-        )
+        role, _ = UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
         self.assertContains(response, "igorville.gov", count=2)
@@ -140,9 +136,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         page = self.app.get(reverse("application:")).follow()
         # submitting should get back the same page if the required field is empty
         result = page.form.submit()
-        self.assertIn(
-            "What kind of U.S.-based government organization do you represent?", result
-        )
+        self.assertIn("What kind of U.S.-based government organization do you represent?", result)
 
     @boto3_mocking.patching
     def test_application_form_submission(self):
@@ -206,9 +200,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
         # federal agency so we have to fill in federal_agency
-        org_contact_form[
-            "organization_contact-federal_agency"
-        ] = "General Services Administration"
+        org_contact_form["organization_contact-federal_agency"] = "General Services Administration"
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -232,9 +224,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the application
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(
-            org_contact_result["Location"], "/register/authorizing_official/"
-        )
+        self.assertEqual(org_contact_result["Location"], "/register/authorizing_official/")
         num_pages_tested += 1
 
         # ---- AUTHORIZING OFFICIAL PAGE  ----
@@ -299,9 +289,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # validate that data from this step are being saved
         application = DomainApplication.objects.get()  # there's only one
         self.assertEqual(application.requested_domain.name, "city.gov")
-        self.assertEqual(
-            application.alternative_domains.filter(website="city1.gov").count(), 1
-        )
+        self.assertEqual(application.alternative_domains.filter(website="city1.gov").count(), 1)
         # the post request should return a redirect to the next form in
         # the application
         self.assertEqual(dotgov_result.status_code, 302)
@@ -649,9 +637,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.form
-        type_form[
-            "organization_type-organization_type"
-        ] = DomainApplication.OrganizationChoices.INTERSTATE
+        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
 
@@ -675,9 +661,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # the post request should return a redirect to the
         # about your organization page if it was successful.
         self.assertEqual(contact_result.status_code, 302)
-        self.assertEqual(
-            contact_result["Location"], "/register/about_your_organization/"
-        )
+        self.assertEqual(contact_result["Location"], "/register/about_your_organization/")
 
     def test_application_about_your_organization_special(self):
         """Special districts have to answer an additional question."""
@@ -689,9 +673,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.form
-        type_form[
-            "organization_type-organization_type"
-        ] = DomainApplication.OrganizationChoices.SPECIAL_DISTRICT
+        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.SPECIAL_DISTRICT
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
         # follow first redirect
@@ -728,9 +710,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.form
-        type_form[
-            "organization_type-organization_type"
-        ] = DomainApplication.OrganizationChoices.INTERSTATE
+        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
         # follow first redirect
@@ -748,9 +728,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         type_form = type_page.form
-        type_form[
-            "organization_type-organization_type"
-        ] = DomainApplication.OrganizationChoices.TRIBAL
+        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.TRIBAL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.form.submit()
         # the tribal government page comes immediately afterwards
@@ -793,9 +771,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
         # federal agency so we have to fill in federal_agency
-        org_contact_form[
-            "organization_contact-federal_agency"
-        ] = "General Services Administration"
+        org_contact_form["organization_contact-federal_agency"] = "General Services Administration"
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -856,9 +832,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         org_contact_page = federal_result.follow()
         org_contact_form = org_contact_page.form
         # federal agency so we have to fill in federal_agency
-        org_contact_form[
-            "organization_contact-federal_agency"
-        ] = "General Services Administration"
+        org_contact_form["organization_contact-federal_agency"] = "General Services Administration"
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -1099,45 +1073,23 @@ class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.domain_with_ip, _ = Domain.objects.get_or_create(
-            name="nameserverwithip.gov"
-        )
-        self.domain_just_nameserver, _ = Domain.objects.get_or_create(
-            name="justnameserver.com"
-        )
-        self.domain_no_information, _ = Domain.objects.get_or_create(
-            name="noinformation.gov"
-        )
+        self.domain_with_ip, _ = Domain.objects.get_or_create(name="nameserverwithip.gov")
+        self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
+        self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
 
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-        self.domain_multdsdata, _ = Domain.objects.get_or_create(
-            name="dnssec-multdsdata.gov"
-        )
+        self.domain_multdsdata, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
         # We could simply use domain (igorville) but this will be more readable in tests
         # that inherit this setUp
-        self.domain_dnssec_none, _ = Domain.objects.get_or_create(
-            name="dnssec-none.gov"
-        )
+        self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain
-        )
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain_dsdata
-        )
-        DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain_multdsdata
-        )
-        DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain_dnssec_none
-        )
-        DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain_with_ip
-        )
-        DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain_just_nameserver
-        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -1196,9 +1148,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
-                response = self.client.get(
-                    reverse(view_name, kwargs={"pk": self.domain.id})
-                )
+                response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
                 self.assertEqual(response.status_code, 302)
 
     def test_no_domain_role(self):
@@ -1218,9 +1168,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
         ]:
             with self.subTest(view_name=view_name):
                 with less_console_noise():
-                    response = self.client.get(
-                        reverse(view_name, kwargs={"pk": self.domain.id})
-                    )
+                    response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
                 self.assertEqual(response.status_code, 403)
 
 
@@ -1255,9 +1203,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(home_page, "justnameserver.com")
 
         # View nameserver on Domain Overview page
-        detail_page = self.app.get(
-            reverse("domain", kwargs={"pk": self.domain_just_nameserver.id})
-        )
+        detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_just_nameserver.id}))
 
         self.assertContains(detail_page, "justnameserver.com")
         self.assertContains(detail_page, "ns1.justnameserver.com")
@@ -1268,9 +1214,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(home_page, "nameserverwithip.gov")
 
         # View nameserver on Domain Overview page
-        detail_page = self.app.get(
-            reverse("domain", kwargs={"pk": self.domain_with_ip.id})
-        )
+        detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
 
         self.assertContains(detail_page, "nameserverwithip.gov")
 
@@ -1297,9 +1241,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         session["analyst_action_location"] = self.domain_no_information.id
         session.save()
 
-        detail_page = self.client.get(
-            reverse("domain", kwargs={"pk": self.domain_no_information.id})
-        )
+        detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_no_information.id}))
 
         self.assertContains(detail_page, "noinformation.gov")
         self.assertContains(detail_page, "Domain missing domain information")
@@ -1307,33 +1249,23 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
 
 class TestDomainManagers(TestDomainOverview):
     def test_domain_managers(self):
-        response = self.client.get(
-            reverse("domain-users", kwargs={"pk": self.domain.id})
-        )
+        response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
 
     def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
-        management_page = self.app.get(
-            reverse("domain-users", kwargs={"pk": self.domain.id})
-        )
+        management_page = self.app.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         add_page = management_page.click("Add another user")
         self.assertContains(add_page, "Add another user")
 
     def test_domain_user_add(self):
-        response = self.client.get(
-            reverse("domain-users-add", kwargs={"pk": self.domain.id})
-        )
+        response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add another user")
 
     def test_domain_user_add_form(self):
         """Adding an existing user works."""
-        other_user, _ = get_user_model().objects.get_or_create(
-            email="mayor@igorville.gov"
-        )
-        add_page = self.app.get(
-            reverse("domain-users-add", kwargs={"pk": self.domain.id})
-        )
+        other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         add_page.form["email"] = "mayor@igorville.gov"
@@ -1362,13 +1294,9 @@ class TestDomainManagers(TestDomainOverview):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain
-        )
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        add_page = self.app.get(
-            reverse("domain-users-add", kwargs={"pk": self.domain.id})
-        )
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = EMAIL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1387,16 +1315,12 @@ class TestDomainManagers(TestDomainOverview):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain
-        )
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(
-                reverse("domain-users-add", kwargs={"pk": self.domain.id})
-            )
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             add_page.form["email"] = EMAIL
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1411,9 +1335,7 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_invitation_cancel(self):
         """Posting to the delete view deletes an invitation."""
         EMAIL = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(
-            domain=self.domain, email=EMAIL
-        )
+        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=EMAIL)
         self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
@@ -1421,17 +1343,13 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the delete view as a different user should fail."""
         EMAIL = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(
-            domain=self.domain, email=EMAIL
-        )
+        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=EMAIL)
 
         other_user = User()
         other_user.save()
         self.client.force_login(other_user)
         with less_console_noise():  # permission denied makes console errors
-            result = self.client.post(
-                reverse("invitation-delete", kwargs={"pk": invitation.id})
-            )
+            result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
         self.assertEqual(result.status_code, 403)
 
     @boto3_mocking.patching
@@ -1440,13 +1358,9 @@ class TestDomainManagers(TestDomainOverview):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        add_page = self.app.get(
-            reverse("domain-users-add", kwargs={"pk": self.domain.id})
-        )
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain
-        )
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = EMAIL
@@ -1457,8 +1371,8 @@ class TestDomainManagers(TestDomainOverview):
         new_user = User.objects.create(username=EMAIL, email=EMAIL)
         # log them in to `self.app`
         self.app.set_user(new_user.username)
-        # and manually call the first login callback
-        new_user.first_login()
+        # and manually call the on each login callback
+        new_user.on_each_login()
 
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
@@ -1468,9 +1382,7 @@ class TestDomainManagers(TestDomainOverview):
 class TestDomainNameservers(TestDomainOverview):
     def test_domain_nameservers(self):
         """Can load domain's nameservers page."""
-        page = self.client.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        page = self.client.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
     def test_domain_nameservers_form_submit_one_nameserver(self):
@@ -1479,9 +1391,7 @@ class TestDomainNameservers(TestDomainOverview):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with only one nameserver, should error
@@ -1504,9 +1414,7 @@ class TestDomainNameservers(TestDomainOverview):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1530,9 +1438,7 @@ class TestDomainNameservers(TestDomainOverview):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1560,9 +1466,7 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver2 = "ns2.igorville.com"
         valid_ip = "127.0.0.1"
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1590,9 +1494,7 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver = "ns2.igorville.gov"
         invalid_ip = "123"
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1606,11 +1508,7 @@ class TestDomainNameservers(TestDomainOverview):
         # the required field.  nameserver has ip but missing host
         self.assertContains(
             result,
-            str(
-                NameserverError(
-                    code=NameserverErrorCodes.INVALID_IP, nameserver=nameserver
-                )
-            ),
+            str(NameserverError(code=NameserverErrorCodes.INVALID_IP, nameserver=nameserver)),
             count=2,
             status_code=200,
         )
@@ -1623,9 +1521,7 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver = "invalid-nameserver.gov"
         valid_ip = "123.2.45.111"
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1639,11 +1535,7 @@ class TestDomainNameservers(TestDomainOverview):
         # the required field.  nameserver has invalid host
         self.assertContains(
             result,
-            str(
-                NameserverError(
-                    code=NameserverErrorCodes.INVALID_HOST, nameserver=nameserver
-                )
-            ),
+            str(NameserverError(code=NameserverErrorCodes.INVALID_HOST, nameserver=nameserver)),
             count=2,
             status_code=200,
         )
@@ -1657,9 +1549,7 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver2 = "ns2.igorville.gov"
         invalid_ip = "127.0.0.1"
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1684,9 +1574,7 @@ class TestDomainNameservers(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id})
-        )
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
@@ -1708,9 +1596,7 @@ class TestDomainNameservers(TestDomainOverview):
 class TestDomainAuthorizingOfficial(TestDomainOverview):
     def test_domain_authorizing_official(self):
         """Can load domain's authorizing official page."""
-        page = self.client.get(
-            reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
-        )
+        page = self.client.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the title
         self.assertContains(page, "Authorizing official", count=2)
 
@@ -1719,18 +1605,14 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         self.domain_information.authorizing_official = Contact(first_name="Testy")
         self.domain_information.authorizing_official.save()
         self.domain_information.save()
-        page = self.app.get(
-            reverse("domain-authorizing-official", kwargs={"pk": self.domain.id})
-        )
+        page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
 
 
 class TestDomainOrganization(TestDomainOverview):
     def test_domain_org_name_address(self):
         """Can load domain's org name and mailing address page."""
-        page = self.client.get(
-            reverse("domain-org-name-address", kwargs={"pk": self.domain.id})
-        )
+        page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
         self.assertContains(page, "Organization name and mailing address", count=3)
 
@@ -1738,18 +1620,14 @@ class TestDomainOrganization(TestDomainOverview):
         """Org name and address information appears on the page."""
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.save()
-        page = self.app.get(
-            reverse("domain-org-name-address", kwargs={"pk": self.domain.id})
-        )
+        page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Town of Igorville")
 
     def test_domain_org_name_address_form(self):
         """Submitting changes works on the org name address page."""
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.save()
-        org_name_page = self.app.get(
-            reverse("domain-org-name-address", kwargs={"pk": self.domain.id})
-        )
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         org_name_page.form["organization_name"] = "Not igorville"
@@ -1766,18 +1644,14 @@ class TestDomainOrganization(TestDomainOverview):
 class TestDomainContactInformation(TestDomainOverview):
     def test_domain_your_contact_information(self):
         """Can load domain's your contact information page."""
-        page = self.client.get(
-            reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
-        )
+        page = self.client.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Your contact information")
 
     def test_domain_your_contact_information_content(self):
         """Logged-in user's contact information appears on the page."""
         self.user.contact.first_name = "Testy"
         self.user.contact.save()
-        page = self.app.get(
-            reverse("domain-your-contact-information", kwargs={"pk": self.domain.id})
-        )
+        page = self.app.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
 
 
@@ -1791,9 +1665,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
         domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
         # Add current user to this domain
         _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
-        page = self.client.get(
-            reverse("domain-security-email", kwargs={"pk": domain_contact.id})
-        )
+        page = self.client.get(reverse("domain-security-email", kwargs={"pk": domain_contact.id}))
 
         # Loads correctly
         self.assertContains(page, "Security email")
@@ -1807,9 +1679,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-        page = self.client.get(
-            reverse("domain-security-email", kwargs={"pk": self.domain.id})
-        )
+        page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
 
         # Loads correctly
         self.assertContains(page, "Security email")
@@ -1818,18 +1688,14 @@ class TestDomainSecurityEmail(TestDomainOverview):
 
     def test_domain_security_email(self):
         """Can load domain's security email page."""
-        page = self.client.get(
-            reverse("domain-security-email", kwargs={"pk": self.domain.id})
-        )
+        page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Security email")
 
     def test_domain_security_email_form(self):
         """Adding a security email works.
         Uses self.app WebTest because we need to interact with forms.
         """
-        security_email_page = self.app.get(
-            reverse("domain-security-email", kwargs={"pk": self.domain.id})
-        )
+        security_email_page = self.app.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         security_email_page.form["security_email"] = "mayor@igorville.gov"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1843,9 +1709,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = result.follow()
-        self.assertContains(
-            success_page, "The security email for this domain has been updated"
-        )
+        self.assertContains(success_page, "The security email for this domain has been updated")
 
     def test_security_email_form_messages(self):
         """
@@ -1932,18 +1796,14 @@ class TestDomainDNSSEC(TestDomainOverview):
         """DNSSEC overview page loads when domain has no DNSSEC data
         and shows a 'Enable DNSSEC' button."""
 
-        page = self.client.get(
-            reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id})
-        )
+        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Enable DNSSEC")
 
     def test_dnssec_page_loads_with_data_in_domain(self):
         """DNSSEC overview page loads when domain has DNSSEC data
         and the template contains a button to disable DNSSEC."""
 
-        page = self.client.get(
-            reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id})
-        )
+        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id}))
         self.assertContains(page, "Disable DNSSEC")
 
         # Prepare the data for the POST request
@@ -1964,11 +1824,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         """DNSSEC Add DS Data page loads when there is no
         domain DNSSEC data and shows a button to Add new record"""
 
-        page = self.client.get(
-            reverse(
-                "domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}
-            )
-        )
+        page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}))
         self.assertContains(page, "You have no DS Data added")
         self.assertContains(page, "Add new record")
 
@@ -1976,16 +1832,12 @@ class TestDomainDNSSEC(TestDomainOverview):
         """DNSSEC Add DS Data page loads when there is
         domain DNSSEC DS data and shows the data"""
 
-        page = self.client.get(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
-        )
+        page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
         self.assertContains(page, "DS Data record 1")
 
     def test_ds_data_form_modal(self):
         """When user clicks on save, a modal pops up."""
-        add_data_page = self.app.get(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
-        )
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
         # Assert that a hidden trigger for the modal does not exist.
         # This hidden trigger will pop on the page when certain condition are met:
         # 1) Initial form contained DS data, 2) All data is deleted and form is
@@ -2006,9 +1858,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
-        )
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         with less_console_noise():  # swallow log warning message
@@ -2021,18 +1871,14 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
-        self.assertContains(
-            page, "The DS Data records for this domain have been updated."
-        )
+        self.assertContains(page, "The DS Data records for this domain have been updated.")
 
     def test_ds_data_form_invalid(self):
         """DS Data form errors with invalid data
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id})
-        )
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
@@ -2054,9 +1900,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status(self):
         """Checking application status page"""
-        application = completed_application(
-            status=DomainApplication.SUBMITTED, user=self.user
-        )
+        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2076,9 +1920,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.user.status = "ineligible"
         self.user.save()
 
-        application = completed_application(
-            status=DomainApplication.SUBMITTED, user=self.user
-        )
+        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2093,9 +1935,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_withdraw(self):
         """Checking application status page"""
-        application = completed_application(
-            status=DomainApplication.SUBMITTED, user=self.user
-        )
+        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2125,9 +1965,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status_no_permissions(self):
         """Can't access applications without being the creator."""
-        application = completed_application(
-            status=DomainApplication.SUBMITTED, user=self.user
-        )
+        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
         other_user = User()
         other_user.save()
         application.creator = other_user
@@ -2141,17 +1979,13 @@ class TestApplicationStatus(TestWithUser, WebTest):
                 "application-withdrawn",
             ]:
                 with self.subTest(url_name=url_name):
-                    page = self.client.get(
-                        reverse(url_name, kwargs={"pk": application.pk})
-                    )
+                    page = self.client.get(reverse(url_name, kwargs={"pk": application.pk}))
                     self.assertEqual(page.status_code, 403)
 
     def test_approved_application_not_in_active_requests(self):
         """An approved application is not shown in the Active
         Requests table on home.html."""
-        application = completed_application(
-            status=DomainApplication.APPROVED, user=self.user
-        )
+        application = completed_application(status=DomainApplication.APPROVED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")

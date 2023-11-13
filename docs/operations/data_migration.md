@@ -246,7 +246,7 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 *You are now ready to run migration scripts.*
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
-While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands. If you run into the error that. If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
+While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands.If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
 
 ### STEP 1: Load Transition Domains
 
@@ -274,8 +274,6 @@ Directs the script to load only the first 100 entries into the table.  You can a
 This will delete all the data in transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
 
 ###### (arguments that override filepaths and directories if needed)
-`--infer_filenames`
-Determines if we should infer filenames or not. Recommended to be enabled only in a development or testing setting..
 
 `--directory`
 Defines the directory where all data files and the JSON are stored.
@@ -307,7 +305,8 @@ Defines the filename for domain type adhocs.
 `--authority_adhoc_filename`
 Defines the filename for domain type adhocs.
 
-
+`--infer_filenames`
+Determines if we should infer filenames or not. This setting is not available for use in environments with the flag `settings.DEBUG` set to false, as it is intended for local development only.
 
 ### STEP 2: Transfer Transition Domain data into main Domain tables
 

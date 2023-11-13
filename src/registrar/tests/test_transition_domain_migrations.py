@@ -1,4 +1,7 @@
 import datetime
+
+from io import StringIO
+
 from django.test import TestCase
 
 from registrar.models import (
@@ -12,6 +15,8 @@ from registrar.models import (
 
 from django.core.management import call_command
 from unittest.mock import patch
+
+from .common import less_console_noise
 
 
 class TestMigrations(TestCase):
@@ -103,9 +108,7 @@ class TestMigrations(TestCase):
             # Check Domain table
             matching_domains = Domain.objects.filter(name=transition_domain_name)
             # Check Domain Information table
-            matching_domain_informations = DomainInformation.objects.filter(
-                domain__name=transition_domain_name
-            )
+            matching_domain_informations = DomainInformation.objects.filter(domain__name=transition_domain_name)
             # Check Domain Invitation table
             matching_domain_invitations = DomainInvitation.objects.filter(
                 email=transition_domain_email.lower(),
@@ -146,12 +149,8 @@ class TestMigrations(TestCase):
         )
         self.assertEqual(total_missing_domains, expected_missing_domains)
         self.assertEqual(total_duplicate_domains, expected_duplicate_domains)
-        self.assertEqual(
-            total_missing_domain_informations, expected_missing_domain_informations
-        )
-        self.assertEqual(
-            total_missing_domain_invitations, expected_missing_domain_invitations
-        )
+        self.assertEqual(total_missing_domain_informations, expected_missing_domain_informations)
+        self.assertEqual(total_missing_domain_invitations, expected_missing_domain_invitations)
 
         self.assertEqual(total_transition_domains, expected_total_transition_domains)
         self.assertEqual(total_domains, expected_total_domains)
@@ -352,10 +351,8 @@ class TestMigrations(TestCase):
         # Simluate Logins
         for invite in DomainInvitation.objects.all():
             # get a user with this email address
-            user, user_created = User.objects.get_or_create(
-                email=invite.email, username=invite.email
-            )
-            user.first_login()
+            user, user_created = User.objects.get_or_create(email=invite.email, username=invite.email)
+            user.on_each_login()
 
         # Analyze the tables
         expected_total_transition_domains = 9
@@ -377,3 +374,42 @@ class TestMigrations(TestCase):
             expected_missing_domain_informations,
             expected_missing_domain_invitations,
         )
+
+    def test_send_domain_invitations_email(self):
+        """Can send only a single domain invitation email."""
+        with less_console_noise():
+            self.run_load_domains()
+            self.run_transfer_domains()
+
+        # this is one of the email addresses in data/test_contacts.txt
+        output_stream = StringIO()
+        # also have to re-point the logging handlers to output_stream
+        with less_console_noise(output_stream):
+            call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
+
+        # Check that we had the right numbers in our output
+        output = output_stream.getvalue()
+        # should only be one domain we send email for
+        self.assertIn("Found 1 transition domains", output)
+        self.assertTrue("would send email to testuser@gmail.com", output)
+
+    def test_send_domain_invitations_two_emails(self):
+        """Can send only a single domain invitation email."""
+        with less_console_noise():
+            self.run_load_domains()
+            self.run_transfer_domains()
+
+        # these are two email addresses in data/test_contacts.txt
+        output_stream = StringIO()
+        # also have to re-point the logging handlers to output_stream
+        with less_console_noise(output_stream):
+            call_command(
+                "send_domain_invitations", "testuser@gmail.com", "agustina.wyman7@test.com", stdout=output_stream
+            )
+
+        # Check that we had the right numbers in our output
+        output = output_stream.getvalue()
+        # should only be one domain we send email for
+        self.assertIn("Found 2 transition domains", output)
+        self.assertTrue("would send email to testuser@gmail.com", output)
+        self.assertTrue("would send email to agustina.wyman7@test.com", output)

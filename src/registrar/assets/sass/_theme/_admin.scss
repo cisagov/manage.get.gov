@@ -161,6 +161,26 @@ h1, h2, h3 {
     font-size: 14px;
 }
 
+// right justify custom buttons and display as links
+.submit-row input.custom-link-button,
+.submit-row input.custom-link-button:hover {
+    background: none;
+    border: none;
+    color: var(--link-fg);
+    cursor: pointer;
+    text-decoration: none;
+    padding: 0;
+    font-size: inherit;
+    margin-left: auto;
+}
+.submit-row div.spacer {
+    flex-grow: 1;
+}
+.submit-row span {
+    margin-top: units(1);
+}
+
+// Customize 
 // Keep th from collapsing 
 .min-width-25 {
     min-width: 25px;

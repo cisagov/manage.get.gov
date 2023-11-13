@@ -73,9 +73,7 @@ class ListHeaderAdmin(AuditedAdmin):
         filters = self.get_filters(request)
         # Pass the filtered values to the template context
         extra_context["filters"] = filters
-        extra_context["search_query"] = request.GET.get(
-            "q", ""
-        )  # Assuming the search query parameter is 'q'
+        extra_context["search_query"] = request.GET.get("q", "")  # Assuming the search query parameter is 'q'
         return super().changelist_view(request, extra_context=extra_context)
 
     def get_filters(self, request):
@@ -91,11 +89,7 @@ class ListHeaderAdmin(AuditedAdmin):
         for param in request.GET.keys():
             # Exclude the default search parameter 'q'
             if param != "q" and param != "o":
-                parameter_name = (
-                    param.replace("__exact", "")
-                    .replace("_type", "")
-                    .replace("__id", " id")
-                )
+                parameter_name = param.replace("__exact", "").replace("_type", "").replace("__id", " id")
 
                 if parameter_name == "investigator id":
                     # Retrieves the corresponding contact from Users
@@ -613,8 +607,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
                     messages.error(
                         request,
-                        "This action is not permitted. The domain "
-                        + "is already active.",
+                        "This action is not permitted. The domain is already active.",
                     )
 
                 else:
@@ -627,9 +620,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                             models.DomainApplication.APPROVED: obj.approve,
                             models.DomainApplication.WITHDRAWN: obj.withdraw,
                             models.DomainApplication.REJECTED: obj.reject,
-                            models.DomainApplication.INELIGIBLE: (
-                                obj.reject_with_prejudice
-                            ),
+                            models.DomainApplication.INELIGIBLE: (obj.reject_with_prejudice),
                         }
                         selected_method = status_method_mapping.get(obj.status)
                         if selected_method is None:
@@ -649,8 +640,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
             messages.error(
                 request,
-                "This action is not permitted for applications "
-                + "with a restricted creator.",
+                "This action is not permitted for applications with a restricted creator.",
             )
 
     def get_readonly_fields(self, request, obj=None):
@@ -669,9 +659,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             readonly_fields.extend([field.name for field in self.model._meta.fields])
             # Add the multi-select fields to readonly_fields:
             # Complex fields like ManyToManyField require special handling
-            readonly_fields.extend(
-                ["current_websites", "other_contacts", "alternative_domains"]
-            )
+            readonly_fields.extend(["current_websites", "other_contacts", "alternative_domains"])
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
@@ -739,9 +727,7 @@ class DomainAdmin(ListHeaderAdmin):
     def organization_type(self, obj):
         return obj.domain_info.get_organization_type_display()
 
-    organization_type.admin_order_field = (  # type: ignore
-        "domain_info__organization_type"
-    )
+    organization_type.admin_order_field = "domain_info__organization_type"  # type: ignore
 
     # Filters
     list_filter = ["domain_info__organization_type", "state"]
@@ -846,9 +832,7 @@ class DomainAdmin(ListHeaderAdmin):
             if not err.is_connection_error():
                 # If nothing is found, will default to returned err
                 message = error_messages.get(err.code, err)
-            self.message_user(
-                request, f"Error deleting this Domain: {message}", messages.ERROR
-            )
+            self.message_user(request, f"Error deleting this Domain: {message}", messages.ERROR)
         except TransitionNotAllowed:
             if obj.state == Domain.State.DELETED:
                 self.message_user(
@@ -886,8 +870,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                f"The registry statuses are {statuses}. "
-                "These statuses are from the provider of the .gov registry.",
+                f"The registry statuses are {statuses}. These statuses are from the provider of the .gov registry.",
             )
         return HttpResponseRedirect(".")
 
@@ -916,11 +899,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                (
-                    "%s is in client hold. This domain is no longer accessible on"
-                    " the public internet."
-                )
-                % obj.name,
+                ("%s is in client hold. This domain is no longer accessible on the public internet.") % obj.name,
             )
         return HttpResponseRedirect(".")
 
@@ -949,8 +928,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("%s is ready. This domain is accessible on the public internet.")
-                % obj.name,
+                ("%s is ready. This domain is accessible on the public internet.") % obj.name,
             )
         return HttpResponseRedirect(".")
 
@@ -973,9 +951,9 @@ class DomainAdmin(ListHeaderAdmin):
         # Fixes a bug wherein users which are only is_staff
         # can access 'change' when GET,
         # but cannot access this page when it is a request of type POST.
-        if request.user.has_perm(
-            "registrar.full_access_permission"
-        ) or request.user.has_perm("registrar.analyst_access_permission"):
+        if request.user.has_perm("registrar.full_access_permission") or request.user.has_perm(
+            "registrar.analyst_access_permission"
+        ):
             return True
         return super().has_change_permission(request, obj)
 

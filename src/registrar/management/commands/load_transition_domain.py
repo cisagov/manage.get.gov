@@ -1,10 +1,12 @@
 import json
+import os
 import sys
 import csv
 import logging
 import argparse
 
 from collections import defaultdict
+from django.conf import settings
 
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.epp_data_containers import EnumFilenames
@@ -43,19 +45,14 @@ class Command(BaseCommand):
         """
         parser.add_argument(
             "migration_json_filename",
-            help=(
-                "A JSON file that holds the location and filenames"
-                "of all the data files used for migrations"
-            ),
+            help=("A JSON file that holds the location and filenames" "of all the data files used for migrations"),
         )
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
-        parser.add_argument(
-            "--limitParse", default=0, help="Sets max number of entries to load"
-        )
+        parser.add_argument("--limitParse", default=0, help="Sets max number of entries to load")
 
         parser.add_argument(
             "--resetTable",
@@ -63,16 +60,17 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-        parser.add_argument(
-            "--infer_filenames",
-            action=argparse.BooleanOptionalAction,
-            help="Determines if we should infer filenames or not."
-            "Recommended to be enabled only in a development or testing setting.",
-        )
+        # This option should only be available when developing locally.
+        # This should not be available to the end user.
+        if settings.DEBUG:
+            parser.add_argument(
+                "--infer_filenames",
+                action=argparse.BooleanOptionalAction,
+                help="Determines if we should infer filenames or not."
+                "Recommended to be enabled only in a development or testing setting.",
+            )
 
-        parser.add_argument(
-            "--directory", default="migrationdata", help="Desired directory"
-        )
+        parser.add_argument("--directory", default="migrationdata", help="Desired directory")
         parser.add_argument(
             "--domain_contacts_filename",
             help="Data file with domain contact information",
@@ -116,9 +114,7 @@ class Command(BaseCommand):
             help="Defines the filename for domain type adhocs",
         )
 
-    def print_debug_mode_statements(
-        self, debug_on: bool, debug_max_entries_to_parse: int
-    ):
+    def print_debug_mode_statements(self, debug_on: bool, debug_max_entries_to_parse: int):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
         if debug_on:
@@ -140,9 +136,7 @@ class Command(BaseCommand):
                 """
             )
 
-    def get_domain_user_dict(
-        self, domain_statuses_filename: str, sep: str
-    ) -> defaultdict[str, str]:
+    def get_domain_user_dict(self, domain_statuses_filename: str, sep: str) -> defaultdict[str, str]:
         """Creates a mapping of domain name -> status"""
         domain_status_dictionary = defaultdict(str)
         logger.info("Reading domain statuses data file %s", domain_statuses_filename)
@@ -154,9 +148,7 @@ class Command(BaseCommand):
         logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
         return domain_status_dictionary
 
-    def get_user_emails_dict(
-        self, contacts_filename: str, sep
-    ) -> defaultdict[str, str]:
+    def get_user_emails_dict(self, contacts_filename: str, sep) -> defaultdict[str, str]:
         """Creates mapping of userId -> emails"""
         user_emails_dictionary = defaultdict(str)
         logger.info("Reading contacts data file %s", contacts_filename)
@@ -205,19 +197,13 @@ class Command(BaseCommand):
         total_duplicate_domains = len(duplicate_domains)
         total_users_without_email = len(users_without_email)
         if total_users_without_email > 0:
-            users_without_email_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domain_user_combos))
-            )
+            users_without_email_as_string = "{}".format(", ".join(map(str, duplicate_domain_user_combos)))
             logger.warning(
                 f"{TerminalColors.YELLOW} No e-mails found for users: {users_without_email_as_string}"  # noqa
             )
         if total_duplicate_pairs > 0 or total_duplicate_domains > 0:
-            duplicate_pairs_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domain_user_combos))
-            )
-            duplicate_domains_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domains))
-            )
+            duplicate_pairs_as_string = "{}".format(", ".join(map(str, duplicate_domain_user_combos)))
+            duplicate_domains_as_string = "{}".format(", ".join(map(str, duplicate_domains)))
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -235,9 +221,7 @@ class Command(BaseCommand):
                     {TerminalColors.ENDC}"""
             )
 
-    def print_summary_status_findings(
-        self, domains_without_status: list[str], outlier_statuses: list[str]
-    ):
+    def print_summary_status_findings(self, domains_without_status: list[str], outlier_statuses: list[str]):
         """Called at the end of the script execution to print out a summary of
         status anomolies in the imported Verisign data.  Currently, we check for:
         - domains without a status
@@ -247,9 +231,7 @@ class Command(BaseCommand):
         total_domains_without_status = len(domains_without_status)
         total_outlier_statuses = len(outlier_statuses)
         if total_domains_without_status > 0:
-            domains_without_status_as_string = "{}".format(
-                ", ".join(map(str, domains_without_status))
-            )
+            domains_without_status_as_string = "{}".format(", ".join(map(str, domains_without_status)))
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -263,9 +245,7 @@ class Command(BaseCommand):
             )
 
         if total_outlier_statuses > 0:
-            domains_without_status_as_string = "{}".format(
-                ", ".join(map(str, outlier_statuses))
-            )  # noqa
+            domains_without_status_as_string = "{}".format(", ".join(map(str, outlier_statuses)))  # noqa
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -322,6 +302,9 @@ class Command(BaseCommand):
         **options,
     ):
         """Parse the data files and create TransitionDomains."""
+        if not settings.DEBUG:
+            options["infer_filenames"] = False
+
         args = TransitionDomainArguments(**options)
 
         # Desired directory for additional TransitionDomain data
@@ -366,42 +349,31 @@ class Command(BaseCommand):
         debug_on = args.debug
 
         # Get --LimitParse argument
-        debug_max_entries_to_parse = int(
-            args.limitParse
-        )  # set to 0 to parse all entries
+        debug_max_entries_to_parse = int(args.limitParse)  # set to 0 to parse all entries
 
         # Variables for Additional TransitionDomain Information #
 
         # Main script filenames - these do not have defaults
         domain_contacts_filename = None
         try:
-            domain_contacts_filename = directory + options.get(
-                "domain_contacts_filename"
-            )
+            domain_contacts_filename = directory + options.get("domain_contacts_filename")
         except TypeError:
             logger.error(
-                f"Invalid filename of '{args.domain_contacts_filename}'"
-                " was provided for domain_contacts_filename"
+                f"Invalid filename of '{args.domain_contacts_filename}'" " was provided for domain_contacts_filename"
             )
 
         contacts_filename = None
         try:
             contacts_filename = directory + options.get("contacts_filename")
         except TypeError:
-            logger.error(
-                f"Invalid filename of '{args.contacts_filename}'"
-                " was provided for contacts_filename"
-            )
+            logger.error(f"Invalid filename of '{args.contacts_filename}'" " was provided for contacts_filename")
 
         domain_statuses_filename = None
         try:
-            domain_statuses_filename = directory + options.get(
-                "domain_statuses_filename"
-            )
+            domain_statuses_filename = directory + options.get("domain_statuses_filename")
         except TypeError:
             logger.error(
-                f"Invalid filename of '{args.domain_statuses_filename}'"
-                " was provided for domain_statuses_filename"
+                f"Invalid filename of '{args.domain_statuses_filename}'" " was provided for domain_statuses_filename"
             )
 
         # Agency information
@@ -419,11 +391,25 @@ class Command(BaseCommand):
         # print message to terminal about which args are in use
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
 
+        filenames = [
+            agency_adhoc_filename,
+            domain_adhoc_filename,
+            organization_adhoc_filename,
+            domain_escrow_filename,
+            domain_additional_filename,
+        ]
+
+        # Do a top-level check to see if these files exist
+        for filename in filenames:
+            if not isinstance(filename, str):
+                raise TypeError(f"Filename must be a string, got {type(filename).__name__}")
+            full_path = os.path.join(directory, filename)
+            if not os.path.isfile(full_path):
+                raise FileNotFoundError(full_path)
+
         # STEP 1:
         # Create mapping of domain name -> status
-        domain_status_dictionary = self.get_domain_user_dict(
-            domain_statuses_filename, sep
-        )
+        domain_status_dictionary = self.get_domain_user_dict(domain_statuses_filename, sep)
 
         # STEP 2:
         # Create mapping of userId  -> email
@@ -518,12 +504,7 @@ class Command(BaseCommand):
                     None,
                 )
                 existing_domain_user_pair = next(
-                    (
-                        x
-                        for x in to_create
-                        if x.username == new_entry_email
-                        and x.domain_name == new_entry_domain_name
-                    ),
+                    (x for x in to_create if x.username == new_entry_email and x.domain_name == new_entry_domain_name),
                     None,
                 )
                 if existing_domain is not None:
@@ -594,10 +575,7 @@ class Command(BaseCommand):
                         )
 
                 # Check Parse limit and exit loop if needed
-                if (
-                    total_rows_parsed >= debug_max_entries_to_parse
-                    and debug_max_entries_to_parse != 0
-                ):
+                if total_rows_parsed >= debug_max_entries_to_parse and debug_max_entries_to_parse != 0:
                     logger.info(
                         f"{TerminalColors.YELLOW}"
                         f"----PARSE LIMIT REACHED.  HALTING PARSER.----"
@@ -606,12 +584,35 @@ class Command(BaseCommand):
                     break
 
         TransitionDomain.objects.bulk_create(to_create)
+        # Print a summary of findings (duplicate entries,
+        # missing data..etc.)
+        self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
+        self.print_summary_status_findings(domains_without_status, outlier_statuses)
+
+        logger.info(
+            f"""{TerminalColors.OKGREEN}
+            ============= FINISHED ===============
+            Created {total_new_entries} transition domain entries,
+            Updated {total_updated_domain_entries} transition domain entries
+
+            {TerminalColors.YELLOW}
+            ----- DUPLICATES FOUND -----
+            {len(duplicate_domain_user_combos)} DOMAIN - USER pairs
+            were NOT unique in the supplied data files.
+            {len(duplicate_domains)} DOMAINS were NOT unique in
+            the supplied data files.
+
+            ----- STATUSES -----
+            {len(domains_without_status)} DOMAINS had NO status (defaulted to READY).
+            {len(outlier_statuses)} Statuses were invalid (defaulted to READY).
+
+            {TerminalColors.ENDC}
+            """
+        )
 
         # Print a summary of findings (duplicate entries,
         # missing data..etc.)
-        self.print_summary_duplications(
-            duplicate_domain_user_combos, duplicate_domains, users_without_email
-        )
+        self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
 
         logger.info(

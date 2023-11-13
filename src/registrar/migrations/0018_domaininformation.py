@@ -64,15 +64,11 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "federally_recognized_tribe",
-                    models.BooleanField(
-                        help_text="Is the tribe federally recognized", null=True
-                    ),
+                    models.BooleanField(help_text="Is the tribe federally recognized", null=True),
                 ),
                 (
                     "state_recognized_tribe",
-                    models.BooleanField(
-                        help_text="Is the tribe recognized by a state", null=True
-                    ),
+                    models.BooleanField(help_text="Is the tribe recognized by a state", null=True),
                 ),
                 (
                     "tribe_name",
@@ -172,9 +168,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "purpose",
-                    models.TextField(
-                        blank=True, help_text="Purpose of your domain", null=True
-                    ),
+                    models.TextField(blank=True, help_text="Purpose of your domain", null=True),
                 ),
                 (
                     "no_other_contacts_rationale",
@@ -186,9 +180,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "anything_else",
-                    models.TextField(
-                        blank=True, help_text="Anything else we should know?", null=True
-                    ),
+                    models.TextField(blank=True, help_text="Anything else we should know?", null=True),
                 ),
                 (
                     "is_policy_acknowledged",

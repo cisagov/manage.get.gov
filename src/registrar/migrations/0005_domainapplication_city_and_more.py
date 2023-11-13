@@ -22,8 +22,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domainapplication",
             name="federal_agency",
-            field=models.TextField(
-                blank=True, help_text="Top level federal agency", null=True
-            ),
+            field=models.TextField(blank=True, help_text="Top level federal agency", null=True),
         ),
     ]

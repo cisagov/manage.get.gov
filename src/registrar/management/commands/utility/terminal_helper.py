@@ -150,9 +150,7 @@ class TerminalHelper:
                     logger.info(print_statement)
 
     @staticmethod
-    def prompt_for_execution(
-        system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str
-    ) -> bool:
+    def prompt_for_execution(system_exit_on_terminate: bool, info_to_inspect: str, prompt_title: str) -> bool:
         """Create to reduce code complexity.
         Prompts the user to inspect the given string
         and asks if they wish to proceed.
@@ -195,9 +193,7 @@ class TerminalHelper:
         return total_line
 
     @staticmethod
-    def print_to_file_conditional(
-        print_condition: bool, filename: str, file_directory: str, file_contents: str
-    ):
+    def print_to_file_conditional(print_condition: bool, filename: str, file_directory: str, file_contents: str):
         """Sometimes logger outputs get insanely huge."""
         if print_condition:
             # Add a slash if the last character isn't one
@@ -206,54 +202,6 @@ class TerminalHelper:
             # Assemble filepath
             filepath = f"{file_directory}{filename}.txt"
             # Write to file
-            logger.info(
-                f"{TerminalColors.MAGENTA}Writing to file "
-                f" {filepath}..."
-                f"{TerminalColors.ENDC}"
-            )
+            logger.info(f"{TerminalColors.MAGENTA}Writing to file " f" {filepath}..." f"{TerminalColors.ENDC}")
             with open(f"{filepath}", "w+") as f:
                 f.write(file_contents)
-
-    @staticmethod
-    def printProgressBar(
-        iteration,
-        total,
-        prefix="Progress:",
-        suffix="Complete",
-        decimals=1,
-        length=100,
-        fill="█",
-        printEnd="\r",
-    ):
-        """
-        Call in a loop to create terminal progress bar
-        @params:
-            iteration   - Required  : current iteration (Int)
-            total       - Required  : total iterations (Int)
-            prefix      - Optional  : prefix string (Str)
-            suffix      - Optional  : suffix string (Str)
-            decimals    - Optional  : positive number of decimals in percent complete (Int)
-            length      - Optional  : character length of bar (Int)
-            fill        - Optional  : bar fill character (Str)
-            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-        """  # noqa
-
-        """
-        # Initial call to print 0% progress
-        printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        for i, item in enumerate(items):
-            # Do stuff...
-            time.sleep(0.1)
-            # Update Progress Bar
-            printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        """  # noqa
-
-        percent = ("{0:." + str(decimals) + "f}").format(
-            100 * (iteration / float(total))
-        )
-        filledLength = int(length * iteration // total)
-        bar = fill * filledLength + "-" * (length - filledLength)
-        print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=printEnd)
-        # Print New Line on Complete
-        if iteration == total:
-            print()
