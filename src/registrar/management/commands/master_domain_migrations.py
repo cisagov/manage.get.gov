@@ -7,7 +7,6 @@
 
 import logging
 import argparse
-import sys
 
 from django.core.management import BaseCommand
 from django.core.management import call_command
@@ -28,29 +27,27 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = """ """
+    help = """ """  # TODO: update this!
 
+    # ======================================================
+    # ==================    ARGUMENTS    ===================
+    # ======================================================
     def add_arguments(self, parser):
         """
         OPTIONAL ARGUMENTS:
         --runMigrations
-        Triggers running all scripts (in sequence)
-        for transition domain migrations
+        A boolean (default to true), which triggers running
+        all scripts (in sequence) for transition domain migrations
 
         --migrationDirectory
         The location of the files used for load_transition_domain migration script
         EXAMPLE USAGE:
         > --migrationDirectory /app/tmp
 
-        --migrationFilenames
-        The files used for load_transition_domain migration script.
-        Must appear IN ORDER and comma-delimiteds:
+        --migrationJSON
+        The name of the JSON file used for load_transition_domain migration script
         EXAMPLE USAGE:
-        > --migrationFilenames domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
-        where...
-        - domain_contacts_filename is the Data file with domain contact information
-        - contacts_filename is the Data file with contact information
-        - domain_statuses_filename is the Data file with domain status information
+        > --migrationJSON migrationFilepaths.json
 
         --sep
         Delimiter for the migration scripts to correctly parse the given text files.
@@ -59,9 +56,8 @@ class Command(BaseCommand):
         --debug
         Activates additional print statements
 
-        --prompt
-        Activates terminal prompts that allows
-        the user to step through each portion of this
+        --disablePrompts
+        Disables terminal prompts that allows the user to step through each portion of this
         script.
 
         --limitParse
@@ -91,33 +87,28 @@ class Command(BaseCommand):
         )
 
         # The following file arguments have default values for running in the sandbox
+
+        # TODO: make this a mandatory argument
+        # (if/when we strip out defaults, it will be mandatory)
+        # TODO: use the migration directory arg or force user to type FULL filepath?
+        parser.add_argument(
+            "--migrationJSON",
+            default="migrationFilepaths.json",
+            help=("A JSON file that holds the location and filenames" "of all the data files used for migrations"),
+        )
+
+        # TODO: deprecate this once JSON module is done? (or keep as an override)
         parser.add_argument(
             "--migrationDirectory",
             default="migrationdata",
             help=("The location of the files used for load_transition_domain migration script"),
-        )
-        parser.add_argument(
-            "--migrationFilenames",
-            default="escrow_domain_contacts.daily.gov.GOV.txt,"
-            "escrow_contacts.daily.gov.GOV.txt,"
-            "escrow_domain_statuses.daily.gov.GOV.txt",
-            help="""The files used for load_transition_domain migration script.
-            Must appear IN ORDER and separated by commas:
-            domain_contacts_filename.txt,contacts_filename.txt,domain_statuses_filename.txt
-
-            where...
-            - domain_contacts_filename is the Data file with domain contact
-            information
-            - contacts_filename is the Data file with contact information
-            - domain_statuses_filename is the Data file with domain status
-            information""",
         )
 
         parser.add_argument("--sep", default="|", help="Delimiter character for the migration files")
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
-        parser.add_argument("--prompt", action=argparse.BooleanOptionalAction)
+        parser.add_argument("--disablePrompts", action=argparse.BooleanOptionalAction)
 
         parser.add_argument("--limitParse", default=0, help="Sets max number of entries to load")
 
@@ -126,6 +117,10 @@ class Command(BaseCommand):
             help="Deletes all data in the TransitionDomain table",
             action=argparse.BooleanOptionalAction,
         )
+
+    # ======================================================
+    # ===============    DATA ANALYSIS    ==================
+    # ======================================================
 
     def compare_tables(self, debug_on: bool):
         """Does a diff between the transition_domain and the following tables:
@@ -237,27 +232,26 @@ class Command(BaseCommand):
             """
         )
 
+    # ======================================================
+    # =================    MIGRATIONS    ===================
+    # ======================================================
     def run_load_transition_domain_script(
         self,
-        file_location: str,
-        domain_contacts_filename: str,
-        contacts_filename: str,
-        domain_statuses_filename: str,
+        migration_json_filename: str,
+        file_directory: str,
         sep: str,
         reset_table: bool,
         debug_on: bool,
         prompts_enabled: bool,
         debug_max_entries_to_parse: int,
     ):
+        if file_directory and file_directory[-1] != "/":
+            file_directory += "/"
+        json_filepath = migration_json_filename
         """Runs the load_transition_domain script"""
         # Create the command string
         command_script = "load_transition_domain"
-        command_string = (
-            f"./manage.py {command_script} "
-            f"{file_location+domain_contacts_filename} "
-            f"{file_location+contacts_filename} "
-            f"{file_location+domain_statuses_filename} "
-        )
+        command_string = f"./manage.py {command_script} " f"{json_filepath} "
         if sep is not None and sep != "|":
             command_string += f"--sep {sep} "
         if reset_table:
@@ -266,27 +260,29 @@ class Command(BaseCommand):
             command_string += "--debug "
         if debug_max_entries_to_parse > 0:
             command_string += f"--limitParse {debug_max_entries_to_parse} "
+        if file_directory:
+            command_string += f"--directory {file_directory}"
 
         # Execute the command string
+        proceed = False
         if prompts_enabled:
-            system_exit_on_terminate = True
-            TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate,
+            proceed = TerminalHelper.prompt_for_execution(
+                True,
                 command_string,
                 "Running load_transition_domain script",
             )
 
         # TODO: make this somehow run inside TerminalHelper prompt
-        call_command(
-            command_script,
-            f"{file_location+domain_contacts_filename}",
-            f"{file_location+contacts_filename}",
-            f"{file_location+domain_statuses_filename}",
-            sep=sep,
-            resetTable=reset_table,
-            debug=debug_on,
-            limitParse=debug_max_entries_to_parse,
-        )
+        if proceed or not prompts_enabled:
+            call_command(
+                command_script,
+                json_filepath,
+                sep=sep,
+                resetTable=reset_table,
+                debug=debug_on,
+                limitParse=debug_max_entries_to_parse,
+                directory=file_directory,
+            )
 
     def run_transfer_script(self, debug_on: bool, prompts_enabled: bool):
         """Runs the transfer_transition_domains_to_domains script"""
@@ -296,16 +292,16 @@ class Command(BaseCommand):
         if debug_on:
             command_string += "--debug "
         # Execute the command string
+        proceed = False
         if prompts_enabled:
-            system_exit_on_terminate = True
-            TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate,
+            proceed = TerminalHelper.prompt_for_execution(
+                True,
                 command_string,
                 "Running transfer_transition_domains_to_domains script",
             )
-
         # TODO: make this somehow run inside TerminalHelper prompt
-        call_command(command_script)
+        if proceed or not prompts_enabled:
+            call_command(command_script)
 
     def run_send_invites_script(self, debug_on: bool, prompts_enabled: bool):
         """Runs the send_domain_invitations script"""
@@ -313,23 +309,22 @@ class Command(BaseCommand):
         command_script = "send_domain_invitations"
         command_string = f"./manage.py {command_script} -s"
         # Execute the command string
+        proceed = False
         if prompts_enabled:
-            system_exit_on_terminate = True
-            TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate,
+            proceed = TerminalHelper.prompt_for_execution(
+                False,
                 command_string,
                 "Running send_domain_invitations script",
             )
 
         # TODO: make this somehow run inside TerminalHelper prompt
-        call_command(command_script, send_emails=True)
+        if proceed or not prompts_enabled:
+            call_command(command_script, send_emails=True)
 
     def run_migration_scripts(
         self,
+        migration_json_filename,
         file_location,
-        domain_contacts_filename,
-        contacts_filename,
-        domain_statuses_filename,
         sep,
         reset_table,
         debug_on,
@@ -352,10 +347,8 @@ class Command(BaseCommand):
                 The migration scripts are looking in directory....
                 {file_location}
 
-                ....for the following files:
-                - domain contacts: {domain_contacts_filename}
-                - contacts: {contacts_filename}
-                - domain statuses: {domain_statuses_filename}
+                ....for the following JSON:
+                {migration_json_filename}
 
                 {TerminalColors.FAIL}
                 Does this look correct?{TerminalColors.ENDC}"""
@@ -370,17 +363,15 @@ class Command(BaseCommand):
                     f"""
                 {TerminalColors.YELLOW}
                 PLEASE Re-Run the script with the correct
-                file location and filenames:
+                JSON filename and directory:
                 """
                 )
                 return
 
         # Proceed executing the migration scripts
         self.run_load_transition_domain_script(
+            migration_json_filename,
             file_location,
-            domain_contacts_filename,
-            contacts_filename,
-            domain_statuses_filename,
             sep,
             reset_table,
             debug_on,
@@ -413,7 +404,7 @@ class Command(BaseCommand):
 
         # Get arguments
         debug_on = options.get("debug")
-        prompts_enabled = options.get("prompt")
+        prompts_enabled = not options.get("disablePrompts")
         run_migrations_enabled = options.get("runMigrations")
 
         TerminalHelper.print_conditional(
@@ -462,33 +453,13 @@ class Command(BaseCommand):
             debug_max_entries_to_parse = int(options.get("limitParse"))
 
             # Grab filepath information from the arguments
-            file_location = options.get("migrationDirectory") + "/"
-            filenames = options.get("migrationFilenames").split(",")
-            if len(filenames) < 3:
-                filenames_as_string = "{}".format(", ".join(map(str, filenames)))
-                logger.info(
-                    f"""
-                {TerminalColors.FAIL}
-                --migrationFilenames expected 3 filenames to follow it,
-                but only {len(filenames)} were given:
-                {filenames_as_string}
-
-                PLEASE MODIFY THE SCRIPT AND TRY RUNNING IT AGAIN
-                ============= TERMINATING =============
-                {TerminalColors.ENDC}
-                """
-                )
-                sys.exit()
-            domain_contacts_filename = filenames[0]
-            contacts_filename = filenames[1]
-            domain_statuses_filename = filenames[2]
+            file_location = options.get("migrationDirectory")
+            migration_json_filename = options.get("migrationJSON")
 
             # Run migration scripts
             self.run_migration_scripts(
+                migration_json_filename,
                 file_location,
-                domain_contacts_filename,
-                contacts_filename,
-                domain_statuses_filename,
                 sep,
                 reset_table,
                 debug_on,

@@ -1,5 +1,4 @@
 from django.db import models
-
 from .utility.time_stamped_model import TimeStampedModel
 
 
@@ -43,11 +42,53 @@ class TransitionDomain(TimeStampedModel):
         verbose_name="email sent",
         help_text="indicates whether email was sent",
     )
+    organization_type = models.TextField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Type of organization",
+    )
+    organization_name = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Organization name",
+        db_index=True,
+    )
+    federal_type = models.TextField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Federal government branch",
+    )
+    federal_agency = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Federal agency",
+    )
+    epp_creation_date = models.DateField(
+        null=True,
+        help_text=("Duplication of registry's creation " "date saved for ease of reporting"),
+    )
+    epp_expiration_date = models.DateField(
+        null=True,
+        help_text=("Duplication of registry's expiration " "date saved for ease of reporting"),
+    )
 
     def __str__(self):
+        return f"{self.username}, {self.domain_name}"
+
+    def display_transition_domain(self):
+        """Displays all information about a TransitionDomain in string format"""
         return (
-            f"username: {self.username} "
-            f"domainName: {self.domain_name} "
-            f"status: {self.status} "
-            f"email sent: {self.email_sent} "
+            f"\n-----TRANSITION DOMAIN------\n"
+            f"domainName: {self.domain_name}, \n"
+            f"username: {self.username}, \n"
+            f"status: {self.status}, \n"
+            f"email sent: {self.email_sent}, \n"
+            f"organization type: {self.organization_type}, \n"
+            f"organization_name: {self.organization_name}, \n"
+            f"federal_type: {self.federal_type}, \n"
+            f"federal_agency: {self.federal_agency}, \n"
+            f"epp_creation_date: {self.epp_creation_date}, \n"
+            f"epp_expiration_date: {self.epp_expiration_date}, \n"
         )
