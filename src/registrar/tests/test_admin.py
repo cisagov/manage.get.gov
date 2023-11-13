@@ -128,12 +128,12 @@ class TestDomainAdmin(MockEppLib):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
-        self.assertContains(response, "Delete domain in registry")
+        self.assertContains(response, "Remove from registry")
 
         # Test the info dialog
         request = self.factory.post(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Delete domain in registry", "name": domain.name},
+            {"_delete_domain": "Remove from registry", "name": domain.name},
             follow=True,
         )
         request.user = self.client
@@ -168,12 +168,12 @@ class TestDomainAdmin(MockEppLib):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
-        self.assertContains(response, "Delete domain in registry")
+        self.assertContains(response, "Remove from registry")
 
         # Test the error
         request = self.factory.post(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Delete domain in registry", "name": domain.name},
+            {"_delete_domain": "Remove from registry", "name": domain.name},
             follow=True,
         )
         request.user = self.client
@@ -213,12 +213,12 @@ class TestDomainAdmin(MockEppLib):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, domain.name)
-        self.assertContains(response, "Delete domain in registry")
+        self.assertContains(response, "Remove from registry")
 
         # Test the info dialog
         request = self.factory.post(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Delete domain in registry", "name": domain.name},
+            {"_delete_domain": "Remove from registry", "name": domain.name},
             follow=True,
         )
         request.user = self.client
@@ -240,7 +240,7 @@ class TestDomainAdmin(MockEppLib):
         # Test the info dialog
         request = self.factory.post(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Delete domain in registry", "name": domain.name},
+            {"_delete_domain": "Remove from registry", "name": domain.name},
             follow=True,
         )
         request.user = self.client
