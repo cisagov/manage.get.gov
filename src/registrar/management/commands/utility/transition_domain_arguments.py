@@ -37,26 +37,14 @@ class TransitionDomainArguments:
 
     # Filenames #
     # = Adhocs =#
-    agency_adhoc_filename: Optional[str] = field(
-        default=EnumFilenames.AGENCY_ADHOC.value[1], repr=True
-    )
-    domain_adhoc_filename: Optional[str] = field(
-        default=EnumFilenames.DOMAIN_ADHOC.value[1], repr=True
-    )
-    organization_adhoc_filename: Optional[str] = field(
-        default=EnumFilenames.ORGANIZATION_ADHOC.value[1], repr=True
-    )
-    authority_adhoc_filename: Optional[str] = field(
-        default=EnumFilenames.AUTHORITY_ADHOC.value[1], repr=True
-    )
+    agency_adhoc_filename: Optional[str] = field(default=EnumFilenames.AGENCY_ADHOC.value[1], repr=True)
+    domain_adhoc_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADHOC.value[1], repr=True)
+    organization_adhoc_filename: Optional[str] = field(default=EnumFilenames.ORGANIZATION_ADHOC.value[1], repr=True)
+    authority_adhoc_filename: Optional[str] = field(default=EnumFilenames.AUTHORITY_ADHOC.value[1], repr=True)
 
     # = Data files =#
-    domain_escrow_filename: Optional[str] = field(
-        default=EnumFilenames.DOMAIN_ESCROW.value[1], repr=True
-    )
-    domain_additional_filename: Optional[str] = field(
-        default=EnumFilenames.DOMAIN_ADDITIONAL.value[1], repr=True
-    )
+    domain_escrow_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ESCROW.value[1], repr=True)
+    domain_additional_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADDITIONAL.value[1], repr=True)
     domain_contacts_filename: Optional[str] = field(default=None, repr=True)
     domain_statuses_filename: Optional[str] = field(default=None, repr=True)
     contacts_filename: Optional[str] = field(default=None, repr=True)

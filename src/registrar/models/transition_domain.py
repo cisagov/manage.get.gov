@@ -66,15 +66,11 @@ class TransitionDomain(TimeStampedModel):
     )
     epp_creation_date = models.DateField(
         null=True,
-        help_text=(
-            "Duplication of registry's creation " "date saved for ease of reporting"
-        ),
+        help_text=("Duplication of registry's creation " "date saved for ease of reporting"),
     )
     epp_expiration_date = models.DateField(
         null=True,
-        help_text=(
-            "Duplication of registry's expiration " "date saved for ease of reporting"
-        ),
+        help_text=("Duplication of registry's expiration " "date saved for ease of reporting"),
     )
     first_name = models.TextField(
         null=True,

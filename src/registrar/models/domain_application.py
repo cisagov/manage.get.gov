@@ -169,10 +169,7 @@ class DomainApplication(TimeStampedModel):
         "American Battle Monuments Commission",
         "AMTRAK",
         "Appalachian Regional Commission",
-        (
-            "Appraisal Subcommittee of the Federal Financial "
-            "Institutions Examination Council"
-        ),
+        ("Appraisal Subcommittee of the Federal Financial " "Institutions Examination Council"),
         "Appraisal Subcommittee",
         "Architect of the Capitol",
         "Armed Forces Retirement Home",

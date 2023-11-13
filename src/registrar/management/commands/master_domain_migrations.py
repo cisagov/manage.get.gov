@@ -94,10 +94,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--migrationJSON",
             default="migrationFilepaths.json",
-            help=(
-                "A JSON file that holds the location and filenames"
-                "of all the data files used for migrations"
-            ),
+            help=("A JSON file that holds the location and filenames" "of all the data files used for migrations"),
         )
 
         # TODO: deprecate this once JSON module is done? (or keep as an override)

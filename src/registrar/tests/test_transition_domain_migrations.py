@@ -146,12 +146,8 @@ class TestMigrations(TestCase):
         )
         self.assertEqual(total_missing_domains, expected_missing_domains)
         self.assertEqual(total_duplicate_domains, expected_duplicate_domains)
-        self.assertEqual(
-            total_missing_domain_informations, expected_missing_domain_informations
-        )
-        self.assertEqual(
-            total_missing_domain_invitations, expected_missing_domain_invitations
-        )
+        self.assertEqual(total_missing_domain_informations, expected_missing_domain_informations)
+        self.assertEqual(total_missing_domain_invitations, expected_missing_domain_invitations)
 
         self.assertEqual(total_transition_domains, expected_total_transition_domains)
         self.assertEqual(total_domains, expected_total_domains)
