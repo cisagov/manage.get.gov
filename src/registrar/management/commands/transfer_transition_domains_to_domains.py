@@ -327,9 +327,7 @@ class Command(BaseCommand):
             ).exists()
             if not domain_email_already_in_domain_invites:
                 # Create new domain invitation
-                new_domain_invitation = DomainInvitation(
-                    email=domain_email.lower(), domain=associated_domain
-                )
+                new_domain_invitation = DomainInvitation(email=domain_email.lower(), domain=associated_domain)
                 return new_domain_invitation
         return None
 
@@ -746,9 +744,7 @@ class Command(BaseCommand):
 
         # grab command line arguments and store locally...
         debug_on = options.get("debug")
-        debug_max_entries_to_parse = int(
-            options.get("limitParse")
-        )  # set to 0 to parse all entries
+        debug_max_entries_to_parse = int(options.get("limitParse"))  # set to 0 to parse all entries
 
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
 

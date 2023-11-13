@@ -21,9 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="domainapplication",
             name="type_of_work",
-            field=models.TextField(
-                blank=True, help_text="Type of work of the organization", null=True
-            ),
+            field=models.TextField(blank=True, help_text="Type of work of the organization", null=True),
         ),
         migrations.AlterField(
             model_name="domainapplication",
@@ -33,9 +31,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domainapplication",
             name="address_line2",
-            field=models.CharField(
-                blank=True, help_text="Street address line 2", max_length=15, null=True
-            ),
+            field=models.CharField(blank=True, help_text="Street address line 2", max_length=15, null=True),
         ),
         migrations.AlterField(
             model_name="domainapplication",
@@ -95,9 +91,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domainapplication",
             name="purpose",
-            field=models.TextField(
-                blank=True, help_text="Purpose of your domain", null=True
-            ),
+            field=models.TextField(blank=True, help_text="Purpose of your domain", null=True),
         ),
         migrations.AlterField(
             model_name="domainapplication",
@@ -112,9 +106,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domainapplication",
             name="urbanization",
-            field=models.TextField(
-                blank=True, help_text="Urbanization (Puerto Rico only)", null=True
-            ),
+            field=models.TextField(blank=True, help_text="Urbanization (Puerto Rico only)", null=True),
         ),
         migrations.AlterField(
             model_name="domainapplication",

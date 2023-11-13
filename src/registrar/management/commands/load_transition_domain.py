@@ -55,9 +55,7 @@ class Command(BaseCommand):
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
-        parser.add_argument(
-            "--limitParse", default=0, help="Sets max number of entries to load"
-        )
+        parser.add_argument("--limitParse", default=0, help="Sets max number of entries to load")
 
         parser.add_argument(
             "--resetTable",
@@ -145,9 +143,7 @@ class Command(BaseCommand):
                 """
             )
 
-    def get_domain_user_dict(
-        self, domain_statuses_filename: str, sep: str
-    ) -> defaultdict[str, str]:
+    def get_domain_user_dict(self, domain_statuses_filename: str, sep: str) -> defaultdict[str, str]:
         """Creates a mapping of domain name -> status"""
         domain_status_dictionary = defaultdict(str)
         logger.info("Reading domain statuses data file %s", domain_statuses_filename)
@@ -159,9 +155,7 @@ class Command(BaseCommand):
         logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
         return domain_status_dictionary
 
-    def get_user_emails_dict(
-        self, contacts_filename: str, sep
-    ) -> defaultdict[str, str]:
+    def get_user_emails_dict(self, contacts_filename: str, sep) -> defaultdict[str, str]:
         """Creates mapping of userId -> emails"""
         user_emails_dictionary = defaultdict(str)
         logger.info("Reading contacts data file %s", contacts_filename)
@@ -210,19 +204,13 @@ class Command(BaseCommand):
         total_duplicate_domains = len(duplicate_domains)
         total_users_without_email = len(users_without_email)
         if total_users_without_email > 0:
-            users_without_email_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domain_user_combos))
-            )
+            users_without_email_as_string = "{}".format(", ".join(map(str, duplicate_domain_user_combos)))
             logger.warning(
                 f"{TerminalColors.YELLOW} No e-mails found for users: {users_without_email_as_string}"  # noqa
             )
         if total_duplicate_pairs > 0 or total_duplicate_domains > 0:
-            duplicate_pairs_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domain_user_combos))
-            )
-            duplicate_domains_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domains))
-            )
+            duplicate_pairs_as_string = "{}".format(", ".join(map(str, duplicate_domain_user_combos)))
+            duplicate_domains_as_string = "{}".format(", ".join(map(str, duplicate_domains)))
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -240,9 +228,7 @@ class Command(BaseCommand):
                     {TerminalColors.ENDC}"""
             )
 
-    def print_summary_status_findings(
-        self, domains_without_status: list[str], outlier_statuses: list[str]
-    ):
+    def print_summary_status_findings(self, domains_without_status: list[str], outlier_statuses: list[str]):
         """Called at the end of the script execution to print out a summary of
         status anomolies in the imported Verisign data.  Currently, we check for:
         - domains without a status
@@ -252,9 +238,7 @@ class Command(BaseCommand):
         total_domains_without_status = len(domains_without_status)
         total_outlier_statuses = len(outlier_statuses)
         if total_domains_without_status > 0:
-            domains_without_status_as_string = "{}".format(
-                ", ".join(map(str, domains_without_status))
-            )
+            domains_without_status_as_string = "{}".format(", ".join(map(str, domains_without_status)))
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -268,9 +252,7 @@ class Command(BaseCommand):
             )
 
         if total_outlier_statuses > 0:
-            domains_without_status_as_string = "{}".format(
-                ", ".join(map(str, outlier_statuses))
-            )  # noqa
+            domains_without_status_as_string = "{}".format(", ".join(map(str, outlier_statuses)))  # noqa
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -445,9 +427,7 @@ class Command(BaseCommand):
 
         # STEP 1:
         # Create mapping of domain name -> status
-        domain_status_dictionary = self.get_domain_user_dict(
-            domain_statuses_filename, sep
-        )
+        domain_status_dictionary = self.get_domain_user_dict(domain_statuses_filename, sep)
 
         # STEP 2:
         # Create mapping of userId  -> email
@@ -542,12 +522,7 @@ class Command(BaseCommand):
                     None,
                 )
                 existing_domain_user_pair = next(
-                    (
-                        x
-                        for x in to_create
-                        if x.username == new_entry_email
-                        and x.domain_name == new_entry_domain_name
-                    ),
+                    (x for x in to_create if x.username == new_entry_email and x.domain_name == new_entry_domain_name),
                     None,
                 )
                 if existing_domain is not None:
@@ -618,10 +593,7 @@ class Command(BaseCommand):
                         )
 
                 # Check Parse limit and exit loop if needed
-                if (
-                    total_rows_parsed >= debug_max_entries_to_parse
-                    and debug_max_entries_to_parse != 0
-                ):
+                if total_rows_parsed >= debug_max_entries_to_parse and debug_max_entries_to_parse != 0:
                     logger.info(
                         f"{TerminalColors.YELLOW}"
                         f"----PARSE LIMIT REACHED.  HALTING PARSER.----"
@@ -630,6 +602,31 @@ class Command(BaseCommand):
                     break
 
         TransitionDomain.objects.bulk_create(to_create)
+        # Print a summary of findings (duplicate entries,
+        # missing data..etc.)
+        self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
+        self.print_summary_status_findings(domains_without_status, outlier_statuses)
+
+        logger.info(
+            f"""{TerminalColors.OKGREEN}
+            ============= FINISHED ===============
+            Created {total_new_entries} transition domain entries,
+            Updated {total_updated_domain_entries} transition domain entries
+
+            {TerminalColors.YELLOW}
+            ----- DUPLICATES FOUND -----
+            {len(duplicate_domain_user_combos)} DOMAIN - USER pairs
+            were NOT unique in the supplied data files.
+            {len(duplicate_domains)} DOMAINS were NOT unique in
+            the supplied data files.
+
+            ----- STATUSES -----
+            {len(domains_without_status)} DOMAINS had NO status (defaulted to READY).
+            {len(outlier_statuses)} Statuses were invalid (defaulted to READY).
+
+            {TerminalColors.ENDC}
+            """
+        )
 
         # Print a summary of findings (duplicate entries,
         # missing data..etc.)

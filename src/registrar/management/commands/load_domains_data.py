@@ -43,9 +43,7 @@ class Command(BaseCommand):
     help = "Load domain data from a delimited text file on stdin."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--sep", default="|", help="Separator character for data file"
-        )
+        parser.add_argument("--sep", default="|", help="Separator character for data file")
 
     def handle(self, *args, **options):
         separator_character = options.get("sep")

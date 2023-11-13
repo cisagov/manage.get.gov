@@ -10,9 +10,7 @@ from login_required import login_not_required
 from cachetools.func import ttl_cache
 
 
-DOMAIN_FILE_URL = (
-    "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
-)
+DOMAIN_FILE_URL = "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
 
 
 DOMAIN_API_MESSAGES = {
@@ -22,8 +20,7 @@ DOMAIN_API_MESSAGES = {
     "extra_dots": "Enter the .gov domain you want without any periods.",
     "unavailable": "That domain isn’t available. Try entering another one."
     " Contact us if you need help coming up with a domain.",
-    "invalid": "Enter a domain using only letters,"
-    " numbers, or hyphens (though we don't recommend using hyphens).",
+    "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
     "error": "Error finding domain availability.",
 }
@@ -82,24 +79,13 @@ def available(request, domain=""):
     DraftDomain = apps.get_model("registrar.DraftDomain")
     # validate that the given domain could be a domain name and fail early if
     # not.
-    if not (
-        DraftDomain.string_could_be_domain(domain)
-        or DraftDomain.string_could_be_domain(domain + ".gov")
-    ):
-        return JsonResponse(
-            {"available": False, "message": DOMAIN_API_MESSAGES["invalid"]}
-        )
+    if not (DraftDomain.string_could_be_domain(domain) or DraftDomain.string_could_be_domain(domain + ".gov")):
+        return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["invalid"]})
     # a domain is available if it is NOT in the list of current domains
     try:
         if check_domain_available(domain):
-            return JsonResponse(
-                {"available": True, "message": DOMAIN_API_MESSAGES["success"]}
-            )
+            return JsonResponse({"available": True, "message": DOMAIN_API_MESSAGES["success"]})
         else:
-            return JsonResponse(
-                {"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]}
-            )
+            return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]})
     except Exception:
-        return JsonResponse(
-            {"available": False, "message": DOMAIN_API_MESSAGES["error"]}
-        )
+        return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["error"]})

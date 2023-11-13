@@ -12,16 +12,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="domainapplication",
             name="federally_recognized_tribe",
-            field=models.BooleanField(
-                help_text="Is the tribe federally recognized", null=True
-            ),
+            field=models.BooleanField(help_text="Is the tribe federally recognized", null=True),
         ),
         migrations.AddField(
             model_name="domainapplication",
             name="state_recognized_tribe",
-            field=models.BooleanField(
-                help_text="Is the tribe recognized by a state", null=True
-            ),
+            field=models.BooleanField(help_text="Is the tribe recognized by a state", null=True),
         ),
         migrations.AddField(
             model_name="domainapplication",
