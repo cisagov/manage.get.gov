@@ -17,9 +17,9 @@ class Migration(migrations.Migration):
             field=django_fsm.FSMField(
                 choices=[
                     ("unknown", "Unknown"),
-                    ("dns needed", "Dns Needed"),
+                    ("dns needed", "DNS needed"),
                     ("ready", "Ready"),
-                    ("on hold", "On Hold"),
+                    ("on hold", "On hold"),
                     ("deleted", "Deleted"),
                 ],
                 default="unknown",
