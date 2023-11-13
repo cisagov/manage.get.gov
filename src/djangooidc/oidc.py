@@ -72,7 +72,9 @@ class Client(oic.Client):
         try:
             # discover and store the provider (OP) urls, etc
             self.provider_config(provider["srv_discovery_url"])
-            self.store_registration_info(RegistrationResponse(**provider["client_registration"]))
+            self.store_registration_info(
+                RegistrationResponse(**provider["client_registration"])
+            )
         except Exception as err:
             logger.error(err)
             logger.error(
@@ -167,7 +169,9 @@ class Client(oic.Client):
         if isinstance(authn_response, ErrorResponse):
             error = authn_response.get("error", "")
             if error == "login_required":
-                logger.warning("User was not logged in (%s), trying again for %s" % (error, state))
+                logger.warning(
+                    "User was not logged in (%s), trying again for %s" % (error, state)
+                )
                 return self.create_authn_request(session)
             else:
                 logger.error("Unable to process response %s for %s" % (error, state))
@@ -186,7 +190,9 @@ class Client(oic.Client):
 
         if self.behaviour.get("response_type") == "code":
             # need an access token to get user info (and to log the user out later)
-            self._request_token(authn_response["state"], authn_response["code"], session)
+            self._request_token(
+                authn_response["state"], authn_response["code"], session
+            )
 
         user_info = self._get_user_info(state, session)
 
@@ -210,7 +216,10 @@ class Client(oic.Client):
 
         # ErrorResponse is not raised, it is passed back...
         if isinstance(info_response, ErrorResponse):
-            logger.error("Unable to get user info (%s) for %s" % (info_response.get("error", ""), state))
+            logger.error(
+                "Unable to get user info (%s) for %s"
+                % (info_response.get("error", ""), state)
+            )
             raise o_e.AuthenticationFailed(locator=state)
 
         logger.debug("user info: %s" % info_response)
@@ -240,7 +249,10 @@ class Client(oic.Client):
 
         # ErrorResponse is not raised, it is passed back...
         if isinstance(token_response, ErrorResponse):
-            logger.error("Unable to get token (%s) for %s" % (token_response.get("error", ""), state))
+            logger.error(
+                "Unable to get token (%s) for %s"
+                % (token_response.get("error", ""), state)
+            )
             raise o_e.AuthenticationFailed(locator=state)
 
         logger.debug("token response %s" % token_response)

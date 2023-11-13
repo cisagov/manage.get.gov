@@ -42,7 +42,10 @@ class TestFormValidation(MockEppLib):
         form = CurrentSitesForm(data={"website": "nah"})
         self.assertEqual(
             form.errors["website"],
-            ["Enter your organization's current website in the required format, like www.city.com."],
+            [
+                "Enter your organization's current website in the required format, like"
+                " www.city.com."
+            ],
         )
 
     def test_website_valid(self):
@@ -79,7 +82,10 @@ class TestFormValidation(MockEppLib):
         form = DotGovDomainForm(data={"requested_domain": "underscores_forever"})
         self.assertEqual(
             form.errors["requested_domain"],
-            ["Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens)."],
+            [
+                "Enter a domain using only letters, numbers, or hyphens (though we"
+                " don't recommend using hyphens)."
+            ],
         )
 
     def test_authorizing_official_email_invalid(self):
@@ -181,7 +187,9 @@ class TestFormValidation(MockEppLib):
     def test_authorizing_official_phone_invalid(self):
         """Must be a valid phone number."""
         form = AuthorizingOfficialForm(data={"phone": "boss@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
+        self.assertTrue(
+            form.errors["phone"][0].startswith("Enter a valid phone number ")
+        )
 
     def test_your_contact_email_invalid(self):
         """must be a valid email address."""
@@ -194,7 +202,9 @@ class TestFormValidation(MockEppLib):
     def test_your_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = YourContactForm(data={"phone": "boss@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
+        self.assertTrue(
+            form.errors["phone"][0].startswith("Enter a valid phone number ")
+        )
 
     def test_other_contact_email_invalid(self):
         """must be a valid email address."""
@@ -207,14 +217,19 @@ class TestFormValidation(MockEppLib):
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = OtherContactsForm(data={"phone": "boss@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
+        self.assertTrue(
+            form.errors["phone"][0].startswith("Enter a valid phone number ")
+        )
 
     def test_requirements_form_blank(self):
         """Requirements box unchecked is an error."""
         form = RequirementsForm(data={})
         self.assertEqual(
             form.errors["is_policy_acknowledged"],
-            ["Check the box if you read and agree to the requirements for operating .gov domains."],
+            [
+                "Check the box if you read and agree to the requirements for"
+                " operating .gov domains."
+            ],
         )
 
     def test_requirements_form_unchecked(self):
@@ -222,13 +237,23 @@ class TestFormValidation(MockEppLib):
         form = RequirementsForm(data={"is_policy_acknowledged": False})
         self.assertEqual(
             form.errors["is_policy_acknowledged"],
-            ["Check the box if you read and agree to the requirements for operating .gov domains."],
+            [
+                "Check the box if you read and agree to the requirements for"
+                " operating .gov domains."
+            ],
         )
 
     def test_tribal_government_unrecognized(self):
         """Not state or federally recognized is an error."""
-        form = TribalGovernmentForm(data={"state_recognized": False, "federally_recognized": False})
-        self.assertTrue(any("tell us more about your tribe" in error for error in form.non_field_errors()))
+        form = TribalGovernmentForm(
+            data={"state_recognized": False, "federally_recognized": False}
+        )
+        self.assertTrue(
+            any(
+                "tell us more about your tribe" in error
+                for error in form.non_field_errors()
+            )
+        )
 
 
 class TestContactForm(TestCase):

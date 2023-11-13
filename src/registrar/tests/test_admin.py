@@ -67,7 +67,9 @@ class TestDomainAdmin(MockEppLib):
         # for our actual application
         self.assertContains(response, "Federal", count=4)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
+        self.assertContains(
+            response, '<td class="field-organization_type">Federal</td>', count=1
+        )
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -316,7 +318,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         super().setUp()
         self.site = AdminSite()
         self.factory = RequestFactory()
-        self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
+        self.admin = DomainApplicationAdmin(
+            model=DomainApplication, admin_site=self.site
+        )
         self.superuser = create_superuser()
         self.staffuser = create_user()
 
@@ -331,7 +335,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         # for our actual application
         self.assertContains(response, "Federal", count=4)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
+        self.assertContains(
+            response, '<td class="field-organization_type">Federal</td>', count=1
+        )
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -349,7 +355,9 @@ class TestDomainApplicationAdmin(MockEppLib):
             application = completed_application()
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+            )
 
             # Modify the application's property
             application.status = DomainApplication.SUBMITTED
@@ -390,7 +398,9 @@ class TestDomainApplicationAdmin(MockEppLib):
             application = completed_application(status=DomainApplication.SUBMITTED)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+            )
 
             # Modify the application's property
             application.status = DomainApplication.IN_REVIEW
@@ -431,7 +441,9 @@ class TestDomainApplicationAdmin(MockEppLib):
             application = completed_application(status=DomainApplication.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+            )
 
             # Modify the application's property
             application.status = DomainApplication.APPROVED
@@ -467,7 +479,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         application = completed_application(status=DomainApplication.IN_REVIEW)
 
         # Create a mock request
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
 
         # Modify the application's property
         application.status = DomainApplication.APPROVED
@@ -476,7 +490,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.admin.save_model(request, application, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
-        self.assertEqual(application.requested_domain.name, application.approved_domain.name)
+        self.assertEqual(
+            application.requested_domain.name, application.approved_domain.name
+        )
 
     @boto3_mocking.patching
     def test_save_model_sends_action_needed_email(self):
@@ -492,7 +508,9 @@ class TestDomainApplicationAdmin(MockEppLib):
             application = completed_application(status=DomainApplication.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+            )
 
             # Modify the application's property
             application.status = DomainApplication.ACTION_NEEDED
@@ -511,7 +529,10 @@ class TestDomainApplicationAdmin(MockEppLib):
         email_body = email_content["Simple"]["Body"]["Text"]["Data"]
 
         # Assert or perform other checks on the email details
-        expected_string = "We've identified an action needed to complete the review of your .gov domain request."
+        expected_string = (
+            "We've identified an action needed to complete the "
+            "review of your .gov domain request."
+        )
         self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(to_email, EMAIL)
         self.assertIn(expected_string, email_body)
@@ -533,7 +554,9 @@ class TestDomainApplicationAdmin(MockEppLib):
             application = completed_application(status=DomainApplication.IN_REVIEW)
 
             # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request = self.factory.post(
+                "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+            )
 
             # Modify the application's property
             application.status = DomainApplication.REJECTED
@@ -569,7 +592,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         application = completed_application(status=DomainApplication.IN_REVIEW)
 
         # Create a mock request
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
 
         # Modify the application's property
         application.status = DomainApplication.INELIGIBLE
@@ -674,7 +699,8 @@ class TestDomainApplicationAdmin(MockEppLib):
             # Assert that the error message was called with the correct argument
             mock_error.assert_called_once_with(
                 request,
-                "This action is not permitted for applications with a restricted creator.",
+                "This action is not permitted for applications "
+                + "with a restricted creator.",
             )
 
         # Assert that the status has not changed
@@ -688,7 +714,9 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         with patch("django.contrib.messages.warning") as mock_warning:
             # Create a request object with a superuser
-            request = self.factory.get("/admin/your_app/domainapplication/{}/change/".format(application.pk))
+            request = self.factory.get(
+                "/admin/your_app/domainapplication/{}/change/".format(application.pk)
+            )
             request.user = self.superuser
 
             self.admin.display_restricted_warning(request, application)
@@ -707,7 +735,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         application.save()
 
         # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
         request.user = self.superuser
 
         # Define a custom implementation for is_active
@@ -734,12 +764,16 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
-        domain_information = DomainInformation.objects.create(creator=self.superuser, domain=domain)
+        domain_information = DomainInformation.objects.create(
+            creator=self.superuser, domain=domain
+        )
         application.approved_domain = domain
         application.save()
 
         # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
         request.user = self.superuser
 
         # Define a custom implementation for is_active
@@ -777,7 +811,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         application.save()
 
         # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
         request.user = self.superuser
 
         # Define a custom implementation for is_active
@@ -804,12 +840,16 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
-        domain_information = DomainInformation.objects.create(creator=self.superuser, domain=domain)
+        domain_information = DomainInformation.objects.create(
+            creator=self.superuser, domain=domain
+        )
         application.approved_domain = domain
         application.save()
 
         # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(application.pk)
+        )
         request.user = self.superuser
 
         # Define a custom implementation for is_active
@@ -972,13 +1012,17 @@ class AuditedAdminTest(TestCase):
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
 
-    def order_by_desired_field_helper(self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names):
+    def order_by_desired_field_helper(
+        self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names
+    ):
         formatted_sort_fields = []
         for obj in obj_names:
             formatted_sort_fields.append("{}__{}".format(field_name, obj))
 
         ordered_list = list(
-            obj_to_sort.get_queryset(request).order_by(*formatted_sort_fields).values_list(*formatted_sort_fields)
+            obj_to_sort.get_queryset(request)
+            .order_by(*formatted_sort_fields)
+            .values_list(*formatted_sort_fields)
         )
 
         return ordered_list
@@ -996,7 +1040,9 @@ class AuditedAdminTest(TestCase):
         applications = multiple_unalphabetical_domain_objects("application")
 
         # Create a mock request
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(applications[0].pk))
+        request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
+        )
 
         model_admin = AuditedAdmin(DomainApplication, self.site)
 
@@ -1012,8 +1058,12 @@ class AuditedAdminTest(TestCase):
                 sorted_fields = ["first_name", "last_name"]
             # We want both of these to be lists, as it is richer test wise.
 
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
-            current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
+            desired_order = self.order_by_desired_field_helper(
+                model_admin, request, field.name, *sorted_fields
+            )
+            current_sort_order = list(
+                model_admin.formfield_for_foreignkey(field, request).queryset
+            )
 
             # Conforms to the same object structure as desired_order
             current_sort_order_coerced_type = []
@@ -1051,7 +1101,9 @@ class AuditedAdminTest(TestCase):
         applications = multiple_unalphabetical_domain_objects("information")
 
         # Create a mock request
-        request = self.factory.post("/admin/registrar/domaininformation/{}/change/".format(applications[0].pk))
+        request = self.factory.post(
+            "/admin/registrar/domaininformation/{}/change/".format(applications[0].pk)
+        )
 
         model_admin = AuditedAdmin(DomainInformation, self.site)
 
@@ -1069,8 +1121,12 @@ class AuditedAdminTest(TestCase):
                 sorted_fields = ["first_name", "last_name"]
                 field_obj = field
             # We want both of these to be lists, as it is richer test wise.
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field_obj.name, *sorted_fields)
-            current_sort_order = list(model_admin.formfield_for_foreignkey(field_obj, request).queryset)
+            desired_order = self.order_by_desired_field_helper(
+                model_admin, request, field_obj.name, *sorted_fields
+            )
+            current_sort_order = list(
+                model_admin.formfield_for_foreignkey(field_obj, request).queryset
+            )
 
             # Conforms to the same object structure as desired_order
             current_sort_order_coerced_type = []
@@ -1088,7 +1144,9 @@ class AuditedAdminTest(TestCase):
                 elif field_obj == DomainInformation.domain_application.field:
                     first = obj.requested_domain.name
 
-                name_tuple = self.coerced_fk_field_helper(first, last, field_obj.name, ":")
+                name_tuple = self.coerced_fk_field_helper(
+                    first, last, field_obj.name, ":"
+                )
                 if name_tuple is not None:
                     current_sort_order_coerced_type.append(name_tuple)
 
@@ -1105,7 +1163,9 @@ class AuditedAdminTest(TestCase):
         applications = multiple_unalphabetical_domain_objects("invitation")
 
         # Create a mock request
-        request = self.factory.post("/admin/registrar/domaininvitation/{}/change/".format(applications[0].pk))
+        request = self.factory.post(
+            "/admin/registrar/domaininvitation/{}/change/".format(applications[0].pk)
+        )
 
         model_admin = AuditedAdmin(DomainInvitation, self.site)
 
@@ -1117,8 +1177,12 @@ class AuditedAdminTest(TestCase):
             sorted_fields = ["name"]
             # We want both of these to be lists, as it is richer test wise.
 
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
-            current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
+            desired_order = self.order_by_desired_field_helper(
+                model_admin, request, field.name, *sorted_fields
+            )
+            current_sort_order = list(
+                model_admin.formfield_for_foreignkey(field, request).queryset
+            )
 
             # Conforms to the same object structure as desired_order
             current_sort_order_coerced_type = []
@@ -1140,7 +1204,9 @@ class AuditedAdminTest(TestCase):
                 "{} is not ordered alphabetically".format(field.name),
             )
 
-    def coerced_fk_field_helper(self, first_name, last_name, field_name, queryset_shorthand):
+    def coerced_fk_field_helper(
+        self, first_name, last_name, field_name, queryset_shorthand
+    ):
         """Handles edge cases for test cases"""
         if first_name is None:
             raise ValueError("Invalid value for first_name, must be defined")
@@ -1190,7 +1256,9 @@ class DomainSessionVariableTest(TestCase):
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
-        dummy_domain_information: Domain = generic_domain_object("information", "session")
+        dummy_domain_information: Domain = generic_domain_object(
+            "information", "session"
+        )
         dummy_domain_information.domain.pk = 1
 
         request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
@@ -1207,7 +1275,9 @@ class DomainSessionVariableTest(TestCase):
         dummy_domain_information = generic_domain_object("information", "session")
         request = self.get_factory_post_edit_domain(dummy_domain_information.domain.pk)
 
-        self.populate_session_values(request, dummy_domain_information.domain, preload_bad_data=True)
+        self.populate_session_values(
+            request, dummy_domain_information.domain, preload_bad_data=True
+        )
 
         self.assertEqual(request.session["analyst_action"], "edit")
         self.assertEqual(
@@ -1221,7 +1291,9 @@ class DomainSessionVariableTest(TestCase):
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
-        dummy_domain_information_list = multiple_unalphabetical_domain_objects("information")
+        dummy_domain_information_list = multiple_unalphabetical_domain_objects(
+            "information"
+        )
         for item in dummy_domain_information_list:
             request = self.get_factory_post_edit_domain(item.domain.pk)
             self.populate_session_values(request, item.domain)

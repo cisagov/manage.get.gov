@@ -13,7 +13,7 @@
   <h1>Manage your domains</h2>
 
   <p class="margin-top-4">
-    {% if IS_PRODUCTION %}
+    {% if is_production %}
     <a href="javascript:void(0)" 
     class="usa-button usa-tooltip disabled-link"
     data-position="right"
@@ -139,7 +139,7 @@
     ></div>
     {% else %}
     <p>You don't have any active domain requests right now</p>
-    <!-- <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p> -->
+    <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p>
     {% endif %}
   </section>
 

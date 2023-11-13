@@ -95,7 +95,9 @@ class EPPLibWrapper:
 
         try:
             if not self.pool_status.connection_success:
-                raise LoginError("Couldn't connect to the registry after three attempts")
+                raise LoginError(
+                    "Couldn't connect to the registry after three attempts"
+                )
             with self._pool.get() as connection:
                 response = connection.send(command)
         except Timeout as t:
@@ -237,4 +239,6 @@ try:
     logger.info("registry client initialized")
 except Exception:
     CLIENT = None  # type: ignore
-    logger.warning("Unable to configure epplib. Registrar cannot contact registry.", exc_info=True)
+    logger.warning(
+        "Unable to configure epplib. Registrar cannot contact registry.", exc_info=True
+    )

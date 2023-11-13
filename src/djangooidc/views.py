@@ -92,7 +92,11 @@ def logout(request, next_page=None):
             and len(CLIENT.registration_response["post_logout_redirect_uris"]) > 0
         ):
             request_args.update(
-                {"post_logout_redirect_uri": CLIENT.registration_response["post_logout_redirect_uris"][0]}
+                {
+                    "post_logout_redirect_uri": CLIENT.registration_response[
+                        "post_logout_redirect_uris"
+                    ][0]
+                }
             )
 
         url = CLIENT.provider_info["end_session_endpoint"]

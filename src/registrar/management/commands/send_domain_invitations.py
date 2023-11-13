@@ -83,7 +83,10 @@ class Command(BaseCommand):
             # domains_with_errors
             try:
                 # if prior username does not match current username
-                if not email_context["email"] or email_context["email"] != transition_domain.username:
+                if (
+                    not email_context["email"]
+                    or email_context["email"] != transition_domain.username
+                ):
                     # if not first in list of transition_domains
                     if email_context["email"]:
                         # append the email context to the emails_to_send array
@@ -93,8 +96,12 @@ class Command(BaseCommand):
                 email_context["domains"].append(transition_domain.domain_name)
             except Exception as err:
                 # error condition if domain not in database
-                self.domains_with_errors.append(copy.deepcopy(transition_domain.domain_name))
-                logger.error(f"error retrieving domain {transition_domain.domain_name}: {err}")
+                self.domains_with_errors.append(
+                    copy.deepcopy(transition_domain.domain_name)
+                )
+                logger.error(
+                    f"error retrieving domain {transition_domain.domain_name}: {err}"
+                )
         # if there are at least one more transition domains than errors,
         # then append one more item
         if len(self.transition_domains) > len(self.domains_with_errors):

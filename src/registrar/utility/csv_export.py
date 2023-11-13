@@ -10,25 +10,37 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
     # write columns headers to writer
     writer.writerow(columns)
 
-    domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
+    domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(
+        *sort_fields
+    )
     for domainInfo in domainInfos:
-        security_contacts = domainInfo.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
+        security_contacts = domainInfo.domain.contacts.filter(
+            contact_type=PublicContact.ContactTypeChoices.SECURITY
+        )
 
         # create a dictionary of fields which can be included in output
         FIELDS = {
             "Domain name": domainInfo.domain.name,
-            "Domain type": domainInfo.get_organization_type_display() + " - " + domainInfo.get_federal_type_display()
+            "Domain type": domainInfo.get_organization_type_display()
+            + " - "
+            + domainInfo.get_federal_type_display()
             if domainInfo.federal_type
             else domainInfo.get_organization_type_display(),
             "Agency": domainInfo.federal_agency,
             "Organization name": domainInfo.organization_name,
             "City": domainInfo.city,
             "State": domainInfo.state_territory,
-            "AO": domainInfo.authorizing_official.first_name + " " + domainInfo.authorizing_official.last_name
+            "AO": domainInfo.authorizing_official.first_name
+            + " "
+            + domainInfo.authorizing_official.last_name
             if domainInfo.authorizing_official
             else " ",
-            "AO email": domainInfo.authorizing_official.email if domainInfo.authorizing_official else " ",
-            "Security Contact Email": security_contacts[0].email if security_contacts else " ",
+            "AO email": domainInfo.authorizing_official.email
+            if domainInfo.authorizing_official
+            else " ",
+            "Security Contact Email": security_contacts[0].email
+            if security_contacts
+            else " ",
             "Status": domainInfo.domain.state,
             "Expiration Date": domainInfo.domain.expiration_date,
         }

@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
             model_name="domain",
             name="expiration_date",
             field=models.DateField(
-                help_text="Duplication of registry's expiration date saved for ease of reporting",
+                help_text="Duplication of registry's expirationdate saved for ease of reporting",
                 null=True,
             ),
         ),

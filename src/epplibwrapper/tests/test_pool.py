@@ -103,7 +103,9 @@ class TestConnectionPool(TestCase):
                     ],
                     cl_id="gov2023-ote",
                     cr_id="gov2023-ote",
-                    cr_date=datetime.datetime(2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()),
+                    cr_date=datetime.datetime(
+                        2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()
+                    ),
                     up_id="gov2023-ote",
                     up_date=datetime.datetime(2023, 8, 17, 2, 3, 19, tzinfo=tzlocal()),
                     tr_date=None,
@@ -127,7 +129,9 @@ class TestConnectionPool(TestCase):
 
         # Mock what happens inside the "with"
         with ExitStack() as stack:
-            stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
+            stack.enter_context(
+                patch.object(EPPConnectionPool, "_create_socket", self.fake_socket)
+            )
             stack.enter_context(patch.object(Socket, "connect", self.fake_client))
             stack.enter_context(patch.object(SocketTransport, "send", self.fake_send))
             stack.enter_context(patch.object(SocketTransport, "receive", fake_receive))
@@ -172,7 +176,9 @@ class TestConnectionPool(TestCase):
                     ],
                     cl_id="gov2023-ote",
                     cr_id="gov2023-ote",
-                    cr_date=datetime.datetime(2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()),
+                    cr_date=datetime.datetime(
+                        2023, 8, 15, 23, 56, 36, tzinfo=tzlocal()
+                    ),
                     up_id="gov2023-ote",
                     up_date=datetime.datetime(2023, 8, 17, 2, 3, 19, tzinfo=tzlocal()),
                     tr_date=None,
@@ -196,7 +202,9 @@ class TestConnectionPool(TestCase):
 
         # Mock what happens inside the "with"
         with ExitStack() as stack:
-            stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
+            stack.enter_context(
+                patch.object(EPPConnectionPool, "_create_socket", self.fake_socket)
+            )
             stack.enter_context(patch.object(Socket, "connect", self.fake_client))
             stack.enter_context(patch.object(SocketTransport, "send", self.fake_send))
             stack.enter_context(patch.object(SocketTransport, "receive", fake_receive))
@@ -210,7 +218,9 @@ class TestConnectionPool(TestCase):
             # that they cannot connect to EPP
             with self.assertRaises(RegistryError):
                 expected = "InfoDomain failed to execute due to a connection error."
-                result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
+                result = registry.send(
+                    commands.InfoDomain(name="test.gov"), cleaned=True
+                )
                 self.assertEqual(result, expected)
 
             # A subsequent command should be successful, as the pool restarts
@@ -230,7 +240,9 @@ class TestConnectionPool(TestCase):
         right as we send a command."""
 
         with ExitStack() as stack:
-            stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
+            stack.enter_context(
+                patch.object(EPPConnectionPool, "_create_socket", self.fake_socket)
+            )
             stack.enter_context(patch.object(Socket, "connect", self.fake_client))
 
             # Pool should be running
@@ -240,5 +252,7 @@ class TestConnectionPool(TestCase):
             # Try to send a command out - should fail
             with self.assertRaises(RegistryError):
                 expected = "InfoDomain failed to execute due to a connection error."
-                result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
+                result = registry.send(
+                    commands.InfoDomain(name="test.gov"), cleaned=True
+                )
                 self.assertEqual(result, expected)

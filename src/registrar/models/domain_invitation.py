@@ -57,7 +57,9 @@ class DomainInvitation(TimeStampedModel):
         except User.DoesNotExist:
             # should not happen because a matching user should exist before
             # we retrieve this invitation
-            raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
+            raise RuntimeError(
+                "Cannot find the user to retrieve this domain invitation."
+            )
 
         # and create a role for that user on this domain
         _, created = UserDomainRole.objects.get_or_create(
@@ -66,4 +68,6 @@ class DomainInvitation(TimeStampedModel):
         if not created:
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
-            logger.warn("Invitation %s was retrieved for a role that already exists.", self)
+            logger.warn(
+                "Invitation %s was retrieved for a role that already exists.", self
+            )

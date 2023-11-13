@@ -93,11 +93,19 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     # We can use a dictionary with step names and callables that return booleans
     # to show or hide particular steps based on the state of the process.
     WIZARD_CONDITIONS = {
-        Step.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
+        Step.ORGANIZATION_FEDERAL: lambda w: w.from_model(
+            "show_organization_federal", False
+        ),
         Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
-        Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
-        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
-        Step.NO_OTHER_CONTACTS: lambda w: w.from_model("show_no_other_contacts_rationale", False),
+        Step.ORGANIZATION_ELECTION: lambda w: w.from_model(
+            "show_organization_election", False
+        ),
+        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model(
+            "show_about_your_organization", False
+        ),
+        Step.NO_OTHER_CONTACTS: lambda w: w.from_model(
+            "show_no_other_contacts_rationale", False
+        ),
     }
 
     def __init__(self):

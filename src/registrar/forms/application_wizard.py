@@ -50,7 +50,9 @@ class RegistrarForm(forms.Form):
         """Returns a dict of form field values gotten from `obj`."""
         if obj is None:
             return {}
-        return {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
+        return {
+            name: getattr(obj, name) for name in cls.declared_fields.keys()
+        }  # type: ignore
 
 
 class RegistrarFormSet(forms.BaseFormSet):
@@ -176,7 +178,10 @@ class TribalGovernmentForm(RegistrarForm):
 
     def clean(self):
         """Needs to be either state or federally recognized."""
-        if not (self.cleaned_data["federally_recognized_tribe"] or self.cleaned_data["state_recognized_tribe"]):
+        if not (
+            self.cleaned_data["federally_recognized_tribe"]
+            or self.cleaned_data["state_recognized_tribe"]
+        ):
             raise forms.ValidationError(
                 # no sec because we are using it to include an internal URL
                 # into a link. There should be no user-facing input in the
@@ -198,7 +203,11 @@ class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
         choices=DomainApplication.BranchChoices.choices,
         widget=forms.RadioSelect,
-        error_messages={"required": ("Select the part of the federal government your organization is in.")},
+        error_messages={
+            "required": (
+                "Select the part of the federal government your organization is in."
+            )
+        },
     )
 
 
@@ -218,7 +227,10 @@ class OrganizationElectionForm(RegistrarForm):
         is_election_board = self.cleaned_data["is_election_board"]
         if is_election_board is None:
             raise forms.ValidationError(
-                ("Select “Yes” if you represent an election office. Select “No” if you don’t."),
+                (
+                    "Select “Yes” if you represent an election office. Select “No” if"
+                    " you don’t."
+                ),
                 code="required",
             )
         return is_election_board
@@ -248,13 +260,18 @@ class OrganizationContactForm(RegistrarForm):
     )
     city = forms.CharField(
         label="City",
-        error_messages={"required": "Enter the city where your organization is located."},
+        error_messages={
+            "required": "Enter the city where your organization is located."
+        },
     )
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
         error_messages={
-            "required": ("Select the state, territory, or military post where your organization is located.")
+            "required": (
+                "Select the state, territory, or military post where your organization"
+                " is located."
+            )
         },
     )
     zipcode = forms.CharField(
@@ -303,7 +320,9 @@ class AboutYourOrganizationForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        error_messages={"required": ("Enter more information about your organization.")},
+        error_messages={
+            "required": ("Enter more information about your organization.")
+        },
     )
 
 
@@ -327,7 +346,11 @@ class AuthorizingOfficialForm(RegistrarForm):
 
     first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": ("Enter the first name / given name of your authorizing official.")},
+        error_messages={
+            "required": (
+                "Enter the first name / given name of your authorizing official."
+            )
+        },
     )
     middle_name = forms.CharField(
         required=False,
@@ -335,7 +358,11 @@ class AuthorizingOfficialForm(RegistrarForm):
     )
     last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": ("Enter the last name / family name of your authorizing official.")},
+        error_messages={
+            "required": (
+                "Enter the last name / family name of your authorizing official."
+            )
+        },
     )
     title = forms.CharField(
         label="Title or role in your organization",
@@ -348,11 +375,17 @@ class AuthorizingOfficialForm(RegistrarForm):
     )
     email = forms.EmailField(
         label="Email",
-        error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": (
+                "Enter an email address in the required format, like name@example.com."
+            )
+        },
     )
     phone = PhoneNumberField(
         label="Phone",
-        error_messages={"required": "Enter the phone number for your authorizing official."},
+        error_messages={
+            "required": "Enter the phone number for your authorizing official."
+        },
     )
 
 
@@ -361,7 +394,10 @@ class CurrentSitesForm(RegistrarForm):
         required=False,
         label="Public website",
         error_messages={
-            "invalid": ("Enter your organization's current website in the required format, like www.city.com.")
+            "invalid": (
+                "Enter your organization's current website in the required format, like"
+                " www.city.com."
+            )
         },
     )
 
@@ -374,7 +410,9 @@ class BaseCurrentSitesFormSet(RegistrarFormSet):
         return website.strip() == ""
 
     def to_database(self, obj: DomainApplication):
-        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(
+            obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create
+        )
 
     @classmethod
     def from_database(cls, obj):
@@ -396,9 +434,13 @@ class AlternativeDomainForm(RegistrarForm):
             requested = self.cleaned_data.get("alternative_domain", None)
             validated = DraftDomain.validate(requested, blank_ok=True)
         except errors.ExtraDotsError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
+            raise forms.ValidationError(
+                DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots"
+            )
         except errors.DomainUnavailableError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+            raise forms.ValidationError(
+                DOMAIN_API_MESSAGES["unavailable"], code="unavailable"
+            )
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
@@ -429,7 +471,9 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
             return {}
 
     def to_database(self, obj: DomainApplication):
-        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(
+            obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create
+        )
 
     @classmethod
     def on_fetch(cls, query):
@@ -479,11 +523,17 @@ class DotGovDomainForm(RegistrarForm):
             requested = self.cleaned_data.get("requested_domain", None)
             validated = DraftDomain.validate(requested)
         except errors.BlankValueError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["required"], code="required")
+            raise forms.ValidationError(
+                DOMAIN_API_MESSAGES["required"], code="required"
+            )
         except errors.ExtraDotsError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
+            raise forms.ValidationError(
+                DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots"
+            )
         except errors.DomainUnavailableError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+            raise forms.ValidationError(
+                DOMAIN_API_MESSAGES["unavailable"], code="unavailable"
+            )
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
@@ -501,7 +551,9 @@ class PurposeForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        error_messages={"required": "Describe how you'll use the .gov domain you’re requesting."},
+        error_messages={
+            "required": "Describe how you'll use the .gov domain you’re requesting."
+        },
     )
 
 
@@ -538,12 +590,20 @@ class YourContactForm(RegistrarForm):
     title = forms.CharField(
         label="Title or role in your organization",
         error_messages={
-            "required": ("Enter your title or role in your organization (e.g., Chief Information Officer).")
+            "required": (
+                "Enter your title or role in your organization (e.g., Chief Information"
+                " Officer)."
+            )
         },
     )
     email = forms.EmailField(
         label="Email",
-        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": (
+                "Enter your email address in the required format, like"
+                " name@example.com."
+            )
+        },
     )
     phone = PhoneNumberField(
         label="Phone",
@@ -554,7 +614,9 @@ class YourContactForm(RegistrarForm):
 class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": "Enter the first name / given name of this contact."},
+        error_messages={
+            "required": "Enter the first name / given name of this contact."
+        },
     )
     middle_name = forms.CharField(
         required=False,
@@ -562,19 +624,26 @@ class OtherContactsForm(RegistrarForm):
     )
     last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": "Enter the last name / family name of this contact."},
+        error_messages={
+            "required": "Enter the last name / family name of this contact."
+        },
     )
     title = forms.CharField(
         label="Title or role in your organization",
         error_messages={
             "required": (
-                "Enter the title or role in your organization of this contact (e.g., Chief Information Officer)."
+                "Enter the title or role in your organization of this contact (e.g.,"
+                " Chief Information Officer)."
             )
         },
     )
     email = forms.EmailField(
         label="Email",
-        error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": (
+                "Enter an email address in the required format, like name@example.com."
+            )
+        },
     )
     phone = PhoneNumberField(
         label="Phone",
@@ -590,7 +659,9 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         return all(empty)
 
     def to_database(self, obj: DomainApplication):
-        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(
+            obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create
+        )
 
     @classmethod
     def from_database(cls, obj):
@@ -635,6 +706,9 @@ class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
         label="I read and agree to the requirements for operating .gov domains.",
         error_messages={
-            "required": ("Check the box if you read and agree to the requirements for operating .gov domains.")
+            "required": (
+                "Check the box if you read and agree to the requirements for"
+                " operating .gov domains."
+            )
         },
     )

@@ -59,6 +59,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="userdomainrole",
-            constraint=models.UniqueConstraint(fields=("user", "domain"), name="unique_user_domain_role"),
+            constraint=models.UniqueConstraint(
+                fields=("user", "domain"), name="unique_user_domain_role"
+            ),
         ),
     ]

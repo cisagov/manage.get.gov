@@ -49,7 +49,9 @@ class DomainPermission(PermissionsLoginMixin):
             return True
 
         # user needs to have a role on the domain
-        if not UserDomainRole.objects.filter(user=self.request.user, domain__id=pk).exists():
+        if not UserDomainRole.objects.filter(
+            user=self.request.user, domain__id=pk
+        ).exists():
             return False
 
         # if we need to check more about the nature of role, do it here.
@@ -131,7 +133,9 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         # user needs to be the creator of the application
         # this query is empty if there isn't a domain application with this
         # id and this user as creator
-        if not DomainApplication.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
+        if not DomainApplication.objects.filter(
+            creator=self.request.user, id=self.kwargs["pk"]
+        ).exists():
             return False
 
         return True

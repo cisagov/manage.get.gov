@@ -125,7 +125,9 @@ class EPPConnectionPool(ConnectionPool):
 
         # Open multiple connections
         for i in range(self.size):
-            self.greenlets.append(gevent.spawn_later(self.spawn_frequency * i, self._addOne))
+            self.greenlets.append(
+                gevent.spawn_later(self.spawn_frequency * i, self._addOne)
+            )
 
         # Open a "keepalive" thread if we want to ping open connections
         if self.keepalive:

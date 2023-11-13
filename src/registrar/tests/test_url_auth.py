@@ -52,7 +52,9 @@ def iter_patterns(urlconf, patterns=None, namespace=None):
         if isinstance(pattern, URLPattern):
             viewname = pattern.name
             if viewname is None and namespace not in NAMESPACES_WITH_UNNAMED_VIEWS:
-                raise AssertionError(f"namespace {namespace} cannot contain unnamed views")
+                raise AssertionError(
+                    f"namespace {namespace} cannot contain unnamed views"
+                )
             if namespace and viewname is not None:
                 viewname = f"{namespace}:{viewname}"
             yield (viewname, pattern.pattern)
@@ -63,7 +65,9 @@ def iter_patterns(urlconf, patterns=None, namespace=None):
                 raise AssertionError("nested namespaces are not currently supported")
             if pattern.namespace in IGNORE_NAMESPACES:
                 continue
-            yield from iter_patterns(urlconf, pattern.url_patterns, namespace or pattern.namespace)
+            yield from iter_patterns(
+                urlconf, pattern.url_patterns, namespace or pattern.namespace
+            )
         else:
             raise AssertionError("unknown pattern class")
 
@@ -87,7 +91,9 @@ def iter_sample_urls(urlconf):
 
         for kwarg in named_groups:
             if kwarg not in SAMPLE_KWARGS:
-                raise AssertionError(f'Sample value for {kwarg} in pattern "{route}" not found')
+                raise AssertionError(
+                    f'Sample value for {kwarg} in pattern "{route}" not found'
+                )
             kwargs[kwarg] = SAMPLE_KWARGS[kwarg]
 
         url = reverse(viewname, args=args, kwargs=kwargs)
@@ -135,13 +141,15 @@ class TestURLAuth(TestCase):
             self.assertRegex(
                 redirect,
                 r"^\/openid\/login",
-                f"GET {url} should redirect to login or deny access, but instead " f"it redirects to {redirect}",
+                f"GET {url} should redirect to login or deny access, but instead "
+                f"it redirects to {redirect}",
             )
         elif code == 401 or code == 403:
             pass
         else:
             raise AssertionError(
-                f"GET {url} returned HTTP {code}, but should redirect to login or deny access",
+                f"GET {url} returned HTTP {code}, but should redirect to login or "
+                "deny access",
             )
 
     def test_login_required_all_urls(self):

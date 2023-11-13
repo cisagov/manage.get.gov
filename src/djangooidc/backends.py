@@ -49,13 +49,13 @@ class OpenIdConnectBackend(ModelBackend):
             user, created = UserModel.objects.update_or_create(**args)
             if created:
                 user = self.configure_user(user, **kwargs)
+                # run a newly created user's callback for a first-time login
+                user.first_login()
         else:
             try:
                 user = UserModel.objects.get_by_natural_key(username)
             except UserModel.DoesNotExist:
                 return None
-        # run this callback for a each login
-        user.on_each_login()
         return user
 
     def clean_username(self, username):

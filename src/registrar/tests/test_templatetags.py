@@ -23,12 +23,16 @@ class TestTemplateTags(TestCase):
         return Template(string).render(context)
 
     def test_public_site_url(self):
-        result = self._render_template("{% load url_helpers %}{% public_site_url 'directory/page' %}")
+        result = self._render_template(
+            "{% load url_helpers %}{% public_site_url 'directory/page' %}"
+        )
         self.assertTrue(result.startswith(settings.GETGOV_PUBLIC_SITE_URL))
         self.assertTrue(result.endswith("/directory/page"))
 
     def test_public_site_url_leading_slash(self):
-        result = self._render_template("{% load url_helpers %}{% public_site_url '/directory/page' %}")
+        result = self._render_template(
+            "{% load url_helpers %}{% public_site_url '/directory/page' %}"
+        )
         self.assertTrue(result.startswith(settings.GETGOV_PUBLIC_SITE_URL))
         # slash-slash host slash directory slash page
         self.assertEqual(result.count("/"), 4)
@@ -36,11 +40,17 @@ class TestTemplateTags(TestCase):
 
 class CustomFiltersTestCase(TestCase):
     def test_extract_value_filter(self):
-        html_input = '<input type="checkbox" name="_selected_action" value="123" id="label_123" class="action-select">'
+        html_input = (
+            '<input type="checkbox" name="_selected_action" value="123" '
+            'id="label_123" class="action-select">'
+        )
         result = extract_value(html_input)
         self.assertEqual(result, "123")
 
-        html_input = '<input type="checkbox" name="_selected_action" value="abc" id="label_123" class="action-select">'
+        html_input = (
+            '<input type="checkbox" name="_selected_action" value="abc" '
+            'id="label_123" class="action-select">'
+        )
         result = extract_value(html_input)
         self.assertEqual(result, "abc")
 
@@ -71,7 +81,9 @@ class CustomFiltersTestCase(TestCase):
 
         substring = "XYZ"
         result = slice_after(value, substring)
-        self.assertEqual(result, value)  # Should return the original value if substring not found
+        self.assertEqual(
+            result, value
+        )  # Should return the original value if substring not found
 
     def test_contains_checkbox_with_checkbox(self):
         # Test the filter when HTML list contains a checkbox

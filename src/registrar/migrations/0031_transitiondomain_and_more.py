@@ -95,12 +95,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="domainapplication",
             name="about_your_organization",
-            field=models.TextField(blank=True, help_text="Information about your organization", null=True),
+            field=models.TextField(
+                blank=True, help_text="Information about your organization", null=True
+            ),
         ),
         migrations.AddField(
             model_name="domaininformation",
             name="about_your_organization",
-            field=models.TextField(blank=True, help_text="Information about your organization", null=True),
+            field=models.TextField(
+                blank=True, help_text="Information about your organization", null=True
+            ),
         ),
         migrations.AlterField(
             model_name="domainapplication",

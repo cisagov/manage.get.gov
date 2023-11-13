@@ -85,8 +85,12 @@ class ViewsTest(TestCase):
         session.save()
         # mock
         mock_client.callback.side_effect = self.user_info
-        mock_client.registration_response = {"post_logout_redirect_uris": ["http://example.com/back"]}
-        mock_client.provider_info = {"end_session_endpoint": "http://example.com/log_me_out"}
+        mock_client.registration_response = {
+            "post_logout_redirect_uris": ["http://example.com/back"]
+        }
+        mock_client.provider_info = {
+            "end_session_endpoint": "http://example.com/log_me_out"
+        }
         mock_client.client_id = "TEST"
         # test
         with less_console_noise():

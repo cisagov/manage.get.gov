@@ -21,7 +21,9 @@ class Command(BaseCommand):
             "domain_contacts_filename",
             help="Data file with domain contact information",
         )
-        parser.add_argument("contacts_filename", help="Data file with contact information")
+        parser.add_argument(
+            "contacts_filename", help="Data file with contact information"
+        )
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
 

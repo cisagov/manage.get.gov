@@ -23,7 +23,9 @@ class Command(BaseCommand):
             default="txt",
             help="What file extensions to look for, like txt or gz",
         )
-        parser.add_argument("--directory", default="migrationdata", help="Desired directory")
+        parser.add_argument(
+            "--directory", default="migrationdata", help="Desired directory"
+        )
 
     def handle(self, **options):
         file_extension: str = options.get("file_extension").lstrip(".")

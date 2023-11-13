@@ -87,15 +87,28 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: ("Using your domain for a name server requires an IP address"),
-        NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: ("Name server address does not match domain name"),
-        NameserverErrorCodes.INVALID_IP: ("{}: Enter an IP address in the required format."),
-        NameserverErrorCodes.TOO_MANY_HOSTS: ("Too many hosts provided, you may not have more than 13 nameservers."),
-        NameserverErrorCodes.UNABLE_TO_UPDATE_DOMAIN: (
-            "Unable to update domain, changes were not applied. Check logs as a Registry Error is the likely cause"
+        NameserverErrorCodes.MISSING_IP: (
+            "Using your domain for a name server requires an IP address"
         ),
-        NameserverErrorCodes.MISSING_HOST: ("Name server must be provided to enter IP address."),
-        NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
+        NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: (
+            "Name server address does not match domain name"
+        ),
+        NameserverErrorCodes.INVALID_IP: (
+            "{}: Enter an IP address in the required format."
+        ),
+        NameserverErrorCodes.TOO_MANY_HOSTS: (
+            "Too many hosts provided, you may not have more than 13 nameservers."
+        ),
+        NameserverErrorCodes.UNABLE_TO_UPDATE_DOMAIN: (
+            "Unable to update domain, changes were not applied."
+            "Check logs as a Registry Error is the likely cause"
+        ),
+        NameserverErrorCodes.MISSING_HOST: (
+            "Name server must be provided to enter IP address."
+        ),
+        NameserverErrorCodes.INVALID_HOST: (
+            "Enter a name server in the required format, like ns1.example.com"
+        ),
     }
 
     def __init__(self, *args, code=None, nameserver=None, ip=None, **kwargs):

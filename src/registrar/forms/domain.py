@@ -95,17 +95,23 @@ class DomainNameserverForm(forms.Form):
             elif e.code == nsErrorCodes.MISSING_IP:
                 self.add_error(
                     "ip",
-                    NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=domain, ip=ip_list),
+                    NameserverError(
+                        code=nsErrorCodes.MISSING_IP, nameserver=domain, ip=ip_list
+                    ),
                 )
             elif e.code == nsErrorCodes.MISSING_HOST:
                 self.add_error(
                     "server",
-                    NameserverError(code=nsErrorCodes.MISSING_HOST, nameserver=domain, ip=ip_list),
+                    NameserverError(
+                        code=nsErrorCodes.MISSING_HOST, nameserver=domain, ip=ip_list
+                    ),
                 )
             elif e.code == nsErrorCodes.INVALID_HOST:
                 self.add_error(
                     "server",
-                    NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=server, ip=ip_list),
+                    NameserverError(
+                        code=nsErrorCodes.INVALID_HOST, nameserver=server, ip=ip_list
+                    ),
                 )
             else:
                 self.add_error("ip", str(e))
@@ -181,12 +187,17 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             "urbanization",
         ]
         error_messages = {
-            "federal_agency": {"required": "Select the federal agency for your organization."},
+            "federal_agency": {
+                "required": "Select the federal agency for your organization."
+            },
             "organization_name": {"required": "Enter the name of your organization."},
-            "address_line1": {"required": "Enter the street address of your organization."},
+            "address_line1": {
+                "required": "Enter the street address of your organization."
+            },
             "city": {"required": "Enter the city where your organization is located."},
             "state_territory": {
-                "required": "Select the state, territory, or military post where your organization is located."
+                "required": "Select the state, territory, or military post where your"
+                "organization  is located."
             },
         }
         widgets = {
@@ -194,7 +205,9 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             # state/territory because for these fields we are creating an individual
             # instance of the Select. For the other fields we use the for loop to set
             # the class's required attribute to true.
-            "federal_agency": forms.Select(attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES),
+            "federal_agency": forms.Select(
+                attrs={"required": True}, choices=DomainInformation.AGENCY_CHOICES
+            ),
             "organization_name": forms.TextInput,
             "address_line1": forms.TextInput,
             "address_line2": forms.TextInput,

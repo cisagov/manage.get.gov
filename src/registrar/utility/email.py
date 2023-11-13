@@ -13,7 +13,9 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def send_templated_email(template_name: str, subject_template_name: str, to_address: str, context={}):
+def send_templated_email(
+    template_name: str, subject_template_name: str, to_address: str, context={}
+):
     """Send an email built from a template to one email address.
 
     template_name and subject_template_name are relative to the same template

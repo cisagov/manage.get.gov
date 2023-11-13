@@ -12,7 +12,9 @@ class TestNameserverError(TestCase):
         nameserver = "nameserver val"
         expected = "Using your domain for a name server requires an IP address"
 
-        nsException = NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
+        nsException = NameserverError(
+            code=nsErrorCodes.MISSING_IP, nameserver=nameserver
+        )
         self.assertEqual(nsException.message, expected)
         self.assertEqual(nsException.code, nsErrorCodes.MISSING_IP)
 
@@ -22,7 +24,9 @@ class TestNameserverError(TestCase):
         nameserver = "nameserver val"
         expected = "Too many hosts provided, you may not have more than 13 nameservers."
 
-        nsException = NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS, nameserver=nameserver)
+        nsException = NameserverError(
+            code=nsErrorCodes.TOO_MANY_HOSTS, nameserver=nameserver
+        )
         self.assertEqual(nsException.message, expected)
         self.assertEqual(nsException.code, nsErrorCodes.TOO_MANY_HOSTS)
 
@@ -32,6 +36,8 @@ class TestNameserverError(TestCase):
         nameserver = "nameserver val"
 
         expected = f"{nameserver}: Enter an IP address in the required format."
-        nsException = NameserverError(code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip)
+        nsException = NameserverError(
+            code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip
+        )
         self.assertEqual(nsException.message, expected)
         self.assertEqual(nsException.code, nsErrorCodes.INVALID_IP)

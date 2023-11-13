@@ -48,7 +48,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="domainapplication",
             name="address_line2",
-            field=models.CharField(blank=True, help_text="Address line 2", max_length=15, null=True),
+            field=models.CharField(
+                blank=True, help_text="Address line 2", max_length=15, null=True
+            ),
         ),
         migrations.AddField(
             model_name="domainapplication",

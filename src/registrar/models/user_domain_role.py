@@ -44,5 +44,7 @@ class UserDomainRole(TimeStampedModel):
         constraints = [
             # a user can have only one role on a given domain, that is, there can
             # be only a single row with a certain (user, domain) pair.
-            models.UniqueConstraint(fields=["user", "domain"], name="unique_user_domain_role")
+            models.UniqueConstraint(
+                fields=["user", "domain"], name="unique_user_domain_role"
+            )
         ]
