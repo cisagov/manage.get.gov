@@ -2,6 +2,7 @@
 
 import logging
 import copy
+import time
 
 from django.core.management import BaseCommand
 from registrar.models import TransitionDomain
@@ -112,6 +113,9 @@ class Command(BaseCommand):
         if len(self.emails_to_send) > 0:
             for email_data in self.emails_to_send:
                 self.send_email(email_data)
+                # wait 1/10 second until sending the next email to keep us
+                # safely under a rate of 10 emails per second
+                time.sleep(0.1)
         else:
             logger.info("no emails to send")
 
