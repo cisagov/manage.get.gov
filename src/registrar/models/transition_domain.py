@@ -1,6 +1,7 @@
 from django.db import models
 from .utility.time_stamped_model import TimeStampedModel
 
+
 class StatusChoices(models.TextChoices):
     READY = "ready", "Ready"
     ON_HOLD = "on hold", "On Hold"

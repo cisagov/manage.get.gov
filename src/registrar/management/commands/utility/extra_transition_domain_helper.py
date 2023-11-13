@@ -287,10 +287,7 @@ class LoadExtraTransitionDomain:
 
     def log_add_or_changed_values(self, file_type, values_to_check, domain_name):
         for field_name, value in values_to_check:
-            str_exists = (
-                value is not None
-                and value.strip() != ""
-            )
+            str_exists = value is not None and value.strip() != ""
             # Logs if we either added to this property,
             # or modified it.
             self._add_or_change_message(
@@ -331,11 +328,7 @@ class LoadExtraTransitionDomain:
             ("email", transition_domain.email),
             ("phone", transition_domain.phone),
         ]
-        self.log_add_or_changed_values(
-            EnumFilenames.AUTHORITY_ADHOC,
-            changed_fields,
-            domain_name
-        )
+        self.log_add_or_changed_values(EnumFilenames.AUTHORITY_ADHOC, changed_fields, domain_name)
 
         return transition_domain
 

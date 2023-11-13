@@ -367,15 +367,11 @@ class Command(BaseCommand):
 
         contact = None
         contacts = Contact.objects.filter(email=email)
-        contact_count = contacts.count() 
+        contact_count = contacts.count()
         # Create a new one
         if contact_count == 0:
             contact = Contact(
-                first_name=first_name,
-                middle_name=middle_name,
-                last_name=last_name,
-                email=email,
-                phone=phone
+                first_name=first_name, middle_name=middle_name, last_name=last_name, email=email, phone=phone
             )
             contact.save()
         elif contact_count == 1:
@@ -427,7 +423,7 @@ class Command(BaseCommand):
             "domain": domain,
             "organization_name": transition_domain.organization_name,
             "creator": default_creator,
-            "authorizing_official": contact
+            "authorizing_official": contact,
         }
 
         if valid_org_type:
