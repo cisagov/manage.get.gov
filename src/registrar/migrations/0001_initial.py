@@ -32,9 +32,7 @@ class Migration(migrations.Migration):
                 ("password", models.CharField(max_length=128, verbose_name="password")),
                 (
                     "last_login",
-                    models.DateTimeField(
-                        blank=True, null=True, verbose_name="last login"
-                    ),
+                    models.DateTimeField(blank=True, null=True, verbose_name="last login"),
                 ),
                 (
                     "is_superuser",
@@ -47,35 +45,25 @@ class Migration(migrations.Migration):
                 (
                     "username",
                     models.CharField(
-                        error_messages={
-                            "unique": "A user with that username already exists."
-                        },
+                        error_messages={"unique": "A user with that username already exists."},
                         help_text="Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
                         max_length=150,
                         unique=True,
-                        validators=[
-                            django.contrib.auth.validators.UnicodeUsernameValidator()
-                        ],
+                        validators=[django.contrib.auth.validators.UnicodeUsernameValidator()],
                         verbose_name="username",
                     ),
                 ),
                 (
                     "first_name",
-                    models.CharField(
-                        blank=True, max_length=150, verbose_name="first name"
-                    ),
+                    models.CharField(blank=True, max_length=150, verbose_name="first name"),
                 ),
                 (
                     "last_name",
-                    models.CharField(
-                        blank=True, max_length=150, verbose_name="last name"
-                    ),
+                    models.CharField(blank=True, max_length=150, verbose_name="last name"),
                 ),
                 (
                     "email",
-                    models.EmailField(
-                        blank=True, max_length=254, verbose_name="email address"
-                    ),
+                    models.EmailField(blank=True, max_length=254, verbose_name="email address"),
                 ),
                 (
                     "is_staff",
@@ -95,9 +83,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "date_joined",
-                    models.DateTimeField(
-                        default=django.utils.timezone.now, verbose_name="date joined"
-                    ),
+                    models.DateTimeField(default=django.utils.timezone.now, verbose_name="date joined"),
                 ),
                 (
                     "groups",
@@ -145,9 +131,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "first_name",
-                    models.TextField(
-                        blank=True, db_index=True, help_text="First name", null=True
-                    ),
+                    models.TextField(blank=True, db_index=True, help_text="First name", null=True),
                 ),
                 (
                     "middle_name",
@@ -155,22 +139,16 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "last_name",
-                    models.TextField(
-                        blank=True, db_index=True, help_text="Last name", null=True
-                    ),
+                    models.TextField(blank=True, db_index=True, help_text="Last name", null=True),
                 ),
                 ("title", models.TextField(blank=True, help_text="Title", null=True)),
                 (
                     "email",
-                    models.TextField(
-                        blank=True, db_index=True, help_text="Email", null=True
-                    ),
+                    models.TextField(blank=True, db_index=True, help_text="Email", null=True),
                 ),
                 (
                     "phone",
-                    models.TextField(
-                        blank=True, db_index=True, help_text="Phone", null=True
-                    ),
+                    models.TextField(blank=True, db_index=True, help_text="Phone", null=True),
                 ),
             ],
         ),
@@ -280,21 +258,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "unit_type",
-                    models.CharField(
-                        blank=True, help_text="Unit type", max_length=15, null=True
-                    ),
+                    models.CharField(blank=True, help_text="Unit type", max_length=15, null=True),
                 ),
                 (
                     "unit_number",
-                    models.CharField(
-                        blank=True, help_text="Unit number", max_length=255, null=True
-                    ),
+                    models.CharField(blank=True, help_text="Unit number", max_length=255, null=True),
                 ),
                 (
                     "state_territory",
-                    models.CharField(
-                        blank=True, help_text="State/Territory", max_length=2, null=True
-                    ),
+                    models.CharField(blank=True, help_text="State/Territory", max_length=2, null=True),
                 ),
                 (
                     "zip_code",
@@ -308,9 +280,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "purpose",
-                    models.TextField(
-                        blank=True, help_text="Purpose of the domain", null=True
-                    ),
+                    models.TextField(blank=True, help_text="Purpose of the domain", null=True),
                 ),
                 (
                     "security_email",
@@ -323,9 +293,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "anything_else",
-                    models.TextField(
-                        blank=True, help_text="Anything else we should know?", null=True
-                    ),
+                    models.TextField(blank=True, help_text="Anything else we should know?", null=True),
                 ),
                 (
                     "acknowledged_policy",
@@ -337,9 +305,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "alternative_domains",
-                    models.ManyToManyField(
-                        blank=True, related_name="alternatives+", to="registrar.website"
-                    ),
+                    models.ManyToManyField(blank=True, related_name="alternatives+", to="registrar.website"),
                 ),
                 (
                     "authorizing_official",
@@ -361,9 +327,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "current_websites",
-                    models.ManyToManyField(
-                        blank=True, related_name="current+", to="registrar.website"
-                    ),
+                    models.ManyToManyField(blank=True, related_name="current+", to="registrar.website"),
                 ),
                 (
                     "investigator",

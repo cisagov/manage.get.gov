@@ -94,10 +94,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--migrationDirectory",
             default="migrationdata",
-            help=(
-                "The location of the files used for"
-                "load_transition_domain migration script"
-            ),
+            help=("The location of the files used for load_transition_domain migration script"),
         )
         parser.add_argument(
             "--migrationFilenames",
@@ -116,17 +113,13 @@ class Command(BaseCommand):
             information""",
         )
 
-        parser.add_argument(
-            "--sep", default="|", help="Delimiter character for the migration files"
-        )
+        parser.add_argument("--sep", default="|", help="Delimiter character for the migration files")
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
         parser.add_argument("--prompt", action=argparse.BooleanOptionalAction)
 
-        parser.add_argument(
-            "--limitParse", default=0, help="Sets max number of entries to load"
-        )
+        parser.add_argument("--limitParse", default=0, help="Sets max number of entries to load")
 
         parser.add_argument(
             "--resetTable",
@@ -173,9 +166,7 @@ class Command(BaseCommand):
             # Check Domain table
             matching_domains = Domain.objects.filter(name=transition_domain_name)
             # Check Domain Information table
-            matching_domain_informations = DomainInformation.objects.filter(
-                domain__name=transition_domain_name
-            )
+            matching_domain_informations = DomainInformation.objects.filter(domain__name=transition_domain_name)
             # Check Domain Invitation table
             matching_domain_invitations = DomainInvitation.objects.filter(
                 email=transition_domain_email.lower(),
@@ -215,15 +206,9 @@ class Command(BaseCommand):
         total_missing_domain_invitations = len(missing_domain_invites)
 
         missing_domains_as_string = "{}".format(", ".join(map(str, missing_domains)))
-        duplicate_domains_as_string = "{}".format(
-            ", ".join(map(str, duplicate_domains))
-        )
-        missing_domain_informations_as_string = "{}".format(
-            ", ".join(map(str, missing_domain_informations))
-        )
-        missing_domain_invites_as_string = "{}".format(
-            ", ".join(map(str, missing_domain_invites))
-        )
+        duplicate_domains_as_string = "{}".format(", ".join(map(str, duplicate_domains)))
+        missing_domain_informations_as_string = "{}".format(", ".join(map(str, missing_domain_informations)))
+        missing_domain_invites_as_string = "{}".format(", ".join(map(str, missing_domain_invites)))
 
         logger.info(
             f"""{TerminalColors.OKGREEN}

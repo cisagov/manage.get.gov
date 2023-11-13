@@ -55,9 +55,7 @@ def contains_checkbox(html_list):
 
 @register.filter
 def get_organization_long_name(organization_type):
-    organization_choices_dict = dict(
-        DomainApplication.OrganizationChoicesVerbose.choices
-    )
+    organization_choices_dict = dict(DomainApplication.OrganizationChoicesVerbose.choices)
     long_form_type = organization_choices_dict[organization_type]
     if long_form_type is None:
         logger.error("Organization type error, triggered by a template's custom filter")

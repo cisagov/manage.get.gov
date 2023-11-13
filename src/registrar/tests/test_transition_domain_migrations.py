@@ -85,9 +85,7 @@ class TestLogins(TestCase):
             # Check Domain table
             matching_domains = Domain.objects.filter(name=transition_domain_name)
             # Check Domain Information table
-            matching_domain_informations = DomainInformation.objects.filter(
-                domain__name=transition_domain_name
-            )
+            matching_domain_informations = DomainInformation.objects.filter(domain__name=transition_domain_name)
             # Check Domain Invitation table
             matching_domain_invitations = DomainInvitation.objects.filter(
                 email=transition_domain_email.lower(),
@@ -129,12 +127,8 @@ class TestLogins(TestCase):
 
         self.assertTrue(total_missing_domains == expected_missing_domains)
         self.assertTrue(total_duplicate_domains == expected_duplicate_domains)
-        self.assertTrue(
-            total_missing_domain_informations == expected_missing_domain_informations
-        )
-        self.assertTrue(
-            total_missing_domain_invitations == expected_missing_domain_invitations
-        )
+        self.assertTrue(total_missing_domain_informations == expected_missing_domain_informations)
+        self.assertTrue(total_missing_domain_invitations == expected_missing_domain_invitations)
 
         self.assertTrue(total_transition_domains == expected_total_transition_domains)
         self.assertTrue(total_domains == expected_total_domains)
@@ -234,9 +228,7 @@ class TestLogins(TestCase):
         # Simluate Logins
         for invite in DomainInvitation.objects.all():
             # get a user with this email address
-            user, user_created = User.objects.get_or_create(
-                email=invite.email, username=invite.email
-            )
+            user, user_created = User.objects.get_or_create(email=invite.email, username=invite.email)
             user.on_each_login()
 
         # Analyze the tables

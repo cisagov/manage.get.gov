@@ -104,9 +104,7 @@ class TestDomainApplication(TestCase):
     def test_status_fsm_submit_succeed(self):
         user, _ = User.objects.get_or_create()
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=user, requested_domain=site
-        )
+        application = DomainApplication.objects.create(creator=user, requested_domain=site)
         # no submitter email so this emits a log warning
         with less_console_noise():
             application.submit()
@@ -543,9 +541,7 @@ class TestPermissions(TestCase):
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(
-            creator=user, requested_domain=draft_domain
-        )
+        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
         # skip using the submit method
         application.status = DomainApplication.SUBMITTED
         application.approve()
@@ -562,9 +558,7 @@ class TestDomainInfo(TestCase):
     def test_approval_creates_info(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(
-            creator=user, requested_domain=draft_domain
-        )
+        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
         # skip using the submit method
         application.status = DomainApplication.SUBMITTED
         application.approve()
@@ -581,9 +575,7 @@ class TestInvitations(TestCase):
     def setUp(self):
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.email = "mayor@igorville.gov"
-        self.invitation, _ = DomainInvitation.objects.get_or_create(
-            email=self.email, domain=self.domain
-        )
+        self.invitation, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=self.domain)
         self.user, _ = User.objects.get_or_create(email=self.email)
 
         # clean out the roles each time
@@ -601,9 +593,7 @@ class TestInvitations(TestCase):
 
     def test_retrieve_existing_role_no_error(self):
         # make the overlapping role
-        UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
         # this is not an error but does produce a console warning
         with less_console_noise():
             self.invitation.retrieve()
@@ -627,9 +617,7 @@ class TestUser(TestCase):
         # clean out the roles each time
         UserDomainRole.objects.all().delete()
 
-        TransitionDomain.objects.get_or_create(
-            username="mayor@igorville.gov", domain_name=self.domain_name
-        )
+        TransitionDomain.objects.get_or_create(username="mayor@igorville.gov", domain_name=self.domain_name)
 
     def tearDown(self):
         super().tearDown()

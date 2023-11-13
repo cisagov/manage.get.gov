@@ -36,24 +36,18 @@ class Command(BaseCommand):
         Use this to trigger a prompt for deleting all table entries.  Useful
         for testing purposes, but USE WITH CAUTION
         """
-        parser.add_argument(
-            "domain_contacts_filename", help="Data file with domain contact information"
-        )
+        parser.add_argument("domain_contacts_filename", help="Data file with domain contact information")
         parser.add_argument(
             "contacts_filename",
             help="Data file with contact information",
         )
-        parser.add_argument(
-            "domain_statuses_filename", help="Data file with domain status information"
-        )
+        parser.add_argument("domain_statuses_filename", help="Data file with domain status information")
 
         parser.add_argument("--sep", default="|", help="Delimiter character")
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
-        parser.add_argument(
-            "--limitParse", default=0, help="Sets max number of entries to load"
-        )
+        parser.add_argument("--limitParse", default=0, help="Sets max number of entries to load")
 
         parser.add_argument(
             "--resetTable",
@@ -61,9 +55,7 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
         )
 
-    def print_debug_mode_statements(
-        self, debug_on: bool, debug_max_entries_to_parse: int
-    ):
+    def print_debug_mode_statements(self, debug_on: bool, debug_max_entries_to_parse: int):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
         if debug_on:
@@ -85,9 +77,7 @@ class Command(BaseCommand):
                 """
             )
 
-    def get_domain_user_dict(
-        self, domain_statuses_filename: str, sep: str
-    ) -> defaultdict[str, str]:
+    def get_domain_user_dict(self, domain_statuses_filename: str, sep: str) -> defaultdict[str, str]:
         """Creates a mapping of domain name -> status"""
         domain_status_dictionary = defaultdict(str)
         logger.info("Reading domain statuses data file %s", domain_statuses_filename)
@@ -99,9 +89,7 @@ class Command(BaseCommand):
         logger.info("Loaded statuses for %d domains", len(domain_status_dictionary))
         return domain_status_dictionary
 
-    def get_user_emails_dict(
-        self, contacts_filename: str, sep
-    ) -> defaultdict[str, str]:
+    def get_user_emails_dict(self, contacts_filename: str, sep) -> defaultdict[str, str]:
         """Creates mapping of userId -> emails"""
         user_emails_dictionary = defaultdict(str)
         logger.info("Reading contacts data file %s", contacts_filename)
@@ -149,19 +137,13 @@ class Command(BaseCommand):
         total_duplicate_domains = len(duplicate_domains)
         total_users_without_email = len(users_without_email)
         if total_users_without_email > 0:
-            users_without_email_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domain_user_combos))
-            )
+            users_without_email_as_string = "{}".format(", ".join(map(str, duplicate_domain_user_combos)))
             logger.warning(
                 f"{TerminalColors.YELLOW} No e-mails found for users: {users_without_email_as_string}"  # noqa
             )
         if total_duplicate_pairs > 0 or total_duplicate_domains > 0:
-            duplicate_pairs_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domain_user_combos))
-            )
-            duplicate_domains_as_string = "{}".format(
-                ", ".join(map(str, duplicate_domains))
-            )
+            duplicate_pairs_as_string = "{}".format(", ".join(map(str, duplicate_domain_user_combos)))
+            duplicate_domains_as_string = "{}".format(", ".join(map(str, duplicate_domains)))
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -179,9 +161,7 @@ class Command(BaseCommand):
                     {TerminalColors.ENDC}"""
             )
 
-    def print_summary_status_findings(
-        self, domains_without_status: list[str], outlier_statuses: list[str]
-    ):
+    def print_summary_status_findings(self, domains_without_status: list[str], outlier_statuses: list[str]):
         """Called at the end of the script execution to print out a summary of
         status anomolies in the imported Verisign data.  Currently, we check for:
         - domains without a status
@@ -191,9 +171,7 @@ class Command(BaseCommand):
         total_domains_without_status = len(domains_without_status)
         total_outlier_statuses = len(outlier_statuses)
         if total_domains_without_status > 0:
-            domains_without_status_as_string = "{}".format(
-                ", ".join(map(str, domains_without_status))
-            )
+            domains_without_status_as_string = "{}".format(", ".join(map(str, domains_without_status)))
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -207,9 +185,7 @@ class Command(BaseCommand):
             )
 
         if total_outlier_statuses > 0:
-            domains_without_status_as_string = "{}".format(
-                ", ".join(map(str, outlier_statuses))
-            )  # noqa
+            domains_without_status_as_string = "{}".format(", ".join(map(str, outlier_statuses)))  # noqa
             logger.warning(
                 f"""{TerminalColors.YELLOW}
 
@@ -265,18 +241,14 @@ class Command(BaseCommand):
         debug_on = options.get("debug")
 
         # Get --LimitParse argument
-        debug_max_entries_to_parse = int(
-            options.get("limitParse")
-        )  # set to 0 to parse all entries
+        debug_max_entries_to_parse = int(options.get("limitParse"))  # set to 0 to parse all entries
 
         # print message to terminal about which args are in use
         self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
 
         # STEP 1:
         # Create mapping of domain name -> status
-        domain_status_dictionary = self.get_domain_user_dict(
-            domain_statuses_filename, sep
-        )
+        domain_status_dictionary = self.get_domain_user_dict(domain_statuses_filename, sep)
 
         # STEP 2:
         # Create mapping of userId  -> email
@@ -367,12 +339,7 @@ class Command(BaseCommand):
                     None,
                 )
                 existing_domain_user_pair = next(
-                    (
-                        x
-                        for x in to_create
-                        if x.username == new_entry_email
-                        and x.domain_name == new_entry_domain_name
-                    ),
+                    (x for x in to_create if x.username == new_entry_email and x.domain_name == new_entry_domain_name),
                     None,
                 )
                 if existing_domain is not None:
@@ -443,10 +410,7 @@ class Command(BaseCommand):
                         )
 
                 # Check Parse limit and exit loop if needed
-                if (
-                    total_rows_parsed >= debug_max_entries_to_parse
-                    and debug_max_entries_to_parse != 0
-                ):
+                if total_rows_parsed >= debug_max_entries_to_parse and debug_max_entries_to_parse != 0:
                     logger.info(
                         f"{TerminalColors.YELLOW}"
                         f"----PARSE LIMIT REACHED.  HALTING PARSER.----"
@@ -467,7 +431,5 @@ class Command(BaseCommand):
 
         # Print a summary of findings (duplicate entries,
         # missing data..etc.)
-        self.print_summary_duplications(
-            duplicate_domain_user_combos, duplicate_domains, users_without_email
-        )
+        self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
         self.print_summary_status_findings(domains_without_status, outlier_statuses)

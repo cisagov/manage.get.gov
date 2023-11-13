@@ -18,21 +18,11 @@ class ExportDataTest(TestCase):
             username=username, first_name=first_name, last_name=last_name, email=email
         )
 
-        self.domain_1, _ = Domain.objects.get_or_create(
-            name="cdomain1.gov", state=Domain.State.READY
-        )
-        self.domain_2, _ = Domain.objects.get_or_create(
-            name="adomain2.gov", state=Domain.State.DNS_NEEDED
-        )
-        self.domain_3, _ = Domain.objects.get_or_create(
-            name="ddomain3.gov", state=Domain.State.ON_HOLD
-        )
-        self.domain_4, _ = Domain.objects.get_or_create(
-            name="bdomain4.gov", state=Domain.State.UNKNOWN
-        )
-        self.domain_4, _ = Domain.objects.get_or_create(
-            name="bdomain4.gov", state=Domain.State.UNKNOWN
-        )
+        self.domain_1, _ = Domain.objects.get_or_create(name="cdomain1.gov", state=Domain.State.READY)
+        self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
+        self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
+        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
+        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
 
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -121,16 +111,8 @@ class ExportDataTest(TestCase):
 
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
-        csv_content = (
-            csv_content.replace(",,", "")
-            .replace(",", "")
-            .replace(" ", "")
-            .replace("\r\n", "\n")
-            .strip()
-        )
-        expected_content = (
-            expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        )
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
 
         self.assertEqual(csv_content, expected_content)
 
@@ -181,15 +163,7 @@ class ExportDataTest(TestCase):
 
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
-        csv_content = (
-            csv_content.replace(",,", "")
-            .replace(",", "")
-            .replace(" ", "")
-            .replace("\r\n", "\n")
-            .strip()
-        )
-        expected_content = (
-            expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        )
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
 
         self.assertEqual(csv_content, expected_content)
