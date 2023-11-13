@@ -2,7 +2,7 @@ import logging
 import argparse
 import sys
 
-from django_fsm import TransitionNotAllowed  # type: ignore
+from django.forms import ValidationError
 
 from django.core.management import BaseCommand
 
@@ -345,9 +345,6 @@ class Command(BaseCommand):
 
         return updated
 
-    def try_add_domain_information(self):
-        pass
-
     def create_new_domain_info(
         self,
         transition_domain: TransitionDomain,
@@ -382,11 +379,27 @@ class Command(BaseCommand):
             )
             contact.save()
         elif contact_count == 1:
-            # TODO
             contact = contacts.get()
+            contact.first_name = first_name
+            contact.middle_name = middle_name
+            contact.last_name = last_name
+            contact.email = email
+            contact.phone = phone
+            contact.save()
         else:
-            logger.error("duplicates found")
-        
+            logger.warning(f"Duplicate contact found {contact}. Updating all relevant entries.")
+            for c in contact:
+                c.first_name = first_name
+                c.middle_name = middle_name
+                c.last_name = last_name
+                c.email = email
+                c.phone = phone
+                c.save()
+            contact = c.first()
+
+        if debug_on:
+            logger.info(f"Contact created: {contact}")
+
         org_type_current = transition_domain.organization_type
         match org_type_current:
             case "Federal":
