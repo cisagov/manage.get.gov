@@ -65,8 +65,6 @@ class Command(BaseCommand):
             self.send_emails()
             logger.info("done sending emails")
 
-            self.update_domains_as_sent()
-
             logger.info("done sending emails and updating transition_domains")
         else:
             logger.info("not sending emails")
@@ -143,11 +141,13 @@ class Command(BaseCommand):
             # to True
             for domain in email_data["domains"]:
                 self.domains_with_errors.append(domain)
-
-    def update_domains_as_sent(self):
-        """set email_sent to True in all transition_domains which have
-        been processed successfully"""
-        for transition_domain in self.transition_domains:
-            if transition_domain.domain_name not in self.domains_with_errors:
-                transition_domain.email_sent = True
-                transition_domain.save()
+        else:
+            # email was sent no exception, mark all these transition domains
+            # as email_sent.
+            this_email = email_data["email"]
+            for domain_name in email_data["domains"]:
+                # self.transition_domains is a queryset so we can sub-select
+                # from it and use the objects to mark them as sent
+                this_transition_domain = self.transition_domains.get(username=this_email, domain_name=domain_name)
+                this_transition_domain.email_sent = True
+                this_transition_domain.save()
