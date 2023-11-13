@@ -609,9 +609,9 @@ class TestInvitations(TestCase):
             self.invitation.retrieve()
         self.assertEqual(self.invitation.status, DomainInvitation.RETRIEVED)
 
-    def test_retrieve_on_first_login(self):
-        """A new user's first_login callback retrieves their invitations."""
-        self.user.first_login()
+    def test_retrieve_on_each_login(self):
+        """A user's authenticate on_each_login callback retrieves their invitations."""
+        self.user.on_each_login()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
 
 
@@ -640,19 +640,19 @@ class TestUser(TestCase):
         User.objects.all().delete()
 
     def test_check_transition_domains_on_login(self):
-        """A new user's first_login callback checks transition domains.
+        """A user's on_each_login callback checks transition domains.
         Makes DomainInformation object."""
         self.domain, _ = Domain.objects.get_or_create(name=self.domain_name)
 
-        self.user.first_login()
+        self.user.on_each_login()
         self.assertTrue(DomainInformation.objects.get(domain=self.domain))
 
     def test_check_transition_domains_without_domains_on_login(self):
-        """A new user's first_login callback checks transition domains.
+        """A user's on_each_login callback checks transition domains.
         This test makes sure that in the event a domain does not exist
         for a given transition domain, both a domain and domain invitation
         are created."""
-        self.user.first_login()
+        self.user.on_each_login()
         self.assertTrue(Domain.objects.get(name=self.domain_name))
 
         domain = Domain.objects.get(name=self.domain_name)

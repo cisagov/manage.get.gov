@@ -25,7 +25,7 @@ This is a good time to check who has access to your .gov domain{% if domains|len
     2. Click the “Manage” link next to your .gov domain, then click on “Domain managers” to see who has access to your domain. 
     3. If any of these users should not have access to your domain, let us know in a reply to this email.
 
-After verifying who has access to your domain{% if domains|length > 1 %}s{% endif %}, we also suggest reviewing your contact information and organization mailing address to ensure those are up to date. 
+After verifying who has access to your domain{% if domains|length > 1 %}s{% endif %}, review your contact information to make sure it's up to date.
 
 
 DOMAIN EXPIRATION DATES EXTENDED BY ONE YEAR
