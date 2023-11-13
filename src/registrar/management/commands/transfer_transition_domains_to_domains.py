@@ -2,7 +2,7 @@ import logging
 import argparse
 import sys
 
-from django.forms import ValidationError
+from django_fsm import TransitionNotAllowed  # type: ignore
 
 from django.core.management import BaseCommand
 
