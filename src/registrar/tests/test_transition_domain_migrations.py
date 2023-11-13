@@ -284,8 +284,9 @@ class TestLogins(TestCase):
         output_stream = StringIO()
         # also have to re-point the logging handlers to output_stream
         with less_console_noise(output_stream):
-            call_command("send_domain_invitations", "testuser@gmail.com",
-                         "agustina.wyman7@test.com",  stdout=output_stream)
+            call_command(
+                "send_domain_invitations", "testuser@gmail.com", "agustina.wyman7@test.com", stdout=output_stream
+            )
 
         # Check that we had the right numbers in our output
         output = output_stream.getvalue()

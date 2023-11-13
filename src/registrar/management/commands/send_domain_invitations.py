@@ -37,11 +37,7 @@ class Command(BaseCommand):
             help="Send emails ",
         )
 
-        parser.add_argument(
-            "emails",
-            nargs="*",
-            help="Email addresses to send invitations to"
-        )
+        parser.add_argument("emails", nargs="*", help="Email addresses to send invitations to")
 
     def handle(self, **options):
         """Process the objects in TransitionDomain."""
