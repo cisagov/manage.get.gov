@@ -2,5 +2,5 @@ authorityid|firstname|middlename|lastname|email|phonenumber|agencyid|addlinfo
 1|Gregoor|middle|Kalinke|gkalinke0@indiegogo.com|(773) 172-5515|1|Asparagus - Mexican
 2|Fayre||Filippozzi|ffilippozzi1@hugedomains.com|(357) 487-4280|2|Steampan - Foil
 3|Gabey||Lightbody|glightbody2@fc2.com|(332) 816-5691|3|Soup - Campbells, Minestrone
-4|Seline||Tower|stower3@answers.com|(151) 539-6028|4|Kiwi Gold Zespri
-5|Joe||Smoe|joe@smoe.gov|(111) 111-1111|5|Kiwi Gold Zespri
+4|Seline|testmiddle2|Tower|stower3@answers.com|151-539-6028|4|Kiwi Gold Zespri
+5|Joe|testmiddle|Smoe|joe@smoe.gov|(111) 111-1111|5|Kiwi Gold Zespri

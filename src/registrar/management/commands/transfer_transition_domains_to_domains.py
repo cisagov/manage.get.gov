@@ -14,6 +14,7 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,
 )
+from registrar.models.contact import Contact
 from registrar.models.domain_application import DomainApplication
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user import User
@@ -344,8 +345,35 @@ class Command(BaseCommand):
 
         return updated
 
-    def try_add_domain_information(self):
-        pass
+    def update_contact_info(self, first_name, middle_name, last_name, email, phone):
+        contact = None
+        contacts = Contact.objects.filter(email=email)
+        contact_count = contacts.count()
+        # Create a new one
+        if contact_count == 0:
+            contact = Contact(
+                first_name=first_name, middle_name=middle_name, last_name=last_name, email=email, phone=phone
+            )
+            contact.save()
+        elif contact_count == 1:
+            contact = contacts.get()
+            contact.first_name = first_name
+            contact.middle_name = middle_name
+            contact.last_name = last_name
+            contact.email = email
+            contact.phone = phone
+            contact.save()
+        else:
+            logger.warning(f"Duplicate contact found {contact}. Updating all relevant entries.")
+            for c in contact:
+                c.first_name = first_name
+                c.middle_name = middle_name
+                c.last_name = last_name
+                c.email = email
+                c.phone = phone
+                c.save()
+            contact = c.first()
+        return contact
 
     def create_new_domain_info(
         self,
@@ -356,11 +384,23 @@ class Command(BaseCommand):
         org_choices,
         debug_on,
     ) -> DomainInformation:
-        org_type_current = transition_domain.organization_type
+        org_type = ("", "")
         fed_type = transition_domain.federal_type
         fed_agency = transition_domain.federal_agency
 
-        org_type = ("", "")
+        # = AO Information = #
+        first_name = transition_domain.first_name
+        middle_name = transition_domain.middle_name
+        last_name = transition_domain.last_name
+        email = transition_domain.email
+        phone = transition_domain.phone
+
+        contact = self.update_contact_info(first_name, middle_name, last_name, email, phone)
+
+        if debug_on:
+            logger.info(f"Contact created: {contact}")
+
+        org_type_current = transition_domain.organization_type
         match org_type_current:
             case "Federal":
                 org_type = ("federal", "Federal")
@@ -387,6 +427,7 @@ class Command(BaseCommand):
             "domain": domain,
             "organization_name": transition_domain.organization_name,
             "creator": default_creator,
+            "authorizing_official": contact,
         }
 
         if valid_org_type:

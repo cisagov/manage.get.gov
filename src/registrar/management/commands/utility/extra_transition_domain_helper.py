@@ -170,7 +170,10 @@ class LoadExtraTransitionDomain:
                 # STEP 3: Parse agency data
                 updated_transition_domain = self.parse_agency_data(domain_name, transition_domain)
 
-                # STEP 4: Parse creation and expiration data
+                # STEP 4: Parse ao data
+                updated_transition_domain = self.parse_authority_data(domain_name, transition_domain)
+
+                # STEP 5: Parse creation and expiration data
                 updated_transition_domain = self.parse_creation_expiration_data(domain_name, transition_domain)
 
                 # Check if the instance has changed before saving
@@ -279,6 +282,53 @@ class LoadExtraTransitionDomain:
             domain_name,
             expiration_exists,
         )
+
+        return transition_domain
+
+    def log_add_or_changed_values(self, file_type, values_to_check, domain_name):
+        for field_name, value in values_to_check:
+            str_exists = value is not None and value.strip() != ""
+            # Logs if we either added to this property,
+            # or modified it.
+            self._add_or_change_message(
+                file_type,
+                field_name,
+                value,
+                domain_name,
+                str_exists,
+            )
+
+    def parse_authority_data(self, domain_name, transition_domain) -> TransitionDomain:
+        """Grabs authorizing_offical data from the parsed files and associates it
+        with a transition_domain object, then returns that object."""
+        if not isinstance(transition_domain, TransitionDomain):
+            raise ValueError("Not a valid object, must be TransitionDomain")
+
+        info = self.get_authority_info(domain_name)
+        if info is None:
+            self.parse_logs.create_log_item(
+                EnumFilenames.AGENCY_ADHOC,
+                LogCode.ERROR,
+                f"Could not add authorizing_official on {domain_name}, no data exists.",
+                domain_name,
+                not self.debug,
+            )
+            return transition_domain
+
+        transition_domain.first_name = info.firstname
+        transition_domain.middle_name = info.middlename
+        transition_domain.last_name = info.lastname
+        transition_domain.email = info.email
+        transition_domain.phone = info.phonenumber
+
+        changed_fields = [
+            ("first_name", transition_domain.first_name),
+            ("middle_name", transition_domain.middle_name),
+            ("last_name", transition_domain.last_name),
+            ("email", transition_domain.email),
+            ("phone", transition_domain.phone),
+        ]
+        self.log_add_or_changed_values(EnumFilenames.AUTHORITY_ADHOC, changed_fields, domain_name)
 
         return transition_domain
 

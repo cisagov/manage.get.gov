@@ -313,6 +313,14 @@ class TestMigrations(TestCase):
         self.assertEqual(fakewebsite.federal_agency, "Department of Commerce")
         self.assertEqual(fakewebsite.federal_type, "executive")
 
+        ao = fakewebsite.authorizing_official
+
+        self.assertEqual(ao.first_name, "Seline")
+        self.assertEqual(ao.middle_name, "testmiddle2")
+        self.assertEqual(ao.last_name, "Tower")
+        self.assertEqual(ao.email, "stower3@answers.com")
+        self.assertEqual(ao.phone, "151-539-6028")
+
         # Check for the "system" creator user
         Users = User.objects.filter(username="System")
         self.assertEqual(Users.count(), 1)

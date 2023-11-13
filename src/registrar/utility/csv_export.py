@@ -13,7 +13,12 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
     domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
     for domainInfo in domainInfos:
         security_contacts = domainInfo.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
-
+        # For linter
+        ao = " "
+        if domainInfo.authorizing_official:
+            first_name = domainInfo.authorizing_official.first_name or ""
+            last_name = domainInfo.authorizing_official.last_name or ""
+            ao = first_name + " " + last_name
         # create a dictionary of fields which can be included in output
         FIELDS = {
             "Domain name": domainInfo.domain.name,
@@ -24,9 +29,7 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             "Organization name": domainInfo.organization_name,
             "City": domainInfo.city,
             "State": domainInfo.state_territory,
-            "AO": domainInfo.authorizing_official.first_name + " " + domainInfo.authorizing_official.last_name
-            if domainInfo.authorizing_official
-            else " ",
+            "AO": ao,
             "AO email": domainInfo.authorizing_official.email if domainInfo.authorizing_official else " ",
             "Security Contact Email": security_contacts[0].email if security_contacts else " ",
             "Status": domainInfo.domain.state,
