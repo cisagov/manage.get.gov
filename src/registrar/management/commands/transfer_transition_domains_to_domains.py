@@ -384,11 +384,19 @@ class Command(BaseCommand):
             )
             contact.save()
         elif contact_count == 1:
-            # TODO
             contact = contacts.get()
+            contact.first_name = first_name
+            contact.middle_name = middle_name
+            contact.last_name = last_name
+            contact.email = email
+            contact.phone = phone
+            contact.save()
         else:
-            logger.error("duplicates found")
-        
+            raise Exception("Duplicate Contacts Found")
+
+        if debug_on:
+            logger.info(f"Contact created: {contact}")
+
         org_type_current = transition_domain.organization_type
         match org_type_current:
             case "Federal":
