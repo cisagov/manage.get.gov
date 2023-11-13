@@ -170,7 +170,10 @@ class LoadExtraTransitionDomain:
                 # STEP 3: Parse agency data
                 updated_transition_domain = self.parse_agency_data(domain_name, transition_domain)
 
-                # STEP 4: Parse creation and expiration data
+                # STEP 4: Parse ao data
+                updated_transition_domain = self.parse_authority_data(domain_name, transition_domain)
+
+                # STEP 5: Parse creation and expiration data
                 updated_transition_domain = self.parse_creation_expiration_data(domain_name, transition_domain)
 
                 # Check if the instance has changed before saving
