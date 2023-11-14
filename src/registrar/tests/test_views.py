@@ -1743,7 +1743,7 @@ contact help@get.gov
             (
                 "ContactError",
                 form_data_contact_error,
-                "Enter an email address in the required format, like name@example.com."
+                "Enter an email address in the required format, like name@example.com.",
             ),
             (
                 "RegistrySuccess",
