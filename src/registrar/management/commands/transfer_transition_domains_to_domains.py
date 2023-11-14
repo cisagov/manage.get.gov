@@ -372,7 +372,7 @@ class Command(BaseCommand):
                 c.email = email
                 c.phone = phone
                 c.save()
-            contact = c.first()
+            contact = contacts.first()
         return contact
 
     def create_new_domain_info(
