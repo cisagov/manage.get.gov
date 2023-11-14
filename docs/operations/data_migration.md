@@ -423,7 +423,7 @@ Disables the terminal prompts that allows the user to step through each portion 
 Used by the migration scripts (load_transition_domain) to set the limit for the
 number of data entries to insert.  Set to 0 (or just don't use this
 argument) to parse every entry. This was provided primarily for testing
-purposes
+purposes.
 **Note:** `--limitParse` is currently experiencing issues and may not work as intended.
 
 `--resetTable`
