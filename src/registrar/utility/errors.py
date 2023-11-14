@@ -99,7 +99,8 @@ class NameserverError(Exception):
         NameserverErrorCodes.MISSING_HOST: ("Name server must be provided to enter IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.BAD_DATA: (
-            "There’s something wrong with the name server information you provided. If you need help email us at help@get.gov."
+            "There’s something wrong with the name server information you provided. "
+            "If you need help email us at help@get.gov."
         ),
     }
 
