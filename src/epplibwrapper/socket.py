@@ -78,7 +78,7 @@ class Socket:
                 self.client.connect()
                 response = self.client.send(self.login)
             except LoginError as err:
-                if err.should_retry() and counter < 3:
+                if err.should_retry() and counter < 10:
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
