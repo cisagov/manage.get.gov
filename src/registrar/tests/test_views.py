@@ -1740,7 +1740,11 @@ and try again. If you continue to receive this error after a few tries,
 contact help@get.gov
                 """,
             ),
-            ("ContactError", form_data_contact_error, "Value entered was wrong."),
+            (
+                "ContactError",
+                form_data_contact_error,
+                "Enter an email address in the required format, like name@example.com."
+            ),
             (
                 "RegistrySuccess",
                 form_data_success,
