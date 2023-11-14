@@ -21,6 +21,6 @@ ALGORITHM_CHOICES = [
 # DIGEST_TYPE_CHOICES are options for digestType attribute in DS Data
 # reference: https://datatracker.ietf.org/doc/html/rfc4034#appendix-A.2
 DIGEST_TYPE_CHOICES = [
-    (0, "(0) Reserved"),
-    (1, "(1) SHA-256"),
+    (1, "(1) SHA-1"),
+    (2, "(2) SHA-256"),
 ]
