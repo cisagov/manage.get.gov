@@ -3,7 +3,7 @@
 The original system has an existing registrar/registry that we will import.
 The company of that system will provide us with an export of the data.
 The goal of our data migration is to take the provided data and use
-it to create as much as possible a _matching_ state
+it to create, as close as possible, a _matching_ state
 in our registrar.
 
 There is no way to make our registrar _identical_ to the original system
@@ -15,11 +15,11 @@ primarily allow users of the system to perform the tasks that they want to do.
 
 One of the major differences with the existing registrar/registry is that our
 system uses Login.gov for authentication. Any person with an identity-verified
-Login.gov account can make an account on the new registrar, and the first time
-that person logs in through Login.gov, we make a corresponding account in our
-user table. Because we cannot know the Universal Unique ID (UUID) for a
-person's Login.gov account, we cannot pre-create user accounts for individuals
-in our new registrar based on the original data.
+Login.gov account can make an account on the new registrar. The first time
+a person logs into the registrar through Login.gov, we make a corresponding 
+account in our user table. Because we cannot know the Universal Unique ID (UUID) 
+for a person's Login.gov account, we cannot pre-create user accounts for 
+individuals in our new registrar based on the original data.
 
 ## Domains
 
@@ -29,7 +29,7 @@ information to make connections between registry users and the domains that
 they manage. The registrar stores very few fields about a domain except for
 its name, so it could be straightforward to import the exported list of domains
 from `escrow_domains.daily.dotgov.GOV.txt`. It doesn't appear that
-that table stores a flag for active or inactive.
+that table stores a flag for if a domain is active or inactive.
 
 An example Django management command that can load the delimited text file
 from the daily escrow is in
@@ -47,8 +47,8 @@ docker compose run -T app ./manage.py load_domains_data < /tmp/escrow_domains.da
 The data export contains a `escrow_domain_contacts.daily.dotgov.txt` file
 that links each domain to three different types of contacts: `billing`,
 `tech`, and `admin`. The ID of the contact in this linking table corresponds
-to the ID of a contact in the `escrow_contacts.daily.dotgov.txt` file. In the
-contacts file is an email address for each contact.
+to the ID of a contact in the `escrow_contacts.daily.dotgov.txt` file. The
+contacts file contains an email address for each contact.
 
 The new registrar associates user accounts (authenticated with Login.gov) with
 domains using a `UserDomainRole` linking table. New users can be granted roles
@@ -82,17 +82,18 @@ docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_co
 
 #### STEP 1: obtain data files
 We are provided with information about Transition Domains in the following files:
-
-- FILE 1: **escrow_domain_contacts.daily.gov.GOV.txt** -> has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
-- FILE 2: **escrow_contacts.daily.gov.GOV.txt** -> has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
-- FILE 3: **escrow_domain_statuses.daily.gov.GOV.txt** -> has the map of domains and their statuses
-- FILE 4: **escrow_domains.daily.dotgov.GOV.txt** -> has a map of domainname, expiration and creation dates
-- FILE 5: **domainadditionaldatalink.adhoc.dotgov.txt** -> has the map of domains to other data like authority, organization, & domain type
-- FILE 6: **domaintypes.adhoc.dotgov.txt** -> has data on federal type and organization type
-- FILE 7: **organization.adhoc.dotgov.txt** -> has organization name data
-- FILE 8: **authority.adhoc.dotgov.txt** -> has authority data which maps to an agency
-- FILE 9: **agency.adhoc.dotgov.txt** -> has federal agency data
-- FILE 10: **migrationFilepaths.json** -> A JSON which points towards all given filenames. Specified below.
+|  | Filename                                    | Description |  
+|:-| :-------------------------------------------- | :---------- |
+|1| **escrow_domain_contacts.daily.gov.GOV.txt**  | Has the map of domain names to contact ID. Domains in this file will usually have 3 contacts each
+|2| **escrow_contacts.daily.gov.GOV.txt**         | Has the mapping of contact id to contact email address (which is what we care about for sending domain invitations)
+|3| **escrow_domain_statuses.daily.gov.GOV.txt**  | Has the map of domains and their statuses
+|4| **escrow_domains.daily.dotgov.GOV.txt**       | Has a map of domainname, expiration and creation dates
+|5| **domainadditionaldatalink.adhoc.dotgov.txt** | Has the map of domains to other data like authority, organization, & domain type
+|6| **domaintypes.adhoc.dotgov.txt**              | Has data on federal type and organization type
+|7| **organization.adhoc.dotgov.txt**             | Has organization name data
+|8| **authority.adhoc.dotgov.txt**                | Has authority data which maps to an agency
+|9| **agency.adhoc.dotgov.txt**                   | Has federal agency data
+|10| **migrationFilepaths.json**                  | A JSON which points towards all given filenames. Specified below.
 
 #### STEP 2: obtain JSON file (for file locations)
 Add a JSON file called "migrationFilepaths.json" with the following contents (update filenames and directory as needed):
@@ -204,12 +205,16 @@ cf ssh {APP_NAME_IN_ENVIRONMENT}
 
 ##### From this directory, run the following command:
 ```shell
-./manage.py cat_files_into_getgov --file_extension txt
+./manage.py cat_files_into_getgov --file_extension {FILE_EXTENSION_TYPE}
 ```
 
-NOTE: This will look for all files in /tmp with the .txt extension, but this can
-be changed if you are dealing with different extensions. For instance, a .tar.gz could be expressed
-as `--file_extension tar.gz`.
+This will look for all files in /tmp with that are the same file type as `FILE_EXTENSION_TYPE`. 
+**Example 1: txt**
+`./manage.py cat_files_into_getgov --file_extension txt` will search for
+all files with the .txt extension.
+**Example 2: .tar.gz**
+`./manage.py cat_files_into_getgov --file_extension tar.gz` will search 
+for .tar.gz files.
 
 If you are using a tar.gz file, you will need to perform one additional step to extract it.
 Run the following command from the same directory:
@@ -246,11 +251,12 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 *You are now ready to run migration scripts.*
 
 ## Transition Domains (Part 2) - Running the Migration Scripts
-While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands.If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
+While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands. If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
 
 ### STEP 1: Load Transition Domains
 
-Run the following command, making sure the file paths point to the right location. This will parse all given files and load the information into the TransitionDomain table. Make sure you have your migrationFilepaths.json file in the same directory.
+Run the following command, making sure the file paths point to the right location of your migration files. This will parse all given files and 
+load the information into the TransitionDomain table. Make sure you have your migrationFilepaths.json file in the same directory.
 
 ```
 ##### LOCAL COMMAND
@@ -268,7 +274,8 @@ docker-compose exec app ./manage.py load_transition_domain migrationFilepaths.js
 This will print out additional, detailed logs.
 
 `--limitParse 100` 
-Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
+Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.
+**Note:** `--limitParse` is currently experiencing issues and may not work as intended.
 
 `--resetTable`
 This will delete all the data in transtion_domain.  It is helpful if you want to see the entries reload from scratch or for clearing test data.
@@ -329,7 +336,8 @@ docker compose run -T app ./manage.py transfer_transition_domains_to_domains --d
 This will print out additional, detailed logs.
 
 `--limitParse 100` 
-Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes.  
+Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes. 
+**Note:** `--limitParse` is currently experiencing issues and may not work as intended.
 
 ### STEP 3: Send Domain invitations
 
@@ -416,6 +424,7 @@ Used by the migration scripts (load_transition_domain) to set the limit for the
 number of data entries to insert.  Set to 0 (or just don't use this
 argument) to parse every entry. This was provided primarily for testing
 purposes
+**Note:** `--limitParse` is currently experiencing issues and may not work as intended.
 
 `--resetTable`
 
