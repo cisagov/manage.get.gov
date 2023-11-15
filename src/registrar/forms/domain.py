@@ -8,6 +8,8 @@ from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
+    DsDataError,
+    DsDataErrorCodes,
 )
 
 from ..models import Contact, DomainInformation, Domain
@@ -232,14 +234,14 @@ class DomainDsdataForm(forms.Form):
 
     def validate_hexadecimal(value):
         if not re.match(r'^[0-9a-fA-F]+$', value):
-            raise forms.ValidationError('Digest must contain only alphanumeric characters [0-9,a-f].')
+            raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
 
     key_tag = forms.IntegerField(
         required=True,
         label="Key tag",
         validators=[
-            MinValueValidator(0, message="Key tag must be less than 65535"),
-            MaxValueValidator(65535, message="Key tag must be less than 65535"),
+            MinValueValidator(0, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
+            MaxValueValidator(65535, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
         ],
         error_messages={"required": ("Key tag is required.")},
     )
@@ -257,7 +259,7 @@ class DomainDsdataForm(forms.Form):
         label="Digest type",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
-        error_messages={"required": ("Digest Type is required.")},
+        error_messages={"required": ("Digest type is required.")},
     )
 
     digest = forms.CharField(
@@ -267,7 +269,7 @@ class DomainDsdataForm(forms.Form):
         max_length=64,
         error_messages={
             "required": "Digest is required.",
-            "max_length": "Digest must be at most 64 characters long.",
+            "max_length": str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_LENGTH)),
         },
     )
 
@@ -282,63 +284,14 @@ class DomainDsdataForm(forms.Form):
         if digest_type == 1 and len(digest) != 40:
             self.add_error(
                 "digest",
-                DsDa)
-        # remove ANY spaces in the server field
-        server = server.replace(" ", "")
-        # lowercase the server
-        server = server.lower()
-        cleaned_data["server"] = server
-        ip = cleaned_data.get("ip", None)
-        # remove ANY spaces in the ip field
-        ip = ip.replace(" ", "")
-        domain = cleaned_data.get("domain", "")
-
-        ip_list = self.extract_ip_list(ip)
-
-        # validate if the form has a server or an ip
-        if (ip and ip_list) or server:
-            self.validate_nameserver_ip_combo(domain, server, ip_list)
-
+                DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA1),
+            )
+        elif digest_type == 2 and len(digest) != 64:
+            self.add_error(
+                "digest",
+                DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA256),
+            )
         return cleaned_data
-
-    def clean_empty_strings(self, cleaned_data):
-        ip = cleaned_data.get("ip", "")
-        if ip and len(ip.strip()) == 0:
-            cleaned_data["ip"] = None
-
-    def extract_ip_list(self, ip):
-        return [ip.strip() for ip in ip.split(",")] if ip else []
-
-    def validate_nameserver_ip_combo(self, domain, server, ip_list):
-        try:
-            Domain.checkHostIPCombo(domain, server, ip_list)
-        except NameserverError as e:
-            if e.code == nsErrorCodes.GLUE_RECORD_NOT_ALLOWED:
-                self.add_error(
-                    "server",
-                    NameserverError(
-                        code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED,
-                        nameserver=domain,
-                        ip=ip_list,
-                    ),
-                )
-            elif e.code == nsErrorCodes.MISSING_IP:
-                self.add_error(
-                    "ip",
-                    NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=domain, ip=ip_list),
-                )
-            elif e.code == nsErrorCodes.MISSING_HOST:
-                self.add_error(
-                    "server",
-                    NameserverError(code=nsErrorCodes.MISSING_HOST, nameserver=domain, ip=ip_list),
-                )
-            elif e.code == nsErrorCodes.INVALID_HOST:
-                self.add_error(
-                    "server",
-                    NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=server, ip=ip_list),
-                )
-            else:
-                self.add_error("ip", str(e))
 
 
 DomainDsdataFormset = formset_factory(

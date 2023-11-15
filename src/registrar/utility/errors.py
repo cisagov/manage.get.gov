@@ -125,9 +125,19 @@ class DsDataErrorCodes(IntEnum):
     error mapping.
     Overview of ds data error codes:
         - 1 BAD_DATA  bad data input in ds data
+        - 2 INVALID_DIGEST_SHA1 invalid digest for digest type SHA-1
+        - 3 INVALID_DIGEST_SHA256 invalid digest for digest type SHA-256
+        - 4 INVALID_DIGEST_LENGTH invalid digest length exceeds 64
+        - 5 INVALID_DIGEST_CHARS invalid chars in digest
+        - 6 INVALID_KEYTAG_SIZE invalid key tag size > 65535
     """
 
     BAD_DATA = 1
+    INVALID_DIGEST_SHA1 = 2
+    INVALID_DIGEST_SHA256 = 3
+    INVALID_DIGEST_LENGTH = 4
+    INVALID_DIGEST_CHARS = 5
+    INVALID_KEYTAG_SIZE = 6
 
 
 class DsDataError(Exception):
@@ -139,7 +149,22 @@ class DsDataError(Exception):
     _error_mapping = {
         DsDataErrorCodes.BAD_DATA: (
             "There’s something wrong with the DS data you provided. If you need help email us at help@get.gov."
-        )
+        ),
+        DsDataErrorCodes.INVALID_DIGEST_SHA1: (
+            "SHA-1 digest must be exactly 40 characters."
+        ),
+        DsDataErrorCodes.INVALID_DIGEST_SHA256: (
+            "SHA-256 digest must be exactly 64 characters."
+        ),
+        DsDataErrorCodes.INVALID_DIGEST_LENGTH: (
+            "Digest must be at most 64 characters."
+        ),
+        DsDataErrorCodes.INVALID_DIGEST_CHARS: (
+            "Digest must contain only alphanumeric characters [0-9,a-f]."
+        ),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: (
+            "Key tag must be less than 65535"
+        ),
     }
 
     def __init__(self, *args, code=None, **kwargs):
