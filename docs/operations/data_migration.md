@@ -1,7 +1,7 @@
 # Registrar Data Migration
 
-The original system has an existing registrar/registry that we will import.
-The company of that system will provide us with an export of the data.
+The original system uses an existing registrar/registry that we will import.
+The company of that system will provide us with an export of the existing data.
 The goal of our data migration is to take the provided data and use
 it to create, as close as possible, a _matching_ state
 in our registrar.
