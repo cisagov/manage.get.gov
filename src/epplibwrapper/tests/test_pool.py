@@ -125,10 +125,14 @@ class TestConnectionPool(TestCase):
             xml = (location).read_bytes()
             return xml
 
+        def do_nothing(command):
+            pass
+
         # Mock what happens inside the "with"
         with ExitStack() as stack:
             stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
             stack.enter_context(patch.object(Socket, "connect", self.fake_client))
+            stack.enter_context(patch.object(EPPConnectionPool, "kill_all_connections", do_nothing))
             stack.enter_context(patch.object(SocketTransport, "send", self.fake_send))
             stack.enter_context(patch.object(SocketTransport, "receive", fake_receive))
             # Restart the connection pool
