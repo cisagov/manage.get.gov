@@ -134,7 +134,8 @@ Load migration data onto a production or sandbox environment
 **WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
 Do not use these environments to store data you want to keep around permanently. We don't want sensitive data to be accidentally present in our application environments.
 
-### Step 1: Using cat to transfer data to sandboxes
+### Step 1: Transfer data to sandboxes
+Use the following cat command to upload your data to a sandbox environment of your choice:
 
 ```bash
 cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
@@ -144,7 +145,7 @@ cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
 
-#### TROUBLESHOOTING STEP 1
+#### TROUBLESHOOTING STEP 1 ISSUES 
 Depending on your operating system (Windows for instance), this command may upload corrupt data. If you encounter the error `gzip: prfiles.tar.gz: not in gzip format` when trying to unzip a .tar.gz file, use the scp command instead.
 
 **IMPORTANT:** Only follow the below troubleshooting steps if cat does not work as expected. If it does, skip to step 2.
@@ -236,7 +237,7 @@ tar -xvf migrationdata/{FILE_NAME}.tar.gz -C migrationdata/ --strip-components=1
 *FILE_NAME* - Name of the desired file, ex: exportdata
 
 
-#### Manual method
+#### Manually transferring your files
 If the `cat_files_into_getgov.py` script isn't working, follow these steps instead.
 
 ##### Move the desired file into the correct directory
@@ -248,7 +249,7 @@ cat ../tmp/{filename} > migrationdata/{filename}
 
 *You are now ready to run migration scripts (see [Running the Migration Scripts](running-the-migration-scripts))*
 
-### Set Up Migrations on Local (TESTING PURPOSES ONLY)
+### Set Up Local Migrations (TESTING PURPOSES ONLY)
 
 ***IMPORTANT: only use test data, to avoid publicizing PII in our public repo.***
 
@@ -264,12 +265,11 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 ## Transition Domains (Part 2) - Running the Migration Scripts
 While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands. If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
 
-### Step 1: Load Transition Domains
+### Step 1: Upload Transition Domains
 
 Run the following command, making sure the file paths point to the right location of your migration files. This will parse all given files and 
 load the information into the TransitionDomain table. Make sure you have your migrationFilepaths.json file in the same directory.
 
-```
 ##### LOCAL COMMAND
 ```shell
 docker-compose exec app ./manage.py load_transition_domain migrationFilepaths.json --directory /app/tmp/ --debug --limitParse 10
@@ -367,7 +367,7 @@ docker compose run -T app ./manage.py send_domain_invitations -s
 
 This script's main function is to scan the transition domain and domain tables for any anomalies.  It produces a simple report of missing or duplicate data.  NOTE: some missing data might be expected depending on the nature of our migrations so use best judgement when evaluating the results.
 
-#### OPTION 1 - ANALYZE ONLY
+#### OPTION 1 - Analyze Only
 
 To analyze our database without running migrations, execute the script without any optional arguments:
 
@@ -380,7 +380,7 @@ docker compose run -T app ./manage.py master_domain_migrations --debug
 ./manage.py master_domain_migrations --debug
 ```
 
-#### OPTION 2 - RUN MIGRATIONS FEATURE
+#### OPTION 2 - Run Migrations Feature
 
 To run the migrations again (all above migration steps) before analyzing, execute the following command (read the documentation on the terminal arguments below.  Everything used by the migration scripts can also be passed into this script and will have the same effects).  NOTE: --debug provides detailed logging statements during the migration.  It is recommended that you use this argument when using the --runMigrations feature:
 
