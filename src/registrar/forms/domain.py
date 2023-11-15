@@ -16,6 +16,8 @@ from .common import (
     DIGEST_TYPE_CHOICES,
 )
 
+import re
+
 
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
@@ -228,12 +230,16 @@ class DomainDnssecForm(forms.Form):
 class DomainDsdataForm(forms.Form):
     """Form for adding or editing DNSSEC DS Data to a domain."""
 
+    def validate_hexadecimal(value):
+        if not re.match(r'^[0-9a-fA-F]+$', value):
+            raise forms.ValidationError('Digest must contain only alphanumeric characters [0-9,a-f].')
+
     key_tag = forms.IntegerField(
         required=True,
         label="Key tag",
         validators=[
-            MinValueValidator(0, message="Value must be between 0 and 65535"),
-            MaxValueValidator(65535, message="Value must be between 0 and 65535"),
+            MinValueValidator(0, message="Key tag must be less than 65535"),
+            MaxValueValidator(65535, message="Key tag must be less than 65535"),
         ],
         error_messages={"required": ("Key tag is required.")},
     )
@@ -257,8 +263,82 @@ class DomainDsdataForm(forms.Form):
     digest = forms.CharField(
         required=True,
         label="Digest",
-        error_messages={"required": ("Digest is required.")},
+        validators=[validate_hexadecimal],
+        max_length=64,
+        error_messages={
+            "required": "Digest is required.",
+            "max_length": "Digest must be at most 64 characters long.",
+        },
     )
+
+    def clean(self):
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        digest_type = cleaned_data.get("digest_type", 0)
+        digest = cleaned_data.get("digest", "")
+        # validate length of digest depending on digest_type
+        if digest_type == 1 and len(digest) != 40:
+            self.add_error(
+                "digest",
+                DsDa)
+        # remove ANY spaces in the server field
+        server = server.replace(" ", "")
+        # lowercase the server
+        server = server.lower()
+        cleaned_data["server"] = server
+        ip = cleaned_data.get("ip", None)
+        # remove ANY spaces in the ip field
+        ip = ip.replace(" ", "")
+        domain = cleaned_data.get("domain", "")
+
+        ip_list = self.extract_ip_list(ip)
+
+        # validate if the form has a server or an ip
+        if (ip and ip_list) or server:
+            self.validate_nameserver_ip_combo(domain, server, ip_list)
+
+        return cleaned_data
+
+    def clean_empty_strings(self, cleaned_data):
+        ip = cleaned_data.get("ip", "")
+        if ip and len(ip.strip()) == 0:
+            cleaned_data["ip"] = None
+
+    def extract_ip_list(self, ip):
+        return [ip.strip() for ip in ip.split(",")] if ip else []
+
+    def validate_nameserver_ip_combo(self, domain, server, ip_list):
+        try:
+            Domain.checkHostIPCombo(domain, server, ip_list)
+        except NameserverError as e:
+            if e.code == nsErrorCodes.GLUE_RECORD_NOT_ALLOWED:
+                self.add_error(
+                    "server",
+                    NameserverError(
+                        code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED,
+                        nameserver=domain,
+                        ip=ip_list,
+                    ),
+                )
+            elif e.code == nsErrorCodes.MISSING_IP:
+                self.add_error(
+                    "ip",
+                    NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=domain, ip=ip_list),
+                )
+            elif e.code == nsErrorCodes.MISSING_HOST:
+                self.add_error(
+                    "server",
+                    NameserverError(code=nsErrorCodes.MISSING_HOST, nameserver=domain, ip=ip_list),
+                )
+            elif e.code == nsErrorCodes.INVALID_HOST:
+                self.add_error(
+                    "server",
+                    NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=server, ip=ip_list),
+                )
+            else:
+                self.add_error("ip", str(e))
 
 
 DomainDsdataFormset = formset_factory(

@@ -445,7 +445,7 @@ class DomainDsDataView(DomainFormBaseView):
             modal_button = (
                 '<button type="submit" '
                 'class="usa-button usa-button--secondary" '
-                'name="disable-override-click">Delete all records</button>'
+                'name="disable-override-click">Remove all DS Data</button>'
             )
 
             # context to back out of a broken form on all fields delete
