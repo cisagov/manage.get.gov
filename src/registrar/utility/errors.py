@@ -150,21 +150,11 @@ class DsDataError(Exception):
         DsDataErrorCodes.BAD_DATA: (
             "There’s something wrong with the DS data you provided. If you need help email us at help@get.gov."
         ),
-        DsDataErrorCodes.INVALID_DIGEST_SHA1: (
-            "SHA-1 digest must be exactly 40 characters."
-        ),
-        DsDataErrorCodes.INVALID_DIGEST_SHA256: (
-            "SHA-256 digest must be exactly 64 characters."
-        ),
-        DsDataErrorCodes.INVALID_DIGEST_LENGTH: (
-            "Digest must be at most 64 characters."
-        ),
-        DsDataErrorCodes.INVALID_DIGEST_CHARS: (
-            "Digest must contain only alphanumeric characters [0-9,a-f]."
-        ),
-        DsDataErrorCodes.INVALID_KEYTAG_SIZE: (
-            "Key tag must be less than 65535"
-        ),
+        DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
+        DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
+        DsDataErrorCodes.INVALID_DIGEST_LENGTH: ("Digest must be at most 64 characters."),
+        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters [0-9,a-f]."),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Key tag must be less than 65535"),
     }
 
     def __init__(self, *args, code=None, **kwargs):

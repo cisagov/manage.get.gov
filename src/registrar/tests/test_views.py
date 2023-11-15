@@ -1921,7 +1921,9 @@ class TestDomainDNSSEC(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200)
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
+        )
 
     def test_ds_data_form_invalid_digest_length(self):
         """DS Data form errors with invalid data (digest too long)
@@ -1936,13 +1938,17 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page.forms[0]["form-0-key_tag"] = "1234"
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "1"
-        add_data_page.forms[0]["form-0-digest"] = "1234567890123456789012345678901234567890123456789012345678901234567890"
+        add_data_page.forms[0][
+            "form-0-digest"
+        ] = "1234567890123456789012345678901234567890123456789012345678901234567890"
         with less_console_noise():  # swallow logged warning message
             result = add_data_page.forms[0].submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_LENGTH)), count=2, status_code=200)
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_LENGTH)), count=2, status_code=200
+        )
 
     def test_ds_data_form_invalid_digest_chars(self):
         """DS Data form errors with invalid data (digest contains non hexadecimal chars)
@@ -1963,7 +1969,9 @@ class TestDomainDNSSEC(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)), count=2, status_code=200)
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)), count=2, status_code=200
+        )
 
     def test_ds_data_form_invalid_digest_sha1(self):
         """DS Data form errors with invalid data (digest is invalid sha-1)
@@ -1984,7 +1992,9 @@ class TestDomainDNSSEC(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA1)), count=2, status_code=200)
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA1)), count=2, status_code=200
+        )
 
     def test_ds_data_form_invalid_digest_sha256(self):
         """DS Data form errors with invalid data (digest is invalid sha-256)
@@ -2005,7 +2015,9 @@ class TestDomainDNSSEC(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA256)), count=2, status_code=200)
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA256)), count=2, status_code=200
+        )
 
 
 class TestApplicationStatus(TestWithUser, WebTest):
