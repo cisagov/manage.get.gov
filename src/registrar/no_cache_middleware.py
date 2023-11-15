@@ -4,6 +4,7 @@ Used to force Cloudfront caching to leave us alone while we develop
 better caching responses.
 """
 
+
 class NoCacheMiddleware:
 
     """Middleware to add a single header to every response."""
