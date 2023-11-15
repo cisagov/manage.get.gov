@@ -69,6 +69,7 @@ class NameserverErrorCodes(IntEnum):
         - 5 UNABLE_TO_UPDATE_DOMAIN unable to update the domain
         - 6 MISSING_HOST host is missing for a nameserver
         - 7 INVALID_HOST host is invalid for a nameserver
+        - 8 BAD_DATA bad data input for nameserver
     """
 
     MISSING_IP = 1
@@ -78,6 +79,7 @@ class NameserverErrorCodes(IntEnum):
     UNABLE_TO_UPDATE_DOMAIN = 5
     MISSING_HOST = 6
     INVALID_HOST = 7
+    BAD_DATA = 8
 
 
 class NameserverError(Exception):
@@ -96,6 +98,10 @@ class NameserverError(Exception):
         ),
         NameserverErrorCodes.MISSING_HOST: ("Name server must be provided to enter IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
+        NameserverErrorCodes.BAD_DATA: (
+            "There’s something wrong with the name server information you provided. "
+            "If you need help email us at help@get.gov."
+        ),
     }
 
     def __init__(self, *args, code=None, nameserver=None, ip=None, **kwargs):
@@ -109,6 +115,68 @@ class NameserverError(Exception):
                 self.message = self.message.format(str(nameserver))
             elif ip is not None:
                 self.message = self.message.format(str(ip))
+
+    def __str__(self):
+        return f"{self.message}"
+
+
+class DsDataErrorCodes(IntEnum):
+    """Used in the DsDataError class for
+    error mapping.
+    Overview of ds data error codes:
+        - 1 BAD_DATA  bad data input in ds data
+    """
+
+    BAD_DATA = 1
+
+
+class DsDataError(Exception):
+    """
+    DsDataError class used to raise exceptions on
+    the ds data getter
+    """
+
+    _error_mapping = {
+        DsDataErrorCodes.BAD_DATA: (
+            "There’s something wrong with the DS data you provided. If you need help email us at help@get.gov."
+        )
+    }
+
+    def __init__(self, *args, code=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.code = code
+        if self.code in self._error_mapping:
+            self.message = self._error_mapping.get(self.code)
+
+    def __str__(self):
+        return f"{self.message}"
+
+
+class SecurityEmailErrorCodes(IntEnum):
+    """Used in the SecurityEmailError class for
+    error mapping.
+    Overview of security email error codes:
+        - 1 BAD_DATA  bad data input in security email
+    """
+
+    BAD_DATA = 1
+
+
+class SecurityEmailError(Exception):
+    """
+    SecurityEmailError class used to raise exceptions on
+    the security email form
+    """
+
+    _error_mapping = {
+        SecurityEmailErrorCodes.BAD_DATA: ("Enter an email address in the required format, like name@example.com.")
+    }
+
+    def __init__(self, *args, code=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.code = code
+        if self.code in self._error_mapping:
+            self.message = self._error_mapping.get(self.code)
 
     def __str__(self):
         return f"{self.message}"

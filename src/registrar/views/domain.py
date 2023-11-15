@@ -28,6 +28,10 @@ from registrar.utility.errors import (
     GenericErrorCodes,
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
+    DsDataError,
+    DsDataErrorCodes,
+    SecurityEmailError,
+    SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
 
@@ -315,7 +319,7 @@ class DomainNameserversView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+                messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
             messages.success(
@@ -491,7 +495,7 @@ class DomainDsDataView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {err}")
             else:
-                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+                messages.error(self.request, DsDataError(code=DsDataErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
@@ -581,10 +585,10 @@ class DomainSecurityEmailView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+                messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         except ContactError as Err:
-            messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+            messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
             logger.error(f"Generic registry error: {Err}")
         else:
             messages.success(self.request, "The security email for this domain has been updated.")
