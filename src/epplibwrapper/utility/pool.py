@@ -97,7 +97,7 @@ class EPPConnectionPool(ConnectionPool):
     def kill_all_connections(self):
         """Kills all active connections in the pool."""
         try:
-            if len(self.conn) > 0:
+            if len(self.conn) > 0 or len(self.greenlets) > 0:
                 gevent.killall(self.greenlets)
 
                 self.greenlets.clear()
@@ -116,7 +116,7 @@ class EPPConnectionPool(ConnectionPool):
         If any connections exist, kill them first.
         Based off of the __init__ definition for geventconnpool.
         """
-        if len(self.conn) > 0:
+        if len(self.conn) > 0 or len(self.greenlets) > 0:
             self.kill_all_connections()
 
         # Setup the lock

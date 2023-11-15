@@ -365,14 +365,14 @@ class Command(BaseCommand):
             contact.save()
         else:
             logger.warning(f"Duplicate contact found {contact}. Updating all relevant entries.")
-            for c in contact:
+            for c in contacts:
                 c.first_name = first_name
                 c.middle_name = middle_name
                 c.last_name = last_name
                 c.email = email
                 c.phone = phone
                 c.save()
-            contact = c.first()
+            contact = contacts.first()
         return contact
 
     def create_new_domain_info(
