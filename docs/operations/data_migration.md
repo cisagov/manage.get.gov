@@ -11,7 +11,7 @@ because we have a different data model and workflow model. Instead, we should
 focus our migration efforts on creating a state in our new registrar that will
 primarily allow users of the system to perform the tasks that they want to do.
 
-## Users
+#### Users
 
 One of the major differences with the existing registrar/registry is that our
 system uses Login.gov for authentication. Any person with an identity-verified
@@ -21,7 +21,7 @@ account in our user table. Because we cannot know the Universal Unique ID (UUID)
 for a person's Login.gov account, we cannot pre-create user accounts for 
 individuals in our new registrar based on the original data.
 
-## Domains
+#### Domains
 
 Our registrar keeps track of domains. The authoritative source for domain
 information is the registry, but the registrar needs a copy of that
@@ -42,7 +42,7 @@ locally for testing, using Docker Compose:
 docker compose run -T app ./manage.py load_domains_data < /tmp/escrow_domains.daily.dotgov.GOV.txt
 ```
 
-## User access to domains
+#### User access to domains
 
 The data export contains a `escrow_domain_contacts.daily.dotgov.txt` file
 that links each domain to three different types of contacts: `billing`,
@@ -78,9 +78,9 @@ An example script using this technique is in
 docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_contacts.daily.dotgov.GOV.txt /app/escrow_contacts.daily.dotgov.GOV.txt
 ```
 
-## Transition Domains (Part 1) - Setup Files for Import
+## Transition Domains (Part 1) - Set Up Files for Import
 
-#### STEP 1: Obtain data files
+#### Step 1: Obtain data files
 We are provided with information about Transition Domains in the following files:
 |  | Filename                                    | Description |  
 |:-| :-------------------------------------------- | :---------- |
@@ -95,7 +95,7 @@ We are provided with information about Transition Domains in the following files
 |9| **agency.adhoc.dotgov.txt**                   | Has federal agency data
 |10| **migrationFilepaths.json**                  | A JSON which points towards all given filenames. Specified below.
 
-#### STEP 2: Obtain JSON file (for file locations)
+#### Step 2: Obtain JSON file (for file locations)
 Add a JSON file called "migrationFilepaths.json" with the following contents (update filenames and directory as needed):
 ```
 {
@@ -120,21 +120,21 @@ Later on, we will bundle this file along with the others into its own folder. Ke
 We need to run a few scripts to parse these files into our domain tables.
 We can do this both locally and in a sandbox.
 
-#### STEP 3: Bundle all relevant data files into an archive
+#### Step 3: Bundle all relevant data files into an archive
 Move all the files specified in Step 1 into a shared folder, and create a tar.gz.
 
-Create a folder on your desktop called `datafiles` and move all of the obtained files into that. Add these files to a tar.gz archive using any method. See (here)[https://stackoverflow.com/questions/53283240/how-to-create-tar-file-with-7zip].
+Create a folder on your desktop called `datafiles` and move all of the obtained files into that. Add these files to a tar.gz archive using any method. See [here](https://stackoverflow.com/questions/53283240/how-to-create-tar-file-with-7zip).
 
 After this is created, move this archive into `src/migrationdata`.
 
 
-### SECTION 1 - SANDBOX MIGRATION SETUP
+### Set Up Migrations on Sandbox
 Load migration data onto a production or sandbox environment
 
 **WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
 Do not use these environments to store data you want to keep around permanently. We don't want sensitive data to be accidentally present in our application environments.
 
-#### STEP 1: Using cat to transfer data to sandboxes
+#### Step 1: Using cat to transfer data to sandboxes
 
 ```bash
 cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
@@ -144,17 +144,22 @@ cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap
 * LOCAL_PATH_TO_FILE - Path to the file you want to copy, ex: src/tmp/escrow_contacts.daily.gov.GOV.txt
 * DESIRED_NAME_OF_FILE - Use this to specify the filename and type, ex: test.txt or escrow_contacts.daily.gov.GOV.txt
 
-**TROUBLESHOOTING:** Depending on your operating system (Windows for instance), this command may upload corrupt data. If you encounter the error `gzip: prfiles.tar.gz: not in gzip format` when trying to unzip a .tar.gz file, use the scp command instead.
+#### TROUBLESHOOTING STEP 1
+Depending on your operating system (Windows for instance), this command may upload corrupt data. If you encounter the error `gzip: prfiles.tar.gz: not in gzip format` when trying to unzip a .tar.gz file, use the scp command instead.
 
-#### STEP 1 (Alternative): Using scp to transfer data to sandboxes
-**IMPORTANT:** Only follow these steps if cat does not work as expected. If it does, skip to step 2.
-
+**IMPORTANT:** Only follow the below troubleshooting steps if cat does not work as expected. If it does, skip to step 2.
+<details>
+<summary>Troubleshooting cat instructions 
+</summary>
+    
+#### Use scp to transfer data to sandboxes. 
 CloudFoundry supports scp as means of transferring data locally to our environment. If you are dealing with a batch of files, try sending across a tar.gz and unpacking that.
-
+    
 ##### Login to Cloud.gov
 
 ```bash
 cf login -a api.fr.cloud.gov  --sso
+
 ```
 
 ##### Target your workspace
@@ -187,8 +192,10 @@ cf ssh-code
 Copy this code into the password prompt from earlier.
 
 NOTE: You can use different utilities to copy this onto the clipboard for you. If you are on Windows, try the command `cf ssh-code | clip`. On Mac, this will be `cf ssh-code | pbcopy`
+</details>
 
-#### STEP 2: Transfer uploaded files to the getgov directory
+
+#### Step 2: Transfer uploaded files to the getgov directory
 Due to the nature of how Cloud.gov operates, the getgov directory is dynamically generated whenever the app is built under the tmp/ folder. We can directly upload files to the tmp/ folder but cannot target the generated getgov folder directly, as we need to spin up a shell to access this. From here, we can move those uploaded files into the getgov directory using the `cat` command. Note that you will have to repeat this for each file you want to move, so it is better to use a tar.gz for multiple, and unpack it inside of the `datamigration` folder.
 
 ##### SSH into your sandbox
@@ -209,10 +216,14 @@ cf ssh {APP_NAME_IN_ENVIRONMENT}
 ```
 
 This will look for all files in /tmp with that are the same file type as `FILE_EXTENSION_TYPE`. 
-**Example 1: txt**
+
+**Example 1: Transferring txt files**
+
 `./manage.py cat_files_into_getgov --file_extension txt` will search for
 all files with the .txt extension.
-**Example 2: .tar.gz**
+
+**Example 2: Transferring tar.gz files**
+
 `./manage.py cat_files_into_getgov --file_extension tar.gz` will search 
 for .tar.gz files.
 
@@ -237,7 +248,7 @@ cat ../tmp/{filename} > migrationdata/{filename}
 
 *You are now ready to run migration scripts (see [Running the Migration Scripts](running-the-migration-scripts))*
 
-### SECTION 2 - LOCAL MIGRATION SETUP (TESTING PURPOSES ONLY)
+### Set Up Migrations on Local (TESTING PURPOSES ONLY)
 
 ***IMPORTANT: only use test data, to avoid publicizing PII in our public repo.***
 
@@ -253,7 +264,7 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 ## Transition Domains (Part 2) - Running the Migration Scripts
 While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands. If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
 
-### STEP 1: Load Transition Domains
+### Step 1: Load Transition Domains
 
 Run the following command, making sure the file paths point to the right location of your migration files. This will parse all given files and 
 load the information into the TransitionDomain table. Make sure you have your migrationFilepaths.json file in the same directory.
@@ -315,7 +326,7 @@ Defines the filename for domain type adhocs.
 `--infer_filenames`
 Determines if we should infer filenames or not. This setting is not available for use in environments with the flag `settings.DEBUG` set to false, as it is intended for local development only.
 
-### STEP 2: Transfer Transition Domain data into main Domain tables
+### Step 2: Transfer Transition Domain data into main Domain tables
 
 Now that we've loaded all the data into TransitionDomain, we need to update the main Domain and DomainInvitation tables with this information.  
 In the same terminal as used in STEP 1, run the command below; 
@@ -339,7 +350,7 @@ This will print out additional, detailed logs.
 Directs the script to load only the first 100 entries into the table.  You can adjust this number as needed for testing purposes. 
 **Note:** `--limitParse` is currently experiencing issues and may not work as intended.
 
-### STEP 3: Send Domain invitations
+### Step 3: Send Domain invitations
 
 To send invitation emails for every transition domain in the transition domain table, execute the following command:
 
@@ -352,7 +363,7 @@ docker compose run -T app ./manage.py send_domain_invitations -s
 ./manage.py send_domain_invitations -s
 ```
 
-### STEP 4: Test the results (Run the analyzer script)
+### Step 4: Test the results (Run the analyzer script)
 
 This script's main function is to scan the transition domain and domain tables for any anomalies.  It produces a simple report of missing or duplicate data.  NOTE: some missing data might be expected depending on the nature of our migrations so use best judgement when evaluating the results.
 
