@@ -247,7 +247,7 @@ cat ../tmp/{filename} > migrationdata/{filename}
 ```
 
 
-*You are now ready to run migration scripts (see [Running the Migration Scripts](running-the-migration-scripts))*
+*You are now ready to run migration scripts (see [Running the Domain Migration Scripts](running-the-domain-migration-scripts))*
 
 ### Set Up Local Migrations (TESTING PURPOSES ONLY)
 
