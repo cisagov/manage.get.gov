@@ -80,7 +80,7 @@ docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_co
 
 ## Transition Domains (Part 1) - Set Up Files for Import
 
-#### Step 1: Obtain data files
+### Step 1: Obtain data files
 We are provided with information about Transition Domains in the following files:
 |  | Filename                                    | Description |  
 |:-| :-------------------------------------------- | :---------- |
@@ -95,7 +95,7 @@ We are provided with information about Transition Domains in the following files
 |9| **agency.adhoc.dotgov.txt**                   | Has federal agency data
 |10| **migrationFilepaths.json**                  | A JSON which points towards all given filenames. Specified below.
 
-#### Step 2: Obtain JSON file (for file locations)
+### Step 2: Obtain JSON file (for file locations)
 Add a JSON file called "migrationFilepaths.json" with the following contents (update filenames and directory as needed):
 ```
 {
@@ -134,7 +134,7 @@ Load migration data onto a production or sandbox environment
 **WARNING:** All files uploaded in this manner are temporary, i.e. they will be deleted when the app is restaged.
 Do not use these environments to store data you want to keep around permanently. We don't want sensitive data to be accidentally present in our application environments.
 
-#### Step 1: Using cat to transfer data to sandboxes
+### Step 1: Using cat to transfer data to sandboxes
 
 ```bash
 cat {LOCAL_PATH_TO_FILE} | cf ssh {APP_NAME_IN_ENVIRONMENT} -c "cat > /home/vcap/tmp/{DESIRED_NAME_OF_FILE}"
@@ -195,7 +195,7 @@ NOTE: You can use different utilities to copy this onto the clipboard for you. I
 </details>
 
 
-#### Step 2: Transfer uploaded files to the getgov directory
+### Step 2: Transfer uploaded files to the getgov directory
 Due to the nature of how Cloud.gov operates, the getgov directory is dynamically generated whenever the app is built under the tmp/ folder. We can directly upload files to the tmp/ folder but cannot target the generated getgov folder directly, as we need to spin up a shell to access this. From here, we can move those uploaded files into the getgov directory using the `cat` command. Note that you will have to repeat this for each file you want to move, so it is better to use a tar.gz for multiple, and unpack it inside of the `datamigration` folder.
 
 ##### SSH into your sandbox
