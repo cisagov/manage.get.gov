@@ -31,6 +31,7 @@ class Socket:
 
     def connect(self):
         """Use epplib to connect."""
+        logger.info("Opening socket on connection pool")
         self.client.connect()
         response = self.client.send(self.login)
         if self.is_login_error(response.code):
@@ -40,11 +41,13 @@ class Socket:
 
     def disconnect(self):
         """Close the connection."""
+        logger.info("Closing socket on connection pool")
         try:
             self.client.send(commands.Logout())
             self.client.close()
-        except Exception:
+        except Exception as err:
             logger.warning("Connection to registry was not cleanly closed.")
+            logger.error(err)
 
     def send(self, command):
         """Sends a command to the registry.
@@ -77,19 +80,14 @@ class Socket:
             try:
                 self.client.connect()
                 response = self.client.send(self.login)
-            except LoginError as err:
+            except (LoginError, OSError) as err:
+                logger.error(err)
                 if err.should_retry() and counter < 10:
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
                     return False
-            # Occurs when an invalid creds are passed in - such as on localhost
-            except OSError as err:
-                logger.error(err)
-                return False
             else:
-                self.disconnect()
-
                 # If we encounter a login error, fail
                 if self.is_login_error(response.code):
                     logger.warning("A login error was found in test_connection_success")
@@ -97,3 +95,5 @@ class Socket:
 
                 # Otherwise, just return true
                 return True
+            finally:
+                self.disconnect()
