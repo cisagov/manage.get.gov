@@ -78,7 +78,7 @@ An example script using this technique is in
 docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_contacts.daily.dotgov.GOV.txt /app/escrow_contacts.daily.dotgov.GOV.txt
 ```
 
-## Transition Domains (Part 1) - Set Up Files for Import
+## Set Up Files for Importing Domains
 
 ### Step 1: Obtain migration data files
 We are provided with information about Transition Domains in the following files:
@@ -262,7 +262,7 @@ This will allow Docker to mount the files to a container (under `/app`) for our 
 
 *You are now ready to run migration scripts.*
 
-## Transition Domains (Part 2) - Running the Migration Scripts
+## Running the Domain Migration Scripts
 While keeping the same ssh instance open (if you are running on a sandbox), run through the following commands. If you cannot run `manage.py` commands, try running `/tmp/lifecycle/shell` in the ssh instance. 
 
 ### Step 1: Upload Transition Domains
