@@ -101,6 +101,8 @@ class EPPConnectionPool(ConnectionPool):
                 gevent.killall(self.greenlets)
 
                 self.greenlets.clear()
+                for connection in self.conn:
+                    connection.disconnect()
                 self.conn.clear()
 
                 # Clear the semaphore
