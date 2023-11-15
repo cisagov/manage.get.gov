@@ -293,3 +293,17 @@ it may help to resync your laptop with time.nist.gov:
 ```
 sudo sntp -sS time.nist.gov
 ```
+
+## Test if our connection pool is running
+Our connection pool has a built-in `pool_status` object which you can call at anytime to assess the current connection status of the pool. Follow these steps to access it.
+
+1. `cf ssh getgov-{env-name} -i {instance-index}`
+* env-name -> Which environment to target, e.g. `staging`
+* instance-index -> Which instance to target. For instance, `cf ssh getgov-staging -i 0`
+2. `/tmp/lifecycle/shell`
+3. `./manage.py shell`
+4. `from epplibwrapper import CLIENT as registry, commands`
+5. `print(registry.pool_status.connection_success)`
+* (Should return true)
+
+If you have multiple instances (staging for example), then repeat commands 1-5 for each instance you want to test. 
