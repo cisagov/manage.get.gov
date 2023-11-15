@@ -200,7 +200,7 @@ class EPPLibWrapper:
                 logger.info("Connection pool restarting...")
                 self.kill_pool()
                 logger.info("Old pool killed")
-            
+
             self._pool = self._create_pool(self._client, self._login, self.pool_options)
 
             self.pool_status.pool_running = True
