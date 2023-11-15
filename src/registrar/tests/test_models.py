@@ -628,13 +628,9 @@ class TestUser(TestCase):
         User.objects.all().delete()
 
     def test_check_transition_domains_without_domains_on_login(self):
-        """A user's on_each_login callback checks transition domains.
+        """A user's on_each_login callback does not check transition domains.
         This test makes sure that in the event a domain does not exist
         for a given transition domain, both a domain and domain invitation
         are created."""
         self.user.on_each_login()
-        self.assertTrue(Domain.objects.get(name=self.domain_name))
-
-        domain = Domain.objects.get(name=self.domain_name)
-        self.assertTrue(DomainInvitation.objects.get(email=self.email, domain=domain))
-        self.assertTrue(DomainInformation.objects.get(domain=domain))
+        self.assertFalse(Domain.objects.filter(name=self.domain_name).exists())

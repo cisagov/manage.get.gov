@@ -5,7 +5,6 @@ from django.db import models
 
 from .domain_invitation import DomainInvitation
 from .transition_domain import TransitionDomain
-from .domain_information import DomainInformation
 from .domain import Domain
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
