@@ -136,6 +136,8 @@ MIDDLEWARE = [
     "allow_cidr.middleware.AllowCIDRMiddleware",
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
+    # custom middleware to stop caching from CloudFront
+    "registrar.no_cache_middleware.NoCacheMiddleware",
     # serve static assets in production
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
