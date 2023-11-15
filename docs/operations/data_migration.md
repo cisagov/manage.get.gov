@@ -80,7 +80,7 @@ docker compose run app ./manage.py load_domain_invitations /app/escrow_domain_co
 
 ## Transition Domains (Part 1) - Set Up Files for Import
 
-### Step 1: Obtain data files
+### Step 1: Obtain migration data files
 We are provided with information about Transition Domains in the following files:
 |  | Filename                                    | Description |  
 |:-| :-------------------------------------------- | :---------- |
@@ -95,7 +95,7 @@ We are provided with information about Transition Domains in the following files
 |9| **agency.adhoc.dotgov.txt**                   | Has federal agency data
 |10| **migrationFilepaths.json**                  | A JSON which points towards all given filenames. Specified below.
 
-### Step 2: Obtain JSON file (for file locations)
+### Step 2: Obtain JSON file for migration files locations
 Add a JSON file called "migrationFilepaths.json" with the following contents (update filenames and directory as needed):
 ```
 {
