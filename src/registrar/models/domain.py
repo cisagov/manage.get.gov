@@ -218,7 +218,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def registry_expiration_date(self, ex_date: date):
         """
         Direct setting of the expiration date in the registry is not implemented.
-        
+
         To update the expiration date, use renew_domain method."""
         raise NotImplementedError()
 
@@ -226,7 +226,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         Renew the domain to a length and unit of time relative to the current
         expiration date.
-        
+
         Default length and unit of time are 1 year.
         """
         # if no expiration date from registry, set to today
@@ -236,11 +236,7 @@ class Domain(TimeStampedModel, DomainHelper):
             cur_exp_date = date.today()
 
         # create RenewDomain request
-        request = commands.RenewDomain(
-            name=self.name,
-            cur_exp_date=cur_exp_date,
-            period = epp.Period(length, unit)
-        )
+        request = commands.RenewDomain(name=self.name, cur_exp_date=cur_exp_date, period=epp.Period(length, unit))
 
         try:
             # update expiration date in registry, and set the updated

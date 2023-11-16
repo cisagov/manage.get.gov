@@ -1972,7 +1972,7 @@ class TestExpirationDate(MockEppLib):
 
     def test_expiration_date_setter_not_implemented(self):
         """assert that the setter for expiration date is not implemented and will raise error"""
-        with self.assertRaises(NotImplementedError) as err:
+        with self.assertRaises(NotImplementedError):
             self.domain.registry_expiration_date = datetime.date.today()
 
     def test_renew_domain(self):
@@ -1984,10 +1984,10 @@ class TestExpirationDate(MockEppLib):
 
     def test_renew_domain_error(self):
         """assert that the renew_domain raises an exception when registry raises error"""
-        with self.assertRaises(RegistryError) as err:
+        with self.assertRaises(RegistryError):
             self.domain_w_error.renew_domain()
 
-        
+
 class TestAnalystClientHold(MockEppLib):
     """Rule: Analysts may suspend or restore a domain by using client hold"""
 

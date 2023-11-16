@@ -907,7 +907,7 @@ class MockEppLib(TestCase):
                 res_data=[self.mockRenewedDomainExpDate],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-    
+
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
 
