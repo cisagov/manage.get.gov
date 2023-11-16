@@ -98,6 +98,7 @@ class EPPConnectionPool(ConnectionPool):
         """Kills all active connections in the pool."""
         try:
             if len(self.conn) > 0 or len(self.greenlets) > 0:
+                logger.info("Attempting to kill connections")
                 gevent.killall(self.greenlets)
 
                 self.greenlets.clear()
@@ -107,6 +108,7 @@ class EPPConnectionPool(ConnectionPool):
 
                 # Clear the semaphore
                 self.lock = BoundedSemaphore(self.size)
+                logger.info("Finished killing connections")
             else:
                 logger.info("No connections to kill.")
         except Exception as err:

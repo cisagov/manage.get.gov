@@ -106,6 +106,7 @@ class EPPLibWrapper:
                 # Flag that the pool is frozen,
                 # then restart the pool.
                 self.pool_status.pool_hanging = True
+                logger.error("Pool timed out")
                 self.start_connection_pool()
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
@@ -174,6 +175,7 @@ class EPPLibWrapper:
 
     def _create_pool(self, client, login, options):
         """Creates and returns new pool instance"""
+        logger.info("New pool was created")
         return EPPConnectionPool(client, login, options)
 
     def start_connection_pool(self, restart_pool_if_exists=True):
@@ -187,7 +189,7 @@ class EPPLibWrapper:
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
         if not self._test_registry_connection_success():
-            logger.warning("Cannot contact the Registry")
+            logger.warning("start_connection_pool() -> Cannot contact the Registry")
             self.pool_status.connection_success = False
         else:
             self.pool_status.connection_success = True
@@ -197,6 +199,7 @@ class EPPLibWrapper:
             if self._pool is not None and restart_pool_if_exists:
                 logger.info("Connection pool restarting...")
                 self.kill_pool()
+                logger.info("Old pool killed")
 
             self._pool = self._create_pool(self._client, self._login, self.pool_options)
 
@@ -221,6 +224,7 @@ class EPPLibWrapper:
         credentials are valid, and/or if the Registrar
         can be contacted
         """
+        # This is closed in test_connection_success
         socket = Socket(self._client, self._login)
         can_login = False
 
