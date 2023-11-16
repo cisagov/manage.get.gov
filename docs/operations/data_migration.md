@@ -120,7 +120,7 @@ Later on, we will bundle this file along with the others into its own folder. Ke
 We need to run a few scripts to parse these files into our domain tables.
 We can do this both locally and in a sandbox.
 
-#### Step 3: Bundle all relevant data files into an archive
+### Step 3: Bundle all relevant data files into an archive
 Move all the files specified in Step 1 into a shared folder, and create a tar.gz.
 
 Create a folder on your desktop called `datafiles` and move all of the obtained files into that. Add these files to a tar.gz archive using any method. See [here](https://stackoverflow.com/questions/53283240/how-to-create-tar-file-with-7zip).
