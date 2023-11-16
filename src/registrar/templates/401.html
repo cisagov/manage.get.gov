@@ -11,23 +11,18 @@
       <h1>
         {% translate "You are not authorized to view this page" %}
       </h1>
-      <h2>
+
+              <h2>
         {% translate "Status 401" %}
       </h2>
-
-
-      {% if friendly_message %}
-        <p>{{ friendly_message }}</p>
-      {% else %}
-        <p>{% translate "Authorization failed." %}</p>
-      {% endif %}
+       
       <p>
-        You must be an authorized user and need to be signed in to view this page. 
-        Would you like to <a href="{% url 'login' %}"> try logging in again?</a>
+        You must be an authorized user and signed in to view this page. If you are an authorized user, 
+        <strong><a href="{% url 'login' %}"> try signing in again</a>.</strong>
       </p>
       <p>
-     If you'd like help with this error <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact/' %}">contact us</a>.
-      </p>
+     If you'd like help with this error <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact/' %}">contact us</a>.</p>
+
 
       {% if log_identifier %}
         <p>Here's a unique identifier for this error.</p>
@@ -35,6 +30,7 @@
         <p>{% translate "Please include it if you contact us." %}</p>
       {% endif %}
     </div>
+    
     <div class="tablet:grid-col-4">
       <img 
          src="{% static 'img/registrar/dotgov_401_illo.svg' %}"
