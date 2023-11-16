@@ -85,7 +85,7 @@ class Socket:
                 should_retry = True
                 if isinstance(err, LoginError):
                     should_retry = err.should_retry()
-                if should_retry and counter < 10:
+                if should_retry and counter < 3:
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
