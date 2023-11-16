@@ -103,35 +103,62 @@ class Command(BaseCommand):
         if not proceed:
             return None
 
+        if len(domain_information_to_update) == 0:
+            logger.error(
+                f"{TerminalColors.MAGENTA}"
+                "No DomainInformation objects exist"
+                f"{TerminalColors.ENDC}"
+            )
+            return None
+
         logger.info(
             f"{TerminalColors.MAGENTA}"
-            "Loading organization data onto DomainInformation tables..."
+            "Preparing to load organization data onto DomainInformation tables..."
+            f"{TerminalColors.ENDC}"
         )
         self.update_domain_information(domain_information_to_update, args.debug)
     
     def update_domain_information(self, desired_objects: List[TransitionDomain], debug):
         di_to_update = []
         di_failed_to_update = []
+
+        # Fetch all TransitionDomains in one query
+        transition_domains = TransitionDomain.objects.filter(
+            username__in=[item.username for item in desired_objects],
+            domain_name__in=[item.domain_name for item in desired_objects]
+        )
+
+        # Fetch all Domains in one query
+        domains = Domain.objects.filter(
+            name__in=[td.domain_name for td in transition_domains]
+        )
+
+        # Fetch all DomainInformations in one query
+        domain_informations = DomainInformation.objects.filter(
+            domain__in=domains
+        )
+
+        # Create dictionaries for faster lookup
+        transition_domains_dict = {td.domain_name: td for td in transition_domains}
+        domains_dict = {d.name: d for d in domains}
+        domain_informations_dict = {di.domain.name: di for di in domain_informations}
+
         for item in desired_objects:
-            # TODO - this can probably be done in fewer steps
-            transition_domains = TransitionDomain.objects.filter(username=item.username, domain_name=item.domain_name)
-            current_transition_domain = self.retrieve_and_assert_single_item(transition_domains, "TransitionDomain", "test")
-
-            domains = Domain.objects.filter(name=current_transition_domain.domain_name)
-            current_domain = self.retrieve_and_assert_single_item(domains, "Domain", "test")
-            
-            domain_informations = DomainInformation.objects.filter(domain=current_domain)
-            current_domain_information = self.retrieve_and_assert_single_item(domain_informations, "DomainInformation", "test")
-
             try:
+                current_transition_domain = transition_domains_dict[item.domain_name]
+                current_domain = domains_dict[current_transition_domain.domain_name]
+                current_domain_information = domain_informations_dict[current_domain.name]
+
                 # TODO - add verification to each, for instance check address_line length
                 current_domain_information.address_line1 = current_transition_domain.address_line
                 current_domain_information.city = current_transition_domain.city
                 current_domain_information.state_territory = current_transition_domain.state_territory
                 current_domain_information.zipcode = current_transition_domain.zipcode
-
                 # TODO - Country Code
                 #current_domain_information.country_code = current_transition_domain.country_code
+
+                if debug:
+                    logger.info(f"Updating {current_domain.name}...")
             except Exception as err:
                 logger.error(err)
                 di_failed_to_update.append(current_domain_information)
@@ -182,16 +209,3 @@ class Command(BaseCommand):
                 f"Updated {len(di_to_update)} DomainInformations: {[item for item in di_to_update]}"
                 f"{TerminalColors.ENDC}"
             )
-    
-    # TODO - rename function + update so item_name_for_log works
-    def retrieve_and_assert_single_item(self, item_queryset, class_name_for_log, item_name_for_log):
-        """Checks if .filter returns one, and only one, item"""
-        if item_queryset.count() == 0:
-            # TODO - custom exception class
-            raise Exception(f"Could not update. {class_name_for_log} for {item_name_for_log} was not found")
-        
-        if item_queryset.count() > 1:
-            raise Exception(f"Could not update. Duplicate {class_name_for_log} for {item_name_for_log} was found")
-
-        desired_item = item_queryset.get()
-        return desired_item
