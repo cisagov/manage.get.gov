@@ -233,6 +233,7 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             cur_exp_date = self.registry_expiration_date
         except KeyError:
+            logger.warning("current expiration date not set; setting to today")
             cur_exp_date = date.today()
 
         # create RenewDomain request
