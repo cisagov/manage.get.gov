@@ -784,17 +784,17 @@ class OrganizationDataLoader:
         """Updates org data for all TransitionDomains"""
         all_transition_domains = TransitionDomain.objects.all()
         if len(all_transition_domains) < 1:
-            logger.error(
+            raise Exception(
                 f"{TerminalColors.FAIL}"
                 "No TransitionDomains exist. Cannot update."
                 f"{TerminalColors.ENDC}"
             )
-            return None
 
         # Store all actions we want to perform in tds_to_update
         self.prepare_transition_domains(all_transition_domains)
         # Then if we don't run into any exceptions, bulk_update it
         self.bulk_update_transition_domains(self.tds_to_update)
+        return self.tds_to_update
 
     def prepare_transition_domains(self, transition_domains):
         for item in transition_domains:

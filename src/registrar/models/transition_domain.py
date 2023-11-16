@@ -134,7 +134,6 @@ class TransitionDomain(TimeStampedModel):
         blank=True,
         help_text="Country code",
     )
-    # TODO - Country code?
 
     def __str__(self):
         return f"{self.username}, {self.domain_name}"
