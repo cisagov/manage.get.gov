@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 from registrar.management.commands.utility.epp_data_containers import EnumFilenames
 
@@ -18,6 +18,9 @@ class TransitionDomainArguments:
     # Maintains an internal kwargs list and sets values
     # that match the class definition.
     def __init__(self, **kwargs):
+        self.pattern_map_params = []
+        if "self.pattern_map_params" in kwargs:
+            self.pattern_map_params = kwargs["pattern_map_params"]
         self.kwargs = kwargs
         for k, v in kwargs.items():
             if hasattr(self, k):
@@ -36,13 +39,13 @@ class TransitionDomainArguments:
     limitParse: Optional[int] = field(default=None, repr=True)
 
     # Filenames #
-    # = Adhocs =#
+    # = Adhocs = #
     agency_adhoc_filename: Optional[str] = field(default=EnumFilenames.AGENCY_ADHOC.value[1], repr=True)
     domain_adhoc_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADHOC.value[1], repr=True)
     organization_adhoc_filename: Optional[str] = field(default=EnumFilenames.ORGANIZATION_ADHOC.value[1], repr=True)
     authority_adhoc_filename: Optional[str] = field(default=EnumFilenames.AUTHORITY_ADHOC.value[1], repr=True)
 
-    # = Data files =#
+    # = Data files = #
     domain_escrow_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ESCROW.value[1], repr=True)
     domain_additional_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADDITIONAL.value[1], repr=True)
     domain_contacts_filename: Optional[str] = field(default=None, repr=True)
