@@ -21,11 +21,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="transitiondomain",
-            name="country_code",
-            field=models.CharField(blank=True, help_text="Country code", max_length=2, null=True),
-        ),
-        migrations.AddField(
-            model_name="transitiondomain",
             name="state_territory",
             field=models.CharField(blank=True, help_text="State, territory, or military post", max_length=2, null=True),
         ),

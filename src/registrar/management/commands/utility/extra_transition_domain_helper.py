@@ -804,6 +804,7 @@ class OrganizationDataLoader:
                 if self.debug:
                     logger.info(item.display_transition_domain())
                     logger.info(
+                        f"Successfully updated TransitionDomain: \n"
                         f"{TerminalColors.OKCYAN}"
                         f"{item.display_transition_domain()}"
                         f"{TerminalColors.ENDC}"
@@ -813,6 +814,7 @@ class OrganizationDataLoader:
                 self.tds_failed_to_update.append(item)
                 if self.debug:
                     logger.error(
+                        f"Failed to update TransitionDomain: \n"
                         f"{TerminalColors.YELLOW}"
                         f"{item.display_transition_domain()}"
                         f"{TerminalColors.ENDC}"
@@ -846,7 +848,6 @@ class OrganizationDataLoader:
             "city",
             "state_territory",
             "zipcode",
-            "country_code",
         ]
 
         TransitionDomain.objects.bulk_update(update_list, changed_fields)
@@ -886,15 +887,14 @@ class OrganizationDataLoader:
         transition_domain.city = org_info.orgcity
         transition_domain.state_territory = org_info.orgstate
         transition_domain.zipcode = org_info.orgzip
-        transition_domain.country_code = org_info.orgcountrycode
 
-        # Log what happened to each field
+        # Log what happened to each field. The first value
+        # is the field name that was updated, second is the value
         changed_fields = [
             ("address_line", transition_domain.address_line),
             ("city", transition_domain.city),
             ("state_territory", transition_domain.state_territory),
             ("zipcode", transition_domain.zipcode),
-            ("country_code", transition_domain.country_code),
         ]
         self.log_add_or_changed_values(EnumFilenames.AUTHORITY_ADHOC, changed_fields, domain_name)
 

@@ -51,7 +51,6 @@ class Command(BaseCommand):
             "city",
             "state_territory",
             "zipcode",
-            "country_code",
         ]
         proceed = TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
@@ -122,43 +121,48 @@ class Command(BaseCommand):
         di_to_update = []
         di_failed_to_update = []
 
-        # Fetch all TransitionDomains in one query
+        # Grab each TransitionDomain we want to change. Store it.
+        # Fetches all TransitionDomains in one query.
         transition_domains = TransitionDomain.objects.filter(
             username__in=[item.username for item in desired_objects],
             domain_name__in=[item.domain_name for item in desired_objects]
         )
 
-        # Fetch all Domains in one query
+        if len(desired_objects) != len(transition_domains):
+            raise Exception("Could not find all desired TransitionDomains")
+
+        # Then, for each domain_name grab the associated domain object.
+        # Fetches all Domains in one query.
         domains = Domain.objects.filter(
             name__in=[td.domain_name for td in transition_domains]
         )
 
-        # Fetch all DomainInformations in one query
+        # Then, use each domain object to map domain <--> DomainInformation
+        # Fetches all DomainInformations in one query.
         domain_informations = DomainInformation.objects.filter(
             domain__in=domains
         )
 
         # Create dictionaries for faster lookup
-        transition_domains_dict = {td.domain_name: td for td in transition_domains}
         domains_dict = {d.name: d for d in domains}
         domain_informations_dict = {di.domain.name: di for di in domain_informations}
 
-        for item in desired_objects:
+        for item in transition_domains:
             try:
-                current_transition_domain = transition_domains_dict[item.domain_name]
-                current_domain = domains_dict[current_transition_domain.domain_name]
+                # Grab the current Domain. This ensures we are pointing towards the right place.
+                current_domain = domains_dict[item.domain_name]
+
+                # Based on the current domain, grab the right DomainInformation object.
                 current_domain_information = domain_informations_dict[current_domain.name]
 
-                # TODO - add verification to each, for instance check address_line length
-                current_domain_information.address_line1 = current_transition_domain.address_line
-                current_domain_information.city = current_transition_domain.city
-                current_domain_information.state_territory = current_transition_domain.state_territory
-                current_domain_information.zipcode = current_transition_domain.zipcode
-                # TODO - Country Code
-                #current_domain_information.country_code = current_transition_domain.country_code
+                current_domain_information.address_line1 = item.address_line
+                current_domain_information.city = item.city
+                current_domain_information.state_territory = item.state_territory
+                current_domain_information.zipcode = item.zipcode
 
                 if debug:
                     logger.info(f"Updating {current_domain.name}...")
+
             except Exception as err:
                 logger.error(err)
                 di_failed_to_update.append(current_domain_information)
@@ -192,7 +196,6 @@ class Command(BaseCommand):
             "city",
             "state_territory",
             "zipcode",
-            #"country_code",
         ]
 
         DomainInformation.objects.bulk_update(di_to_update, changed_fields)

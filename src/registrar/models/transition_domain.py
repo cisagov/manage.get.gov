@@ -128,12 +128,6 @@ class TransitionDomain(TimeStampedModel):
         help_text="Zip code",
         db_index=True,
     )
-    country_code = models.CharField(
-        max_length=2,
-        null=True,
-        blank=True,
-        help_text="Country code",
-    )
 
     def __str__(self):
         return f"{self.username}, {self.domain_name}"
@@ -161,5 +155,4 @@ class TransitionDomain(TimeStampedModel):
             f"city: {self.city}, \n"
             f"state_territory: {self.state_territory}, \n"
             f"zipcode: {self.zipcode}, \n"
-            f"country_code: {self.country_code}, \n"
         )
