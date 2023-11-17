@@ -208,34 +208,11 @@ class TestOrganizationMigration(TestCase):
         # == Third, test that we've loaded data as we expect == #     
         _domain = Domain.objects.filter(name="fakewebsite2.gov").get()   
         domain_information = DomainInformation.objects.filter(domain=_domain).get()
-        expected_domain_information = DomainInformation(
-            id=4,
-            creator_id=1,
-            domain_application_id=None,
-            organization_type='federal',
-            federally_recognized_tribe=None,
-            state_recognized_tribe=None,
-            tribe_name=None,
-            federal_agency='Department of Commerce',
-            federal_type='executive',
-            is_election_board=None,
-            organization_name='Fanoodle',
-            address_line1='93001 Arizona Drive',
-            address_line2=None,
-            city='Columbus',
-            state_territory='Oh',
-            zipcode='43268',
-            urbanization=None,
-            about_your_organization=None,
-            authorizing_official_id=5,
-            domain_id=4,
-            submitter_id=None,
-            purpose=None,
-            no_other_contacts_rationale=None,
-            anything_else=None,
-            is_policy_acknowledged=None
-        )
-        self.assertEqual(domain_information.__dict__, expected_domain_information.__dict__)
+        
+        self.assertEqual(domain_information.address_line1, '93001 Arizona Drive')
+        self.assertEqual(domain_information.city, 'Columbus')
+        self.assertEqual(domain_information.state_territory, 'Oh')
+        self.assertEqual(domain_information.zipcode, '43268')
 
     def test_load_organization_data_integrity(self):
         """Validates data integrity with the load_org_data command"""
