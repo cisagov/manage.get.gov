@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 from .common import less_console_noise
 
+
 class TestOrganizationMigration(TestCase):
     def setUp(self):
         """ """
@@ -65,7 +66,7 @@ class TestOrganizationMigration(TestCase):
 
     def run_transfer_domains(self):
         call_command("transfer_transition_domains_to_domains")
-    
+
     def run_load_organization_data(self):
         # noqa here (E501) because splitting this up makes it
         # confusing to read.
@@ -162,7 +163,7 @@ class TestOrganizationMigration(TestCase):
         # == Second, try adding org data to it == #
         self.run_load_organization_data()
 
-        # == Third, test that we've loaded data as we expect == #        
+        # == Third, test that we've loaded data as we expect == #
         transition_domains = TransitionDomain.objects.filter(domain_name="fakewebsite2.gov")
 
         # Should return three objects (three unique emails)
@@ -171,33 +172,32 @@ class TestOrganizationMigration(TestCase):
         # Lets test the first one
         transition = transition_domains.first()
         expected_transition_domain = TransitionDomain(
-            username='alexandra.bobbitt5@test.com',
-            domain_name='fakewebsite2.gov',
-            status='on hold',
+            username="alexandra.bobbitt5@test.com",
+            domain_name="fakewebsite2.gov",
+            status="on hold",
             email_sent=True,
-            organization_type='Federal',
-            organization_name='Fanoodle',
-            federal_type='Executive',
-            federal_agency='Department of Commerce',
+            organization_type="Federal",
+            organization_name="Fanoodle",
+            federal_type="Executive",
+            federal_agency="Department of Commerce",
             epp_creation_date=datetime.date(2004, 5, 7),
             epp_expiration_date=datetime.date(2023, 9, 30),
-            first_name='Seline',
-            middle_name='testmiddle2',
-            last_name='Tower',
+            first_name="Seline",
+            middle_name="testmiddle2",
+            last_name="Tower",
             title=None,
-            email='stower3@answers.com',
-            phone='151-539-6028',
-            address_line='93001 Arizona Drive',
-            city='Columbus',
-            state_territory='Oh',
-            zipcode='43268'
+            email="stower3@answers.com",
+            phone="151-539-6028",
+            address_line="93001 Arizona Drive",
+            city="Columbus",
+            state_territory="Oh",
+            zipcode="43268",
         )
         expected_transition_domain.id = transition.id
 
         self.assertEqual(transition, expected_transition_domain)
-    
+
     def test_load_organization_data_domain_information(self):
-        self.maxDiff = None
         # == First, parse all existing data == #
         self.run_load_domains()
         self.run_transfer_domains()
@@ -205,14 +205,14 @@ class TestOrganizationMigration(TestCase):
         # == Second, try adding org data to it == #
         self.run_load_organization_data()
 
-        # == Third, test that we've loaded data as we expect == #     
-        _domain = Domain.objects.filter(name="fakewebsite2.gov").get()   
+        # == Third, test that we've loaded data as we expect == #
+        _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
         domain_information = DomainInformation.objects.filter(domain=_domain).get()
-        
-        self.assertEqual(domain_information.address_line1, '93001 Arizona Drive')
-        self.assertEqual(domain_information.city, 'Columbus')
-        self.assertEqual(domain_information.state_territory, 'Oh')
-        self.assertEqual(domain_information.zipcode, '43268')
+
+        self.assertEqual(domain_information.address_line1, "93001 Arizona Drive")
+        self.assertEqual(domain_information.city, "Columbus")
+        self.assertEqual(domain_information.state_territory, "Oh")
+        self.assertEqual(domain_information.zipcode, "43268")
 
     def test_load_organization_data_integrity(self):
         """Validates data integrity with the load_org_data command"""
@@ -222,7 +222,7 @@ class TestOrganizationMigration(TestCase):
 
         # Second, try adding org data to it
         self.run_load_organization_data()
-        
+
         # Third, test that we didn't corrupt any data
         expected_total_transition_domains = 9
         expected_total_domains = 5
@@ -244,6 +244,7 @@ class TestOrganizationMigration(TestCase):
             expected_missing_domain_informations,
             expected_missing_domain_invitations,
         )
+
 
 class TestMigrations(TestCase):
     def setUp(self):
@@ -308,7 +309,7 @@ class TestMigrations(TestCase):
                 migrationJSON=self.migration_json_filename,
                 disablePrompts=True,
             )
-    
+
     def run_load_organization_data(self):
         # noqa here (E501) because splitting this up makes it
         # confusing to read.

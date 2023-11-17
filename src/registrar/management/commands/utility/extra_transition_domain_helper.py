@@ -751,26 +751,28 @@ class FileDataHolder:
         full_filename = date + "." + filename_without_date
         return (full_filename, can_infer)
 
+
 class OrganizationDataLoader:
     """Saves organization data onto Transition Domains. Handles file parsing."""
+
     def __init__(self, options: TransitionDomainArguments):
         # Globally stores event logs and organizes them
         self.parse_logs = FileTransitionLog()
         self.debug = options.debug
 
         options.pattern_map_params = [
-                (
-                    EnumFilenames.DOMAIN_ADDITIONAL,
-                    options.domain_additional_filename,
-                    DomainAdditionalData,
-                    "domainname",
-                ),
-                (
-                    EnumFilenames.ORGANIZATION_ADHOC,
-                    options.organization_adhoc_filename,
-                    OrganizationAdhoc,
-                    "orgid",
-                ),
+            (
+                EnumFilenames.DOMAIN_ADDITIONAL,
+                options.domain_additional_filename,
+                DomainAdditionalData,
+                "domainname",
+            ),
+            (
+                EnumFilenames.ORGANIZATION_ADHOC,
+                options.organization_adhoc_filename,
+                OrganizationAdhoc,
+                "orgid",
+            ),
         ]
         # Reads and parses organization data
         self.parsed_data = ExtraTransitionDomain(options)
@@ -779,15 +781,13 @@ class OrganizationDataLoader:
 
         self.tds_to_update = []
         self.tds_failed_to_update = []
-    
+
     def update_organization_data_for_all(self):
         """Updates org data for all TransitionDomains"""
         all_transition_domains = TransitionDomain.objects.all()
         if len(all_transition_domains) < 1:
             raise Exception(
-                f"{TerminalColors.FAIL}"
-                "No TransitionDomains exist. Cannot update."
-                f"{TerminalColors.ENDC}"
+                f"{TerminalColors.FAIL}" "No TransitionDomains exist. Cannot update." f"{TerminalColors.ENDC}"
             )
 
         # Store all actions we want to perform in tds_to_update
@@ -822,26 +822,20 @@ class OrganizationDataLoader:
 
         if len(self.tds_failed_to_update) > 0:
             logger.error(
-                "Failed to update. An exception was encountered " 
+                "Failed to update. An exception was encountered "
                 f"on the following TransitionDomains: {[item for item in self.tds_failed_to_update]}"
             )
             raise Exception("Failed to update TransitionDomains")
 
         if not self.debug:
-            logger.info(
-                f"Ready to update {len(self.tds_to_update)} TransitionDomains."
-            )
+            logger.info(f"Ready to update {len(self.tds_to_update)} TransitionDomains.")
         else:
             logger.info(
                 f"Ready to update {len(self.tds_to_update)} TransitionDomains: {[item for item in self.tds_failed_to_update]}"
             )
 
     def bulk_update_transition_domains(self, update_list):
-        logger.info(
-            f"{TerminalColors.MAGENTA}"
-            "Beginning mass TransitionDomain update..."
-            f"{TerminalColors.ENDC}"
-        )
+        logger.info(f"{TerminalColors.MAGENTA}" "Beginning mass TransitionDomain update..." f"{TerminalColors.ENDC}")
 
         changed_fields = [
             "address_line",
@@ -905,7 +899,7 @@ class OrganizationDataLoader:
         self.log_add_or_changed_values(EnumFilenames.AUTHORITY_ADHOC, changed_fields, domain_name)
 
         return transition_domain
-    
+
     def get_org_info(self, domain_name) -> OrganizationAdhoc:
         """Maps an id given in get_domain_data to a organization_adhoc
         record which has its corresponding definition"""
@@ -914,17 +908,17 @@ class OrganizationDataLoader:
             return None
         org_id = domain_info.orgid
         return self.get_organization_adhoc(org_id)
-    
+
     def get_organization_adhoc(self, desired_id) -> OrganizationAdhoc:
         """Grabs a corresponding row within the ORGANIZATION_ADHOC file,
         based off a desired_id"""
         return self.get_object_by_id(EnumFilenames.ORGANIZATION_ADHOC, desired_id)
-    
+
     def get_domain_data(self, desired_id) -> DomainAdditionalData:
         """Grabs a corresponding row within the DOMAIN_ADDITIONAL file,
         based off a desired_id"""
         return self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id)
-    
+
     def get_object_by_id(self, file_type: EnumFilenames, desired_id):
         """Returns a field in a dictionary based off the type and id.
 
@@ -1032,9 +1026,7 @@ class ExtraTransitionDomain:
         # metadata about each file and associate it with an enum.
         # That way if we want the data located at the agency_adhoc file,
         # we can just call EnumFilenames.AGENCY_ADHOC.
-        if (
-            options.pattern_map_params is None or options.pattern_map_params == []
-        ):
+        if options.pattern_map_params is None or options.pattern_map_params == []:
             options.pattern_map_params = [
                 (
                     EnumFilenames.AGENCY_ADHOC,

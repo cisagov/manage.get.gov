@@ -105,10 +105,7 @@ class Command(BaseCommand):
         if not proceed:
             return None
 
-        logger.info(
-            f"{TerminalColors.MAGENTA}"
-            "Loading organization data onto TransitionDomain tables..."
-        )
+        logger.info(f"{TerminalColors.MAGENTA}" "Loading organization data onto TransitionDomain tables...")
         load = OrganizationDataLoader(args)
         domain_information_to_update = load.update_organization_data_for_all()
 
@@ -135,11 +132,7 @@ class Command(BaseCommand):
             return None
 
         if len(domain_information_to_update) == 0:
-            logger.error(
-                f"{TerminalColors.MAGENTA}"
-                "No DomainInformation objects exist"
-                f"{TerminalColors.ENDC}"
-            )
+            logger.error(f"{TerminalColors.MAGENTA}" "No DomainInformation objects exist" f"{TerminalColors.ENDC}")
             return None
 
         logger.info(
@@ -148,125 +141,93 @@ class Command(BaseCommand):
             f"{TerminalColors.ENDC}"
         )
         self.update_domain_information(domain_information_to_update, args.debug)
-    
+
     def update_domain_information(self, desired_objects: List[TransitionDomain], debug):
         di_to_update = []
         di_failed_to_update = []
-        # These are fields that we COULD update, but fields we choose not to update.
-        # For instance, if the user already entered data - lets not corrupt that.
         di_skipped = []
 
-        # Grab each TransitionDomain we want to change. Store it.
-        # Fetches all TransitionDomains in one query.
+        # Grab each TransitionDomain we want to change.
         transition_domains = TransitionDomain.objects.filter(
             username__in=[item.username for item in desired_objects],
-            domain_name__in=[item.domain_name for item in desired_objects]
+            domain_name__in=[item.domain_name for item in desired_objects],
         ).distinct()
 
         if len(desired_objects) != len(transition_domains):
             raise Exception("Could not find all desired TransitionDomains")
 
         # Then, for each domain_name grab the associated domain object.
-        # Fetches all Domains in one query.
-        domains = Domain.objects.filter(
-            name__in=[td.domain_name for td in transition_domains]
-        )
-
+        domains = Domain.objects.filter(name__in=[td.domain_name for td in transition_domains])
+        # Create dictionary for faster lookup
+        domains_dict = {d.name: d for d in domains}
 
         # Start with all DomainInformation objects
         filtered_domain_informations = DomainInformation.objects.all()
-        
-        changed_fields = [
-            "address_line1",
-            "city",
-            "state_territory",
-            "zipcode",
-        ]
-
-        # Chain filter calls for each field. This checks to see if the end user
-        # made a change to ANY field in changed_fields. If they did, don't update their information.
-        # We assume that if they made a change, we don't want to interfere with that.
-        for field in changed_fields:
-            # For each changed_field, check if no data exists
-            filtered_domain_informations = filtered_domain_informations.filter(**{f'{field}__isnull': True})
 
         # Then, use each domain object to map domain <--> DomainInformation
         # Fetches all DomainInformations in one query.
+        # If any related organization fields have been updated,
+        # we can assume that they modified this information themselves - thus we should not update it.
         domain_informations = filtered_domain_informations.filter(
-            domain__in=domains
+            domain__in=domains,
+            address_line1__isnull=True,
+            city__isnull=True,
+            state_territory__isnull=True,
+            zipcode__isnull=True,
         )
 
-        # Create dictionaries for faster lookup
-        domains_dict = {d.name: d for d in domains}
         domain_informations_dict = {di.domain.name: di for di in domain_informations}
 
         for item in transition_domains:
-            try:
-                should_update = True
-                # Grab the current Domain. This ensures we are pointing towards the right place.
-                if item.domain_name not in domains_dict:
-                    logger.error(f"Could not add {item.domain_name}. Domain does not exist.")
-                    di_failed_to_update.append(item)
-                    continue
-                current_domain = domains_dict[item.domain_name]
-
-                # Based on the current domain, grab the right DomainInformation object.
-                if current_domain.name in domain_informations_dict:
-                    current_domain_information = domain_informations_dict[current_domain.name]
-                    current_domain_information.address_line1 = item.address_line
-                    current_domain_information.city = item.city
-                    current_domain_information.state_territory = item.state_territory
-                    current_domain_information.zipcode = item.zipcode
-                    
-                    if debug:
-                        logger.info(f"Updating {current_domain.name}...")
-
-                else:
-                    logger.info(
-                        f"{TerminalColors.YELLOW}"
-                        f"Domain {current_domain.name} was updated by a user. Cannot update."
-                        f"{TerminalColors.ENDC}"
-                    )
-                    should_update = False
-
-            except Exception as err:
-                logger.error(err)
+            if item.domain_name not in domains_dict:
+                logger.error(f"Could not add {item.domain_name}. Domain does not exist.")
                 di_failed_to_update.append(item)
-            else:
-                if should_update:
-                    di_to_update.append(current_domain_information)
-                else:
-                    # TODO either update to name for all,
-                    # or have this filter to the right field
-                    di_skipped.append(item)
-        
-        if len(di_failed_to_update) > 0:
+                continue
+
+            current_domain = domains_dict[item.domain_name]
+            if current_domain.name not in domain_informations_dict:
+                logger.info(
+                    f"{TerminalColors.YELLOW}"
+                    f"Domain {current_domain.name} was updated by a user. Cannot update."
+                    f"{TerminalColors.ENDC}"
+                )
+                di_skipped.append(item)
+                continue
+
+            # Based on the current domain, grab the right DomainInformation object.
+            current_domain_information = domain_informations_dict[current_domain.name]
+
+            # Update fields
+            current_domain_information.address_line1 = item.address_line
+            current_domain_information.city = item.city
+            current_domain_information.state_territory = item.state_territory
+            current_domain_information.zipcode = item.zipcode
+
+            di_to_update.append(current_domain_information)
+            if debug:
+                logger.info(f"Updated {current_domain.name}...")
+
+        if di_failed_to_update:
+            failed = [item.domain_name for item in di_failed_to_update]
             logger.error(
-                f"{TerminalColors.FAIL}"
-                "Failed to update. An exception was encountered " 
-                f"on the following TransitionDomains: {[item for item in di_failed_to_update]}"
-                f"{TerminalColors.ENDC}"
+                f"""{TerminalColors.FAIL}
+                Failed to update. An exception was encountered on the following TransitionDomains: {failed}
+                {TerminalColors.ENDC}"""
             )
             raise Exception("Failed to update DomainInformations")
-        
-        skipped_count = len(di_skipped)
-        if skipped_count > 0:
-            logger.info(f"Skipped updating {skipped_count} fields. User-supplied data exists")
 
-        if not debug:
-            logger.info(
-                f"Ready to update {len(di_to_update)} TransitionDomains."
-            )
-        else:
-            logger.info(
-                f"Ready to update {len(di_to_update)} TransitionDomains: {[item for item in di_to_update]}"
-            )
-        
-        logger.info(
-            f"{TerminalColors.MAGENTA}"
-            "Beginning mass DomainInformation update..."
-            f"{TerminalColors.ENDC}"
-        )
+        if di_skipped:
+            logger.info(f"Skipped updating {len(di_skipped)} fields. User-supplied data exists")
+
+        self.bulk_update_domain_information(di_to_update, debug)
+
+    def bulk_update_domain_information(self, di_to_update, debug):
+        if debug:
+            logger.info(f"Updating these TransitionDomains: {[item for item in di_to_update]}")
+
+        logger.info(f"Ready to update {len(di_to_update)} TransitionDomains.")
+
+        logger.info(f"{TerminalColors.MAGENTA}" "Beginning mass DomainInformation update..." f"{TerminalColors.ENDC}")
 
         changed_fields = [
             "address_line1",
@@ -283,15 +244,9 @@ class Command(BaseCommand):
             page = paginator.page(page_num)
             DomainInformation.objects.bulk_update(page.object_list, changed_fields)
 
-        if not debug:
-            logger.info(
-                f"{TerminalColors.OKGREEN}"
-                f"Updated {len(di_to_update)} DomainInformations."
-                f"{TerminalColors.ENDC}"
-            )
-        else:
-            logger.info(
-                f"{TerminalColors.OKGREEN}"
-                f"Updated {len(di_to_update)} DomainInformations: {[item for item in di_to_update]}"
-                f"{TerminalColors.ENDC}"
-            )
+        if debug:
+            logger.info(f"Updated these DomainInformations: {[item for item in di_to_update]}")
+
+        logger.info(
+            f"{TerminalColors.OKGREEN}" f"Updated {len(di_to_update)} DomainInformations." f"{TerminalColors.ENDC}"
+        )
