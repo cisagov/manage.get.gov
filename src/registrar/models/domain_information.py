@@ -131,8 +131,8 @@ class DomainInformation(TimeStampedModel):
     urbanization = models.TextField(
         null=True,
         blank=True,
-        help_text="Urbanization (Puerto Rico only)",
-        verbose_name="Urbanization (Puerto Rico only)",
+        help_text="Urbanization (required for Puerto Rico only)",
+        verbose_name="Urbanization (required for Puerto Rico only)",
     )
 
     about_your_organization = models.TextField(

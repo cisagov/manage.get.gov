@@ -106,7 +106,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domainapplication",
             name="urbanization",
-            field=models.TextField(blank=True, help_text="Urbanization (Puerto Rico only)", null=True),
+            field=models.TextField(blank=True, help_text="Urbanization (required for Puerto Rico only)", null=True),
         ),
         migrations.AlterField(
             model_name="domainapplication",
