@@ -442,7 +442,7 @@ class DomainApplication(TimeStampedModel):
     address_line2 = models.TextField(
         null=True,
         blank=True,
-        help_text="Street address line 2",
+        help_text="Street address line 2 (optional)",
     )
     city = models.TextField(
         null=True,

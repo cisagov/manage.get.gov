@@ -24,9 +24,9 @@ class Migration(migrations.Migration):
             name="address_line2",
             field=models.TextField(
                 blank=True,
-                help_text="Street address line 2",
+                help_text="Street address line 2 (optional)",
                 null=True,
-                verbose_name="Street address line 2",
+                verbose_name="Street address line 2 (optional)",
             ),
         ),
         migrations.AlterField(

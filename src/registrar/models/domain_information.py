@@ -106,8 +106,8 @@ class DomainInformation(TimeStampedModel):
     address_line2 = models.TextField(
         null=True,
         blank=True,
-        help_text="Street address line 2",
-        verbose_name="Street address line 2",
+        help_text="Street address line 2 (optional)",
+        verbose_name="Street address line 2 (optional)",
     )
     city = models.TextField(
         null=True,

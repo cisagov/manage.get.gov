@@ -244,7 +244,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     address_line2 = forms.CharField(
         required=False,
-        label="Street address line 2",
+        label="Street address line 2 (optional)",
     )
     city = forms.CharField(
         label="City",

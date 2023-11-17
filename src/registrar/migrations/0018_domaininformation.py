@@ -117,7 +117,7 @@ class Migration(migrations.Migration):
                     "address_line2",
                     models.CharField(
                         blank=True,
-                        help_text="Street address line 2",
+                        help_text="Street address line 2 (optional)",
                         max_length=15,
                         null=True,
                     ),
