@@ -11,11 +11,21 @@ If you’re not affiliated with the above domain{% if domains|length > 1 %}s{% e
 
 CREATE A LOGIN.GOV ACCOUNT
 
-You can’t use your old credentials to access the new registrar. Access is now managed through Login.gov, a simple and secure process for signing into many government services with one account. Follow these steps to create your Login.gov account <https://login.gov/help/get-started/create-your-account/>. 
+You can’t use your old credentials to access the new registrar. Access is now managed through Login.gov, a simple and secure process for signing in to many government services with one account. 
 
-When creating an account, you’ll need to provide the same email address you used to log in to the old registrar. That will ensure your domains are linked to your Login.gov account. 
+When creating a Login.gov account, you’ll need to provide the same email address you used to sign in to the old registrar. That will link your domain{% if domains|length > 1 %}s{% endif %} to your account. 
 
 If you need help finding the email address you used in the past, let us know in a reply to this email.
+
+YOU MUST VERIFY YOUR IDENTITY WITH LOGIN.GOV
+
+We require you to verify your identity with Login.gov as part of the account creation process. This is an extra layer of security that requires you to prove you are you, and not someone pretending to be you.
+
+When you try to access the registrar with your Login.gov account, we’ll ask you to verify your identity if you haven’t already. You’ll only have to verify your identity once. You’ll need a state-issued ID, a Social Security number, and a phone number for identity verification.
+
+Follow these steps to create your Login.gov account <https://login.gov/help/get-started/create-your-account/>. 
+
+Read more about verifying your identity with Login.gov <https://login.gov/help/verify-your-identity/how-to-verify-your-identity/>. 
 
 CHECK YOUR .GOV DOMAIN CONTACTS
 
