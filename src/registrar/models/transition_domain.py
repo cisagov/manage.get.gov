@@ -83,7 +83,7 @@ class TransitionDomain(TimeStampedModel):
     middle_name = models.TextField(
         null=True,
         blank=True,
-        help_text="Middle name",
+        help_text="Middle name (optional)",
     )
     last_name = models.TextField(
         null=True,

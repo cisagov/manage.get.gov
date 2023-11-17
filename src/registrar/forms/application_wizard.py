@@ -331,7 +331,7 @@ class AuthorizingOfficialForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -529,7 +529,7 @@ class YourContactForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -558,7 +558,7 @@ class OtherContactsForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
