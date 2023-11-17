@@ -757,7 +757,6 @@ class OrganizationDataLoader:
 
     def __init__(self, options: TransitionDomainArguments):
         # Globally stores event logs and organizes them
-        self.parse_logs = FileTransitionLog()
         self.debug = options.debug
 
         options.pattern_map_params = [
@@ -784,9 +783,7 @@ class OrganizationDataLoader:
         """Updates org data for all TransitionDomains"""
         all_transition_domains = TransitionDomain.objects.all()
         if len(all_transition_domains) == 0:
-            raise Exception(
-                f"{TerminalColors.FAIL}No TransitionDomains exist. Cannot update.{TerminalColors.ENDC}"
-            )
+            raise Exception(f"{TerminalColors.FAIL}No TransitionDomains exist. Cannot update.{TerminalColors.ENDC}")
 
         self.prepare_transition_domains(all_transition_domains)
 
@@ -831,14 +828,12 @@ class OrganizationDataLoader:
         for page_num in paginator.page_range:
             page = paginator.page(page_num)
             TransitionDomain.objects.bulk_update(page.object_list, changed_fields)
-        
+
         if self.debug:
             logger.info(f"Updated the following: {[item for item in self.tds_to_update]}")
 
         logger.info(
-            f"{TerminalColors.OKGREEN}"
-            f"Updated {len(self.tds_to_update)} TransitionDomains."
-            f"{TerminalColors.ENDC}"
+            f"{TerminalColors.OKGREEN}" f"Updated {len(self.tds_to_update)} TransitionDomains." f"{TerminalColors.ENDC}"
         )
 
     def parse_org_data(self, domain_name, transition_domain: TransitionDomain) -> TransitionDomain:
@@ -849,13 +844,7 @@ class OrganizationDataLoader:
 
         org_info = self.get_org_info(domain_name)
         if org_info is None:
-            self.parse_logs.create_log_item(
-                EnumFilenames.ORGANIZATION_ADHOC,
-                LogCode.ERROR,
-                f"Could not add organization data on {domain_name}, no data exists.",
-                domain_name,
-                not self.debug,
-            )
+            logger.error(f"Could not add organization data on {domain_name}, no data exists.")
             return transition_domain
 
         # Add street info
@@ -938,12 +927,12 @@ class OrganizationDataLoader:
 
     def log_add_or_changed_values(self, values_to_check, domain_name):
         """Iterates through a list of fields, and determines if we should log
-        if the field was added or if the field was updated. 
-        
+        if the field was added or if the field was updated.
+
         A field is "updated" when it is not None or not "".
         A field is "created" when it is either of those things.
 
-        
+
         """
         for field_name, value in values_to_check:
             str_exists = value is not None and value.strip() != ""
