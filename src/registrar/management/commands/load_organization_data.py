@@ -204,6 +204,10 @@ class Command(BaseCommand):
             try:
                 should_update = True
                 # Grab the current Domain. This ensures we are pointing towards the right place.
+                if item.domain_name not in domains_dict:
+                    logger.error(f"Could not add {item.domain_name}. Domain does not exist.")
+                    di_failed_to_update.append(item)
+                    continue
                 current_domain = domains_dict[item.domain_name]
 
                 # Based on the current domain, grab the right DomainInformation object.

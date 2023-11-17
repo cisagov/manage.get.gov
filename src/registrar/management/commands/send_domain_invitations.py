@@ -152,6 +152,12 @@ class Command(BaseCommand):
             for domain_name in email_data["domains"]:
                 # self.transition_domains is a queryset so we can sub-select
                 # from it and use the objects to mark them as sent
-                this_transition_domain = self.transition_domains.get(username=this_email, domain_name=domain_name)
-                this_transition_domain.email_sent = True
-                this_transition_domain.save()
+                transition_domains = self.transition_domains.filter(username=this_email, domain_name=domain_name)
+                if len(transition_domains) == 1:
+                    this_transition_domain = transition_domains.get()
+                    this_transition_domain.email_sent = True
+                    this_transition_domain.save()
+                elif len(transition_domains) > 1:
+                    logger.error(f"Multiple TransitionDomains exist for {this_email}")
+                else:
+                    logger.error(f"No TransitionDomain exists for {this_email}")
