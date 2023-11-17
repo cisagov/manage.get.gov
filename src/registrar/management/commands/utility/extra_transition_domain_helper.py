@@ -10,7 +10,7 @@ import logging
 import os
 import sys
 from typing import Dict
-
+from django.core.paginator import Paginator
 from registrar.models.transition_domain import TransitionDomain
 
 from .epp_data_containers import (
@@ -850,7 +850,13 @@ class OrganizationDataLoader:
             "zipcode",
         ]
 
-        TransitionDomain.objects.bulk_update(update_list, changed_fields)
+        batch_size = 1000
+        # Create a Paginator object. Bulk_update on the full dataset
+        # is too memory intensive for our current app config, so we can chunk this data instead.
+        paginator = Paginator(update_list, batch_size)
+        for page_num in paginator.page_range:
+            page = paginator.page(page_num)
+            TransitionDomain.objects.bulk_update(page.object_list, changed_fields)
 
         if not self.debug:
             logger.info(
