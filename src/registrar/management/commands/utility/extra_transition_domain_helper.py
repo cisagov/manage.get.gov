@@ -870,15 +870,15 @@ class OrganizationDataLoader:
         """Maps an id given in get_domain_data to a organization_adhoc
         record which has its corresponding definition"""
         # Get a row in the domain_additional file. The id is the domain_name.
-        domain_additional_row = self.retrieve_file_data_by_id(EnumFilenames.DOMAIN_ADDITIONAL, domain_name)
+        domain_additional_row = self.retrieve_row_by_id(EnumFilenames.DOMAIN_ADDITIONAL, domain_name)
         if domain_additional_row is None:
             return None
 
         # Get a row in the organization_adhoc file. The id is the orgid in domain_info.
-        org_row = self.retrieve_file_data_by_id(EnumFilenames.ORGANIZATION_ADHOC, domain_additional_row.orgid)
+        org_row = self.retrieve_row_by_id(EnumFilenames.ORGANIZATION_ADHOC, domain_additional_row.orgid)
         return org_row
 
-    def retrieve_file_data_by_id(self, file_type: EnumFilenames, desired_id):
+    def retrieve_row_by_id(self, file_type: EnumFilenames, desired_id):
         """Returns a field in a dictionary based off the type and id.
 
         vars:
