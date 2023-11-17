@@ -81,6 +81,19 @@ class TestMigrations(TestCase):
                 migrationJSON=self.migration_json_filename,
                 disablePrompts=True,
             )
+    
+    def run_load_organization_data(self):
+        # noqa here (E501) because splitting this up makes it
+        # confusing to read.
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command(
+                "load_organization_data",
+                self.migration_json_filename,
+                directory=self.test_data_file_location,
+            )
 
     def compare_tables(
         self,
@@ -156,6 +169,118 @@ class TestMigrations(TestCase):
         self.assertEqual(total_domains, expected_total_domains)
         self.assertEqual(total_domain_informations, expected_total_domain_informations)
         self.assertEqual(total_domain_invitations, expected_total_domain_invitations)
+
+    def test_load_organization_data_transition_domain(self):
+        self.maxDiff = None
+        # == First, parse all existing data == #
+        self.run_master_script()
+
+        # == Second, try adding org data to it == #
+        self.run_load_organization_data()
+
+        # == Third, test that we've loaded data as we expect == #        
+        transition_domains = TransitionDomain.objects.filter(domain_name="fakewebsite2.gov")
+
+        # Should return three objects (three unique emails)
+        self.assertEqual(transition_domains.count(), 3)
+
+        # Lets test the first one
+        transition = transition_domains.first()
+        expected_transition_domain = TransitionDomain(
+            id=6,
+            username='alexandra.bobbitt5@test.com',
+            domain_name='fakewebsite2.gov',
+            status='on hold',
+            email_sent=True,
+            organization_type='Federal',
+            organization_name='Fanoodle',
+            federal_type='Executive',
+            federal_agency='Department of Commerce',
+            epp_creation_date=datetime.date(2004, 5, 7),
+            epp_expiration_date=datetime.date(2023, 9, 30),
+            first_name='Seline',
+            middle_name='testmiddle2',
+            last_name='Tower',
+            title=None,
+            email='stower3@answers.com',
+            phone='151-539-6028',
+            address_line='93001 Arizona Drive',
+            city='Columbus',
+            state_territory='Oh',
+            zipcode='43268'
+        )
+
+        self.assertEqual(transition, expected_transition_domain)
+    
+    def test_load_organization_data_domain_information(self):
+        self.maxDiff = None
+        # == First, parse all existing data == #
+        self.run_master_script()
+
+        # == Second, try adding org data to it == #
+        self.run_load_organization_data()
+
+        # == Third, test that we've loaded data as we expect == #     
+        _domain = Domain.objects.filter(name="fakewebsite2.gov").get()   
+        domain_information = DomainInformation.objects.filter(domain=_domain).get()
+        expected_domain_information = DomainInformation(
+            id=4,
+            creator_id=1,
+            domain_application_id=None,
+            organization_type='federal',
+            federally_recognized_tribe=None,
+            state_recognized_tribe=None,
+            tribe_name=None,
+            federal_agency='Department of Commerce',
+            federal_type='executive',
+            is_election_board=None,
+            organization_name='Fanoodle',
+            address_line1='93001 Arizona Drive',
+            address_line2=None,
+            city='Columbus',
+            state_territory='Oh',
+            zipcode='43268',
+            urbanization=None,
+            about_your_organization=None,
+            authorizing_official_id=5,
+            domain_id=4,
+            submitter_id=None,
+            purpose=None,
+            no_other_contacts_rationale=None,
+            anything_else=None,
+            is_policy_acknowledged=None
+        )
+        self.assertEqual(domain_information, expected_domain_information)
+
+    def test_load_organization_data_integrity(self):
+        """Validates data integrity with the load_org_data command"""
+        # First, parse all existing data
+        self.run_master_script()
+
+        # Second, try adding org data to it
+        self.run_load_organization_data()
+        
+        # Third, test that we didn't corrupt any data
+        expected_total_transition_domains = 9
+        expected_total_domains = 5
+        expected_total_domain_informations = 5
+        expected_total_domain_invitations = 8
+
+        expected_missing_domains = 0
+        expected_duplicate_domains = 0
+        expected_missing_domain_informations = 0
+        # we expect 1 missing invite from anomaly.gov (an injected error)
+        expected_missing_domain_invitations = 1
+        self.compare_tables(
+            expected_total_transition_domains,
+            expected_total_domains,
+            expected_total_domain_informations,
+            expected_total_domain_invitations,
+            expected_missing_domains,
+            expected_duplicate_domains,
+            expected_missing_domain_informations,
+            expected_missing_domain_invitations,
+        )
 
     def test_master_migration_functions(self):
         """Run the full master migration script using local test data.

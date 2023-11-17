@@ -1,6 +1,7 @@
 """Data migration: Send domain invitations once to existing customers."""
 
 import argparse
+import json
 import logging
 
 from django.core.management import BaseCommand
@@ -22,6 +23,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add command line arguments."""
 
+        parser.add_argument(
+            "migration_json_filename",
+            help=("A JSON file that holds the location and filenames" "of all the data files used for migrations"),
+        )
+
         parser.add_argument("--sep", default="|", help="Delimiter character")
 
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
@@ -31,17 +37,45 @@ class Command(BaseCommand):
         parser.add_argument(
             "--domain_additional_filename",
             help="Defines the filename for additional domain data",
-            required=True,
         )
 
         parser.add_argument(
             "--organization_adhoc_filename",
             help="Defines the filename for domain type adhocs",
-            required=True,
         )
 
-    def handle(self, **options):
+    def handle(self, migration_json_filename, **options):
         """Process the objects in TransitionDomain."""
+
+        # === Parse JSON file === #
+        # Desired directory for additional TransitionDomain data
+        # (In the event they are stored seperately)
+        directory = options["directory"]
+        # Add a slash if the last character isn't one
+        if directory and directory[-1] != "/":
+            directory += "/"
+
+        json_filepath = directory + migration_json_filename
+
+        # If a JSON was provided, use its values instead of defaults.
+        with open(json_filepath, "r") as jsonFile:
+            # load JSON object as a dictionary
+            try:
+                data = json.load(jsonFile)
+                # Create an instance of TransitionDomainArguments
+                # Iterate over the data from the JSON file
+                for key, value in data.items():
+                    if value is not None and value.strip() != "":
+                        options[key] = value
+            except Exception as err:
+                logger.error(
+                    f"{TerminalColors.FAIL}"
+                    "There was an error loading "
+                    "the JSON responsible for providing filepaths."
+                    f"{TerminalColors.ENDC}"
+                )
+                raise err
+        # === End parse JSON file === #
         args = TransitionDomainArguments(**options)
 
         changed_fields = [
