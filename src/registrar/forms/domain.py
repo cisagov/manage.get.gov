@@ -235,7 +235,7 @@ class DomainDsdataForm(forms.Form):
     def validate_hexadecimal(value):
         """
         Tests that string matches all hexadecimal values.
-        
+
         Raise validation error to display error in form
         if invalid caracters entered
         """
