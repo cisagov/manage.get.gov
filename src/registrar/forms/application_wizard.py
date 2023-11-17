@@ -268,7 +268,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     urbanization = forms.CharField(
         required=False,
-        label="Urbanization (Puerto Rico only)",
+        label="Urbanization (required for Puerto Rico only)",
     )
 
     def clean_federal_agency(self):
