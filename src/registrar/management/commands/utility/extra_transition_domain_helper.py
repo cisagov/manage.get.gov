@@ -778,65 +778,45 @@ class OrganizationDataLoader:
         self.parsed_data = ExtraTransitionDomain(options)
         # options.infer_filenames will always be false when not SETTING.DEBUG
         self.parsed_data.parse_all_files(options.infer_filenames)
-
         self.tds_to_update = []
-        self.tds_failed_to_update = []
 
     def update_organization_data_for_all(self):
         """Updates org data for all TransitionDomains"""
         all_transition_domains = TransitionDomain.objects.all()
-        if len(all_transition_domains) < 1:
+        if len(all_transition_domains) == 0:
             raise Exception(
-                f"{TerminalColors.FAIL}" "No TransitionDomains exist. Cannot update." f"{TerminalColors.ENDC}"
+                f"{TerminalColors.FAIL}No TransitionDomains exist. Cannot update.{TerminalColors.ENDC}"
             )
 
-        # Store all actions we want to perform in tds_to_update
         self.prepare_transition_domains(all_transition_domains)
-        # Then if we don't run into any exceptions, bulk_update it
+
+        logger.info(f"{TerminalColors.MAGENTA}" "Beginning mass TransitionDomain update..." f"{TerminalColors.ENDC}")
         self.bulk_update_transition_domains(self.tds_to_update)
+
         return self.tds_to_update
 
     def prepare_transition_domains(self, transition_domains):
         for item in transition_domains:
-            try:
-                updated = self.parse_org_data(item.domain_name, item)
-                self.tds_to_update.append(updated)
-                if self.debug:
-                    logger.info(item.display_transition_domain())
-                    logger.info(
-                        f"Successfully updated TransitionDomain: \n"
-                        f"{TerminalColors.OKCYAN}"
-                        f"{item.display_transition_domain()}"
-                        f"{TerminalColors.ENDC}"
-                    )
-            except Exception as err:
-                logger.error(err)
-                self.tds_failed_to_update.append(item)
-                if self.debug:
-                    logger.error(
-                        f"Failed to update TransitionDomain: \n"
-                        f"{TerminalColors.YELLOW}"
-                        f"{item.display_transition_domain()}"
-                        f"{TerminalColors.ENDC}"
-                    )
+            updated = self.parse_org_data(item.domain_name, item)
+            self.tds_to_update.append(updated)
+            if self.debug:
+                logger.info(
+                    f"""{TerminalColors.OKCYAN}
+                    Successfully updated:
+                    {item.display_transition_domain()}
+                    {TerminalColors.ENDC}"""
+                )
 
-        if len(self.tds_failed_to_update) > 0:
-            logger.error(
-                "Failed to update. An exception was encountered "
-                f"on the following TransitionDomains: {[item for item in self.tds_failed_to_update]}"
-            )
-            raise Exception("Failed to update TransitionDomains")
+        if self.debug:
+            logger.info(f"Updating the following: {[item for item in self.tds_to_update]}")
 
-        if not self.debug:
-            logger.info(f"Ready to update {len(self.tds_to_update)} TransitionDomains.")
-        else:
-            logger.info(
-                f"Ready to update {len(self.tds_to_update)} TransitionDomains: {[item for item in self.tds_failed_to_update]}"
-            )
+        logger.info(
+            f"""{TerminalColors.MAGENTA}
+            Ready to update {len(self.tds_to_update)} TransitionDomains.
+            {TerminalColors.ENDC}"""
+        )
 
     def bulk_update_transition_domains(self, update_list):
-        logger.info(f"{TerminalColors.MAGENTA}" "Beginning mass TransitionDomain update..." f"{TerminalColors.ENDC}")
-
         changed_fields = [
             "address_line",
             "city",
@@ -851,19 +831,15 @@ class OrganizationDataLoader:
         for page_num in paginator.page_range:
             page = paginator.page(page_num)
             TransitionDomain.objects.bulk_update(page.object_list, changed_fields)
+        
+        if self.debug:
+            logger.info(f"Updated the following: {[item for item in self.tds_to_update]}")
 
-        if not self.debug:
-            logger.info(
-                f"{TerminalColors.OKGREEN}"
-                f"Updated {len(self.tds_to_update)} TransitionDomains."
-                f"{TerminalColors.ENDC}"
-            )
-        else:
-            logger.info(
-                f"{TerminalColors.OKGREEN}"
-                f"Updated {len(self.tds_to_update)} TransitionDomains: {[item for item in self.tds_failed_to_update]}"
-                f"{TerminalColors.ENDC}"
-            )
+        logger.info(
+            f"{TerminalColors.OKGREEN}"
+            f"Updated {len(self.tds_to_update)} TransitionDomains."
+            f"{TerminalColors.ENDC}"
+        )
 
     def parse_org_data(self, domain_name, transition_domain: TransitionDomain) -> TransitionDomain:
         """Grabs organization_name from the parsed files and associates it
@@ -876,7 +852,7 @@ class OrganizationDataLoader:
             self.parse_logs.create_log_item(
                 EnumFilenames.ORGANIZATION_ADHOC,
                 LogCode.ERROR,
-                f"Could not add organization_name on {domain_name}, no data exists.",
+                f"Could not add organization data on {domain_name}, no data exists.",
                 domain_name,
                 not self.debug,
             )
@@ -888,38 +864,32 @@ class OrganizationDataLoader:
         transition_domain.state_territory = org_info.orgstate
         transition_domain.zipcode = org_info.orgzip
 
-        # Log what happened to each field. The first value
-        # is the field name that was updated, second is the value
-        changed_fields = [
-            ("address_line", transition_domain.address_line),
-            ("city", transition_domain.city),
-            ("state_territory", transition_domain.state_territory),
-            ("zipcode", transition_domain.zipcode),
-        ]
-        self.log_add_or_changed_values(EnumFilenames.AUTHORITY_ADHOC, changed_fields, domain_name)
+        if self.debug:
+            # Log what happened to each field. The first value
+            # is the field name that was updated, second is the value
+            changed_fields = [
+                ("address_line", transition_domain.address_line),
+                ("city", transition_domain.city),
+                ("state_territory", transition_domain.state_territory),
+                ("zipcode", transition_domain.zipcode),
+            ]
+            self.log_add_or_changed_values(changed_fields, domain_name)
 
         return transition_domain
 
     def get_org_info(self, domain_name) -> OrganizationAdhoc:
         """Maps an id given in get_domain_data to a organization_adhoc
         record which has its corresponding definition"""
-        domain_info = self.get_domain_data(domain_name)
-        if domain_info is None:
+        # Get a row in the domain_additional file. The id is the domain_name.
+        domain_additional_row = self.retrieve_file_data_by_id(EnumFilenames.DOMAIN_ADDITIONAL, domain_name)
+        if domain_additional_row is None:
             return None
-        org_id = domain_info.orgid
-        return self.get_organization_adhoc(org_id)
 
-    def get_organization_adhoc(self, desired_id) -> OrganizationAdhoc:
-        """Grabs a corresponding row within the ORGANIZATION_ADHOC file,
-        based off a desired_id"""
-        return self.get_object_by_id(EnumFilenames.ORGANIZATION_ADHOC, desired_id)
+        # Get a row in the organization_adhoc file. The id is the orgid in domain_info.
+        org_row = self.retrieve_file_data_by_id(EnumFilenames.ORGANIZATION_ADHOC, domain_additional_row.orgid)
+        return org_row
 
-    def get_domain_data(self, desired_id) -> DomainAdditionalData:
-        """Grabs a corresponding row within the DOMAIN_ADDITIONAL file,
-        based off a desired_id"""
-        return self.get_object_by_id(EnumFilenames.DOMAIN_ADDITIONAL, desired_id)
-
-    def get_object_by_id(self, file_type: EnumFilenames, desired_id):
+    def retrieve_file_data_by_id(self, file_type: EnumFilenames, desired_id):
         """Returns a field in a dictionary based off the type and id.
 
         vars:
@@ -948,59 +918,51 @@ class OrganizationDataLoader:
             So, `AuthorityAdhoc(...)`
         """
         # Grabs a dict associated with the file_type.
-        # For example, EnumFilenames.DOMAIN_ADDITIONAL.
-        desired_type = self.parsed_data.file_data.get(file_type)
-        if desired_type is None:
-            self.parse_logs.create_log_item(
-                file_type,
-                LogCode.ERROR,
-                f"Type {file_type} does not exist",
-            )
+        # For example, EnumFilenames.DOMAIN_ADDITIONAL would map to
+        # whatever data exists on the domain_additional file.
+        desired_file = self.parsed_data.file_data.get(file_type)
+        if desired_file is None:
+            logger.error(f"Type {file_type} does not exist")
             return None
 
-        # Grab the value given an Id within that file_type dict.
-        # For example, "igorville.gov".
-        obj = desired_type.data.get(desired_id)
-        if obj is None:
-            self.parse_logs.create_log_item(
-                file_type,
-                LogCode.ERROR,
-                f"Id {desired_id} does not exist for {file_type.value[0]}",
-            )
-        return obj
+        # This is essentially a dictionary of rows.
+        data_in_file = desired_file.data
 
-    def log_add_or_changed_values(self, file_type, values_to_check, domain_name):
+        # Get a row in the given file, based on an id.
+        # For instance, "igorville.gov" in domain_additional.
+        row_in_file = data_in_file.get(desired_id)
+        if row_in_file is None:
+            logger.error(f"Id {desired_id} does not exist for {file_type.value[0]}")
+
+        return row_in_file
+
+    def log_add_or_changed_values(self, values_to_check, domain_name):
+        """Iterates through a list of fields, and determines if we should log
+        if the field was added or if the field was updated. 
+        
+        A field is "updated" when it is not None or not "".
+        A field is "created" when it is either of those things.
+
+        
+        """
         for field_name, value in values_to_check:
             str_exists = value is not None and value.strip() != ""
             # Logs if we either added to this property,
             # or modified it.
             self._add_or_change_message(
-                file_type,
                 field_name,
                 value,
                 domain_name,
                 str_exists,
             )
 
-    def _add_or_change_message(self, file_type, var_name, changed_value, domain_name, is_update=False):
+    def _add_or_change_message(self, field_name, changed_value, domain_name, is_update=False):
         """Creates a log instance when a property
         is successfully changed on a given TransitionDomain."""
         if not is_update:
-            self.parse_logs.create_log_item(
-                file_type,
-                LogCode.INFO,
-                f"Added {var_name} as '{changed_value}' on {domain_name}",
-                domain_name,
-                not self.debug,
-            )
+            logger.info(f"Added {field_name} as '{changed_value}' on {domain_name}")
         else:
-            self.parse_logs.create_log_item(
-                file_type,
-                LogCode.WARNING,
-                f"Updated existing {var_name} to '{changed_value}' on {domain_name}",
-                domain_name,
-                not self.debug,
-            )
+            logger.warning(f"Updated existing {field_name} to '{changed_value}' on {domain_name}")
 
 
 class ExtraTransitionDomain:
