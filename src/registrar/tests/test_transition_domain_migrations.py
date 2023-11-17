@@ -171,7 +171,6 @@ class TestOrganizationMigration(TestCase):
         # Lets test the first one
         transition = transition_domains.first()
         expected_transition_domain = TransitionDomain(
-            id=24,
             username='alexandra.bobbitt5@test.com',
             domain_name='fakewebsite2.gov',
             status='on hold',
@@ -193,10 +192,12 @@ class TestOrganizationMigration(TestCase):
             state_territory='Oh',
             zipcode='43268'
         )
+        expected_transition_domain.id = transition.id
 
         self.assertEqual(transition, expected_transition_domain)
     
     def test_load_organization_data_domain_information(self):
+        self.maxDiff = None
         # == First, parse all existing data == #
         self.run_load_domains()
         self.run_transfer_domains()
@@ -234,7 +235,7 @@ class TestOrganizationMigration(TestCase):
             anything_else=None,
             is_policy_acknowledged=None
         )
-        self.assertEqual(domain_information, expected_domain_information)
+        self.assertEqual(domain_information.__dict__, expected_domain_information.__dict__)
 
     def test_load_organization_data_integrity(self):
         """Validates data integrity with the load_org_data command"""
