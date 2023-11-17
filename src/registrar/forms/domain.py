@@ -233,6 +233,12 @@ class DomainDsdataForm(forms.Form):
     """Form for adding or editing DNSSEC DS Data to a domain."""
 
     def validate_hexadecimal(value):
+        """
+        Tests that string matches all hexadecimal values.
+        
+        Raise validation error to display error in form
+        if invalid caracters entered
+        """
         if not re.match(r"^[0-9a-fA-F]+$", value):
             raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
 
