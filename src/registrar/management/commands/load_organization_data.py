@@ -127,7 +127,7 @@ class Command(BaseCommand):
         transition_domains = TransitionDomain.objects.filter(
             username__in=[item.username for item in desired_objects],
             domain_name__in=[item.domain_name for item in desired_objects]
-        )
+        ).distinct()
 
         if len(desired_objects) != len(transition_domains):
             raise Exception("Could not find all desired TransitionDomains")
