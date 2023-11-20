@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domainapplication",
             name="address_line2",
-            field=models.CharField(blank=True, help_text="Street address line 2 (optional)", max_length=15, null=True),
+            field=models.CharField(blank=True, help_text="Street address line 2", max_length=15, null=True),
         ),
         migrations.AlterField(
             model_name="domainapplication",

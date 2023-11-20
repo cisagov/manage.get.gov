@@ -135,7 +135,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "middle_name",
-                    models.TextField(blank=True, help_text="Middle name (optional)", null=True),
+                    models.TextField(blank=True, help_text="Middle name", null=True),
                 ),
                 (
                     "last_name",
