@@ -12,6 +12,7 @@ import sys
 from typing import Dict
 from django.core.paginator import Paginator
 from registrar.models.transition_domain import TransitionDomain
+from registrar.utility.errors import LoadOrganizationError, LoadOrganizationErrorCodes
 
 from .epp_data_containers import (
     AgencyAdhoc,
@@ -756,9 +757,9 @@ class OrganizationDataLoader:
     """Saves organization data onto Transition Domains. Handles file parsing."""
 
     def __init__(self, options: TransitionDomainArguments):
-        # Globally stores event logs and organizes them
         self.debug = options.debug
 
+        # We want to data from the domain_additional file and the organization_adhoc file
         options.pattern_map_params = [
             (
                 EnumFilenames.DOMAIN_ADDITIONAL,
@@ -773,17 +774,20 @@ class OrganizationDataLoader:
                 "orgid",
             ),
         ]
+
         # Reads and parses organization data
         self.parsed_data = ExtraTransitionDomain(options)
+
         # options.infer_filenames will always be false when not SETTING.DEBUG
         self.parsed_data.parse_all_files(options.infer_filenames)
+
         self.tds_to_update = []
 
     def update_organization_data_for_all(self):
         """Updates org data for all TransitionDomains"""
         all_transition_domains = TransitionDomain.objects.all()
         if len(all_transition_domains) == 0:
-            raise Exception(f"{TerminalColors.FAIL}No TransitionDomains exist. Cannot update.{TerminalColors.ENDC}")
+            raise LoadOrganizationError(code=LoadOrganizationErrorCodes.EMPTY_TRANSITION_DOMAIN_TABLE)
 
         self.prepare_transition_domains(all_transition_domains)
 
@@ -887,24 +891,6 @@ class OrganizationDataLoader:
 
             desired_id: str -> Which id you want to search on.
             An example would be `"12"` or `"igorville.gov"`
-
-        Explanation:
-            Each data file has an associated type (file_type) for tracking purposes.
-
-            Each file_type is a dictionary which
-            contains a dictionary of row[id_field]: object.
-
-            In practice, this would look like:
-
-            EnumFilenames.AUTHORITY_ADHOC: {
-                "1": AuthorityAdhoc(...),
-                "2": AuthorityAdhoc(...),
-                ...
-            }
-
-            desired_id will then specify which id to grab. If we wanted "1",
-            then this function will return the value of id "1".
-            So, `AuthorityAdhoc(...)`
         """
         # Grabs a dict associated with the file_type.
         # For example, EnumFilenames.DOMAIN_ADDITIONAL would map to
