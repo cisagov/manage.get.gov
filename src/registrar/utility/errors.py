@@ -58,6 +58,12 @@ contact help@get.gov
 
 
 class LoadOrganizationErrorCodes(IntEnum):
+    """Used when running the load_organization_data script
+    Overview of error codes:
+        - 1 TRANSITION_DOMAINS_NOT_FOUND
+        - 2 UPDATE_DOMAIN_INFO_FAILED
+        - 3 EMPTY_TRANSITION_DOMAIN_TABLE
+    """
     TRANSITION_DOMAINS_NOT_FOUND = 1
     UPDATE_DOMAIN_INFO_FAILED = 2
     EMPTY_TRANSITION_DOMAIN_TABLE = 3
