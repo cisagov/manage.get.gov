@@ -67,7 +67,7 @@ class Command(BaseCommand):
                     
                     # If any key in skipped_fields has a value, then
                     # we override what is specified in the JSON.
-                    if key not in skipped_fields or :
+                    if key not in skipped_fields:
                         options[key] = value
 
             except Exception as err:
