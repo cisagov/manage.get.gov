@@ -147,6 +147,9 @@ class ContactForm(forms.ModelForm):
 
         for field_name in self.required:
             self.fields[field_name].required = True
+
+        # Set custom form label
+        self.fields["middle_name"].label = "Middle name (optional)"
         
         # Set custom error messages
         self.fields["first_name"].error_messages = {'required': 'Enter your first name / given name.'}
@@ -158,6 +161,23 @@ class ContactForm(forms.ModelForm):
             'required': 'Enter your email address in the required format, like name@example.com.'
         }
         self.fields["phone"].error_messages = {'required': 'Enter your phone number.'}
+
+class AuthorizingOfficialContactForm(ContactForm):
+    """Form for updating authorizing official contacts."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set custom error messages
+        self.fields["first_name"].error_messages = {'required': 'Enter the first name / given name of this contact.'}
+        self.fields["last_name"].error_messages = {'required': 'Enter the last name / family name of this contact.'}
+        self.fields["title"].error_messages = {
+            'required': 'Enter the title or role in your organization of this contact \
+            (e.g., Chief Information Officer).'
+        }
+        self.fields["email"].error_messages = {
+            'required': 'Enter an email address in the required format, like name@example.com.'
+        }
+        self.fields["phone"].error_messages = {'required': 'Enter a phone number for this contact.'}
 
 
 class DomainSecurityEmailForm(forms.Form):
