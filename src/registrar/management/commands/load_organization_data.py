@@ -111,7 +111,7 @@ class Command(BaseCommand):
 
         logger.info(f"{TerminalColors.MAGENTA}" "Loading organization data onto TransitionDomain tables...")
         load = OrganizationDataLoader(args)
-        domain_information_to_update = load.update_organization_data_for_all()
+        transition_domains = load.update_organization_data_for_all()
 
         # Reprompt the user to reinspect before updating DomainInformation
         proceed = TerminalHelper.prompt_for_execution(
@@ -127,7 +127,7 @@ class Command(BaseCommand):
             directory: {args.directory}
 
             ==Proposed Changes==
-            Number of DomainInformation objects to change: {len(domain_information_to_update)}
+            Number of DomainInformation objects to (potentially) change: {len(transition_domains)}
             """,
             prompt_title="Do you wish to load organization data for DomainInformation?",
         )
@@ -135,8 +135,8 @@ class Command(BaseCommand):
         if not proceed:
             return None
 
-        if len(domain_information_to_update) == 0:
-            logger.error(f"{TerminalColors.MAGENTA}" "No DomainInformation objects exist" f"{TerminalColors.ENDC}")
+        if len(transition_domains) == 0:
+            logger.error(f"{TerminalColors.MAGENTA}" "No TransitionDomain objects exist" f"{TerminalColors.ENDC}")
             return None
 
         logger.info(
@@ -144,7 +144,7 @@ class Command(BaseCommand):
             "Preparing to load organization data onto DomainInformation tables..."
             f"{TerminalColors.ENDC}"
         )
-        self.update_domain_information(domain_information_to_update, args.debug)
+        self.update_domain_information(transition_domains, args.debug)
 
     def update_domain_information(self, desired_objects: List[TransitionDomain], debug):
         di_to_update = []
@@ -183,6 +183,15 @@ class Command(BaseCommand):
                 logger.error(f"Could not add {item.domain_name}. Domain does not exist.")
                 di_failed_to_update.append(item)
                 continue
+            
+            if item.address_line is None and item.city is None and item.state_territory and item.zipcode is None:
+                logger.info(
+                    f"{TerminalColors.YELLOW}"
+                    f"Domain {item.domain_name} has no Organization Data. Cannot update."
+                    f"{TerminalColors.ENDC}"
+                )
+                di_skipped.append(item)
+                continue
 
             if item.domain_name not in filtered_domain_informations_dict:
                 logger.info(
@@ -198,15 +207,6 @@ class Command(BaseCommand):
 
             if current_domain_information.domain is None or current_domain_information.domain.name is None:
                 raise LoadOrganizationError(code=LoadOrganizationErrorCodes.DOMAIN_NAME_WAS_NONE)
-
-            if item.address_line is None and item.city is None and item.state_territory and item.zipcode is None:
-                logger.info(
-                    f"{TerminalColors.YELLOW}"
-                    f"Domain {item.domain_name} has no Organization Data. Cannot update."
-                    f"{TerminalColors.ENDC}"
-                )
-                di_skipped.append(item)
-                continue
 
             # Update fields
             current_domain_information.address_line1 = item.address_line
