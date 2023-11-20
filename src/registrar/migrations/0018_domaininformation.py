@@ -146,7 +146,7 @@ class Migration(migrations.Migration):
                     "urbanization",
                     models.TextField(
                         blank=True,
-                        help_text="Urbanization (required for Puerto Rico only)",
+                        help_text="Urbanization (Puerto Rico only)",
                         null=True,
                     ),
                 ),

@@ -17,6 +17,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domaininformation",
             name="address_line2",
-            field=models.TextField(blank=True, help_text="Street address line 2 (optional)", null=True),
+            field=models.TextField(blank=True, help_text="Street address line 2", null=True),
         ),
     ]

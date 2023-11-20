@@ -45,9 +45,9 @@ class Migration(migrations.Migration):
             name="urbanization",
             field=models.TextField(
                 blank=True,
-                help_text="Urbanization (required for Puerto Rico only)",
+                verbose_name="Urbanization (Puerto Rico only)",
                 null=True,
-                verbose_name="Urbanization (required for Puerto Rico only)",
+                verbose_name="Urbanization (Puerto Rico only)",
             ),
         ),
     ]
