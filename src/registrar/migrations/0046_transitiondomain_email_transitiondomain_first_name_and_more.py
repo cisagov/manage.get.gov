@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="transitiondomain",
             name="middle_name",
-            field=models.TextField(blank=True, help_text="Middle name (optional)", null=True),
+            field=models.TextField(blank=True, help_text="Middle name", null=True),
         ),
         migrations.AddField(
             model_name="transitiondomain",
