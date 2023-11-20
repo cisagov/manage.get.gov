@@ -9,7 +9,7 @@ import logging
 
 import os
 import sys
-from typing import Dict
+from typing import Dict, List
 from django.core.paginator import Paginator
 from registrar.models.transition_domain import TransitionDomain
 from registrar.utility.errors import LoadOrganizationError, LoadOrganizationErrorCodes
@@ -781,7 +781,7 @@ class OrganizationDataLoader:
         # options.infer_filenames will always be false when not SETTING.DEBUG
         self.parsed_data.parse_all_files(options.infer_filenames)
 
-        self.tds_to_update = []
+        self.tds_to_update: List[TransitionDomain] = []
 
     def update_organization_data_for_all(self):
         """Updates org data for all TransitionDomains"""
@@ -870,7 +870,7 @@ class OrganizationDataLoader:
 
         return transition_domain
 
-    def get_org_info(self, domain_name) -> OrganizationAdhoc:
+    def get_org_info(self, domain_name) -> OrganizationAdhoc | None:
         """Maps an id given in get_domain_data to a organization_adhoc
         record which has its corresponding definition"""
         # Get a row in the domain_additional file. The id is the domain_name.

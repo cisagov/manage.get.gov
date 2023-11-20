@@ -64,7 +64,7 @@ class Command(BaseCommand):
                 for key, value in data.items():
                     if value is None or value.strip() == "":
                         continue
-                    
+
                     # If any key in skipped_fields has a value, then
                     # we override what is specified in the JSON.
                     if options not in skipped_fields:
@@ -163,7 +163,7 @@ class Command(BaseCommand):
 
         # Start with all DomainInformation objects
         domain_informations = DomainInformation.objects.all()
-        domain_informations_dict = {di.domain.name: di for di in domain_informations}
+        domain_informations_dict = {di.domain.name: di for di in domain_informations if di.domain is not None}
 
         # Then, use each domain object to map TransitionDomain <--> DomainInformation
         # Fetches all DomainInformations in one query.
@@ -177,7 +177,7 @@ class Command(BaseCommand):
             zipcode__isnull=True,
         )
 
-        filtered_domain_informations_dict = {di.domain.name: di for di in domain_informations}
+        filtered_domain_informations_dict = {di.domain.name: di for di in domain_informations if di.domain is not None}
         for item in transition_domains:
             if item.domain_name not in domain_informations_dict:
                 logger.error(f"Could not add {item.domain_name}. Domain does not exist.")
@@ -195,6 +195,9 @@ class Command(BaseCommand):
 
             # Based on the current domain, grab the right DomainInformation object.
             current_domain_information = filtered_domain_informations_dict[item.domain_name]
+
+            if current_domain_information.domain is None or current_domain_information.domain.name is None:
+                raise LoadOrganizationError(code=LoadOrganizationErrorCodes.DOMAIN_NAME_WAS_NONE)
 
             # Update fields
             current_domain_information.address_line1 = item.address_line

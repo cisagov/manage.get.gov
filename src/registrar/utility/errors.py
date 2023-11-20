@@ -64,9 +64,11 @@ class LoadOrganizationErrorCodes(IntEnum):
         - 2 UPDATE_DOMAIN_INFO_FAILED
         - 3 EMPTY_TRANSITION_DOMAIN_TABLE
     """
+
     TRANSITION_DOMAINS_NOT_FOUND = 1
     UPDATE_DOMAIN_INFO_FAILED = 2
     EMPTY_TRANSITION_DOMAIN_TABLE = 3
+    DOMAIN_NAME_WAS_NONE = 4
 
 
 class LoadOrganizationError(Exception):
@@ -79,7 +81,8 @@ class LoadOrganizationError(Exception):
             "Could not find all desired TransitionDomains. " "(Possible data corruption?)"
         ),
         LoadOrganizationErrorCodes.UPDATE_DOMAIN_INFO_FAILED: "Failed to update DomainInformation",
-        LoadOrganizationErrorCodes.EMPTY_TRANSITION_DOMAIN_TABLE: "No TransitionDomains exist. Cannot update."
+        LoadOrganizationErrorCodes.EMPTY_TRANSITION_DOMAIN_TABLE: "No TransitionDomains exist. Cannot update.",
+        LoadOrganizationErrorCodes.DOMAIN_NAME_WAS_NONE: "DomainInformation was updated, but domain was None",
     }
 
     def __init__(self, *args, code=None, **kwargs):
