@@ -183,7 +183,7 @@ class Command(BaseCommand):
                 logger.error(f"Could not add {item.domain_name}. Domain does not exist.")
                 di_failed_to_update.append(item)
                 continue
-            
+
             if item.address_line is None and item.city is None and item.state_territory and item.zipcode is None:
                 logger.info(
                     f"{TerminalColors.YELLOW}"
