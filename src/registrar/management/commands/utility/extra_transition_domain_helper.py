@@ -878,7 +878,7 @@ class OrganizationDataLoader:
         if domain_additional_row is None:
             return None
 
-        # Get a row in the organization_adhoc file. The id is the orgid in domain_info.
+        # Get a row in the organization_adhoc file. The id is the orgid in domain_additional_row.
         org_row = self.retrieve_row_by_id(EnumFilenames.ORGANIZATION_ADHOC, domain_additional_row.orgid)
         return org_row
 
