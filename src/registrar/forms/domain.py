@@ -147,9 +147,6 @@ class ContactForm(forms.ModelForm):
 
         for field_name in self.required:
             self.fields[field_name].required = True
-
-        # Set custom form label
-        self.fields["middle_name"].label = "Middle name (optional)"
         
         # Set custom error messages
         self.fields["first_name"].error_messages = {'required': 'Enter your first name / given name.'}
