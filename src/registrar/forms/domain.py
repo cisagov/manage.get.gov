@@ -147,6 +147,9 @@ class ContactForm(forms.ModelForm):
 
         for field_name in self.required:
             self.fields[field_name].required = True
+            
+        # Set custom form label
+        self.fields["middle_name"].label = "Middle name (optional)"
 
 
 class DomainSecurityEmailForm(forms.Form):
