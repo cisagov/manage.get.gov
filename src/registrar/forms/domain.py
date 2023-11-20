@@ -125,6 +125,19 @@ class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
         fields = ["first_name", "middle_name", "last_name", "title", "email", "phone"]
+        error_messages = {
+            "first_name": {"required": "Enter your first name / given name."},
+            "last_name": {"required": "Enter your last name / family name."},
+            "title": {
+                "required": "Enter your title or role in your organization (e.g., Chief Information Officer)."
+            },
+            "email": {
+                "required": "Enter your email address in the required format, like name@example.com."
+            },
+            "phone": {
+                "required": "Enter your phone number."
+            },
+        }
         widgets = {
             "first_name": forms.TextInput,
             "middle_name": forms.TextInput,
