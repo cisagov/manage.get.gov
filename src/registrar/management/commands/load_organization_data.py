@@ -35,11 +35,13 @@ class Command(BaseCommand):
 
         parser.add_argument("--directory", default="migrationdata", help="Desired directory")
 
+        # Serves as a domain_additional_filename override
         parser.add_argument(
             "--domain_additional_filename",
             help="Defines the filename for additional domain data",
         )
 
+        # Serves as a organization_adhoc_filename override
         parser.add_argument(
             "--organization_adhoc_filename",
             help="Defines the filename for domain type adhocs",
@@ -56,8 +58,18 @@ class Command(BaseCommand):
             # load JSON object as a dictionary
             try:
                 data = json.load(jsonFile)
+
+                skipped_fields = ["domain_additional_filename", "organization_adhoc_filename"]
                 # Iterate over the data from the JSON file. Skip any unused values.
-                options.update({key: value for key, value in data.items() if value is not None and value.strip() != ""})
+                for key, value in data.items():
+                    if value is not None or value.strip() != "":
+                        continue
+                    
+                    # If any key in skipped_fields has a value, then
+                    # we override what is specified in the JSON.
+                    if key not in skipped_fields:
+                        options[key] = value
+
             except Exception as err:
                 logger.error(
                     f"{TerminalColors.FAIL}"
