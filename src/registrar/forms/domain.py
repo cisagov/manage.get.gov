@@ -147,7 +147,7 @@ class ContactForm(forms.ModelForm):
 
         for field_name in self.required:
             self.fields[field_name].required = True
-        
+
         # Set custom error messages
         self.fields["first_name"].error_messages = {'required': 'Enter your first name / given name.'}
         self.fields["last_name"].error_messages = {'required': 'Enter your last name / family name.'}
@@ -158,6 +158,7 @@ class ContactForm(forms.ModelForm):
             'required': 'Enter your email address in the required format, like name@example.com.'
         }
         self.fields["phone"].error_messages = {'required': 'Enter your phone number.'}
+
 
 class AuthorizingOfficialContactForm(ContactForm):
     """Form for updating authorizing official contacts."""
