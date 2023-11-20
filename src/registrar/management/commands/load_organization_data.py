@@ -51,35 +51,7 @@ class Command(BaseCommand):
         """Process the objects in TransitionDomain."""
 
         # === Parse JSON file === #
-        json_filepath = os.path.join(options["directory"], migration_json_filename)
-
-        # If a JSON was provided, use its values instead of defaults.
-        with open(json_filepath, "r") as jsonFile:
-            # load JSON object as a dictionary
-            try:
-                data = json.load(jsonFile)
-
-                skipped_fields = ["domain_additional_filename", "organization_adhoc_filename"]
-                # Iterate over the data from the JSON file. Skip any unused values.
-                for key, value in data.items():
-                    if value is None or value.strip() == "":
-                        continue
-
-                    # If any key in skipped_fields has a value, then
-                    # we override what is specified in the JSON.
-                    if options not in skipped_fields:
-                        options[key] = value
-
-            except Exception as err:
-                logger.error(
-                    f"{TerminalColors.FAIL}"
-                    "There was an error loading "
-                    "the JSON responsible for providing filepaths."
-                    f"{TerminalColors.ENDC}"
-                )
-                raise err
-        # === End parse JSON file === #
-
+        options = self.load_json_settings(options, migration_json_filename)
         args = TransitionDomainArguments(**options)
 
         changed_fields = [
@@ -145,6 +117,36 @@ class Command(BaseCommand):
             f"{TerminalColors.ENDC}"
         )
         self.update_domain_information(transition_domains, args.debug)
+
+    def load_json_settings(self, options, migration_json_filename):
+        """Parses options from the given JSON file."""
+        json_filepath = os.path.join(options["directory"], migration_json_filename)
+
+        # If a JSON was provided, use its values instead of defaults.
+        with open(json_filepath, "r") as jsonFile:
+            # load JSON object as a dictionary
+            try:
+                data = json.load(jsonFile)
+
+                skipped_fields = ["domain_additional_filename", "organization_adhoc_filename"]
+                # Iterate over the data from the JSON file. Skip any unused values.
+                for key, value in data.items():
+                    if value is not None and value.strip() != "":
+                        # If any key in skipped_fields has a value, then
+                        # we override what is specified in the JSON.
+                        if options not in skipped_fields:
+                            options[key] = value
+
+            except Exception as err:
+                logger.error(
+                    f"{TerminalColors.FAIL}"
+                    "There was an error loading "
+                    "the JSON responsible for providing filepaths."
+                    f"{TerminalColors.ENDC}"
+                )
+                raise err
+
+            return options
 
     def update_domain_information(self, desired_objects: List[TransitionDomain], debug):
         di_to_update = []
