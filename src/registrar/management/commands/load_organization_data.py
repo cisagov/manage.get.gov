@@ -62,12 +62,12 @@ class Command(BaseCommand):
                 skipped_fields = ["domain_additional_filename", "organization_adhoc_filename"]
                 # Iterate over the data from the JSON file. Skip any unused values.
                 for key, value in data.items():
-                    if value is not None or value.strip() != "":
+                    if value is None or value.strip() == "":
                         continue
                     
                     # If any key in skipped_fields has a value, then
                     # we override what is specified in the JSON.
-                    if key not in skipped_fields:
+                    if key not in skipped_fields or :
                         options[key] = value
 
             except Exception as err:
