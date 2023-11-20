@@ -199,6 +199,15 @@ class Command(BaseCommand):
             if current_domain_information.domain is None or current_domain_information.domain.name is None:
                 raise LoadOrganizationError(code=LoadOrganizationErrorCodes.DOMAIN_NAME_WAS_NONE)
 
+            if item.address_line is None and item.city is None and item.state_territory and item.zipcode is None:
+                logger.info(
+                    f"{TerminalColors.YELLOW}"
+                    f"Domain {item.domain_name} has no Organization Data. Cannot update."
+                    f"{TerminalColors.ENDC}"
+                )
+                di_skipped.append(item)
+                continue
+
             # Update fields
             current_domain_information.address_line1 = item.address_line
             current_domain_information.city = item.city
@@ -219,7 +228,7 @@ class Command(BaseCommand):
             raise LoadOrganizationError(code=LoadOrganizationErrorCodes.UPDATE_DOMAIN_INFO_FAILED)
 
         if di_skipped:
-            logger.info(f"Skipped updating {len(di_skipped)} fields. User-supplied data exists.")
+            logger.info(f"Skipped updating {len(di_skipped)} fields. User-supplied data exists, or there is no data.")
 
         self.bulk_update_domain_information(di_to_update, debug)
 
