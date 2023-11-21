@@ -305,9 +305,9 @@ CSP_DEFAULT_SRC = allowed_sources
 CSP_FRAME_ANCESTORS = allowed_sources
 CSP_FORM_ACTION = allowed_sources
 CSP_SCRIPT_SRC_ELEM = allowed_sources_scripts
-CSP_SCRIPT_SRC = allowed_sources_scripts
+
 CSP_CONNECT_SRC = allowed_sources_scripts
-CSP_INCLUDE_NONCE_IN = ["script-src", "script-src-elem"]
+CSP_INCLUDE_NONCE_IN = ["script-src-elem"]
 
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
