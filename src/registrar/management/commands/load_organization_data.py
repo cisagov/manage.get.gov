@@ -14,7 +14,10 @@ from django.core.paginator import Paginator
 from typing import List
 from registrar.models.domain import Domain
 
-from registrar.utility.errors import LoadOrganizationError, LoadOrganizationErrorCodes
+from registrar.management.commands.utility.load_organization_error import (
+    LoadOrganizationError,
+    LoadOrganizationErrorCodes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -276,7 +279,7 @@ class Command(BaseCommand):
 
         Args:
             domain_name (str): The name of the domain to check.
-        """
+        """  # noqa - E501 (harder to read)
         domains = Domain.objects.filter(name=domain_name)
         if domains.count() == 0:
             logger.error(f"Could not add {domain_name}. Domain does not exist.")

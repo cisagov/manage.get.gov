@@ -12,7 +12,10 @@ import sys
 from typing import Dict, List
 from django.core.paginator import Paginator
 from registrar.models.transition_domain import TransitionDomain
-from registrar.utility.errors import LoadOrganizationError, LoadOrganizationErrorCodes
+from registrar.management.commands.utility.load_organization_error import (
+    LoadOrganizationError,
+    LoadOrganizationErrorCodes,
+)
 
 from .epp_data_containers import (
     AgencyAdhoc,

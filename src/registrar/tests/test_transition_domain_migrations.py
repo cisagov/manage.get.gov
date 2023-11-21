@@ -16,20 +16,19 @@ from registrar.models import (
 from django.core.management import call_command
 from unittest.mock import patch
 
+from registrar.models.contact import Contact
+
 from .common import less_console_noise
 
 
 class TestOrganizationMigration(TestCase):
     def setUp(self):
-        """ """
-        # self.load_transition_domain_script = "load_transition_domain",
-        # self.transfer_script = "transfer_transition_domains_to_domains",
-        # self.master_script = "load_transition_domain",
-
+        """Defines the file name of migration_json and the folder its contained in"""
         self.test_data_file_location = "registrar/tests/data"
         self.migration_json_filename = "test_migrationFilepaths.json"
 
     def tearDown(self):
+        """Deletes all DB objects related to migrations"""
         # Delete domain information
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
@@ -41,6 +40,16 @@ class TestOrganizationMigration(TestCase):
         UserDomainRole.objects.all().delete()
 
     def run_load_domains(self):
+        """
+        This method executes the load_transition_domain command.
+
+        It uses 'unittest.mock.patch' to mock the TerminalHelper.query_yes_no_exit method,
+        which is a user prompt in the terminal. The mock function always returns True,
+        allowing the test to proceed without manual user input.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_transition_domain command with the specified arguments.
+        """
         # noqa here because splitting this up makes it confusing.
         # ES501
         with patch(
@@ -54,9 +63,25 @@ class TestOrganizationMigration(TestCase):
             )
 
     def run_transfer_domains(self):
+        """
+        This method executes the transfer_transition_domains_to_domains command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_transition_domain command with the specified arguments.
+        """
         call_command("transfer_transition_domains_to_domains")
 
     def run_load_organization_data(self):
+        """
+        This method executes the load_organization_data command.
+
+        It uses 'unittest.mock.patch' to mock the TerminalHelper.query_yes_no_exit method,
+        which is a user prompt in the terminal. The mock function always returns True,
+        allowing the test to proceed without manual user input.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_organization_data command with the specified arguments.
+        """
         # noqa here (E501) because splitting this up makes it
         # confusing to read.
         with patch(
@@ -88,7 +113,7 @@ class TestOrganizationMigration(TestCase):
         duplicate_domains = []
         missing_domain_informations = []
         missing_domain_invites = []
-        for transition_domain in TransitionDomain.objects.all():  # DEBUG:
+        for transition_domain in TransitionDomain.objects.all():
             transition_domain_name = transition_domain.domain_name
             transition_domain_email = transition_domain.username
 
@@ -121,19 +146,6 @@ class TestOrganizationMigration(TestCase):
         total_domain_informations = len(DomainInformation.objects.all())
         total_domain_invitations = len(DomainInvitation.objects.all())
 
-        print(
-            f"""
-        total_missing_domains = {len(missing_domains)}
-        total_duplicate_domains = {len(duplicate_domains)}
-        total_missing_domain_informations = {len(missing_domain_informations)}
-        total_missing_domain_invitations = {total_missing_domain_invitations}
-
-        total_transition_domains = {len(TransitionDomain.objects.all())}
-        total_domains = {len(Domain.objects.all())}
-        total_domain_informations = {len(DomainInformation.objects.all())}
-        total_domain_invitations = {len(DomainInvitation.objects.all())}
-        """
-        )
         self.assertEqual(total_missing_domains, expected_missing_domains)
         self.assertEqual(total_duplicate_domains, expected_duplicate_domains)
         self.assertEqual(total_missing_domain_informations, expected_missing_domain_informations)
@@ -145,6 +157,17 @@ class TestOrganizationMigration(TestCase):
         self.assertEqual(total_domain_invitations, expected_total_domain_invitations)
 
     def test_load_organization_data_transition_domain(self):
+        """
+        This test verifies the functionality of the load_organization_data method for TransitionDomain objects.
+
+        The test follows these steps:
+        1. Parses all existing data by running the load_domains and transfer_domains methods.
+        2. Attempts to add organization data to the parsed data by running the load_organization_data method.
+        3. Checks that the data has been loaded as expected.
+
+        The expected result is a set of TransitionDomain objects with specific attributes.
+        The test fetches the actual TransitionDomain objects from the database and compares them with the expected objects.
+        """  # noqa - E501 (harder to read)
         # == First, parse all existing data == #
         self.run_load_domains()
         self.run_transfer_domains()
@@ -187,6 +210,18 @@ class TestOrganizationMigration(TestCase):
         self.assertEqual(transition, expected_transition_domain)
 
     def test_load_organization_data_domain_information(self):
+        """
+        This test verifies the functionality of the load_organization_data method.
+
+        The test follows these steps:
+        1. Parses all existing data by running the load_domains and transfer_domains methods.
+        2. Attempts to add organization data to the parsed data by running the load_organization_data method.
+        3. Checks that the data has been loaded as expected.
+
+        The expected result is a DomainInformation object with specific attributes.
+        The test fetches the actual DomainInformation object from the database
+        and compares it with the expected object.
+        """
         # == First, parse all existing data == #
         self.run_load_domains()
         self.run_transfer_domains()
@@ -198,13 +233,90 @@ class TestOrganizationMigration(TestCase):
         _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
         domain_information = DomainInformation.objects.filter(domain=_domain).get()
 
-        self.assertEqual(domain_information.address_line1, "93001 Arizona Drive")
-        self.assertEqual(domain_information.city, "Columbus")
-        self.assertEqual(domain_information.state_territory, "Oh")
-        self.assertEqual(domain_information.zipcode, "43268")
+        expected_creator = User.objects.filter(username="System").get()
+        expected_ao = Contact.objects.filter(first_name="Seline", middle_name="testmiddle2", last_name="Tower").get()
+        expected_domain_information = DomainInformation(
+            creator=expected_creator,
+            organization_type="federal",
+            federal_agency="Department of Commerce",
+            federal_type="executive",
+            organization_name="Fanoodle",
+            address_line1="93001 Arizona Drive",
+            city="Columbus",
+            state_territory="Oh",
+            zipcode="43268",
+            authorizing_official=expected_ao,
+            domain=_domain,
+        )
+        # Given that these are different objects, this needs to be set
+        expected_domain_information.id = domain_information.id
+        self.assertEqual(domain_information, expected_domain_information)
+
+    def test_load_organization_data_preserves_existing_data(self):
+        """
+        This test verifies that the load_organization_data method does not overwrite existing data.
+
+        The test follows these steps:
+        1. Parses all existing data by running the load_domains and transfer_domains methods.
+        2. Adds pre-existing fake data to a DomainInformation object and saves it to the database.
+        3. Runs the load_organization_data method.
+        4. Checks that the pre-existing data in the DomainInformation object has not been overwritten.
+
+        The expected result is that the DomainInformation object retains its pre-existing data
+        after the load_organization_data method is run.
+        """
+        # == First, parse all existing data == #
+        self.run_load_domains()
+        self.run_transfer_domains()
+
+        # == Second, try add prexisting fake data == #
+        _domain_old = Domain.objects.filter(name="fakewebsite2.gov").get()
+        domain_information_old = DomainInformation.objects.filter(domain=_domain_old).get()
+        domain_information_old.address_line1 = "93001 Galactic Way"
+        domain_information_old.city = "Olympus"
+        domain_information_old.state_territory = "MA"
+        domain_information_old.zipcode = "12345"
+        domain_information_old.save()
+
+        # == Third, try running the script == #
+        self.run_load_organization_data()
+
+        # == Fourth, test that no data is overwritten as we expect == #
+        _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
+        domain_information = DomainInformation.objects.filter(domain=_domain).get()
+
+        expected_creator = User.objects.filter(username="System").get()
+        expected_ao = Contact.objects.filter(first_name="Seline", middle_name="testmiddle2", last_name="Tower").get()
+        expected_domain_information = DomainInformation(
+            creator=expected_creator,
+            organization_type="federal",
+            federal_agency="Department of Commerce",
+            federal_type="executive",
+            organization_name="Fanoodle",
+            address_line1="93001 Galactic Way",
+            city="Olympus",
+            state_territory="MA",
+            zipcode="12345",
+            authorizing_official=expected_ao,
+            domain=_domain,
+        )
+        # Given that these are different objects, this needs to be set
+        expected_domain_information.id = domain_information.id
+        self.assertEqual(domain_information, expected_domain_information)
 
     def test_load_organization_data_integrity(self):
-        """Validates data integrity with the load_org_data command"""
+        """
+        This test verifies the data integrity after running the load_organization_data method.
+
+        The test follows these steps:
+        1. Parses all existing data by running the load_domains and transfer_domains methods.
+        2. Attempts to add organization data to the parsed data by running the load_organization_data method.
+        3. Checks that the data has not been corrupted by comparing the actual counts of objects in the database
+        with the expected counts.
+
+        The expected result is that the counts of objects in the database
+        match the expected counts, indicating that the data has not been corrupted.
+        """
         # First, parse all existing data
         self.run_load_domains()
         self.run_transfer_domains()
@@ -221,7 +333,6 @@ class TestOrganizationMigration(TestCase):
         expected_missing_domains = 0
         expected_duplicate_domains = 0
         expected_missing_domain_informations = 0
-        # we expect 1 missing invite from anomaly.gov (an injected error)
         expected_missing_domain_invitations = 1
         self.compare_tables(
             expected_total_transition_domains,
