@@ -280,10 +280,8 @@ class DomainDsdataForm(forms.Form):
         required=True,
         label="Digest",
         validators=[validate_hexadecimal],
-        max_length=64,
         error_messages={
             "required": "Digest is required.",
-            "max_length": str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_LENGTH)),
         },
     )
 

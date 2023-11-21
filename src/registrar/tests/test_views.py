@@ -1925,30 +1925,6 @@ class TestDomainDNSSEC(TestDomainOverview):
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
         )
 
-    def test_ds_data_form_invalid_digest_length(self):
-        """DS Data form errors with invalid data (digest too long)
-
-        Uses self.app WebTest because we need to interact with forms.
-        """
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # first two nameservers are required, so if we empty one out we should
-        # get a form error
-        add_data_page.forms[0]["form-0-key_tag"] = "1234"
-        add_data_page.forms[0]["form-0-algorithm"] = "3"
-        add_data_page.forms[0]["form-0-digest_type"] = "1"
-        add_data_page.forms[0][
-            "form-0-digest"
-        ] = "1234567890123456789012345678901234567890123456789012345678901234567890"
-        with less_console_noise():  # swallow logged warning message
-            result = add_data_page.forms[0].submit()
-        # form submission was a post with an error, response should be a 200
-        # error text appears twice, once at the top of the page, once around
-        # the field.
-        self.assertContains(
-            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_LENGTH)), count=2, status_code=200
-        )
 
     def test_ds_data_form_invalid_digest_chars(self):
         """DS Data form errors with invalid data (digest contains non hexadecimal chars)
