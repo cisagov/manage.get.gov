@@ -390,19 +390,6 @@ class TestMigrations(TestCase):
                 disablePrompts=True,
             )
 
-    def run_load_organization_data(self):
-        # noqa here (E501) because splitting this up makes it
-        # confusing to read.
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-            return_value=True,
-        ):
-            call_command(
-                "load_organization_data",
-                self.migration_json_filename,
-                directory=self.test_data_file_location,
-            )
-
     def compare_tables(
         self,
         expected_total_transition_domains,
