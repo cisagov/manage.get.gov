@@ -1925,7 +1925,6 @@ class TestDomainDNSSEC(TestDomainOverview):
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
         )
 
-
     def test_ds_data_form_invalid_digest_chars(self):
         """DS Data form errors with invalid data (digest contains non hexadecimal chars)
 
