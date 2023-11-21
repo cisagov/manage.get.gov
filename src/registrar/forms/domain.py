@@ -8,6 +8,10 @@ from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
+    DsDataError,
+    DsDataErrorCodes,
+    SecurityEmailError,
+    SecurityEmailErrorCodes,
 )
 
 from ..models import Contact, DomainInformation, Domain
@@ -15,6 +19,8 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
+
+import re
 
 
 class DomainAddUserForm(forms.Form):
@@ -152,7 +158,13 @@ class ContactForm(forms.ModelForm):
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
-    security_email = forms.EmailField(label="Security email", required=False)
+    security_email = forms.EmailField(
+        label="Security email",
+        required=False,
+        error_messages={
+            "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
+        },
+    )
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):
@@ -228,12 +240,22 @@ class DomainDnssecForm(forms.Form):
 class DomainDsdataForm(forms.Form):
     """Form for adding or editing DNSSEC DS Data to a domain."""
 
+    def validate_hexadecimal(value):
+        """
+        Tests that string matches all hexadecimal values.
+
+        Raise validation error to display error in form
+        if invalid characters entered
+        """
+        if not re.match(r"^[0-9a-fA-F]+$", value):
+            raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
+
     key_tag = forms.IntegerField(
         required=True,
         label="Key tag",
         validators=[
-            MinValueValidator(0, message="Value must be between 0 and 65535"),
-            MaxValueValidator(65535, message="Value must be between 0 and 65535"),
+            MinValueValidator(0, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
+            MaxValueValidator(65535, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
         ],
         error_messages={"required": ("Key tag is required.")},
     )
@@ -251,14 +273,37 @@ class DomainDsdataForm(forms.Form):
         label="Digest type",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
-        error_messages={"required": ("Digest Type is required.")},
+        error_messages={"required": ("Digest type is required.")},
     )
 
     digest = forms.CharField(
         required=True,
         label="Digest",
-        error_messages={"required": ("Digest is required.")},
+        validators=[validate_hexadecimal],
+        error_messages={
+            "required": "Digest is required.",
+        },
     )
+
+    def clean(self):
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        digest_type = cleaned_data.get("digest_type", 0)
+        digest = cleaned_data.get("digest", "")
+        # validate length of digest depending on digest_type
+        if digest_type == 1 and len(digest) != 40:
+            self.add_error(
+                "digest",
+                DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA1),
+            )
+        elif digest_type == 2 and len(digest) != 64:
+            self.add_error(
+                "digest",
+                DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA256),
+            )
+        return cleaned_data
 
 
 DomainDsdataFormset = formset_factory(
