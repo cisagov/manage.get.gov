@@ -736,7 +736,7 @@ class DomainAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
     change_list_template = "django/admin/domain_change_list.html"
-    readonly_fields = ["state"]
+    readonly_fields = ["state", "expiration_date"]
 
     def export_data_type(self, request):
         # match the CSV example with all the fields
