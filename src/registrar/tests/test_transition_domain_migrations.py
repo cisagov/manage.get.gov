@@ -27,17 +27,6 @@ class TestOrganizationMigration(TestCase):
         # self.master_script = "load_transition_domain",
 
         self.test_data_file_location = "registrar/tests/data"
-        self.test_domain_contact_filename = "test_domain_contacts.txt"
-        self.test_contact_filename = "test_contacts.txt"
-        self.test_domain_status_filename = "test_domain_statuses.txt"
-
-        # Files for parsing additional TransitionDomain data
-        self.test_agency_adhoc_filename = "test_agency_adhoc.txt"
-        self.test_authority_adhoc_filename = "test_authority_adhoc.txt"
-        self.test_domain_additional = "test_domain_additional.txt"
-        self.test_domain_types_adhoc = "test_domain_types_adhoc.txt"
-        self.test_escrow_domains_daily = "test_escrow_domains_daily"
-        self.test_organization_adhoc = "test_organization_adhoc.txt"
         self.migration_json_filename = "test_migrationFilepaths.json"
 
     def tearDown(self):

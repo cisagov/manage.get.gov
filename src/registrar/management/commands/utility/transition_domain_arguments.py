@@ -18,7 +18,7 @@ class TransitionDomainArguments:
     # Maintains an internal kwargs list and sets values
     # that match the class definition.
     def __init__(self, **kwargs):
-        self.kwargs = kwargs
+        self.pattern_map_params = kwargs.get("pattern_map_params", [])
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
