@@ -12,13 +12,6 @@
   </p>
 {% endblock %}
 
-{% block form_required_fields_help_text %}
-    <p class="margin-top-3">
-      <i>Required fields are marked with an asterisk (<abbr class="usa-hint usa-hint--required"
-          title="required">*</abbr>).</i>
-    </p>
-{% endblock %}
-
 {% block form_fields %}
     {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
       {% input_with_errors forms.0.about_your_organization %}
