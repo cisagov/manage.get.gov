@@ -405,6 +405,7 @@ class AlternativeDomainForm(RegistrarForm):
 
     alternative_domain = forms.CharField(
         required=False,
+        label="",
     )
 
 
