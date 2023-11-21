@@ -162,8 +162,8 @@ class DomainSecurityEmailForm(forms.Form):
         label="Security email",
         required=False,
         error_messages={
-            'invalid': str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
-        }
+            "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
+        },
     )
 
 
