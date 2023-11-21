@@ -110,13 +110,17 @@ class Command(BaseCommand):
         )
 
         logger.info(
-            f"{TerminalColors.MAGENTA}"
-            "Preparing to load organization data onto DomainInformation tables..."
-            f"{TerminalColors.ENDC}"
+            f"""{TerminalColors.MAGENTA}
+            Preparing to load organization data onto DomainInformation tables...
+            {TerminalColors.ENDC}"""
         )
         self.prepare_update_domain_information(transition_domains, args.debug)
 
-        logger.info(f"{TerminalColors.MAGENTA}" "Beginning mass DomainInformation update..." f"{TerminalColors.ENDC}")
+        logger.info(
+            f"""{TerminalColors.MAGENTA}
+            Beginning mass DomainInformation update...
+            {TerminalColors.ENDC}"""
+        )
         self.bulk_update_domain_information(args.debug)
 
     def load_json_settings(self, options, migration_json_filename):
