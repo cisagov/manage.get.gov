@@ -113,17 +113,13 @@ class Command(BaseCommand):
         )
 
         logger.info(
-            f"""{TerminalColors.MAGENTA}
-            Preparing to load organization data onto DomainInformation tables...
-            {TerminalColors.ENDC}"""
+            f"{TerminalColors.MAGENTA}"
+            "Preparing to load organization data onto DomainInformation tables..."
+            f"{TerminalColors.ENDC}"
         )
         self.prepare_update_domain_information(transition_domains, args.debug)
 
-        logger.info(
-            f"""{TerminalColors.MAGENTA}
-            Beginning mass DomainInformation update...
-            {TerminalColors.ENDC}"""
-        )
+        logger.info(f"{TerminalColors.MAGENTA}" f"Beginning mass DomainInformation update..." f"{TerminalColors.ENDC}")
         self.bulk_update_domain_information(args.debug)
 
     def load_json_settings(self, options, migration_json_filename):
@@ -189,10 +185,9 @@ class Command(BaseCommand):
 
         # === Log results and return data === #
         if len(self.domains_failed_to_update) > 0:
-            failed = [item.domain_name for item in self.domains_failed_to_update]
             logger.error(
                 f"""{TerminalColors.FAIL}
-                Failed to update. An exception was encountered on the following Domains: {failed}
+                Failed to update. An exception was encountered on the following Domains: {self.domains_failed_to_update}
                 {TerminalColors.ENDC}"""
             )
             raise LoadOrganizationError(code=LoadOrganizationErrorCodes.UPDATE_DOMAIN_INFO_FAILED)
@@ -201,8 +196,11 @@ class Command(BaseCommand):
             logger.info(f"Updating these DomainInformations: {[item for item in self.domain_information_to_update]}")
 
         if len(self.domains_skipped) > 0:
+            logger.info(f"Skipped these fields: {self.domains_skipped}")
             logger.info(
+                f"{TerminalColors.YELLOW}"
                 f"Skipped updating {len(self.domains_skipped)} fields. User-supplied data exists, or there is no data."
+                f"{TerminalColors.ENDC}"
             )
 
         logger.info(f"Ready to update {len(self.domain_information_to_update)} DomainInformations.")
@@ -242,7 +240,7 @@ class Command(BaseCommand):
                 f"Domain {item.domain_name} has no Organization Data. Cannot update."
                 f"{TerminalColors.ENDC}"
             )
-            self.domains_skipped.append(item)
+            self.domains_skipped.append(item.domain_name)
         else:
             # Based on the current domain, grab the right DomainInformation object.
             current_domain_information = domain_informations_dict[item.domain_name]
