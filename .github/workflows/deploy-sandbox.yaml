@@ -47,16 +47,15 @@ jobs:
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:
-          DEPLOY_NOW: thanks
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
+          MANIFEST: "ops/manifests/manifest-${{ needs.variables.outputs.environment }}.yaml"
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
-          push_arguments: "-f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml"
   comment:
     runs-on: ubuntu-latest
     needs: [variables, deploy]
