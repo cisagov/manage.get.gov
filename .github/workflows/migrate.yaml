@@ -15,6 +15,8 @@ on:
         options:
           - stable
           - staging
+          - development
+          - ky
           - es
           - nl
           - rh

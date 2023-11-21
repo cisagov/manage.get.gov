@@ -54,9 +54,10 @@ If a bug fix or feature needs to be made to stable out of the normal cycle, this
 In the case where a bug fix or feature needs to be added outside of the normal cycle, the code-fix branch and release will be handled differently than normal:
 
 1. Code will need to be branched NOT off of main, but off of the same commit as the most recent stable commit. This should be the one tagged with the most recent vX.XX.XX value.
-2. After making the bug fix, the approved PR will branch will be tagged with a new release tag, incrementing the patch value from the last commit number.
-3. This branch then needs to be merged to main per the usual process.
-4. This same branch should be merged into staging.
+2. After making the bug fix, the approved PR branch will not be merged yet, instead it will be tagged with a new release tag, incrementing the patch value from the last commit number.
+3. If main and stable are on the the same commit then merge this branch into the staging using the staging release tag (staging-<the hotfix release number>). 
+4. If staging is already ahead stable, you may need to create another branch that is based off of the current staging commit, merge in your code change and then tag that branch with the staging release.
+5. Wait to merge your original branch until both deploys finish.  Once they succeed then merge to main per the usual process.
 
 ## Serving static assets
 We are using [WhiteNoise](http://whitenoise.evans.io/en/stable/index.html) plugin to serve our static assets on cloud.gov. This plugin is added to the `MIDDLEWARE` list in our apps `settings.py`.

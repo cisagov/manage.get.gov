@@ -136,6 +136,8 @@ MIDDLEWARE = [
     "allow_cidr.middleware.AllowCIDRMiddleware",
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
+    # custom middleware to stop caching from CloudFront
+    "registrar.no_cache_middleware.NoCacheMiddleware",
     # serve static assets in production
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
@@ -617,6 +619,8 @@ SECURE_SSL_REDIRECT = True
 ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
+    "getgov-development.app.cloud.gov",
+    "getgov-ky.app.cloud.gov",
     "getgov-es.app.cloud.gov",
     "getgov-nl.app.cloud.gov",
     "getgov-rh.app.cloud.gov",
