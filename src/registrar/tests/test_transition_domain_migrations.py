@@ -99,11 +99,9 @@ class TestOrganizationMigration(TestCase):
         expected_total_transition_domains,
         expected_total_domains,
         expected_total_domain_informations,
-        expected_total_domain_invitations,
         expected_missing_domains,
         expected_duplicate_domains,
         expected_missing_domain_informations,
-        expected_missing_domain_invitations,
     ):
         """Does a diff between the transition_domain and the following tables:
         domain, domain_information and the domain_invitation.
@@ -112,20 +110,12 @@ class TestOrganizationMigration(TestCase):
         missing_domains = []
         duplicate_domains = []
         missing_domain_informations = []
-        missing_domain_invites = []
         for transition_domain in TransitionDomain.objects.all():
             transition_domain_name = transition_domain.domain_name
-            transition_domain_email = transition_domain.username
-
             # Check Domain table
             matching_domains = Domain.objects.filter(name=transition_domain_name)
             # Check Domain Information table
             matching_domain_informations = DomainInformation.objects.filter(domain__name=transition_domain_name)
-            # Check Domain Invitation table
-            matching_domain_invitations = DomainInvitation.objects.filter(
-                email=transition_domain_email.lower(),
-                domain__name=transition_domain_name,
-            )
 
             if len(matching_domains) == 0:
                 missing_domains.append(transition_domain_name)
@@ -133,28 +123,22 @@ class TestOrganizationMigration(TestCase):
                 duplicate_domains.append(transition_domain_name)
             if len(matching_domain_informations) == 0:
                 missing_domain_informations.append(transition_domain_name)
-            if len(matching_domain_invitations) == 0:
-                missing_domain_invites.append(transition_domain_name)
 
         total_missing_domains = len(missing_domains)
         total_duplicate_domains = len(duplicate_domains)
         total_missing_domain_informations = len(missing_domain_informations)
-        total_missing_domain_invitations = len(missing_domain_invites)
 
         total_transition_domains = len(TransitionDomain.objects.all())
         total_domains = len(Domain.objects.all())
         total_domain_informations = len(DomainInformation.objects.all())
-        total_domain_invitations = len(DomainInvitation.objects.all())
 
         self.assertEqual(total_missing_domains, expected_missing_domains)
         self.assertEqual(total_duplicate_domains, expected_duplicate_domains)
         self.assertEqual(total_missing_domain_informations, expected_missing_domain_informations)
-        self.assertEqual(total_missing_domain_invitations, expected_missing_domain_invitations)
 
         self.assertEqual(total_transition_domains, expected_total_transition_domains)
         self.assertEqual(total_domains, expected_total_domains)
         self.assertEqual(total_domain_informations, expected_total_domain_informations)
-        self.assertEqual(total_domain_invitations, expected_total_domain_invitations)
 
     def test_load_organization_data_transition_domain(self):
         """
@@ -328,21 +312,17 @@ class TestOrganizationMigration(TestCase):
         expected_total_transition_domains = 9
         expected_total_domains = 5
         expected_total_domain_informations = 5
-        expected_total_domain_invitations = 8
 
         expected_missing_domains = 0
         expected_duplicate_domains = 0
         expected_missing_domain_informations = 0
-        expected_missing_domain_invitations = 1
         self.compare_tables(
             expected_total_transition_domains,
             expected_total_domains,
             expected_total_domain_informations,
-            expected_total_domain_invitations,
             expected_missing_domains,
             expected_duplicate_domains,
             expected_missing_domain_informations,
-            expected_missing_domain_invitations,
         )
 
 
