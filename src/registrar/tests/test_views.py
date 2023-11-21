@@ -13,6 +13,12 @@ import boto3_mocking  # type: ignore
 from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes,
+    SecurityEmailError,
+    SecurityEmailErrorCodes,
+    GenericError,
+    GenericErrorCodes,
+    DsDataError,
+    DsDataErrorCodes,
 )
 
 from registrar.models import (
@@ -1734,13 +1740,13 @@ class TestDomainSecurityEmail(TestDomainOverview):
             (
                 "RegistryError",
                 form_data_registry_error,
-                """
-We’re experiencing a system connection error. Please wait a few minutes
-and try again. If you continue to receive this error after a few tries,
-contact help@get.gov
-                """,
+                str(GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY)),
             ),
-            ("ContactError", form_data_contact_error, "Value entered was wrong."),
+            (
+                "ContactError",
+                form_data_contact_error,
+                str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
+            ),
             (
                 "RegistrySuccess",
                 form_data_success,
@@ -1874,7 +1880,30 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(page, "The DS Data records for this domain have been updated.")
 
     def test_ds_data_form_invalid(self):
-        """DS Data form errors with invalid data
+        """DS Data form errors with invalid data (missing required fields)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # all four form fields are required, so will test with each blank
+        add_data_page.forms[0]["form-0-key_tag"] = ""
+        add_data_page.forms[0]["form-0-algorithm"] = ""
+        add_data_page.forms[0]["form-0-digest_type"] = ""
+        add_data_page.forms[0]["form-0-digest"] = ""
+        with less_console_noise():  # swallow logged warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(result, "Key tag is required", count=2, status_code=200)
+        self.assertContains(result, "Algorithm is required", count=2, status_code=200)
+        self.assertContains(result, "Digest type is required", count=2, status_code=200)
+        self.assertContains(result, "Digest is required", count=2, status_code=200)
+
+    def test_ds_data_form_invalid_keytag(self):
+        """DS Data form errors with invalid data (key tag too large)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1883,13 +1912,87 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
         # get a form error
-        add_data_page.forms[0]["form-0-key_tag"] = ""
+        add_data_page.forms[0]["form-0-key_tag"] = "65536"  # > 65535
+        add_data_page.forms[0]["form-0-algorithm"] = ""
+        add_data_page.forms[0]["form-0-digest_type"] = ""
+        add_data_page.forms[0]["form-0-digest"] = ""
         with less_console_noise():  # swallow logged warning message
             result = add_data_page.forms[0].submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, "Key tag is required", count=2, status_code=200)
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
+        )
+
+    def test_ds_data_form_invalid_digest_chars(self):
+        """DS Data form errors with invalid data (digest contains non hexadecimal chars)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-key_tag"] = "1234"
+        add_data_page.forms[0]["form-0-algorithm"] = "3"
+        add_data_page.forms[0]["form-0-digest_type"] = "1"
+        add_data_page.forms[0]["form-0-digest"] = "GG1234"
+        with less_console_noise():  # swallow logged warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)), count=2, status_code=200
+        )
+
+    def test_ds_data_form_invalid_digest_sha1(self):
+        """DS Data form errors with invalid data (digest is invalid sha-1)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-key_tag"] = "1234"
+        add_data_page.forms[0]["form-0-algorithm"] = "3"
+        add_data_page.forms[0]["form-0-digest_type"] = "1"  # SHA-1
+        add_data_page.forms[0]["form-0-digest"] = "A123"
+        with less_console_noise():  # swallow logged warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA1)), count=2, status_code=200
+        )
+
+    def test_ds_data_form_invalid_digest_sha256(self):
+        """DS Data form errors with invalid data (digest is invalid sha-256)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-key_tag"] = "1234"
+        add_data_page.forms[0]["form-0-algorithm"] = "3"
+        add_data_page.forms[0]["form-0-digest_type"] = "2"  # SHA-256
+        add_data_page.forms[0]["form-0-digest"] = "GG1234"
+        with less_console_noise():  # swallow logged warning message
+            result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA256)), count=2, status_code=200
+        )
 
 
 class TestApplicationStatus(TestWithUser, WebTest):

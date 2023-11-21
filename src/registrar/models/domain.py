@@ -598,7 +598,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # if unable to update domain raise error and stop
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-            raise NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN)
+            raise NameserverError(code=nsErrorCodes.BAD_DATA)
 
         successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
 
