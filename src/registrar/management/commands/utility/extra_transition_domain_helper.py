@@ -963,45 +963,44 @@ class ExtraTransitionDomain:
         # metadata about each file and associate it with an enum.
         # That way if we want the data located at the agency_adhoc file,
         # we can just call EnumFilenames.AGENCY_ADHOC.
-        if options.pattern_map_params is None or options.pattern_map_params == []:
-            options.pattern_map_params = [
-                (
-                    EnumFilenames.AGENCY_ADHOC,
-                    options.agency_adhoc_filename,
-                    AgencyAdhoc,
-                    "agencyid",
-                ),
-                (
-                    EnumFilenames.DOMAIN_ADDITIONAL,
-                    options.domain_additional_filename,
-                    DomainAdditionalData,
-                    "domainname",
-                ),
-                (
-                    EnumFilenames.DOMAIN_ESCROW,
-                    options.domain_escrow_filename,
-                    DomainEscrow,
-                    "domainname",
-                ),
-                (
-                    EnumFilenames.DOMAIN_ADHOC,
-                    options.domain_adhoc_filename,
-                    DomainTypeAdhoc,
-                    "domaintypeid",
-                ),
-                (
-                    EnumFilenames.ORGANIZATION_ADHOC,
-                    options.organization_adhoc_filename,
-                    OrganizationAdhoc,
-                    "orgid",
-                ),
-                (
-                    EnumFilenames.AUTHORITY_ADHOC,
-                    options.authority_adhoc_filename,
-                    AuthorityAdhoc,
-                    "authorityid",
-                ),
-            ]
+        options.pattern_map_params = [
+            (
+                EnumFilenames.AGENCY_ADHOC,
+                options.agency_adhoc_filename,
+                AgencyAdhoc,
+                "agencyid",
+            ),
+            (
+                EnumFilenames.DOMAIN_ADDITIONAL,
+                options.domain_additional_filename,
+                DomainAdditionalData,
+                "domainname",
+            ),
+            (
+                EnumFilenames.DOMAIN_ESCROW,
+                options.domain_escrow_filename,
+                DomainEscrow,
+                "domainname",
+            ),
+            (
+                EnumFilenames.DOMAIN_ADHOC,
+                options.domain_adhoc_filename,
+                DomainTypeAdhoc,
+                "domaintypeid",
+            ),
+            (
+                EnumFilenames.ORGANIZATION_ADHOC,
+                options.organization_adhoc_filename,
+                OrganizationAdhoc,
+                "orgid",
+            ),
+            (
+                EnumFilenames.AUTHORITY_ADHOC,
+                options.authority_adhoc_filename,
+                AuthorityAdhoc,
+                "authorityid",
+            ),
+        ]
 
         self.file_data = self.populate_file_data(options.pattern_map_params)
 
