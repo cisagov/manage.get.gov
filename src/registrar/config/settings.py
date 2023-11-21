@@ -304,9 +304,8 @@ CSP_DEFAULT_SRC = allowed_sources
 # explicitly set
 CSP_FRAME_ANCESTORS = allowed_sources
 CSP_FORM_ACTION = allowed_sources
-CSP_SCRIPT_SRC_ELEM = allowed_sources_scripts
-
-CSP_CONNECT_SRC = allowed_sources_scripts
+CSP_SCRIPT_SRC_ELEM = ["'self'", "https://www.googletagmanager.com/"]
+CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/"]
 CSP_INCLUDE_NONCE_IN = ["script-src-elem"]
 
 # Cross-Origin Resource Sharing (CORS) configuration
