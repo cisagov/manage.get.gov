@@ -1,28 +1,17 @@
 name: Upload current-full.csv and current-federal.csv
 
 on:
-  push:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.gitignore'
-    branches:
-      - rjm
-  pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.gitignore'
-    branches:
-      - rjm
   schedule:
     # Runs every day at 5 AM UTC
     - cron: '0 5 * * *'
 
+
 jobs:
   upload_reports:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    env:
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
       - uses: actions/checkout@v3
 
@@ -31,19 +20,9 @@ jobs:
           curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
           sudo mv cf /usr/local/bin
 
-      - name: Login to cloud.gov
-        run: |
-          cf api https://api.fr.cloud.gov
-          cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
-          cf target -o ${{ secrets.CF_ORG }} -s ${{ secrets.CF_SPACE }}
-
-      - name: Run task
-        run: cf run-task my-app "/tmp/lifecycle/shell -c './manage.py generate_current_full_and_federal_reports.py'"
+      - name: Generate current-federal.csv
+        run: cf run-task getgov-za "/tmp/lifecycle/shell -c './manage.py generate_current_full_report.py'"
+        
       
-      - name: Commit and push CSV files
-      run: |
-        git config --global user.name 'GitHub Actions'
-        git config --global user.email 'actions@github.com'
-        git add current-full.csv current-federal.csv
-        git commit -m "Update CSV files"
-        git push
+      - name: Generate current-full.csv
+        run: cf run-task getgov-za "/tmp/lifecycle/shell -c './manage.py generate_current_federal_report.py'"
