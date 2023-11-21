@@ -298,7 +298,6 @@ SERVER_EMAIL = "root@get.gov"
 # Content-Security-Policy configuration
 # this can be restrictive because we have few external scripts
 allowed_sources = "'self'"
-allowed_sources_scripts = ["'self'", "https://www.googletagmanager.com/", "https://www.google-analytics.com/"]
 CSP_DEFAULT_SRC = allowed_sources
 # Most things fall back to default-src, but the following do not and should be
 # explicitly set
