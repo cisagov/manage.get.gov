@@ -1,7 +1,7 @@
 """Internal API views"""
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 
 import requests
 
@@ -89,3 +89,26 @@ def available(request, domain=""):
             return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]})
     except Exception:
         return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["error"]})
+
+@require_http_methods(["GET"])
+@login_not_required
+def get_current_full(request):
+    # Open the CSV file
+    file_path = './migrationData/current-full.csv'
+    return serve_file(file_path)
+
+@require_http_methods(["GET"])
+@login_not_required
+def get_current_federal(request):
+    # Open the CSV file
+    file_path = './migrationData/current-federal.csv'
+    return serve_file(file_path)
+
+def serve_file(file_path):
+    """Downloads a file based on a given filepath. Returns a 404 if not found."""
+    if os.path.exists(file_path):
+        # Serve the CSV file
+        response = FileResponse(open(file_path, 'rb'))
+        return response
+    else:
+        return HttpResponse("File not found", status=404)

@@ -11,8 +11,8 @@ from django.views.generic import RedirectView
 from registrar import views
 from registrar.views.application import Step
 from registrar.views.utility import always_404
-from api.views import available
-from api.report_views import get_current_federal, get_current_full
+from api.views import available, get_current_federal, get_current_full
+
 
 APPLICATION_NAMESPACE = views.ApplicationWizard.URL_NAMESPACE
 application_urls = [
