@@ -12,6 +12,10 @@ Read about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{
 
 {% endblock %}
 
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear on this page #}
+{% endblock %}
+
 {% block form_fields %}
     {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
       {% input_with_errors forms.0.purpose %}
