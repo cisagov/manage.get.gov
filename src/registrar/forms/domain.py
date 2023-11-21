@@ -167,16 +167,19 @@ class AuthorizingOfficialContactForm(ContactForm):
         super().__init__(*args, **kwargs)
 
         # Set custom error messages
-        self.fields["first_name"].error_messages = {"required": "Enter the first name / given name of this contact."}
-        self.fields["last_name"].error_messages = {"required": "Enter the last name / family name of this contact."}
+        self.fields["first_name"].error_messages = {
+            "required": "Enter the first name / given name of your authorizing official."
+        }
+        self.fields["last_name"].error_messages = {
+            "required": "Enter the last name / family name of your authorizing official."
+        }
         self.fields["title"].error_messages = {
-            "required": "Enter the title or role in your organization of this contact \
-            (e.g., Chief Information Officer)."
+            "required": "Enter the title or role your authorizing official has in your organization (e.g., Chief Information Officer)."
         }
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages = {"required": "Enter a phone number for this contact."}
+        self.fields["phone"].error_messages = {"required": "Enter a phone number for your authorizing official."}
 
 
 class DomainSecurityEmailForm(forms.Form):
