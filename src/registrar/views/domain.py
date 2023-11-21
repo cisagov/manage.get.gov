@@ -308,7 +308,7 @@ class DomainNameserversView(DomainFormBaseView):
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
             # there was an uncaught error in submission (through EPP)
-            messages.error(self.request, NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN))
+            messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
             logger.error(f"Nameservers error: {Err}")
         # TODO: registry is not throwing an error when no connection
         except RegistryError as Err:

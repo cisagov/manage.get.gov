@@ -10,6 +10,8 @@ from registrar.utility.errors import (
     NameserverErrorCodes as nsErrorCodes,
     DsDataError,
     DsDataErrorCodes,
+    SecurityEmailError,
+    SecurityEmailErrorCodes,
 )
 
 from ..models import Contact, DomainInformation, Domain
@@ -156,7 +158,13 @@ class ContactForm(forms.ModelForm):
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
-    security_email = forms.EmailField(label="Security email", required=False)
+    security_email = forms.EmailField(
+        label="Security email",
+        required=False,
+        error_messages={
+            'invalid': str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
+        }
+    )
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):
@@ -237,7 +245,7 @@ class DomainDsdataForm(forms.Form):
         Tests that string matches all hexadecimal values.
 
         Raise validation error to display error in form
-        if invalid caracters entered
+        if invalid characters entered
         """
         if not re.match(r"^[0-9a-fA-F]+$", value):
             raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
