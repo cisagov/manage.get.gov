@@ -13,6 +13,10 @@ import boto3_mocking  # type: ignore
 from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes,
+    SecurityEmailError,
+    SecurityEmailErrorCodes,
+    GenericError,
+    GenericErrorCodes,
 )
 
 from registrar.models import (
@@ -1734,13 +1738,13 @@ class TestDomainSecurityEmail(TestDomainOverview):
             (
                 "RegistryError",
                 form_data_registry_error,
-                """
-We’re experiencing a system connection error. Please wait a few minutes
-and try again. If you continue to receive this error after a few tries,
-contact help@get.gov
-                """,
+                str(GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY)),
             ),
-            ("ContactError", form_data_contact_error, "Value entered was wrong."),
+            (
+                "ContactError",
+                form_data_contact_error,
+                str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
+            ),
             (
                 "RegistrySuccess",
                 form_data_success,
