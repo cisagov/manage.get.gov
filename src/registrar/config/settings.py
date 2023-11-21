@@ -297,14 +297,8 @@ SERVER_EMAIL = "root@get.gov"
 
 # Content-Security-Policy configuration
 # this can be restrictive because we have few external scripts
-allowed_sources = (
-    "'self'"
-)
-allowed_sources_scripts = [
-    "'self'",
-    "https://www.googletagmanager.com/",
-    "https://www.google-analytics.com/"
-]
+allowed_sources = "'self'"
+allowed_sources_scripts = ["'self'", "https://www.googletagmanager.com/", "https://www.google-analytics.com/"]
 CSP_DEFAULT_SRC = allowed_sources
 # Most things fall back to default-src, but the following do not and should be
 # explicitly set
@@ -313,10 +307,7 @@ CSP_FORM_ACTION = allowed_sources
 CSP_SCRIPT_SRC_ELEM = allowed_sources_scripts
 CSP_SCRIPT_SRC = allowed_sources_scripts
 CSP_CONNECT_SRC = allowed_sources_scripts
-CSP_INCLUDE_NONCE_IN = [
-    'script-src',
-    'script-src-elem'
-    ]
+CSP_INCLUDE_NONCE_IN = ["script-src", "script-src-elem"]
 
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
