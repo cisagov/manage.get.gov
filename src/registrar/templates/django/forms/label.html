@@ -7,9 +7,4 @@
   {% else %}
     {{ field.label }}
   {% endif %}
-  {% if widget.attrs.required %}
-    {% if widget.label != "I read and agree to the requirements for operating .gov domains." %}
-      <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-  {% endif %}
 </{{ label_tag }}>
