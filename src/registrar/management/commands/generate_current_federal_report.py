@@ -1,13 +1,8 @@
 """Generates current-full.csv and current-federal.csv then uploads them to the desired URL."""
-import glob
 import logging
-
 import os
-import shutil
 
 from django.core.management import BaseCommand
-
-from registrar.management.commands.utility.terminal_helper import TerminalHelper
 from registrar.utility import csv_export
 
 

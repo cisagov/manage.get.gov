@@ -112,7 +112,7 @@ class TestURLAuth(TestCase):
         "/openid/callback/logout/",
         "/api/v1/available/whitehouse.gov",
         "/api/v1/get-report/current-federal",
-        "/api/v1/get-report/current-full"
+        "/api/v1/get-report/current-full",
     ]
 
     def assertURLIsProtectedByAuth(self, url):
