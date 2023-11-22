@@ -610,8 +610,7 @@ class NoOtherContactsForm(RegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=(
-            "Please explain why there are no other employees from your organization"
-            " we can contact to help us assess your eligibility for a .gov domain."
+            "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain."
         ),
         widget=forms.Textarea(),
     )
@@ -638,4 +637,4 @@ class RequirementsForm(RegistrarForm):
             "required": ("Check the box if you read and agree to the requirements for operating .gov domains.")
         },
     )
-    
+
