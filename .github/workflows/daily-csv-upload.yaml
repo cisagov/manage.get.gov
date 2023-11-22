@@ -43,10 +43,12 @@ jobs:
         id: wait-for-deploy
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: "deploy" # replace with the name of the deploy job
-          ref: ${{ github.event.pull_request.head.sha }} # the commit SHA of the head commit of the PR
-          timeoutSeconds: 600 # the maximum time to wait for the check to complete, in seconds
-          intervalSeconds: 10 # the time to wait between checks, in seconds
+          checkName: "deploy"
+          ref: ${{ github.event.pull_request.head.sha }}
+          # the maximum time to wait for the check to complete, in seconds
+          timeoutSeconds: 600 
+          # the time to wait between checks, in seconds
+          intervalSeconds: 10 
 
   upload_reports:
     runs-on: ubuntu-latest
@@ -70,7 +72,7 @@ jobs:
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
 
       - name: Generate current-federal.csv
-        run: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_full_report.py'"
+        run: cf run-task getgov-${{ env.ENVIRONMENT }} --wait --command "python manage.py generate_current_full_report.py --name current_full"
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
 
