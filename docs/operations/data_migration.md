@@ -423,7 +423,7 @@ Used by the migration scripts to trigger a prompt for deleting all table entries
 Useful for testing purposes, but *use with caution*
 
 ## Import organization data
-During MVP, our import scripts did not populate the following fields: `address_line, city, state_territory, and zipcode`. This was primarily due to time constraints. Because of this, we need to run a follow-on script to load this remaining data on each `DomainInformation` object.
+During MVP, our import scripts did not populate the following fields: `address_line, city, state_territory, and zipcode` for organization address in Domain Information. This was primarily due to time constraints. Because of this, we need to run a follow-on script to load this remaining data on each `DomainInformation` object.
 
 This script is intended to run under the assumption that the [load_transition_domain](#step-1-load-transition-domains) and the [transfer_transition_domains_to_domains](#step-2-transfer-transition-domain-data-into-main-domain-tables) scripts have already been ran.
 
