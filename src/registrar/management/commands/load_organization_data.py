@@ -55,7 +55,8 @@ class Command(BaseCommand):
         parser.add_argument("--directory", default="migrationdata", help="Desired directory")
 
     def handle(self, migration_json_filename, **options):
-        """Load organization address data into the TransitionDomain and DomainInformation tables by using the organization adhoc file and domain_additional file"""
+        """Load organization address data into the TransitionDomain 
+        and DomainInformation tables by using the organization adhoc file and domain_additional file"""
         # Parse JSON file
         options = self.load_json_settings(options, migration_json_filename)
         org_args = TransitionDomainArguments(**options)
