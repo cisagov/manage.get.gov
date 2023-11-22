@@ -787,7 +787,7 @@ class OrganizationDataLoader:
         self.tds_to_update: List[TransitionDomain] = []
 
     def update_organization_data_for_all(self):
-        """Updates org data for all TransitionDomains"""
+        """Updates org address data for all TransitionDomains"""
         all_transition_domains = TransitionDomain.objects.all()
         if len(all_transition_domains) == 0:
             raise LoadOrganizationError(code=LoadOrganizationErrorCodes.EMPTY_TRANSITION_DOMAIN_TABLE)
@@ -847,7 +847,7 @@ class OrganizationDataLoader:
 
     def parse_org_data(self, domain_name, transition_domain: TransitionDomain) -> TransitionDomain:
         """Grabs organization_name from the parsed files and associates it
-        with a transition_domain object, then returns that object."""
+        with a transition_domain object, then  updates that transition domain object and returns it"""
         if not isinstance(transition_domain, TransitionDomain):
             raise ValueError("Not a valid object, must be TransitionDomain")
 
