@@ -9,9 +9,13 @@ import logging
 
 import os
 import sys
-from typing import Dict
-
+from typing import Dict, List
+from django.core.paginator import Paginator
 from registrar.models.transition_domain import TransitionDomain
+from registrar.management.commands.utility.load_organization_error import (
+    LoadOrganizationError,
+    LoadOrganizationErrorCodes,
+)
 
 from .epp_data_containers import (
     AgencyAdhoc,
@@ -752,6 +756,195 @@ class FileDataHolder:
         return (full_filename, can_infer)
 
 
+class OrganizationDataLoader:
+    """Saves organization data onto Transition Domains. Handles file parsing."""
+
+    def __init__(self, options: TransitionDomainArguments):
+        self.debug = options.debug
+
+        # We want to data from the domain_additional file and the organization_adhoc file
+        options.pattern_map_params = [
+            (
+                EnumFilenames.DOMAIN_ADDITIONAL,
+                options.domain_additional_filename,
+                DomainAdditionalData,
+                "domainname",
+            ),
+            (
+                EnumFilenames.ORGANIZATION_ADHOC,
+                options.organization_adhoc_filename,
+                OrganizationAdhoc,
+                "orgid",
+            ),
+        ]
+
+        # Reads and parses organization data
+        self.parsed_data = ExtraTransitionDomain(options)
+
+        # options.infer_filenames will always be false when not SETTING.DEBUG
+        self.parsed_data.parse_all_files(options.infer_filenames)
+
+        self.tds_to_update: List[TransitionDomain] = []
+
+    def update_organization_data_for_all(self):
+        """Updates org address data for all TransitionDomains"""
+        all_transition_domains = TransitionDomain.objects.all()
+        if len(all_transition_domains) == 0:
+            raise LoadOrganizationError(code=LoadOrganizationErrorCodes.EMPTY_TRANSITION_DOMAIN_TABLE)
+
+        self.prepare_transition_domains(all_transition_domains)
+
+        logger.info(f"{TerminalColors.MAGENTA}" "Beginning mass TransitionDomain update..." f"{TerminalColors.ENDC}")
+        self.bulk_update_transition_domains(self.tds_to_update)
+
+        return self.tds_to_update
+
+    def prepare_transition_domains(self, transition_domains):
+        """Parses org data for each transition domain,
+        then appends it to the tds_to_update list"""
+        for item in transition_domains:
+            updated = self.parse_org_data(item.domain_name, item)
+            self.tds_to_update.append(updated)
+            if self.debug:
+                logger.info(
+                    f"""{TerminalColors.OKCYAN}
+                    Successfully updated:
+                    {item.display_transition_domain()}
+                    {TerminalColors.ENDC}"""
+                )
+
+        if self.debug:
+            logger.info(f"Updating the following: {[item for item in self.tds_to_update]}")
+
+        logger.info(
+            f"""{TerminalColors.MAGENTA}
+            Ready to update {len(self.tds_to_update)} TransitionDomains.
+            {TerminalColors.ENDC}"""
+        )
+
+    def bulk_update_transition_domains(self, update_list):
+        changed_fields = [
+            "address_line",
+            "city",
+            "state_territory",
+            "zipcode",
+        ]
+
+        batch_size = 1000
+        # Create a Paginator object. Bulk_update on the full dataset
+        # is too memory intensive for our current app config, so we can chunk this data instead.
+        paginator = Paginator(update_list, batch_size)
+        for page_num in paginator.page_range:
+            page = paginator.page(page_num)
+            TransitionDomain.objects.bulk_update(page.object_list, changed_fields)
+
+        if self.debug:
+            logger.info(f"Updated the following: {[item for item in self.tds_to_update]}")
+
+        logger.info(
+            f"{TerminalColors.OKGREEN}" f"Updated {len(self.tds_to_update)} TransitionDomains." f"{TerminalColors.ENDC}"
+        )
+
+    def parse_org_data(self, domain_name, transition_domain: TransitionDomain) -> TransitionDomain:
+        """Grabs organization_name from the parsed files and associates it
+        with a transition_domain object, then  updates that transition domain object and returns it"""
+        if not isinstance(transition_domain, TransitionDomain):
+            raise ValueError("Not a valid object, must be TransitionDomain")
+
+        org_info = self.get_org_info(domain_name)
+        if org_info is None:
+            logger.error(f"Could not add organization data on {domain_name}, no data exists.")
+            return transition_domain
+
+        # Add street info
+        transition_domain.address_line = org_info.orgstreet
+        transition_domain.city = org_info.orgcity
+        transition_domain.state_territory = org_info.orgstate
+        transition_domain.zipcode = org_info.orgzip
+
+        if self.debug:
+            # Log what happened to each field. The first value
+            # is the field name that was updated, second is the value
+            changed_fields = [
+                ("address_line", transition_domain.address_line),
+                ("city", transition_domain.city),
+                ("state_territory", transition_domain.state_territory),
+                ("zipcode", transition_domain.zipcode),
+            ]
+            self.log_add_or_changed_values(changed_fields, domain_name)
+
+        return transition_domain
+
+    def get_org_info(self, domain_name) -> OrganizationAdhoc | None:
+        """Maps an id given in get_domain_data to a organization_adhoc
+        record which has its corresponding definition"""
+        # Get a row in the domain_additional file. The id is the domain_name.
+        domain_additional_row = self.retrieve_row_by_id(EnumFilenames.DOMAIN_ADDITIONAL, domain_name)
+        if domain_additional_row is None:
+            return None
+
+        # Get a row in the organization_adhoc file. The id is the orgid in domain_additional_row.
+        org_row = self.retrieve_row_by_id(EnumFilenames.ORGANIZATION_ADHOC, domain_additional_row.orgid)
+        return org_row
+
+    def retrieve_row_by_id(self, file_type: EnumFilenames, desired_id):
+        """Returns a field in a dictionary based off the type and id.
+
+        vars:
+            file_type: (constant) EnumFilenames -> Which data file to target.
+            An example would be `EnumFilenames.DOMAIN_ADHOC`.
+
+            desired_id: str -> Which id you want to search on.
+            An example would be `"12"` or `"igorville.gov"`
+        """
+        # Grabs a dict associated with the file_type.
+        # For example, EnumFilenames.DOMAIN_ADDITIONAL would map to
+        # whatever data exists on the domain_additional file.
+        desired_file = self.parsed_data.file_data.get(file_type)
+        if desired_file is None:
+            logger.error(f"Type {file_type} does not exist")
+            return None
+
+        # This is essentially a dictionary of rows.
+        data_in_file = desired_file.data
+
+        # Get a row in the given file, based on an id.
+        # For instance, "igorville.gov" in domain_additional.
+        row_in_file = data_in_file.get(desired_id)
+        if row_in_file is None:
+            logger.error(f"Id {desired_id} does not exist for {file_type.value[0]}")
+
+        return row_in_file
+
+    def log_add_or_changed_values(self, values_to_check, domain_name):
+        """Iterates through a list of fields, and determines if we should log
+        if the field was added or if the field was updated.
+
+        A field is "updated" when it is not None or not "".
+        A field is "created" when it is either of those things.
+
+
+        """
+        for field_name, value in values_to_check:
+            str_exists = value is not None and value.strip() != ""
+            # Logs if we either added to this property,
+            # or modified it.
+            self._add_or_change_message(
+                field_name,
+                value,
+                domain_name,
+                str_exists,
+            )
+
+    def _add_or_change_message(self, field_name, changed_value, domain_name, is_update=False):
+        """Creates a log instance when a property
+        is successfully changed on a given TransitionDomain."""
+        if not is_update:
+            logger.info(f"Added {field_name} as '{changed_value}' on {domain_name}")
+        else:
+            logger.warning(f"Updated existing {field_name} to '{changed_value}' on {domain_name}")
+
+
 class ExtraTransitionDomain:
     """Helper class to aid in storing TransitionDomain data spread across
     multiple files."""
@@ -775,52 +968,47 @@ class ExtraTransitionDomain:
         # metadata about each file and associate it with an enum.
         # That way if we want the data located at the agency_adhoc file,
         # we can just call EnumFilenames.AGENCY_ADHOC.
-        pattern_map_params = [
-            (
-                EnumFilenames.AGENCY_ADHOC,
-                options.agency_adhoc_filename,
-                AgencyAdhoc,
-                "agencyid",
-            ),
-            (
-                EnumFilenames.DOMAIN_ADDITIONAL,
-                options.domain_additional_filename,
-                DomainAdditionalData,
-                "domainname",
-            ),
-            (
-                EnumFilenames.DOMAIN_ESCROW,
-                options.domain_escrow_filename,
-                DomainEscrow,
-                "domainname",
-            ),
-            (
-                EnumFilenames.DOMAIN_ADHOC,
-                options.domain_adhoc_filename,
-                DomainTypeAdhoc,
-                "domaintypeid",
-            ),
-            (
-                EnumFilenames.ORGANIZATION_ADHOC,
-                options.organization_adhoc_filename,
-                OrganizationAdhoc,
-                "orgid",
-            ),
-            (
-                EnumFilenames.AUTHORITY_ADHOC,
-                options.authority_adhoc_filename,
-                AuthorityAdhoc,
-                "authorityid",
-            ),
-            (
-                EnumFilenames.AUTHORITY_ADHOC,
-                options.authority_adhoc_filename,
-                AuthorityAdhoc,
-                "authorityid",
-            ),
-        ]
+        if options.pattern_map_params is None or options.pattern_map_params == []:
+            options.pattern_map_params = [
+                (
+                    EnumFilenames.AGENCY_ADHOC,
+                    options.agency_adhoc_filename,
+                    AgencyAdhoc,
+                    "agencyid",
+                ),
+                (
+                    EnumFilenames.DOMAIN_ADDITIONAL,
+                    options.domain_additional_filename,
+                    DomainAdditionalData,
+                    "domainname",
+                ),
+                (
+                    EnumFilenames.DOMAIN_ESCROW,
+                    options.domain_escrow_filename,
+                    DomainEscrow,
+                    "domainname",
+                ),
+                (
+                    EnumFilenames.DOMAIN_ADHOC,
+                    options.domain_adhoc_filename,
+                    DomainTypeAdhoc,
+                    "domaintypeid",
+                ),
+                (
+                    EnumFilenames.ORGANIZATION_ADHOC,
+                    options.organization_adhoc_filename,
+                    OrganizationAdhoc,
+                    "orgid",
+                ),
+                (
+                    EnumFilenames.AUTHORITY_ADHOC,
+                    options.authority_adhoc_filename,
+                    AuthorityAdhoc,
+                    "authorityid",
+                ),
+            ]
 
-        self.file_data = self.populate_file_data(pattern_map_params)
+        self.file_data = self.populate_file_data(options.pattern_map_params)
 
     # TODO - revise comment
     def populate_file_data(self, pattern_map_params):

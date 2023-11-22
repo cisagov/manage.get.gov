@@ -56,7 +56,7 @@ class TestDomainCache(MockEppLib):
         self.assertFalse("avail" in domain._cache.keys())
 
         # using a setter should clear the cache
-        domain.registry_expiration_date = datetime.date.today()
+        domain.dnssecdata = []
         self.assertEquals(domain._cache, {})
 
         # send should have been called only once
@@ -1951,6 +1951,41 @@ class TestRegistrantDNSSEC(MockEppLib):
         with self.assertRaises(RegistryError) as err:
             domain.dnssecdata = self.dnssecExtensionWithDsData
             self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
+
+
+class TestExpirationDate(MockEppLib):
+    """User may renew expiration date by a number of units of time"""
+
+    def setUp(self):
+        """
+        Domain exists in registry
+        """
+        super().setUp()
+        # for the tests, need a domain in the ready state
+        self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        # for the test, need a domain that will raise an exception
+        self.domain_w_error, _ = Domain.objects.get_or_create(name="fake-error.gov", state=Domain.State.READY)
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
+    def test_expiration_date_setter_not_implemented(self):
+        """assert that the setter for expiration date is not implemented and will raise error"""
+        with self.assertRaises(NotImplementedError):
+            self.domain.registry_expiration_date = datetime.date.today()
+
+    def test_renew_domain(self):
+        """assert that the renew_domain sets new expiration date in cache and saves to registrar"""
+        self.domain.renew_domain()
+        test_date = datetime.date(2023, 5, 25)
+        self.assertEquals(self.domain._cache["ex_date"], test_date)
+        self.assertEquals(self.domain.expiration_date, test_date)
+
+    def test_renew_domain_error(self):
+        """assert that the renew_domain raises an exception when registry raises error"""
+        with self.assertRaises(RegistryError):
+            self.domain_w_error.renew_domain()
 
 
 class TestAnalystClientHold(MockEppLib):

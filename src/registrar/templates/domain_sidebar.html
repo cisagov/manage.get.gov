@@ -17,6 +17,7 @@
         <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}>
           DNS
         </a>
+        {% if request.path|startswith:url %}
         <ul class="usa-sidenav__sublist">
           <li class="usa-sidenav__item">
             {% url 'domain-dns-nameservers' pk=domain.id as url %} 
@@ -34,20 +35,23 @@
             >
                 DNSSEC
             </a>
-            {% if domain.dnssecdata is not None or request.path|startswith:url and request.path|endswith:'dsdata' %}
-            <ul class="usa-sidenav__sublist">
-              <li class="usa-sidenav__item">
-                {% url 'domain-dns-dnssec-dsdata' pk=domain.id as url %}
-                <a href="{{ url }}"
-                  {% if request.path == url %}class="usa-current"{% endif %}
-                >
-                    DS Data
-                </a>
-              </li>
-            </ul>
+            {% if request.path|startswith:url %}
+              {% if domain.dnssecdata is not None or request.path|startswith:url and request.path|endswith:'dsdata' %}
+              <ul class="usa-sidenav__sublist">
+                <li class="usa-sidenav__item">
+                  {% url 'domain-dns-dnssec-dsdata' pk=domain.id as url %}
+                  <a href="{{ url }}"
+                    {% if request.path == url %}class="usa-current"{% endif %}
+                  >
+                      DS Data
+                  </a>
+                </li>
+              </ul>
+              {% endif %}
             {% endif %}
           </li>
         </ul>
+        {% endif %}
       </li>
 
       <li class="usa-sidenav__item">

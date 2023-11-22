@@ -18,7 +18,7 @@ class TransitionDomainArguments:
     # Maintains an internal kwargs list and sets values
     # that match the class definition.
     def __init__(self, **kwargs):
-        self.kwargs = kwargs
+        self.pattern_map_params = kwargs.get("pattern_map_params", [])
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
@@ -36,13 +36,13 @@ class TransitionDomainArguments:
     limitParse: Optional[int] = field(default=None, repr=True)
 
     # Filenames #
-    # = Adhocs =#
+    # = Adhocs = #
     agency_adhoc_filename: Optional[str] = field(default=EnumFilenames.AGENCY_ADHOC.value[1], repr=True)
     domain_adhoc_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADHOC.value[1], repr=True)
     organization_adhoc_filename: Optional[str] = field(default=EnumFilenames.ORGANIZATION_ADHOC.value[1], repr=True)
     authority_adhoc_filename: Optional[str] = field(default=EnumFilenames.AUTHORITY_ADHOC.value[1], repr=True)
 
-    # = Data files =#
+    # = Data files = #
     domain_escrow_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ESCROW.value[1], repr=True)
     domain_additional_filename: Optional[str] = field(default=EnumFilenames.DOMAIN_ADDITIONAL.value[1], repr=True)
     domain_contacts_filename: Optional[str] = field(default=None, repr=True)
