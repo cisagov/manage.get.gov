@@ -61,7 +61,6 @@ jobs:
       - name: Set login credentials
         uses: 18f/cg-deploy-action@main
         env:
-          DEPLOY_NOW: thanks
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
