@@ -1,4 +1,4 @@
-"""Data migration: Send domain invitations once to existing customers."""
+"""Data migration: Load organization data for TransitionDomain and DomainInformation objects"""
 
 import argparse
 import json
@@ -53,18 +53,6 @@ class Command(BaseCommand):
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
         parser.add_argument("--directory", default="migrationdata", help="Desired directory")
-
-        # Serves as a domain_additional_filename override
-        parser.add_argument(
-            "--domain_additional_filename",
-            help="Defines the filename for additional domain data",
-        )
-
-        # Serves as a organization_adhoc_filename override
-        parser.add_argument(
-            "--organization_adhoc_filename",
-            help="Defines the filename for domain type adhocs",
-        )
 
     def handle(self, migration_json_filename, **options):
         """Process the objects in TransitionDomain."""
