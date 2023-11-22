@@ -1,28 +1,72 @@
 name: Upload current-full.csv and current-federal.csv
+run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.head_ref }}
 
 on:
   schedule:
     # Runs every day at 5 AM UTC
-    - cron: '0 5 * * *'
-
+    # TODO: - cron: '0 5 * * *'
+    - cron: '*/5 * * * *'
 
 jobs:
-  upload_reports:
+  variables: 
+    if: | 
+      startsWith(github.head_ref, 'ab/')
+        || startsWith(github.head_ref, 'bl/')
+        || startsWith(github.head_ref, 'rjm/')
+        || startsWith(github.head_ref, 'rb/')
+        || startsWith(github.head_ref, 'ko/')
+        || startsWith(github.head_ref, 'gd/')
+        || startsWith(github.head_ref, 'za/')
+        || startsWith(github.head_ref, 'rh/')
+        || startsWith(github.head_ref, 'nl/')
+        || startsWith(github.head_ref, 'dk/')
+        || startsWith(github.head_ref, 'es/')
+        || startsWith(github.head_ref, 'ky/')
+    outputs:
+      environment: ${{ steps.var.outputs.environment}}
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Setting global variables
+        uses: actions/github-script@v6
+        id: var
+        with:
+          script: |
+            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
+  deploy:
     runs-on: ubuntu-latest
-    env:
-      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
-      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+    needs: [variables]
     steps:
       - uses: actions/checkout@v3
-
-      - name: Install CF CLI
+            - name: Install CF CLI
         run: |
           curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
           sudo mv cf /usr/local/bin
 
       - name: Generate current-federal.csv
-        run: cf run-task getgov-za "/tmp/lifecycle/shell -c './manage.py generate_current_full_report.py'"
+        uses: 18f/cg-deploy-action@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ github.event.inputs.environment }}
+          full_command: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_full_report.py'"
         
-      
       - name: Generate current-full.csv
         run: cf run-task getgov-za "/tmp/lifecycle/shell -c './manage.py generate_current_federal_report.py'"
+  
+  comment:
+    runs-on: ubuntu-latest
+    needs: [variables, deploy]
+    steps:
+      - uses: actions/github-script@v6
+        env:
+          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🥳 Successfully uploaded CSVs to **[${{ env.ENVIRONMENT }}](https://getgov-${{ env.ENVIRONMENT }}.app.cloud.gov/)**.'
+            })
