@@ -800,6 +800,8 @@ class OrganizationDataLoader:
         return self.tds_to_update
 
     def prepare_transition_domains(self, transition_domains):
+        """Pares org data for each transition domain, 
+        then appends it to the tds_to_update list"""
         for item in transition_domains:
             updated = self.parse_org_data(item.domain_name, item)
             self.tds_to_update.append(updated)

@@ -58,26 +58,26 @@ class Command(BaseCommand):
         """Process the objects in TransitionDomain."""
         # Parse JSON file
         options = self.load_json_settings(options, migration_json_filename)
-        args = TransitionDomainArguments(**options)
+        org_args = TransitionDomainArguments(**options)
 
         # Will sys.exit() when prompt is "n"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
             info_to_inspect=f"""
             ==Master data file==
-            domain_additional_filename: {args.domain_additional_filename}
+            domain_additional_filename: {org_args.domain_additional_filename}
 
             ==Organization data==
-            organization_adhoc_filename: {args.organization_adhoc_filename}
+            organization_adhoc_filename: {org_args.organization_adhoc_filename}
 
             ==Containing directory==
-            directory: {args.directory}
+            directory: {org_args.directory}
             """,
             prompt_title="Do you wish to load organization data for TransitionDomains?",
         )
 
-        load = OrganizationDataLoader(args)
-        transition_domains = load.update_organization_data_for_all()
+        org_load_helper = OrganizationDataLoader(org_args)
+        transition_domains = org_load_helper.update_organization_data_for_all()
 
         # Reprompt the user to reinspect before updating DomainInformation
         # Will sys.exit() when prompt is "n"
@@ -85,13 +85,13 @@ class Command(BaseCommand):
             system_exit_on_terminate=True,
             info_to_inspect=f"""
             ==Master data file==
-            domain_additional_filename: {args.domain_additional_filename}
+            domain_additional_filename: {org_args.domain_additional_filename}
 
             ==Organization name information==
-            organization_adhoc_filename: {args.organization_adhoc_filename}
+            organization_adhoc_filename: {org_args.organization_adhoc_filename}
 
             ==Containing directory==
-            directory: {args.directory}
+            directory: {org_args.directory}
 
             ==Proposed Changes==
             Number of DomainInformation objects to (potentially) change: {len(transition_domains)}
@@ -105,10 +105,10 @@ class Command(BaseCommand):
             "Preparing to load organization data onto DomainInformation tables..."
             f"{TerminalColors.ENDC}"
         )
-        self.prepare_update_domain_information(transition_domains, args.debug)
+        self.prepare_update_domain_information(transition_domains, org_args.debug)
 
         logger.info(f"{TerminalColors.MAGENTA}" f"Beginning mass DomainInformation update..." f"{TerminalColors.ENDC}")
-        self.bulk_update_domain_information(args.debug)
+        self.bulk_update_domain_information(org_args.debug)
 
     def load_json_settings(self, options, migration_json_filename):
         """Parses options from the given JSON file."""
