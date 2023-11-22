@@ -91,25 +91,28 @@ def available(request, domain=""):
     except Exception:
         return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["error"]})
 
+
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_full(request):
     # Open the CSV file
-    file_path = 'migrationdata/current-full.csv'
+    file_path = "migrationdata/current-full.csv"
     return serve_file(file_path)
+
 
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_federal(request):
     # Open the CSV file
-    file_path = 'migrationdata/current-federal.csv'
+    file_path = "migrationdata/current-federal.csv"
     return serve_file(file_path)
+
 
 def serve_file(file_path):
     """Downloads a file based on a given filepath. Returns a 404 if not found."""
     if os.path.exists(file_path):
         # Serve the CSV file
-        response = FileResponse(open(file_path, 'rb'))
+        response = FileResponse(open(file_path, "rb"))
         return response
     else:
         return HttpResponse("File not found", status=404)
