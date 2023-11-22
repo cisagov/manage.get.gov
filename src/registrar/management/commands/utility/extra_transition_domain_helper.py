@@ -845,7 +845,7 @@ class OrganizationDataLoader:
 
     def parse_org_data(self, domain_name, transition_domain: TransitionDomain) -> TransitionDomain:
         """Grabs organization_name from the parsed files and associates it
-        with a transition_domain object, then returns that object."""
+        with a transition_domain object, then  updates that transition domain object and returns it"""
         if not isinstance(transition_domain, TransitionDomain):
             raise ValueError("Not a valid object, must be TransitionDomain")
 
