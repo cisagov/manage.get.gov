@@ -175,7 +175,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         """The form is valid, save the organization name and mailing address."""
         form.save()
 
-        messages.success(self.request, "The organization name and mailing address has been updated.")
+        messages.success(self.request, "The organization information has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
