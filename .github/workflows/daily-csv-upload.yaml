@@ -4,8 +4,7 @@ run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.
 on:
   schedule:
     # Runs every day at 5 AM UTC
-    # TODO: - cron: '0 5 * * *'
-    - cron: '*/1 * * * *'
+    cron: '0 5 * * *'
 
 jobs:
   variables: 
@@ -93,5 +92,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🥳 Successfully uploaded CSVs to **[${{ env.ENVIRONMENT }}](https://getgov-${{ env.ENVIRONMENT }}.app.cloud.gov/)**.'
+              body: '🥳 Successfully uploaded current-full.csv and current-federal.csv to **[${{ env.ENVIRONMENT }}](https://getgov-${{ env.ENVIRONMENT }}.app.cloud.gov/)**.'
             })
