@@ -170,9 +170,9 @@ class TribalGovernmentForm(RegistrarForm):
     )
 
     tribe_name = forms.CharField(
-        label1="What is the name of the tribe you represent? "
+        label1="What is the name of the tribe you represent? ",
         label2="*",
-        label={label1+label2}
+        label={label1+label2},
         error_messages={"required": "Enter the tribe you represent."},
     )
 
