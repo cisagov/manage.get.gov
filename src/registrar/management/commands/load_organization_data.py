@@ -97,7 +97,7 @@ class Command(BaseCommand):
             Number of DomainInformation objects to (potentially) change: {len(transition_domains)}
             For each DomainInformation, modify the following fields: {self.changed_fields}
             """,
-            prompt_title="Do you wish to load organization data for DomainInformation?",
+            prompt_title="Do you wish to update organization address data for DomainInformation as well?",
         )
 
         logger.info(
