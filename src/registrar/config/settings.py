@@ -299,10 +299,17 @@ SERVER_EMAIL = "root@get.gov"
 # this can be restrictive because we have few external scripts
 allowed_sources = ("'self'",)
 CSP_DEFAULT_SRC = allowed_sources
-# Most things fall back to default-src, but these two do not and should be
+# Most things fall back to default-src, but the following do not and should be
 # explicitly set
 CSP_FRAME_ANCESTORS = allowed_sources
 CSP_FORM_ACTION = allowed_sources
+
+# Google analytics requires that we relax our otherwise
+# strict CSP by allowing scripts to run from their domain
+# and inline with a nonce, as well as allowing connections back to their domain
+CSP_SCRIPT_SRC_ELEM = ["'self'", "https://www.googletagmanager.com/"]
+CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/"]
+CSP_INCLUDE_NONCE_IN = ["script-src-elem"]
 
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov

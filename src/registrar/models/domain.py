@@ -211,12 +211,56 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @Cache
     def registry_expiration_date(self) -> date:
-        """Get or set the `ex_date` element from the registry."""
-        return self._get_property("ex_date")
+        """Get or set the `ex_date` element from the registry.
+        Additionally, update the expiration date in the registrar"""
+        try:
+            self.expiration_date = self._get_property("ex_date")
+            self.save()
+            return self.expiration_date
+        except Exception as e:
+            # exception raised during the save to registrar
+            logger.error(f"error updating expiration date in registrar: {e}")
+            raise (e)
 
     @registry_expiration_date.setter  # type: ignore
     def registry_expiration_date(self, ex_date: date):
-        pass
+        """
+        Direct setting of the expiration date in the registry is not implemented.
+
+        To update the expiration date, use renew_domain method."""
+        raise NotImplementedError()
+
+    def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR):
+        """
+        Renew the domain to a length and unit of time relative to the current
+        expiration date.
+
+        Default length and unit of time are 1 year.
+        """
+        # if no expiration date from registry, set to today
+        try:
+            cur_exp_date = self.registry_expiration_date
+        except KeyError:
+            logger.warning("current expiration date not set; setting to today")
+            cur_exp_date = date.today()
+
+        # create RenewDomain request
+        request = commands.RenewDomain(name=self.name, cur_exp_date=cur_exp_date, period=epp.Period(length, unit))
+
+        try:
+            # update expiration date in registry, and set the updated
+            # expiration date in the registrar, and in the cache
+            self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
+            self.expiration_date = self._cache["ex_date"]
+            self.save()
+        except RegistryError as err:
+            # if registry error occurs, log the error, and raise it as well
+            logger.error(f"registry error renewing domain: {err}")
+            raise (err)
+        except Exception as e:
+            # exception raised during the save to registrar
+            logger.error(f"error updating expiration date in registrar: {e}")
+            raise (e)
 
     @Cache
     def password(self) -> str:
@@ -598,7 +642,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # if unable to update domain raise error and stop
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-            raise NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN)
+            raise NameserverError(code=nsErrorCodes.BAD_DATA)
 
         successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
 

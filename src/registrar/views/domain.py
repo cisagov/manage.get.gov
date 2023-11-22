@@ -28,11 +28,16 @@ from registrar.utility.errors import (
     GenericErrorCodes,
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
+    DsDataError,
+    DsDataErrorCodes,
+    SecurityEmailError,
+    SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
 
 from ..forms import (
     ContactForm,
+    AuthorizingOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
     DomainSecurityEmailForm,
@@ -182,7 +187,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
     model = Domain
     template_name = "domain_authorizing_official.html"
     context_object_name = "domain"
-    form_class = ContactForm
+    form_class = AuthorizingOfficialContactForm
 
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.authorizing_official instance to make a bound form."""
@@ -304,7 +309,7 @@ class DomainNameserversView(DomainFormBaseView):
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
             # there was an uncaught error in submission (through EPP)
-            messages.error(self.request, NameserverError(code=nsErrorCodes.UNABLE_TO_UPDATE_DOMAIN))
+            messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
             logger.error(f"Nameservers error: {Err}")
         # TODO: registry is not throwing an error when no connection
         except RegistryError as Err:
@@ -315,7 +320,7 @@ class DomainNameserversView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+                messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
             messages.success(
@@ -445,7 +450,7 @@ class DomainDsDataView(DomainFormBaseView):
             modal_button = (
                 '<button type="submit" '
                 'class="usa-button usa-button--secondary" '
-                'name="disable-override-click">Delete all records</button>'
+                'name="disable-override-click">Remove all DS Data</button>'
             )
 
             # context to back out of a broken form on all fields delete
@@ -491,7 +496,7 @@ class DomainDsDataView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {err}")
             else:
-                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+                messages.error(self.request, DsDataError(code=DsDataErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
@@ -581,10 +586,10 @@ class DomainSecurityEmailView(DomainFormBaseView):
                 )
                 logger.error(f"Registry connection error: {Err}")
             else:
-                messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+                messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         except ContactError as Err:
-            messages.error(self.request, GenericError(code=GenericErrorCodes.GENERIC_ERROR))
+            messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
             logger.error(f"Generic registry error: {Err}")
         else:
             messages.success(self.request, "The security email for this domain has been updated.")

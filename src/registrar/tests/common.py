@@ -556,6 +556,7 @@ class MockEppLib(TestCase):
             avail=...,
             addrs=...,
             registrant=...,
+            ex_date=...,
         ):
             self.auth_info = auth_info
             self.cr_date = cr_date
@@ -565,6 +566,7 @@ class MockEppLib(TestCase):
             self.avail = avail  # use for CheckDomain
             self.addrs = addrs
             self.registrant = registrant
+            self.ex_date = ex_date
 
         def dummyInfoContactResultData(
             self,
@@ -811,6 +813,11 @@ class MockEppLib(TestCase):
         ],
     )
 
+    mockRenewedDomainExpDate = fakedEppObject(
+        "fake.gov",
+        ex_date=datetime.date(2023, 5, 25),
+    )
+
     def _mockDomainName(self, _name, _avail=False):
         return MagicMock(
             res_data=[
@@ -870,6 +877,8 @@ class MockEppLib(TestCase):
                 return self.mockCheckDomainCommand(_request, cleaned)
             case commands.DeleteDomain:
                 return self.mockDeleteDomainCommands(_request, cleaned)
+            case commands.RenewDomain:
+                return self.mockRenewDomainCommand(_request, cleaned)
             case _:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
@@ -889,6 +898,15 @@ class MockEppLib(TestCase):
             if name in fake_nameserver:
                 raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
         return None
+
+    def mockRenewDomainCommand(self, _request, cleaned):
+        if getattr(_request, "name", None) == "fake-error.gov":
+            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
+        else:
+            return MagicMock(
+                res_data=[self.mockRenewedDomainExpDate],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
