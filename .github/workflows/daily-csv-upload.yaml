@@ -34,7 +34,20 @@ jobs:
         with:
           script: |
             core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
-  deploy:
+  wait_for_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deploy to complete
+        uses: fountainhead/action-wait-for-check@v1.0.0
+        id: wait-for-deploy
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: "deploy" # replace with the name of the deploy job
+          ref: ${{ github.event.pull_request.head.sha }} # the commit SHA of the head commit of the PR
+          timeoutSeconds: 600 # the maximum time to wait for the check to complete, in seconds
+          intervalSeconds: 10 # the time to wait between checks, in seconds
+
+  upload_reports:
     runs-on: ubuntu-latest
     needs: [variables]
     steps:
@@ -57,10 +70,10 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
-          full_command: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_full_report.py'"
+        run: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_full_report.py'"
         
       - name: Generate current-full.csv
-        run: cf run-task getgov-za "/tmp/lifecycle/shell -c './manage.py generate_current_federal_report.py'"
+        run: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_federal_report.py'"
   
   comment:
     runs-on: ubuntu-latest
