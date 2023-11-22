@@ -170,13 +170,9 @@ class TribalGovernmentForm(RegistrarForm):
     )
 
     tribe_name = forms.CharField(
-        label1="What is the name of the tribe you represent? ",
-        label2="*",
-        label={label1+label2},
+        label="What is the name of the tribe you represent? ",
         error_messages={"required": "Enter the tribe you represent."},
     )
-
-    tribe_name.widget.attrs.update({"class": "no_asterisk"})
 
     def clean(self):
         """Needs to be either state or federally recognized."""
