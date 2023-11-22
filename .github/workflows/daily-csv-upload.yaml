@@ -71,10 +71,14 @@ jobs:
 
       - name: Generate current-federal.csv
         run: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_full_report.py'"
-        
+        env:
+          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
+
       - name: Generate current-full.csv
         run: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_federal_report.py'"
-  
+        env:
+          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
+          
   comment:
     runs-on: ubuntu-latest
     needs: [variables, upload_reports]
