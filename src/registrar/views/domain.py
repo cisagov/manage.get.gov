@@ -37,7 +37,6 @@ from registrar.models.utility.contact_error import ContactError
 
 from ..forms import (
     ContactForm,
-    AuthorizingOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
     DomainSecurityEmailForm,
@@ -187,7 +186,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
     model = Domain
     template_name = "domain_authorizing_official.html"
     context_object_name = "domain"
-    form_class = AuthorizingOfficialContactForm
+    form_class = ContactForm
 
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.authorizing_official instance to make a bound form."""
