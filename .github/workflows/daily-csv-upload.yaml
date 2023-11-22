@@ -37,7 +37,8 @@ jobs:
     needs: [variables]
     steps:
       - uses: actions/checkout@v3
-            - name: Install CF CLI
+      
+      - name: Install CF CLI
         run: |
           curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
           sudo mv cf /usr/local/bin
