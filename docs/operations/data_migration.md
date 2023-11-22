@@ -470,6 +470,6 @@ The `load_organization_data` script has five optional parameters. These are as f
 |:-:|:---------------------------------|:----------------------------------------------------------------------------|
 | 1 | **sep**                          | Determines the file separator. Defaults to "\|"                             |
 | 2 | **debug**                        | Increases logging detail. Defaults to False                                 |
-| 3 | **directory**                    | Specifies the containing directory of the data. Defaults to "migrationdata" |
+| 3 | **directory**                    | Specifies the directory containing the files that will be parsed. Defaults to "migrationdata" |
 | 4 | **domain_additional_filename**   | Specifies the filename of domain_additional. Used as an override for the JSON. Has no default. |
 | 5 | **organization_adhoc_filename**  | Specifies the filename of organization_adhoc. Used as an override for the JSON. Has no default. |
