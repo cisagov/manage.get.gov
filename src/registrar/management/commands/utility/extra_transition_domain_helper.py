@@ -787,7 +787,7 @@ class OrganizationDataLoader:
         self.tds_to_update: List[TransitionDomain] = []
 
     def update_organization_data_for_all(self):
-        """Updates org data for all TransitionDomains"""
+        """Updates org address data for all TransitionDomains"""
         all_transition_domains = TransitionDomain.objects.all()
         if len(all_transition_domains) == 0:
             raise LoadOrganizationError(code=LoadOrganizationErrorCodes.EMPTY_TRANSITION_DOMAIN_TABLE)
