@@ -95,14 +95,14 @@ def available(request, domain=""):
 @login_not_required
 def get_current_full(request):
     # Open the CSV file
-    file_path = './migrationData/current-full.csv'
+    file_path = '../migrationdata/current-full.csv'
     return serve_file(file_path)
 
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_federal(request):
     # Open the CSV file
-    file_path = './migrationData/current-federal.csv'
+    file_path = '../migrationdata/current-federal.csv'
     return serve_file(file_path)
 
 def serve_file(file_path):
