@@ -72,7 +72,7 @@ jobs:
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
 
       - name: Generate current-federal.csv
-        run: cf run-task getgov-${{ env.ENVIRONMENT }} --wait --command "python manage.py generate_current_full_report.py --name current_full"
+        run: cf run-task getgov-${{ env.ENVIRONMENT }} "python manage.py generate_current_full_report.py"
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
 
