@@ -2,10 +2,12 @@ name: Upload current-full.csv and current-federal.csv
 run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.head_ref }}
 
 on:
+  pull_request:
+
   schedule:
     # Runs every day at 5 AM UTC
     # TODO: - cron: '0 5 * * *'
-    - cron: '*/5 * * * *'
+    - cron: '*/2 * * * *'
 
 jobs:
   variables: 
@@ -37,7 +39,7 @@ jobs:
     needs: [variables]
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install CF CLI
         run: |
           curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
