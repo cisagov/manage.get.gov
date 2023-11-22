@@ -1083,6 +1083,7 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
         self.domain_on_hold, _ = Domain.objects.get_or_create(name="on-hold.gov", state=Domain.State.ON_HOLD)
+        self.domain_deleted, _ = Domain.objects.get_or_create(name="deleted.gov", state=Domain.State.DELETED)
 
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         self.domain_multdsdata, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
@@ -1098,6 +1099,7 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -1128,6 +1130,9 @@ class TestWithDomainPermissions(TestWithUser):
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_on_hold, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_deleted, role=UserDomainRole.Roles.MANAGER
         )
 
     def tearDown(self):
@@ -1181,6 +1186,31 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 with less_console_noise():
                     response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
                 self.assertEqual(response.status_code, 403)
+
+    def test_domain_pages_blocked_for_on_hold_and_deleted(self):
+        """Test that the domain pages are blocked for on hold and deleted domains"""
+
+        self.client.force_login(self.user)
+        for view_name in [
+            "domain-users",
+            "domain-users-add",
+            "domain-dns",
+            "domain-dns-nameservers",
+            "domain-dns-dnssec",
+            "domain-dns-dnssec-dsdata",
+            "domain-org-name-address",
+            "domain-authorizing-official",
+            "domain-your-contact-information",
+            "domain-security-email",
+        ]:
+            for domain in [
+                self.domain_on_hold,
+                self.domain_deleted,
+            ]:
+                with self.subTest(view_name=view_name, domain=domain):
+                    with less_console_noise():
+                        response = self.client.get(reverse(view_name, kwargs={"pk": domain.id}))
+                        self.assertEqual(response.status_code, 403)
 
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
@@ -1271,19 +1301,6 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
-
-    def test_domain_users_blocked_for_on_hold(self):
-        """Test that the domain users page blocked for on hold domain"""
-
-        # attempt to view domain users page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
-
-        # attempt to view domain users add page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
 
     def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
@@ -1417,14 +1434,6 @@ class TestDomainNameservers(TestDomainOverview):
         """Can load domain's nameservers page."""
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
-
-    def test_domain_nameservers_blocked_for_on_hold(self):
-        """Test that the domain nameservers page blocked for on hold domain"""
-
-        # attempt to view domain nameservers page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
 
     def test_domain_nameservers_form_submit_one_nameserver(self):
         """Nameserver form submitted with one nameserver throws error.
@@ -1641,14 +1650,6 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         # once on the sidebar, once in the title
         self.assertContains(page, "Authorizing official", count=2)
 
-    def test_domain_authorizing_official_blocked_for_on_hold(self):
-        """Test that the domain authorizing official page blocked for on hold domain"""
-
-        # attempt to view domain authorizing official page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
-
     def test_domain_authorizing_official_content(self):
         """Authorizing official information appears on the page."""
         self.domain_information.authorizing_official = Contact(first_name="Testy")
@@ -1664,14 +1665,6 @@ class TestDomainOrganization(TestDomainOverview):
         page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
         self.assertContains(page, "Organization name and mailing address", count=3)
-
-    def test_domain_org_name_blocked_for_on_hold(self):
-        """Test that the domain org name page blocked for on hold domain"""
-
-        # attempt to view domain org name page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
 
     def test_domain_org_name_address_content(self):
         """Org name and address information appears on the page."""
@@ -1704,16 +1697,6 @@ class TestDomainContactInformation(TestDomainOverview):
         page = self.client.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Your contact information")
 
-    def test_domain_contact_information_blocked_for_on_hold(self):
-        """Test that the domain contact information page blocked for on hold domain"""
-
-        # attempt to view domain contact information page
-        with less_console_noise():
-            response = self.client.get(
-                reverse("domain-your-contact-information", kwargs={"pk": self.domain_on_hold.id})
-            )
-            self.assertEqual(response.status_code, 403)
-
     def test_domain_your_contact_information_content(self):
         """Logged-in user's contact information appears on the page."""
         self.user.contact.first_name = "Testy"
@@ -1738,14 +1721,6 @@ class TestDomainSecurityEmail(TestDomainOverview):
         self.assertContains(page, "Security email")
         self.assertContains(page, "security@mail.gov")
         self.mockSendPatch.stop()
-
-    def test_domain_security_email_blocked_for_on_hold(self):
-        """Test that the domain security email page blocked for on hold domain"""
-
-        # attempt to view domain security email page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
 
     def test_domain_security_email_no_security_contact(self):
         """Loads a domain with no defined security email.
@@ -1873,19 +1848,6 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Enable DNSSEC")
-
-    def test_domain_dnssec_blocked_for_on_hold(self):
-        """Test that the domain dnssec page blocked for on hold domain"""
-
-        # attempt to view domain dnssec page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
-
-        # attempt to view domain dnssec dsdata page
-        with less_console_noise():
-            response = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_on_hold.id}))
-            self.assertEqual(response.status_code, 403)
 
     def test_dnssec_page_loads_with_data_in_domain(self):
         """DNSSEC overview page loads when domain has DNSSEC data
