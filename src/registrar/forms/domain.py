@@ -153,7 +153,7 @@ class ContactForm(forms.ModelForm):
 
         for field_name in self.required:
             self.fields[field_name].required = True
-            
+
         # Set custom form label
         self.fields["middle_name"].label = "Middle name (optional)"
 
@@ -195,7 +195,6 @@ class AuthorizingOfficialContactForm(ContactForm):
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
-
     security_email = forms.EmailField(
         label="Security email (optional)",
         required=False,
@@ -203,7 +202,6 @@ class DomainSecurityEmailForm(forms.Form):
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
         },
     )
-
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):

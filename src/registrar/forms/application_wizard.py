@@ -638,4 +638,3 @@ class RequirementsForm(RegistrarForm):
             "required": ("Check the box if you read and agree to the requirements for operating .gov domains.")
         },
     )
-
