@@ -29,7 +29,7 @@
 
     {% url 'domain-dns-nameservers' pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
-      {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url %}
+      {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=domain.is_editable %}
     {% else %}
       <h2 class="margin-top-neg-1"> DNS name servers </h2>
       <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
@@ -37,22 +37,22 @@
     {% endif %}
 
     {% url 'domain-org-name-address' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url %}
+    {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domain.domain_info address='true' edit_link=url editable=domain.is_editable %}
 
     {% url 'domain-authorizing-official' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url %}
+    {% include "includes/summary_item.html" with title='Authorizing official' value=domain.domain_info.authorizing_official contact='true' edit_link=url editable=domain.is_editable %}
 
     {% url 'domain-your-contact-information' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url %}
+    {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url editable=domain.is_editable %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
     {% if security_email is not None and security_email != default_security_email%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url %}
+      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=domain.is_editable %}
     {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url %}
+      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=domain.is_editable %}
     {% endif %}
     {% url 'domain-users' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Domain managers' users='true' list=True value=domain.permissions.all edit_link=url %}
+    {% include "includes/summary_item.html" with title='Domain managers' users='true' list=True value=domain.permissions.all edit_link=url editable=domain.is_editable %}
 
   </div>
 {% endblock %}  {# domain_content #}

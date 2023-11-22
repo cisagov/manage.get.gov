@@ -880,6 +880,14 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         return self.state == self.State.READY
 
+    def is_editable(self) -> bool:
+        """domain is editable unless state is on hold or deleted"""
+        return self.state in [
+            self.State.UNKNOWN,
+            self.State.DNS_NEEDED,
+            self.State.READY,
+        ]
+
     def transfer(self):
         """Going somewhere. Not implemented."""
         raise NotImplementedError()
