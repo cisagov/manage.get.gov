@@ -152,6 +152,28 @@ class DomainView(DomainBaseView):
         context["security_email"] = security_email
         return context
 
+    def in_editable_state(self, pk):
+        """Override in_editable_state from DomainPermission
+        Allow detail page to be editable"""
+
+        requested_domain = None
+        if Domain.objects.filter(id=pk).exists():
+            requested_domain = Domain.objects.get(id=pk)
+
+        # if domain is editable return true
+        if requested_domain:
+            return True
+        return False
+
+    def _get_domain(self, request):
+        """
+        override get_domain for this view so that domain overview
+        always resets the cache for the domain object
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
+
 
 class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization name and mailing address view"""
