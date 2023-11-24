@@ -73,9 +73,7 @@ jobs:
           cf api https://api.fr.cloud.gov
           cf auth ${{ secrets[env.CF_USERNAME] }} ${{ secrets[env.CF_PASSWORD] }}
           cf target -o cisa-dotgov -s ${{ env.ENVIRONMENT }}
-          cf ssh getgov-${{ env.ENVIRONMENT }}
-          /tmp/lifecycle/shell
-          ./manage.py generate_current_federal_report
+          cf ssh getgov-${{ env.ENVIRONMENT }} -c "/tmp/lifecycle/shell -c './manage.py generate_current_federal_report'"
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
