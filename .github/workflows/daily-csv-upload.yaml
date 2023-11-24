@@ -2,36 +2,20 @@ name: Upload current-full.csv and current-federal.csv
 run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.head_ref }}
 
 on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
+    branches:
+      - za
   schedule:
     # Runs every day at 5 AM UTC
-    # - cron: '0 5 * * *'
-    - cron: "* * * * *"
+    - cron: "0 5 * * *"
 
 jobs:
   variables: 
-    if: | 
-      startsWith(github.head_ref, 'ab/')
-        || startsWith(github.head_ref, 'bl/')
-        || startsWith(github.head_ref, 'rjm/')
-        || startsWith(github.head_ref, 'rb/')
-        || startsWith(github.head_ref, 'ko/')
-        || startsWith(github.head_ref, 'gd/')
-        || startsWith(github.head_ref, 'za/')
-        || startsWith(github.head_ref, 'rh/')
-        || startsWith(github.head_ref, 'nl/')
-        || startsWith(github.head_ref, 'dk/')
-        || startsWith(github.head_ref, 'es/')
-        || startsWith(github.head_ref, 'ky/')
-    outputs:
-      environment: ${{ steps.var.outputs.environment}}
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: Setting global variables
-        uses: actions/github-script@v6
-        id: var
-        with:
-          script: |
-            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
+    environment: "za"
 
   "Wait for deploy":
     runs-on: ubuntu-latest
