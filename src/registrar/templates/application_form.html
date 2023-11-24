@@ -66,6 +66,13 @@
               value="next"
               class="usa-button"
             >Save and continue</button>
+            {% elif pending_requests_exist %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="save_and_return"
+              class="usa-button usa-button--outline"
+            >Save and return to manage your domains</button>
             {% else %}
             <button
               type="submit"
