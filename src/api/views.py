@@ -3,7 +3,6 @@ import os
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import FileResponse, HttpResponse, JsonResponse
-
 import requests
 
 from login_required import login_not_required
@@ -106,7 +105,6 @@ def get_current_federal(request):
     # Open the CSV file
     file_path = "migrationdata/current-federal.csv"
     return serve_file(file_path)
-
 
 def serve_file(file_path):
     """Downloads a file based on a given filepath. Returns a 404 if not found."""

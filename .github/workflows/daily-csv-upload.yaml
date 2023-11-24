@@ -7,7 +7,7 @@ on:
     inputs:
       environment:
         type: choice
-        description: Which environment do you wish load reports for?
+        description: Which environment load reports for?
         options:
           - stable
           - staging
@@ -59,31 +59,29 @@ jobs:
 
   upload-reports:
     runs-on: ubuntu-latest
-    needs: [variables, wait-for-deploy]
+    env:
+      CF_USERNAME: CF_{{ needs.variables.outputs.environment }}_USERNAME
+      CF_PASSWORD: CF_{{ needs.variables.outputs.environment }}_PASSWORD
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Install CF CLI
-        run: |
-          curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
-          sudo mv cf /usr/local/bin
 
       - name: Generate current-federal.csv
-        run: |
-          cf api https://api.fr.cloud.gov
-          cf auth ${{ secrets[env.CF_USERNAME] }} ${{ secrets[env.CF_PASSWORD] }}
-          cf target -o cisa-dotgov -s ${{ env.ENVIRONMENT }}
-          cf ssh getgov-${{ env.ENVIRONMENT }} -c "/tmp/lifecycle/shell -c './manage.py generate_current_federal_report'"
-        env:
-          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
-          CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
-          CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
+        uses: 18f/cg-deploy-action@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ needs.variables.outputs.environment }}
+          full_command: "cf run-task getgov-${{ needs.variables.outputs.environment }} --command 'python manage.py generate_current_federal_report' --name federal"
 
       - name: Generate current-full.csv
-        run: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_full_report'"
-        env:
-          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
-          
+        uses: 18f/cg-deploy-action@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ needs.variables.outputs.environment }}
+          full_command: "cf run-task getgov-${{ needs.variables.outputs.environment }} --command 'python manage.py generate_current_full_report' --name full"
+            
   comment:
     runs-on: ubuntu-latest
     needs: [variables, upload-reports]
