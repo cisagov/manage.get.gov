@@ -10,7 +10,7 @@ on:
     branches:
       - za
   schedule:
-    # Runs every day at 5 AM UTC
+    # Runs every day at 5 AM UTC.
     - cron: "0 5 * * *"
 
 jobs:
