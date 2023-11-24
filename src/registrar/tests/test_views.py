@@ -36,7 +36,9 @@ from registrar.models import (
 from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
+import logging
 
+logger = logging.getLogger(__name__)
 
 class TestViews(TestCase):
     def setUp(self):
@@ -143,6 +145,45 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # submitting should get back the same page if the required field is empty
         result = page.form.submit()
         self.assertIn("What kind of U.S.-based government organization do you represent?", result)
+
+    def test_application_multiple_applications_exist(self):
+        """Test that an info message appears when user has multiple applications already"""
+        # create and submit an application, and set ti in_review status
+        contact = Contact.objects.create()
+        com_website, _ = Website.objects.get_or_create(website="igorville.com")
+        gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
+        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user,
+            investigator=self.user,
+            organization_type=DomainApplication.OrganizationChoices.FEDERAL,
+            federal_type=DomainApplication.BranchChoices.EXECUTIVE,
+            is_election_board=False,
+            organization_name="Test",
+            address_line1="100 Main St.",
+            address_line2="APT 1A",
+            state_territory="CA",
+            zipcode="12345-6789",
+            authorizing_official=contact,
+            requested_domain=domain,
+            submitter=contact,
+            purpose="Igorville rules!",
+            anything_else="All of Igorville loves the dotgov program.",
+            is_policy_acknowledged=True,
+        )
+        application.current_websites.add(com_website)
+        application.alternative_domains.add(gov_website)
+        application.other_contacts.add(contact)
+        application.submit()
+        application.in_review()
+        application.save()
+        print(application.creator)
+        print(application.status)
+
+        # now, attempt to create another one
+        with less_console_noise():
+            page = self.app.get("/register/").follow()
+            self.assertContains(page, "You cannot submit this request yet")
 
     @boto3_mocking.patching
     def test_application_form_submission(self):
