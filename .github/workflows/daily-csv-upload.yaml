@@ -7,7 +7,7 @@ on:
     inputs:
       environment:
         type: choice
-        description: Which environment load reports for?
+        description: Which environment do you wish load reports for?
         options:
           - stable
           - staging
