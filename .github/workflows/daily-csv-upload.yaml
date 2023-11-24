@@ -42,7 +42,7 @@ jobs:
             const environment = context.event.inputs.environment || 'za';
             core.setOutput('environment', environment);
 
-  "Wait for deploy":
+  wait-for-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for deploy to complete
@@ -57,9 +57,9 @@ jobs:
           # the time to wait between checks, in seconds
           intervalSeconds: 10 
 
-  "Upload reports":
+  upload-reports:
     runs-on: ubuntu-latest
-    needs: [variables, "Wait for deploy"]
+    needs: [variables, wait-for-deploy]
     steps:
       - uses: actions/checkout@v3
 
@@ -90,7 +90,7 @@ jobs:
           
   comment:
     runs-on: ubuntu-latest
-    needs: [variables, "Upload reports"]
+    needs: [variables, upload-reports]
     steps:
       - uses: actions/github-script@v6
         env:
