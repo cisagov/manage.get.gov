@@ -39,7 +39,7 @@ jobs:
         id: var
         with:
           script: |
-            const environment = (github and github.event and github.event.inputs) ? github.event.inputs.environment : 'za';
+            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : 'za';
             core.setOutput('environment', environment);
 
   wait-for-deploy:
