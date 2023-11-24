@@ -382,7 +382,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # if user opted to save progress and return,
         # return them to the home page
         if button == "save_and_return":
-            messages.success(request, "Your progress has been saved!")
             return HttpResponseRedirect(reverse("home"))
         # otherwise, proceed as normal
         return self.goto_next_step()
