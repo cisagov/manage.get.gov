@@ -2,13 +2,7 @@ name: Upload current-full.csv and current-federal.csv
 run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.head_ref }}
 
 on:
-  push:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.gitignore'
-    branches:
-      - za
+  pull_request:
   schedule:
     # Runs every day at 5 AM UTC.
     - cron: "0 5 * * *"
