@@ -2,14 +2,44 @@ name: Upload current-full.csv and current-federal.csv
 run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.head_ref }}
 
 on:
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Which environment load reports for?
+        options:
+          - stable
+          - staging
+          - development
+          - ky
+          - es
+          - nl
+          - rh
+          - za
+          - gd
+          - rb
+          - ko
+          - ab
+          - bl
+          - rjm
+          - dk
   schedule:
     # Runs every day at 5 AM UTC.
     - cron: "0 5 * * *"
 
 jobs:
   variables: 
-    environment: "za"
+    outputs:
+      environment: ${{ steps.var.outputs.environment }}
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Setting global variables
+        uses: actions/github-script@v6
+        id: var
+        with:
+          script: |
+            const environment = context.event.inputs.environment || 'za';
+            core.setOutput('environment', environment);
 
   "Wait for deploy":
     runs-on: ubuntu-latest
