@@ -4,7 +4,8 @@ run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.
 on:
   schedule:
     # Runs every day at 5 AM UTC
-    - cron: '0 5 * * *'
+    # - cron: '0 5 * * *'
+    - cron: "* * * * *"
 
 jobs:
   variables: 
@@ -32,7 +33,7 @@ jobs:
           script: |
             core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
 
-  wait_for_deploy:
+  "Wait for deploy":
     runs-on: ubuntu-latest
     steps:
       - name: Wait for deploy to complete
@@ -47,9 +48,9 @@ jobs:
           # the time to wait between checks, in seconds
           intervalSeconds: 10 
 
-  upload_reports:
+  "Upload reports":
     runs-on: ubuntu-latest
-    needs: [variables, wait_for_deploy]
+    needs: [variables, "Wait for deploy"]
     steps:
       - uses: actions/checkout@v3
 
@@ -80,7 +81,7 @@ jobs:
           
   comment:
     runs-on: ubuntu-latest
-    needs: [variables, upload_reports]
+    needs: [variables, "Upload reports"]
     steps:
       - uses: actions/github-script@v6
         env:
