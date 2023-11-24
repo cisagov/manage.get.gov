@@ -36,9 +36,7 @@ from registrar.models import (
 from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
-import logging
 
-logger = logging.getLogger(__name__)
 
 class TestViews(TestCase):
     def setUp(self):
