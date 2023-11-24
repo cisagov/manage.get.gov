@@ -146,7 +146,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_multiple_applications_exist(self):
         """Test that an info message appears when user has multiple applications already"""
-        # create and submit an application, and set ti in_review status
+        # create and submit an application
         contact = Contact.objects.create()
         com_website, _ = Website.objects.get_or_create(website="igorville.com")
         gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
@@ -173,10 +173,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         application.alternative_domains.add(gov_website)
         application.other_contacts.add(contact)
         application.submit()
-        application.in_review()
         application.save()
-        print(application.creator)
-        print(application.status)
 
         # now, attempt to create another one
         with less_console_noise():

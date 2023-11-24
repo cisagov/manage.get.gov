@@ -313,7 +313,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # if the current application has ACTION_NEEDED status, this check should not be performed
         if self.application.status == DomainApplication.ACTION_NEEDED:
             return []
-        check_statuses = [DomainApplication.APPROVED, DomainApplication.IN_REVIEW, DomainApplication.ACTION_NEEDED]
+        check_statuses = [DomainApplication.SUBMITTED, DomainApplication.IN_REVIEW, DomainApplication.ACTION_NEEDED]
         filter_conditions = Q(creator=self.request.user) & Q(status__in=check_statuses)
         return DomainApplication.objects.filter(filter_conditions)
 
