@@ -39,7 +39,7 @@ jobs:
         id: var
         with:
           script: |
-            const environment = context.event.inputs.environment || 'za';
+            const environment = context.event.inputs ? context.event.inputs.environment : 'za';
             core.setOutput('environment', environment);
 
   wait-for-deploy:
