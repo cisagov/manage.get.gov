@@ -356,6 +356,10 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         "email",
         "domain__name",
     ]
+
+    # Filters
+    list_filter = ("status",)
+
     search_help_text = "Search by email or domain."
 
     # Mark the FSM field 'status' as readonly

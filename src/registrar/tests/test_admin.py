@@ -8,6 +8,7 @@ from registrar.admin import (
     DomainAdmin,
     DomainApplicationAdmin,
     DomainApplicationAdminForm,
+    DomainInvitationAdmin,
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
@@ -845,6 +846,42 @@ class TestDomainApplicationAdmin(MockEppLib):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
+
+
+class DomainInvitationAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=None)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+    
+    def tearDown(self):
+        # delete any applications too
+        DomainInvitation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_get_filters(self):
+        # Create a mock request object
+        request = self.factory.get("/admin/yourmodel/")
+        # Set the GET parameters for testing
+        request.GET = {
+            "status": "started",
+            "investigator": "Rachid Mrad",
+            "q": "search_value",
+        }
+        # Call the get_filters method
+        filters = self.admin.get_filters(request)
+
+        # Assert the filters extracted from the request GET
+        self.assertEqual(
+            filters,
+            [
+                {"parameter_name": "status", "parameter_value": "started"},
+                {"parameter_name": "investigator", "parameter_value": "Rachid Mrad"},
+            ],
+        )
 
 
 class ListHeaderAdminTest(TestCase):
