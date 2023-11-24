@@ -39,8 +39,8 @@ jobs:
         id: var
         with:
           script: |
-            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : 'za';
-            core.setOutput('environment', environment);
+            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : 'ZA';
+            core.setOutput('environment', 'ZA');
 
   wait-for-deploy:
     runs-on: ubuntu-latest

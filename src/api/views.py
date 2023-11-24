@@ -1,5 +1,6 @@
 """Internal API views"""
 import os
+from datetime import datetime, timezone
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import FileResponse, HttpResponse, JsonResponse
@@ -102,7 +103,11 @@ def get_current_full(request):
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_federal(request):
-    # Open the CSV file
+    now = datetime.now(timezone.utc)
+    # Check if the current time is 5 AM
+    if now.hour == 5:
+        generate_new_file()
+
     file_path = "migrationdata/current-federal.csv"
     return serve_file(file_path)
 
@@ -114,3 +119,6 @@ def serve_file(file_path):
         return response
     else:
         return HttpResponse("File not found", status=404)
+
+def generate_new_file():
+    pass
