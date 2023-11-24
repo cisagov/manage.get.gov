@@ -68,23 +68,18 @@ jobs:
           curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&source=github" | tar -zx
           sudo mv cf /usr/local/bin
 
-      - name: Set login credentials
+      - name: Generate current-federal.csv
         run: |
           cf api https://api.fr.cloud.gov
           cf auth ${{ secrets[env.CF_USERNAME] }} ${{ secrets[env.CF_PASSWORD] }}
           cf target -o cisa-dotgov -s ${{ env.ENVIRONMENT }}
-        env:
-          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
-          CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
-          CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
-
-      - name: Generate current-federal.csv
-        run: |
           cf ssh getgov-${{ env.ENVIRONMENT }}
           /tmp/lifecycle/shell
           ./manage.py generate_current_federal_report
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
+          CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
+          CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
 
       - name: Generate current-full.csv
         run: cf run-task getgov-${{ env.ENVIRONMENT }} "/tmp/lifecycle/shell -c './manage.py generate_current_full_report'"
