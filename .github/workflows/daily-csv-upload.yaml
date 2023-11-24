@@ -59,6 +59,7 @@ jobs:
 
   upload-reports:
     runs-on: ubuntu-latest
+    needs: [variables, wait-for-deploy]
     env:
       CF_USERNAME: CF_{{ needs.variables.outputs.environment }}_USERNAME
       CF_PASSWORD: CF_{{ needs.variables.outputs.environment }}_PASSWORD
