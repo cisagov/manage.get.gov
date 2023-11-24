@@ -8,7 +8,6 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
-from typing import List
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
@@ -231,11 +230,11 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             message_content = (
                 f"<h4 class='usa-alert__heading'>{message_header}</h4>"
                 "<p>New domain requests cannot be submitted until we have finished reviewing your pending request: "
-                f"<strong>{pending_requests[0].requested_domain}</strong>. You can continue to fill out this request and "
-                "save it as a draft to be submitted later. "
+                f"<strong>{pending_requests[0].requested_domain}</strong>. You can continue to fill out this request "
+                "and save it as a draft to be submitted later. "
                 f"<a class='usa-link' href='{reverse('home')}'>View your pending requests.</a></p>"
             )
-            messages.info(request, mark_safe(message_content))
+            messages.info(request, mark_safe(message_content))  # nosec
         context["pending_requests_exist"] = len(pending_requests) > 0
 
         return render(request, self.template_name, context)
@@ -286,30 +285,29 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
         return instantiated
 
-    def pending_requests(self) -> List[DomainApplication]:
+    def pending_requests(self):
         """return an array of pending requests if user has pending requests
         and no approved requests"""
         if self.approved_applications_exist() or self.approved_domains_exist():
             return []
         else:
             return self.pending_applications()
-    
-    def approved_applications_exist(self) -> bool:
+
+    def approved_applications_exist(self):
         """Checks if user is creator of applications with APPROVED status"""
         approved_application_count = DomainApplication.objects.filter(
-            creator=self.request.user,
-            status=DomainApplication.APPROVED
+            creator=self.request.user, status=DomainApplication.APPROVED
         ).count()
         return approved_application_count > 0
 
-    def approved_domains_exist(self) -> bool:
+    def approved_domains_exist(self):
         """Checks if user has permissions on approved domains
-        
+
         This additional check is necessary to account for domains which were migrated
         and do not have an application"""
         return self.request.user.permissions.count() > 0
-    
-    def pending_applications(self) -> List[DomainApplication]:
+
+    def pending_applications(self):
         """Returns a List of user's applications with one of the following states:
         SUBMITTED, IN_REVIEW, ACTION_NEEDED"""
         # if the current application has ACTION_NEEDED status, this check should not be performed
