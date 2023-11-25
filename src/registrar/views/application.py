@@ -314,8 +314,10 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if self.application.status == DomainApplication.ACTION_NEEDED:
             return []
         check_statuses = [DomainApplication.SUBMITTED, DomainApplication.IN_REVIEW, DomainApplication.ACTION_NEEDED]
-        filter_conditions = Q(creator=self.request.user) & Q(status__in=check_statuses)
-        return DomainApplication.objects.filter(filter_conditions)
+    return DomainApplication.objects.filter(
+        creator=self.request.user,
+        status__in=check_statuses
+    )
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
