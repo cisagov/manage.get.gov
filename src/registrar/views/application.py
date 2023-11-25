@@ -224,7 +224,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         #     present message that domain application cannot be submitted
         pending_requests = self.pending_requests()
         if len(pending_requests) > 0:
-            # TODO may want to move this whole thing to utility/errors.py
             message_header = "You cannot submit this request yet"
             message_content = (
                 f"<h4 class='usa-alert__heading'>{message_header}</h4>"
