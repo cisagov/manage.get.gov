@@ -897,7 +897,7 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-    
+
     def mockUpdateDomainCommands(self, _request, cleaned):
         if getattr(_request, "name", None) == "dnssec-invalid.gov":
             raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
