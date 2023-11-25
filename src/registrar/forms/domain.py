@@ -131,7 +131,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
 
         for form in self.forms:
             if form.cleaned_data:
-                value = form.cleaned_data['server']
+                value = form.cleaned_data["server"]
                 if value in data:
                     form.add_error(
                         "server",
