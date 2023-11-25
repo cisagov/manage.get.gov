@@ -1,7 +1,6 @@
 import logging
 
 from django.http import Http404, HttpResponse, HttpResponseRedirect
-from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.safestring import mark_safe
@@ -314,10 +313,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if self.application.status == DomainApplication.ACTION_NEEDED:
             return []
         check_statuses = [DomainApplication.SUBMITTED, DomainApplication.IN_REVIEW, DomainApplication.ACTION_NEEDED]
-    return DomainApplication.objects.filter(
-        creator=self.request.user,
-        status__in=check_statuses
-    )
+        return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
