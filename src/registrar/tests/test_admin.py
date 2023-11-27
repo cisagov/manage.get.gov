@@ -849,25 +849,24 @@ class TestDomainApplicationAdmin(MockEppLib):
 
 
 class DomainInvitationAdminTest(TestCase):
+    """Tests for the DomainInvitation page"""
+
     def setUp(self):
+        """Create a client object"""
+        self.client = Client(HTTP_HOST="localhost:8080")
         self.factory = RequestFactory()
         self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
-        self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
-    
+
     def tearDown(self):
-        # delete any applications too
+        """Delete all DomainInvitation objects"""
         DomainInvitation.objects.all().delete()
-        DomainApplication.objects.all().delete()
-        User.objects.all().delete()
 
     def test_get_filters(self):
+        """Ensures that our filters are displaying correctly"""
         # Have to get creative to get past linter
         p = "adminpass"
         self.client.login(username="superuser", password=p)
-
-        # Mock a user
-        user = mock_user()
 
         response = self.client.get(
             "/admin/registrar/domaininvitation/",
@@ -878,6 +877,13 @@ class DomainInvitationAdminTest(TestCase):
         # Assert that the filters are added
         self.assertContains(response, "invited", count=4)
         self.assertContains(response, "retrieved", count=4)
+
+        # Check for the HTML context specificially
+        invited_html = '<a href="?status__exact=invited">invited</a>'
+        retrieved_html = '<a href="?status__exact=retrieved">retrieved</a>'
+
+        self.assertContains(response, invited_html, count=1)
+        self.assertContains(response, retrieved_html, count=1)
 
 
 class ListHeaderAdminTest(TestCase):
