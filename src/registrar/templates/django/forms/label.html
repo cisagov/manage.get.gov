@@ -8,9 +8,17 @@
     {{ field.label }}
   {% endif %}
 
-  {% if widget.attrs.required and field.label != "Is your organization an election office" and field.label != "What .gov domain do you want" and field.label != "I read and agree to the requirements for operating .gov domains." %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+  {% if widget.attrs.required %}
+    <!-- Don't include asterisk in one-field forms -->
+    {% if field.label != "Is your organization an election office" %}
+      {% if field.label != "What .gov domain do you want" %}
+        {% if field.label != "I read and agree to the requirements for operating .gov domains" %}
+          <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+        {% endif %}
+      {% endif %}
+    {% endif %}
   {% endif %}
+
 
 
 <!--
