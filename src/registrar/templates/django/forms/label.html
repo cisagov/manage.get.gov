@@ -8,12 +8,12 @@
     {{ field.label }}
   {% endif %}
 
-<!--Don't include asterisk in one-field forms-->
-{% if widget.attrs.required %}
-  {% if field.label != ("Is your organization an election office?" or "What .gov domain do you want?" or "I read and agree to the requirements for operating .gov domains.") %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+  {% if widget.attrs.required %}
+    <!--Don't include asterisk in one-field forms-->
+    {% if field.label !=("Is your organization an election office?" or "What .gov domain do you want?" or "I read and agree to the requirements for operating .gov domains.") %}
+      <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+    {% endif %}
   {% endif %}
-{% endif %}
 
 <!--
   {% if widget.attrs.required %}
