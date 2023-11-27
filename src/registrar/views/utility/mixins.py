@@ -46,15 +46,15 @@ class DomainPermission(PermissionsLoginMixin):
         if pk is None:
             raise ValueError("Primary key is None")
 
+        # test if domain in editable state
+        if not self.in_editable_state(pk):
+            return False
+
         if self.can_access_other_user_domains(pk):
             return True
 
         # user needs to have a role on the domain
         if not UserDomainRole.objects.filter(user=self.request.user, domain__id=pk).exists():
-            return False
-
-        # test if domain in editable state
-        if not self.in_editable_state(pk):
             return False
 
         # if we need to check more about the nature of role, do it here.
