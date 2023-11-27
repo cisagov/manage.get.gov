@@ -12,6 +12,7 @@ from registrar.admin import (
     MyUserAdmin,
     AuditedAdmin,
     ContactAdmin,
+    UserDomainRoleAdmin,
 )
 from registrar.models import (
     Domain,
@@ -845,6 +846,15 @@ class TestDomainApplicationAdmin(MockEppLib):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
+
+
+class UserDomainRoleAdminTest(TestCase):
+    def setUp(self):
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.admin = ListHeaderAdmin(model=UserDomainRoleAdmin, admin_site=None)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
 
 
 class ListHeaderAdminTest(TestCase):

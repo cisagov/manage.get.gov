@@ -335,6 +335,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
     search_fields = [
         "user__first_name",
         "user__last_name",
+        "user__email",
         "domain__name",
         "role",
     ]
