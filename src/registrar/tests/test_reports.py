@@ -1,3 +1,4 @@
+from unittest import skip
 from django.test import TestCase
 from io import StringIO
 import csv
@@ -7,6 +8,86 @@ from registrar.models.user import User
 from django.contrib.auth import get_user_model
 from registrar.utility.csv_export import export_domains_to_writer
 
+
+class CsvUploadTest(TestCase):
+    """Tests to determine if we are uploading our reports correctly"""
+    def setUp(self):
+        """Create fake domain data"""
+        username = "test_user"
+        first_name = "First"
+        last_name = "Last"
+        email = "info@example.com"
+        self.user = get_user_model().objects.create(
+            username=username, first_name=first_name, last_name=last_name, email=email
+        )
+
+        self.domain_1, _ = Domain.objects.get_or_create(name="cdomain1.gov", state=Domain.State.READY)
+        self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
+        self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
+        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
+        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
+
+        self.domain_information_1, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_1,
+            organization_type="federal",
+            federal_agency="World War I Centennial Commission",
+            federal_type="executive",
+        )
+        self.domain_information_2, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_2,
+            organization_type="interstate",
+        )
+        self.domain_information_3, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_3,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+        self.domain_information_4, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_4,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+
+    def tearDown(self):
+        """Delete all faked data"""
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+
+    @skip("not implemented yet")
+    def test_generate_federal_report(self):
+        """Ensures that we correctly generate current-federal.csv"""
+        raise
+
+    @skip("not implemented yet")
+    def test_generate_full_report(self):
+        """Ensures that we correctly generate current-full.csv"""
+        raise
+
+    @skip("not implemented yet")
+    def test_api_url_full_report(self):
+        """Ensures that we correctly return current-full.csv"""
+        raise
+
+    @skip("not implemented yet")
+    def test_api_url_federal_report(self):
+        """Ensures that we correctly return current-full.csv"""
+        raise
+    
+    @skip("not implemented yet")
+    def test_not_found_full_report(self):
+        """Ensures that we get a not found when the report doesn't exist"""
+        raise
+
+    @skip("not implemented yet")
+    def test_not_found_federal_report(self):
+        """Ensures that we get a not found when the report doesn't exist"""
+        raise
 
 class ExportDataTest(TestCase):
     def setUp(self):
