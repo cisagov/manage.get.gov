@@ -8,7 +8,7 @@
     {{ field.label }}
   {% endif %}
 
-
+<!--Don't include asterisk in one-field forms-->
 {% if widget.attrs.required %}
   {% if field.label != "Is your organization an election office?" and 
   field.label != “What .gov domain do you want?” and 
