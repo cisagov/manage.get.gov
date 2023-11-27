@@ -11,7 +11,7 @@
 <!--Don't include asterisk in one-field forms-->
 {% if widget.attrs.required %}
   {% if field.label != "Is your organization an election office?" and 
-  field.label != “What .gov domain do you want?” and 
+  field.label != "What .gov domain do you want?" and 
   field.label != "I read and agree to the requirements for operating .gov domains." %}
     <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
   {% endif %}
