@@ -154,13 +154,13 @@ class DomainView(DomainBaseView):
 
     def in_editable_state(self, pk):
         """Override in_editable_state from DomainPermission
-        Allow detail page to be editable"""
+        Allow detail page to be viewable"""
 
         requested_domain = None
         if Domain.objects.filter(id=pk).exists():
             requested_domain = Domain.objects.get(id=pk)
 
-        # if domain is editable return true
+        # return true if the domain exists, this will allow the detail page to load
         if requested_domain:
             return True
         return False
