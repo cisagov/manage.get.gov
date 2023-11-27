@@ -20,6 +20,11 @@ class Command(BaseCommand):
         # Ensures a slash is added
         directory = os.path.join(options.get("directory"), "")
         logger.info("Generating report...")
+
+        # TODO - Delete 
+        current_directory = os.getcwd()
+        logger.info(f"Current working directory: {current_directory}")
+
         self.generate_current_full_report(directory)
         logger.info(f"Success! Created {directory}current-full.csv")
 
@@ -28,3 +33,6 @@ class Command(BaseCommand):
         file_path = os.path.join(directory, "current-full.csv")
         with open(file_path, "w") as file:
             csv_export.export_data_full_to_csv(file)
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Could not find newly created file at '{file_path}'")
