@@ -64,6 +64,8 @@ jobs:
       CF_USERNAME: CF_ZA_USERNAME
       CF_PASSWORD: CF_ZA_PASSWORD
     steps:
+      - name: Wait for a few seconds
+        run: sleep 20
 
       - name: Generate current-federal.csv
         uses: 18f/cg-deploy-action@main
