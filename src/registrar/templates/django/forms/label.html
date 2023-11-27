@@ -8,7 +8,7 @@
     {{ field.label }}
   {% endif %}
 
-<!--
+
 {% if widget.attrs.required %}
   {% if field.label != "Is your organization an election office?" and 
   field.label != “What .gov domain do you want?” and 
@@ -16,8 +16,8 @@
     <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
   {% endif %}
 {% endif %}
--->
 
+<!--
   {% if widget.attrs.required %}
     {% if field.label == "What is the name of the tribe you represent? “ %}
       <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
@@ -53,5 +53,5 @@
     <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
     {% endif %}
   {% endif %}
-
+-->
 </{{ label_tag }}>
