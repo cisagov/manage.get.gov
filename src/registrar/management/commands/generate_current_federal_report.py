@@ -21,15 +21,12 @@ class Command(BaseCommand):
         directory = os.path.join(options.get("directory"), "")
         logger.info("Generating report...")
 
-        # TODO - Delete 
-        current_directory = os.getcwd()
-        logger.info(f"Current working directory: {current_directory}")
-
         self.generate_current_federal_report(directory)
         logger.info(f"Success! Created {directory}current-federal.csv")
 
     def generate_current_federal_report(self, directory):
         """Creates a current-full.csv file under the migrationdata/ directory"""
+        # TODO - #1403, push to the S3 instance instead
         file_path = os.path.join(directory, "current-federal.csv")
         with open(file_path, "w") as file:
             csv_export.export_data_federal_to_csv(file)

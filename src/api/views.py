@@ -107,6 +107,7 @@ def get_current_federal(request):
 
 def serve_file(file_path):
     """Downloads a file based on a given filepath. Returns a 404 if not found."""
+    # TODO - #1403, grab from the S3 instance instead
     if os.path.exists(file_path):
         # Serve the CSV file
         response = FileResponse(open(file_path, "rb"))
