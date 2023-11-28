@@ -8,54 +8,38 @@
     {{ field.label }}
   {% endif %}
 
+<!--
   {% if widget.attrs.required %}
-    <!-- Don't include asterisk in one-field forms -->
-    {% if field.label != "Is your organization an election office" %}
-      {% if field.label != "What .gov domain do you want" %}
-        {% if field.label != "I read and agree to the requirements for operating .gov domains" %}
+    
+    {% if field.label != "Is your organization an election office?" %}
+      {% if field.label != "What .gov domain do you want?" %}
+        {% if field.label != "I read and agree to the requirements for operating .gov domains." %}
           <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
         {% endif %}
       {% endif %}
     {% endif %}
   {% endif %}
-
-
-
-<!--
-  {% if widget.attrs.required %}
-    {% if field.label == "What is the name of the tribe you represent? “ %}
-      <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "Organization name" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "Street address" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "City" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "State, territory, or military post" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "Zip code" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "First name / given name" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "Last name / family name" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "Title or role in your organization" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "Email" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-    {% if field.label == "Phone" %}
-    <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-    {% endif %}
-  {% endif %}
 -->
+
+{% if widget.attrs.required %}
+  {% for required_label in [
+    "What is the name of the tribe you represent?",
+    "Organization name",
+    "Street address",
+    "City",
+    "State, territory, or military post",
+    "Zip code",
+    "First name / given name",
+    "Last name / family name",
+    "Title or role in your organization",
+    "Email",
+    "Phone"
+  ] %}
+    {% if field.label == required_label %}
+      <abbr class="usa-hint usa-hint--required" title="required"> *</abbr>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+
 </{{ label_tag }}>
