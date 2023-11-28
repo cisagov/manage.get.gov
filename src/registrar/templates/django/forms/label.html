@@ -8,26 +8,12 @@
     {{ field.label }}
   {% endif %}
 
-<!--
   {% if widget.attrs.required %}
-    
-    {% if field.label != "Is your organization an election office?" %}
-      {% if field.label != "What .gov domain do you want?" %}
-        {% if field.label != "I read and agree to the requirements for operating .gov domains." %}
-          <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-        {% endif %}
-      {% endif %}
+  <!--Don't add asterisk to one-field forms -->
+    {% if field.label == "Is your organization an election office?" or field.label == "What .gov domain do you want? or field.label == "I read and agree to the requirements for operating .gov domains." %}
+    {% else %}
+      <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
     {% endif %}
   {% endif %}
--->
-
-{% if widget.attrs.required and field.label in ["What is the name of the tribe you represent?", "Organization name",
-"Street address", "City", "State, territory, or military post", "Zip code", "First name / given name", "Last name /
-family name", "Title or role in your organization", "Email", "Phone"] %}
-  <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-{% endif %}
-
-
-
 
 </{{ label_tag }}>
