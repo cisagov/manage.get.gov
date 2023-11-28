@@ -137,7 +137,6 @@ class CsvReportsTest(TestCase):
 
     def test_load_federal_report(self):
         """Tests the current-federal api link"""
-        self.maxDiff = None
         request = self.factory.get("/fake-path")
         response = get_current_federal(request, file_path="registrar/tests/data/fake_current_federal.csv")
         # Check that the response has status code 200
@@ -147,7 +146,7 @@ class CsvReportsTest(TestCase):
 
         expected_file_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
-            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
         )
 
@@ -155,7 +154,6 @@ class CsvReportsTest(TestCase):
 
     def test_load_full_report(self):
         """Tests the current-federal api link"""
-        self.maxDiff = None
         request = self.factory.get("/fake-path")
         response = get_current_full(request, file_path="registrar/tests/data/fake_current_full.csv")
         # Check that the response has status code 200
