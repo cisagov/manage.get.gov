@@ -21,6 +21,8 @@ DOMAIN_API_MESSAGES = {
     " For example, if you want www.city.gov, you would enter “city”"
     " (without the quotes).",
     "extra_dots": "Enter the .gov domain you want without any periods.",
+    # message below is considered safe; no user input can be inserted into the message
+    # body; public_site_url() function reads from local app settings and therefore safe
     "unavailable": mark_safe(  # nosec
         "That domain isn’t available. "
         "<a class='usa-link' href='{}' target='_blank'>"
