@@ -9,7 +9,9 @@ from registrar.utility.csv_export import export_domains_to_writer
 from django.core.management import call_command
 from unittest.mock import call, mock_open, patch
 from api.views import get_current_federal, get_current_full
+import logging
 
+logger = logging.getLogger(__name__)
 
 class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
@@ -144,8 +146,7 @@ class CsvReportsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
-        print("data to expect fed")
-        print(file_content)
+        logger.info(f"data to expect fed: {file_content}")
         expected_file_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email \r\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"
@@ -163,8 +164,7 @@ class CsvReportsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
-        print("data to expect")
-        print(file_content)
+        logger.info(f"data to expect full: {file_content}")
         expected_file_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"
