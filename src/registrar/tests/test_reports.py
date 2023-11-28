@@ -1,5 +1,4 @@
 import csv
-from unittest import skip
 from django.test import Client, RequestFactory, TestCase
 from io import StringIO
 from registrar.models.domain_information import DomainInformation
@@ -88,9 +87,9 @@ class CsvReportsTest(TestCase):
     def test_generate_federal_report(self):
         """Ensures that we correctly generate current-federal.csv"""
         expected_file_content = [
-            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
-            call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
-            call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
+            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"),
+            call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \n"),
+            call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \n"),
         ]
         fake_open = mock_open()
         # We don't actually want to write anything for a test case,
@@ -104,10 +103,10 @@ class CsvReportsTest(TestCase):
     def test_generate_full_report(self):
         """Ensures that we correctly generate current-full.csv"""
         expected_file_content = [
-            call(f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
-            call(f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
-            call(f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
-            call(f"adomain2.gov,Interstate,,,,, \r\n"),
+            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"),
+            call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \n"),
+            call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \n"),
+            call("adomain2.gov,Interstate,,,,, \n"),
         ]
         fake_open = mock_open()
         # We don't actually want to write anything for a test case,
@@ -146,9 +145,9 @@ class CsvReportsTest(TestCase):
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
         expected_file_content = (
-            f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
-            f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"
-            f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
         )
 
         self.assertEqual(file_content, expected_file_content)
@@ -157,16 +156,16 @@ class CsvReportsTest(TestCase):
         """Tests the current-federal api link"""
         self.maxDiff = None
         request = self.factory.get("/fake-path")
-        response = get_current_federal(request, file_path="registrar/tests/data/fake_current_full.csv")
+        response = get_current_full(request, file_path="registrar/tests/data/fake_current_full.csv")
         # Check that the response has status code 200
         self.assertEqual(response.status_code, 200)
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
         expected_file_content = (
-            f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
-            f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"
-            f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\r\n"
-            f"adomain2.gov,Interstate,,,,,"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\n"
+            "adomain2.gov,Interstate,,,,,"
         )
 
         self.assertEqual(file_content, expected_file_content)
