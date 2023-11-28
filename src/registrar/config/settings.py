@@ -126,6 +126,8 @@ INSTALLED_APPS = [
     # "puml_generator",
     # supports necessary headers for Django cross origin
     "corsheaders",
+    # Django admin searchable drop down package
+    "admin_searchable_dropdown",
 ]
 
 # Middleware are routines for processing web requests.

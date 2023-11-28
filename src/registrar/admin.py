@@ -16,6 +16,7 @@ from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
+from admin_searchable_dropdown.filters import AutocompleteFilter
 
 logger = logging.getLogger(__name__)
 
@@ -319,26 +320,6 @@ class WebsiteAdmin(ListHeaderAdmin):
         "website",
     ]
     search_help_text = "Search by website."
-
-
-class UserDomainRoleAdmin(ListHeaderAdmin):
-    """Custom domain role admin class."""
-
-    # Columns
-    list_display = [
-        "user",
-        "domain",
-        "role",
-    ]
-
-    # Search
-    search_fields = [
-        "user__first_name",
-        "user__last_name",
-        "domain__name",
-        "role",
-    ]
-    search_help_text = "Search by user, domain, or role."
 
 
 class DomainInvitationAdmin(ListHeaderAdmin):
@@ -722,6 +703,11 @@ class DomainInformationInline(admin.StackedInline):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
 
 
+class DomainFilter(AutocompleteFilter):
+    title = 'Domain'
+    field_name = 'domain'
+
+
 class DomainAdmin(ListHeaderAdmin):
     """Custom domain admin class to add extra buttons."""
 
@@ -968,6 +954,30 @@ class DomainAdmin(ListHeaderAdmin):
         return super().has_change_permission(request, obj)
 
 
+class UserDomainRoleAdmin(ListHeaderAdmin):
+    """Custom domain role admin class."""
+
+    # Columns
+    list_display = [
+        "user",
+        "domain",
+        "role",
+    ]
+
+    # Search
+    search_fields = [
+        "user__first_name",
+        "user__last_name",
+        "domain__name",
+        "role",
+    ]
+    search_help_text = "Search by user, domain, or role."
+
+    autocomplete_fields = ["domain"]
+
+    # list_filter = [DomainFilter]
+
+
 class DraftDomainAdmin(ListHeaderAdmin):
     """Custom draft domain admin class."""
 
@@ -982,11 +992,11 @@ admin.site.register(models.User, MyUserAdmin)
 admin.site.unregister(Group)
 # Register UserGroup
 admin.site.register(models.UserGroup)
+admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
-admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
