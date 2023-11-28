@@ -144,6 +144,8 @@ class CsvReportsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
+        print("data to expect fed")
+        print(file_content)
         expected_file_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email \r\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"
@@ -161,6 +163,8 @@ class CsvReportsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
+        print("data to expect")
+        print(file_content)
         expected_file_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"
