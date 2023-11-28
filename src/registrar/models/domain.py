@@ -212,11 +212,9 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def registry_expiration_date(self) -> date:
         """Get or set the `ex_date` element from the registry.
-        Additionally, update the expiration date in the registrar"""
+        Additionally, _get_property updates the expiration date in the registrar"""
         try:
-            self.expiration_date = self._get_property("ex_date")
-            self.save()
-            return self.expiration_date
+            return self._get_property("ex_date")
         except Exception as e:
             # exception raised during the save to registrar
             logger.error(f"error updating expiration date in registrar: {e}")
@@ -1609,6 +1607,12 @@ class Domain(TimeStampedModel, DomainHelper):
                 cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
                 if old_cache_contacts is not None:
                     cleaned["contacts"] = old_cache_contacts
+
+            # if expiration date from registry does not match what is in db,
+            # update the db
+            if "ex_date" in cleaned and cleaned["ex_date"] != self.expiration_date:
+                self.expiration_date = cleaned["ex_date"]
+                self.save()
 
             self._cache = cleaned
 
