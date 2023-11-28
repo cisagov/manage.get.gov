@@ -1506,6 +1506,38 @@ class TestDomainNameservers(TestDomainOverview):
             status_code=200,
         )
 
+    def test_domain_nameservers_form_submit_whitespace(self):
+        """Nameserver form removes whitespace from ip.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameserver1 = "ns1.igorville.gov"
+        nameserver2 = "ns2.igorville.gov"
+        valid_ip = "1.1. 1.1"
+        # initial nameservers page has one server with two ips
+        # have to throw an error in order to test that the whitespace has been stripped from ip
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without one host and an ip with whitespace
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-1-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an ip address which has been stripped of whitespace,
+        # response should be a 302 to success page
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = result.follow()
+        # in the event of a generic nameserver error from registry error, there will be a 302
+        # with an error message displayed, so need to follow 302 and test for success message
+        self.assertContains(page, "The name servers for this domain have been updated")
+
     def test_domain_nameservers_form_submit_glue_record_not_allowed(self):
         """Nameserver form catches error when IP is present
         but host not subdomain.
@@ -1597,7 +1629,7 @@ class TestDomainNameservers(TestDomainOverview):
         """
         nameserver1 = "ns1.igorville.gov"
         nameserver2 = "ns2.igorville.gov"
-        invalid_ip = "127.0.0.1"
+        valid_ip = "127.0.0.1"
         # initial nameservers page has one server with two ips
         nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1606,7 +1638,7 @@ class TestDomainNameservers(TestDomainOverview):
         # only one has ips
         nameservers_page.form["form-0-server"] = nameserver1
         nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = invalid_ip
+        nameservers_page.form["form-1-ip"] = valid_ip
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
         # form submission was a successful post, response should be a 302
