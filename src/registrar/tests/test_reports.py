@@ -152,7 +152,7 @@ class CsvReportsTest(TestCase):
         )
 
         self.assertEqual(file_content, expected_file_content)
-    
+
     def test_load_full_report(self):
         """Tests the current-federal api link"""
         self.maxDiff = None

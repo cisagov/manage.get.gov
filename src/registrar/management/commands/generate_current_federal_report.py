@@ -15,9 +15,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add our two filename arguments."""
         parser.add_argument("--directory", default="migrationdata", help="Desired directory")
-        parser.add_argument("--checkpath", default=True, help="Used for test cases")
+        parser.add_argument(
+            "--checkpath",
+            default=True,
+            help="Flag that determines if we do a check for os.path.exists. Used for test cases",
+        )
 
     def handle(self, **options):
+        """Grabs the directory then creates current-federal.csv in that directory"""
         # Ensures a slash is added
         directory = os.path.join(options.get("directory"), "")
         check_path = options.get("checkpath")
