@@ -21,21 +21,12 @@
   {% endif %}
 -->
 
-{% if widget.attrs.required and field.label in [
-  "What is the name of the tribe you represent?",
-  "Organization name",
-  "Street address",
-  "City",
-  "State, territory, or military post",
-  "Zip code",
-  "First name / given name",
-  "Last name / family name",
-  "Title or role in your organization",
-  "Email",
-  "Phone"
-] %}
+{% if widget.attrs.required and field.label in ["What is the name of the tribe you represent?", "Organization name",
+"Street address", "City", "State, territory, or military post", "Zip code", "First name / given name", "Last name /
+family name", "Title or role in your organization", "Email", "Phone"] %}
   <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
 {% endif %}
+
 
 
 
