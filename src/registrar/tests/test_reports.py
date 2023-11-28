@@ -9,9 +9,7 @@ from registrar.utility.csv_export import export_domains_to_writer
 from django.core.management import call_command
 from unittest.mock import call, mock_open, patch
 from api.views import get_current_federal, get_current_full
-import logging
 
-logger = logging.getLogger(__name__)
 
 class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
@@ -146,10 +144,10 @@ class CsvReportsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
-        logger.info(f"data to expect fed: {file_content}")
+
         expected_file_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email \r\n"
-            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
         )
 
@@ -164,11 +162,10 @@ class CsvReportsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
-        logger.info(f"data to expect full: {file_content}")
         expected_file_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
-            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"
-            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\n"
             "adomain2.gov,Interstate,,,,,"
         )
 
