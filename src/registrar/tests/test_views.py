@@ -1224,10 +1224,8 @@ class TestDomainDetail(TestDomainOverview):
     def test_domain_detail_link_works(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")
-        print(home_page)
         # click the "Edit" link
         detail_page = home_page.click("Manage", index=0)
-        print(detail_page)
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
 
