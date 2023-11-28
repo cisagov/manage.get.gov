@@ -1,5 +1,5 @@
 from unittest import skip
-from django.test import TestCase
+from django.test import Client, TestCase
 from io import StringIO
 import csv
 from registrar.models.domain_information import DomainInformation
@@ -7,12 +7,15 @@ from registrar.models.domain import Domain
 from registrar.models.user import User
 from django.contrib.auth import get_user_model
 from registrar.utility.csv_export import export_domains_to_writer
+from django.core.management import call_command
+from unittest.mock import call, mock_open, patch
 
-
-class CsvUploadTest(TestCase):
+class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
     def setUp(self):
         """Create fake domain data"""
+        self.client = Client(HTTP_HOST="localhost:8080")
+
         username = "test_user"
         first_name = "First"
         last_name = "Last"
@@ -59,35 +62,96 @@ class CsvUploadTest(TestCase):
         User.objects.all().delete()
         super().tearDown()
 
-    @skip("not implemented yet")
+    def test_create_failed_federal(self):
+        """Ensures that we return an error when we cannot find our created file"""
+        fake_open = mock_open()
+        # We don't actually want to write anything for a test case,
+        # we just want to verify what is being written.
+        with patch('builtins.open', fake_open), self.assertRaises(FileNotFoundError) as err:
+            call_command(
+                "generate_current_federal_report"
+            )
+        error = err.exception
+        self.assertEqual(str(error), "Could not find newly created file at 'migrationdata/current-federal.csv'")
+
+    def test_create_failed_full(self):
+        """Ensures that we return an error when we cannot find our created file"""
+        fake_open = mock_open()
+        # We don't actually want to write anything for a test case,
+        # we just want to verify what is being written.
+        with patch('builtins.open', fake_open), self.assertRaises(FileNotFoundError) as err:
+            call_command(
+                "generate_current_full_report"
+            )
+        error = err.exception
+        self.assertEqual(str(error), "Could not find newly created file at 'migrationdata/current-full.csv'")
+
     def test_generate_federal_report(self):
         """Ensures that we correctly generate current-federal.csv"""
-        raise
+        expected_file_content = [
+            call('Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n'),
+            call('cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n'),
+            call('ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n')
+        ]
+        fake_open = mock_open()
+        # We don't actually want to write anything for a test case,
+        # we just want to verify what is being written.
+        with patch('builtins.open', fake_open):
+            call_command(
+                "generate_current_federal_report",
+                checkpath=False
+            )
+        content = fake_open()
+        # Now you can make assertions about how you expect 'file' to be used.
+        content.write.assert_has_calls(expected_file_content)
 
-    @skip("not implemented yet")
     def test_generate_full_report(self):
         """Ensures that we correctly generate current-full.csv"""
-        raise
-
-    @skip("not implemented yet")
-    def test_api_url_full_report(self):
-        """Ensures that we correctly return current-full.csv"""
-        raise
-
-    @skip("not implemented yet")
-    def test_api_url_federal_report(self):
-        """Ensures that we correctly return current-full.csv"""
-        raise
+        expected_file_content = [
+            call('Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n'),
+            call('cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n'),
+            call('ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n'),
+            call('adomain2.gov,Interstate,,,,, \r\n')
+        ]
+        fake_open = mock_open()
+        # We don't actually want to write anything for a test case,
+        # we just want to verify what is being written.
+        with patch('builtins.open', fake_open):
+            call_command(
+                "generate_current_full_report",
+                checkpath=False
+            )
+        content = fake_open()
+        # Now you can make assertions about how you expect 'file' to be used.
+        content.write.assert_has_calls(expected_file_content)
     
-    @skip("not implemented yet")
     def test_not_found_full_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
-        raise
+        response = self.client.get('/api/v1/get-report/current-full')
 
-    @skip("not implemented yet")
+        # Check that the response has status code 404
+        self.assertEqual(response.status_code, 404)
+        # Check that the response body contains "File not found"
+        self.assertEqual(response.content.decode(), "File not found")
+
     def test_not_found_federal_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
-        raise
+        response = self.client.get('/api/v1/get-report/current-federal')
+
+        # Check that the response has status code 404
+        self.assertEqual(response.status_code, 404)
+        # Check that the response body contains "File not found"
+        self.assertEqual(response.content.decode(), "File not found")
+    
+    def test_federal_report(self):
+        """Ensures that we get a not found when the report doesn't exist"""
+        response = self.client.get('/api/v1/get-report/current-federal')
+
+        # Check that the response has status code 404
+        self.assertEqual(response.status_code, 404)
+        # Check that the response body contains "File not found"
+        self.assertEqual(response.content.decode(), "File not found")
+
 
 class ExportDataTest(TestCase):
     def setUp(self):
