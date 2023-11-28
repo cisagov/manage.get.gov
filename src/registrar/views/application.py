@@ -227,7 +227,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             message_header = "You cannot submit this request yet"
             message_content = (
                 f"<h4 class='usa-alert__heading'>{message_header}</h4>"
-                "<p>New domain requests cannot be submitted until we have finished reviewing your pending request: "
+                "<p class="margin-bottom-0">New domain requests cannot be submitted until we have finished reviewing your pending request: "
                 f"<strong>{pending_requests[0].requested_domain}</strong>. You can continue to fill out this request "
                 "and save it as a draft to be submitted later. "
                 f"<a class='usa-link' href='{reverse('home')}'>View your pending requests.</a></p>"
