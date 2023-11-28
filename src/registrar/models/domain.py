@@ -878,6 +878,14 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         return self.state == self.State.READY
 
+    def is_editable(self) -> bool:
+        """domain is editable unless state is on hold or deleted"""
+        return self.state in [
+            self.State.UNKNOWN,
+            self.State.DNS_NEEDED,
+            self.State.READY,
+        ]
+
     def transfer(self):
         """Going somewhere. Not implemented."""
         raise NotImplementedError()
@@ -1186,7 +1194,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e)
                     logger.error(e.code)
                     raise e
-                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state != Domain.State.DELETED:
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.dns_needed_from_unknown()
