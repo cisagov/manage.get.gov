@@ -5,7 +5,6 @@ from io import StringIO
 from registrar.models.domain_information import DomainInformation
 from registrar.models.domain import Domain
 from registrar.models.user import User
-from os import linesep
 from django.contrib.auth import get_user_model
 from registrar.utility.csv_export import export_domains_to_writer
 from django.core.management import call_command
@@ -105,10 +104,10 @@ class CsvReportsTest(TestCase):
     def test_generate_full_report(self):
         """Ensures that we correctly generate current-full.csv"""
         expected_file_content = [
-            call(f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email{linesep}"),
-            call(f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, {linesep}"),
-            call(f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,, {linesep}"),
-            call(f"adomain2.gov,Interstate,,,,, {linesep}"),
+            call(f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
+            call(f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
+            call(f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
+            call(f"adomain2.gov,Interstate,,,,, \r\n"),
         ]
         fake_open = mock_open()
         # We don't actually want to write anything for a test case,
@@ -147,9 +146,27 @@ class CsvReportsTest(TestCase):
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
         expected_file_content = (
-            f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email{linesep}"
-            f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, {linesep}"
-            f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,, {linesep}"
+            f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
+            f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"
+            f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
+        )
+
+        self.assertEqual(file_content, expected_file_content)
+    
+    def test_load_full_report(self):
+        """Tests the current-federal api link"""
+        self.maxDiff = None
+        request = self.factory.get("/fake-path")
+        response = get_current_federal(request, file_path="registrar/tests/data/fake_current_full.csv")
+        # Check that the response has status code 200
+        self.assertEqual(response.status_code, 200)
+        # Check that the response contains what we expect
+        file_content = b"".join(response.streaming_content).decode("utf-8")
+        expected_file_content = (
+            f"Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
+            f"cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"
+            f"ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\r\n"
+            f"adomain2.gov,Interstate,,,,,"
         )
 
         self.assertEqual(file_content, expected_file_content)
