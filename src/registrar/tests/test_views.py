@@ -1255,6 +1255,8 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 
+
+class TestDomainDetail(TestDomainOverview):
     def test_domain_detail_link_works(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")
@@ -1263,7 +1265,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
 
-    def test_domain_overview_blocked_for_ineligible_user(self):
+    def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
         management pages share the same permissions class"""
@@ -1275,7 +1277,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
 
-    def test_domain_overview_allowed_for_on_hold(self):
+    def test_domain_detail_allowed_for_on_hold(self):
         """Test that the domain overview page displays for on hold domain"""
         home_page = self.app.get("/")
         self.assertContains(home_page, "on-hold.gov")
@@ -1284,7 +1286,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_on_hold.id}))
         self.assertNotContains(detail_page, "Edit")
 
-    def test_domain_see_just_nameserver(self):
+    def test_domain_detail_see_just_nameserver(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "justnameserver.com")
 
@@ -1295,7 +1297,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(detail_page, "ns1.justnameserver.com")
         self.assertContains(detail_page, "ns2.justnameserver.com")
 
-    def test_domain_see_nameserver_and_ip(self):
+    def test_domain_detail_see_nameserver_and_ip(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "nameserverwithip.gov")
 
@@ -1311,7 +1313,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(detail_page, "(1.2.3.4,")
         self.assertContains(detail_page, "2.3.4.5)")
 
-    def test_domain_with_no_information_or_application(self):
+    def test_domain_detail_with_no_information_or_application(self):
         """Test that domain management page returns 200 and displays error
         when no domain information or domain application exist"""
         # have to use staff user for this test
