@@ -973,9 +973,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by user, domain, or role."
 
-    autocomplete_fields = ["domain"]
-
-    # list_filter = [DomainFilter]
+    autocomplete_fields = ["user", "domain"]
 
 
 class DraftDomainAdmin(ListHeaderAdmin):
