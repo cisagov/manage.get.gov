@@ -212,7 +212,7 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def registry_expiration_date(self) -> date:
         """Get or set the `ex_date` element from the registry.
-        Additionally, update the expiration date in the registrar"""
+        Additionally, _get_property updates the expiration date in the registrar"""
         try:
             return self._get_property("ex_date")
         except Exception as e:
