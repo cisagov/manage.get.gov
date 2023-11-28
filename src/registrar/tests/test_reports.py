@@ -87,9 +87,9 @@ class CsvReportsTest(TestCase):
     def test_generate_federal_report(self):
         """Ensures that we correctly generate current-federal.csv"""
         expected_file_content = [
-            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"),
-            call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \n"),
-            call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \n"),
+            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
+            call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
+            call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
         ]
         fake_open = mock_open()
         # We don't actually want to write anything for a test case,
@@ -103,10 +103,10 @@ class CsvReportsTest(TestCase):
     def test_generate_full_report(self):
         """Ensures that we correctly generate current-full.csv"""
         expected_file_content = [
-            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"),
-            call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \n"),
-            call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \n"),
-            call("adomain2.gov,Interstate,,,,, \n"),
+            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
+            call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
+            call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
+            call("adomain2.gov,Interstate,,,,, \r\n"),
         ]
         fake_open = mock_open()
         # We don't actually want to write anything for a test case,
@@ -145,8 +145,8 @@ class CsvReportsTest(TestCase):
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
         expected_file_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
-            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
         )
 
@@ -162,9 +162,9 @@ class CsvReportsTest(TestCase):
         # Check that the response contains what we expect
         file_content = b"".join(response.streaming_content).decode("utf-8")
         expected_file_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
-            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
-            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\n"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\r\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\r\n"
             "adomain2.gov,Interstate,,,,,"
         )
 
