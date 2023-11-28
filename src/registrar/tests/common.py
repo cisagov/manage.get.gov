@@ -617,6 +617,7 @@ class MockEppLib(TestCase):
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
+        ex_date=datetime.date(2023, 5, 25),
     )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
         "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
