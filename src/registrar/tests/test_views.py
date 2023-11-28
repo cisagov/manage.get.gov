@@ -1305,12 +1305,12 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_managers_add_link(self):
         """Button to get to user add page works."""
         management_page = self.app.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
-        add_page = management_page.click("Add another user")
-        self.assertContains(add_page, "Add another user")
+        add_page = management_page.click("Add a domain manager")
+        self.assertContains(add_page, "Add a domain manager")
 
     def test_domain_user_add(self):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-        self.assertContains(response, "Add another user")
+        self.assertContains(response, "Add a domain manager")
 
     def test_domain_user_add_form(self):
         """Adding an existing user works."""
