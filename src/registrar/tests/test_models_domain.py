@@ -1987,6 +1987,13 @@ class TestExpirationDate(MockEppLib):
         with self.assertRaises(RegistryError):
             self.domain_w_error.renew_domain()
 
+    def test_expiration_date_updated_on_info_domain_call(self):
+        """assert that expiration date in db is updated on info domain call"""
+        # force fetch_cache to be called
+        self.domain.statuses
+        test_date = datetime.date(2023, 5, 25)
+        self.assertEquals(self.domain.expiration_date, test_date)
+
 
 class TestAnalystClientHold(MockEppLib):
     """Rule: Analysts may suspend or restore a domain by using client hold"""

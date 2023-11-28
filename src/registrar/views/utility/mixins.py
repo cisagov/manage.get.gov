@@ -3,6 +3,7 @@
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from registrar.models import (
+    Domain,
     DomainApplication,
     DomainInvitation,
     DomainInformation,
@@ -45,6 +46,10 @@ class DomainPermission(PermissionsLoginMixin):
         if pk is None:
             raise ValueError("Primary key is None")
 
+        # test if domain in editable state
+        if not self.in_editable_state(pk):
+            return False
+
         if self.can_access_other_user_domains(pk):
             return True
 
@@ -54,6 +59,18 @@ class DomainPermission(PermissionsLoginMixin):
 
         # if we need to check more about the nature of role, do it here.
         return True
+
+    def in_editable_state(self, pk):
+        """Is the domain in an editable state"""
+
+        requested_domain = None
+        if Domain.objects.filter(id=pk).exists():
+            requested_domain = Domain.objects.get(id=pk)
+
+        # if domain is editable return true
+        if requested_domain and requested_domain.is_editable():
+            return True
+        return False
 
     def can_access_other_user_domains(self, pk):
         """Checks to see if an authorized user (staff or superuser)
