@@ -16,7 +16,6 @@ from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
-from admin_searchable_dropdown.filters import AutocompleteFilter
 
 logger = logging.getLogger(__name__)
 
@@ -701,11 +700,6 @@ class DomainInformationInline(admin.StackedInline):
 
     def get_readonly_fields(self, request, obj=None):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
-
-
-class DomainFilter(AutocompleteFilter):
-    title = 'Domain'
-    field_name = 'domain'
 
 
 class DomainAdmin(ListHeaderAdmin):
