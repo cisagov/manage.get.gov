@@ -93,7 +93,7 @@ def available(request, domain=""):
 
 @require_http_methods(["GET"])
 @login_not_required
-def get_current_full(request):
+def get_current_full(request, file_path = "migrationdata/current-full.csv"):
     # Open the CSV file
     file_path = "migrationdata/current-full.csv"
     return serve_file(file_path)
@@ -101,8 +101,7 @@ def get_current_full(request):
 
 @require_http_methods(["GET"])
 @login_not_required
-def get_current_federal(request):
-    file_path = "migrationdata/current-federal.csv"
+def get_current_federal(request, file_path = "migrationdata/current-federal.csv"):
     return serve_file(file_path)
 
 def serve_file(file_path):
