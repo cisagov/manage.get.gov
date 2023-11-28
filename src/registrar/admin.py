@@ -344,6 +344,12 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
 class DomainInvitationAdmin(ListHeaderAdmin):
     """Custom domain invitation admin class."""
 
+    class Meta:
+        model = models.DomainInvitation
+        fields = "__all__"
+
+    _meta = Meta()
+
     # Columns
     list_display = [
         "email",
@@ -356,6 +362,10 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         "email",
         "domain__name",
     ]
+
+    # Filters
+    list_filter = ("status",)
+
     search_help_text = "Search by email or domain."
 
     # Mark the FSM field 'status' as readonly

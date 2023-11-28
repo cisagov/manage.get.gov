@@ -1082,6 +1082,8 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_with_ip, _ = Domain.objects.get_or_create(name="nameserverwithip.gov")
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
+        self.domain_on_hold, _ = Domain.objects.get_or_create(name="on-hold.gov", state=Domain.State.ON_HOLD)
+        self.domain_deleted, _ = Domain.objects.get_or_create(name="deleted.gov", state=Domain.State.DELETED)
 
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         self.domain_multdsdata, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
@@ -1096,6 +1098,8 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -1123,6 +1127,12 @@ class TestWithDomainPermissions(TestWithUser):
             user=self.user,
             domain=self.domain_just_nameserver,
             role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_on_hold, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_deleted, role=UserDomainRole.Roles.MANAGER
         )
 
     def tearDown(self):
@@ -1177,6 +1187,31 @@ class TestDomainPermissions(TestWithDomainPermissions):
                     response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
                 self.assertEqual(response.status_code, 403)
 
+    def test_domain_pages_blocked_for_on_hold_and_deleted(self):
+        """Test that the domain pages are blocked for on hold and deleted domains"""
+
+        self.client.force_login(self.user)
+        for view_name in [
+            "domain-users",
+            "domain-users-add",
+            "domain-dns",
+            "domain-dns-nameservers",
+            "domain-dns-dnssec",
+            "domain-dns-dnssec-dsdata",
+            "domain-org-name-address",
+            "domain-authorizing-official",
+            "domain-your-contact-information",
+            "domain-security-email",
+        ]:
+            for domain in [
+                self.domain_on_hold,
+                self.domain_deleted,
+            ]:
+                with self.subTest(view_name=view_name, domain=domain):
+                    with less_console_noise():
+                        response = self.client.get(reverse(view_name, kwargs={"pk": domain.id}))
+                        self.assertEqual(response.status_code, 403)
+
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
     def setUp(self):
@@ -1203,6 +1238,15 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         with less_console_noise():
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
+
+    def test_domain_overview_allowed_for_on_hold(self):
+        """Test that the domain overview page displays for on hold domain"""
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "on-hold.gov")
+
+        # View domain overview page
+        detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_on_hold.id}))
+        self.assertNotContains(detail_page, "Edit")
 
     def test_domain_see_just_nameserver(self):
         home_page = self.app.get("/")

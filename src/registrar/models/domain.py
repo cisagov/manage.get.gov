@@ -212,11 +212,9 @@ class Domain(TimeStampedModel, DomainHelper):
     @Cache
     def registry_expiration_date(self) -> date:
         """Get or set the `ex_date` element from the registry.
-        Additionally, update the expiration date in the registrar"""
+        Additionally, _get_property updates the expiration date in the registrar"""
         try:
-            self.expiration_date = self._get_property("ex_date")
-            self.save()
-            return self.expiration_date
+            return self._get_property("ex_date")
         except Exception as e:
             # exception raised during the save to registrar
             logger.error(f"error updating expiration date in registrar: {e}")
@@ -880,6 +878,14 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         return self.state == self.State.READY
 
+    def is_editable(self) -> bool:
+        """domain is editable unless state is on hold or deleted"""
+        return self.state in [
+            self.State.UNKNOWN,
+            self.State.DNS_NEEDED,
+            self.State.READY,
+        ]
+
     def transfer(self):
         """Going somewhere. Not implemented."""
         raise NotImplementedError()
@@ -1188,7 +1194,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e)
                     logger.error(e.code)
                     raise e
-                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state != Domain.State.DELETED:
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.dns_needed_from_unknown()
@@ -1601,6 +1607,12 @@ class Domain(TimeStampedModel, DomainHelper):
                 cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
                 if old_cache_contacts is not None:
                     cleaned["contacts"] = old_cache_contacts
+
+            # if expiration date from registry does not match what is in db,
+            # update the db
+            if "ex_date" in cleaned and cleaned["ex_date"] != self.expiration_date:
+                self.expiration_date = cleaned["ex_date"]
+                self.save()
 
             self._cache = cleaned
 
