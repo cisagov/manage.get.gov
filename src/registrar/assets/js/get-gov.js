@@ -122,7 +122,7 @@ function inlineToast(el, id, style, msg) {
     } else {
       // update and show the existing message div
       toast.className = `usa-alert usa-alert--${style} usa-alert--slim`;
-      toast.querySelector("div p").innerText = msg;
+      toast.querySelector("div p").innerHTML = msg;
       makeVisible(toast);
     }
   } else {
