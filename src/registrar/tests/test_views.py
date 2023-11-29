@@ -1219,6 +1219,8 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 
+
+class TestDomainDetail(TestDomainOverview):
     def test_domain_detail_link_works(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")
@@ -1227,7 +1229,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
 
-    def test_domain_overview_blocked_for_ineligible_user(self):
+    def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
         management pages share the same permissions class"""
@@ -1239,7 +1241,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
 
-    def test_domain_overview_allowed_for_on_hold(self):
+    def test_domain_detail_allowed_for_on_hold(self):
         """Test that the domain overview page displays for on hold domain"""
         home_page = self.app.get("/")
         self.assertContains(home_page, "on-hold.gov")
@@ -1248,7 +1250,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_on_hold.id}))
         self.assertNotContains(detail_page, "Edit")
 
-    def test_domain_see_just_nameserver(self):
+    def test_domain_detail_see_just_nameserver(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "justnameserver.com")
 
@@ -1259,7 +1261,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(detail_page, "ns1.justnameserver.com")
         self.assertContains(detail_page, "ns2.justnameserver.com")
 
-    def test_domain_see_nameserver_and_ip(self):
+    def test_domain_detail_see_nameserver_and_ip(self):
         home_page = self.app.get("/")
         self.assertContains(home_page, "nameserverwithip.gov")
 
@@ -1275,7 +1277,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.assertContains(detail_page, "(1.2.3.4,")
         self.assertContains(detail_page, "2.3.4.5)")
 
-    def test_domain_with_no_information_or_application(self):
+    def test_domain_detail_with_no_information_or_application(self):
         """Test that domain management page returns 200 and displays error
         when no domain information or domain application exist"""
         # have to use staff user for this test
@@ -1506,6 +1508,62 @@ class TestDomainNameservers(TestDomainOverview):
             status_code=200,
         )
 
+    def test_domain_nameservers_form_submit_duplicate_host(self):
+        """Nameserver form catches error when host is duplicated.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form with duplicate host names of fake.host.com
+        nameservers_page.form["form-0-ip"] = ""
+        nameservers_page.form["form-1-server"] = "fake.host.com"
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  remove duplicate entry
+        self.assertContains(
+            result,
+            str(NameserverError(code=NameserverErrorCodes.DUPLICATE_HOST)),
+            count=2,
+            status_code=200,
+        )
+
+    def test_domain_nameservers_form_submit_whitespace(self):
+        """Nameserver form removes whitespace from ip.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        nameserver1 = "ns1.igorville.gov"
+        nameserver2 = "ns2.igorville.gov"
+        valid_ip = "1.1. 1.1"
+        # initial nameservers page has one server with two ips
+        # have to throw an error in order to test that the whitespace has been stripped from ip
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form without one host and an ip with whitespace
+        nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-1-ip"] = valid_ip
+        nameservers_page.form["form-1-server"] = nameserver2
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an ip address which has been stripped of whitespace,
+        # response should be a 302 to success page
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result["Location"],
+            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+        )
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        page = result.follow()
+        # in the event of a generic nameserver error from registry error, there will be a 302
+        # with an error message displayed, so need to follow 302 and test for success message
+        self.assertContains(page, "The name servers for this domain have been updated")
+
     def test_domain_nameservers_form_submit_glue_record_not_allowed(self):
         """Nameserver form catches error when IP is present
         but host not subdomain.
@@ -1597,7 +1655,7 @@ class TestDomainNameservers(TestDomainOverview):
         """
         nameserver1 = "ns1.igorville.gov"
         nameserver2 = "ns2.igorville.gov"
-        invalid_ip = "127.0.0.1"
+        valid_ip = "127.0.0.1"
         # initial nameservers page has one server with two ips
         nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1606,7 +1664,7 @@ class TestDomainNameservers(TestDomainOverview):
         # only one has ips
         nameservers_page.form["form-0-server"] = nameserver1
         nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = invalid_ip
+        nameservers_page.form["form-1-ip"] = valid_ip
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
         # form submission was a successful post, response should be a 302
