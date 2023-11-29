@@ -617,6 +617,7 @@ class MockEppLib(TestCase):
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
+        ex_date=datetime.date(2023, 5, 25),
     )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
         "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
@@ -859,15 +860,9 @@ class MockEppLib(TestCase):
             case commands.UpdateDomain:
                 return self.mockUpdateDomainCommands(_request, cleaned)
             case commands.CreateHost:
-                return MagicMock(
-                    res_data=[self.mockDataHostChange],
-                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-                )
+                return self.mockCreateHostCommands(_request, cleaned)
             case commands.UpdateHost:
-                return MagicMock(
-                    res_data=[self.mockDataHostChange],
-                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-                )
+                return self.mockUpdateHostCommands(_request, cleaned)
             case commands.DeleteHost:
                 return MagicMock(
                     res_data=[self.mockDataHostChange],
@@ -881,6 +876,28 @@ class MockEppLib(TestCase):
                 return self.mockRenewDomainCommand(_request, cleaned)
             case _:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
+
+    def mockCreateHostCommands(self, _request, cleaned):
+        test_ws_ip = common.Ip(addr="1.1. 1.1")
+        addrs_submitted = getattr(_request, "addrs", [])
+        if test_ws_ip in addrs_submitted:
+            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
+        else:
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+
+    def mockUpdateHostCommands(self, _request, cleaned):
+        test_ws_ip = common.Ip(addr="1.1. 1.1")
+        addrs_submitted = getattr(_request, "addrs", [])
+        if test_ws_ip in addrs_submitted:
+            raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
+        else:
+            return MagicMock(
+                res_data=[self.mockDataHostChange],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
 
     def mockUpdateDomainCommands(self, _request, cleaned):
         if getattr(_request, "name", None) == "dnssec-invalid.gov":

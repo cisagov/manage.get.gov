@@ -12,6 +12,7 @@
         </a>
       </li>
 
+      {% if domain.is_editable %}
       <li class="usa-sidenav__item">
         {% url 'domain-dns' pk=domain.id as url %}
         <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}>
@@ -98,6 +99,7 @@
             Domain managers
         </a>
       </li>
+      {% endif %}
     </ul>
   </nav>
 </div>

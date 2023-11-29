@@ -21,6 +21,7 @@ jobs:
         || startsWith(github.head_ref, 'dk/')
         || startsWith(github.head_ref, 'es/')
         || startsWith(github.head_ref, 'ky/')
+        || startsWith(github.head_ref, 'backup/')
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
