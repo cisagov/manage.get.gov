@@ -44,7 +44,7 @@ s3_key_service = AppEnv().get_service(name="getgov-s3")
 if s3_key_service and s3_key_service.credentials:
     secret_s3 = s3_key_service.credentials.get
 else:
-    secret_s3 = None
+    secret_s3 = env
 # # #                          ###
 #   Values obtained externally   #
 # # #                          ###
