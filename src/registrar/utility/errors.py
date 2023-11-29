@@ -68,7 +68,8 @@ class NameserverErrorCodes(IntEnum):
         - 4 TOO_MANY_HOSTS  more than the max allowed host values
         - 5 MISSING_HOST host is missing for a nameserver
         - 6 INVALID_HOST host is invalid for a nameserver
-        - 7 BAD_DATA bad data input for nameserver
+        - 7 DUPLICATE_HOST host is a duplicate
+        - 8 BAD_DATA bad data input for nameserver
     """
 
     MISSING_IP = 1
@@ -77,7 +78,8 @@ class NameserverErrorCodes(IntEnum):
     TOO_MANY_HOSTS = 4
     MISSING_HOST = 5
     INVALID_HOST = 6
-    BAD_DATA = 7
+    DUPLICATE_HOST = 7
+    BAD_DATA = 8
 
 
 class NameserverError(Exception):
@@ -93,6 +95,7 @@ class NameserverError(Exception):
         NameserverErrorCodes.TOO_MANY_HOSTS: ("Too many hosts provided, you may not have more than 13 nameservers."),
         NameserverErrorCodes.MISSING_HOST: ("Name server must be provided to enter IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
+        NameserverErrorCodes.DUPLICATE_HOST: ("Remove duplicate entry"),
         NameserverErrorCodes.BAD_DATA: (
             "There’s something wrong with the name server information you provided. "
             "If you need help email us at help@get.gov."

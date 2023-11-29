@@ -2,6 +2,9 @@
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
+from django.utils.safestring import mark_safe
+
+from registrar.templatetags.url_helpers import public_site_url
 
 import requests
 
@@ -18,8 +21,13 @@ DOMAIN_API_MESSAGES = {
     " For example, if you want www.city.gov, you would enter “city”"
     " (without the quotes).",
     "extra_dots": "Enter the .gov domain you want without any periods.",
-    "unavailable": "That domain isn’t available. Try entering another one."
-    " Contact us if you need help coming up with a domain.",
+    # message below is considered safe; no user input can be inserted into the message
+    # body; public_site_url() function reads from local app settings and therefore safe
+    "unavailable": mark_safe(  # nosec
+        "That domain isn’t available. "
+        "<a class='usa-link' href='{}' target='_blank'>"
+        "Read more about choosing your .gov domain.</a>".format(public_site_url("domains/choosing"))
+    ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
     "error": "Error finding domain availability. Please wait a few minutes and try again. If you continue \
