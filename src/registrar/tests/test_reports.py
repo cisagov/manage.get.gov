@@ -212,6 +212,7 @@ class ExportDataTest(TestCase):
         )
 
     def tearDown(self):
+        # Dummy push - will remove
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         User.objects.all().delete()

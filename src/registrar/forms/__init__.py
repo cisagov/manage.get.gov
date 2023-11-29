@@ -5,6 +5,7 @@ from .domain import (
     DomainSecurityEmailForm,
     DomainOrgNameAddressForm,
     ContactForm,
+    AuthorizingOfficialContactForm,
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,

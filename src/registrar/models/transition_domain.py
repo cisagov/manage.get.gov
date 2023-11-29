@@ -105,6 +105,29 @@ class TransitionDomain(TimeStampedModel):
         blank=True,
         help_text="Phone",
     )
+    address_line = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Street address",
+    )
+    city = models.TextField(
+        null=True,
+        blank=True,
+        help_text="City",
+    )
+    state_territory = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        help_text="State, territory, or military post",
+    )
+    zipcode = models.CharField(
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text="Zip code",
+        db_index=True,
+    )
 
     def __str__(self):
         return f"{self.username}, {self.domain_name}"
@@ -128,4 +151,8 @@ class TransitionDomain(TimeStampedModel):
             f"last_name: {self.last_name}, \n"
             f"email: {self.email}, \n"
             f"phone: {self.phone}, \n"
+            f"address_line: {self.address_line}, \n"
+            f"city: {self.city}, \n"
+            f"state_territory: {self.state_territory}, \n"
+            f"zipcode: {self.zipcode}, \n"
         )

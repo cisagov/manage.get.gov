@@ -115,14 +115,14 @@ function inlineToast(el, id, style, msg) {
       toast.className = `usa-alert usa-alert--${style} usa-alert--slim`;
       toastBody.classList.add("usa-alert__body");
       p.classList.add("usa-alert__text");
-      p.innerText = msg;
+      p.innerHTML = msg;
       toastBody.appendChild(p);
       toast.appendChild(toastBody);
       el.parentNode.insertBefore(toast, el.nextSibling);
     } else {
       // update and show the existing message div
       toast.className = `usa-alert usa-alert--${style} usa-alert--slim`;
-      toast.querySelector("div p").innerText = msg;
+      toast.querySelector("div p").innerHTML = msg;
       makeVisible(toast);
     }
   } else {

@@ -8,6 +8,10 @@ from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
+    DsDataError,
+    DsDataErrorCodes,
+    SecurityEmailError,
+    SecurityEmailErrorCodes,
 )
 
 from ..models import Contact, DomainInformation, Domain
@@ -15,6 +19,8 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
+
+import re
 
 
 class DomainAddUserForm(forms.Form):
@@ -61,6 +67,7 @@ class DomainNameserverForm(forms.Form):
         ip = cleaned_data.get("ip", None)
         # remove ANY spaces in the ip field
         ip = ip.replace(" ", "")
+        cleaned_data["ip"] = ip
         domain = cleaned_data.get("domain", "")
 
         ip_list = self.extract_ip_list(ip)
@@ -111,8 +118,34 @@ class DomainNameserverForm(forms.Form):
                 self.add_error("ip", str(e))
 
 
+class BaseNameserverFormset(forms.BaseFormSet):
+    def clean(self):
+        """
+        Check for duplicate entries in the formset.
+        """
+        if any(self.errors):
+            # Don't bother validating the formset unless each form is valid on its own
+            return
+
+        data = []
+        duplicates = []
+
+        for form in self.forms:
+            if form.cleaned_data:
+                value = form.cleaned_data["server"]
+                if value in data:
+                    form.add_error(
+                        "server",
+                        NameserverError(code=nsErrorCodes.DUPLICATE_HOST, nameserver=value),
+                    )
+                    duplicates.append(value)
+                else:
+                    data.append(value)
+
+
 NameserverFormset = formset_factory(
     DomainNameserverForm,
+    formset=BaseNameserverFormset,
     extra=1,
     max_num=13,
     validate_max=True,
@@ -148,11 +181,51 @@ class ContactForm(forms.ModelForm):
         for field_name in self.required:
             self.fields[field_name].required = True
 
+        # Set custom error messages
+        self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}
+        self.fields["last_name"].error_messages = {"required": "Enter your last name / family name."}
+        self.fields["title"].error_messages = {
+            "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
+        }
+        self.fields["email"].error_messages = {
+            "required": "Enter your email address in the required format, like name@example.com."
+        }
+        self.fields["phone"].error_messages = {"required": "Enter your phone number."}
+
+
+class AuthorizingOfficialContactForm(ContactForm):
+    """Form for updating authorizing official contacts."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set custom error messages
+        self.fields["first_name"].error_messages = {
+            "required": "Enter the first name / given name of your authorizing official."
+        }
+        self.fields["last_name"].error_messages = {
+            "required": "Enter the last name / family name of your authorizing official."
+        }
+        self.fields["title"].error_messages = {
+            "required": "Enter the title or role your authorizing official has in your \
+            organization (e.g., Chief Information Officer)."
+        }
+        self.fields["email"].error_messages = {
+            "required": "Enter an email address in the required format, like name@example.com."
+        }
+        self.fields["phone"].error_messages = {"required": "Enter a phone number for your authorizing official."}
+
 
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
-    security_email = forms.EmailField(label="Security email", required=False)
+    security_email = forms.EmailField(
+        label="Security email",
+        required=False,
+        error_messages={
+            "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
+        },
+    )
 
 
 class DomainOrgNameAddressForm(forms.ModelForm):
@@ -228,12 +301,22 @@ class DomainDnssecForm(forms.Form):
 class DomainDsdataForm(forms.Form):
     """Form for adding or editing DNSSEC DS Data to a domain."""
 
+    def validate_hexadecimal(value):
+        """
+        Tests that string matches all hexadecimal values.
+
+        Raise validation error to display error in form
+        if invalid characters entered
+        """
+        if not re.match(r"^[0-9a-fA-F]+$", value):
+            raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
+
     key_tag = forms.IntegerField(
         required=True,
         label="Key tag",
         validators=[
-            MinValueValidator(0, message="Value must be between 0 and 65535"),
-            MaxValueValidator(65535, message="Value must be between 0 and 65535"),
+            MinValueValidator(0, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
+            MaxValueValidator(65535, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
         ],
         error_messages={"required": ("Key tag is required.")},
     )
@@ -251,14 +334,37 @@ class DomainDsdataForm(forms.Form):
         label="Digest type",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
-        error_messages={"required": ("Digest Type is required.")},
+        error_messages={"required": ("Digest type is required.")},
     )
 
     digest = forms.CharField(
         required=True,
         label="Digest",
-        error_messages={"required": ("Digest is required.")},
+        validators=[validate_hexadecimal],
+        error_messages={
+            "required": "Digest is required.",
+        },
     )
+
+    def clean(self):
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        digest_type = cleaned_data.get("digest_type", 0)
+        digest = cleaned_data.get("digest", "")
+        # validate length of digest depending on digest_type
+        if digest_type == 1 and len(digest) != 40:
+            self.add_error(
+                "digest",
+                DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA1),
+            )
+        elif digest_type == 2 and len(digest) != 64:
+            self.add_error(
+                "digest",
+                DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_SHA256),
+            )
+        return cleaned_data
 
 
 DomainDsdataFormset = formset_factory(
