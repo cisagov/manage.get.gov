@@ -33,18 +33,20 @@ env = environs.Env()
 # Get secrets from Cloud.gov user provided service, if exists
 # If not, get secrets from environment variables
 key_service = AppEnv().get_service(name="getgov-credentials")
+
+
+# Get secrets from Cloud.gov user provided s3 service, if it exists
+s3_key_service = AppEnv().get_service(name="getgov-s3")
+
 if key_service and key_service.credentials:
+    if s3_key_service and s3_key_service.credentials:
+        # Concatenate the credentials from our S3 service into our secret service
+        key_service.credentials.update(s3_key_service.credentials)
     secret = key_service.credentials.get
 else:
     secret = env
 
-# Get secrets from Cloud.gov user provided s3 service, if it exists
-# If not, get secrets from environment variables.
-s3_key_service = AppEnv().get_service(name="getgov-s3")
-if s3_key_service and s3_key_service.credentials:
-    secret_s3 = s3_key_service.credentials.get
-else:
-    secret_s3 = env
+
 # # #                          ###
 #   Values obtained externally   #
 # # #                          ###
@@ -65,10 +67,11 @@ secret_key = secret("DJANGO_SECRET_KEY")
 secret_aws_ses_key_id = secret("AWS_ACCESS_KEY_ID", None)
 secret_aws_ses_key = secret("AWS_SECRET_ACCESS_KEY", None)
 
-aws_s3_region_name = secret_s3("region", None)
-secret_aws_s3_key_id = secret_s3("access_key_id", None)
-secret_aws_s3_key = secret_s3("secret_access_key", None)
-secret_aws_s3_bucket_name = secret_s3("bucket", None)
+# TODO - allow for local env variable
+aws_s3_region_name = secret("region", None)
+secret_aws_s3_key_id = secret("access_key_id", None)
+secret_aws_s3_key = secret("secret_access_key", None)
+secret_aws_s3_bucket_name = secret("bucket", None)
 
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
