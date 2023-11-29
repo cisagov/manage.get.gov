@@ -9,6 +9,8 @@ from login_required import login_not_required
 
 from cachetools.func import ttl_cache
 
+from registrar.utility.s3_bucket import S3ClientHelper
+
 
 DOMAIN_FILE_URL = "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
 
@@ -94,21 +96,24 @@ def available(request, domain=""):
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_full(request, file_path="migrationdata/current-full.csv"):
-    return serve_file(file_path)
+    return serve_file(file_path, "current-full.csv")
 
 
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_federal(request, file_path="migrationdata/current-federal.csv"):
-    return serve_file(file_path)
+    return serve_file(file_path, "current-federal.csv")
 
 
-def serve_file(file_path):
+def serve_file(file_path, file_name):
     """Downloads a file based on a given filepath. Returns a 404 if not found."""
+    s3_client = S3ClientHelper()
     # TODO - #1403, grab from the S3 instance instead
+    # TODO - check if file exists in s3, not here
     if os.path.exists(file_path):
         # Serve the CSV file
-        response = FileResponse(open(file_path, "rb"))
+        file = s3_client.get_file(file_name)
+        response = FileResponse(file)
         return response
     else:
         return HttpResponse("File not found", status=404)
