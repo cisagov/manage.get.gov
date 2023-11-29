@@ -66,20 +66,20 @@ jobs:
       CF_PASSWORD: CF_{{ needs.variables.outputs.environment }}_PASSWORD
     steps:
       - name: Generate current-federal.csv
-        uses: 18f/cg-deploy-action@main
+        uses: cloud-gov/cg-cli-tools@main
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ needs.variables.outputs.environment }}
-          full_command: "cf run-task getgov-${{ needs.variables.outputs.environment }} --command 'python manage.py generate_current_federal_report' --name federal"
+           cf_command: "run-task getgov-${{ needs.variables.outputs.environment }} --command 'python manage.py generate_current_federal_report' --name federal"
 
       - name: Generate current-full.csv
-        uses: 18f/cg-deploy-action@main
+        uses: cloud-gov/cg-cli-tools@main
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ needs.variables.outputs.environment }}
-          full_command: "cf run-task getgov-${{ needs.variables.outputs.environment }} --command 'python manage.py generate_current_full_report' --name full"
+          cf_command: "run-task getgov-${{ needs.variables.outputs.environment }} --command 'python manage.py generate_current_full_report' --name full"
 

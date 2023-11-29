@@ -9,7 +9,7 @@ from registrar.utility.csv_export import export_domains_to_writer
 from django.core.management import call_command
 from unittest.mock import call, mock_open, patch
 from api.views import get_current_federal, get_current_full
-
+import boto3_mocking  # type: ignore
 
 class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
@@ -84,6 +84,7 @@ class CsvReportsTest(TestCase):
         error = err.exception
         self.assertEqual(str(error), "Could not find newly created file at 'migrationdata/current-full.csv'")
 
+    @boto3_mocking.patching
     def test_generate_federal_report(self):
         """Ensures that we correctly generate current-federal.csv"""
         expected_file_content = [
@@ -100,6 +101,7 @@ class CsvReportsTest(TestCase):
         # Now you can make assertions about how you expect 'file' to be used.
         content.write.assert_has_calls(expected_file_content)
 
+    @boto3_mocking.patching
     def test_generate_full_report(self):
         """Ensures that we correctly generate current-full.csv"""
         expected_file_content = [
@@ -116,7 +118,7 @@ class CsvReportsTest(TestCase):
         content = fake_open()
         # Now you can make assertions about how you expect 'file' to be used.
         content.write.assert_has_calls(expected_file_content)
-
+    
     def test_not_found_full_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
         response = self.client.get("/api/v1/get-report/current-full")
@@ -134,7 +136,8 @@ class CsvReportsTest(TestCase):
         self.assertEqual(response.status_code, 404)
         # Check that the response body contains "File not found"
         self.assertEqual(response.content.decode(), "File not found")
-
+    
+    @boto3_mocking.patching
     def test_load_federal_report(self):
         """Tests the current-federal api link"""
         request = self.factory.get("/fake-path")
@@ -152,6 +155,7 @@ class CsvReportsTest(TestCase):
 
         self.assertEqual(file_content, expected_file_content)
 
+    @boto3_mocking.patching
     def test_load_full_report(self):
         """Tests the current-federal api link"""
         request = self.factory.get("/fake-path")
