@@ -147,31 +147,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
     def test_application_multiple_applications_exist(self):
         """Test that an info message appears when user has multiple applications already"""
         # create and submit an application
-        contact = Contact.objects.create()
-        com_website, _ = Website.objects.get_or_create(website="igorville.com")
-        gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
-        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=self.user,
-            investigator=self.user,
-            organization_type=DomainApplication.OrganizationChoices.FEDERAL,
-            federal_type=DomainApplication.BranchChoices.EXECUTIVE,
-            is_election_board=False,
-            organization_name="Test",
-            address_line1="100 Main St.",
-            address_line2="APT 1A",
-            state_territory="CA",
-            zipcode="12345-6789",
-            authorizing_official=contact,
-            requested_domain=domain,
-            submitter=contact,
-            purpose="Igorville rules!",
-            anything_else="All of Igorville loves the dotgov program.",
-            is_policy_acknowledged=True,
-        )
-        application.current_websites.add(com_website)
-        application.alternative_domains.add(gov_website)
-        application.other_contacts.add(contact)
+        application = completed_application(user=self.user)
         application.submit()
         application.save()
 
