@@ -1508,6 +1508,30 @@ class TestDomainNameservers(TestDomainOverview):
             status_code=200,
         )
 
+    def test_domain_nameservers_form_submit_duplicate_host(self):
+        """Nameserver form catches error when host is duplicated.
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        # initial nameservers page has one server with two ips
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # attempt to submit the form with duplicate host names of fake.host.com
+        nameservers_page.form["form-0-ip"] = ""
+        nameservers_page.form["form-1-server"] = "fake.host.com"
+        with less_console_noise():  # swallow log warning message
+            result = nameservers_page.form.submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the required field.  remove duplicate entry
+        self.assertContains(
+            result,
+            str(NameserverError(code=NameserverErrorCodes.DUPLICATE_HOST)),
+            count=2,
+            status_code=200,
+        )
+
     def test_domain_nameservers_form_submit_whitespace(self):
         """Nameserver form removes whitespace from ip.
 
