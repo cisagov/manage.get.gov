@@ -441,3 +441,55 @@ purposes.
 
 Used by the migration scripts to trigger a prompt for deleting all table entries.  
 Useful for testing purposes, but *use with caution*
+
+## Import organization data
+During MVP, our import scripts did not populate the following fields: `address_line, city, state_territory, and zipcode` for organization address in Domain Information. This was primarily due to time constraints. Because of this, we need to run a follow-on script to load this remaining data on each `DomainInformation` object.
+
+This script is intended to run under the assumption that the [load_transition_domain](#step-1-load-transition-domains) and the [transfer_transition_domains_to_domains](#step-2-transfer-transition-domain-data-into-main-domain-tables) scripts have already been ran.
+
+##### LOCAL COMMAND
+to run this command locally, enter the following:
+```shell
+docker compose run -T app ./manage.py load_organization_data {filename_of_migration_json} --debug
+```
+* filename_of_migration_filepath_json - This is a [JSON containing a list of filenames](#step-2-obtain-json-file-for-file-locations). This same file was used in the preceeding steps, `load_transition_domain` and `transfer_transition_domains_to_domains`, however, this script only needs two fields:
+```
+{
+    "domain_additional_filename": "example.domainadditionaldatalink.adhoc.dotgov.txt",
+    "organization_adhoc_filename": "example.organization.adhoc.dotgov.txt"
+}
+```
+If you already possess the old JSON, you do not need to modify it. This script can run even if you specify multiple filepaths. It will just skip over unused ones. 
+
+**Example**
+```shell
+docker compose run -T app ./manage.py load_organization_data migrationFilepaths.json --debug
+```
+
+##### SANDBOX COMMAND
+```shell
+./manage.py load_organization_data {filename_of_migration_json} --debug
+```
+* **filename_of_migration_filepath_json** - This is a [JSON containing a list of filenames](#step-2-obtain-json-file-for-file-locations). This same file was used in the preceeding steps, `load_transition_domain` and `transfer_transition_domains_to_domains`, however, this script only needs two fields:
+```
+{
+    "domain_additional_filename": "example.domainadditionaldatalink.adhoc.dotgov.txt",
+    "organization_adhoc_filename": "example.organization.adhoc.dotgov.txt"
+}
+```
+If you already possess the old JSON, you do not need to modify it. This script can run even if you specify multiple filepaths. It will just skip over unused ones. 
+
+**Example**
+```shell
+./manage.py load_organization_data migrationFilepaths.json --debug
+```
+
+##### Optional parameters
+The `load_organization_data` script has five optional parameters. These are as follows:
+|   | Parameter                        | Description                                                                 |
+|:-:|:---------------------------------|:----------------------------------------------------------------------------|
+| 1 | **sep**                          | Determines the file separator. Defaults to "\|"                             |
+| 2 | **debug**                        | Increases logging detail. Defaults to False                                 |
+| 3 | **directory**                    | Specifies the directory containing the files that will be parsed. Defaults to "migrationdata" |
+| 4 | **domain_additional_filename**   | Specifies the filename of domain_additional. Used as an override for the JSON. Has no default. |
+| 5 | **organization_adhoc_filename**  | Specifies the filename of organization_adhoc. Used as an override for the JSON. Has no default. |

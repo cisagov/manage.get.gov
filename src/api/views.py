@@ -3,6 +3,9 @@ import os
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import FileResponse, HttpResponse, JsonResponse
+from django.utils.safestring import mark_safe
+
+from registrar.templatetags.url_helpers import public_site_url
 import requests
 
 from login_required import login_not_required
@@ -20,8 +23,13 @@ DOMAIN_API_MESSAGES = {
     " For example, if you want www.city.gov, you would enter “city”"
     " (without the quotes).",
     "extra_dots": "Enter the .gov domain you want without any periods.",
-    "unavailable": "That domain isn’t available. Try entering another one."
-    " Contact us if you need help coming up with a domain.",
+    # message below is considered safe; no user input can be inserted into the message
+    # body; public_site_url() function reads from local app settings and therefore safe
+    "unavailable": mark_safe(  # nosec
+        "That domain isn’t available. "
+        "<a class='usa-link' href='{}' target='_blank'>"
+        "Read more about choosing your .gov domain.</a>".format(public_site_url("domains/choosing"))
+    ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
     "error": "Error finding domain availability.",
@@ -96,12 +104,18 @@ def available(request, domain=""):
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_full(request, file_path="migrationdata/current-full.csv"):
+    """This will return the file content of current-full.csv which is the command
+    output of generate_current_full_report.py. This command iterates through each Domain
+    and returns a CSV representation."""
     return serve_file(file_path, "current-full.csv")
 
 
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_federal(request, file_path="migrationdata/current-federal.csv"):
+    """This will return the file content of current-federal.csv which is the command
+    output of generate_current_federal_report.py. This command iterates through each Domain
+    and returns a CSV representation."""
     return serve_file(file_path, "current-federal.csv")
 
 
