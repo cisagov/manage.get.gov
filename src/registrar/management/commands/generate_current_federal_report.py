@@ -4,6 +4,7 @@ import os
 
 from django.core.management import BaseCommand
 from registrar.utility import csv_export
+from registrar.utility.s3_bucket import S3ClientHelper
 
 
 logger = logging.getLogger(__name__)
@@ -23,20 +24,32 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         """Grabs the directory then creates current-federal.csv in that directory"""
+        file_name = "current-federal.csv"
         # Ensures a slash is added
         directory = os.path.join(options.get("directory"), "")
         check_path = options.get("checkpath")
+
         logger.info("Generating report...")
+        try:
+            self.generate_current_federal_report(directory, file_name, check_path)
+        except Exception as err:
+            # TODO - #1317: Notify operations when auto report generation fails
+            raise err
+        else:
+            logger.info(f"Success! Created {file_name}")
 
-        self.generate_current_federal_report(directory, check_path)
-        logger.info(f"Success! Created {directory}current-federal.csv")
-
-    def generate_current_federal_report(self, directory, check_path):
-        """Creates a current-full.csv file under the specified directory"""
-        # TODO - #1403, push to the S3 instance instead
-        file_path = os.path.join(directory, "current-federal.csv")
+    def generate_current_federal_report(self, directory, file_name, check_path):
+        """Creates a current-full.csv file under the specified directory, 
+        then uploads it to a AWS S3 bucket"""
+        s3_client = S3ClientHelper()
+        file_path = os.path.join(directory, file_name)
+        
+        # Generate a file locally for upload
         with open(file_path, "w") as file:
             csv_export.export_data_federal_to_csv(file)
 
         if check_path and not os.path.exists(file_path):
             raise FileNotFoundError(f"Could not find newly created file at '{file_path}'")
+
+        # Upload this generated file for our S3 instance        
+        s3_client.upload_file(file_path, file_name)

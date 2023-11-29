@@ -58,6 +58,11 @@ secret_key = secret("DJANGO_SECRET_KEY")
 secret_aws_ses_key_id = secret("AWS_ACCESS_KEY_ID", None)
 secret_aws_ses_key = secret("AWS_SECRET_ACCESS_KEY", None)
 
+aws_s3_region_name = secret("AWS_S3_ACCESS_KEY_ID", None)
+secret_aws_s3_key_id = secret("AWS_S3_SECRET_ACCESS_KEY", None)
+secret_aws_s3_key = secret("AWS_S3_REGION", None)
+secret_aws_s3_bucket_name = secret("AWS_S3_BUCKET_NAME", None)
+
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
 secret_registry_cert = b64decode(secret("REGISTRY_CERT", ""))
@@ -257,6 +262,13 @@ AUTH_USER_MODEL = "registrar.User"
 AWS_ACCESS_KEY_ID = secret_aws_ses_key_id
 AWS_SECRET_ACCESS_KEY = secret_aws_ses_key
 AWS_REGION = "us-gov-west-1"
+
+# Configuration for accessing AWS S3
+AWS_S3_ACCESS_KEY_ID = secret_aws_s3_key_id
+AWS_S3_SECRET_ACCESS_KEY = secret_aws_s3_key
+AWS_S3_REGION = aws_s3_region_name
+AWS_S3_BUCKET_NAME = secret_aws_s3_bucket_name
+
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html#standard-retry-mode
 AWS_RETRY_MODE: Final = "standard"
 # base 2 exponential backoff with max of 20 seconds:

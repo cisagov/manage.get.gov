@@ -28,23 +28,29 @@ class Command(BaseCommand):
         # Ensures a slash is added
         directory = os.path.join(options.get("directory"), "")
         check_path = options.get("checkpath")
+
         logger.info("Generating report...")
-
-        self.generate_current_full_report(directory, file_name, check_path)
-
-        file_path = os.path.join(directory, file_name)
-        logger.info(f"Success! Created {file_path}")
+        try:
+            self.generate_current_full_report(directory, file_name, check_path)
+        except Exception as err:
+            # TODO - #1317: Notify operations when auto report generation fails
+            raise err
+        else:
+            logger.info(f"Success! Created {file_name}")
 
     def generate_current_full_report(self, directory, file_name, check_path):
-        """Creates a current-full.csv file under the specified directory"""
+        """Creates a current-full.csv file under the specified directory, 
+        then uploads it to a AWS S3 bucket"""
         s3_client = S3ClientHelper()
-        # TODO - #1403, push to the S3 instance instead
         file_path = os.path.join(directory, file_name)
-        # TODO - Don't genererate a useless file
+        
+        # Generate a file locally for upload
         with open(file_path, "w") as file:
             csv_export.export_data_full_to_csv(file)
 
         if check_path and not os.path.exists(file_path):
             raise FileNotFoundError(f"Could not find newly created file at '{file_path}'")
-        
+
+        # Upload this generated file for our S3 instance        
         s3_client.upload_file(file_path, file_name)
+
