@@ -38,6 +38,13 @@ if key_service and key_service.credentials:
 else:
     secret = env
 
+# Get secrets from Cloud.gov user provided s3 service, if exists
+# If not, get secrets from environment variables.
+s3_key_service = AppEnv().get_service(name="getgov-s3")
+if s3_key_service and s3_key_service.credentials:
+    secret_s3 = s3_key_service.credentials.get
+else:
+    secret_s3 = None
 # # #                          ###
 #   Values obtained externally   #
 # # #                          ###
@@ -58,10 +65,10 @@ secret_key = secret("DJANGO_SECRET_KEY")
 secret_aws_ses_key_id = secret("AWS_ACCESS_KEY_ID", None)
 secret_aws_ses_key = secret("AWS_SECRET_ACCESS_KEY", None)
 
-aws_s3_region_name = secret("AWS_S3_ACCESS_KEY_ID", None)
-secret_aws_s3_key_id = secret("AWS_S3_SECRET_ACCESS_KEY", None)
-secret_aws_s3_key = secret("AWS_S3_REGION", None)
-secret_aws_s3_bucket_name = secret("AWS_S3_BUCKET_NAME", None)
+aws_s3_region_name = secret_s3("region", None)
+secret_aws_s3_key_id = secret_s3("access_key_id", None)
+secret_aws_s3_key = secret_s3("secret_access_key", None)
+secret_aws_s3_bucket_name = secret_s3("bucket", None)
 
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
@@ -269,7 +276,7 @@ AWS_S3_SECRET_ACCESS_KEY = secret_aws_s3_key
 AWS_S3_REGION = aws_s3_region_name
 AWS_S3_BUCKET_NAME = secret_aws_s3_bucket_name
 
-# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html#standard-retry-mode
+# https://boto3.amazonaws.com/v1/documentation/latest/guide/retries.html#standard-retry-mode
 AWS_RETRY_MODE: Final = "standard"
 # base 2 exponential backoff with max of 20 seconds:
 AWS_MAX_ATTEMPTS = 3
