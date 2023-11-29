@@ -112,7 +112,7 @@ base64 -i client.key
 base64 -i client.crt
 ```
 
-You'll need to give the new certificate to the registry vendor _before_ rotating it in production. Once it has been accepted by the vender, make sure to update the kdbx file on Google Drive.
+You'll need to give the new certificate to the registry vendor _before_ rotating it in production. Once it has been accepted by the vendor, make sure to update the kdbx file on Google Drive.
 
 ## REGISTRY_HOSTNAME
 
