@@ -620,7 +620,7 @@ class NoOtherContactsForm(RegistrarForm):
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
         required=False,
-        label="Anything else we should know?",
+        label="Anything else?",
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(

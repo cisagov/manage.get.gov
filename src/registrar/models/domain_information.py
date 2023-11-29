@@ -190,7 +190,7 @@ class DomainInformation(TimeStampedModel):
     anything_else = models.TextField(
         null=True,
         blank=True,
-        help_text="Anything else we should know?",
+        help_text="Anything else?",
     )
 
     is_policy_acknowledged = models.BooleanField(

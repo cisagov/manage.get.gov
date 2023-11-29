@@ -85,7 +85,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
         Step.NO_OTHER_CONTACTS: _("No other employees from your organization?"),
-        Step.ANYTHING_ELSE: _("Anything else we should know?"),
+        Step.ANYTHING_ELSE: _("Anything else?"),
         Step.REQUIREMENTS: _("Requirements for operating .gov domains"),
         Step.REVIEW: _("Review and submit your domain request"),
     }
