@@ -949,7 +949,7 @@ class DomainAdmin(ListHeaderAdmin):
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin):
-    """Custom domain role admin class."""
+    """Custom user domain role admin class."""
 
     # Columns
     list_display = [
