@@ -321,6 +321,28 @@ class WebsiteAdmin(ListHeaderAdmin):
     search_help_text = "Search by website."
 
 
+class UserDomainRoleAdmin(ListHeaderAdmin):
+    """Custom user domain role admin class."""
+
+    # Columns
+    list_display = [
+        "user",
+        "domain",
+        "role",
+    ]
+
+    # Search
+    search_fields = [
+        "user__first_name",
+        "user__last_name",
+        "domain__name",
+        "role",
+    ]
+    search_help_text = "Search by user, domain, or role."
+
+    autocomplete_fields = ["user", "domain"]
+
+
 class DomainInvitationAdmin(ListHeaderAdmin):
     """Custom domain invitation admin class."""
 
@@ -948,28 +970,6 @@ class DomainAdmin(ListHeaderAdmin):
         return super().has_change_permission(request, obj)
 
 
-class UserDomainRoleAdmin(ListHeaderAdmin):
-    """Custom user domain role admin class."""
-
-    # Columns
-    list_display = [
-        "user",
-        "domain",
-        "role",
-    ]
-
-    # Search
-    search_fields = [
-        "user__first_name",
-        "user__last_name",
-        "domain__name",
-        "role",
-    ]
-    search_help_text = "Search by user, domain, or role."
-
-    autocomplete_fields = ["user", "domain"]
-
-
 class DraftDomainAdmin(ListHeaderAdmin):
     """Custom draft domain admin class."""
 
@@ -985,10 +985,10 @@ admin.site.unregister(Group)
 # Register UserGroup
 admin.site.register(models.UserGroup)
 admin.site.register(models.Domain, DomainAdmin)
-admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
+admin.site.register(models.UserDomainRole, UserDomainRoleAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Nameserver, MyHostAdmin)
