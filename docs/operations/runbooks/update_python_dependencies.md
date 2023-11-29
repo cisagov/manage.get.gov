@@ -3,7 +3,7 @@
 
 1. Check the [Pipfile](../../../src/Pipfile) for pinned dependencies and manually adjust the version numbers
 
-1. Run
+2. Run
 
         cd src
         docker-compose run app bash -c "pipenv lock && pipenv requirements > requirements.txt"
@@ -14,6 +14,6 @@
 
     The requirements.txt is used by Cloud.gov. It is needed to work around a bug in the CloudFoundry buildpack version of Pipenv that breaks on installing from a git repository.
 
-1. (optional) Run `docker-compose stop` and `docker-compose build` to build a new image for local development with the updated dependencies.
+3. (optional) Run `docker-compose stop` and `docker-compose build` to build a new image for local development with the updated dependencies.
 
     The reason for de-coupling the `build` and `lock` steps is to increase consistency between builds--a run of `build` will always get exactly the dependencies listed in `Pipfile.lock`, nothing more, nothing less.

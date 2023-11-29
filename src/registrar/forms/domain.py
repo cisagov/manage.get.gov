@@ -67,6 +67,7 @@ class DomainNameserverForm(forms.Form):
         ip = cleaned_data.get("ip", None)
         # remove ANY spaces in the ip field
         ip = ip.replace(" ", "")
+        cleaned_data["ip"] = ip
         domain = cleaned_data.get("domain", "")
 
         ip_list = self.extract_ip_list(ip)
@@ -117,8 +118,34 @@ class DomainNameserverForm(forms.Form):
                 self.add_error("ip", str(e))
 
 
+class BaseNameserverFormset(forms.BaseFormSet):
+    def clean(self):
+        """
+        Check for duplicate entries in the formset.
+        """
+        if any(self.errors):
+            # Don't bother validating the formset unless each form is valid on its own
+            return
+
+        data = []
+        duplicates = []
+
+        for form in self.forms:
+            if form.cleaned_data:
+                value = form.cleaned_data["server"]
+                if value in data:
+                    form.add_error(
+                        "server",
+                        NameserverError(code=nsErrorCodes.DUPLICATE_HOST, nameserver=value),
+                    )
+                    duplicates.append(value)
+                else:
+                    data.append(value)
+
+
 NameserverFormset = formset_factory(
     DomainNameserverForm,
+    formset=BaseNameserverFormset,
     extra=1,
     max_num=13,
     validate_max=True,
