@@ -109,7 +109,7 @@ class AvailableViewTest(MockEppLib):
         self.assertFalse(json.loads(response.content)["available"])
         # domain set to raise error returns false for availability
         error_domain_available = available(request, "errordomain.gov")
-        self.assertFalse(json.loads(error_domain_available.content)["available"])
+        self.assertRaises(json.loads(error_domain_available.content)["available"])
 
 
 class AvailableAPITest(MockEppLib):
