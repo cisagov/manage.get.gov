@@ -38,7 +38,7 @@ if key_service and key_service.credentials:
 else:
     secret = env
 
-# Get secrets from Cloud.gov user provided s3 service, if exists
+# Get secrets from Cloud.gov user provided s3 service, if it exists
 # If not, get secrets from environment variables.
 s3_key_service = AppEnv().get_service(name="getgov-s3")
 if s3_key_service and s3_key_service.credentials:
