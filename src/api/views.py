@@ -102,12 +102,18 @@ def available(request, domain=""):
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_full(request, file_path="migrationdata/current-full.csv"):
+    """This will return the file content of current-full.csv which is the command
+    output of generate_current_full_report.py. This command iterates through each Domain
+    and returns a CSV representation."""
     return serve_file(file_path)
 
 
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_federal(request, file_path="migrationdata/current-federal.csv"):
+    """This will return the file content of current-federal.csv which is the command
+    output of generate_current_federal_report.py. This command iterates through each Domain
+    and returns a CSV representation."""
     return serve_file(file_path)
 
 
