@@ -325,7 +325,8 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
     """Custom domain role admin class."""
 
     class Meta:
-        model = models.DomainInvitation
+        """Contains meta information about this class"""
+        model = models.UserDomainRole
         fields = "__all__"
 
     _meta = Meta()
