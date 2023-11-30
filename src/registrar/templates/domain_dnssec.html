@@ -40,9 +40,9 @@
     >
     {% else %}
     <div id="enable-dnssec">
-      <div class="usa-alert usa-alert--info usa-alert--slim">
+      <div class="usa-alert usa-alert--info">
         <div class="usa-alert__body">
-          It is strongly recommended that you only enable DNSSEC if you know how to set it up properly at your hosting service. If you make a mistake, it could cause your domain name to stop working.
+          <p>It is strongly recommended that you only enable DNSSEC if you know how to set it up properly at your hosting service. If you make a mistake, it could cause your domain name to stop working.</p>
         </div>
       </div>
       <a href="{% url 'domain-dns-dnssec-dsdata' pk=domain.id %}" class="usa-button">Enable DNSSEC</a>

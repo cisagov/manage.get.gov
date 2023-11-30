@@ -22,6 +22,14 @@
           {% include "includes/form_messages.html" %}
 {% endblock %}
 
+{% if pending_requests_message %}
+<div class="usa-alert usa-alert--info margin-bottom-2">
+  <div class="usa-alert__body">
+    {{ pending_requests_message }}
+  </div>
+</div>
+{% endif %}
+
 {% block form_errors %}
         {% comment %}
            to make sense of this loop, consider that 

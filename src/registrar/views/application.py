@@ -221,18 +221,19 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         context["forms"] = self.get_forms()
 
         # if pending requests exist and user does not have approved domains,
-        #     present message that domain application cannot be submitted
+        # present message that domain application cannot be submitted
         pending_requests = self.pending_requests()
         if len(pending_requests) > 0:
             message_header = "You cannot submit this request yet"
             message_content = (
-                f"<h4 class='usa-alert__heading'>{message_header}</h4>"
+                f"<h4 class='usa-alert__heading'>{message_header}</h4> "
                 "<p class='margin-bottom-0'>New domain requests cannot be submitted until we have finished "
                 f"reviewing your pending request: <strong>{pending_requests[0].requested_domain}</strong>. "
                 "You can continue to fill out this request and save it as a draft to be submitted later. "
                 f"<a class='usa-link' href='{reverse('home')}'>View your pending requests.</a></p>"
             )
-            messages.info(request, mark_safe(message_content))  # nosec
+            context["pending_requests_message"] = mark_safe(message_content)  # nosec
+
         context["pending_requests_exist"] = len(pending_requests) > 0
 
         return render(request, self.template_name, context)
