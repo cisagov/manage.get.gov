@@ -67,14 +67,12 @@ def check_domain_available(domain):
     a match.
     """
     Domain = apps.get_model("registrar.Domain")
-    try:
-        if domain.endswith(".gov"):
-            return Domain.available(domain)
-        else:
-            # domain search string doesn't end with .gov, add it on here
-            return Domain.available(domain + ".gov")
-    except Exception as err:
-        raise err
+    if domain.endswith(".gov"):
+        return Domain.available(domain)
+    else:
+        # domain search string doesn't end with .gov, add it on here
+        return Domain.available(domain + ".gov")
+
 
 
 @require_http_methods(["GET"])
