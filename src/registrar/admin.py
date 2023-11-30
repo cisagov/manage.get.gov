@@ -324,6 +324,12 @@ class WebsiteAdmin(ListHeaderAdmin):
 class UserDomainRoleAdmin(ListHeaderAdmin):
     """Custom domain role admin class."""
 
+    class Meta:
+        model = models.DomainInvitation
+        fields = "__all__"
+
+    _meta = Meta()
+
     # Columns
     list_display = [
         "user",
