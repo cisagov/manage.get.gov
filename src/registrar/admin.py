@@ -455,7 +455,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "is_policy_acknowledged",
     ]
 
-    filter_horizontal = ('other_contacts',)
+    filter_horizontal = ("other_contacts",)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -593,13 +593,13 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "is_policy_acknowledged",
     ]
 
-    filter_horizontal = ('current_websites', 'alternative_domains')
+    filter_horizontal = ("current_websites", "alternative_domains")
 
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name in ("current_websites", "alternative_domains"):
-            kwargs["queryset"] = models.Website.objects.all().order_by('website')  # Sort websites
+            kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
@@ -730,6 +730,7 @@ class DomainInformationInline(admin.StackedInline):
 
     fieldsets = DomainInformationAdmin.fieldsets
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
+    filter_horizontal = ("other_contacts",)
 
     def get_readonly_fields(self, request, obj=None):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
@@ -760,7 +761,7 @@ class DomainAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/domain_change_form.html"
     change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state", "expiration_date"]
-    
+
     def export_data_type(self, request):
         # match the CSV example with all the fields
         response = HttpResponse(content_type="text/csv")
