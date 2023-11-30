@@ -322,7 +322,7 @@ class WebsiteAdmin(ListHeaderAdmin):
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin):
-    """Custom domain role admin class."""
+    """Custom user domain role admin class."""
 
     # Columns
     list_display = [
@@ -339,6 +339,8 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "role",
     ]
     search_help_text = "Search by user, domain, or role."
+
+    autocomplete_fields = ["user", "domain"]
 
 
 class DomainInvitationAdmin(ListHeaderAdmin):
