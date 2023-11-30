@@ -67,11 +67,11 @@ secret_key = secret("DJANGO_SECRET_KEY")
 secret_aws_ses_key_id = secret("AWS_ACCESS_KEY_ID", None)
 secret_aws_ses_key = secret("AWS_SECRET_ACCESS_KEY", None)
 
-# TODO - allow for local env variable
-aws_s3_region_name = secret("region", None)
-secret_aws_s3_key_id = secret("access_key_id", None)
-secret_aws_s3_key = secret("secret_access_key", None)
-secret_aws_s3_bucket_name = secret("bucket", None)
+# These keys are present in a getgov-s3 instance, or they can be defined locally
+aws_s3_region_name = secret("region", None) or secret("AWS_S3_REGION", None)
+secret_aws_s3_key_id = secret("access_key_id", None) or secret("AWS_S3_ACCESS_KEY_ID", None)
+secret_aws_s3_key = secret("secret_access_key", None) or secret("AWS_S3_SECRET_ACCESS_KEY", None)
+secret_aws_s3_bucket_name = secret("bucket", None) or secret("AWS_S3_BUCKET_NAME", None)
 
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
