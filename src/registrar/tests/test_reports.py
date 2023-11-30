@@ -1,4 +1,5 @@
 import csv
+import io
 from django.test import Client, RequestFactory, TestCase
 from io import StringIO
 from registrar.models.domain_information import DomainInformation
@@ -11,7 +12,8 @@ from unittest.mock import MagicMock, call, mock_open, patch
 from api.views import get_current_federal, get_current_full
 from django.conf import settings
 from botocore.exceptions import ClientError
-import boto3_mocking  # type: ignore
+import boto3_mocking
+from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 
 class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
@@ -124,75 +126,114 @@ class CsvReportsTest(TestCase):
     @boto3_mocking.patching
     def test_not_found_full_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
-        def side_effect(fake):
+        def side_effect(Bucket, Key):
             raise ClientError({"Error": {"Code": "NoSuchKey", "Message": "No such key"}}, "get_object")
         mock_client = MagicMock()
-        mock_client_instance = mock_client.return_value
         mock_client.get_object.side_effect = side_effect
-        with patch('boto3.client', return_value=mock_client):
-            with self.assertRaises(ClientError) as context:
-                with boto3_mocking.clients.handler_for("s3", mock_client):
-                    response = self.client.get("/api/v1/get-report/current-full")
 
-        expected_call = [
-            call.get_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key='current-full.csv')
-        ]
-        mock_client_instance.assert_has_calls(expected_call)
-        mock_client_instance.get_object.side_effect = Exception("An error occurred")
-        print("look")
-        print(response.content.decode())
-        # Check that the response has status code 404
-        self.assertEqual(response.status_code, 404)
-        # Check that the response body contains "File not found"
-        self.assertEqual(response.content.decode(), "File not found")
+        response = None
+        with boto3_mocking.clients.handler_for("s3", mock_client):
+            with patch('boto3.client', return_value=mock_client):
+                with self.assertRaises(S3ClientError) as context:
+                    response = self.client.get("/api/v1/get-report/current-full")
+                    # Check that the response has status code 500
+                    self.assertEqual(response.status_code, 500)
+
+        # Check that we get the right error back from the page
+        self.assertEqual(context.exception.code, S3ClientErrorCodes.FILE_NOT_FOUND_ERROR)
+
 
     @boto3_mocking.patching
     def test_not_found_federal_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
-        response = self.client.get("/api/v1/get-report/current-federal")
+        def side_effect(Bucket, Key):
+            raise ClientError({"Error": {"Code": "NoSuchKey", "Message": "No such key"}}, "get_object")
+        mock_client = MagicMock()
+        mock_client.get_object.side_effect = side_effect
+    
+        with boto3_mocking.clients.handler_for("s3", mock_client):
+            with patch('boto3.client', return_value=mock_client):
+                with self.assertRaises(S3ClientError) as context:
+                    response = self.client.get("/api/v1/get-report/current-federal")
+                    # Check that the response has status code 500
+                    self.assertEqual(response.status_code, 500)
 
-        # Check that the response has status code 404
-        self.assertEqual(response.status_code, 404)
-        # Check that the response body contains "File not found"
-        self.assertEqual(response.content.decode(), "File not found")
+        # Check that we get the right error back from the page
+        self.assertEqual(context.exception.code, S3ClientErrorCodes.FILE_NOT_FOUND_ERROR)
     
     @boto3_mocking.patching
     def test_load_federal_report(self):
-        """Tests the current-federal api link"""
-        if not boto3_mocking.patching_engaged():
-            raise Exception("test123")
-        request = self.factory.get("/fake-path")
-        response = get_current_federal(request, file_path="registrar/tests/data/fake_current_federal.csv")
+        """Tests the get_current_federal api endpoint"""
+        self.maxDiff = None
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with open("registrar/tests/data/fake_current_federal.csv", "r") as file:
+            file_content = file.read()
+
+        # Mock a recieved file
+        mock_client_instance.get_object.return_value = {
+            'Body': io.BytesIO(file_content.encode())
+        }
+        with boto3_mocking.clients.handler_for("s3", mock_client):
+            request = self.factory.get("/fake-path")
+            response = get_current_federal(request)
+    
+        # Check that we are sending the correct calls. 
+        # Ensures that we are decoding the file content recieved from AWS.
+        expected_call = [
+            call.get_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key='current-federal.csv')
+        ]
+        mock_client_instance.assert_has_calls(expected_call)
+
         # Check that the response has status code 200
         self.assertEqual(response.status_code, 200)
-        # Check that the response contains what we expect
-        file_content = b"".join(response.streaming_content).decode("utf-8")
 
+        # Check that the response contains what we expect
         expected_file_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
-        )
+        ).encode()
 
-        self.assertEqual(file_content, expected_file_content)
+        self.assertEqual(expected_file_content, response.content)
 
     @boto3_mocking.patching
     def test_load_full_report(self):
         """Tests the current-federal api link"""
-        request = self.factory.get("/fake-path")
-        response = get_current_full(request, file_path="registrar/tests/data/fake_current_full.csv")
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with open("registrar/tests/data/fake_current_full.csv", "r") as file:
+            file_content = file.read()
+
+        # Mock a recieved file
+        mock_client_instance.get_object.return_value = {
+            'Body': io.BytesIO(file_content.encode())
+        }
+        with boto3_mocking.clients.handler_for("s3", mock_client):
+            request = self.factory.get("/fake-path")
+            response = get_current_federal(request)
+    
+        # Check that we are sending the correct calls. 
+        # Ensures that we are decoding the file content recieved from AWS.
+        expected_call = [
+            call.get_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key='current-federal.csv')
+        ]
+        mock_client_instance.assert_has_calls(expected_call)
+
         # Check that the response has status code 200
         self.assertEqual(response.status_code, 200)
+
         # Check that the response contains what we expect
-        file_content = b"".join(response.streaming_content).decode("utf-8")
         expected_file_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\n"
             "adomain2.gov,Interstate,,,,,"
-        )
+        ).encode()
 
-        self.assertEqual(file_content, expected_file_content)
+        self.assertEqual(expected_file_content, response.content)
 
 
 class ExportDataTest(TestCase):
