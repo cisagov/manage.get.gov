@@ -116,8 +116,11 @@ class AvailableViewTest(MockEppLib):
         # domain set to raise error returns false for availability and error message
         error_domain_response = available(request, domain="errordomain.gov")
         self.assertFalse(json.loads(error_domain_response.content)["available"])
-        self.assertEqual(GenericError._error_mapping[GenericErrorCodes.CANNOT_CONTACT_REGISTRY], 
-        json.loads(error_domain_response.content)["message"])
+        self.assertEqual(
+            GenericError._error_mapping[GenericErrorCodes.CANNOT_CONTACT_REGISTRY],
+            json.loads(error_domain_response.content)["message"],
+        )
+
 
 class AvailableAPITest(MockEppLib):
 

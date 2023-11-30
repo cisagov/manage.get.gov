@@ -74,7 +74,6 @@ def check_domain_available(domain):
         return Domain.available(domain + ".gov")
 
 
-
 @require_http_methods(["GET"])
 @login_not_required
 def available(request, domain=""):
