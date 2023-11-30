@@ -9,6 +9,8 @@ from registrar.utility.csv_export import export_domains_to_writer
 from django.core.management import call_command
 from unittest.mock import MagicMock, call, mock_open, patch
 from api.views import get_current_federal, get_current_full
+from django.conf import settings
+from botocore.exceptions import ClientError
 import boto3_mocking  # type: ignore
 
 class CsvReportsTest(TestCase):
@@ -122,13 +124,23 @@ class CsvReportsTest(TestCase):
     @boto3_mocking.patching
     def test_not_found_full_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
+        def side_effect(fake):
+            raise ClientError({"Error": {"Code": "NoSuchKey", "Message": "No such key"}}, "get_object")
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
-        with boto3_mocking.clients.handler_for("s3", mock_client):
-            response = self.client.get("/api/v1/get-report/current-full")
+        mock_client.get_object.side_effect = side_effect
+        with patch('boto3.client', return_value=mock_client):
+            with self.assertRaises(ClientError) as context:
+                with boto3_mocking.clients.handler_for("s3", mock_client):
+                    response = self.client.get("/api/v1/get-report/current-full")
 
-        call_args = mock_client_instance
-        args, kwargs = call_args
+        expected_call = [
+            call.get_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key='current-full.csv')
+        ]
+        mock_client_instance.assert_has_calls(expected_call)
+        mock_client_instance.get_object.side_effect = Exception("An error occurred")
+        print("look")
+        print(response.content.decode())
         # Check that the response has status code 404
         self.assertEqual(response.status_code, 404)
         # Check that the response body contains "File not found"
