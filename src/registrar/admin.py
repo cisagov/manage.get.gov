@@ -326,6 +326,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
 
     class Meta:
         """Contains meta information about this class"""
+
         model = models.UserDomainRole
         fields = "__all__"
 
