@@ -347,7 +347,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "domain__name",
         "role",
     ]
-    search_help_text = "Search by user, email, domain, or role."
+    search_help_text = "Search by firstname, lastname, email, domain, or role."
 
 
 class DomainInvitationAdmin(ListHeaderAdmin):
