@@ -223,7 +223,7 @@ class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
     security_email = forms.EmailField(
-        label="Security email",
+        label="Security email (optional)",
         required=False,
         error_messages={
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
