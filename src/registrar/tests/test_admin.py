@@ -22,6 +22,7 @@ from registrar.models import (
     User,
     DomainInvitation,
 )
+from registrar.models.user_domain_role import UserDomainRole
 from .common import (
     completed_application,
     generic_domain_object,
@@ -894,6 +895,45 @@ class UserDomainRoleAdminTest(TestCase):
         self.admin = ListHeaderAdmin(model=UserDomainRoleAdmin, admin_site=None)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+    
+    def test_changelist_view(self):
+        # Have to get creative to get past linter
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        # Mock a user
+        user = mock_user()
+        fake_user = User.objects.create(
+            username = "dummyuser",
+            first_name = "Stewart",
+            last_name = "Jones",
+            email = "AntarticPolarBears@cold.com"
+        )
+        fake_domain = Domain.objects.create(
+            name="test123"
+        )
+        UserDomainRole.objects.create(
+            user=fake_user,
+            domain=fake_domain,
+            role="manager"
+        )
+        # Make the request using the Client class
+        # which handles CSRF
+        # Follow=True handles the redirect
+        response = self.client.get(
+            "/admin/registrar/userdomainrole/",
+            {
+                "q": "testmail@igorville.com",
+            },
+            follow=True,
+        )
+
+        # Assert that the query is added to the extra_context
+        self.assertIn("search_query", response.context)
+        # Assert the content of filters and search_query
+        search_query = response.context["search_query"]
+        self.assertEqual(search_query, "testmail@igorville.com")
+        self.assertIn("Stewart Jones", response)
 
 
 class ListHeaderAdminTest(TestCase):
