@@ -7,7 +7,7 @@ from registrar.models.user import User
 from django.contrib.auth import get_user_model
 from registrar.utility.csv_export import export_domains_to_writer
 from django.core.management import call_command
-from unittest.mock import call, mock_open, patch
+from unittest.mock import MagicMock, call, mock_open, patch
 from api.views import get_current_federal, get_current_full
 import boto3_mocking  # type: ignore
 
@@ -73,7 +73,7 @@ class CsvReportsTest(TestCase):
             call_command("generate_current_federal_report")
         error = err.exception
         self.assertEqual(str(error), "Could not find newly created file at 'migrationdata/current-federal.csv'")
-
+    
     def test_create_failed_full(self):
         """Ensures that we return an error when we cannot find our created file"""
         fake_open = mock_open()
@@ -119,15 +119,22 @@ class CsvReportsTest(TestCase):
         # Now you can make assertions about how you expect 'file' to be used.
         content.write.assert_has_calls(expected_file_content)
     
+    @boto3_mocking.patching
     def test_not_found_full_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
-        response = self.client.get("/api/v1/get-report/current-full")
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+        with boto3_mocking.clients.handler_for("s3", mock_client):
+            response = self.client.get("/api/v1/get-report/current-full")
 
+        call_args = mock_client_instance
+        args, kwargs = call_args
         # Check that the response has status code 404
         self.assertEqual(response.status_code, 404)
         # Check that the response body contains "File not found"
         self.assertEqual(response.content.decode(), "File not found")
 
+    @boto3_mocking.patching
     def test_not_found_federal_report(self):
         """Ensures that we get a not found when the report doesn't exist"""
         response = self.client.get("/api/v1/get-report/current-federal")
@@ -140,6 +147,8 @@ class CsvReportsTest(TestCase):
     @boto3_mocking.patching
     def test_load_federal_report(self):
         """Tests the current-federal api link"""
+        if not boto3_mocking.patching_engaged():
+            raise Exception("test123")
         request = self.factory.get("/fake-path")
         response = get_current_federal(request, file_path="registrar/tests/data/fake_current_federal.csv")
         # Check that the response has status code 200

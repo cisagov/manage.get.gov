@@ -23,19 +23,11 @@ class S3ClientHelper:
                 config=settings.BOTO_CONFIG,
             )
         except Exception as exc:
-            raise S3ClientError("Could not access the S3 client.") from exc
+            raise S3ClientError("Could not access the S3 client") from exc
 
     def get_bucket_name(self):
         """Gets the name of our S3 Bucket"""
         return settings.AWS_S3_BUCKET_NAME
-
-    def list_objects(self):
-        """Returns a list of the top 1000 objects within our S3 instance"""
-        try:
-            response = self.boto_client.list_objects_v2(Bucket=self.get_bucket_name())
-        except Exception as exc:
-            raise S3ClientError("Couldn't list objects") from exc
-        return response
 
     def upload_file(self, file_path, file_name):
         """Uploads a file to our S3 instance"""
@@ -53,6 +45,7 @@ class S3ClientHelper:
             raise S3ClientError("File was not found") from exc
         except Exception as exc:
             raise S3ClientError("Couldn't get file, an unspecified error occured") from exc
+
         file_content = response["Body"].read()
         if decode_to_utf:
             return file_content.decode("utf-8")

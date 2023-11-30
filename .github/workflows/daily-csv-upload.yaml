@@ -32,7 +32,7 @@ on:
 jobs:
   variables: 
     outputs:
-      environment: ${{ steps.var.outputs.environment }}
+      environment: 'za'
     runs-on: "ubuntu-latest"
     steps:
       - name: Setting global variables
