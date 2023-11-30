@@ -101,15 +101,17 @@ class AvailableViewTest(MockEppLib):
         self.assertTrue(json.loads(response.content)["available"])
 
     def test_error_handling(self):
-        """Calling with bad strings raises an error."""
+        """Calling with bad strings returns error (error verifying) or unavailable (invalid domain)."""
         bad_string = "blah!;"
         request = self.factory.get(API_BASE_PATH + bad_string)
         request.user = self.user
         response = available(request, domain=bad_string)
         self.assertFalse(json.loads(response.content)["available"])
-        # domain set to raise error returns false for availability
-        error_domain_available = available(request, "errordomain.gov")
-        self.assertRaises(json.loads(error_domain_available.content)["available"])
+        # domain set to raise error returns false for availability and error message
+        error_domain_response = available(request, domain="errordomain.gov")
+        self.assertFalse(json.loads(error_domain_response.content)["available"])
+        self.assertIn("Error finding domain availability", 
+        json.loads(error_domain_response.content)["message"])
 
 
 class AvailableAPITest(MockEppLib):

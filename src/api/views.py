@@ -30,8 +30,8 @@ DOMAIN_API_MESSAGES = {
     ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
-    "error": "Error finding domain availability. Please wait a few minutes and try again. If you continue \
-    to receive this error after a few tries, contact help@get.gov",
+    "error": "Error finding domain availability. Please wait a few minutes and try again.\
+    If you continue to receive this error after a few tries, contact help@get.gov",
 }
 
 
@@ -74,7 +74,7 @@ def check_domain_available(domain):
             # domain search string doesn't end with .gov, add it on here
             return Domain.available(domain + ".gov")
     except Exception as err:
-        return err
+        raise err
 
 
 @require_http_methods(["GET"])
