@@ -593,7 +593,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "is_policy_acknowledged",
     ]
 
-    filter_horizontal = ("current_websites", "alternative_domains")
+    filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
