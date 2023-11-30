@@ -8,6 +8,7 @@ from django.test import RequestFactory
 from ..views import available, check_domain_available
 from .common import less_console_noise
 from registrar.tests.common import MockEppLib
+from registrar.utility.errors import GenericError, GenericErrorCodes
 from unittest.mock import call
 
 from epplibwrapper import (
@@ -115,7 +116,8 @@ class AvailableViewTest(MockEppLib):
         # domain set to raise error returns false for availability and error message
         error_domain_response = available(request, domain="errordomain.gov")
         self.assertFalse(json.loads(error_domain_response.content)["available"])
-        self.assertIn("Error finding domain availability", json.loads(error_domain_response.content)["message"])
+        self.assertEqual(GenericError._error_mapping[GenericErrorCodes.CANNOT_CONTACT_REGISTRY], 
+        json.loads(error_domain_response.content)["message"])
 
 class AvailableAPITest(MockEppLib):
 

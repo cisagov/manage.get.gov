@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
+from registrar.utility.errors import GenericError, GenericErrorCodes
 
 import requests
 
@@ -30,8 +31,7 @@ DOMAIN_API_MESSAGES = {
     ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
-    "error": "Error finding domain availability. Please wait a few minutes and try again.\
-    If you continue to receive this error after a few tries, contact help@get.gov",
+    "error": GenericError._error_mapping[GenericErrorCodes.CANNOT_CONTACT_REGISTRY],
 }
 
 
