@@ -49,7 +49,10 @@
 {% endblock %}
 
 {% block form_required_fields_help_text %}
-  {% include "includes/required_fields.html" %}
+<!-- The "No other employees from your organization?" page is a one-field form and should not have the required fields sentence -->
+  {% if field.label != "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain." %}
+    {% include "includes/required_fields.html" %}
+  {% endif %}
 {% endblock %}
 
         <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
