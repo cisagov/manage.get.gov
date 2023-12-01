@@ -41,8 +41,8 @@ class TestGroups(TestCase):
             "change_draftdomain",
             "analyst_access_permission",
             "change_user",
-            "change_website",
-            "view_userdomainrole"
+            "view_userdomainrole",
+            "change_website"
         ]
 
         # Get the codenames of actual permissions associated with the group
