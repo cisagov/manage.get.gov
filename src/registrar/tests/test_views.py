@@ -100,7 +100,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
         self.assertContains(response, "igorville.gov", count=2)
-        self.assertContains(response, "DNS Needed")
+        self.assertContains(response, "DNS needed")
         # clean up
         role.delete()
 

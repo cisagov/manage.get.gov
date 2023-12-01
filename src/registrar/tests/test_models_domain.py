@@ -1506,7 +1506,7 @@ class TestRegistrantNameservers(MockEppLib):
             ]
 
     def test_setting_not_allowed(self):
-        """Scenario: A domain state is not Ready or DNS Needed
+        """Scenario: A domain state is not Ready or DNS needed
         then setting nameservers is not allowed"""
         domain, _ = Domain.objects.get_or_create(name="onholdDomain.gov", state=Domain.State.ON_HOLD)
         with self.assertRaises(ActionNotAllowed):
