@@ -40,7 +40,7 @@ jobs:
         id: var
         with:
           script: |
-            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : 'ZA';
+            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : "ZA";
             core.setOutput('environment', environment);
 
   upload-reports:
