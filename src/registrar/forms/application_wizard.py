@@ -392,7 +392,6 @@ CurrentSitesFormSet = forms.formset_factory(
 class AlternativeDomainForm(RegistrarForm):
     def clean_alternative_domain(self):
         """Validation code for domain names."""
-
         try:
             requested = self.cleaned_data.get("alternative_domain", None)
             validated = DraftDomain.validate(requested, blank_ok=True)
