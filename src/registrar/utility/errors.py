@@ -61,7 +61,7 @@ contact help@get.gov.
         return f"{self.message}"
 
     @classmethod
-    def get_error_mapping(self, code=None):
+    def get_error_message(self, code=None):
         return self._error_mapping.get(code)
 
 
