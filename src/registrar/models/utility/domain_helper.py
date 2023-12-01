@@ -29,11 +29,8 @@ class DomainHelper:
         if not isinstance(domain, str):
             raise ValueError("Domain name must be a string")
         domain = domain.lower().strip()
-        if domain == "":
-            if blank_ok:
-                return domain
-            else:
-                raise errors.BlankValueError()
+        if domain == "" and not blank_ok:
+            raise errors.BlankValueError()
         if domain.endswith(".gov"):
             domain = domain[:-4]
         if "." in domain:
