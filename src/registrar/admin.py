@@ -602,9 +602,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "is_policy_acknowledged",
     ]
 
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
-    # to activate the edit/delete/view buttons
-    filter_horizontal = ("current_websites", "alternative_domains")
+    filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
