@@ -56,14 +56,16 @@ jobs:
           timeoutSeconds: 600 
           # the time to wait between checks, in seconds
           intervalSeconds: 10 
-
+  
   upload-reports:
     runs-on: ubuntu-latest
-    needs: [variables]
+    needs: [variables, wait-for-deploy]
     env:
       CF_USERNAME: CF_{{ needs.variables.outputs.environment }}_USERNAME
       CF_PASSWORD: CF_{{ needs.variables.outputs.environment }}_PASSWORD
     steps:
+      - name: Print names of all secrets
+        run: echo ${{ toJson(secrets) }}
       - name: Generate current-federal.csv
         uses: cloud-gov/cg-cli-tools@main
         with:
