@@ -2,7 +2,6 @@ import re
 
 from api.views import check_domain_available
 from registrar.utility import errors
-from registrar.utility.errors import GenericError, GenericErrorCodes
 
 
 class DomainHelper:
