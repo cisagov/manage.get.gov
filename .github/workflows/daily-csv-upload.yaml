@@ -59,17 +59,21 @@ jobs:
   
   upload-reports:
     runs-on: ubuntu-latest
-    needs: [variables, wait-for-deploy]
+    needs: [variables]
     env:
       CF_USERNAME: CF_{{ needs.variables.outputs.environment }}_USERNAME
       CF_PASSWORD: CF_{{ needs.variables.outputs.environment }}_PASSWORD
     steps:
-      - name: Print names of all secrets
-        run: echo ${{ toJson(secrets) }}
-      - name: Print cf_username
-        run: echo ${{ env.CF_USERNAME }}
-      - name: Print cf_password
-        run: echo ${{ env.CF_PASSWORD }}
+    - name: Check secrets
+      run: |
+        if [[ -z "${{ secrets.CF_ZA_USERNAME }}" ]]; then
+          echo "CF_ZA_USERNAME is not set"
+          exit 1
+        fi
+        if [[ -z "${{ secrets.CF_ZA_PASSWORD }}" ]]; then
+          echo "CF_ZA_PASSWORD is not set"
+          exit 1
+        fi
       - name: Generate current-federal.csv
         uses: cloud-gov/cg-cli-tools@main
         with:
