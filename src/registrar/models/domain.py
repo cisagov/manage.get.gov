@@ -1338,19 +1338,6 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Changing to DNS_NEEDED state")
         logger.info("able to transition to DNS_NEEDED state")
 
-    @transition(
-        field="state",
-        source="*",
-        target=State.UNKNOWN,
-    )
-    def force_unknown(self):
-        """Force a domain to go into our unknown state.
-
-        This can be useful on a limited basis when we need a domain
-        to be created in the registry for some reason.
-        """
-        pass
-
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
