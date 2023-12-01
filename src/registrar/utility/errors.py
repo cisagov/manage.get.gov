@@ -60,6 +60,10 @@ contact help@get.gov.
     def __str__(self):
         return f"{self.message}"
 
+    @classmethod
+    def get_error_mapping(self, code=None):
+        return self._error_mapping.get(code)
+
 
 class NameserverErrorCodes(IntEnum):
     """Used in the NameserverError class for
