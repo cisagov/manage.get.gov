@@ -64,7 +64,7 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "userdomainrole",
-                "permissions": ["view_userdomainrole"],
+                "permissions": ["view_userdomainrole", "delete_userdomainrole"],
             },
         ]
 
