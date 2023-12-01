@@ -67,8 +67,8 @@ jobs:
       - name: Generate current-federal.csv
         uses: cloud-gov/cg-cli-tools@main
         with:
-          cf_username: ${{ secrets[CF_ZA_USERNAME] }}
-          cf_password: ${{ secrets[CF_ZA_PASSWORD] }}
+          cf_username: ${{ secrets["CF_ZA_USERNAME"] }}
+          cf_password: ${{ secrets["CF_ZA_USERNAME"] }}
           cf_org: cisa-dotgov
           cf_space: ${{ needs.variables.outputs.environment }}
           cf_command: "run-task getgov-${{ needs.variables.outputs.environment }} --command 'python manage.py generate_current_federal_report' --name federal"
