@@ -43,7 +43,7 @@ class TestGroups(TestCase):
             "change_user",
             "delete_userdomainrole",
             "view_userdomainrole",
-            "change_website"
+            "change_website",
         ]
 
         # Get the codenames of actual permissions associated with the group
