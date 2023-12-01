@@ -2,6 +2,7 @@ import re
 
 from api.views import check_domain_available
 from registrar.utility import errors
+from epplibwrapper.errors import RegistryError
 
 
 class DomainHelper:
