@@ -31,7 +31,7 @@ DOMAIN_API_MESSAGES = {
     ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
-    "error": GenericError.get_error_mapping(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
+    "error": GenericError.get_error_message(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
 }
 
 
