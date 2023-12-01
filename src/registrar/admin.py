@@ -458,7 +458,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
-    
+
     # lists in filter_horizontal are not sorted properly, sort them
     # by first_name
     def formfield_for_manytomany(self, db_field, request, **kwargs):
@@ -742,7 +742,7 @@ class DomainInformationInline(admin.StackedInline):
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
-    
+
     # lists in filter_horizontal are not sorted properly, sort them
     # by first_name
     def formfield_for_manytomany(self, db_field, request, **kwargs):
