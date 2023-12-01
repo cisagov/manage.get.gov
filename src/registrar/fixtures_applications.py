@@ -50,15 +50,15 @@ class DomainApplicationFixture:
     DA = [
         {
             "status": "started",
-            "organization_name": "Example - Finished but not Submitted",
+            "organization_name": "Example - Finished but not submitted",
         },
         {
             "status": "submitted",
-            "organization_name": "Example - Submitted but pending Investigation",
+            "organization_name": "Example - Submitted but pending investigation",
         },
         {
             "status": "in review",
-            "organization_name": "Example - In Investigation",
+            "organization_name": "Example - In investigation",
         },
         {
             "status": "in review",
@@ -70,7 +70,7 @@ class DomainApplicationFixture:
         },
         {
             "status": "action needed",
-            "organization_name": "Example - Action Needed",
+            "organization_name": "Example - Action needed",
         },
         {
             "status": "rejected",
