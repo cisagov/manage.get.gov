@@ -2,6 +2,7 @@ import re
 
 from api.views import check_domain_available
 from registrar.utility import errors
+from registrar.utility.errors import GenericError, GenericErrorCodes
 
 
 class DomainHelper:
@@ -40,8 +41,11 @@ class DomainHelper:
             raise errors.ExtraDotsError()
         if not DomainHelper.string_could_be_domain(domain + ".gov"):
             raise ValueError()
-        if not check_domain_available(domain):
-            raise errors.DomainUnavailableError()
+        try:
+            if not check_domain_available(domain):
+                raise errors.DomainUnavailableError()
+        except Exception:
+            raise errors.RegistrySystemError()
         return domain
 
     @classmethod

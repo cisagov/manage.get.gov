@@ -13,6 +13,10 @@ class DomainUnavailableError(ValueError):
     pass
 
 
+class RegistrySystemError(ValueError):
+    pass
+
+
 class ActionNotAllowed(Exception):
     """User accessed an action that is not
     allowed by the current state"""

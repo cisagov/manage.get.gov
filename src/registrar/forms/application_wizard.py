@@ -392,6 +392,7 @@ CurrentSitesFormSet = forms.formset_factory(
 class AlternativeDomainForm(RegistrarForm):
     def clean_alternative_domain(self):
         """Validation code for domain names."""
+
         try:
             requested = self.cleaned_data.get("alternative_domain", None)
             validated = DraftDomain.validate(requested, blank_ok=True)
@@ -399,6 +400,8 @@ class AlternativeDomainForm(RegistrarForm):
             raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
         except errors.DomainUnavailableError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+        except errors.RegistrySystemError:
+            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
@@ -484,6 +487,8 @@ class DotGovDomainForm(RegistrarForm):
             raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
         except errors.DomainUnavailableError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+        except errors.RegistrySystemError:
+            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
