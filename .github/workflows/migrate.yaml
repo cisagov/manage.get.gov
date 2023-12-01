@@ -16,6 +16,7 @@ on:
           - stable
           - staging
           - development
+          - backup
           - ky
           - es
           - nl
