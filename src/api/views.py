@@ -1,8 +1,7 @@
 """Internal API views"""
-import os
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
-from django.http import FileResponse, HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url

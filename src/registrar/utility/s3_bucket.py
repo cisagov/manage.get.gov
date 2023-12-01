@@ -4,7 +4,7 @@ from enum import IntEnum
 import boto3
 from botocore.exceptions import ClientError
 from django.conf import settings
-from django.template.loader import get_template
+
 
 class S3ClientErrorCodes(IntEnum):
     """Used for S3ClientError
@@ -20,15 +20,16 @@ class S3ClientErrorCodes(IntEnum):
     FILE_NOT_FOUND_ERROR = 3
     GET_FILE_ERROR = 4
 
+
 class S3ClientError(RuntimeError):
     """Local error for handling all failures with boto3.client"""
+
     _error_mapping = {
         S3ClientErrorCodes.ACCESS_S3_CLIENT_ERROR: "Failed to establish a connection with the storage service.",
         S3ClientErrorCodes.UPLOAD_FILE_ERROR: "File upload to the storage service failed.",
         S3ClientErrorCodes.FILE_NOT_FOUND_ERROR: "Requested file not found in the storage service.",
         S3ClientErrorCodes.GET_FILE_ERROR: (
-            "Retrieval of the requested file from " 
-            "the storage service failed due to an unspecified error."
+            "Retrieval of the requested file from " "the storage service failed due to an unspecified error."
         ),
     }
 
@@ -44,6 +45,7 @@ class S3ClientError(RuntimeError):
 
 class S3ClientHelper:
     """Helper class that simplifies S3 intialization"""
+
     def __init__(self):
         try:
             self.boto_client = boto3.client(
@@ -73,7 +75,7 @@ class S3ClientHelper:
         try:
             response = self.boto_client.get_object(Bucket=self.get_bucket_name(), Key=file_name)
         except ClientError as exc:
-            if exc.response['Error']['Code'] == 'NoSuchKey':
+            if exc.response["Error"]["Code"] == "NoSuchKey":
                 raise S3ClientError(code=S3ClientErrorCodes.FILE_NOT_FOUND_ERROR) from exc
             else:
                 raise S3ClientError(code=S3ClientErrorCodes.GET_FILE_ERROR) from exc
