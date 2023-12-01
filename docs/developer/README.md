@@ -295,7 +295,7 @@ sudo sntp -sS time.nist.gov
 ```
 
 ## Connection pool
-To handle our connection to the registry, we utilize a connection pool to keep a socket open to increase responsiveness. In order to accomplish this, we are utilizing a heavily modified version of the (geventconnpool)[https://github.com/rasky/geventconnpool] library.
+To handle our connection to the registry, we utilize a connection pool to keep a socket open to increase responsiveness. In order to accomplish this, we are utilizing a heavily modified version of the [geventconnpool](https://github.com/rasky/geventconnpool) library.
 
 ### Settings
 The config for the connection pool exists inside the `settings.py` file.
@@ -320,3 +320,18 @@ Our connection pool has a built-in `pool_status` object which you can call at an
 * Should return true
 
 If you have multiple instances (staging for example), then repeat commands 1-5 for each instance you want to test. 
+
+## Adding a S3 instance to your sandbox
+This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
+
+To associate a S3 instance to your sandbox, follow these steps:
+1. Navigate to https://dashboard.fr.cloud.gov/login
+2. Select your sandbox from the `Applications` tab
+3. Click `Services` on the application nav bar
+4. Add a new service (plus symbol)
+5. Click `Marketplace Service`
+6. On the `Select the service` dropdown, select `s3`
+7. Under the dropdown on `Select Plan`, select `basic-sandbox`
+8. Under `Service Instance` enter `getgov-s3` for the name
+
+See this [resource](https://cloud.gov/docs/services/s3/) for information on associating an S3 instance with your sandbox through the CLI. 
