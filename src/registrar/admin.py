@@ -455,7 +455,16 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "is_policy_acknowledged",
     ]
 
+    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
+    # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
+    
+    # lists in filter_horizontal are not sorted properly, sort them
+    # by first_name
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name in ("other_contacts",):
+            kwargs["queryset"] = models.Contact.objects.all().order_by("first_name")  # Sort contacts
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -593,6 +602,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "is_policy_acknowledged",
     ]
 
+    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
+    # to activate the edit/delete/view buttons
     filter_horizontal = ("current_websites", "alternative_domains")
 
     # lists in filter_horizontal are not sorted properly, sort them
@@ -730,7 +741,16 @@ class DomainInformationInline(admin.StackedInline):
 
     fieldsets = DomainInformationAdmin.fieldsets
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
+    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
+    # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
+    
+    # lists in filter_horizontal are not sorted properly, sort them
+    # by first_name
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name in ("other_contacts",):
+            kwargs["queryset"] = models.Contact.objects.all().order_by("first_name")  # Sort contacts
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
