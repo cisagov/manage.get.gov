@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = ""
+    help = (
+        "Generates and uploads a current-federal.csv file to our S3 bucket "
+        "which is based off of all existing federal Domains."
+    )
 
     def add_arguments(self, parser):
         """Add our two filename arguments."""
