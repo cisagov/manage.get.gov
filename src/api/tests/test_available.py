@@ -117,7 +117,7 @@ class AvailableViewTest(MockEppLib):
         error_domain_response = available(request, domain="errordomain.gov")
         self.assertFalse(json.loads(error_domain_response.content)["available"])
         self.assertEqual(
-            GenericError._error_mapping[GenericErrorCodes.CANNOT_CONTACT_REGISTRY],
+            GenericError.get_error_message(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
             json.loads(error_domain_response.content)["message"],
         )
 
