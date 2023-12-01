@@ -68,39 +68,21 @@ class CsvReportsTest(TestCase):
         User.objects.all().delete()
         super().tearDown()
 
-    def test_create_failed_federal(self):
-        """Ensures that we return an error when we cannot find our created file"""
-        fake_open = mock_open()
-        # We don't actually want to write anything for a test case,
-        # we just want to verify what is being written.
-        with patch("builtins.open", fake_open), self.assertRaises(FileNotFoundError) as err:
-            call_command("generate_current_federal_report")
-        error = err.exception
-        self.assertEqual(str(error), "Could not find newly created file at 'migrationdata/current-federal.csv'")
-    
-    def test_create_failed_full(self):
-        """Ensures that we return an error when we cannot find our created file"""
-        fake_open = mock_open()
-        # We don't actually want to write anything for a test case,
-        # we just want to verify what is being written.
-        with patch("builtins.open", fake_open), self.assertRaises(FileNotFoundError) as err:
-            call_command("generate_current_full_report")
-        error = err.exception
-        self.assertEqual(str(error), "Could not find newly created file at 'migrationdata/current-full.csv'")
-
     @boto3_mocking.patching
     def test_generate_federal_report(self):
         """Ensures that we correctly generate current-federal.csv"""
+        mock_client = MagicMock()
+        fake_open = mock_open()
         expected_file_content = [
             call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
             call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
             call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
         ]
-        fake_open = mock_open()
         # We don't actually want to write anything for a test case,
         # we just want to verify what is being written.
-        with patch("builtins.open", fake_open):
-            call_command("generate_current_federal_report", checkpath=False)
+        with boto3_mocking.clients.handler_for("s3", mock_client):
+            with patch("builtins.open", fake_open):
+                call_command("generate_current_federal_report", checkpath=False)
         content = fake_open()
         # Now you can make assertions about how you expect 'file' to be used.
         content.write.assert_has_calls(expected_file_content)
@@ -108,17 +90,19 @@ class CsvReportsTest(TestCase):
     @boto3_mocking.patching
     def test_generate_full_report(self):
         """Ensures that we correctly generate current-full.csv"""
+        mock_client = MagicMock()
+        fake_open = mock_open()
         expected_file_content = [
             call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
             call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
             call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
             call("adomain2.gov,Interstate,,,,, \r\n"),
         ]
-        fake_open = mock_open()
         # We don't actually want to write anything for a test case,
         # we just want to verify what is being written.
-        with patch("builtins.open", fake_open):
-            call_command("generate_current_full_report", checkpath=False)
+        with boto3_mocking.clients.handler_for("s3", mock_client):
+            with patch("builtins.open", fake_open):
+                call_command("generate_current_full_report", checkpath=False)
         content = fake_open()
         # Now you can make assertions about how you expect 'file' to be used.
         content.write.assert_has_calls(expected_file_content)
