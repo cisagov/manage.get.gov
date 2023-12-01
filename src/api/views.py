@@ -64,7 +64,7 @@ def check_domain_available(domain):
 
     The given domain is lowercased to match against the domains list. If the
     given domain doesn't end with .gov, ".gov" is added when looking for
-    a match.
+    a match. If check fails, throws a RegistryError.
     """
     Domain = apps.get_model("registrar.Domain")
     if domain.endswith(".gov"):

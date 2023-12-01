@@ -40,8 +40,8 @@ class DomainHelper:
         try:
             if not check_domain_available(domain):
                 raise errors.DomainUnavailableError()
-        except Exception:
-            raise errors.RegistrySystemError()
+        except RegistryError as err:
+            raise errors.RegistrySystemError() from err
         return domain
 
     @classmethod
