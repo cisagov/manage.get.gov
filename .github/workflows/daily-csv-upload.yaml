@@ -66,6 +66,10 @@ jobs:
     steps:
       - name: Print names of all secrets
         run: echo ${{ toJson(secrets) }}
+      - name: Print cf_username
+        run: echo ${{ env.CF_USERNAME }}
+      - name: Print cf_password
+        run: echo ${{ env.CF_PASSWORD }}
       - name: Generate current-federal.csv
         uses: cloud-gov/cg-cli-tools@main
         with:
