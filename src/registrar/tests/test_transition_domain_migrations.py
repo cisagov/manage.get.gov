@@ -193,6 +193,17 @@ class TestOrganizationMigration(TestCase):
 
         self.assertEqual(transition, expected_transition_domain)
 
+    def test_transition_domain_status_unknown(self):
+        """
+        Test that a domain in unknown status can be loaded
+        """  # noqa - E501 (harder to read)
+        # == First, parse all existing data == #
+        self.run_load_domains()
+        self.run_transfer_domains()
+
+        domain_object = Domain.objects.get(name="fakewebsite3.gov")
+        self.assertEqual(domain_object.state, Domain.State.UNKNOWN)
+
     def test_load_organization_data_domain_information(self):
         """
         This test verifies the functionality of the load_organization_data method.

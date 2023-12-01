@@ -99,6 +99,7 @@
           {% if step == Step.OTHER_CONTACTS %}
             {% for other in application.other_contacts.all %}
               <div class="margin-bottom-105">
+                <div class="review__step__subheading">Contact {{ forloop.counter }}</div>
                 {% include "includes/contact.html" with contact=other %}
               </div>
             {% empty %}
