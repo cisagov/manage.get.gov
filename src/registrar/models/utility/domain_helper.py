@@ -2,6 +2,7 @@ import re
 
 from api.views import check_domain_available
 from registrar.utility import errors
+from epplibwrapper.errors import RegistryError
 
 
 class DomainHelper:
@@ -29,19 +30,19 @@ class DomainHelper:
         if not isinstance(domain, str):
             raise ValueError("Domain name must be a string")
         domain = domain.lower().strip()
-        if domain == "":
-            if blank_ok:
-                return domain
-            else:
-                raise errors.BlankValueError()
+        if domain == "" and not blank_ok:
+            raise errors.BlankValueError()
         if domain.endswith(".gov"):
             domain = domain[:-4]
         if "." in domain:
             raise errors.ExtraDotsError()
         if not DomainHelper.string_could_be_domain(domain + ".gov"):
             raise ValueError()
-        if not check_domain_available(domain):
-            raise errors.DomainUnavailableError()
+        try:
+            if not check_domain_available(domain):
+                raise errors.DomainUnavailableError()
+        except RegistryError as err:
+            raise errors.RegistrySystemError() from err
         return domain
 
     @classmethod

@@ -13,6 +13,10 @@ class DomainUnavailableError(ValueError):
     pass
 
 
+class RegistrySystemError(ValueError):
+    pass
+
+
 class ActionNotAllowed(Exception):
     """User accessed an action that is not
     allowed by the current state"""
@@ -42,7 +46,7 @@ class GenericError(Exception):
         GenericErrorCodes.CANNOT_CONTACT_REGISTRY: """
 We’re experiencing a system connection error. Please wait a few minutes
 and try again. If you continue to receive this error after a few tries,
-contact help@get.gov
+contact help@get.gov.
         """,
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }
@@ -55,6 +59,10 @@ contact help@get.gov
 
     def __str__(self):
         return f"{self.message}"
+
+    @classmethod
+    def get_error_message(self, code=None):
+        return self._error_mapping.get(code)
 
 
 class NameserverErrorCodes(IntEnum):
