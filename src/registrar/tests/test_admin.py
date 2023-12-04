@@ -911,7 +911,7 @@ class UserDomainRoleAdminTest(TestCase):
         self.client.login(username="superuser", password=p)
 
         fake_user = User.objects.create(
-            username="dummyuser", first_name="Stewart", last_name="Jones", email="AntarcticPolarBears@cold.com"
+            username="dummyuser", first_name="Stewart", last_name="Jones", email="AntarcticPolarBears@example.com"
         )
         fake_domain = Domain.objects.create(name="test123")
         UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
@@ -933,7 +933,7 @@ class UserDomainRoleAdminTest(TestCase):
         self.assertEqual(search_query, "testmail@igorville.com")
 
         # We only need to check for the end of the HTML string
-        self.assertNotContains(response, "Stewart Jones AntarticPolarBears@cold.com</a></th>")
+        self.assertNotContains(response, "Stewart Jones AntarcticPolarBears@example.com</a></th>")
 
     def test_email_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
@@ -943,7 +943,7 @@ class UserDomainRoleAdminTest(TestCase):
         self.client.login(username="superuser", password=p)
 
         fake_user = User.objects.create(
-            username="dummyuser", first_name="Joe", last_name="Jones", email="AntarcticPolarBears@cold.com"
+            username="dummyuser", first_name="Joe", last_name="Jones", email="AntarcticPolarBears@example.com"
         )
         fake_domain = Domain.objects.create(name="fake")
         UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
@@ -953,7 +953,7 @@ class UserDomainRoleAdminTest(TestCase):
         response = self.client.get(
             "/admin/registrar/userdomainrole/",
             {
-                "q": "AntarcticPolarBears@cold.com",
+                "q": "AntarcticPolarBears@example.com",
             },
             follow=True,
         )
@@ -962,10 +962,10 @@ class UserDomainRoleAdminTest(TestCase):
         self.assertIn("search_query", response.context)
 
         search_query = response.context["search_query"]
-        self.assertEqual(search_query, "AntarcticPolarBears@cold.com")
+        self.assertEqual(search_query, "AntarcticPolarBears@example.com")
 
         # We only need to check for the end of the HTML string
-        self.assertContains(response, "Joe Jones AntarticPolarBears@cold.com</a></th>", count=1)
+        self.assertContains(response, "Joe Jones AntarticPolarBears@example.com</a></th>", count=1)
 
 
 class ListHeaderAdminTest(TestCase):
