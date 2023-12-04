@@ -965,7 +965,7 @@ class UserDomainRoleAdminTest(TestCase):
         self.assertEqual(search_query, "AntarcticPolarBears@example.com")
 
         # We only need to check for the end of the HTML string
-        self.assertContains(response, "Joe Jones AntarticPolarBears@example.com</a></th>", count=1)
+        self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
 
 
 class ListHeaderAdminTest(TestCase):
