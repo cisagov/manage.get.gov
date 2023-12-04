@@ -42,16 +42,6 @@
             </p>
           </div>
         </div>
-        {% else %}
-        <a href="{% url 'home' %}" class="breadcrumb__back">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-          <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-          </svg>
-
-          <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-          Back to manage your domains
-          </p>
-        </a>
         {% endif %}
         {# messages block is under the back breadcrumb link #}
         {% if messages %}

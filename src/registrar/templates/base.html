@@ -148,8 +148,18 @@
         <div class="usa-logo" id="extended-logo">
           <strong class="usa-logo__text" >
             <a href="{% url 'home' %}"> .gov </a>
-          </strong>
+          </strong>    
         </div>
+
+          <a href="{% url 'home' %}" class="breadcrumb__back">
+            <strong class="display-flex">
+            Manage your domains
+            </strong>
+          </a>  
+
+
+
+
         {% endblock %}
         <button type="button" class="usa-menu-btn">Menu</button>
       </div>
