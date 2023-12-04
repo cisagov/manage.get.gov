@@ -335,3 +335,20 @@ To associate a S3 instance to your sandbox, follow these steps:
 8. Under `Service Instance` enter `getgov-s3` for the name
 
 See this [resource](https://cloud.gov/docs/services/s3/) for information on associating an S3 instance with your sandbox through the CLI. 
+
+### Testing your S3 instance locally
+To test the S3 bucket associated with your sandbox, you will need to add four additional variables to your `.env` file. These are as follows:
+
+```
+AWS_S3_ACCESS_KEY_ID = "{string value of `access_key_id` in getgov-s3}"
+AWS_S3_SECRET_ACCESS_KEY = "{string value of `secret_access_key` in getgov-s3}"
+AWS_S3_REGION = "{string value of `region` in getgov-s3}"
+AWS_S3_BUCKET_NAME = "{string value of `bucket` in getgov-s3}"
+```
+
+You can view these variables by running the following command:
+```
+cf env getgov-{app name}
+```
+
+Then, copy the variables under the section labled `s3`.
