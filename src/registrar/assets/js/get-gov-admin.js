@@ -54,36 +54,42 @@ function openInNewTab(el, removeAttribute = false){
  *
  */
 (function extendFilterHorizontalWidgets() {
-    // Grab a list of our custom filter_horizontal widgets
-    let filterHorizontalList = [];
-    checkElementThenAddToList('id_other_contacts_to', filterHorizontalList, 0);
-    checkElementThenAddToList('id_domain_info-0-other_contacts_to', filterHorizontalList, 0);
-    checkElementThenAddToList('id_current_websites_to', filterHorizontalList, 0);
-    checkElementThenAddToList('id_alternative_domains_to', filterHorizontalList, 0);
+    // Initialize custom filter_horizontal widgets; each widget has a "from" select list
+    // and a "to" select list; initialization is based off of the presence of the
+    // "to" select list
+    checkToListThenInitWidget('id_other_contacts_to', 0);
+    checkToListThenInitWidget('id_domain_info-0-other_contacts_to', 0);
+    checkToListThenInitWidget('id_current_websites_to', 0);
+    checkToListThenInitWidget('id_alternative_domains_to', 0);
 })();
 
-// Function to check for the existence of the element
-function checkElementThenAddToList(id, listOfElements, attempts) {
-    let dynamicElement = document.getElementById(id);
+// Function to check for the existence of the "to" select list element in the DOM, and if and when found,
+// initialize the associated widget
+function checkToListThenInitWidget(toListId, attempts) {
+    let toList = document.getElementById(toListId);
     attempts++;
 
     if (attempts < 6) {
-        if ((dynamicElement !== null)) {
-            // Element found, handle it
+        if ((toList !== null)) {
+            // toList found, handle it
             // Add an event listener on the element
             // Add disabled buttons on the element's great-grandparent
-            customizeSelectElement(dynamicElement, id);
+            initializeWidgetOnToList(toList, toListId);
         } else {
             // Element not found, check again after a delay
-            setTimeout(() => checkElementThenAddToList(id, listOfElements, attempts), 1000); // Check every 1000 milliseconds (1 second)
+            setTimeout(() => checkToListThenInitWidget(toListId, attempts), 1000); // Check every 1000 milliseconds (1 second)
         }
     }
 }
 
-function customizeSelectElement(el, elId) {
+// Initialize the widget:
+//  add related buttons to the widget for edit, delete and view
+//  add event listeners on the from list, the to list, and selector buttons which either enable or disable the related buttons
+function initializeWidgetOnToList(toList, toListId) {
+    // create the change button
     let changeLink = createAndCustomizeLink(
-        el,
-        elId,
+        toList,
+        toListId,
         'related-widget-wrapper-link change-related',
         'Change selected item',
         '/public/admin/img/icon-changelink.svg',
@@ -97,9 +103,10 @@ function customizeSelectElement(el, elId) {
         0
     );
 
+    // create the delete button
     let deleteLink = createAndCustomizeLink(
-        el,
-        elId,
+        toList,
+        toListId,
         'related-widget-wrapper-link delete-related',
         'Delete selected item',
         '/public/admin/img/icon-deletelink.svg',
@@ -113,9 +120,10 @@ function customizeSelectElement(el, elId) {
         2
     );
 
+    // create the view button
     let viewLink = createAndCustomizeLink(
-        el,
-        elId,
+        toList,
+        toListId,
         'related-widget-wrapper-link view-related',
         'View selected item',
         '/public/admin/img/icon-viewlink.svg',
@@ -129,28 +137,38 @@ function customizeSelectElement(el, elId) {
         3
     );
 
-    let fromList = el.closest('.selector').querySelector(".selector-available select");
+    // identify the fromList element in the DOM
+    let fromList = toList.closest('.selector').querySelector(".selector-available select");
 
     fromList.addEventListener('click', function(event) {
-        handleSelectClick(event, fromList, el, changeLink, deleteLink, viewLink);
+        handleSelectClick(event, fromList, toList, changeLink, deleteLink, viewLink);
     });
     
-    el.addEventListener('click', function(event) {
-        handleSelectClick(event, el, fromList, changeLink, deleteLink, viewLink);
+    toList.addEventListener('click', function(event) {
+        handleSelectClick(event, toList, fromList, changeLink, deleteLink, viewLink);
     });
     
-    // Disable buttons when the selectors are interated with (items are moved from one column to the other)
+    // Disable buttons when the selectors are interacted with (items are moved from one column to the other)
     let selectorButtons = [];
-    selectorButtons.push(el.closest(".selector").querySelector(".selector-chooseall"));
-    selectorButtons.push(el.closest(".selector").querySelector(".selector-add"));
-    selectorButtons.push(el.closest(".selector").querySelector(".selector-remove"));
+    selectorButtons.push(toList.closest(".selector").querySelector(".selector-chooseall"));
+    selectorButtons.push(toList.closest(".selector").querySelector(".selector-add"));
+    selectorButtons.push(toList.closest(".selector").querySelector(".selector-remove"));
 
     selectorButtons.forEach((selector) => {
         selector.addEventListener("click", ()=>{disableRelatedWidgetButtons(changeLink, deleteLink, viewLink)});
       });
 }
 
-function createAndCustomizeLink(selectEl, selectElId, className, title, imgSrc, imgAlt, dataMappings, dataPopup, position) {
+// create and customize the button, then add to the DOM, relative to the toList
+//  toList - the element in the DOM for the toList
+//  toListId - the ID of the element in the DOM
+//  className - className to add to the created link
+//  imgSrc - the img.src for the created link
+//  imgAlt - the img.alt for the created link
+//  dataMappings - dictionary which relates toListId to href for the created link
+//  dataPopup - boolean for whether the link should produce a popup window
+//  position - the position of the button in the list of buttons in the related-widget-wrapper in the widget
+function createAndCustomizeLink(toList, toListId, className, title, imgSrc, imgAlt, dataMappings, dataPopup, position) {
     // Create a link element
     var link = document.createElement('a');
 
@@ -158,15 +176,16 @@ function createAndCustomizeLink(selectEl, selectElId, className, title, imgSrc, 
     link.className = className;
 
     // Set id
-    // Add 'change_' to the beginning of the string
-    let modifiedLinkString = className.split('-')[0] + '_' + selectElId;
+    // Determine function {change, link, view} from the className
+    // Add {function}_ to the beginning of the string
+    let modifiedLinkString = className.split('-')[0] + '_' + toListId;
     // Remove '_to' from the end of the string
     modifiedLinkString = modifiedLinkString.replace('_to', '');
     link.id = modifiedLinkString;
 
     // Set data-href-template
     for (const [idPattern, template] of Object.entries(dataMappings)) {
-        if (selectElId.includes(idPattern)) {
+        if (toListId.includes(idPattern)) {
             link.setAttribute('data-href-template', template);
             break; // Stop checking once a match is found
         }
@@ -188,19 +207,27 @@ function createAndCustomizeLink(selectEl, selectElId, className, title, imgSrc, 
     link.appendChild(img);
 
     // Insert the link at the specified position
-    selectEl.closest('.related-widget-wrapper').insertBefore(link, selectEl.closest('.related-widget-wrapper').children[position]);
+    toList.closest('.related-widget-wrapper').insertBefore(link, toList.closest('.related-widget-wrapper').children[position]);
 
     // Return the link, which we'll use in the disable and enable functions
     return link;
 }
 
+// Either enable or disable widget buttons when select is clicked. Select can be in either the from list
+// or the to list. Action (enable or disable) taken depends on the tocal count of selected items across
+// both lists. If exactly one item is selected, buttons are enabled, and urls for the buttons associated
+// with the selected item
 function handleSelectClick(event, selectElement, relatedSelectElement, changeLink, deleteLink, viewLink) {
     // Access the target element that was clicked
     var clickedElement = event.target;
 
-    // If one item is selected, enable buttons; otherwise, disable them
+    // If one item is selected (across selectElement and relatedSelectElement), enable buttons; otherwise, disable them
     if (selectElement.selectedOptions.length + relatedSelectElement.selectedOptions.length === 1) {
-        enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, clickedElement.value);
+        if (selectElement.selectedOptions.length) {
+            enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, selectElement.selectedOptions[0].value);
+        } else {
+            enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, relatedSelectElement.selectedOptions[0].value);
+        }
     } else {
         disableRelatedWidgetButtons(changeLink, deleteLink, viewLink);
     }
