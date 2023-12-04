@@ -85,7 +85,7 @@ class CsvReportsTest(TestCase):
             with patch("builtins.open", fake_open):
                 call_command("generate_current_federal_report", checkpath=False)
         content = fake_open()
-        # Now you can make assertions about how you expect 'file' to be used.
+
         content.write.assert_has_calls(expected_file_content)
 
     @boto3_mocking.patching
@@ -105,7 +105,7 @@ class CsvReportsTest(TestCase):
             with patch("builtins.open", fake_open):
                 call_command("generate_current_full_report", checkpath=False)
         content = fake_open()
-        # Now you can make assertions about how you expect 'file' to be used.
+
         content.write.assert_has_calls(expected_file_content)
 
     @boto3_mocking.patching
