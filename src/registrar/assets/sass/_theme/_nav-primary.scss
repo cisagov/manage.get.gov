@@ -7,3 +7,14 @@
 .usa-logo-group {
    flex: 1 1 0%; 
 }
+
+a.manage_domain_back {
+    // Slight vertical and horizontal alignment fixes
+    position: relative;
+    top: -2px;
+    left: -5px;
+    font-weight: bold;
+    &:visited {
+      color: color('primary');
+    }
+}
