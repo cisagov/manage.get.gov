@@ -642,18 +642,9 @@ class DomainAddUserView(DomainFormBaseView):
     def _domain_abs_url(self):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
-
-    def _make_invitation(self, email_address):
-        """Make a Domain invitation for this email and redirect with a message."""
-        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
-        if not created:
-            # that invitation already existed
-            messages.warning(
-                self.request,
-                f"{email_address} has already been invited to this domain.",
-            )
-        else:
-            # created a new invitation in the database, so send an email
+    
+    def _send_domain_invitation_email(self, email_address:str):
+        # created a new invitation in the database, so send an email
             domaininfo = DomainInformation.objects.filter(domain=self.object)
             first = domaininfo.first().creator.first_name
             last = domaininfo.first().creator.last_name
@@ -681,6 +672,17 @@ class DomainAddUserView(DomainFormBaseView):
             else:
                 messages.success(self.request, f"Invited {email_address} to this domain.")
 
+    def _make_invitation(self, email_address:str):
+        """Make a Domain invitation for this email and redirect with a message."""
+        invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
+        if not created:
+            # that invitation already existed
+            messages.warning(
+                self.request,
+                f"{email_address} has already been invited to this domain.",
+            )
+        else:
+            self._send_domain_invitation_email(email_address=email_address)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
@@ -692,6 +694,9 @@ class DomainAddUserView(DomainFormBaseView):
         except User.DoesNotExist:
             # no matching user, go make an invitation
             return self._make_invitation(requested_email)
+        else:
+            #if user already exists then just send an email
+            self._send_domain_invitation_email(requested_email)
 
         try:
             UserDomainRole.objects.create(
