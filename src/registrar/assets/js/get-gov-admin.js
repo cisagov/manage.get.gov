@@ -132,11 +132,11 @@ function customizeSelectElement(el, elId) {
     let fromList = el.closest('.selector').querySelector(".selector-available select");
 
     fromList.addEventListener('click', function(event) {
-        handleSelectClick(event, fromList, changeLink, deleteLink, viewLink);
+        handleSelectClick(event, fromList, el, changeLink, deleteLink, viewLink);
     });
     
     el.addEventListener('click', function(event) {
-        handleSelectClick(event, el, changeLink, deleteLink, viewLink);
+        handleSelectClick(event, el, fromList, changeLink, deleteLink, viewLink);
     });
     
     // Disable buttons when the selectors are interated with (items are moved from one column to the other)
@@ -194,12 +194,12 @@ function createAndCustomizeLink(selectEl, selectElId, className, title, imgSrc, 
     return link;
 }
 
-function handleSelectClick(event, selectElement, changeLink, deleteLink, viewLink) {
+function handleSelectClick(event, selectElement, relatedSelectElement, changeLink, deleteLink, viewLink) {
     // Access the target element that was clicked
     var clickedElement = event.target;
 
     // If one item is selected, enable buttons; otherwise, disable them
-    if (selectElement.selectedOptions.length === 1) {
+    if (selectElement.selectedOptions.length + relatedSelectElement.selectedOptions.length === 1) {
         enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, clickedElement.value);
     } else {
         disableRelatedWidgetButtons(changeLink, deleteLink, viewLink);
