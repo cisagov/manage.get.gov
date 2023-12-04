@@ -13,12 +13,6 @@ Some common commands:
 - ./manage.py showmigrations -- the migration changes should now have a [x] by it
 
 
-On occasion, you will need to run this set of commands to refresh your environment:
-- docker-compose down
-- docker-compose build
-- docker-compose up 
-
-
 ## Scenarios
 
 ### Scenario 1: Conflicting migrations on local
@@ -60,7 +54,6 @@ This has happened when updating user perms (so running a new data migration). So
 - `cf run-task getgov-<app> --wait --command 'python manage.py migrate registrar 39_penultimate_miration --fake' --name migrate`
 - `cf run-task getgov-<app> --wait --command 'python manage.py migrate' --name migrate`
 
-
 ### Scenario 4: All migrations refuse to load due to existing duplicates on sandboxes
 
 This typically happens with a DB conflict that prevents 001_initial from loading. For instance, let's say all migrations have ran successfully before, and a zero command is ran to reset everything. This can lead to a catastrophic issue with your postgres database.
@@ -83,7 +76,6 @@ Afterwards, go back to your psql instance. Run the following for each problemati
 Then, run `./manage.py migrate` again and repeat step 7 for each table which returns this error.
 After these errors are resolved, follow instructions in the other scenarios if applicable.   
 
-
 ### Scenario 5: Permissions group exist, but my users cannot log onto the sandbox
 
 This is most likely due to fixtures not running or fixtures running before the data creating migration. Simple run fixtures again (WARNING: This applies to dev sandboxes only. We never want to rerun fixtures on a stable environment)
@@ -104,7 +96,6 @@ Example: there are extra columns created on a table by an old migration long sin
 ‘\dt’ to see the tables
 - `SELECT * FROM {bad_table};`
 - `alter table registrar_domain drop {bad_column};`
-
 
 ### Scenario 7: Continual 500 error for the registrar + your requests (login, clicking around, etc) are not showing up in the logstream
 
