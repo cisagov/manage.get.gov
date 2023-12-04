@@ -120,8 +120,12 @@ class ListHeaderAdmin(AuditedAdmin):
     # customize the help_text for all formfields for manytomany
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
-        formfield.help_text = formfield.help_text + " If more than one value is selected, the change/delete/view actions will be disabled."
+        formfield.help_text = (
+            formfield.help_text
+            + " If more than one value is selected, the change/delete/view actions will be disabled."
+        )
         return formfield
+
 
 class UserContactInline(admin.StackedInline):
     """Edit a user's profile on the user page."""

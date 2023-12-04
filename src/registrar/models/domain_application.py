@@ -533,6 +533,7 @@ class DomainApplication(TimeStampedModel):
         "registrar.Contact",
         blank=True,
         related_name="contact_applications",
+        verbose_name="contacts",
     )
 
     no_other_contacts_rationale = models.TextField(
