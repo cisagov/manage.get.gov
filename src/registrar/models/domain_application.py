@@ -487,6 +487,7 @@ class DomainApplication(TimeStampedModel):
         "registrar.Website",
         blank=True,
         related_name="current+",
+        verbose_name="websites",
     )
 
     approved_domain = models.OneToOneField(

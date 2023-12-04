@@ -179,6 +179,7 @@ class DomainInformation(TimeStampedModel):
         "registrar.Contact",
         blank=True,
         related_name="contact_applications_information",
+        verbose_name="contacts",
     )
 
     no_other_contacts_rationale = models.TextField(
