@@ -218,14 +218,14 @@ function createAndCustomizeLink(toList, toListId, className, title, imgSrc, imgA
 // both lists. If exactly one item is selected, buttons are enabled, and urls for the buttons associated
 // with the selected item
 function handleSelectClick(event, selectElement, relatedSelectElement, changeLink, deleteLink, viewLink) {
-    // Access the target element that was clicked
-    var clickedElement = event.target;
 
     // If one item is selected (across selectElement and relatedSelectElement), enable buttons; otherwise, disable them
     if (selectElement.selectedOptions.length + relatedSelectElement.selectedOptions.length === 1) {
         if (selectElement.selectedOptions.length) {
+            // enable buttons for selected item in selectElement
             enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, selectElement.selectedOptions[0].value);
         } else {
+            // enable buttons for selected item in relatedSelectElement
             enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, relatedSelectElement.selectedOptions[0].value);
         }
     } else {
