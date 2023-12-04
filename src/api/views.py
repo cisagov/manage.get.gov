@@ -5,6 +5,8 @@ from django.http import HttpResponse, JsonResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
+from registrar.utility.errors import GenericError, GenericErrorCodes
+
 import requests
 
 from login_required import login_not_required
@@ -31,7 +33,7 @@ DOMAIN_API_MESSAGES = {
     ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "success": "That domain is available!",
-    "error": "Error finding domain availability.",
+    "error": GenericError.get_error_message(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
 }
 
 
@@ -64,17 +66,14 @@ def check_domain_available(domain):
 
     The given domain is lowercased to match against the domains list. If the
     given domain doesn't end with .gov, ".gov" is added when looking for
-    a match.
+    a match. If check fails, throws a RegistryError.
     """
     Domain = apps.get_model("registrar.Domain")
-    try:
-        if domain.endswith(".gov"):
-            return Domain.available(domain)
-        else:
-            # domain search string doesn't end with .gov, add it on here
-            return Domain.available(domain + ".gov")
-    except Exception:
-        return False
+    if domain.endswith(".gov"):
+        return Domain.available(domain)
+    else:
+        # domain search string doesn't end with .gov, add it on here
+        return Domain.available(domain + ".gov")
 
 
 @require_http_methods(["GET"])

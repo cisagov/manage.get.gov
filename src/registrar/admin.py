@@ -322,7 +322,15 @@ class WebsiteAdmin(ListHeaderAdmin):
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin):
-    """Custom domain role admin class."""
+    """Custom user domain role admin class."""
+
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.UserDomainRole
+        fields = "__all__"
+
+    _meta = Meta()
 
     # Columns
     list_display = [
@@ -335,10 +343,13 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
     search_fields = [
         "user__first_name",
         "user__last_name",
+        "user__email",
         "domain__name",
         "role",
     ]
-    search_help_text = "Search by user, domain, or role."
+    search_help_text = "Search by firstname, lastname, email, domain, or role."
+
+    autocomplete_fields = ["user", "domain"]
 
 
 class DomainInvitationAdmin(ListHeaderAdmin):

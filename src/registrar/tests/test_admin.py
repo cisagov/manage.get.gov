@@ -13,6 +13,7 @@ from registrar.admin import (
     MyUserAdmin,
     AuditedAdmin,
     ContactAdmin,
+    UserDomainRoleAdmin,
 )
 from registrar.models import (
     Domain,
@@ -21,6 +22,7 @@ from registrar.models import (
     User,
     DomainInvitation,
 )
+from registrar.models.user_domain_role import UserDomainRole
 from .common import (
     completed_application,
     generic_domain_object,
@@ -884,6 +886,86 @@ class DomainInvitationAdminTest(TestCase):
 
         self.assertContains(response, invited_html, count=1)
         self.assertContains(response, retrieved_html, count=1)
+
+
+class UserDomainRoleAdminTest(TestCase):
+    def setUp(self):
+        """Setup environment for a mock admin user"""
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.admin = ListHeaderAdmin(model=UserDomainRoleAdmin, admin_site=None)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+
+    def tearDown(self):
+        """Delete all Users, Domains, and UserDomainRoles"""
+        User.objects.all().delete()
+        Domain.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+    def test_email_not_in_search(self):
+        """Tests the search bar in Django Admin for UserDomainRoleAdmin.
+        Should return no results for an invalid email."""
+        # Have to get creative to get past linter
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        fake_user = User.objects.create(
+            username="dummyuser", first_name="Stewart", last_name="Jones", email="AntarcticPolarBears@example.com"
+        )
+        fake_domain = Domain.objects.create(name="test123")
+        UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
+        # Make the request using the Client class
+        # which handles CSRF
+        # Follow=True handles the redirect
+        response = self.client.get(
+            "/admin/registrar/userdomainrole/",
+            {
+                "q": "testmail@igorville.com",
+            },
+            follow=True,
+        )
+
+        # Assert that the query is added to the extra_context
+        self.assertIn("search_query", response.context)
+        # Assert the content of filters and search_query
+        search_query = response.context["search_query"]
+        self.assertEqual(search_query, "testmail@igorville.com")
+
+        # We only need to check for the end of the HTML string
+        self.assertNotContains(response, "Stewart Jones AntarcticPolarBears@example.com</a></th>")
+
+    def test_email_in_search(self):
+        """Tests the search bar in Django Admin for UserDomainRoleAdmin.
+        Should return results for an valid email."""
+        # Have to get creative to get past linter
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        fake_user = User.objects.create(
+            username="dummyuser", first_name="Joe", last_name="Jones", email="AntarcticPolarBears@example.com"
+        )
+        fake_domain = Domain.objects.create(name="fake")
+        UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
+        # Make the request using the Client class
+        # which handles CSRF
+        # Follow=True handles the redirect
+        response = self.client.get(
+            "/admin/registrar/userdomainrole/",
+            {
+                "q": "AntarcticPolarBears@example.com",
+            },
+            follow=True,
+        )
+
+        # Assert that the query is added to the extra_context
+        self.assertIn("search_query", response.context)
+
+        search_query = response.context["search_query"]
+        self.assertEqual(search_query, "AntarcticPolarBears@example.com")
+
+        # We only need to check for the end of the HTML string
+        self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
 
 
 class ListHeaderAdminTest(TestCase):
