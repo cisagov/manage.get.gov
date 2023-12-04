@@ -91,9 +91,8 @@ function initializeWidgetOnToList(toList, toListId) {
         toList,
         toListId,
         'related-widget-wrapper-link change-related',
-        'Change selected item',
-        '/public/admin/img/icon-changelink.svg',
         'Change',
+        '/public/admin/img/icon-changelink.svg',
         {
             'contacts': '/admin/registrar/contact/__fk__/change/?_to_field=id&_popup=1',
             'websites': '/admin/registrar/website/__fk__/change/?_to_field=id&_popup=1',
@@ -103,49 +102,53 @@ function initializeWidgetOnToList(toList, toListId) {
         0
     );
 
-    // create the delete button
-    let deleteLink = createAndCustomizeLink(
-        toList,
-        toListId,
-        'related-widget-wrapper-link delete-related',
-        'Delete selected item',
-        '/public/admin/img/icon-deletelink.svg',
-        'Delete',
-        {
-            'contacts': '/admin/registrar/contact/__fk__/delete/?_to_field=id&amp;_popup=1',
-            'websites': '/admin/registrar/website/__fk__/delete/?_to_field=id&_popup=1',
-            'alternative_domains': '/admin/registrar/website/__fk__/delete/?_to_field=id&_popup=1',
-        },
-        true,
-        2
-    );
+    let hasDeletePermission = hasDeletePermissionOnPage();
+    console.log("hasDeletePermission = " + hasDeletePermission);
+
+    let deleteLink = null;
+    if (hasDeletePermission) {
+        // create the delete button
+        deleteLink = createAndCustomizeLink(
+            toList,
+            toListId,
+            'related-widget-wrapper-link delete-related',
+            'Delete',
+            '/public/admin/img/icon-deletelink.svg',
+            {
+                'contacts': '/admin/registrar/contact/__fk__/delete/?_to_field=id&amp;_popup=1',
+                'websites': '/admin/registrar/website/__fk__/delete/?_to_field=id&_popup=1',
+                'alternative_domains': '/admin/registrar/website/__fk__/delete/?_to_field=id&_popup=1',
+            },
+            true,
+            2
+        );
+    }
 
     // create the view button
     let viewLink = createAndCustomizeLink(
         toList,
         toListId,
         'related-widget-wrapper-link view-related',
-        'View selected item',
-        '/public/admin/img/icon-viewlink.svg',
         'View',
+        '/public/admin/img/icon-viewlink.svg',
         {
             'contacts': '/admin/registrar/contact/__fk__/change/?_to_field=id',
             'websites': '/admin/registrar/website/__fk__/change/?_to_field=id',
             'alternative_domains': '/admin/registrar/website/__fk__/change/?_to_field=id',
         },
         false,
-        3
+        hasDeletePermission ? 3 : 2
     );
 
     // identify the fromList element in the DOM
     let fromList = toList.closest('.selector').querySelector(".selector-available select");
 
     fromList.addEventListener('click', function(event) {
-        handleSelectClick(event, fromList, toList, changeLink, deleteLink, viewLink);
+        handleSelectClick(fromList, changeLink, deleteLink, viewLink);
     });
     
     toList.addEventListener('click', function(event) {
-        handleSelectClick(event, toList, fromList, changeLink, deleteLink, viewLink);
+        handleSelectClick(toList, changeLink, deleteLink, viewLink);
     });
     
     // Disable buttons when the selectors are interacted with (items are moved from one column to the other)
@@ -168,7 +171,7 @@ function initializeWidgetOnToList(toList, toListId) {
 //  dataMappings - dictionary which relates toListId to href for the created link
 //  dataPopup - boolean for whether the link should produce a popup window
 //  position - the position of the button in the list of buttons in the related-widget-wrapper in the widget
-function createAndCustomizeLink(toList, toListId, className, title, imgSrc, imgAlt, dataMappings, dataPopup, position) {
+function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dataMappings, dataPopup, position) {
     // Create a link element
     var link = document.createElement('a');
 
@@ -194,14 +197,15 @@ function createAndCustomizeLink(toList, toListId, className, title, imgSrc, imgA
     if (dataPopup)
         link.setAttribute('data-popup', 'yes');
     
-    link.title = title;
+    link.setAttribute('title-template', action + " selected item")
+    link.title = link.getAttribute('title-template');
 
     // Create an 'img' element
     var img = document.createElement('img');
 
     // Set attributes for the new image
     img.src = imgSrc;
-    img.alt = imgAlt;
+    img.alt = action;
 
     // Append the image to the link
     link.appendChild(img);
@@ -217,30 +221,39 @@ function createAndCustomizeLink(toList, toListId, className, title, imgSrc, imgA
 // or the to list. Action (enable or disable) taken depends on the tocal count of selected items across
 // both lists. If exactly one item is selected, buttons are enabled, and urls for the buttons associated
 // with the selected item
-function handleSelectClick(event, selectElement, relatedSelectElement, changeLink, deleteLink, viewLink) {
+function handleSelectClick(selectElement, changeLink, deleteLink, viewLink) {
 
     // If one item is selected (across selectElement and relatedSelectElement), enable buttons; otherwise, disable them
-    if (selectElement.selectedOptions.length + relatedSelectElement.selectedOptions.length === 1) {
-        if (selectElement.selectedOptions.length) {
-            // enable buttons for selected item in selectElement
-            enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, selectElement.selectedOptions[0].value);
-        } else {
-            // enable buttons for selected item in relatedSelectElement
-            enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, relatedSelectElement.selectedOptions[0].value);
-        }
+    if (selectElement.selectedOptions.length === 1) {
+        // enable buttons for selected item in selectElement
+        enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, selectElement.selectedOptions[0].value, selectElement.selectedOptions[0].text);
     } else {
         disableRelatedWidgetButtons(changeLink, deleteLink, viewLink);
     }
 }
 
-function disableRelatedWidgetButtons(changeLink, deleteLink, viewLink) {
-    changeLink.removeAttribute('href');
-    deleteLink.removeAttribute('href');
-    viewLink.removeAttribute('href');
+function hasDeletePermissionOnPage() {
+    return document.querySelector('.delete-related') != null
 }
 
-function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk) {
+function disableRelatedWidgetButtons(changeLink, deleteLink, viewLink) {
+    changeLink.removeAttribute('href');
+    changeLink.setAttribute('title', changeLink.getAttribute('title-template'));
+    if (deleteLink) {
+        deleteLink.removeAttribute('href');
+        deleteLink.setAttribute('title', deleteLink.getAttribute('title-template'));
+    }
+    viewLink.removeAttribute('href');
+    viewLink.setAttribute('title', viewLink.getAttribute('title-template'));
+}
+
+function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk, elementText) {
     changeLink.setAttribute('href', changeLink.getAttribute('data-href-template').replace('__fk__', elementPk));
-    deleteLink.setAttribute('href', deleteLink.getAttribute('data-href-template').replace('__fk__', elementPk));
+    changeLink.setAttribute('title', changeLink.getAttribute('title-template').replace('selected item', elementText));
+    if (deleteLink) {
+        deleteLink.setAttribute('href', deleteLink.getAttribute('data-href-template').replace('__fk__', elementPk));
+        deleteLink.setAttribute('title', deleteLink.getAttribute('title-template').replace('selected item', elementText));
+    }
     viewLink.setAttribute('href', viewLink.getAttribute('data-href-template').replace('__fk__', elementPk));
+    viewLink.setAttribute('title', viewLink.getAttribute('title-template').replace('selected item', elementText));
 }
