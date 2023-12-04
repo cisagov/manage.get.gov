@@ -144,23 +144,18 @@
   <header class="usa-header usa-header-basic">
     <div class="usa-nav-container">
       <div class="usa-navbar">
-        {% block logo %}
-        <div class="usa-logo" id="extended-logo">
-          <strong class="usa-logo__text" >
-            <a href="{% url 'home' %}"> .gov </a>
-          </strong>    
-        </div>
-
-          <a href="{% url 'home' %}" class="breadcrumb__back">
-            <strong class="display-flex">
+        <div class="usa-logo-group">
+          {% block logo %}
+            <div class="usa-logo display-inline-block" id="extended-logo">
+              <strong class="usa-logo__text" >
+                <a href="{% url 'home' %}"> .gov </a>
+              </strong>    
+            </div>
+          {% endblock %}
+          <a class="margin-left-3 manage_domain_back" href="{% url 'home' %}">
             Manage your domains
-            </strong>
-          </a>  
-
-
-
-
-        {% endblock %}
+          </a>
+        </div>
         <button type="button" class="usa-menu-btn">Menu</button>
       </div>
       {% block usa_nav %}

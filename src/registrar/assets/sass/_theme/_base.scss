@@ -37,10 +37,6 @@ body {
   @include typeset('sans', 'xl', 2);
   color: color('primary-darker');
 }
- 
-.usa-nav__primary {
-  margin-top: units(1);
-}
 
 .section--outlined {
   background-color: color('white');
