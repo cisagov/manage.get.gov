@@ -99,11 +99,10 @@ function initializeWidgetOnToList(toList, toListId) {
             'alternative_domains': '/admin/registrar/website/__fk__/change/?_to_field=id&_popup=1',
         },
         true,
-        0
+        true
     );
 
     let hasDeletePermission = hasDeletePermissionOnPage();
-    console.log("hasDeletePermission = " + hasDeletePermission);
 
     let deleteLink = null;
     if (hasDeletePermission) {
@@ -120,7 +119,7 @@ function initializeWidgetOnToList(toList, toListId) {
                 'alternative_domains': '/admin/registrar/website/__fk__/delete/?_to_field=id&_popup=1',
             },
             true,
-            2
+            false
         );
     }
 
@@ -137,7 +136,7 @@ function initializeWidgetOnToList(toList, toListId) {
             'alternative_domains': '/admin/registrar/website/__fk__/change/?_to_field=id',
         },
         false,
-        hasDeletePermission ? 3 : 2
+        false
     );
 
     // identify the fromList element in the DOM
@@ -170,8 +169,8 @@ function initializeWidgetOnToList(toList, toListId) {
 //  imgAlt - the img.alt for the created link
 //  dataMappings - dictionary which relates toListId to href for the created link
 //  dataPopup - boolean for whether the link should produce a popup window
-//  position - the position of the button in the list of buttons in the related-widget-wrapper in the widget
-function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dataMappings, dataPopup, position) {
+//  firstPosition - boolean indicating if link should be first position in list of links, otherwise, just before last link
+function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dataMappings, dataPopup, firstPosition) {
     // Create a link element
     var link = document.createElement('a');
 
@@ -210,8 +209,22 @@ function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dat
     // Append the image to the link
     link.appendChild(img);
 
+    let relatedWidgetWrapper = toList.closest('.related-widget-wrapper');
     // Insert the link at the specified position
-    toList.closest('.related-widget-wrapper').insertBefore(link, toList.closest('.related-widget-wrapper').children[position]);
+    if (firstPosition) {
+        relatedWidgetWrapper.insertBefore(link, relatedWidgetWrapper.children[0]);
+    } else {
+        var lastChild = relatedWidgetWrapper.lastChild;
+
+        // Check if lastChild is an element node (not a text node, comment, etc.)
+        if (lastChild.nodeType === 1) {
+            var previousSibling = lastChild.previousSibling;
+            while (previousSibling.nodeType !== 1) {
+                previousSibling = previousSibling.previousSibling;
+            }
+            relatedWidgetWrapper.insertBefore(link, previousSibling.nextSibling);
+        }
+    }
 
     // Return the link, which we'll use in the disable and enable functions
     return link;
