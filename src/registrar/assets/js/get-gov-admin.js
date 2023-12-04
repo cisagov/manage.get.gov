@@ -106,7 +106,7 @@ function initializeWidgetOnToList(toList, toListId) {
 
     let deleteLink = null;
     if (hasDeletePermission) {
-        // create the delete button
+        // create the delete button if user has permission to delete
         deleteLink = createAndCustomizeLink(
             toList,
             toListId,
@@ -165,11 +165,11 @@ function initializeWidgetOnToList(toList, toListId) {
 //  toList - the element in the DOM for the toList
 //  toListId - the ID of the element in the DOM
 //  className - className to add to the created link
+//  action - the action to perform on the item {change, delete, view}
 //  imgSrc - the img.src for the created link
-//  imgAlt - the img.alt for the created link
 //  dataMappings - dictionary which relates toListId to href for the created link
 //  dataPopup - boolean for whether the link should produce a popup window
-//  firstPosition - boolean indicating if link should be first position in list of links, otherwise, just before last link
+//  firstPosition - boolean indicating if link should be first position in list of links, otherwise, should be last link
 function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dataMappings, dataPopup, firstPosition) {
     // Create a link element
     var link = document.createElement('a');
@@ -210,15 +210,19 @@ function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dat
     link.appendChild(img);
 
     let relatedWidgetWrapper = toList.closest('.related-widget-wrapper');
-    // Insert the link at the specified position
+    // If firstPosition is true, insert link as the first child element
     if (firstPosition) {
         relatedWidgetWrapper.insertBefore(link, relatedWidgetWrapper.children[0]);
     } else {
+        // otherwise, insert the link prior to the last child (which is a div)
+        // and also prior to any text elements immediately preceding the last
+        // child node
         var lastChild = relatedWidgetWrapper.lastChild;
 
         // Check if lastChild is an element node (not a text node, comment, etc.)
         if (lastChild.nodeType === 1) {
             var previousSibling = lastChild.previousSibling;
+            // need to work around some white space which has been inserted into the dom
             while (previousSibling.nodeType !== 1) {
                 previousSibling = previousSibling.previousSibling;
             }
@@ -230,10 +234,9 @@ function createAndCustomizeLink(toList, toListId, className, action, imgSrc, dat
     return link;
 }
 
-// Either enable or disable widget buttons when select is clicked. Select can be in either the from list
-// or the to list. Action (enable or disable) taken depends on the tocal count of selected items across
-// both lists. If exactly one item is selected, buttons are enabled, and urls for the buttons associated
-// with the selected item
+// Either enable or disable widget buttons when select is clicked. Action (enable or disable) taken depends on the count
+// of selected items in selectElement. If exactly one item is selected, buttons are enabled, and urls for the buttons are
+// associated with the selected item
 function handleSelectClick(selectElement, changeLink, deleteLink, viewLink) {
 
     // If one item is selected (across selectElement and relatedSelectElement), enable buttons; otherwise, disable them
@@ -245,6 +248,8 @@ function handleSelectClick(selectElement, changeLink, deleteLink, viewLink) {
     }
 }
 
+// return true if there exist elements on the page with classname of delete-related.
+// presence of one or more of these elements indicates user has permission to delete
 function hasDeletePermissionOnPage() {
     return document.querySelector('.delete-related') != null
 }
