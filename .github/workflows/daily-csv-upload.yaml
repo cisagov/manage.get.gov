@@ -11,24 +11,15 @@ on:
           - stable
           - staging
           - development
-          - ky
-          - es
-          - nl
-          - rh
           - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - bl
-          - rjm
-          - dk
   schedule:
     # Runs every day at 5 AM UTC.
     - cron: "0 5 * * *"
 
 jobs:
-  variables: 
+  variables:
+    env:
+      report_environment: CF_REPORT_ENV
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
@@ -38,7 +29,7 @@ jobs:
         id: var
         with:
           script: |
-            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : "ZA";
+            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : ${{ secrets[env.report_environment] }};
             core.setOutput('environment', environment);
 
   upload-reports:
