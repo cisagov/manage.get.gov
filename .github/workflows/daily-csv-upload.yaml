@@ -2,6 +2,7 @@ name: Upload current-full.csv and current-federal.csv
 run-name: Upload current-full.csv and current-federal.csv for branch ${{ github.head_ref }}
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       environment:
