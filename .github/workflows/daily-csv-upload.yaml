@@ -28,7 +28,7 @@ jobs:
         id: var
         with:
           script: |
-            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : ${{ secrets[CF_REPORT_ENV] }};
+            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : ${{ secrets["CF_REPORT_ENV"] }};
             core.setOutput('environment', environment);
 
   upload-reports:
