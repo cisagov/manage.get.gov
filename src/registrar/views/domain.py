@@ -642,37 +642,37 @@ class DomainAddUserView(DomainFormBaseView):
     def _domain_abs_url(self):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
-    
-    def _send_domain_invitation_email(self, email_address:str):
+
+    def _send_domain_invitation_email(self, email_address: str):
         # created a new invitation in the database, so send an email
-            domaininfo = DomainInformation.objects.filter(domain=self.object)
-            first = domaininfo.first().creator.first_name
-            last = domaininfo.first().creator.last_name
-            full_name = f"{first} {last}"
+        domaininfo = DomainInformation.objects.filter(domain=self.object)
+        first = domaininfo.first().creator.first_name
+        last = domaininfo.first().creator.last_name
+        full_name = f"{first} {last}"
 
-            try:
-                send_templated_email(
-                    "emails/domain_invitation.txt",
-                    "emails/domain_invitation_subject.txt",
-                    to_address=email_address,
-                    context={
-                        "domain_url": self._domain_abs_url(),
-                        "domain": self.object,
-                        "full_name": full_name,
-                    },
-                )
-            except EmailSendingError:
-                messages.warning(self.request, "Could not send email invitation.")
-                logger.warn(
-                    "Could not sent email invitation to %s for domain %s",
-                    email_address,
-                    self.object,
-                    exc_info=True,
-                )
-            else:
-                messages.success(self.request, f"Invited {email_address} to this domain.")
+        try:
+            send_templated_email(
+                "emails/domain_invitation.txt",
+                "emails/domain_invitation_subject.txt",
+                to_address=email_address,
+                context={
+                    "domain_url": self._domain_abs_url(),
+                    "domain": self.object,
+                    "full_name": full_name,
+                },
+            )
+        except EmailSendingError:
+            messages.warning(self.request, "Could not send email invitation.")
+            logger.warn(
+                "Could not sent email invitation to %s for domain %s",
+                email_address,
+                self.object,
+                exc_info=True,
+            )
+        else:
+            messages.success(self.request, f"Invited {email_address} to this domain.")
 
-    def _make_invitation(self, email_address:str):
+    def _make_invitation(self, email_address: str):
         """Make a Domain invitation for this email and redirect with a message."""
         invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         if not created:
@@ -695,7 +695,7 @@ class DomainAddUserView(DomainFormBaseView):
             # no matching user, go make an invitation
             return self._make_invitation(requested_email)
         else:
-            #if user already exists then just send an email
+            # if user already exists then just send an email
             self._send_domain_invitation_email(requested_email)
 
         try:
