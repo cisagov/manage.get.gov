@@ -144,6 +144,18 @@ class DomainApplicationTests(TestWithUser, WebTest):
         result = page.form.submit()
         self.assertIn("What kind of U.S.-based government organization do you represent?", result)
 
+    def test_application_multiple_applications_exist(self):
+        """Test that an info message appears when user has multiple applications already"""
+        # create and submit an application
+        application = completed_application(user=self.user)
+        application.submit()
+        application.save()
+
+        # now, attempt to create another one
+        with less_console_noise():
+            page = self.app.get("/register/").follow()
+            self.assertContains(page, "You cannot submit this request yet")
+
     @boto3_mocking.patching
     def test_application_form_submission(self):
         """

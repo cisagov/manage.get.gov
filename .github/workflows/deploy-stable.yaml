@@ -30,12 +30,10 @@ jobs:
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Deploy to cloud.gov sandbox
-        uses: 18f/cg-deploy-action@main
-        env:
-          DEPLOY_NOW: thanks
+        uses: cloud-gov/cg-cli-tools@main
         with:
           cf_username: ${{ secrets.CF_STABLE_USERNAME }}
           cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: stable
-          push_arguments: "-f ops/manifests/manifest-stable.yaml"
+          cf_manifest: "ops/manifests/manifest-stable.yaml"
