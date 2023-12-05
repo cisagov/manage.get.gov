@@ -13,10 +13,8 @@
 {% endblock %}
 
 {% block form_required_fields_help_text %}
-{# there are no required fields on this page so don't show this #}
+{% include "includes/required_fields.html" %}
 {% endblock %}
-
-
 
 {% block form_fields %}
   {{ forms.0.management_form }}
@@ -24,7 +22,7 @@
   {% for form in forms.0.forms %}
     <fieldset class="usa-fieldset">
       <legend>
-        <h2>Organization contact {{ forloop.counter }}</h2>
+        <h2>Organization contact {{ forloop.counter }} (optional)</h2>
       </legend>
 
       {% input_with_errors form.first_name %}

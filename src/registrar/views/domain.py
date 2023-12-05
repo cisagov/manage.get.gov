@@ -280,6 +280,7 @@ class DomainNameserversView(DomainFormBaseView):
                 form.fields["server"].required = True
             else:
                 form.fields["server"].required = False
+                form.fields["server"].label += " (optional)"
             form.fields["domain"].initial = self.object.name
         return formset
 

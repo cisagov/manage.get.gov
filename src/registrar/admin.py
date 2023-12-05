@@ -454,7 +454,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
             "No other employees from your organization?",
             {"fields": ["no_other_contacts_rationale"]},
         ),
-        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        ("Anything else?", {"fields": ["anything_else"]}),
         (
             "Requirements for operating .gov domains",
             {"fields": ["is_policy_acknowledged"]},
@@ -600,7 +600,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             "No other employees from your organization?",
             {"fields": ["no_other_contacts_rationale"]},
         ),
-        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        ("Anything else?", {"fields": ["anything_else"]}),
         (
             "Requirements for operating .gov domains",
             {"fields": ["is_policy_acknowledged"]},
