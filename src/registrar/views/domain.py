@@ -706,7 +706,7 @@ class DomainAddUserView(DomainFormBaseView):
             return self._make_invitation(requested_email)
         else:
             # if user already exists then just send an email
-            self._send_domain_invitation_email(requested_email)
+            self._send_domain_invitation_email(requested_email, add_success=False)
 
         try:
             UserDomainRole.objects.create(
