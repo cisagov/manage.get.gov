@@ -63,6 +63,25 @@ function openInNewTab(el, removeAttribute = false){
     checkToListThenInitWidget('id_alternative_domains_to', 0);
 })();
 
+/** An IIFE to capitalize statuses in the Domain Application status dropdown
+*/
+(function (){
+    function capitalizeFirstLetterInDropdownOptions(dropdown_id) {
+        // Grabs the status dropdown
+        var selectElement = document.getElementById(dropdown_id);
+        if (selectElement) {
+            var options = selectElement.options;
+            // Loop through each option, and convert to sentence case
+            for (var i = 0; i < options.length; i++) {
+                var option = options[i];
+                option.text = option.text.charAt(0).toUpperCase() + option.text.slice(1).toLowerCase();
+            }
+        }
+    }
+    
+    capitalizeFirstLetterInDropdownOptions('id_status');
+})();
+
 // Function to check for the existence of the "to" select list element in the DOM, and if and when found,
 // initialize the associated widget
 function checkToListThenInitWidget(toListId, attempts) {
