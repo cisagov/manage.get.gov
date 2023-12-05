@@ -10,7 +10,15 @@ on:
 jobs:
   default:
     outputs:
-      default: CF_REPORT_ENV
+      default: ${{ steps.var.outputs.default}}
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Setting global variables
+        uses: actions/github-script@v6
+        id: var
+        with:
+          script: |
+            core.setOutput("default", "CF_REPORT_ENV");
 
   variables:
     needs: [default]
