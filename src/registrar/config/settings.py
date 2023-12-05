@@ -64,7 +64,7 @@ secret_registry_cert = b64decode(secret("REGISTRY_CERT", ""))
 secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
-
+# WILL REMOVE (TO PUSH TO SANDBOX)
 # region: Basic Django Config-----------------------------------------------###
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
