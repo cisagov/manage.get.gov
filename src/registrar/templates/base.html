@@ -150,16 +150,11 @@
           {% block logo %}
             <div class="usa-logo display-inline-block" id="extended-logo">
               <strong class="usa-logo__text" >
-                <a href="{% url 'home' %}"> .gov</a>
+                <a href="{% url 'home' %}">.gov registrar </a>
               </strong>    
             </div>
           {% endblock %}
-          {% url 'domain' pk=domain.id as url %} 
-          {% if request.path == url %}
-            <a class="margin-left-3 manage_domain_back" href="{% url 'home' %}">
-            Manage your domains
-            </a> 
-          {% endif %}
+
         </div>
         <button type="button" class="usa-menu-btn">Menu</button>
       </div>
