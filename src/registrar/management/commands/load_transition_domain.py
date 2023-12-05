@@ -176,6 +176,7 @@ class Command(BaseCommand):
             "clienthold": TransitionDomain.StatusChoices.ON_HOLD,
             "created": TransitionDomain.StatusChoices.READY,
             "ok": TransitionDomain.StatusChoices.READY,
+            "unknown": TransitionDomain.StatusChoices.UNKNOWN,
         }
         mapped_status = status_maps.get(status_to_map)
         return mapped_status

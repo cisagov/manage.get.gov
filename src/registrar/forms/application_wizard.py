@@ -399,6 +399,8 @@ class AlternativeDomainForm(RegistrarForm):
             raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
         except errors.DomainUnavailableError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+        except errors.RegistrySystemError:
+            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
@@ -484,6 +486,8 @@ class DotGovDomainForm(RegistrarForm):
             raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
         except errors.DomainUnavailableError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+        except errors.RegistrySystemError:
+            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
