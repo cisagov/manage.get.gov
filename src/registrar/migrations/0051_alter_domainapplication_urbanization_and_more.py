@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0048_alter_contact_middle_name_and_more"),
+        ("registrar", "0050_alter_contact_middle_name_and_more"),
     ]
 
     operations = [
