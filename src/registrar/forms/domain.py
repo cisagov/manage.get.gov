@@ -190,7 +190,7 @@ class ContactForm(forms.ModelForm):
         self.fields["email"].error_messages = {
             "required": "Enter your email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages = {"required": "Enter your phone number."}
+        self.fields["phone"].error_messages["required"] = "Enter your phone number."
 
 
 class AuthorizingOfficialContactForm(ContactForm):
@@ -213,7 +213,7 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages = {"required": "Enter a phone number for your authorizing official."}
+        self.fields["phone"].error_messages["required"] = "Enter a phone number for your authorizing official."
 
 
 class DomainSecurityEmailForm(forms.Form):
