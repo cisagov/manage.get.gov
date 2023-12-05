@@ -29,14 +29,14 @@ class DomainApplication(TimeStampedModel):
     REJECTED = "rejected"
     INELIGIBLE = "ineligible"
     STATUS_CHOICES = [
-        (STARTED, STARTED),
-        (SUBMITTED, SUBMITTED),
-        (IN_REVIEW, IN_REVIEW),
-        (ACTION_NEEDED, ACTION_NEEDED),
-        (APPROVED, APPROVED),
-        (WITHDRAWN, WITHDRAWN),
-        (REJECTED, REJECTED),
-        (INELIGIBLE, INELIGIBLE),
+        (STARTED, STARTED.capitalize()),
+        (SUBMITTED, SUBMITTED.capitalize()),
+        (IN_REVIEW, IN_REVIEW.capitalize()),
+        (ACTION_NEEDED, ACTION_NEEDED.capitalize()),
+        (APPROVED, APPROVED.capitalize()),
+        (WITHDRAWN, WITHDRAWN.capitalize()),
+        (REJECTED, REJECTED.capitalize()),
+        (INELIGIBLE, INELIGIBLE.capitalize()),
     ]
 
     class StateTerritoryChoices(models.TextChoices):

@@ -126,13 +126,13 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # The domain object exists in the registry
         # but nameservers don't exist for it yet
-        DNS_NEEDED = "dns needed"
+        DNS_NEEDED = "dns needed", "Dns needed"
 
         # Domain has had nameservers set, may or may not be active
         READY = "ready"
 
         # Registrar manually changed state to client hold
-        ON_HOLD = "on hold"
+        ON_HOLD = "on hold", "On hold"
 
         # previously existed but has been deleted from the registry
         DELETED = "deleted"
