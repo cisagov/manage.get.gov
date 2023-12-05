@@ -22,6 +22,14 @@
           {% include "includes/form_messages.html" %}
 {% endblock %}
 
+{% if pending_requests_message %}
+<div class="usa-alert usa-alert--info margin-bottom-3">
+  <div class="usa-alert__body">
+    {{ pending_requests_message }}
+  </div>
+</div>
+{% endif %}
+
 {% block form_errors %}
         {% comment %}
            to make sense of this loop, consider that 
@@ -69,6 +77,13 @@
               value="next"
               class="usa-button"
             >Save and continue</button>
+            {% elif pending_requests_exist %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="save_and_return"
+              class="usa-button usa-button--outline"
+            >Save and return to manage your domains</button>
             {% else %}
             <button
               type="submit"

@@ -8,6 +8,7 @@ from django.test import RequestFactory
 from ..views import available, check_domain_available
 from .common import less_console_noise
 from registrar.tests.common import MockEppLib
+from registrar.utility.errors import GenericError, GenericErrorCodes
 from unittest.mock import call
 
 from epplibwrapper import (
@@ -100,16 +101,25 @@ class AvailableViewTest(MockEppLib):
         response = available(request, domain="igorville")
         self.assertTrue(json.loads(response.content)["available"])
 
-    def test_error_handling(self):
-        """Calling with bad strings raises an error."""
+    def test_bad_string_handling(self):
+        """Calling with bad strings returns unavailable."""
         bad_string = "blah!;"
         request = self.factory.get(API_BASE_PATH + bad_string)
         request.user = self.user
         response = available(request, domain=bad_string)
         self.assertFalse(json.loads(response.content)["available"])
-        # domain set to raise error returns false for availability
-        error_domain_available = available(request, "errordomain.gov")
-        self.assertFalse(json.loads(error_domain_available.content)["available"])
+
+    def test_error_handling(self):
+        """Error thrown while calling availabilityAPI returns error."""
+        request = self.factory.get(API_BASE_PATH + "errordomain.gov")
+        request.user = self.user
+        # domain set to raise error returns false for availability and error message
+        error_domain_response = available(request, domain="errordomain.gov")
+        self.assertFalse(json.loads(error_domain_response.content)["available"])
+        self.assertEqual(
+            GenericError.get_error_message(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
+            json.loads(error_domain_response.content)["message"],
+        )
 
 
 class AvailableAPITest(MockEppLib):
