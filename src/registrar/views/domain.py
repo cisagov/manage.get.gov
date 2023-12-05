@@ -654,7 +654,7 @@ class DomainAddUserView(DomainFormBaseView):
         domainInfo = domainInfoResults.first()
         first = ""
         last = ""
-        if not domainInfo is None:
+        if domainInfo is not None:
             first = domainInfo.creator.first_name
             last = domainInfo.creator.last_name
         full_name = f"{first} {last}"
