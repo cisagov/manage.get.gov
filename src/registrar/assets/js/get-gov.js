@@ -73,6 +73,7 @@ function debounce(handler, cooldown=600) {
 
 /** Asyncronously fetches JSON. No error handling. */
 function fetchJSON(endpoint, callback, url="/api/v1/") {
+    console.log("fetchJSON called for endpoint " + endpoint);
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url + endpoint);
     xhr.send();
@@ -142,7 +143,7 @@ function _checkDomainAvailability(el) {
       inlineToast(el.parentElement, el.id, ERROR, response.message);
     }
   }
-  fetchJSON(`available/${el.value}`, callback);
+  fetchJSON(`available/?domain=${el.value}`, callback);
 }
 
 /** Call the API to see if the domain is good. */

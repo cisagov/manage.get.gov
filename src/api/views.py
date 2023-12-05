@@ -82,6 +82,7 @@ def available(request, domain=""):
     Response is a JSON dictionary with the key "available" and value true or
     false.
     """
+    domain = request.GET.get('domain', '')
     DraftDomain = apps.get_model("registrar.DraftDomain")
     # validate that the given domain could be a domain name and fail early if
     # not.

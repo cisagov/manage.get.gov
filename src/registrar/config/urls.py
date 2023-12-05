@@ -72,7 +72,7 @@ urlpatterns = [
     path("health/", views.health),
     path("openid/", include("djangooidc.urls")),
     path("register/", include((application_urls, APPLICATION_NAMESPACE))),
-    path("api/v1/available/<domain>", available, name="available"),
+    path("api/v1/available/", available, name="available"),
     path(
         "todo",
         lambda r: always_404(r, "We forgot to include this link, sorry."),
