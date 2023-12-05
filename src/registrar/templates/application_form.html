@@ -56,9 +56,12 @@
 {% block form_instructions %}
 {% endblock %}
 
-{% block form_required_fields_help_text %}
-  {% include "includes/required_fields.html" %}
-{% endblock %}
+<!-- The "No other employees from your organization?" page is a one-field form and should not have the required fields sentence -->
+{% if steps.current != "no_other_contacts" %}
+  {% block form_required_fields_help_text %}
+    {% include "includes/required_fields.html" %}
+  {% endblock %}
+{% endif %}
 
         <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
           {% csrf_token %}
