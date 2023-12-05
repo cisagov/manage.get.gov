@@ -111,7 +111,7 @@
             {{ application.requested_domain.name|default:"New domain request" }}
           </th>
           <td data-sort-value="{{ application.created_at|date:"U" }}" data-label="Date created">{{ application.created_at|date }}</td>
-          <td data-label="Status">{{ application.status|title }}</td>
+          <td data-label="Status">{{ application.status|capfirst }}</td>
           <td>
              {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
               <a href="{% url 'edit-application' application.pk %}">
