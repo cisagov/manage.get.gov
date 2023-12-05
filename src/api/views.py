@@ -6,6 +6,8 @@ from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.errors import GenericError, GenericErrorCodes
+# comment out after testing
+from epplibwrapper.errors import RegistryError
 
 import requests
 
@@ -67,6 +69,9 @@ def check_domain_available(domain):
     a match. If check fails, throws a RegistryError.
     """
     Domain = apps.get_model("registrar.Domain")
+    # TODO: remove this block it is used for testing on dev sandbox to verify error retry
+    if "bad" in domain:
+        raise RegistryError("Forced Registry Error from bad domain")
     if domain.endswith(".gov"):
         return Domain.available(domain)
     else:
