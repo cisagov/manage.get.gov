@@ -30,7 +30,7 @@ jobs:
         id: var
         with:
           script: |
-            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : ${{ secrets[env.DEFAULT_ENV]] }};
+            const environment = (github && github.event && github.event.inputs) ? github.event.inputs.environment : ${{ secrets[env.DEFAULT_ENV] }};
             core.setOutput('environment', environment);
 
   upload-reports:
