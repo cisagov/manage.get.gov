@@ -9,7 +9,6 @@ on:
 
   upload-reports:
     runs-on: ubuntu-latest
-    needs: [variables]
     env:
       CF_USERNAME: CF_${{ secrets.CF_REPORT_ENV }}_USERNAME
       CF_PASSWORD: CF_${{ secrets.CF_REPORT_ENV }}_PASSWORD
