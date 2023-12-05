@@ -8,7 +8,14 @@ on:
     - cron: "0 5 * * *"
 
 jobs:
+  default:
+    outputs:
+      default: CF_REPORT_ENV
+
   variables:
+    needs: [default]
+    env:
+      CF_DEFAULT: $ {{ needs.default.outputs.default }}
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
@@ -18,9 +25,8 @@ jobs:
         id: var
         with:
           script: |
-            const default = "CF_REPORT_ENV"
-            const environment = ${{ secrets[default] }};
-            core.setOutput('environment', environment);
+            const environment = ${{ secrets[env.CF_DEFAULT] }};
+            core.setOutput("environment", environment);
 
   upload-reports:
     runs-on: ubuntu-latest
