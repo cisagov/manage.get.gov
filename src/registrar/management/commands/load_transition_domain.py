@@ -536,23 +536,28 @@ class Command(BaseCommand):
                                 domain_name=new_entry_domain_name,
                             )
 
-                            if existing_entry.processed:
-                                # TODO - do something here
-                                pass
-
-                            if existing_entry.status != new_entry_status:
-                                # DEBUG:
+                            if not existing_entry.processed:
+                                if existing_entry.status != new_entry_status:
+                                    # DEBUG:
+                                    TerminalHelper.print_conditional(
+                                        debug_on,
+                                        f"{TerminalColors.OKCYAN}"
+                                        f"Updating entry: {existing_entry}"
+                                        f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
+                                        f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
+                                        f"{TerminalColors.ENDC}",
+                                    )
+                                    existing_entry.status = new_entry_status
+                                existing_entry.email_sent = new_entry_emailSent
+                                existing_entry.processed = True
+                                existing_entry.save()
+                            else:
                                 TerminalHelper.print_conditional(
                                     debug_on,
-                                    f"{TerminalColors.OKCYAN}"
-                                    f"Updating entry: {existing_entry}"
-                                    f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
-                                    f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
+                                    f"{TerminalColors.YELLOW}"
+                                    f"Skipping update on processed domain: {existing_entry}"
                                     f"{TerminalColors.ENDC}",
                                 )
-                                existing_entry.status = new_entry_status
-                            existing_entry.email_sent = new_entry_emailSent
-                            existing_entry.save()
                         except TransitionDomain.MultipleObjectsReturned:
                             logger.info(
                                 f"{TerminalColors.FAIL}"
@@ -562,6 +567,7 @@ class Command(BaseCommand):
                                 f"----------TERMINATING----------"
                             )
                             sys.exit()
+                            
                     else:
                         # no matching entry, make one
                         new_entry = TransitionDomain(
