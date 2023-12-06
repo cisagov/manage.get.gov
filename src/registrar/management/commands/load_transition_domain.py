@@ -536,6 +536,10 @@ class Command(BaseCommand):
                                 domain_name=new_entry_domain_name,
                             )
 
+                            if existing_entry.processed:
+                                # TODO - do something here
+                                pass
+
                             if existing_entry.status != new_entry_status:
                                 # DEBUG:
                                 TerminalHelper.print_conditional(
@@ -565,6 +569,7 @@ class Command(BaseCommand):
                             domain_name=new_entry_domain_name,
                             status=new_entry_status,
                             email_sent=new_entry_emailSent,
+                            processed=False
                         )
                         to_create.append(new_entry)
                         total_new_entries += 1
