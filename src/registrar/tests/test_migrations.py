@@ -41,6 +41,8 @@ class TestGroups(TestCase):
             "change_draftdomain",
             "analyst_access_permission",
             "change_user",
+            "delete_userdomainrole",
+            "view_userdomainrole",
             "change_website",
         ]
 
