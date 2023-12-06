@@ -23,8 +23,8 @@ class DomainApplication(TimeStampedModel):
     class ApplicationStatus(models.TextChoices):
         STARTED = "started", "Started"
         SUBMITTED = "submitted", "Submitted"
-        IN_REVIEW = "in_review", "In review"
-        ACTION_NEEDED = "action_needed", "Action needed"
+        IN_REVIEW = "in review", "In review"
+        ACTION_NEEDED = "action needed", "Action needed"
         APPROVED = "approved", "Approved"
         WITHDRAWN = "withdrawn", "Withdrawn"
         REJECTED = "rejected", "Rejected"

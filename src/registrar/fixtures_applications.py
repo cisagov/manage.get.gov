@@ -49,27 +49,27 @@ class DomainApplicationFixture:
     # },
     DA = [
         {
-            "status": "started",
+            "status": DomainApplication.ApplicationStatus.STARTED,
             "organization_name": "Example - Finished but not submitted",
         },
         {
-            "status": "submitted",
+            "status": DomainApplication.ApplicationStatus.SUBMITTED,
             "organization_name": "Example - Submitted but pending investigation",
         },
         {
-            "status": "in review",
+            "status": DomainApplication.ApplicationStatus.IN_REVIEW,
             "organization_name": "Example - In investigation",
         },
         {
-            "status": "in review",
+            "status": DomainApplication.ApplicationStatus.IN_REVIEW,
             "organization_name": "Example - Approved",
         },
         {
-            "status": "withdrawn",
+            "status": DomainApplication.ApplicationStatus.WITHDRAWN,
             "organization_name": "Example - Withdrawn",
         },
         {
-            "status": "action needed",
+            "status": DomainApplication.ApplicationStatus.ACTION_NEEDED,
             "organization_name": "Example - Action needed",
         },
         {
