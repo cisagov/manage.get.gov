@@ -69,9 +69,6 @@ def check_domain_available(domain):
     a match. If check fails, throws a RegistryError.
     """
     Domain = apps.get_model("registrar.Domain")
-    # TODO: remove this block it is used for testing on dev sandbox to verify error retry
-    if "bad" in domain:
-        raise RegistryError("Forced Registry Error from bad domain")
     if domain.endswith(".gov"):
         return Domain.available(domain)
     else:
