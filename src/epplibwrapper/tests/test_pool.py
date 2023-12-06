@@ -246,7 +246,3 @@ class TestConnectionPool(TestCase):
                 expected = "InfoDomain failed to execute due to a connection error."
                 result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
                 self.assertEqual(result, expected)
-
-    @patch.object(EPPLibWrapper, "_test_registry_connection_success", patch_success)
-    def test_retries_on_transport_error(self):
-        """A .send is invoked on the pool, but [description for transport error]."""
