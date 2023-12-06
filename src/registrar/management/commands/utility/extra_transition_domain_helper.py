@@ -157,7 +157,7 @@ class LoadExtraTransitionDomain:
         given in self.parsed_data_container"""
         all_transition_domains = TransitionDomain.objects.all()
         if not all_transition_domains.exists():
-            raise ValueError("No updateable TransitionDomain objects exist.")
+            raise ValueError("No updatable TransitionDomain objects exist.")
 
         updated_transition_domains = []
         failed_transition_domains = []
