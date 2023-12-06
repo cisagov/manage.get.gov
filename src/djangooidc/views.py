@@ -75,7 +75,7 @@ def login_callback(request):
             # if not satisfied, redirect user to login with stepped up acr_value
             if requires_step_up_auth(userinfo):
                 # add acr_value to request.session
-                request.session["acr_value"] = CLIENT.behaviour.get("step_up_acr_value")
+                request.session["acr_value"] = CLIENT.get_step_up_acr_value()
                 return CLIENT.create_authn_request(request.session)
 
             login(request, user)
@@ -87,13 +87,13 @@ def login_callback(request):
         return error_page(request, err)
 
 def requires_step_up_auth(userinfo):
-    # if User.needs_identity_verification and step_up_acr_value not in 
-    # ial returned from callback, redirect to 
-    step_up_acr_value = CLIENT.behavior.get("step_up_acr_value", "UNKNOWN")
+    """ if User.needs_identity_verification and step_up_acr_value not in
+    ial returned from callback, return True """
+    step_up_acr_value = CLIENT.get_step_up_acr_value()
     acr_value = userinfo.get("ial", "")
     uuid = userinfo.get("sub", "")
     email = userinfo.get("email", "")
-    return User.needs_identity_verification(email, uuid) and acr_value == step_up_acr_value
+    return User.needs_identity_verification(email, uuid) and acr_value != step_up_acr_value
 
 def logout(request, next_page=None):
     """Redirect the user to the authentication provider (OP) logout page."""
@@ -124,7 +124,6 @@ def logout(request, next_page=None):
         next_page = getattr(settings, "LOGOUT_REDIRECT_URL", None)
         if next_page:
             request.session["next"] = next_page
-
 
 def logout_callback(request):
     """Simple redirection view: after logout, redirect to `next`."""

@@ -65,7 +65,7 @@ class User(AbstractUser):
         return self.status == self.RESTRICTED
 
     @classmethod
-    def needs_identity_verification(email, uuid):
+    def needs_identity_verification(cls, email, uuid):
         return True
     
     def check_domain_invitations_on_login(self):

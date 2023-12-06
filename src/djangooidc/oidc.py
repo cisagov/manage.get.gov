@@ -89,7 +89,6 @@ class Client(oic.Client):
         """Step 2: Construct a login URL at OP's domain and send the user to it."""
         logger.debug("Creating the OpenID Connect authn request...")
         state = rndstr(size=32)
-        logger.info(session["acr_value"])
         try:
             session["state"] = state
             session["nonce"] = rndstr(size=32)
@@ -101,7 +100,9 @@ class Client(oic.Client):
                 "state": session["state"],
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
-                "acr_values": session["acr_value"] if session["acr_value"] else self.behaviour.get("acr_value"),
+                # acr_value may be passed in session if overriding, as in the case
+                # of step up auth, otherwise get from settings.py
+                "acr_values": session.get("acr_value") or self.behaviour.get("acr_value"),
             }
 
             if extra_args is not None:
@@ -146,7 +147,7 @@ class Client(oic.Client):
             raise o_e.InternalError(locator=state)
 
         return response
-
+    
     def callback(self, unparsed_response, session):
         """Step 3: Receive OP's response, request an access token, and user info."""
         logger.debug("Processing the OpenID Connect callback response...")
@@ -273,6 +274,11 @@ class Client(oic.Client):
 
         super(Client, self).store_response(resp, info)
 
+    def get_step_up_acr_value(self):
+        """returns the step_up_acr_value from settings
+        this helper function is called from djangooidc views"""
+        return self.behaviour.get("step_up_acr_value")
+    
     def __repr__(self):
         return "Client {} {} {}".format(
             self.client_id,
