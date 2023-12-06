@@ -559,9 +559,7 @@ class Command(BaseCommand):
         debug_max_entries_to_parse,
         total_rows_parsed,
     ):
-        changed_transition_domains = TransitionDomain.objects.filter(
-            processed=False
-        )
+        changed_transition_domains = TransitionDomain.objects.filter(processed=False)
         for transition_domain in changed_transition_domains:
             (
                 target_domain_information,
@@ -647,9 +645,7 @@ class Command(BaseCommand):
         debug_max_entries_to_parse,
         total_rows_parsed,
     ):
-        changed_transition_domains = TransitionDomain.objects.filter(
-            processed=False
-        )
+        changed_transition_domains = TransitionDomain.objects.filter(processed=False)
         for transition_domain in changed_transition_domains:
             # Create some local variables to make data tracing easier
             transition_domain_name = transition_domain.domain_name

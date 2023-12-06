@@ -560,7 +560,7 @@ class Command(BaseCommand):
                                 f"----------TERMINATING----------"
                             )
                             sys.exit()
-                            
+
                     else:
                         # no matching entry, make one
                         new_entry = TransitionDomain(
@@ -568,7 +568,7 @@ class Command(BaseCommand):
                             domain_name=new_entry_domain_name,
                             status=new_entry_status,
                             email_sent=new_entry_emailSent,
-                            processed=False
+                            processed=False,
                         )
                         to_create.append(new_entry)
                         total_new_entries += 1
