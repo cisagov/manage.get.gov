@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, urlencode
 
 from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
+from registrar.models import User
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,6 @@ def error_page(request, error):
 def openid(request):
     """Redirect the user to an authentication provider (OP)."""
     request.session["next"] = request.GET.get("next", "/")
-    request.session["acr_value"] = request.GET.get("acr_value",)
 
     try:
         return CLIENT.create_authn_request(request.session)
@@ -74,10 +74,10 @@ def login_callback(request):
             # test for need for identity verification and if it is satisfied
             # if not satisfied, redirect user to login with stepped up acr_value
             if requires_step_up_auth(userinfo):
-                return 
-            # 
-            # if User.needs_identity_verification and step_up_acr_value not in 
-            # ial returned from callback, redirect to 
+                # add acr_value to request.session
+                request.session["acr_value"] = CLIENT.behaviour.get("step_up_acr_value")
+                return CLIENT.create_authn_request(request.session)
+
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
             return redirect(request.session.get("next", "/"))
@@ -87,7 +87,14 @@ def login_callback(request):
         return error_page(request, err)
 
 def requires_step_up_auth(userinfo):
-    step_up_acr_value = 
+    # if User.needs_identity_verification and step_up_acr_value not in 
+    # ial returned from callback, redirect to 
+    step_up_acr_value = CLIENT.behavior.get("step_up_acr_value", "UNKNOWN")
+    acr_value = userinfo.get("ial", "")
+    uuid = userinfo.get("sub", "")
+    email = userinfo.get("email", "")
+    return User.needs_identity_verification(email, uuid) and acr_value == step_up_acr_value
+
 def logout(request, next_page=None):
     """Redirect the user to the authentication provider (OP) logout page."""
     try:

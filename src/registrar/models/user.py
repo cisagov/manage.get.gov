@@ -64,6 +64,10 @@ class User(AbstractUser):
     def is_restricted(self):
         return self.status == self.RESTRICTED
 
+    @classmethod
+    def needs_identity_verification(email, uuid):
+        return True
+    
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
         invitations that match their email address."""

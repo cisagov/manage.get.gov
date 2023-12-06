@@ -89,6 +89,7 @@ class Client(oic.Client):
         """Step 2: Construct a login URL at OP's domain and send the user to it."""
         logger.debug("Creating the OpenID Connect authn request...")
         state = rndstr(size=32)
+        logger.info(session["acr_value"])
         try:
             session["state"] = state
             session["nonce"] = rndstr(size=32)
@@ -100,7 +101,7 @@ class Client(oic.Client):
                 "state": session["state"],
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
-                "acr_values": self.behaviour.get("acr_value"),
+                "acr_values": session["acr_value"] if session["acr_value"] else self.behaviour.get("acr_value"),
             }
 
             if extra_args is not None:
