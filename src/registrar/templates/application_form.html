@@ -22,6 +22,14 @@
           {% include "includes/form_messages.html" %}
 {% endblock %}
 
+{% if pending_requests_message %}
+<div class="usa-alert usa-alert--info margin-bottom-3">
+  <div class="usa-alert__body">
+    {{ pending_requests_message }}
+  </div>
+</div>
+{% endif %}
+
 {% block form_errors %}
         {% comment %}
            to make sense of this loop, consider that 
@@ -48,9 +56,12 @@
 {% block form_instructions %}
 {% endblock %}
 
-{% block form_required_fields_help_text %}
-  {% include "includes/required_fields.html" %}
-{% endblock %}
+<!-- The "No other employees from your organization?" page is a one-field form and should not have the required fields sentence -->
+{% if steps.current != "no_other_contacts" %}
+  {% block form_required_fields_help_text %}
+    {% include "includes/required_fields.html" %}
+  {% endblock %}
+{% endif %}
 
         <form id="step__{{steps.current}}" class="usa-form usa-form--large" method="post" novalidate>
           {% csrf_token %}
@@ -66,6 +77,13 @@
               value="next"
               class="usa-button"
             >Save and continue</button>
+            {% elif pending_requests_exist %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="save_and_return"
+              class="usa-button usa-button--outline"
+            >Save and return to manage your domains</button>
             {% else %}
             <button
               type="submit"

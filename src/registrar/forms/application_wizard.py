@@ -244,7 +244,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     address_line2 = forms.CharField(
         required=False,
-        label="Street address line 2",
+        label="Street address line 2 (optional)",
     )
     city = forms.CharField(
         label="City",
@@ -268,7 +268,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     urbanization = forms.CharField(
         required=False,
-        label="Urbanization (Puerto Rico only)",
+        label="Urbanization (required for Puerto Rico only)",
     )
 
     def clean_federal_agency(self):
@@ -331,7 +331,7 @@ class AuthorizingOfficialForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -399,13 +399,15 @@ class AlternativeDomainForm(RegistrarForm):
             raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
         except errors.DomainUnavailableError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+        except errors.RegistrySystemError:
+            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
 
     alternative_domain = forms.CharField(
         required=False,
-        label="Alternative domain",
+        label="",
     )
 
 
@@ -484,6 +486,8 @@ class DotGovDomainForm(RegistrarForm):
             raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
         except errors.DomainUnavailableError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
+        except errors.RegistrySystemError:
+            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
         except ValueError:
             raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
         return validated
@@ -529,7 +533,7 @@ class YourContactForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -558,7 +562,7 @@ class OtherContactsForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -610,8 +614,8 @@ class NoOtherContactsForm(RegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=(
-            "Please explain why there are no other employees from your organization"
-            " we can contact to help us assess your eligibility for a .gov domain."
+            "Please explain why there are no other employees from your organization "
+            "we can contact to help us assess your eligibility for a .gov domain."
         ),
         widget=forms.Textarea(),
     )
@@ -620,7 +624,7 @@ class NoOtherContactsForm(RegistrarForm):
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
         required=False,
-        label="Anything else we should know?",
+        label="Anything else?",
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(

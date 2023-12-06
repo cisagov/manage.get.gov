@@ -3,6 +3,7 @@ import logging
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
@@ -85,7 +86,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
         Step.NO_OTHER_CONTACTS: _("No other employees from your organization?"),
-        Step.ANYTHING_ELSE: _("Anything else we should know?"),
+        Step.ANYTHING_ELSE: _("Anything else?"),
         Step.REQUIREMENTS: _("Requirements for operating .gov domains"),
         Step.REVIEW: _("Review and submit your domain request"),
     }
@@ -218,6 +219,23 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         self.steps.current = current_url
         context = self.get_context_data()
         context["forms"] = self.get_forms()
+
+        # if pending requests exist and user does not have approved domains,
+        # present message that domain application cannot be submitted
+        pending_requests = self.pending_requests()
+        if len(pending_requests) > 0:
+            message_header = "You cannot submit this request yet"
+            message_content = (
+                f"<h4 class='usa-alert__heading'>{message_header}</h4> "
+                "<p class='margin-bottom-0'>New domain requests cannot be submitted until we have finished "
+                f"reviewing your pending request: <strong>{pending_requests[0].requested_domain}</strong>. "
+                "You can continue to fill out this request and save it as a draft to be submitted later. "
+                f"<a class='usa-link' href='{reverse('home')}'>View your pending requests.</a></p>"
+            )
+            context["pending_requests_message"] = mark_safe(message_content)  # nosec
+
+        context["pending_requests_exist"] = len(pending_requests) > 0
+
         return render(request, self.template_name, context)
 
     def get_all_forms(self, **kwargs) -> list:
@@ -265,6 +283,37 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                 instantiated.append(form(initial=data, **kwargs))
 
         return instantiated
+
+    def pending_requests(self):
+        """return an array of pending requests if user has pending requests
+        and no approved requests"""
+        if self.approved_applications_exist() or self.approved_domains_exist():
+            return []
+        else:
+            return self.pending_applications()
+
+    def approved_applications_exist(self):
+        """Checks if user is creator of applications with APPROVED status"""
+        approved_application_count = DomainApplication.objects.filter(
+            creator=self.request.user, status=DomainApplication.APPROVED
+        ).count()
+        return approved_application_count > 0
+
+    def approved_domains_exist(self):
+        """Checks if user has permissions on approved domains
+
+        This additional check is necessary to account for domains which were migrated
+        and do not have an application"""
+        return self.request.user.permissions.count() > 0
+
+    def pending_applications(self):
+        """Returns a List of user's applications with one of the following states:
+        SUBMITTED, IN_REVIEW, ACTION_NEEDED"""
+        # if the current application has ACTION_NEEDED status, this check should not be performed
+        if self.application.status == DomainApplication.ACTION_NEEDED:
+            return []
+        check_statuses = [DomainApplication.SUBMITTED, DomainApplication.IN_REVIEW, DomainApplication.ACTION_NEEDED]
+        return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
@@ -328,6 +377,10 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if button == "save":
             messages.success(request, "Your progress has been saved!")
             return self.goto(self.steps.current)
+        # if user opted to save progress and return,
+        # return them to the home page
+        if button == "save_and_return":
+            return HttpResponseRedirect(reverse("home"))
         # otherwise, proceed as normal
         return self.goto_next_step()
 

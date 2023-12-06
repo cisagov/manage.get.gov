@@ -442,7 +442,7 @@ class DomainApplication(TimeStampedModel):
     address_line2 = models.TextField(
         null=True,
         blank=True,
-        help_text="Street address line 2",
+        help_text="Street address line 2 (optional)",
     )
     city = models.TextField(
         null=True,
@@ -465,7 +465,7 @@ class DomainApplication(TimeStampedModel):
     urbanization = models.TextField(
         null=True,
         blank=True,
-        help_text="Urbanization (Puerto Rico only)",
+        help_text="Urbanization (required for Puerto Rico only)",
     )
 
     about_your_organization = models.TextField(
@@ -487,6 +487,7 @@ class DomainApplication(TimeStampedModel):
         "registrar.Website",
         blank=True,
         related_name="current+",
+        verbose_name="websites",
     )
 
     approved_domain = models.OneToOneField(
@@ -532,6 +533,7 @@ class DomainApplication(TimeStampedModel):
         "registrar.Contact",
         blank=True,
         related_name="contact_applications",
+        verbose_name="contacts",
     )
 
     no_other_contacts_rationale = models.TextField(
@@ -543,7 +545,7 @@ class DomainApplication(TimeStampedModel):
     anything_else = models.TextField(
         null=True,
         blank=True,
-        help_text="Anything else we should know?",
+        help_text="Anything else?",
     )
 
     is_policy_acknowledged = models.BooleanField(
