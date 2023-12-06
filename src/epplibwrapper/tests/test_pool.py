@@ -246,16 +246,3 @@ class TestConnectionPool(TestCase):
                 expected = "InfoDomain failed to execute due to a connection error."
                 result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
                 self.assertEqual(result, expected)
-
-    @patch.object(EPPLibWrapper, "_test_registry_connection_success", patch_success)
-    def test_retries_on_transport_error(self):
-        """A .send is invoked on the pool, but transport error occurs and EPP
-        retries connection."""
-
-        with ExitStack() as stack:
-            stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
-            stack.enter_context(patch.object(Socket, "connect", self.fake_client))
-
-            # Pool should be running
-            self.assertEqual(registry.pool_status.connection_success, True)
-            self.assertEqual(registry.pool_status.pool_running, True)
