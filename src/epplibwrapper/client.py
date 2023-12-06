@@ -158,7 +158,7 @@ class EPPLibWrapper:
                 # The end user will need to recall .send.
                 self.start_connection_pool()
 
-        counter = 0
+        counter = 0  # we'll try 3 times
         while True:
             try:
                 return self._send(command)
