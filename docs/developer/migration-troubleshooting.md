@@ -9,7 +9,7 @@ Some common commands:
 - ./manage.py showmigrations -- shows the current migrations that are finished, all should have [x]
 - ./manage.py makemigrations -- makes the migration
 - ./manage.py showmigrations -- now you should see the new/updated migration with a [ ]
-- ./manage.py migrate [folder name here, ie registrar]
+- ./manage.py migrate [folder name here, ie registrar] -- applies those changes to db for specific folder
 - ./manage.py showmigrations -- the migration changes should now have a [x] by it
 
 
@@ -110,7 +110,7 @@ Test out the sandbox from there and it should be working!
 
 **Debug connectivity**
 
-dig getgov-rh.app.cloud.gov (domain information groper, gets DNS nameserver information)
+dig https://getgov-<app>.app.cloud.gov (domain information groper, gets DNS nameserver information)
 curl -v https://getgov-<app>.app.cloud.gov/ --resolve 'getgov-<app>.app.cloud.gov:<your-ip-address-from-dig-command-above-here>' (this gets you access to ping to it)
 You should be able to play around with your sandbox and see from the curl command above that it’s being pinged. This command is basically log stream, but gives you full access to make sure you can ping the sandbox manually
 https://cisa-corp.slack.com/archives/C05BGB4L5NF/p1697810600723069
