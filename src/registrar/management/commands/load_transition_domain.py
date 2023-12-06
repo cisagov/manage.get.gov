@@ -536,28 +536,21 @@ class Command(BaseCommand):
                                 domain_name=new_entry_domain_name,
                             )
 
-                            if not existing_entry.processed:
-                                if existing_entry.status != new_entry_status:
-                                    # DEBUG:
-                                    TerminalHelper.print_conditional(
-                                        debug_on,
-                                        f"{TerminalColors.OKCYAN}"
-                                        f"Updating entry: {existing_entry}"
-                                        f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
-                                        f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
-                                        f"{TerminalColors.ENDC}",
-                                    )
-                                    existing_entry.status = new_entry_status
-                                existing_entry.email_sent = new_entry_emailSent
-                                existing_entry.processed = True
-                                existing_entry.save()
-                            else:
+                            if existing_entry.status != new_entry_status:
+                                # DEBUG:
                                 TerminalHelper.print_conditional(
                                     debug_on,
-                                    f"{TerminalColors.YELLOW}"
-                                    f"Skipping update on processed domain: {existing_entry}"
+                                    f"{TerminalColors.OKCYAN}"
+                                    f"Updating entry: {existing_entry}"
+                                    f"Status: {existing_entry.status} > {new_entry_status}"  # noqa
+                                    f"Email Sent: {existing_entry.email_sent} > {new_entry_emailSent}"  # noqa
                                     f"{TerminalColors.ENDC}",
                                 )
+                                existing_entry.status = new_entry_status
+                            existing_entry.email_sent = new_entry_emailSent
+                            existing_entry.processed = True
+                            existing_entry.save()
+
                         except TransitionDomain.MultipleObjectsReturned:
                             logger.info(
                                 f"{TerminalColors.FAIL}"

@@ -155,13 +155,13 @@ class LoadExtraTransitionDomain:
     def update_transition_domain_models(self):
         """Updates TransitionDomain objects based off the file content
         given in self.parsed_data_container"""
-        valid_transition_domains = TransitionDomain.objects.filter(processed=False)
-        if not valid_transition_domains.exists():
+        all_transition_domains = TransitionDomain.objects.all()
+        if not all_transition_domains.exists():
             raise ValueError("No updateable TransitionDomain objects exist.")
 
         updated_transition_domains = []
         failed_transition_domains = []
-        for transition_domain in valid_transition_domains:
+        for transition_domain in all_transition_domains:
             domain_name = transition_domain.domain_name
             updated_transition_domain = transition_domain
             try:
@@ -228,7 +228,7 @@ class LoadExtraTransitionDomain:
         # DATA INTEGRITY CHECK
         # Make sure every Transition Domain got updated
         total_transition_domains = len(updated_transition_domains)
-        total_updates_made = TransitionDomain.objects.filter(processed=False).count()
+        total_updates_made = TransitionDomain.objects.all().count()
         if total_transition_domains != total_updates_made:
             # noqa here for line length
             logger.error(
