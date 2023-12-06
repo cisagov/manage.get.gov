@@ -1,6 +1,7 @@
 import logging
 from django import forms
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -341,6 +342,17 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
     search_help_text = "Search by user, domain, or role."
 
     autocomplete_fields = ["user", "domain"]
+
+    # Fixes a bug where non-superusers are redirected to the main page
+    def delete_view(self, request, object_id, extra_context=None):
+        """Custom delete_view implementation that specifies redirect behaviour"""
+        response = super().delete_view(request, object_id, extra_context)
+
+        if isinstance(response, HttpResponseRedirect) and not request.user.has_perm("registrar.full_access_permission"):
+            url = reverse("admin:registrar_userdomainrole_changelist")
+            return redirect(url)
+        else:
+            return response
 
 
 class DomainInvitationAdmin(ListHeaderAdmin):
