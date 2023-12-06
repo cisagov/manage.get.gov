@@ -7,9 +7,6 @@ from django.utils.safestring import mark_safe
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.errors import GenericError, GenericErrorCodes
 
-# comment out after testing
-from epplibwrapper.errors import RegistryError
-
 import requests
 
 from login_required import login_not_required
