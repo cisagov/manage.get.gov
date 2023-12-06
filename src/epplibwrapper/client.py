@@ -158,16 +158,13 @@ class EPPLibWrapper:
                 # The end user will need to recall .send.
                 self.start_connection_pool()
 
-        counter = 0  # we'll try 3 times
-        logger.info("Counter set to: ", counter)
+        counter = 0
         while True:
             try:
-                logger.info("Trying self._send(command)")
                 return self._send(command)
             except RegistryError as err:
-                logger.info("Exception found")
                 if counter < 3 and (err.should_retry() or err.is_transport_error()):
-                    logger.info("Retrying transport error. Attempt #", counter)
+                    logger.info(f"Retrying transport error. Attempt #{counter+1} of 3.")
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
