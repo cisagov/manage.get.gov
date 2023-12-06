@@ -21,6 +21,92 @@ from registrar.models.contact import Contact
 from .common import less_console_noise
 
 
+class TestProcessedMigrations(TestCase):
+    """This test case class is designed to verify the idempotency of migrations
+    related to domain transitions in the application."""
+
+    def setUp(self):
+        """Defines the file name of migration_json and the folder its contained in"""
+        self.test_data_file_location = "registrar/tests/data"
+        self.migration_json_filename = "test_migrationFilepaths.json"
+
+    def tearDown(self):
+        """Deletes all DB objects related to migrations"""
+        # Delete domain information
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        TransitionDomain.objects.all().delete()
+
+        # Delete users
+        User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+    def run_load_domains(self):
+        """
+        This method executes the load_transition_domain command.
+
+        It uses 'unittest.mock.patch' to mock the TerminalHelper.query_yes_no_exit method,
+        which is a user prompt in the terminal. The mock function always returns True,
+        allowing the test to proceed without manual user input.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_transition_domain command with the specified arguments.
+        """
+        # noqa here because splitting this up makes it confusing.
+        # ES501
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command(
+                "load_transition_domain",
+                self.migration_json_filename,
+                directory=self.test_data_file_location,
+            )
+
+    def run_transfer_domains(self):
+        """
+        This method executes the transfer_transition_domains_to_domains command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_transition_domain command with the specified arguments.
+        """
+        call_command("transfer_transition_domains_to_domains")
+
+    def test_transition_domain_is_processed(self):
+        """
+        This test checks if a domain is correctly marked as processed in the transition.
+        This test ensures that the domain transfer process correctly updates the
+        'processed' status of domains and doesn't affect other domain attributes or related objects.
+        """
+
+        self.run_load_domains()
+        transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
+        self.assertFalse(transition_domain_object.processed)
+
+        self.run_transfer_domains()
+
+        transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
+        self.assertTrue(transition_domain_object.processed)
+
+        changed_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
+        changed_domain.expiration_date = datetime.date(1999, 1, 1)
+        changed_domain.save()
+
+        changed_domain_information = DomainInformation.objects.filter(domain=changed_domain).get()
+        changed_domain_information.organization_name = "changed"
+        changed_domain_information.save()
+
+        self.run_transfer_domains()
+
+        actual_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
+        self.assertEqual(changed_domain, actual_domain)
+
+        actual_domain_information = DomainInformation.objects.filter(domain=changed_domain).get()
+        self.assertEqual(changed_domain_information, actual_domain_information)
+
+
 class TestOrganizationMigration(TestCase):
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
@@ -203,39 +289,6 @@ class TestOrganizationMigration(TestCase):
 
         domain_object = Domain.objects.get(name="fakewebsite3.gov")
         self.assertEqual(domain_object.state, Domain.State.UNKNOWN)
-    
-    def test_transition_domain_is_processed(self):
-        """
-        This test checks if a domain is correctly marked as processed in the transition.
-        This test ensures that the domain transfer process correctly updates the 
-        'processed' status of domains and doesn't affect other domain attributes or related objects.
-        """
-
-        self.run_load_domains()
-        transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
-        self.assertFalse(transition_domain_object.processed)
-
-        self.run_transfer_domains()
-
-        transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
-        self.assertTrue(transition_domain_object.processed)
-
-        changed_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
-        changed_domain.expiration_date = datetime.date(1999, 1, 1)
-        changed_domain.save()
-
-        changed_domain_information = DomainInformation.objects.filter(domain=changed_domain).get()
-        changed_domain_information.organization_name = "changed"
-        changed_domain_information.save()
-
-        self.run_transfer_domains()
-        
-        actual_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
-        self.assertEqual(changed_domain, actual_domain)
-
-        actual_domain_information = DomainInformation.objects.filter(domain=changed_domain).get()
-        self.assertEqual(changed_domain_information, actual_domain_information)
-
 
     def test_load_organization_data_domain_information(self):
         """
