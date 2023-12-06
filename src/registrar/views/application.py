@@ -293,9 +293,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             return self.pending_applications()
 
     def approved_applications_exist(self):
-        """Checks if user is creator of applications with APPROVED status"""
+        """Checks if user is creator of applications with ApplicationStatus.APPROVED status"""
         approved_application_count = DomainApplication.objects.filter(
-            creator=self.request.user, status=DomainApplication.APPROVED
+            creator=self.request.user, status=DomainApplication.ApplicationStatus.APPROVED
         ).count()
         return approved_application_count > 0
 
@@ -308,11 +308,11 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def pending_applications(self):
         """Returns a List of user's applications with one of the following states:
-        SUBMITTED, IN_REVIEW, ACTION_NEEDED"""
-        # if the current application has ACTION_NEEDED status, this check should not be performed
-        if self.application.status == DomainApplication.ACTION_NEEDED:
+        ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED"""
+        # if the current application has ApplicationStatus.ACTION_NEEDED status, this check should not be performed
+        if self.application.status == DomainApplication.ApplicationStatus.ACTION_NEEDED:
             return []
-        check_statuses = [DomainApplication.SUBMITTED, DomainApplication.IN_REVIEW, DomainApplication.ACTION_NEEDED]
+        check_statuses = [DomainApplication.ApplicationStatus.SUBMITTED, DomainApplication.ApplicationStatus.IN_REVIEW, DomainApplication.ApplicationStatus.ACTION_NEEDED]
         return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
 
     def get_context_data(self):

@@ -61,7 +61,7 @@ class TestDomainAdmin(MockEppLib):
         Make sure the short name is displaying in admin on the list page
         """
         self.client.force_login(self.superuser)
-        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
         application.approve()
 
         response = self.client.get("/admin/registrar/domain/")
@@ -282,7 +282,7 @@ class TestDomainApplicationAdminForm(TestCase):
         form = DomainApplicationAdminForm(instance=self.application)
 
         # Verify that the form choices match the available transitions for started
-        expected_choices = [("started", "started"), ("submitted", "submitted")]
+        expected_choices = [("started", "Started"), ("submitted", "Submitted")]
         self.assertEqual(form.fields["status"].widget.choices, expected_choices)
 
     def test_form_choices_when_no_instance(self):
@@ -355,7 +355,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
             # Modify the application's property
-            application.status = DomainApplication.SUBMITTED
+            application.status = DomainApplication.ApplicationStatus.SUBMITTED
 
             # Use the model admin's save_model method
             self.admin.save_model(request, application, form=None, change=True)
@@ -390,13 +390,13 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Create a sample application
-            application = completed_application(status=DomainApplication.SUBMITTED)
+            application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
             # Modify the application's property
-            application.status = DomainApplication.IN_REVIEW
+            application.status = DomainApplication.ApplicationStatus.IN_REVIEW
 
             # Use the model admin's save_model method
             self.admin.save_model(request, application, form=None, change=True)
@@ -431,13 +431,13 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Create a sample application
-            application = completed_application(status=DomainApplication.IN_REVIEW)
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
             # Modify the application's property
-            application.status = DomainApplication.APPROVED
+            application.status = DomainApplication.ApplicationStatus.APPROVED
 
             # Use the model admin's save_model method
             self.admin.save_model(request, application, form=None, change=True)
@@ -467,13 +467,13 @@ class TestDomainApplicationAdmin(MockEppLib):
         User.objects.filter(email=EMAIL).delete()
 
         # Create a sample application
-        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
         # Modify the application's property
-        application.status = DomainApplication.APPROVED
+        application.status = DomainApplication.ApplicationStatus.APPROVED
 
         # Use the model admin's save_model method
         self.admin.save_model(request, application, form=None, change=True)
@@ -492,13 +492,13 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Create a sample application
-            application = completed_application(status=DomainApplication.IN_REVIEW)
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
             # Modify the application's property
-            application.status = DomainApplication.ACTION_NEEDED
+            application.status = DomainApplication.ApplicationStatus.ACTION_NEEDED
 
             # Use the model admin's save_model method
             self.admin.save_model(request, application, form=None, change=True)
@@ -533,13 +533,13 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Create a sample application
-            application = completed_application(status=DomainApplication.IN_REVIEW)
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
             # Create a mock request
             request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
             # Modify the application's property
-            application.status = DomainApplication.REJECTED
+            application.status = DomainApplication.ApplicationStatus.REJECTED
 
             # Use the model admin's save_model method
             self.admin.save_model(request, application, form=None, change=True)
@@ -569,13 +569,13 @@ class TestDomainApplicationAdmin(MockEppLib):
         User.objects.filter(email=EMAIL).delete()
 
         # Create a sample application
-        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
         # Modify the application's property
-        application.status = DomainApplication.INELIGIBLE
+        application.status = DomainApplication.ApplicationStatus.INELIGIBLE
 
         # Use the model admin's save_model method
         self.admin.save_model(request, application, form=None, change=True)
@@ -584,7 +584,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(application.creator.status, "restricted")
 
     def test_readonly_when_restricted_creator(self):
-        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
         application.creator.status = User.RESTRICTED
         application.creator.save()
 
@@ -662,7 +662,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
     def test_saving_when_restricted_creator(self):
         # Create an instance of the model
-        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
         application.creator.status = User.RESTRICTED
         application.creator.save()
 
@@ -681,11 +681,11 @@ class TestDomainApplicationAdmin(MockEppLib):
             )
 
         # Assert that the status has not changed
-        self.assertEqual(application.status, DomainApplication.IN_REVIEW)
+        self.assertEqual(application.status, DomainApplication.ApplicationStatus.IN_REVIEW)
 
     def test_change_view_with_restricted_creator(self):
         # Create an instance of the model
-        application = completed_application(status=DomainApplication.IN_REVIEW)
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
         application.creator.status = User.RESTRICTED
         application.creator.save()
 
@@ -704,7 +704,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
     def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
         # Create an instance of the model
-        application = completed_application(status=DomainApplication.APPROVED)
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
         application.approved_domain = domain
         application.save()
@@ -724,7 +724,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             stack.enter_context(patch.object(messages, "error"))
 
             # Simulate saving the model
-            application.status = DomainApplication.REJECTED
+            application.status = DomainApplication.ApplicationStatus.REJECTED
             self.admin.save_model(request, application, None, True)
 
             # Assert that the error message was called with the correct argument
@@ -735,7 +735,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
     def test_side_effects_when_saving_approved_to_rejected(self):
         # Create an instance of the model
-        application = completed_application(status=DomainApplication.APPROVED)
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
         domain_information = DomainInformation.objects.create(creator=self.superuser, domain=domain)
         application.approved_domain = domain
@@ -756,7 +756,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             stack.enter_context(patch.object(messages, "error"))
 
             # Simulate saving the model
-            application.status = DomainApplication.REJECTED
+            application.status = DomainApplication.ApplicationStatus.REJECTED
             self.admin.save_model(request, application, None, True)
 
             # Assert that the error message was never called
@@ -774,7 +774,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
     def test_error_when_saving_approved_to_ineligible_and_domain_is_active(self):
         # Create an instance of the model
-        application = completed_application(status=DomainApplication.APPROVED)
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
         application.approved_domain = domain
         application.save()
@@ -794,7 +794,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             stack.enter_context(patch.object(messages, "error"))
 
             # Simulate saving the model
-            application.status = DomainApplication.INELIGIBLE
+            application.status = DomainApplication.ApplicationStatus.INELIGIBLE
             self.admin.save_model(request, application, None, True)
 
             # Assert that the error message was called with the correct argument
@@ -805,7 +805,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
         # Create an instance of the model
-        application = completed_application(status=DomainApplication.APPROVED)
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
         domain_information = DomainInformation.objects.create(creator=self.superuser, domain=domain)
         application.approved_domain = domain
@@ -826,7 +826,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             stack.enter_context(patch.object(messages, "error"))
 
             # Simulate saving the model
-            application.status = DomainApplication.INELIGIBLE
+            application.status = DomainApplication.ApplicationStatus.INELIGIBLE
             self.admin.save_model(request, application, None, True)
 
             # Assert that the error message was never called

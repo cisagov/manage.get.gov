@@ -261,7 +261,7 @@ class TestDomainCreation(MockEppLib):
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
         # skip using the submit method
-        application.status = DomainApplication.SUBMITTED
+        application.status = DomainApplication.ApplicationStatus.SUBMITTED
         # transition to approve state
         application.approve()
         # should have information present for this domain

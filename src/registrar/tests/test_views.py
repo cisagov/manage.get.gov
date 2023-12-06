@@ -1079,7 +1079,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         Make sure the long name is displaying in the application summary
         page (manage your application)
         """
-        completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Edit" link
@@ -2117,7 +2117,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2137,7 +2137,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.user.status = "ineligible"
         self.user.save()
 
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2152,7 +2152,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_withdraw(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2182,7 +2182,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status_no_permissions(self):
         """Can't access applications without being the creator."""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         other_user = User()
         other_user.save()
         application.creator = other_user
@@ -2202,7 +2202,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
     def test_approved_application_not_in_active_requests(self):
         """An approved application is not shown in the Active
         Requests table on home.html."""
-        application = completed_application(status=DomainApplication.APPROVED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
