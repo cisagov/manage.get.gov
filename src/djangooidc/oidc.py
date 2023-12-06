@@ -162,7 +162,7 @@ class Client(oic.Client):
             logger.error(err)
             logger.error("Unable to parse response for %s" % state)
             raise o_e.AuthenticationFailed(locator=state)
-
+        logger.info(authn_response)
         # ErrorResponse is not raised, it is passed back...
         if isinstance(authn_response, ErrorResponse):
             error = authn_response.get("error", "")
@@ -207,7 +207,7 @@ class Client(oic.Client):
             logger.error(err)
             logger.error("Unable to request user info for %s" % state)
             raise o_e.AuthenticationFailed(locator=state)
-
+        logger.info(info_response)
         # ErrorResponse is not raised, it is passed back...
         if isinstance(info_response, ErrorResponse):
             logger.error("Unable to get user info (%s) for %s" % (info_response.get("error", ""), state))

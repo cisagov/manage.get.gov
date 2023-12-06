@@ -56,6 +56,7 @@ def error_page(request, error):
 def openid(request):
     """Redirect the user to an authentication provider (OP)."""
     request.session["next"] = request.GET.get("next", "/")
+    request.session["acr_value"] = request.GET.get("acr_value",)
 
     try:
         return CLIENT.create_authn_request(request.session)
@@ -70,6 +71,13 @@ def login_callback(request):
         userinfo = CLIENT.callback(query, request.session)
         user = authenticate(request=request, **userinfo)
         if user:
+            # test for need for identity verification and if it is satisfied
+            # if not satisfied, redirect user to login with stepped up acr_value
+            if requires_step_up_auth(userinfo):
+                return 
+            # 
+            # if User.needs_identity_verification and step_up_acr_value not in 
+            # ial returned from callback, redirect to 
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
             return redirect(request.session.get("next", "/"))
@@ -78,7 +86,8 @@ def login_callback(request):
     except Exception as err:
         return error_page(request, err)
 
-
+def requires_step_up_auth(userinfo):
+    step_up_acr_value = 
 def logout(request, next_page=None):
     """Redirect the user to the authentication provider (OP) logout page."""
     try:
