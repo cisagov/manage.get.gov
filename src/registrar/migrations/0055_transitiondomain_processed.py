@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0053_create_groups_v05"),
+        ("registrar", "0054_alter_domainapplication_federal_agency_and_more"),
     ]
 
     operations = [
