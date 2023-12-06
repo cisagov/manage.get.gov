@@ -877,12 +877,14 @@ class DomainInvitationAdminTest(TestCase):
         )
 
         # Assert that the filters are added
-        self.assertContains(response, "invited", count=4)
-        self.assertContains(response, "retrieved", count=4)
+        self.assertContains(response, "invited", count=2)
+        self.assertContains(response, "Invited", count=2)
+        self.assertContains(response, "retrieved", count=2)
+        self.assertContains(response, "Retrieved", count=2)
 
         # Check for the HTML context specificially
-        invited_html = '<a href="?status__exact=invited">invited</a>'
-        retrieved_html = '<a href="?status__exact=retrieved">retrieved</a>'
+        invited_html = '<a href="?status__exact=invited">Invited</a>'
+        retrieved_html = '<a href="?status__exact=retrieved">Retrieved</a>'
 
         self.assertContains(response, invited_html, count=1)
         self.assertContains(response, retrieved_html, count=1)
