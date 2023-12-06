@@ -67,7 +67,7 @@ class User(AbstractUser):
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
         invitations that match their email address."""
-        for invitation in DomainInvitation.objects.filter(email=self.email, status=DomainInvitation.INVITED):
+        for invitation in DomainInvitation.objects.filter(email=self.email, status=DomainInvitation.DomainInvitationStatus.INVITED):
             try:
                 invitation.retrieve()
                 invitation.save()

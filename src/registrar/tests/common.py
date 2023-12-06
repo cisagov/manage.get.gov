@@ -344,7 +344,7 @@ class AuditedAdminMockData:
                 full_arg_dict = dict(
                     email="test_mail@mail.com",
                     domain=self.dummy_domain(item_name, True),
-                    status=DomainInvitation.INVITED,
+                    status=DomainInvitation.DomainInvitationStatus.INVITED,
                 )
         return full_arg_dict
 

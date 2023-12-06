@@ -15,8 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class DomainInvitation(TimeStampedModel):
-    INVITED = "invited"
-    RETRIEVED = "retrieved"
+    
+    # Constants for status field
+    class DomainInvitationStatus(models.TextChoices):
+        INVITED = "invited", "Invited"
+        RETRIEVED = "retrieved", "Retrieved"
 
     email = models.EmailField(
         null=False,
@@ -31,18 +34,15 @@ class DomainInvitation(TimeStampedModel):
     )
 
     status = FSMField(
-        choices=[
-            (INVITED, INVITED),
-            (RETRIEVED, RETRIEVED),
-        ],
-        default=INVITED,
+        choices=DomainInvitationStatus.choices,
+        default=DomainInvitationStatus.INVITED,
         protected=True,  # can't alter state except through transition methods!
     )
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"
 
-    @transition(field="status", source=INVITED, target=RETRIEVED)
+    @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
     def retrieve(self):
         """When an invitation is retrieved, create the corresponding permission.
 

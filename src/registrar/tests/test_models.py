@@ -597,7 +597,7 @@ class TestInvitations(TestCase):
         # this is not an error but does produce a console warning
         with less_console_noise():
             self.invitation.retrieve()
-        self.assertEqual(self.invitation.status, DomainInvitation.RETRIEVED)
+        self.assertEqual(self.invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
 
     def test_retrieve_on_each_login(self):
         """A user's authenticate on_each_login callback retrieves their invitations."""
