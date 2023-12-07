@@ -18,17 +18,23 @@ from unittest.mock import patch
 
 from registrar.models.contact import Contact
 
-from .common import less_console_noise
+from .common import MockEppLib, less_console_noise
+from dateutil.relativedelta import relativedelta
 
 
-class TestExtendExpirationDates(TestCase):
+class TestExtendExpirationDates(MockEppLib):
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
-        self.test_data_file_location = "registrar/tests/data"
-        self.migration_json_filename = "test_migrationFilepaths.json"
+        super().setUp()
+        self.domain, _ = Domain.objects.get_or_create(
+            name="fake.gov", 
+            state=Domain.State.READY,
+            expiration_date=datetime.date(2023, 5, 25)
+        )
 
     def tearDown(self):
         """Deletes all DB objects related to migrations"""
+        super().tearDown()
         # Delete domain information
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
@@ -38,40 +44,6 @@ class TestExtendExpirationDates(TestCase):
         # Delete users
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
-
-    def run_load_domains(self):
-        """
-        This method executes the load_transition_domain command.
-
-        It uses 'unittest.mock.patch' to mock the TerminalHelper.query_yes_no_exit method,
-        which is a user prompt in the terminal. The mock function always returns True,
-        allowing the test to proceed without manual user input.
-
-        The 'call_command' function from Django's management framework is then used to
-        execute the load_transition_domain command with the specified arguments.
-        """
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-            return_value=True,
-        ):
-            call_command(
-                "load_transition_domain",
-                self.migration_json_filename,
-                directory=self.test_data_file_location,
-            )
-
-    def run_transfer_domains(self):
-        """
-        This method executes the transfer_transition_domains_to_domains command.
-
-        The 'call_command' function from Django's management framework is then used to
-        execute the load_transition_domain command with the specified arguments.
-        """
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-            return_value=True,
-        ):
-            call_command("transfer_transition_domains_to_domains")
     
     def run_extend_expiration_dates(self):
         """
@@ -80,10 +52,53 @@ class TestExtendExpirationDates(TestCase):
         The 'call_command' function from Django's management framework is then used to
         execute the load_transition_domain command with the specified arguments.
         """
-        call_command("extend_expiration_dates")
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("extend_expiration_dates")
     
-    def test_extends_correctly(self):
-        pass
+    def test_extends_expiration_date_correctly(self):
+        desired_domain = Domain.objects.filter(name="fake.gov").get()
+        desired_domain.expiration_date = desired_domain.expiration_date + relativedelta(years=1)
+
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+        
+        self.assertEqual(desired_domain, self.domain)
+
+        # Explicitly test the expiration date 
+        self.assertEqual(self.domain.expiration_date, datetime.date(2024, 5, 25))
+    
+    # TODO ALSO NEED A TEST FOR NON READY DOMAINS
+    def test_extends_expiration_date_skips_non_current(self):
+        desired_domain = Domain.objects.filter(name="fake.gov").get()
+        desired_domain.expiration_date = desired_domain.expiration_date + relativedelta(years=1)
+
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+        
+        current_domain = Domain.objects.filter(name="FakeWebsite3.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the expiration date. The extend_expiration_dates script
+        # will skip all dates less than date(2023, 11, 15), meaning that this domain
+        # should not be affected by the change.
+        self.assertEqual(current_domain.expiration_date, datetime.date(2023, 5, 25))
+    
+    def test_extends_expiration_date_idempotent(self):
+        desired_domain = Domain.objects.filter(name="FakeWebsite3.gov").get()
+        desired_domain.expiration_date = desired_domain.expiration_date + relativedelta(years=1)
+
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+        
+        current_domain = Domain.objects.filter(name="FakeWebsite3.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the expiration date 
+        self.assertEqual(desired_domain.expiration_date, datetime.date(2023, 9, 30))
+
 
 class TestOrganizationMigration(TestCase):
     def setUp(self):
