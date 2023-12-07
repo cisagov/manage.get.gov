@@ -70,10 +70,13 @@ def login_callback(request):
         userinfo = CLIENT.callback(query, request.session)
         # test for need for identity verification and if it is satisfied
         # if not satisfied, redirect user to login with stepped up acr_value
+        logger.info('login_callback start')
         if requires_step_up_auth(userinfo):
             # add acr_value to request.session
+            logger.info('login_callback inside requires_step_up_auth')
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
-            return CLIENT.create_authn_request(request.session)
+            logger.info('login_callback after get_step_up_acr_value')
+            # return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
         if user:
             login(request, user)

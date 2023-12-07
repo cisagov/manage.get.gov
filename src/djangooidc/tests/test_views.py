@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, patch
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.test import Client, TestCase, RequestFactory
 from django.urls import reverse
-from ..views import login_callback
+from ..views import login_callback, requires_step_up_auth
 
 from .common import less_console_noise
 
@@ -61,11 +61,44 @@ class ViewsTest(TestCase):
         # mock
         mock_client.callback.side_effect = self.user_info
         # test
-        with less_console_noise():
+        with patch("djangooidc.views.requires_step_up_auth", return_value=False), \
+        less_console_noise():
             response = self.client.get(reverse("openid_login_callback"))
         # assert
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("logout"))
+        
+    def test_login_callback_no_step_up_auth(self, mock_client):
+        # setup
+        session = self.client.session
+        session.save()
+        # mock
+        mock_client.callback.side_effect = self.user_info
+        # test
+        with patch("djangooidc.views.requires_step_up_auth", return_value=False), \
+        less_console_noise():
+            response = self.client.get(reverse("openid_login_callback"))
+        # assert
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/")
+    
+    @patch.object(requires_step_up_auth, return_value=True)
+    def test_login_callback_requires_step_up_auth(self, mock_client):
+        # setup
+        callback_url = reverse("openid_login_callback")
+        # session = self.client.session
+        # session.save()
+        # mock
+        # mock_client.callback.side_effect = self.user_info
+        # mock_client.create_authn_request.side_effect = self.say_hi
+        # test
+        # with patch("djangooidc.views.requires_step_up_auth", return_value=True):
+            
+        response = self.client.get(reverse("openid_login_callback"))
+        
+        # assert
+        # self.assertEqual(response.status_code, 200)
+        # self.assertContains(response, "Hi")
     
     def test_requires_step_up_auth(self, mock_client):
         # Configure the mock to return an expected value for get_step_up_acr_value
@@ -108,7 +141,8 @@ class ViewsTest(TestCase):
         mock_client.callback.side_effect = self.user_info
         mock_auth.return_value = None
         # test
-        with less_console_noise():
+        with patch("djangooidc.views.requires_step_up_auth", return_value=False), \
+        less_console_noise():
             response = self.client.get(reverse("openid_login_callback"))
         # assert
         self.assertEqual(response.status_code, 401)
