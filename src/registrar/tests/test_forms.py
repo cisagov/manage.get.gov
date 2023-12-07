@@ -74,6 +74,24 @@ class TestFormValidation(MockEppLib):
             ["Enter the .gov domain you want without any periods."],
         )
 
+    def test_requested_domain_two_dots_invalid(self):
+        """don't accept domains that are subdomains"""
+        form = DotGovDomainForm(data={"requested_domain": "sub.top-level-agency.gov"})
+        self.assertEqual(
+            form.errors["requested_domain"],
+            ["Enter the .gov domain you want without any periods."],
+        )
+        form = DotGovDomainForm(data={"requested_domain": ".top-level-agency.gov"})
+        self.assertEqual(
+            form.errors["requested_domain"],
+            ["Enter the .gov domain you want without any periods."],
+        )
+        form = DotGovDomainForm(data={"requested_domain": "..gov"})
+        self.assertEqual(
+            form.errors["requested_domain"],
+            ["Enter the .gov domain you want without any periods."],
+        )
+
     def test_requested_domain_invalid_characters(self):
         """must be a valid .gov domain name."""
         form = DotGovDomainForm(data={"requested_domain": "underscores_forever"})
