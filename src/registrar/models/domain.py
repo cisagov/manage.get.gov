@@ -174,7 +174,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """Check if a domain is available."""
         if not cls.string_could_be_domain(domain):
             raise ValueError("Not a valid domain: %s" % str(domain))
-        req = commands.CheckDomain([domain])
+        domain_name = domain.lower()
+        req = commands.CheckDomain([domain_name])
         return registry.send(req, cleaned=True).res_data[0].avail
 
     @classmethod
