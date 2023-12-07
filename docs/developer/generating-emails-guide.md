@@ -3,7 +3,7 @@
 ## Domain Invitation
 - Starting Location: Home page
 - Workflow: (Domains Table) Manage domain
-- Workflow Step: Click "Manage" => Click "Domain managers" => Click "Add a domain manager" => (enter email) => Click "Add user"
+- Workflow Step: Click "Manage" -> Click "Domain managers" -> Click "Add a domain manager" -> (enter email) -> Click "Add user"
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/domain_invitation.txt)
 
 ### Domain Invitation Subject
@@ -13,7 +13,7 @@
 ## Domain Request Withdrawn
 - Starting Location: Home page
 - Workflow: (Domain requests Table) Manage domain
-- Workflow Step: Click "Manage" => Click "Withdraw request" => (confirmation prompt) => Click "Withdraw request" (inside prompt)
+- Workflow Step: Click "Manage" -> Click "Withdraw request" -> (confirmation prompt) -> Click "Withdraw request" (inside prompt)
 - Notes: You can also do this through Django Admin by switching a domain of status "submitted" to "withdrawn", but you need to be the submitter (email listed on Your Contact Information).
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/domain_request_withdrawn.txt)
 
@@ -68,7 +68,7 @@
 ## Submission Confirmation
 - Starting Location: Home Page
 - Workflow: Start domain request
-- Workflow Step: Click "Start a new domain request" -> (fill out the form) -> On the last step ("Review and submit yourdomain request "), click "Submit your domain request"
+- Workflow Step: Click "Start a new domain request" -> (fill out the form) -> On the last step ("Review and submit your domain request "), click "Submit your domain request"
 - Notes: Note that this will send an email to the submitter (email listed on Your Contact Information)
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/submission_confirmation.txt)
 
