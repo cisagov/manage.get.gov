@@ -158,7 +158,7 @@ class TestEmails(TestCase):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"5557\n\nAnything else we should know?")
+        self.assertRegex(body, r"5557\n\nAnything else?")
 
     @boto3_mocking.patching
     def test_submission_confirmation_no_anything_else_spacing(self):
@@ -168,6 +168,6 @@ class TestEmails(TestCase):
             application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertNotIn("Anything else we should know", body)
+        self.assertNotIn("Anything else", body)
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"5557\n\n----")

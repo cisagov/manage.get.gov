@@ -2,9 +2,7 @@
 {% load field_helpers %}
 
 {% block form_instructions %}
-  <h2 class="margin-bottom-05">
-    Is your organization an election office?  <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-  </h2>
+  <h2 class="margin-bottom-05">Is your organization an election office?</h2>
 
   <p>An election office is a government entity whose <em>primary</em> responsibility is overseeing elections and/or conducting voter registration.</p>
 
@@ -13,7 +11,7 @@
 {% endblock %}
 
 {% block form_required_fields_help_text %}
-  <p class="text-semibold"><abbr class="usa-hint usa-hint--required" title="required">*</abbr> This question is required.</p>
+{# commented out so it does not appear on this page #}
 {% endblock %}
 
 {% block form_fields %}

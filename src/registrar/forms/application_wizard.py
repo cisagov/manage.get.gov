@@ -244,7 +244,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     address_line2 = forms.CharField(
         required=False,
-        label="Street address line 2",
+        label="Street address line 2 (optional)",
     )
     city = forms.CharField(
         label="City",
@@ -268,7 +268,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     urbanization = forms.CharField(
         required=False,
-        label="Urbanization (Puerto Rico only)",
+        label="Urbanization (required for Puerto Rico only)",
     )
 
     def clean_federal_agency(self):
@@ -331,7 +331,7 @@ class AuthorizingOfficialForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -407,7 +407,7 @@ class AlternativeDomainForm(RegistrarForm):
 
     alternative_domain = forms.CharField(
         required=False,
-        label="Alternative domain",
+        label="",
     )
 
 
@@ -533,7 +533,7 @@ class YourContactForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -562,7 +562,7 @@ class OtherContactsForm(RegistrarForm):
     )
     middle_name = forms.CharField(
         required=False,
-        label="Middle name",
+        label="Middle name (optional)",
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -614,8 +614,8 @@ class NoOtherContactsForm(RegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=(
-            "Please explain why there are no other employees from your organization"
-            " we can contact to help us assess your eligibility for a .gov domain."
+            "Please explain why there are no other employees from your organization "
+            "we can contact to help us assess your eligibility for a .gov domain."
         ),
         widget=forms.Textarea(),
     )
@@ -624,7 +624,7 @@ class NoOtherContactsForm(RegistrarForm):
 class AnythingElseForm(RegistrarForm):
     anything_else = forms.CharField(
         required=False,
-        label="Anything else we should know?",
+        label="Anything else?",
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(

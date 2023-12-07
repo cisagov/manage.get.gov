@@ -1,7 +1,7 @@
 """Internal API views"""
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
@@ -12,6 +12,8 @@ import requests
 from login_required import login_not_required
 
 from cachetools.func import ttl_cache
+
+from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
 
 
 DOMAIN_FILE_URL = "https://raw.githubusercontent.com/cisagov/dotgov-data/main/current-full.csv"
@@ -96,3 +98,36 @@ def available(request, domain=""):
             return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]})
     except Exception:
         return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["error"]})
+
+
+@require_http_methods(["GET"])
+@login_not_required
+def get_current_full(request, file_name="current-full.csv"):
+    """This will return the file content of current-full.csv which is the command
+    output of generate_current_full_report.py. This command iterates through each Domain
+    and returns a CSV representation."""
+    return serve_file(file_name)
+
+
+@require_http_methods(["GET"])
+@login_not_required
+def get_current_federal(request, file_name="current-federal.csv"):
+    """This will return the file content of current-federal.csv which is the command
+    output of generate_current_federal_report.py. This command iterates through each Domain
+    and returns a CSV representation."""
+    return serve_file(file_name)
+
+
+def serve_file(file_name):
+    """Downloads a file based on a given filepath. Returns a 500 if not found."""
+    s3_client = S3ClientHelper()
+    # Serve the CSV file. If not found, an exception will be thrown.
+    # This will then be caught by flat, causing it to not read it - which is what we want.
+    try:
+        file = s3_client.get_file(file_name, decode_to_utf=True)
+    except S3ClientError as err:
+        # TODO - #1317: Notify operations when auto report generation fails
+        raise err
+
+    response = HttpResponse(file)
+    return response

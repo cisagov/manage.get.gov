@@ -1,6 +1,7 @@
 import logging
 from django import forms
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -116,6 +117,15 @@ class ListHeaderAdmin(AuditedAdmin):
                         }
                     )
         return filters
+
+    # customize the help_text for all formfields for manytomany
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
+        formfield.help_text = (
+            formfield.help_text
+            + " If more than one value is selected, the change/delete/view actions will be disabled."
+        )
+        return formfield
 
 
 class UserContactInline(admin.StackedInline):
@@ -351,6 +361,17 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
 
     autocomplete_fields = ["user", "domain"]
 
+    # Fixes a bug where non-superusers are redirected to the main page
+    def delete_view(self, request, object_id, extra_context=None):
+        """Custom delete_view implementation that specifies redirect behaviour"""
+        response = super().delete_view(request, object_id, extra_context)
+
+        if isinstance(response, HttpResponseRedirect) and not request.user.has_perm("registrar.full_access_permission"):
+            url = reverse("admin:registrar_userdomainrole_changelist")
+            return redirect(url)
+        else:
+            return response
+
 
 class DomainInvitationAdmin(ListHeaderAdmin):
     """Custom domain invitation admin class."""
@@ -445,7 +466,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
             "No other employees from your organization?",
             {"fields": ["no_other_contacts_rationale"]},
         ),
-        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        ("Anything else?", {"fields": ["anything_else"]}),
         (
             "Requirements for operating .gov domains",
             {"fields": ["is_policy_acknowledged"]},
@@ -463,6 +484,17 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "anything_else",
         "is_policy_acknowledged",
     ]
+
+    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
+    # to activate the edit/delete/view buttons
+    filter_horizontal = ("other_contacts",)
+
+    # lists in filter_horizontal are not sorted properly, sort them
+    # by first_name
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name in ("other_contacts",):
+            kwargs["queryset"] = models.Contact.objects.all().order_by("first_name")  # Sort contacts
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -580,7 +612,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             "No other employees from your organization?",
             {"fields": ["no_other_contacts_rationale"]},
         ),
-        ("Anything else we should know?", {"fields": ["anything_else"]}),
+        ("Anything else?", {"fields": ["anything_else"]}),
         (
             "Requirements for operating .gov domains",
             {"fields": ["is_policy_acknowledged"]},
@@ -599,6 +631,15 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "anything_else",
         "is_policy_acknowledged",
     ]
+
+    filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
+
+    # lists in filter_horizontal are not sorted properly, sort them
+    # by website
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name in ("current_websites", "alternative_domains"):
+            kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -728,6 +769,16 @@ class DomainInformationInline(admin.StackedInline):
 
     fieldsets = DomainInformationAdmin.fieldsets
     analyst_readonly_fields = DomainInformationAdmin.analyst_readonly_fields
+    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
+    # to activate the edit/delete/view buttons
+    filter_horizontal = ("other_contacts",)
+
+    # lists in filter_horizontal are not sorted properly, sort them
+    # by first_name
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name in ("other_contacts",):
+            kwargs["queryset"] = models.Contact.objects.all().order_by("first_name")  # Sort contacts
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
         return DomainInformationAdmin.get_readonly_fields(self, request, obj=None)
