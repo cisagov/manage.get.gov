@@ -613,7 +613,7 @@ class TestUser(TestCase):
         self.email = "mayor@igorville.gov"
         self.domain_name = "igorvilleInTransition.gov"
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.user, _ = User.objects.get_or_create(email=self.email)        
+        self.user, _ = User.objects.get_or_create(email=self.email)
 
     def tearDown(self):
         super().tearDown()
@@ -632,25 +632,25 @@ class TestUser(TestCase):
         are created."""
         self.user.on_each_login()
         self.assertFalse(Domain.objects.filter(name=self.domain_name).exists())
-        
+
     def test_identity_verification_with_domain_manager(self):
         """A domain manager should return False when tested with class
         method needs_identity_verification"""
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
-        
+
     def test_identity_verification_with_transition_user(self):
         """A user from the Verisign transition should return False
         when tested with class method needs_identity_verification"""
         TransitionDomain.objects.get_or_create(username=self.user.email, domain_name=self.domain_name)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
-        
+
     def test_identity_verification_with_invited_user(self):
         """An invited user should return False when tested with class
         method needs_identity_verification"""
         DomainInvitation.objects.get_or_create(email=self.user.email, domain=self.domain)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
-        
+
     def test_identity_verification_with_new_user(self):
         """A new user who's neither transitioned nor invited should
         return True when tested with class method needs_identity_verification"""

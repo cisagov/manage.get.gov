@@ -147,7 +147,7 @@ class Client(oic.Client):
             raise o_e.InternalError(locator=state)
 
         return response
-    
+
     def callback(self, unparsed_response, session):
         """Step 3: Receive OP's response, request an access token, and user info."""
         logger.debug("Processing the OpenID Connect callback response...")
@@ -276,7 +276,7 @@ class Client(oic.Client):
         """returns the step_up_acr_value from settings
         this helper function is called from djangooidc views"""
         return self.behaviour.get("step_up_acr_value")
-    
+
     def __repr__(self):
         return "Client {} {} {}".format(
             self.client_id,
