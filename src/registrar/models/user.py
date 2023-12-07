@@ -68,40 +68,23 @@ class User(AbstractUser):
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
-        
-        logger.info('needs_identity_verification')
-        
-        try:
-            
-            existing_user = cls.objects.get(username=uuid)
-            
-             # An existing user who is a domain manager of a domain (that is, they have an entry in UserDomainRole for their User)
-            if existing_user and UserDomainRole.objects.filter(user=existing_user).exists():
                 
-                logger.info(f'Existing user email {existing_user.email}')
-                logger.info(f'User doman role email {UserDomainRole.objects.filter(user=existing_user).first().user.email}')
+         # An existing user who is a domain manager of a domain (that is, they have an entry in UserDomainRole for their User)
+        try:    
+            existing_user = cls.objects.get(username=uuid)
+            if existing_user and UserDomainRole.objects.filter(user=existing_user).exists():
                 return False
-        
         except:
             pass
                 
-        # logger.info(f'UserDomainRole.objects.filter(user=existing_user).exists() {UserDomainRole.objects.filter(user=existing_user).exists()}')
-        logger.info('got past the existing_user get')
-                
-       
-        
         # A new incoming user who is a domain manager for one of the domains that we inputted from Verisign (that is, their email address appears in the username field of a TransitionDomain) 
         if TransitionDomain.objects.filter(username=email).exists():
-            logger.info('Transition user')
             return False
             
         # A new incoming user who is being invited to be a domain manager (that is, their email address is in DomainInvitation for an invitation that is not yet "retrieved").
         if DomainInvitation.objects.filter(email=email, status=DomainInvitation.INVITED):
-            logger.info('Invited user')
             return False
-        
-        logger.info('needs_identity_verification is TRUE')
-        
+                
         return True
     
     def check_domain_invitations_on_login(self):
