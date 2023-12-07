@@ -1,8 +1,9 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.http import HttpResponse
-from django.test import Client, TestCase
+from django.test import Client, TestCase, RequestFactory
 from django.urls import reverse
+from ..views import login_callback
 
 from .common import less_console_noise
 
@@ -11,6 +12,7 @@ from .common import less_console_noise
 class ViewsTest(TestCase):
     def setUp(self):
         self.client = Client()
+        self.factory = RequestFactory()
 
     def say_hi(*args):
         return HttpResponse("Hi")
@@ -64,6 +66,41 @@ class ViewsTest(TestCase):
         # assert
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("logout"))
+    
+    def test_requires_step_up_auth(self, mock_client):
+        # Configure the mock to return an expected value for get_step_up_acr_value
+        mock_client.return_value.get_step_up_acr_value.return_value = "step_up_acr_value"
+
+        # Create a mock request
+        request = self.factory.get("/some-url")
+        request.session = {"acr_value": ""}
+
+        # Ensure that the CLIENT instance used in login_callback is the mock
+        # patch requires_step_up_auth to return True
+        with patch("djangooidc.views.requires_step_up_auth", return_value=True), \
+        patch("djangooidc.views.CLIENT.create_authn_request", return_value=MagicMock()) as mock_create_authn_request:
+            login_callback(request)
+
+        # Assert that get_step_up_acr_value was called and session was updated
+        self.assertNotEqual(request.session["acr_value"], "")
+        # And create_authn_request was called again
+        mock_create_authn_request.assert_called_once()
+        
+    def test_does_not_requires_step_up_auth(self, mock_client):
+        # Create a mock request
+        request = self.factory.get("/some-url")
+        request.session = {"acr_value": ""}
+
+        # Ensure that the CLIENT instance used in login_callback is the mock
+        # patch requires_step_up_auth to return False
+        with patch("djangooidc.views.requires_step_up_auth", return_value=False), \
+        patch("djangooidc.views.CLIENT.create_authn_request", return_value=MagicMock()) as mock_create_authn_request:
+            login_callback(request)
+
+        # Assert that get_step_up_acr_value was NOT called and session was NOT updated
+        self.assertEqual(request.session["acr_value"], "")
+        # create_authn_request was not called 
+        mock_create_authn_request.assert_not_called()
 
     @patch("djangooidc.views.authenticate")
     def test_login_callback_raises(self, mock_auth, mock_client):
