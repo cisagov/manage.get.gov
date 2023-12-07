@@ -74,22 +74,24 @@ class TestProcessedMigrations(TestCase):
         """
         call_command("transfer_transition_domains_to_domains")
 
-    def test_transition_domain_is_processed(self):
+    def test_domain_idempotent(self):
         """
-        This test checks if a domain is correctly marked as processed in the transition.
-        This test ensures that the domain transfer process correctly updates the
-        'processed' status of domains and doesn't affect other domain attributes or related objects.
+        This test ensures that the domain transfer process
+        is idempotent on Domain and DomainInformation.
         """
-
         self.run_load_domains()
+
+        # Test that a given TransitionDomain isn't set to "processed"
         transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
         self.assertFalse(transition_domain_object.processed)
 
         self.run_transfer_domains()
 
+        # Test that a given TransitionDomain is set to "processed" after we transfer domains
         transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
         self.assertTrue(transition_domain_object.processed)
 
+        # Manually change Domain/DomainInformation objects
         changed_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
         changed_domain.expiration_date = datetime.date(1999, 1, 1)
         changed_domain.save()
@@ -98,13 +100,32 @@ class TestProcessedMigrations(TestCase):
         changed_domain_information.organization_name = "changed"
         changed_domain_information.save()
 
+        # Rerun transfer domains
         self.run_transfer_domains()
 
+        # Ensure that domain hasn't changed
         actual_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
         self.assertEqual(changed_domain, actual_domain)
 
+        # Ensure that DomainInformation hasn't changed
         actual_domain_information = DomainInformation.objects.filter(domain=changed_domain).get()
         self.assertEqual(changed_domain_information, actual_domain_information)
+
+    def test_transition_domain_is_processed(self):
+        """
+        This test checks if a domain is correctly marked as processed in the transition.
+        """
+        self.run_load_domains()
+
+        # Test that a given TransitionDomain isn't set to "processed"
+        transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
+        self.assertFalse(transition_domain_object.processed)
+
+        self.run_transfer_domains()
+
+        # Test that a given TransitionDomain is set to "processed" after we transfer domains
+        transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
+        self.assertTrue(transition_domain_object.processed)
 
 
 class TestOrganizationMigration(TestCase):
