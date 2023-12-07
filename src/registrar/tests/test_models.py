@@ -606,18 +606,14 @@ class TestInvitations(TestCase):
 
 
 class TestUser(TestCase):
-    """For now, just test actions that
-    occur on user login."""
+    """Test actions that occur on user login,
+    test class method that controls how users get validated."""
 
     def setUp(self):
         self.email = "mayor@igorville.gov"
         self.domain_name = "igorvilleInTransition.gov"
-        self.user, _ = User.objects.get_or_create(email=self.email)
-
-        # clean out the roles each time
-        UserDomainRole.objects.all().delete()
-
-        TransitionDomain.objects.get_or_create(username="mayor@igorville.gov", domain_name=self.domain_name)
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.user, _ = User.objects.get_or_create(email=self.email)        
 
     def tearDown(self):
         super().tearDown()
@@ -626,6 +622,8 @@ class TestUser(TestCase):
         DomainInformation.objects.all().delete()
         TransitionDomain.objects.all().delete()
         User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        TransitionDomain.objects.get_or_create(username="mayor@igorville.gov", domain_name=self.domain_name)
 
     def test_check_transition_domains_without_domains_on_login(self):
         """A user's on_each_login callback does not check transition domains.
@@ -634,3 +632,26 @@ class TestUser(TestCase):
         are created."""
         self.user.on_each_login()
         self.assertFalse(Domain.objects.filter(name=self.domain_name).exists())
+        
+    def test_identity_verification_with_domain_manager(self):
+        """A domain manager should return False when tested with class
+        method needs_identity_verification"""
+        UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
+        
+    def test_identity_verification_with_transition_user(self):
+        """A user from the Verisign transition should return False
+        when tested with class method needs_identity_verification"""
+        TransitionDomain.objects.get_or_create(username=self.user.email, domain_name=self.domain_name)
+        self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
+        
+    def test_identity_verification_with_invited_user(self):
+        """An invited user should return False when tested with class
+        method needs_identity_verification"""
+        DomainInvitation.objects.get_or_create(email=self.user.email, domain=self.domain)
+        self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
+        
+    def test_identity_verification_with_new_user(self):
+        """A new user who's neither transitioned nor invited should
+        return True when tested with class method needs_identity_verification"""
+        self.assertTrue(User.needs_identity_verification(self.user.email, self.user.username))

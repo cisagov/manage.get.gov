@@ -68,8 +68,11 @@ class User(AbstractUser):
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
+        """A method used by our oidc classes to test whether a user needs email/uuid verification
+        or the full identity PII verification"""
                 
-         # An existing user who is a domain manager of a domain (that is, they have an entry in UserDomainRole for their User)
+         # An existing user who is a domain manager of a domain (that is,
+         # they have an entry in UserDomainRole for their User)
         try:    
             existing_user = cls.objects.get(username=uuid)
             if existing_user and UserDomainRole.objects.filter(user=existing_user).exists():
@@ -77,11 +80,14 @@ class User(AbstractUser):
         except:
             pass
                 
-        # A new incoming user who is a domain manager for one of the domains that we inputted from Verisign (that is, their email address appears in the username field of a TransitionDomain) 
+        # A new incoming user who is a domain manager for one of the domains
+        # that we inputted from Verisign (that is, their email address appears
+        # in the username field of a TransitionDomain) 
         if TransitionDomain.objects.filter(username=email).exists():
             return False
             
-        # A new incoming user who is being invited to be a domain manager (that is, their email address is in DomainInvitation for an invitation that is not yet "retrieved").
+        # A new incoming user who is being invited to be a domain manager (that is,
+        # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
         if DomainInvitation.objects.filter(email=email, status=DomainInvitation.INVITED):
             return False
                 
