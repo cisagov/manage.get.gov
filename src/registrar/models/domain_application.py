@@ -400,6 +400,7 @@ class DomainApplication(TimeStampedModel):
     )
 
     federal_agency = models.TextField(
+        choices=AGENCY_CHOICES,
         null=True,
         blank=True,
         help_text="Federal agency",
@@ -442,6 +443,7 @@ class DomainApplication(TimeStampedModel):
     )
     state_territory = models.CharField(
         max_length=2,
+        choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
         help_text="State, territory, or military post",
