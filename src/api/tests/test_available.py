@@ -15,7 +15,7 @@ from epplibwrapper import (
     commands,
 )
 
-API_BASE_PATH = "/api/v1/available/"
+API_BASE_PATH = "/api/v1/available/?domain="
 
 
 class AvailableViewTest(MockEppLib):
