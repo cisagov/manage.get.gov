@@ -6,7 +6,7 @@ import django_fsm
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0052_alter_domainapplication_anything_else_and_more"),
+        ("registrar", "0054_alter_domainapplication_federal_agency_and_more"),
     ]
 
     operations = [
