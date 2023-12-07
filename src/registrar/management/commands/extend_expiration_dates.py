@@ -9,6 +9,7 @@ from epplibwrapper.errors import RegistryError
 from registrar.models import Domain
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from dateutil.relativedelta import relativedelta
+try:
     from epplib.exceptions import TransportError
 except ImportError:
     pass
@@ -25,7 +26,6 @@ class Command(BaseCommand):
         self.update_success = []
         self.update_skipped = []
         self.update_failed = []
-        self.debug = False
 
     def add_arguments(self, parser):
         """Add command line arguments."""
@@ -53,11 +53,27 @@ class Command(BaseCommand):
         )
 
     def handle(self, **options):
-        """"""
+        """
+        Extends the expiration dates for valid domains.
+
+        It first retrieves the command line options and checks if the parse limit is a positive integer.
+        Then, it fetches the valid domains from the database and calculates the number of domains to change.
+        If a parse limit is set and it's less than the total number of valid domains, 
+        the number of domains to change is set to the parse limit.
+
+        For each domain, it checks if the operation is idempotent. 
+        If the idempotence check is not disabled and the operation is not idempotent, the domain is skipped.
+        Otherwise, the expiration date of the domain is extended.
+
+        Finally, it logs a summary of the script run, 
+        including the number of successful, failed, and skipped updates.
+        """
+
+        # Retrieve command line options
         extension_amount = options.get("extensionAmount")
         limit_parse = options.get("limitParse")
         disable_idempotence = options.get("disableIdempotentCheck")
-        self.debug = options.get("debug")
+        debug = options.get("debug")
 
         # Does a check to see if parse_limit is a positive int.
         # Raise an error if not.
@@ -84,11 +100,11 @@ class Command(BaseCommand):
             if not disable_idempotence and not is_idempotent:
                 self.update_skipped.append(domain.name)
             else:
-                self.extend_expiration_date_on_domain(domain, extension_amount)
+                self.extend_expiration_date_on_domain(domain, extension_amount, debug)
         
-        self.log_script_run_summary()
+        self.log_script_run_summary(debug)
     
-    def extend_expiration_date_on_domain(self, domain: Domain, extension_amount: int):
+    def extend_expiration_date_on_domain(self, domain: Domain, extension_amount: int, debug: bool):
         """
         Given a particular domain,
         extend the expiration date by the period specified in extension_amount
@@ -103,7 +119,7 @@ class Command(BaseCommand):
             )
             logger.error(err)
         except Exception as err:
-            self.log_script_run_summary()
+            self.log_script_run_summary(debug)
             raise err
         else:
             self.update_success.append(domain.name)
@@ -123,7 +139,7 @@ class Command(BaseCommand):
         # CAVEAT: This check stops working after a year has elapsed between when this script
         # was ran, and when it was ran again. This is good enough for now, but a more robust
         # solution would be a DB flag.
-        is_idempotent = proposed_date < date.today() + relativedelta(years=extension_amount)
+        is_idempotent = proposed_date < (date.today() + relativedelta(years=extension_amount+1))
         return is_idempotent
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
@@ -146,7 +162,20 @@ class Command(BaseCommand):
             f"{TerminalColors.ENDC}"
         )
 
-    def log_script_run_summary(self):
+    def check_if_positive_int(self, value: int, var_name: str):
+        """
+        Determines if the given integer value is positive or not. 
+        If not, it raises an ArgumentTypeError
+        """
+        if value < 0:
+            raise argparse.ArgumentTypeError(
+                f"{value} is an invalid integer value for {var_name}. " 
+                "Must be positive."
+            )
+
+        return value
+
+    def log_script_run_summary(self, debug):
         """Prints success, failed, and skipped counts, as well as 
         all affected domains."""
         update_success_count = len(self.update_success)
@@ -161,7 +190,7 @@ class Command(BaseCommand):
                 """
             )
             TerminalHelper.print_conditional(
-                self.debug,
+                debug,
                 f"""
                 {TerminalColors.OKGREEN}
                 Updated the following Domains: {self.update_success}
@@ -170,7 +199,7 @@ class Command(BaseCommand):
             )
         elif update_failed_count == 0:
             TerminalHelper.print_conditional(
-                self.debug,
+                debug,
                 f"""
                 {TerminalColors.OKGREEN}
                 Updated the following Domains: {self.update_success}
@@ -193,7 +222,7 @@ class Command(BaseCommand):
             )
         else:
             TerminalHelper.print_conditional(
-                self.debug,
+                debug,
                 f"""
                 {TerminalColors.OKGREEN}
                 Updated the following Domains: {self.update_success}
@@ -219,17 +248,3 @@ class Command(BaseCommand):
                 {TerminalColors.ENDC}
                 """
             )
-
-    
-    def check_if_positive_int(self, value: int, var_name: str):
-        """
-        Determines if the given integer value is positive or not. 
-        If not, it raises an ArgumentTypeError
-        """
-        if value < 0:
-            raise argparse.ArgumentTypeError(
-                f"{value} is an invalid integer value for {var_name}. " 
-                "Must be positive."
-            )
-
-        return value

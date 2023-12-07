@@ -21,6 +21,70 @@ from registrar.models.contact import Contact
 from .common import less_console_noise
 
 
+class TestExtendExpirationDates(TestCase):
+    def setUp(self):
+        """Defines the file name of migration_json and the folder its contained in"""
+        self.test_data_file_location = "registrar/tests/data"
+        self.migration_json_filename = "test_migrationFilepaths.json"
+
+    def tearDown(self):
+        """Deletes all DB objects related to migrations"""
+        # Delete domain information
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        TransitionDomain.objects.all().delete()
+
+        # Delete users
+        User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+    def run_load_domains(self):
+        """
+        This method executes the load_transition_domain command.
+
+        It uses 'unittest.mock.patch' to mock the TerminalHelper.query_yes_no_exit method,
+        which is a user prompt in the terminal. The mock function always returns True,
+        allowing the test to proceed without manual user input.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_transition_domain command with the specified arguments.
+        """
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command(
+                "load_transition_domain",
+                self.migration_json_filename,
+                directory=self.test_data_file_location,
+            )
+
+    def run_transfer_domains(self):
+        """
+        This method executes the transfer_transition_domains_to_domains command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_transition_domain command with the specified arguments.
+        """
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("transfer_transition_domains_to_domains")
+    
+    def run_extend_expiration_dates(self):
+        """
+        This method executes the transfer_transition_domains_to_domains command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the load_transition_domain command with the specified arguments.
+        """
+        call_command("extend_expiration_dates")
+    
+    def test_extends_correctly(self):
+        pass
+
 class TestOrganizationMigration(TestCase):
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
