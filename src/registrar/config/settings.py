@@ -33,10 +33,19 @@ env = environs.Env()
 # Get secrets from Cloud.gov user provided service, if exists
 # If not, get secrets from environment variables
 key_service = AppEnv().get_service(name="getgov-credentials")
+
+
+# Get secrets from Cloud.gov user provided s3 service, if it exists
+s3_key_service = AppEnv().get_service(name="getgov-s3")
+
 if key_service and key_service.credentials:
+    if s3_key_service and s3_key_service.credentials:
+        # Concatenate the credentials from our S3 service into our secret service
+        key_service.credentials.update(s3_key_service.credentials)
     secret = key_service.credentials.get
 else:
     secret = env
+
 
 # # #                          ###
 #   Values obtained externally   #
@@ -57,6 +66,12 @@ secret_key = secret("DJANGO_SECRET_KEY")
 
 secret_aws_ses_key_id = secret("AWS_ACCESS_KEY_ID", None)
 secret_aws_ses_key = secret("AWS_SECRET_ACCESS_KEY", None)
+
+# These keys are present in a getgov-s3 instance, or they can be defined locally
+aws_s3_region_name = secret("region", None) or secret("AWS_S3_REGION", None)
+secret_aws_s3_key_id = secret("access_key_id", None) or secret("AWS_S3_ACCESS_KEY_ID", None)
+secret_aws_s3_key = secret("secret_access_key", None) or secret("AWS_S3_SECRET_ACCESS_KEY", None)
+secret_aws_s3_bucket_name = secret("bucket", None) or secret("AWS_S3_BUCKET_NAME", None)
 
 secret_registry_cl_id = secret("REGISTRY_CL_ID")
 secret_registry_password = secret("REGISTRY_PASSWORD")
@@ -257,7 +272,14 @@ AUTH_USER_MODEL = "registrar.User"
 AWS_ACCESS_KEY_ID = secret_aws_ses_key_id
 AWS_SECRET_ACCESS_KEY = secret_aws_ses_key
 AWS_REGION = "us-gov-west-1"
-# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html#standard-retry-mode
+
+# Configuration for accessing AWS S3
+AWS_S3_ACCESS_KEY_ID = secret_aws_s3_key_id
+AWS_S3_SECRET_ACCESS_KEY = secret_aws_s3_key
+AWS_S3_REGION = aws_s3_region_name
+AWS_S3_BUCKET_NAME = secret_aws_s3_bucket_name
+
+# https://boto3.amazonaws.com/v1/documentation/latest/guide/retries.html#standard-retry-mode
 AWS_RETRY_MODE: Final = "standard"
 # base 2 exponential backoff with max of 20 seconds:
 AWS_MAX_ATTEMPTS = 3
@@ -518,7 +540,7 @@ OIDC_PROVIDERS = {
             "response_type": "code",
             "scope": ["email", "profile:name", "phone"],
             "user_info_request": ["email", "first_name", "last_name", "phone"],
-            "acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
+            "acr_value": "http://idmanagement.gov/ns/assurance/ial/1",
         },
         "client_registration": {
             "client_id": "cisa_dotgov_registrar",
@@ -535,7 +557,7 @@ OIDC_PROVIDERS = {
             "response_type": "code",
             "scope": ["email", "profile:name", "phone"],
             "user_info_request": ["email", "first_name", "last_name", "phone"],
-            "acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
+            "acr_value": "http://idmanagement.gov/ns/assurance/ial/1",
         },
         "client_registration": {
             "client_id": ("urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"),

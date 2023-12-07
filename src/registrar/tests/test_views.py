@@ -1083,7 +1083,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Edit" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "Federal: an agency of the U.S. government")
 
 
@@ -2123,7 +2123,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Manage" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2143,7 +2143,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Manage" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
@@ -2158,7 +2158,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Manage" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")

@@ -1,5 +1,7 @@
 <!doctype html>{# keep this on the first line #}
 {% load i18n static %}
+{% load static url_helpers %}
+
 <html class="no-js" lang="{{ LANGUAGE_CODE }}">
 
 <head>
@@ -144,13 +146,13 @@
   <header class="usa-header usa-header-basic">
     <div class="usa-nav-container">
       <div class="usa-navbar">
-        {% block logo %}
-        <div class="usa-logo" id="extended-logo">
-          <strong class="usa-logo__text" >
-            <a href="{% url 'home' %}"> .gov </a>
-          </strong>
-        </div>
-        {% endblock %}
+          {% block logo %}
+            <div class="usa-logo display-inline-block" id="extended-logo">
+              <strong class="usa-logo__text" >
+                <a href="{% url 'home' %}">.gov registrar </a>
+              </strong>    
+            </div>
+          {% endblock %}
         <button type="button" class="usa-menu-btn">Menu</button>
       </div>
       {% block usa_nav %}

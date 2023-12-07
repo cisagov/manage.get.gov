@@ -72,6 +72,7 @@ class DomainInformation(TimeStampedModel):
     )
 
     federal_agency = models.TextField(
+        choices=AGENCY_CHOICES,
         null=True,
         blank=True,
         help_text="Federal agency",
@@ -106,8 +107,8 @@ class DomainInformation(TimeStampedModel):
     address_line2 = models.TextField(
         null=True,
         blank=True,
-        help_text="Street address line 2",
-        verbose_name="Street address line 2",
+        help_text="Street address line 2 (optional)",
+        verbose_name="Street address line 2 (optional)",
     )
     city = models.TextField(
         null=True,
@@ -116,6 +117,7 @@ class DomainInformation(TimeStampedModel):
     )
     state_territory = models.CharField(
         max_length=2,
+        choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
         help_text="State, territory, or military post",
@@ -131,8 +133,8 @@ class DomainInformation(TimeStampedModel):
     urbanization = models.TextField(
         null=True,
         blank=True,
-        help_text="Urbanization (Puerto Rico only)",
-        verbose_name="Urbanization (Puerto Rico only)",
+        help_text="Urbanization (required for Puerto Rico only)",
+        verbose_name="Urbanization (required for Puerto Rico only)",
     )
 
     about_your_organization = models.TextField(
@@ -179,6 +181,7 @@ class DomainInformation(TimeStampedModel):
         "registrar.Contact",
         blank=True,
         related_name="contact_applications_information",
+        verbose_name="contacts",
     )
 
     no_other_contacts_rationale = models.TextField(
@@ -190,7 +193,7 @@ class DomainInformation(TimeStampedModel):
     anything_else = models.TextField(
         null=True,
         blank=True,
-        help_text="Anything else we should know?",
+        help_text="Anything else?",
     )
 
     is_policy_acknowledged = models.BooleanField(

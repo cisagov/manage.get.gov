@@ -181,6 +181,9 @@ class ContactForm(forms.ModelForm):
         for field_name in self.required:
             self.fields[field_name].required = True
 
+        # Set custom form label
+        self.fields["middle_name"].label = "Middle name (optional)"
+
         # Set custom error messages
         self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}
         self.fields["last_name"].error_messages = {"required": "Enter your last name / family name."}
@@ -190,7 +193,7 @@ class ContactForm(forms.ModelForm):
         self.fields["email"].error_messages = {
             "required": "Enter your email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages = {"required": "Enter your phone number."}
+        self.fields["phone"].error_messages["required"] = "Enter your phone number."
 
 
 class AuthorizingOfficialContactForm(ContactForm):
@@ -213,14 +216,14 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages = {"required": "Enter a phone number for your authorizing official."}
+        self.fields["phone"].error_messages["required"] = "Enter a phone number for your authorizing official."
 
 
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
     security_email = forms.EmailField(
-        label="Security email",
+        label="Security email (optional)",
         required=False,
         error_messages={
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),

@@ -34,6 +34,6 @@ Other employees from your organization:
 {% for other in application.other_contacts.all %}
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
 {% endfor %}{% endif %}{% if application.anything_else %}
-Anything else we should know?
+Anything else?
 {{ application.anything_else }}
 {% endif %}
