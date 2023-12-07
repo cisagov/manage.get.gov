@@ -32,7 +32,7 @@ DOMAIN_API_MESSAGES = {
         "Read more about choosing your .gov domain.</a>".format(public_site_url("domains/choosing"))
     ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
-    "success": "That domain is available! We’ll try to give you the domain you want, " 
+    "success": "That domain is available! We’ll try to give you the domain you want, "
                "but it's not guaranteed. After you complete this form, we’ll "
                 "evaluate whether your request meets our requirements.",
     "error": GenericError.get_error_message(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
