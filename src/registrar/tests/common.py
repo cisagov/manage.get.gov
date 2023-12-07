@@ -832,7 +832,7 @@ class MockEppLib(TestCase):
         elif "GSA.gov" in getattr(_request, "names", None):
             return self._mockDomainName("GSA.gov", False)
         elif "igorville.gov" in getattr(_request, "names", None):
-            return self._mockDomainName("igorvilleremixed.gov", True)
+            return self._mockDomainName("igorville.gov", True)
         elif "top-level-agency.gov" in getattr(_request, "names", None):
             return self._mockDomainName("top-level-agency.gov", True)
         elif "city.gov" in getattr(_request, "names", None):
