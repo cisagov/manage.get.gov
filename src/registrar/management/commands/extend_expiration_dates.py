@@ -14,7 +14,6 @@ try:
 except ImportError:
     pass
 
-from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +236,7 @@ class Command(BaseCommand):
             )
 
     # We use this manual approach rather than relative delta due to our
-    # github localenv not having the package installed. 
+    # github localenv not having the package installed.
     # Credit: https://stackoverflow.com/questions/15741618/add-one-year-in-current-date-python
     def add_years(self, old_date, years):
         """Return a date that's `years` years after the date (or datetime)
@@ -247,6 +246,6 @@ class Command(BaseCommand):
 
         """
         try:
-            return old_date.replace(year = old_date.year + years)
+            return old_date.replace(year=old_date.year + years)
         except ValueError:
             return old_date + (date(old_date.year + years, 1, 1) - date(old_date.year, 1, 1))
