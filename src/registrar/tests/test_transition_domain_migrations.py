@@ -103,12 +103,12 @@ class TestProcessedMigrations(TestCase):
         # Manually change Domain/DomainInformation objects
         changed_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
         changed_domain.expiration_date = datetime.date(1999, 1, 1)
-        print(f"copy domain: {changed_domain.__dict__}")
+
         changed_domain.save()
 
         changed_domain_information = DomainInformation.objects.filter(domain=changed_domain).get()
         changed_domain_information.organization_name = "changed"
-        print(f"copy domaininfo: {changed_domain_information.__dict__}")
+
         changed_domain_information.save()
 
         # Rerun transfer domains
