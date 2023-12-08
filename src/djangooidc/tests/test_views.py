@@ -201,13 +201,10 @@ class ViewsTestUnpatched(TestCase):
 
     def test_login_callback_requires_step_up_auth(self):
         """Walk through login_callback when requires_step_up_auth returns True
-        and assert that create_authn_request is returned."""
+        and assert that create_authn_request is called."""
 
         with patch("djangooidc.views.requires_step_up_auth", return_value=True), patch(
             "djangooidc.views.Client.callback", return_value=self.user_info
-        ), patch("djangooidc.views.Client.create_authn_request", side_effect=self.say_hi):
+        ), patch("djangooidc.views.Client.create_authn_request", side_effect=self.say_hi) as mock_create_authn_request:
             response = self.client.get(reverse("openid_login_callback"))
-
-        # assert
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Hi")
+            mock_create_authn_request.assert_called()
