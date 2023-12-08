@@ -1941,19 +1941,19 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(updated_page, "Enable DNSSEC")
 
     def test_ds_form_loads_with_no_domain_data(self):
-        """DNSSEC Add DS Data page loads when there is no
+        """DNSSEC Add DS data page loads when there is no
         domain DNSSEC data and shows a button to Add new record"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}))
-        self.assertContains(page, "You have no DS Data added")
+        self.assertContains(page, "You have no DS data added")
         self.assertContains(page, "Add new record")
 
     def test_ds_form_loads_with_ds_data(self):
-        """DNSSEC Add DS Data page loads when there is
+        """DNSSEC Add DS data page loads when there is
         domain DNSSEC DS data and shows the data"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
-        self.assertContains(page, "DS Data record 1")
+        self.assertContains(page, "DS data record 1")
 
     def test_ds_data_form_modal(self):
         """When user clicks on save, a modal pops up."""
@@ -1974,7 +1974,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(response, "Trigger Disable DNSSEC Modal")
 
     def test_ds_data_form_submits(self):
-        """DS Data form submits successfully
+        """DS data form submits successfully
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1991,10 +1991,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
-        self.assertContains(page, "The DS Data records for this domain have been updated.")
+        self.assertContains(page, "The DS data records for this domain have been updated.")
 
     def test_ds_data_form_invalid(self):
-        """DS Data form errors with invalid data (missing required fields)
+        """DS data form errors with invalid data (missing required fields)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2017,7 +2017,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
     def test_ds_data_form_invalid_keytag(self):
-        """DS Data form errors with invalid data (key tag too large)
+        """DS data form errors with invalid data (key tag too large)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2040,7 +2040,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_chars(self):
-        """DS Data form errors with invalid data (digest contains non hexadecimal chars)
+        """DS data form errors with invalid data (digest contains non hexadecimal chars)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2063,7 +2063,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_sha1(self):
-        """DS Data form errors with invalid data (digest is invalid sha-1)
+        """DS data form errors with invalid data (digest is invalid sha-1)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2086,7 +2086,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_sha256(self):
-        """DS Data form errors with invalid data (digest is invalid sha-256)
+        """DS data form errors with invalid data (digest is invalid sha-256)
 
         Uses self.app WebTest because we need to interact with forms.
         """
