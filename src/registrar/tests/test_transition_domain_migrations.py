@@ -79,7 +79,11 @@ class TestProcessedMigrations(TestCase):
         This test ensures that the domain transfer process
         is idempotent on Domain and DomainInformation.
         """
-
+        unchanged_domain, _ = Domain.objects.get_or_create(
+            name="unchanged.gov",
+            state=Domain.State.READY,
+            expiration_date=datetime.date(2000, 1, 1),
+        )
         self.run_load_domains()
 
         # Test that a given TransitionDomain isn't set to "processed"
@@ -88,6 +92,10 @@ class TestProcessedMigrations(TestCase):
 
         self.run_transfer_domains()
 
+        # Test that old data isn't corrupted
+        actual_unchanged = Domain.objects.filter(name="unchanged.gov").get()
+        self.assertEqual(unchanged_domain, actual_unchanged)
+
         # Test that a given TransitionDomain is set to "processed" after we transfer domains
         transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
         self.assertTrue(transition_domain_object.processed)
@@ -95,14 +103,20 @@ class TestProcessedMigrations(TestCase):
         # Manually change Domain/DomainInformation objects
         changed_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
         changed_domain.expiration_date = datetime.date(1999, 1, 1)
+        print(f"copy domain: {changed_domain.__dict__}")
         changed_domain.save()
 
         changed_domain_information = DomainInformation.objects.filter(domain=changed_domain).get()
         changed_domain_information.organization_name = "changed"
+        print(f"copy domaininfo: {changed_domain_information.__dict__}")
         changed_domain_information.save()
 
         # Rerun transfer domains
         self.run_transfer_domains()
+
+        # Test that old data isn't corrupted after running this twice
+        actual_unchanged = Domain.objects.filter(name="unchanged.gov").get()
+        self.assertEqual(unchanged_domain, actual_unchanged)
 
         # Ensure that domain hasn't changed
         actual_domain = Domain.objects.filter(name="fakewebsite3.gov").get()
@@ -116,6 +130,15 @@ class TestProcessedMigrations(TestCase):
         """
         This test checks if a domain is correctly marked as processed in the transition.
         """
+        old_transition_domain, _ = TransitionDomain.objects.get_or_create(domain_name="unchanged.gov")
+        # Asser that old records default to 'True'
+        self.assertTrue(old_transition_domain.processed)
+
+        unchanged_domain, _ = Domain.objects.get_or_create(
+            name="unchanged.gov",
+            state=Domain.State.READY,
+            expiration_date=datetime.date(2000, 1, 1),
+        )
         self.run_load_domains()
 
         # Test that a given TransitionDomain isn't set to "processed"
@@ -123,6 +146,11 @@ class TestProcessedMigrations(TestCase):
         self.assertFalse(transition_domain_object.processed)
 
         self.run_transfer_domains()
+
+        # Test that old data isn't corrupted
+        actual_unchanged = Domain.objects.filter(name="unchanged.gov").get()
+        self.assertEqual(unchanged_domain, actual_unchanged)
+        self.assertTrue(old_transition_domain.processed)
 
         # Test that a given TransitionDomain is set to "processed" after we transfer domains
         transition_domain_object = TransitionDomain.objects.get(domain_name="fakewebsite3.gov")
