@@ -854,6 +854,10 @@ class Command(BaseCommand):
         for domain in domains_to_create:
             name = domain.name
             TransitionDomain.objects.filter(domain_name=name).update(processed=True)
+        
+        # Loop through the list of everything updated, and mark it as processed
+        for name in updated_domain_entries:
+            TransitionDomain.objects.filter(domain_name=name).update(processed=True)
 
         self.print_summary_of_findings(
             domains_to_create,
