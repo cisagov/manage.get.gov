@@ -9,6 +9,7 @@ from epplibwrapper.errors import RegistryError
 from registrar.models import Domain
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from dateutil.relativedelta import relativedelta
+
 try:
     from epplib.exceptions import TransportError
 except ImportError:
@@ -42,15 +43,9 @@ class Command(BaseCommand):
             help="Sets a cap on the number of records to parse",
         )
         parser.add_argument(
-            "--disableIdempotentCheck", 
-            action=argparse.BooleanOptionalAction,
-            help="Disable script idempotence"
+            "--disableIdempotentCheck", action=argparse.BooleanOptionalAction, help="Disable script idempotence"
         )
-        parser.add_argument(
-            "--debug", 
-            action=argparse.BooleanOptionalAction,
-            help="Increases log chattiness"
-        )
+        parser.add_argument("--debug", action=argparse.BooleanOptionalAction, help="Increases log chattiness")
 
     def handle(self, **options):
         """
@@ -58,14 +53,14 @@ class Command(BaseCommand):
 
         It first retrieves the command line options and checks if the parse limit is a positive integer.
         Then, it fetches the valid domains from the database and calculates the number of domains to change.
-        If a parse limit is set and it's less than the total number of valid domains, 
+        If a parse limit is set and it's less than the total number of valid domains,
         the number of domains to change is set to the parse limit.
 
-        For each domain, it checks if the operation is idempotent. 
+        For each domain, it checks if the operation is idempotent.
         If the idempotence check is not disabled and the operation is not idempotent, the domain is skipped.
         Otherwise, the expiration date of the domain is extended.
 
-        Finally, it logs a summary of the script run, 
+        Finally, it logs a summary of the script run,
         including the number of successful, failed, and skipped updates.
         """
 
@@ -80,8 +75,7 @@ class Command(BaseCommand):
         self.check_if_positive_int(limit_parse, "limitParse")
 
         valid_domains = Domain.objects.filter(
-            expiration_date__gte=date(2023, 11, 15),
-            state=Domain.State.READY
+            expiration_date__gte=date(2023, 11, 15), state=Domain.State.READY
         ).order_by("name")
 
         domains_to_change_count = valid_domains.count()
@@ -95,15 +89,15 @@ class Command(BaseCommand):
         for i, domain in enumerate(valid_domains):
             if limit_parse != 0 and i > limit_parse:
                 break
-            
+
             is_idempotent = self.idempotence_check(domain, extension_amount)
             if not disable_idempotence and not is_idempotent:
                 self.update_skipped.append(domain.name)
             else:
                 self.extend_expiration_date_on_domain(domain, extension_amount, debug)
-        
+
         self.log_script_run_summary(debug)
-    
+
     def extend_expiration_date_on_domain(self, domain: Domain, extension_amount: int, debug: bool):
         """
         Given a particular domain,
@@ -113,9 +107,7 @@ class Command(BaseCommand):
             domain.renew_domain(extension_amount)
         except (RegistryError, TransportError) as err:
             logger.error(
-                f"{TerminalColors.FAIL}"
-                f"Failed to update expiration date for {domain}"
-                f"{TerminalColors.ENDC}"
+                f"{TerminalColors.FAIL}" f"Failed to update expiration date for {domain}" f"{TerminalColors.ENDC}"
             )
             logger.error(err)
         except Exception as err:
@@ -124,9 +116,7 @@ class Command(BaseCommand):
         else:
             self.update_success.append(domain.name)
             logger.info(
-                f"{TerminalColors.OKCYAN}"
-                f"Successfully updated expiration date for {domain}"
-                f"{TerminalColors.ENDC}"
+                f"{TerminalColors.OKCYAN}" f"Successfully updated expiration date for {domain}" f"{TerminalColors.ENDC}"
             )
 
     # == Helper functions == #
@@ -139,7 +129,7 @@ class Command(BaseCommand):
         # CAVEAT: This check stops working after a year has elapsed between when this script
         # was ran, and when it was ran again. This is good enough for now, but a more robust
         # solution would be a DB flag.
-        is_idempotent = proposed_date < (date.today() + relativedelta(years=extension_amount+1))
+        is_idempotent = proposed_date < (date.today() + relativedelta(years=extension_amount + 1))
         return is_idempotent
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
@@ -156,27 +146,22 @@ class Command(BaseCommand):
             prompt_title="Do you wish to modify Expiration Dates for the given Domains?",
         )
 
-        logger.info(
-            f"{TerminalColors.MAGENTA}"
-            "Preparing to extend expiration dates..."
-            f"{TerminalColors.ENDC}"
-        )
+        logger.info(f"{TerminalColors.MAGENTA}" "Preparing to extend expiration dates..." f"{TerminalColors.ENDC}")
 
     def check_if_positive_int(self, value: int, var_name: str):
         """
-        Determines if the given integer value is positive or not. 
+        Determines if the given integer value is positive or not.
         If not, it raises an ArgumentTypeError
         """
         if value < 0:
             raise argparse.ArgumentTypeError(
-                f"{value} is an invalid integer value for {var_name}. " 
-                "Must be positive."
+                f"{value} is an invalid integer value for {var_name}. " "Must be positive."
             )
 
         return value
 
     def log_script_run_summary(self, debug):
-        """Prints success, failed, and skipped counts, as well as 
+        """Prints success, failed, and skipped counts, as well as
         all affected domains."""
         update_success_count = len(self.update_success)
         update_failed_count = len(self.update_failed)

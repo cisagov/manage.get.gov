@@ -26,10 +26,14 @@ class TestExtendExpirationDates(MockEppLib):
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
         super().setUp()
-        self.domain, _ = Domain.objects.get_or_create(
-            name="fake.gov", 
-            state=Domain.State.READY,
-            expiration_date=datetime.date(2023, 5, 25)
+        Domain.objects.get_or_create(
+            name="waterbutpurple.gov", state=Domain.State.READY, expiration_date=datetime.date(2023, 11, 15)
+        )
+        Domain.objects.get_or_create(
+            name="fake.gov", state=Domain.State.READY, expiration_date=datetime.date(2022, 5, 25)
+        )
+        Domain.objects.get_or_create(
+            name="fakeneeded.gov", state=Domain.State.DNS_NEEDED, expiration_date=datetime.date(2023, 11, 15)
         )
 
     def tearDown(self):
@@ -44,7 +48,7 @@ class TestExtendExpirationDates(MockEppLib):
         # Delete users
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
-    
+
     def run_extend_expiration_dates(self):
         """
         This method executes the transfer_transition_domains_to_domains command.
@@ -57,47 +61,87 @@ class TestExtendExpirationDates(MockEppLib):
             return_value=True,
         ):
             call_command("extend_expiration_dates")
-    
+
     def test_extends_expiration_date_correctly(self):
-        desired_domain = Domain.objects.filter(name="fake.gov").get()
+        """
+        Tests that the extend_expiration_dates method extends dates as expected
+        """
+        desired_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
         desired_domain.expiration_date = desired_domain.expiration_date + relativedelta(years=1)
 
         # Run the expiration date script
         self.run_extend_expiration_dates()
-        
-        self.assertEqual(desired_domain, self.domain)
 
-        # Explicitly test the expiration date 
-        self.assertEqual(self.domain.expiration_date, datetime.date(2024, 5, 25))
-    
-    # TODO ALSO NEED A TEST FOR NON READY DOMAINS
+        current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the expiration date
+        self.assertEqual(current_domain.expiration_date, datetime.date(2025, 1, 10))
+
     def test_extends_expiration_date_skips_non_current(self):
+        """
+        Tests that the extend_expiration_dates method correctly skips domains
+        with an expiration date less than a certain threshold.
+        """
         desired_domain = Domain.objects.filter(name="fake.gov").get()
         desired_domain.expiration_date = desired_domain.expiration_date + relativedelta(years=1)
 
         # Run the expiration date script
         self.run_extend_expiration_dates()
-        
-        current_domain = Domain.objects.filter(name="FakeWebsite3.gov").get()
+
+        current_domain = Domain.objects.filter(name="fake.gov").get()
         self.assertEqual(desired_domain, current_domain)
 
         # Explicitly test the expiration date. The extend_expiration_dates script
         # will skip all dates less than date(2023, 11, 15), meaning that this domain
         # should not be affected by the change.
-        self.assertEqual(current_domain.expiration_date, datetime.date(2023, 5, 25))
-    
-    def test_extends_expiration_date_idempotent(self):
-        desired_domain = Domain.objects.filter(name="FakeWebsite3.gov").get()
+        self.assertEqual(current_domain.expiration_date, datetime.date(2022, 5, 25))
+
+    def test_extends_expiration_date_skips_non_ready(self):
+        """
+        Tests that the extend_expiration_dates method correctly skips domains not in the state "ready"
+        """
+        desired_domain = Domain.objects.filter(name="fakeneeded.gov").get()
         desired_domain.expiration_date = desired_domain.expiration_date + relativedelta(years=1)
 
         # Run the expiration date script
         self.run_extend_expiration_dates()
-        
-        current_domain = Domain.objects.filter(name="FakeWebsite3.gov").get()
+
+        current_domain = Domain.objects.filter(name="fake.gov").get()
         self.assertEqual(desired_domain, current_domain)
 
-        # Explicitly test the expiration date 
-        self.assertEqual(desired_domain.expiration_date, datetime.date(2023, 9, 30))
+        # Explicitly test the expiration date. The extend_expiration_dates script
+        # will skip all dates less than date(2023, 11, 15), meaning that this domain
+        # should not be affected by the change.
+        self.assertEqual(current_domain.expiration_date, datetime.date(2023, 11, 15))
+
+    def test_extends_expiration_date_idempotent(self):
+        """
+        Tests the idempotency of the extend_expiration_dates command.
+
+        Verifies that running the method multiple times does not change the expiration date
+        of a domain beyond the initial extension.
+        """
+        desired_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        desired_domain.expiration_date = desired_domain.expiration_date + relativedelta(years=1)
+
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+
+        current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the expiration date
+        self.assertEqual(desired_domain.expiration_date, datetime.date(2024, 11, 15))
+
+        # Run the expiration date script again
+        self.run_extend_expiration_dates()
+
+        # The old domain shouldn't have changed
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the expiration date - should be the same
+        self.assertEqual(desired_domain.expiration_date, datetime.date(2024, 11, 15))
 
 
 class TestOrganizationMigration(TestCase):
