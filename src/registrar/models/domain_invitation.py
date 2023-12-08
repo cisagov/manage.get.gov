@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class DomainInvitation(TimeStampedModel):
-    
     # Constants for status field
     class DomainInvitationStatus(models.TextChoices):
         INVITED = "invited", "Invited"

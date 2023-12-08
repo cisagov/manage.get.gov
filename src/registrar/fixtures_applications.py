@@ -214,7 +214,9 @@ class DomainFixture(DomainApplicationFixture):
 
         for user in users:
             # approve one of each users in review status domains
-            application = DomainApplication.objects.filter(creator=user, status=DomainApplication.ApplicationStatus.IN_REVIEW).last()
+            application = DomainApplication.objects.filter(
+                creator=user, status=DomainApplication.ApplicationStatus.IN_REVIEW
+            ).last()
             logger.debug(f"Approving {application} for {user}")
             application.approve()
             application.save()

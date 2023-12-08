@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class DomainApplication(TimeStampedModel):
 
     """A registrant's application for a new domain."""
-    
+
     # Constants for choice fields
     class ApplicationStatus(models.TextChoices):
         STARTED = "started", "Started"
@@ -583,7 +583,11 @@ class DomainApplication(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
-    @transition(field="status", source=[ApplicationStatus.STARTED, ApplicationStatus.ACTION_NEEDED, ApplicationStatus.WITHDRAWN], target=ApplicationStatus.SUBMITTED)
+    @transition(
+        field="status",
+        source=[ApplicationStatus.STARTED, ApplicationStatus.ACTION_NEEDED, ApplicationStatus.WITHDRAWN],
+        target=ApplicationStatus.SUBMITTED,
+    )
     def submit(self):
         """Submit an application that is started.
 
@@ -621,7 +625,11 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_in_review_subject.txt",
         )
 
-    @transition(field="status", source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.REJECTED], target=ApplicationStatus.ACTION_NEEDED)
+    @transition(
+        field="status",
+        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.REJECTED],
+        target=ApplicationStatus.ACTION_NEEDED,
+    )
     def action_needed(self):
         """Send back an application that is under investigation or rejected.
 
@@ -635,7 +643,12 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW, ApplicationStatus.REJECTED, ApplicationStatus.INELIGIBLE],
+        source=[
+            ApplicationStatus.SUBMITTED,
+            ApplicationStatus.IN_REVIEW,
+            ApplicationStatus.REJECTED,
+            ApplicationStatus.INELIGIBLE,
+        ],
         target=ApplicationStatus.APPROVED,
     )
     def approve(self):
@@ -669,7 +682,11 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_approved_subject.txt",
         )
 
-    @transition(field="status", source=[ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW], target=ApplicationStatus.WITHDRAWN)
+    @transition(
+        field="status",
+        source=[ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW],
+        target=ApplicationStatus.WITHDRAWN,
+    )
     def withdraw(self):
         """Withdraw an application that has been submitted."""
         self._send_status_update_email(

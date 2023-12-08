@@ -312,7 +312,11 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # if the current application has ApplicationStatus.ACTION_NEEDED status, this check should not be performed
         if self.application.status == DomainApplication.ApplicationStatus.ACTION_NEEDED:
             return []
-        check_statuses = [DomainApplication.ApplicationStatus.SUBMITTED, DomainApplication.ApplicationStatus.IN_REVIEW, DomainApplication.ApplicationStatus.ACTION_NEEDED]
+        check_statuses = [
+            DomainApplication.ApplicationStatus.SUBMITTED,
+            DomainApplication.ApplicationStatus.IN_REVIEW,
+            DomainApplication.ApplicationStatus.ACTION_NEEDED,
+        ]
         return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
 
     def get_context_data(self):
