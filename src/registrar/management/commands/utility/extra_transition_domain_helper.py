@@ -788,11 +788,11 @@ class OrganizationDataLoader:
 
     def update_organization_data_for_all(self):
         """Updates org address data for all valid TransitionDomains"""
-        valid_transition_domains = TransitionDomain.objects.filter(processed=False)
-        if len(valid_transition_domains) == 0:
+        all_transition_domains = TransitionDomain.objects.all()
+        if len(all_transition_domains) == 0:
             raise LoadOrganizationError(code=LoadOrganizationErrorCodes.EMPTY_TRANSITION_DOMAIN_TABLE)
 
-        self.prepare_transition_domains(valid_transition_domains)
+        self.prepare_transition_domains(all_transition_domains)
 
         logger.info(f"{TerminalColors.MAGENTA}" "Beginning mass TransitionDomain update..." f"{TerminalColors.ENDC}")
         self.bulk_update_transition_domains(self.tds_to_update)
