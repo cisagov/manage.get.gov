@@ -123,14 +123,15 @@ class Command(BaseCommand):
     # == Helper functions == #
     def idempotence_check(self, domain, extension_amount):
         """Determines if the proposed operation violates idempotency"""
-        proposed_date = domain.expiration_date + relativedelta(years=extension_amount)
+        proposed_date = self.add_years(domain.expiration_date, extension_amount)
         # Because our migration data had a hard stop date, we can determine if our change
         # is valid simply checking if adding a year to our current date yields a greater date
         # than the proposed.
         # CAVEAT: This check stops working after a year has elapsed between when this script
         # was ran, and when it was ran again. This is good enough for now, but a more robust
         # solution would be a DB flag.
-        is_idempotent = proposed_date < (date.today() + relativedelta(years=extension_amount + 1))
+        extension_from_today = self.add_years(date.today(), extension_amount + 1)
+        is_idempotent = proposed_date < extension_from_today
         return is_idempotent
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
@@ -234,3 +235,18 @@ class Command(BaseCommand):
                 {TerminalColors.ENDC}
                 """
             )
+
+    # We use this manual approach rather than relative delta due to our
+    # github localenv not having the package installed. 
+    # Credit: https://stackoverflow.com/questions/15741618/add-one-year-in-current-date-python
+    def add_years(self, old_date, years):
+        """Return a date that's `years` years after the date (or datetime)
+        object `old_date`. Return the same calendar date (month and day) in the
+        destination year, if it exists, otherwise use the following day
+        (thus changing February 29 to March 1).
+
+        """
+        try:
+            return old_date.replace(year = old_date.year + years)
+        except ValueError:
+            return old_date + (date(old_date.year + years, 1, 1) - date(old_date.year, 1, 1))
