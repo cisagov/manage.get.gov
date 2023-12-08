@@ -80,7 +80,7 @@ class TestProcessedMigrations(TestCase):
         is idempotent on Domain and DomainInformation.
         """
         unchanged_domain, _ = Domain.objects.get_or_create(
-            name="unchanged.gov",
+            name="testdomain.gov",
             state=Domain.State.READY,
             expiration_date=datetime.date(2000, 1, 1),
         )
@@ -93,7 +93,7 @@ class TestProcessedMigrations(TestCase):
         self.run_transfer_domains()
 
         # Test that old data isn't corrupted
-        actual_unchanged = Domain.objects.filter(name="unchanged.gov").get()
+        actual_unchanged = Domain.objects.filter(name="testdomain.gov").get()
         self.assertEqual(unchanged_domain, actual_unchanged)
 
         # Test that a given TransitionDomain is set to "processed" after we transfer domains
@@ -115,7 +115,7 @@ class TestProcessedMigrations(TestCase):
         self.run_transfer_domains()
 
         # Test that old data isn't corrupted after running this twice
-        actual_unchanged = Domain.objects.filter(name="unchanged.gov").get()
+        actual_unchanged = Domain.objects.filter(name="testdomain.gov").get()
         self.assertEqual(unchanged_domain, actual_unchanged)
 
         # Ensure that domain hasn't changed
@@ -130,12 +130,12 @@ class TestProcessedMigrations(TestCase):
         """
         This test checks if a domain is correctly marked as processed in the transition.
         """
-        old_transition_domain, _ = TransitionDomain.objects.get_or_create(domain_name="unchanged.gov")
+        old_transition_domain, _ = TransitionDomain.objects.get_or_create(domain_name="testdomain.gov")
         # Asser that old records default to 'True'
         self.assertTrue(old_transition_domain.processed)
 
         unchanged_domain, _ = Domain.objects.get_or_create(
-            name="unchanged.gov",
+            name="testdomain.gov",
             state=Domain.State.READY,
             expiration_date=datetime.date(2000, 1, 1),
         )
@@ -148,7 +148,7 @@ class TestProcessedMigrations(TestCase):
         self.run_transfer_domains()
 
         # Test that old data isn't corrupted
-        actual_unchanged = Domain.objects.filter(name="unchanged.gov").get()
+        actual_unchanged = Domain.objects.filter(name="testdomain.gov").get()
         self.assertEqual(unchanged_domain, actual_unchanged)
         self.assertTrue(old_transition_domain.processed)
 
