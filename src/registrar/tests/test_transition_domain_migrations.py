@@ -79,6 +79,7 @@ class TestProcessedMigrations(TestCase):
         This test ensures that the domain transfer process
         is idempotent on Domain and DomainInformation.
         """
+
         self.run_load_domains()
 
         # Test that a given TransitionDomain isn't set to "processed"
