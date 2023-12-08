@@ -623,7 +623,6 @@ class TestUser(TestCase):
         TransitionDomain.objects.all().delete()
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
-        TransitionDomain.objects.get_or_create(username="mayor@igorville.gov", domain_name=self.domain_name)
 
     def test_check_transition_domains_without_domains_on_login(self):
         """A user's on_each_login callback does not check transition domains.

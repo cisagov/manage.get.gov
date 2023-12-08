@@ -99,7 +99,10 @@ class ViewsTest(TestCase):
         ) as mock_create_authn_request:
             login_callback(request)
 
-        # Assert that get_step_up_acr_value was called and session was updated
+        # create_authn_request only gets called when requires_step_up_auth is True
+        # and it changes this acr_value in request.session
+
+        # Assert that acr_value is no longer empty string
         self.assertNotEqual(request.session["acr_value"], "")
         # And create_authn_request was called again
         mock_create_authn_request.assert_called_once()
@@ -120,9 +123,12 @@ class ViewsTest(TestCase):
         ) as mock_create_authn_request:
             login_callback(request)
 
-        # Assert that get_step_up_acr_value was NOT called and session was NOT updated
+        # create_authn_request only gets called when requires_step_up_auth is True
+        # and it changes this acr_value in request.session
+
+        # Assert that acr_value is NOT updated by testing that it is still an empty string
         self.assertEqual(request.session["acr_value"], "")
-        # create_authn_request was not called
+        # Assert create_authn_request was not called
         mock_create_authn_request.assert_not_called()
 
     @patch("djangooidc.views.authenticate")

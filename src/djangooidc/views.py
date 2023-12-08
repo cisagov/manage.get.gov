@@ -92,7 +92,14 @@ def requires_step_up_auth(userinfo):
     acr_value = userinfo.get("ial", "")
     uuid = userinfo.get("sub", "")
     email = userinfo.get("email", "")
-    return User.needs_identity_verification(email, uuid) and acr_value != step_up_acr_value
+    if acr_value != step_up_acr_value:
+        # The acr of this attempt is not at the highest level
+        # so check if the user needs the higher level
+        return User.needs_identity_verification(email, uuid)
+    else:
+        # This attempt already came back at the highest level
+        # so does not require step up
+        return False
 
 
 def logout(request, next_page=None):
