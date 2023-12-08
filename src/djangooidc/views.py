@@ -73,9 +73,7 @@ def login_callback(request):
         if requires_step_up_auth(userinfo):
             # add acr_value to request.session
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
-            test = CLIENT.create_authn_request(request.session)
-            logger.info(test)
-            return test
+            return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
         if user:
             login(request, user)
