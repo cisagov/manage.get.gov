@@ -8,12 +8,13 @@ from django.core.management import BaseCommand
 from epplibwrapper.errors import RegistryError
 from registrar.models import Domain
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-from dateutil.relativedelta import relativedelta
 
 try:
     from epplib.exceptions import TransportError
 except ImportError:
     pass
+
+from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger(__name__)
 
