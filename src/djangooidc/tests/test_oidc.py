@@ -13,7 +13,7 @@ class OidcTest(TestCase):
     def test_oidc_create_authn_request_with_acr_value(self):
         """Test that create_authn_request returns a redirect with an acr_value
         when an acr_value is passed through session.
-        
+
         This test is only valid locally.  On local, client can be initialized.
         Client initialization does not work in pipeline, so test is useless in
         pipeline. However, it will not fail in pipeline."""
