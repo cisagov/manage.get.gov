@@ -84,9 +84,7 @@ class ViewsTest(TestCase):
 
     def test_requires_step_up_auth(self, mock_client):
         """Invoke login_callback passing it a request when requires_step_up_auth returns True
-        and assert that session is updated and create_authn_request (mock) is called.
-
-        Possibly redundant with test_login_callback_no_step_up_auth"""
+        and assert that session is updated and create_authn_request (mock) is called."""
         # Configure the mock to return an expected value for get_step_up_acr_value
         mock_client.return_value.get_step_up_acr_value.return_value = "step_up_acr_value"
 
@@ -101,7 +99,10 @@ class ViewsTest(TestCase):
         ) as mock_create_authn_request:
             login_callback(request)
 
-        # Assert that get_step_up_acr_value was called and session was updated
+        # create_authn_request only gets called when requires_step_up_auth is True
+        # and it changes this acr_value in request.session
+
+        # Assert that acr_value is no longer empty string
         self.assertNotEqual(request.session["acr_value"], "")
         # And create_authn_request was called again
         mock_create_authn_request.assert_called_once()
@@ -122,9 +123,12 @@ class ViewsTest(TestCase):
         ) as mock_create_authn_request:
             login_callback(request)
 
-        # Assert that get_step_up_acr_value was NOT called and session was NOT updated
+        # create_authn_request only gets called when requires_step_up_auth is True
+        # and it changes this acr_value in request.session
+
+        # Assert that acr_value is NOT updated by testing that it is still an empty string
         self.assertEqual(request.session["acr_value"], "")
-        # create_authn_request was not called
+        # Assert create_authn_request was not called
         mock_create_authn_request.assert_not_called()
 
     @patch("djangooidc.views.authenticate")
@@ -180,34 +184,3 @@ class ViewsTest(TestCase):
         # assert
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("logout"))
-
-
-class ViewsTestUnpatched(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.factory = RequestFactory()
-
-    def say_hi(*args):
-        return HttpResponse("Hi")
-
-    def user_info(*args):
-        return {
-            "sub": "TEST",
-            "email": "test@example.com",
-            "first_name": "Testy",
-            "last_name": "Tester",
-            "phone": "814564000",
-        }
-
-    def test_login_callback_requires_step_up_auth(self):
-        """Walk through login_callback when requires_step_up_auth returns True
-        and assert that create_authn_request is returned."""
-
-        with patch("djangooidc.views.requires_step_up_auth", return_value=True), patch(
-            "djangooidc.views.Client.callback", return_value=self.user_info
-        ), patch("djangooidc.views.Client.create_authn_request", side_effect=self.say_hi):
-            response = self.client.get(reverse("openid_login_callback"))
-
-        # assert
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Hi")
