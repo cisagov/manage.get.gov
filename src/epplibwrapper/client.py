@@ -17,7 +17,7 @@ except ImportError:
 from django.conf import settings
 
 from .cert import Cert, Key
-from .errors import LoginError, RegistryError
+from .errors import ErrorCode, LoginError, RegistryError
 from .socket import Socket
 from .utility.pool import EPPConnectionPool
 
@@ -115,7 +115,7 @@ class EPPLibWrapper:
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
             logger.error(f"{message} Error: {err}", exc_info=True)
-            raise RegistryError(message) from err
+            raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
@@ -163,7 +163,8 @@ class EPPLibWrapper:
             try:
                 return self._send(command)
             except RegistryError as err:
-                if err.should_retry() and counter < 3:
+                if counter < 3 and (err.should_retry() or err.is_transport_error()):
+                    logger.info(f"Retrying transport error. Attempt #{counter+1} of 3.")
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
