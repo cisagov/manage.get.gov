@@ -455,7 +455,6 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "is_policy_acknowledged",
     ]
 
-
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 1 conditions that determine which fields are read-only:
@@ -591,7 +590,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "anything_else",
         "is_policy_acknowledged",
     ]
-
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
