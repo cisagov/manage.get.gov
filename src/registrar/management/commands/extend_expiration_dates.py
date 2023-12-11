@@ -84,6 +84,9 @@ class Command(BaseCommand):
             is_idempotent = self.idempotence_check(domain, extension_amount)
             if not disable_idempotence and not is_idempotent:
                 self.update_skipped.append(domain.name)
+                logger.info(
+                    f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}"
+                )
             else:
                 self.extend_expiration_date_on_domain(domain, extension_amount, debug)
 
@@ -113,14 +116,14 @@ class Command(BaseCommand):
     # == Helper functions == #
     def idempotence_check(self, domain, extension_amount):
         """Determines if the proposed operation violates idempotency"""
-        proposed_date = self.add_years(domain.expiration_date, extension_amount)
+        proposed_date = self.add_years(domain.registry_expiration_date, extension_amount)
         # Because our migration data had a hard stop date, we can determine if our change
         # is valid simply checking if adding two years to our current date yields a greater date
         # than the proposed.
         # CAVEAT: This check stops working after a year has elapsed between when this script
         # was ran, and when it was ran again. This is good enough for now, but a more robust
         # solution would be a DB flag.
-        extension_from_today = self.add_years(date.today(), extension_amount + 2)
+        extension_from_today = self.add_years(date.today(), extension_amount + 1)
         is_idempotent = proposed_date < extension_from_today
         return is_idempotent
 
