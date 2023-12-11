@@ -51,17 +51,10 @@ class Command(BaseCommand):
         """
         Extends the expiration dates for valid domains.
 
-        It first retrieves the command line options and checks if the parse limit is a positive integer.
-        Then, it fetches the valid domains from the database and calculates the number of domains to change.
         If a parse limit is set and it's less than the total number of valid domains,
         the number of domains to change is set to the parse limit.
 
-        For each domain, it checks if the operation is idempotent.
-        If the idempotence check is not disabled and the operation is not idempotent, the domain is skipped.
-        Otherwise, the expiration date of the domain is extended.
-
-        Finally, it logs a summary of the script run,
-        including the number of successful, failed, and skipped updates.
+        Includes an idempotence check.
         """
 
         # Retrieve command line options
@@ -79,17 +72,15 @@ class Command(BaseCommand):
         ).order_by("name")
 
         domains_to_change_count = valid_domains.count()
-        if limit_parse != 0 and limit_parse < domains_to_change_count:
+        if limit_parse != 0:
             domains_to_change_count = limit_parse
+            valid_domains = valid_domains[:limit_parse]
 
         # Determines if we should continue code execution or not.
         # If the user prompts 'N', a sys.exit() will be called.
         self.prompt_user_to_proceed(extension_amount, domains_to_change_count)
 
-        for i, domain in enumerate(valid_domains):
-            if limit_parse != 0 and i > limit_parse:
-                break
-
+        for domain in valid_domains:
             is_idempotent = self.idempotence_check(domain, extension_amount)
             if not disable_idempotence and not is_idempotent:
                 self.update_skipped.append(domain.name)
@@ -124,12 +115,12 @@ class Command(BaseCommand):
         """Determines if the proposed operation violates idempotency"""
         proposed_date = self.add_years(domain.expiration_date, extension_amount)
         # Because our migration data had a hard stop date, we can determine if our change
-        # is valid simply checking if adding a year to our current date yields a greater date
+        # is valid simply checking if adding two years to our current date yields a greater date
         # than the proposed.
         # CAVEAT: This check stops working after a year has elapsed between when this script
         # was ran, and when it was ran again. This is good enough for now, but a more robust
         # solution would be a DB flag.
-        extension_from_today = self.add_years(date.today(), extension_amount + 1)
+        extension_from_today = self.add_years(date.today(), extension_amount + 2)
         is_idempotent = proposed_date < extension_from_today
         return is_idempotent
 
@@ -144,7 +135,7 @@ class Command(BaseCommand):
             ==Proposed Changes==
             Domains to change: {domains_to_change_count}
             """,
-            prompt_title="Do you wish to modify Expiration Dates for the given Domains?",
+            prompt_title="Do you wish to proceed?",
         )
 
         logger.info(f"{TerminalColors.MAGENTA}" "Preparing to extend expiration dates..." f"{TerminalColors.ENDC}")
@@ -167,6 +158,23 @@ class Command(BaseCommand):
         update_success_count = len(self.update_success)
         update_failed_count = len(self.update_failed)
         update_skipped_count = len(self.update_skipped)
+
+        # Prepare debug messages
+        debug_messages = {
+            "success": f"{TerminalColors.OKCYAN}Updated the following Domains: {self.update_success}{TerminalColors.ENDC}\n",
+            "skipped": f"{TerminalColors.YELLOW}Skipped the following Domains: {self.update_skipped}{TerminalColors.ENDC}\n",
+            "failed": f"{TerminalColors.FAIL}Failed to update the following Domains: {self.update_failed}{TerminalColors.ENDC}\n",
+        }
+
+        # Print out a list of everything that was changed, if we have any changes to log.
+        # Otherwise, don't print anything.
+        TerminalHelper.print_conditional(
+            debug,
+            f"{debug_messages.get('success') if update_success_count > 0 else ''}"
+            f"{debug_messages.get('skipped') if update_skipped_count > 0 else ''}"
+            f"{debug_messages.get('failed') if update_failed_count > 0 else ''}",
+        )
+
         if update_failed_count == 0 and update_skipped_count == 0:
             logger.info(
                 f"""{TerminalColors.OKGREEN}
@@ -175,27 +183,7 @@ class Command(BaseCommand):
                 {TerminalColors.ENDC}
                 """
             )
-            TerminalHelper.print_conditional(
-                debug,
-                f"""
-                {TerminalColors.OKGREEN}
-                Updated the following Domains: {self.update_success}
-                {TerminalColors.ENDC}
-                """,
-            )
         elif update_failed_count == 0:
-            TerminalHelper.print_conditional(
-                debug,
-                f"""
-                {TerminalColors.OKGREEN}
-                Updated the following Domains: {self.update_success}
-                {TerminalColors.ENDC}
-
-                {TerminalColors.YELLOW}
-                Skipped the following Domains: {self.update_skipped}
-                {TerminalColors.ENDC}
-                """,
-            )
             logger.info(
                 f"""{TerminalColors.YELLOW}
                 ============= FINISHED ===============
@@ -207,22 +195,6 @@ class Command(BaseCommand):
                 """
             )
         else:
-            TerminalHelper.print_conditional(
-                debug,
-                f"""
-                {TerminalColors.OKGREEN}
-                Updated the following Domains: {self.update_success}
-                {TerminalColors.ENDC}
-
-                {TerminalColors.YELLOW}
-                Skipped the following Domains: {self.update_skipped}
-                {TerminalColors.ENDC}
-
-                {TerminalColors.FAIL}
-                Failed to update the following Domains: {self.update_failed}
-                {TerminalColors.ENDC}
-                """,
-            )
             logger.info(
                 f"""{TerminalColors.FAIL}
                 ============= FINISHED ===============
