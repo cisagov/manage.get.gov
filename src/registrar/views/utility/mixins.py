@@ -101,10 +101,10 @@ class DomainPermission(PermissionsLoginMixin):
 
         # Analysts may manage domains, when they are in these statuses:
         valid_domain_statuses = [
-            DomainApplication.APPROVED,
-            DomainApplication.IN_REVIEW,
-            DomainApplication.REJECTED,
-            DomainApplication.ACTION_NEEDED,
+            DomainApplication.ApplicationStatus.APPROVED,
+            DomainApplication.ApplicationStatus.IN_REVIEW,
+            DomainApplication.ApplicationStatus.REJECTED,
+            DomainApplication.ApplicationStatus.ACTION_NEEDED,
             # Edge case - some domains do not have
             # a status or DomainInformation... aka a status of 'None'.
             # It is necessary to access those to correct errors.

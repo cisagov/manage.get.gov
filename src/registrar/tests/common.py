@@ -294,7 +294,7 @@ class AuditedAdminMockData:
         self,
         domain_type,
         item_name,
-        status=DomainApplication.STARTED,
+        status=DomainApplication.ApplicationStatus.STARTED,
         org_type="federal",
         federal_type="executive",
         purpose="Purpose of the site",
@@ -311,7 +311,7 @@ class AuditedAdminMockData:
             title, email, and username.
 
             status (str - optional): Defines the status for DomainApplication,
-            e.g. DomainApplication.STARTED
+            e.g. DomainApplication.ApplicationStatus.STARTED
 
             org_type (str - optional): Sets a domains org_type
 
@@ -344,23 +344,23 @@ class AuditedAdminMockData:
                 full_arg_dict = dict(
                     email="test_mail@mail.com",
                     domain=self.dummy_domain(item_name, True),
-                    status=DomainInvitation.INVITED,
+                    status=DomainInvitation.DomainInvitationStatus.INVITED,
                 )
         return full_arg_dict
 
-    def create_full_dummy_domain_application(self, item_name, status=DomainApplication.STARTED):
+    def create_full_dummy_domain_application(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
         """Creates a dummy domain application object"""
         domain_application_kwargs = self.dummy_kwarg_boilerplate(self.APPLICATION, item_name, status)
         application = DomainApplication.objects.get_or_create(**domain_application_kwargs)[0]
         return application
 
-    def create_full_dummy_domain_information(self, item_name, status=DomainApplication.STARTED):
+    def create_full_dummy_domain_information(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
         """Creates a dummy domain information object"""
         domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INFORMATION, item_name, status)
         application = DomainInformation.objects.get_or_create(**domain_application_kwargs)[0]
         return application
 
-    def create_full_dummy_domain_invitation(self, item_name, status=DomainApplication.STARTED):
+    def create_full_dummy_domain_invitation(self, item_name, status=DomainApplication.ApplicationStatus.STARTED):
         """Creates a dummy domain invitation object"""
         domain_application_kwargs = self.dummy_kwarg_boilerplate(self.INVITATION, item_name, status)
         application = DomainInvitation.objects.get_or_create(**domain_application_kwargs)[0]
@@ -374,7 +374,7 @@ class AuditedAdminMockData:
         has_other_contacts=True,
         has_current_website=True,
         has_alternative_gov_domain=True,
-        status=DomainApplication.STARTED,
+        status=DomainApplication.ApplicationStatus.STARTED,
     ):
         """A helper to create a dummy domain application object"""
         application = None
@@ -455,7 +455,7 @@ def completed_application(
     has_alternative_gov_domain=True,
     has_about_your_organization=True,
     has_anything_else=True,
-    status=DomainApplication.STARTED,
+    status=DomainApplication.ApplicationStatus.STARTED,
     user=False,
     name="city.gov",
 ):
