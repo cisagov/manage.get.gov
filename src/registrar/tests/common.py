@@ -829,8 +829,6 @@ class MockEppLib(TestCase):
     def mockCheckDomainCommand(self, _request, cleaned):
         if "gsa.gov" in getattr(_request, "names", None):
             return self._mockDomainName("gsa.gov", False)
-        elif "GSA.gov" in getattr(_request, "names", None):
-            return self._mockDomainName("GSA.gov", False)
         elif "igorville.gov" in getattr(_request, "names", None):
             return self._mockDomainName("igorville.gov", True)
         elif "top-level-agency.gov" in getattr(_request, "names", None):
