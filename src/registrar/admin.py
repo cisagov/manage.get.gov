@@ -752,6 +752,7 @@ class TransitionDomainAdmin(ListHeaderAdmin):
         "domain_name",
         "status",
         "email_sent",
+        "processed",
     ]
 
     search_fields = ["username", "domain_name"]
