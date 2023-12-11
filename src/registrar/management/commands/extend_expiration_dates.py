@@ -84,9 +84,7 @@ class Command(BaseCommand):
             is_idempotent = self.idempotence_check(domain, extension_amount)
             if not disable_idempotence and not is_idempotent:
                 self.update_skipped.append(domain.name)
-                logger.info(
-                    f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}"
-                )
+                logger.info(f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}")
             else:
                 self.extend_expiration_date_on_domain(domain, extension_amount, debug)
 
@@ -164,9 +162,15 @@ class Command(BaseCommand):
 
         # Prepare debug messages
         debug_messages = {
-            "success": f"{TerminalColors.OKCYAN}Updated the following Domains: {self.update_success}{TerminalColors.ENDC}\n",
-            "skipped": f"{TerminalColors.YELLOW}Skipped the following Domains: {self.update_skipped}{TerminalColors.ENDC}\n",
-            "failed": f"{TerminalColors.FAIL}Failed to update the following Domains: {self.update_failed}{TerminalColors.ENDC}\n",
+            "success": (
+                f"{TerminalColors.OKCYAN}Updated these Domains: {self.update_success}{TerminalColors.ENDC}\n"
+            ),
+            "skipped": (
+                f"{TerminalColors.YELLOW}Skipped these Domains: {self.update_skipped}{TerminalColors.ENDC}\n"
+            ),
+            "failed": (
+                f"{TerminalColors.FAIL}Failed to update these Domains: {self.update_failed}{TerminalColors.ENDC}\n"
+            ),
         }
 
         # Print out a list of everything that was changed, if we have any changes to log.
