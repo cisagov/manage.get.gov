@@ -87,7 +87,7 @@ class Client(oic.Client):
         extra_args=None,
     ):
         """Step 2: Construct a login URL at OP's domain and send the user to it."""
-        logger.debug("Creating the OpenID Connect authn request...")
+        logger.info("create_authn_request() Creating the OpenID Connect authn request...")
         state = rndstr(size=32)
         try:
             session["state"] = state
@@ -112,7 +112,7 @@ class Client(oic.Client):
             logger.error("Failed to assemble request arguments for %s" % state)
             raise o_e.InternalError(locator=state)
 
-        logger.debug("request args: %s" % request_args)
+        logger.info("request args: %s" % request_args)
 
         try:
             # prepare the request for sending
@@ -126,9 +126,9 @@ class Client(oic.Client):
                 method="GET",
                 request_args=request_args,
             )
-            logger.debug("body: %s" % body)
-            logger.debug("URL: %s" % url)
-            logger.debug("headers: %s" % headers)
+            logger.info("body: %s" % body)
+            logger.info("URL: %s" % url)
+            logger.info("headers: %s" % headers)
         except Exception as err:
             logger.error(err)
             logger.error("Failed to prepare request for %s" % state)
@@ -150,7 +150,7 @@ class Client(oic.Client):
 
     def callback(self, unparsed_response, session):
         """Step 3: Receive OP's response, request an access token, and user info."""
-        logger.debug("Processing the OpenID Connect callback response...")
+        logger.info("callback() Processing the OpenID Connect callback response...")
         state = session.get("state", "")
         try:
             # parse the response from OP
@@ -174,7 +174,7 @@ class Client(oic.Client):
                 logger.error("Unable to process response %s for %s" % (error, state))
                 raise o_e.AuthenticationFailed(locator=state)
 
-        logger.debug("authn_response %s" % authn_response)
+        logger.info("callback() authn_response %s" % authn_response)
 
         if not authn_response.get("state", None):
             logger.error("State value not received from OP for %s" % state)
@@ -213,7 +213,8 @@ class Client(oic.Client):
             logger.error("Unable to get user info (%s) for %s" % (info_response.get("error", ""), state))
             raise o_e.AuthenticationFailed(locator=state)
 
-        logger.debug("user info: %s" % info_response)
+        logger.info("_get_user_info() user info: %s" % info_response)
+
         return info_response.to_dict()
 
     def _request_token(self, state, code, session):
