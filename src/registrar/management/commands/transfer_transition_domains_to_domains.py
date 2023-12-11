@@ -559,7 +559,8 @@ class Command(BaseCommand):
         debug_max_entries_to_parse,
         total_rows_parsed,
     ):
-        for transition_domain in TransitionDomain.objects.all():
+        changed_transition_domains = TransitionDomain.objects.filter(processed=False)
+        for transition_domain in changed_transition_domains:
             (
                 target_domain_information,
                 associated_domain,
@@ -644,7 +645,8 @@ class Command(BaseCommand):
         debug_max_entries_to_parse,
         total_rows_parsed,
     ):
-        for transition_domain in TransitionDomain.objects.all():
+        changed_transition_domains = TransitionDomain.objects.filter(processed=False)
+        for transition_domain in changed_transition_domains:
             # Create some local variables to make data tracing easier
             transition_domain_name = transition_domain.domain_name
             transition_domain_status = transition_domain.status
@@ -796,6 +798,7 @@ class Command(BaseCommand):
 
         # First, save all Domain objects to the database
         Domain.objects.bulk_create(domains_to_create)
+
         # DomainInvitation.objects.bulk_create(domain_invitations_to_create)
 
         # TODO: this is to resolve an error where bulk_create
@@ -846,6 +849,15 @@ class Command(BaseCommand):
             (f"{TerminalColors.YELLOW}" f"Trying to add: {domain_information_to_create}" f"{TerminalColors.ENDC}"),
         )
         DomainInformation.objects.bulk_create(domain_information_to_create)
+
+        # Loop through the list of everything created, and mark it as processed
+        for domain in domains_to_create:
+            name = domain.name
+            TransitionDomain.objects.filter(domain_name=name).update(processed=True)
+
+        # Loop through the list of everything updated, and mark it as processed
+        for name in updated_domain_entries:
+            TransitionDomain.objects.filter(domain_name=name).update(processed=True)
 
         self.print_summary_of_findings(
             domains_to_create,
