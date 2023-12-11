@@ -142,7 +142,7 @@ function _checkDomainAvailability(el) {
       inlineToast(el.parentElement, el.id, ERROR, response.message);
     }
   }
-  fetchJSON(`available/${el.value}`, callback);
+  fetchJSON(`available/?domain=${el.value}`, callback);
 }
 
 /** Call the API to see if the domain is good. */
