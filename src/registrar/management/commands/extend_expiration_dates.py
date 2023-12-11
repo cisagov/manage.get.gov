@@ -162,12 +162,8 @@ class Command(BaseCommand):
 
         # Prepare debug messages
         debug_messages = {
-            "success": (
-                f"{TerminalColors.OKCYAN}Updated these Domains: {self.update_success}{TerminalColors.ENDC}\n"
-            ),
-            "skipped": (
-                f"{TerminalColors.YELLOW}Skipped these Domains: {self.update_skipped}{TerminalColors.ENDC}\n"
-            ),
+            "success": (f"{TerminalColors.OKCYAN}Updated these Domains: {self.update_success}{TerminalColors.ENDC}\n"),
+            "skipped": (f"{TerminalColors.YELLOW}Skipped these Domains: {self.update_skipped}{TerminalColors.ENDC}\n"),
             "failed": (
                 f"{TerminalColors.FAIL}Failed to update these Domains: {self.update_failed}{TerminalColors.ENDC}\n"
             ),
