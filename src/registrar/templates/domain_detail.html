@@ -27,6 +27,12 @@
     </div>
     <br>
 
+    <!-- {% include "includes/domain_dates.html" %} -->
+    <div>
+      Expires: {{ expiration_date }}
+      Date created: {{ creation_date }}
+    </div>
+
     {% url 'domain-dns-nameservers' pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=domain.is_editable %}

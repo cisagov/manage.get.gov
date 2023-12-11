@@ -142,14 +142,23 @@ class DomainView(DomainBaseView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        default_email = self.object.get_default_security_contact().email
-        context["default_security_email"] = default_email
+        try:
+            default_email = self.object.get_default_security_contact().email
+            context["default_security_email"] = default_email
 
-        security_email = self.object.get_security_email()
-        if security_email is None or security_email == default_email:
-            context["security_email"] = None
-            return context
-        context["security_email"] = security_email
+            security_email = self.object.get_security_email()
+            if security_email is None or security_email == default_email:
+                context["security_email"] = None
+                return context
+            context["security_email"] = security_email
+
+            context["expiration_date"] = self.object.registry_expiration_date
+            context["creation_date"] = self.object.creation_date
+        except:
+            log.warning(err)
+            context["expiration_date"] = datetime.strptime("2019-01-01", "%Y-%m-%d")
+            context["creation_date"] = datetime.strptime("2015-01-01", "%Y-%m-%d")
+
         return context
 
     def in_editable_state(self, pk):
