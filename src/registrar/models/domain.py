@@ -8,6 +8,7 @@ from typing import Optional
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
+from django.utils import timezone
 from typing import Any
 
 
@@ -963,6 +964,16 @@ class Domain(TimeStampedModel, DomainHelper):
     def isActive(self):
         return self.state == Domain.State.CREATED
 
+    def is_expired(self):
+        """
+        Check if the domain's expiration date is in the past.
+        Returns True if expired, False otherwise.
+        """
+        if not self.expiration_date:
+            return True
+        now = timezone.now().date()
+        return self.expiration_date < now
+    
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
 
