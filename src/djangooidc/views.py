@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlencode
 
 from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
-
+from registrar.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,12 @@ def login_callback(request):
     try:
         query = parse_qs(request.GET.urlencode())
         userinfo = CLIENT.callback(query, request.session)
+        # test for need for identity verification and if it is satisfied
+        # if not satisfied, redirect user to login with stepped up acr_value
+        if requires_step_up_auth(userinfo):
+            # add acr_value to request.session
+            request.session["acr_value"] = CLIENT.get_step_up_acr_value()
+            return CLIENT.create_authn_request(request.session)
         user = authenticate(request=request, **userinfo)
         if user:
             login(request, user)
@@ -79,10 +85,27 @@ def login_callback(request):
         return error_page(request, err)
 
 
+def requires_step_up_auth(userinfo):
+    """if User.needs_identity_verification and step_up_acr_value not in
+    ial returned from callback, return True"""
+    step_up_acr_value = CLIENT.get_step_up_acr_value()
+    acr_value = userinfo.get("ial", "")
+    uuid = userinfo.get("sub", "")
+    email = userinfo.get("email", "")
+    if acr_value != step_up_acr_value:
+        # The acr of this attempt is not at the highest level
+        # so check if the user needs the higher level
+        return User.needs_identity_verification(email, uuid)
+    else:
+        # This attempt already came back at the highest level
+        # so does not require step up
+        return False
+
+
 def logout(request, next_page=None):
     """Redirect the user to the authentication provider (OP) logout page."""
     try:
-        username = request.user.username
+        user = request.user
         request_args = {
             "client_id": CLIENT.client_id,
             "state": request.session["state"],
@@ -94,7 +117,6 @@ def logout(request, next_page=None):
             request_args.update(
                 {"post_logout_redirect_uri": CLIENT.registration_response["post_logout_redirect_uris"][0]}
             )
-
         url = CLIENT.provider_info["end_session_endpoint"]
         url += "?" + urlencode(request_args)
         return HttpResponseRedirect(url)
@@ -104,7 +126,7 @@ def logout(request, next_page=None):
         # Always remove Django session stuff - even if not logged out from OP.
         # Don't wait for the callback as it may never come.
         auth_logout(request)
-        logger.info("Successfully logged out user %s" % username)
+        logger.info("Successfully logged out user %s" % user)
         next_page = getattr(settings, "LOGOUT_REDIRECT_URL", None)
         if next_page:
             request.session["next"] = next_page

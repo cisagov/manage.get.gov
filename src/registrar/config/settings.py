@@ -541,6 +541,7 @@ OIDC_PROVIDERS = {
             "scope": ["email", "profile:name", "phone"],
             "user_info_request": ["email", "first_name", "last_name", "phone"],
             "acr_value": "http://idmanagement.gov/ns/assurance/ial/1",
+            "step_up_acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
         },
         "client_registration": {
             "client_id": "cisa_dotgov_registrar",
@@ -558,6 +559,7 @@ OIDC_PROVIDERS = {
             "scope": ["email", "profile:name", "phone"],
             "user_info_request": ["email", "first_name", "last_name", "phone"],
             "acr_value": "http://idmanagement.gov/ns/assurance/ial/1",
+            "step_up_acr_value": "http://idmanagement.gov/ns/assurance/ial/2",
         },
         "client_registration": {
             "client_id": ("urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar"),
