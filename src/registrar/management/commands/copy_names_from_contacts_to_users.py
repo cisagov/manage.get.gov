@@ -103,8 +103,9 @@ class Command(BaseCommand):
                 TerminalHelper.print_conditional(
                     debug_on,
                     f"""{TerminalColors.YELLOW}
-                    > Found linked entry in User table for:
-                    {contact.email} {contact.first_name} {contact.last_name}
+                    > Found linked user for contact:
+                    {contact} {contact.email} {contact.first_name} {contact.last_name}
+                    > The linked user is {eligible_user}
                     {TerminalColors.ENDC}""",  # noqa
                 )
 
