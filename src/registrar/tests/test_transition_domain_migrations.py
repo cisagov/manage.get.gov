@@ -92,8 +92,6 @@ class TestExtendExpirationDates(MockEppLib):
         current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
         x = TransitionDomain.objects.filter(domain_name=current_domain.name).get()
         self.assertEqual(desired_domain, current_domain)
-        print(f"wtf is going on {current_domain.__dict__}")
-        print(f"wtf is going on2 {x.__dict__}")
         # Explicitly test the expiration date
         self.assertEqual(current_domain.expiration_date, datetime.date(2024, 11, 15))
 
