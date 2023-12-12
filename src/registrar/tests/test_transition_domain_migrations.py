@@ -32,7 +32,7 @@ class TestExtendExpirationDates(MockEppLib):
         TransitionDomain.objects.get_or_create(
             username="testytester@mail.com",
             domain_name="waterbutpurple.gov",
-            epp_expiration_date=datetime.date(2023, 11, 15)
+            epp_expiration_date=datetime.date(2023, 11, 15),
         )
         # Create a domain with an invalid expiration date
         Domain.objects.get_or_create(
@@ -41,7 +41,7 @@ class TestExtendExpirationDates(MockEppLib):
         TransitionDomain.objects.get_or_create(
             username="themoonisactuallycheese@mail.com",
             domain_name="fake.gov",
-            epp_expiration_date=datetime.date(2022, 5, 25)
+            epp_expiration_date=datetime.date(2022, 5, 25),
         )
         # Create a domain with an invalid state
         Domain.objects.get_or_create(
@@ -50,7 +50,7 @@ class TestExtendExpirationDates(MockEppLib):
         TransitionDomain.objects.get_or_create(
             username="fakeneeded@mail.com",
             domain_name="fakeneeded.gov",
-            epp_expiration_date=datetime.date(2023, 11, 15)
+            epp_expiration_date=datetime.date(2023, 11, 15),
         )
 
     def tearDown(self):
@@ -84,16 +84,18 @@ class TestExtendExpirationDates(MockEppLib):
         Tests that the extend_expiration_dates method extends dates as expected
         """
         desired_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
-        desired_domain.expiration_date = datetime.date(2025, 1, 10)
+        desired_domain.expiration_date = datetime.date(2024, 11, 15)
 
         # Run the expiration date script
         self.run_extend_expiration_dates()
 
         current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        x = TransitionDomain.objects.filter(domain_name=current_domain.name).get()
         self.assertEqual(desired_domain, current_domain)
-
+        print(f"wtf is going on {current_domain.__dict__}")
+        print(f"wtf is going on2 {x.__dict__}")
         # Explicitly test the expiration date
-        self.assertEqual(current_domain.expiration_date, datetime.date(2025, 1, 10))
+        self.assertEqual(current_domain.expiration_date, datetime.date(2024, 11, 15))
 
     def test_extends_expiration_date_skips_non_current(self):
         """

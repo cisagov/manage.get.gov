@@ -9,9 +9,9 @@ from django.core.management import BaseCommand
 from epplibwrapper.errors import RegistryError
 from registrar.models import Domain
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-from datetime import datetime
 
 from registrar.models.transition_domain import TransitionDomain
+
 try:
     from epplib.exceptions import TransportError
 except ImportError:
@@ -94,7 +94,9 @@ class Command(BaseCommand):
                     domain.renew_domain(extension_amount)
                     self.update_success.append(domain.name)
                     logger.info(
-                        f"{TerminalColors.OKCYAN}" f"Successfully updated expiration date for {domain}" f"{TerminalColors.ENDC}"
+                        f"{TerminalColors.OKCYAN}"
+                        f"Successfully updated expiration date for {domain}"
+                        f"{TerminalColors.ENDC}"
                     )
             # Catches registry errors. Failures indicate bad data, or a faulty connection.
             except (RegistryError, KeyError, TransportError) as err:
@@ -117,8 +119,7 @@ class Command(BaseCommand):
         # CAVEAT: This is a workaround. A more robust solution would be a db flag
         current_expiration_date = domain.registry_expiration_date
         transition_domains = TransitionDomain.objects.filter(
-            domain_name=domain.name,
-            epp_expiration_date=current_expiration_date
+            domain_name=domain.name, epp_expiration_date=current_expiration_date
         )
         proposed_date = self.add_years(current_expiration_date, extension_amount)
         minimum_extension_date = self.add_years(self.expiration_cutoff, extension_amount)

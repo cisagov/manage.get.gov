@@ -619,6 +619,17 @@ class MockEppLib(TestCase):
         ],
         ex_date=datetime.date(2023, 5, 25),
     )
+    mockDataExtensionDomain = fakedEppObject(
+        "fakePw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+        ex_date=datetime.date(2023, 11, 15),
+    )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
         "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
     )
@@ -826,7 +837,7 @@ class MockEppLib(TestCase):
 
     mockRecentRenewedDomainExpDate = fakedEppObject(
         "waterbutpurple.gov",
-        ex_date=datetime.date(2025, 1, 10),
+        ex_date=datetime.date(2024, 11, 15),
     )
 
     def _mockDomainName(self, _name, _avail=False):
@@ -962,6 +973,7 @@ class MockEppLib(TestCase):
                 self.infoDomainTwoHosts if self.mockedSendFunction.call_count == 5 else self.infoDomainNoHost,
                 None,
             ),
+            "waterbutpurple.gov": (self.mockDataExtensionDomain, None),
             "nameserverwithip.gov": (self.infoDomainHasIP, None),
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
