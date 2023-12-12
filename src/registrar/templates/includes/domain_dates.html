@@ -1,10 +1,12 @@
 {% if domain.expiration_date or domain.created_at %}
-<div>
-{% if domain.expiration_date %}Expires: 
-  {{ domain.expiration_date|date:"Y-m-d" }}
-  {% if domain.is_expired %} (expired){% endif %}
-  <br/>
-  {% endif %}
-  {% if domain.created_at %}Date created: {{ domain.created_at|date:"Y-m-d" }}{% endif %}
-</div>
+  <p class="margin-y-0">
+    {% if domain.expiration_date %}
+    <strong class="text-primary-dark">Expires:</strong> 
+    {{ domain.expiration_date|date }}
+    {% if domain.is_expired %} <span class="text-error-dark">(expired)</span>{% endif %}
+    <br/>
+    {% endif %}
+    {% if domain.created_at %}
+    <strong class="text-primary-dark">Date created:</strong> {{ domain.created_at|date }}{% endif %}
+  </p>
 {% endif %}

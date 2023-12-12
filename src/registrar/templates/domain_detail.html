@@ -34,7 +34,7 @@
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=domain.is_editable %}
     {% else %}
       {% if domain.is_editable %}
-      <h2 class="margin-top-neg-1"> DNS name servers </h2>
+      <h2 class="margin-top-3"> DNS name servers </h2>
       <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
       <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
       {% else %}
