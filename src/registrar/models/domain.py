@@ -201,6 +201,14 @@ class Domain(TimeStampedModel, DomainHelper):
         """Get the `cr_date` element from the registry."""
         return self._get_property("cr_date")
 
+    @creation_date.setter  # type: ignore
+    def creation_date(self, ex_date: date):
+        """
+        Direct setting of the creation date in the registry is not implemented.
+
+        Creation date can only be set by registry."""
+        raise NotImplementedError()
+
     @Cache
     def last_transferred_date(self) -> date:
         """Get the `tr_date` element from the registry."""
@@ -969,11 +977,11 @@ class Domain(TimeStampedModel, DomainHelper):
         Check if the domain's expiration date is in the past.
         Returns True if expired, False otherwise.
         """
-        if not self.expiration_date:
+        if self.expiration_date is None:
             return True
         now = timezone.now().date()
         return self.expiration_date < now
-    
+
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
 
@@ -1620,10 +1628,22 @@ class Domain(TimeStampedModel, DomainHelper):
                 if old_cache_contacts is not None:
                     cleaned["contacts"] = old_cache_contacts
 
+            requires_save = False
+
             # if expiration date from registry does not match what is in db,
             # update the db
             if "ex_date" in cleaned and cleaned["ex_date"] != self.expiration_date:
                 self.expiration_date = cleaned["ex_date"]
+                requires_save = True
+
+            # if creation_date from registry does not match what is in db,
+            # update the db
+            if "cr_date" in cleaned and cleaned["cr_date"] != self.created_at:
+                self.created_at = cleaned["cr_date"]
+                requires_save = True
+
+            # if either registration date or creation date need updating
+            if requires_save:
                 self.save()
 
             self._cache = cleaned
