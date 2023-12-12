@@ -111,7 +111,7 @@ class Command(BaseCommand):
 
                 # ---- UPDATE THE USER IF IT DOES NOT HAVE A FIRST AND LAST NAMES
                 # ---- LET'S KEEP A LIGHT TOUCH
-                if not eligible_user.first_name or not eligible_user.last_name:
+                if not eligible_user.first_name and not eligible_user.last_name:
                     processed_user = eligible_user
                     # (expression has type "str | None", variable has type "str | int | Combinable")
                     # so we'll ignore type

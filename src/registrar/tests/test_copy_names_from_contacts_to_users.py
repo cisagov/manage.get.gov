@@ -17,7 +17,7 @@ class TestDataUpdates(TestCase):
         self.user1 = User.objects.create(username="user1")
         self.user2 = User.objects.create(username="user2")
         self.user3 = User.objects.create(username="user3")
-        self.userX = User.objects.create(username="user4")
+        self.user4 = User.objects.create(username="user4")
         # The last user created triggers the creation of a contact and attaches itself to it. @Neil wth is going on?
         # This bs_user defuses that situation so we can test the code.
         self.bs_user = User.objects.create()
@@ -53,6 +53,7 @@ class TestDataUpdates(TestCase):
         self.user1.save()
 
         # User with a first name but no last name
+        self.user2.first_name = "First name but no last name"
         self.user2.last_name = ""
         self.user2.save()
 
@@ -60,12 +61,6 @@ class TestDataUpdates(TestCase):
         self.user3.first_name = "An existing first name"
         self.user3.last_name = "An existing last name"
         self.user3.save()
-
-        # Unlinked user
-        # To make this test useful, we will set the last_name to ""
-        self.userX.first_name = "Unlinked user's first name"
-        self.userX.last_name = ""
-        self.userX.save()
 
         # Call the parent method the same way we do it in the script
         skipped_contacts = []
@@ -87,14 +82,17 @@ class TestDataUpdates(TestCase):
         self.user1.refresh_from_db()
         self.user2.refresh_from_db()
         self.user3.refresh_from_db()
-        self.userX.refresh_from_db()
 
         # Asserts
+        # The user that has no first and last names will get them from the contact
         self.assertEqual(self.user1.first_name, "first1")
         self.assertEqual(self.user1.last_name, "last1")
-        self.assertEqual(self.user2.first_name, "first2")
-        self.assertEqual(self.user2.last_name, "last2")
+        # The user that has a first but no last will be left alone
+        self.assertEqual(self.user2.first_name, "First name but no last name")
+        self.assertEqual(self.user2.last_name, "")
+        # The user that has a first and a last will be left alone
         self.assertEqual(self.user3.first_name, "An existing first name")
         self.assertEqual(self.user3.last_name, "An existing last name")
-        self.assertEqual(self.userX.first_name, "Unlinked user's first name")
-        self.assertEqual(self.userX.last_name, "")
+        # The unlinked user will be left alone
+        self.assertEqual(self.user4.first_name, "")
+        self.assertEqual(self.user4.last_name, "")
