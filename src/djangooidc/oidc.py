@@ -100,7 +100,9 @@ class Client(oic.Client):
                 "state": session["state"],
                 "nonce": session["nonce"],
                 "redirect_uri": self.registration_response["redirect_uris"][0],
-                "acr_values": self.behaviour.get("acr_value"),
+                # acr_value may be passed in session if overriding, as in the case
+                # of step up auth, otherwise get from settings.py
+                "acr_values": session.get("acr_value") or self.behaviour.get("acr_value"),
             }
 
             if extra_args is not None:
@@ -162,7 +164,6 @@ class Client(oic.Client):
             logger.error(err)
             logger.error("Unable to parse response for %s" % state)
             raise o_e.AuthenticationFailed(locator=state)
-
         # ErrorResponse is not raised, it is passed back...
         if isinstance(authn_response, ErrorResponse):
             error = authn_response.get("error", "")
@@ -207,7 +208,6 @@ class Client(oic.Client):
             logger.error(err)
             logger.error("Unable to request user info for %s" % state)
             raise o_e.AuthenticationFailed(locator=state)
-
         # ErrorResponse is not raised, it is passed back...
         if isinstance(info_response, ErrorResponse):
             logger.error("Unable to get user info (%s) for %s" % (info_response.get("error", ""), state))
@@ -271,6 +271,11 @@ class Client(oic.Client):
             self.id_token_raw = info["id_token"]
 
         super(Client, self).store_response(resp, info)
+
+    def get_step_up_acr_value(self):
+        """returns the step_up_acr_value from settings
+        this helper function is called from djangooidc views"""
+        return self.behaviour.get("step_up_acr_value")
 
     def __repr__(self):
         return "Client {} {} {}".format(

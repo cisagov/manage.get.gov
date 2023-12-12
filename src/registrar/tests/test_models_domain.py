@@ -261,7 +261,7 @@ class TestDomainCreation(MockEppLib):
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
         # skip using the submit method
-        application.status = DomainApplication.SUBMITTED
+        application.status = DomainApplication.ApplicationStatus.SUBMITTED
         # transition to approve state
         application.approve()
         # should have information present for this domain
@@ -1506,7 +1506,7 @@ class TestRegistrantNameservers(MockEppLib):
             ]
 
     def test_setting_not_allowed(self):
-        """Scenario: A domain state is not Ready or DNS Needed
+        """Scenario: A domain state is not Ready or DNS needed
         then setting nameservers is not allowed"""
         domain, _ = Domain.objects.get_or_create(name="onholdDomain.gov", state=Domain.State.ON_HOLD)
         with self.assertRaises(ActionNotAllowed):
