@@ -83,9 +83,7 @@ def login_callback(request):
             user_in_db = User.objects.get(username=userinfo["sub"])
             
             if user_in_db:
-                logger.info(f"This user exists in the DB (before authenticate): {user_in_db.first_name}")
-                userinfo["given_name"] = user_in_db.first_name
-                userinfo["family_name"] = user_in_db.last_name
+                logger.info(f"This user exists in the DB (before authenticate): {user_in_db.first_name} {user_in_db.last_name}")
         except:
             pass
         
