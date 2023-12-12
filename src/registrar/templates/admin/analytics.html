@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+
+{% block content_title %}Registrar Analytics{% endblock %}
+
+{% block content %}
+<ul>
+  <li>User Count: {{ data.user_count }}</li>
+  <li>Domain Count: {{ data.domain_count }}</li>
+  <li>Domain applications (last 30 days): {{ data.applications_last_30_days }}</li>
+  <li>Average approval time for applications (last 30 days): {{ data.average_application_approval_time_last_30_days }}</li>
+</ul>
+{% endblock %}

@@ -1,15 +1,17 @@
 import logging
+import datetime
+
 from django import forms
-from django.db.models.functions import Concat
+from django.db.models.functions import Concat, Avg, F
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.http.response import HttpResponseRedirect
-from django.urls import reverse
+from django.http.response import HttpResponse, HttpResponseRedirect
+from django.urls import path, reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
 from registrar.models.user import User
@@ -352,6 +354,39 @@ class MyUserAdmin(BaseUserAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+
+    def get_urls(self):
+        urlpatterns = super().get_urls()
+
+        my_urls = [
+            path(
+                "analytics/",
+                self.admin_site.admin_view(self.user_analytics),
+                name="user_analytics",
+            ),
+        ]
+
+        return my_urls + urlpatterns
+
+    def user_analytics(self, request):
+        last_30_days_applications = models.DomainApplication.objects.filter(
+            created_at__gt=datetime.datetime.today() - datetime.timedelta(days=30)
+        )
+        avg_approval_time = last_30_days_applications.annotate(
+            approval_time=F("approved_domain__created_at") - F("created_at")
+        ).aggregate(Avg("approval_time"))["approval_time__avg"]
+        # format the timedelta?
+        avg_approval_time = str(avg_approval_time)
+        context = dict(
+            **self.admin_site.each_context(request),
+            data=dict(
+                user_count=models.User.objects.all().count(),
+                domain_count=models.Domain.objects.all().count(),
+                applications_last_30_days=last_30_days_applications.count(),
+                average_application_approval_time_last_30_days=avg_approval_time,
+            ),
+        )
+        return render(request, "admin/analytics.html", context)
 
     # Let's define First group
     # (which should in theory be the ONLY group)
@@ -1095,8 +1130,6 @@ class DomainAdmin(ListHeaderAdmin):
         return response
 
     def get_urls(self):
-        from django.urls import path
-
         urlpatterns = super().get_urls()
 
         # Used to extrapolate a path name, for instance
@@ -1178,9 +1211,11 @@ class DomainAdmin(ListHeaderAdmin):
             else:
                 self.message_user(
                     request,
-                    "Error deleting this Domain: "
-                    f"Can't switch from state '{obj.state}' to 'deleted'"
-                    ", must be either 'dns_needed' or 'on_hold'",
+                    (
+                        "Error deleting this Domain: "
+                        f"Can't switch from state '{obj.state}' to 'deleted'"
+                        ", must be either 'dns_needed' or 'on_hold'"
+                    ),
                     messages.ERROR,
                 )
         except Exception:
@@ -1192,7 +1227,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("Domain %s has been deleted. Thanks!") % obj.name,
+                "Domain %s has been deleted. Thanks!" % obj.name,
             )
 
         return HttpResponseRedirect(".")
@@ -1234,7 +1269,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("%s is in client hold. This domain is no longer accessible on the public internet.") % obj.name,
+                "%s is in client hold. This domain is no longer accessible on the public internet." % obj.name,
             )
         return HttpResponseRedirect(".")
 
@@ -1263,7 +1298,7 @@ class DomainAdmin(ListHeaderAdmin):
         else:
             self.message_user(
                 request,
-                ("%s is ready. This domain is accessible on the public internet.") % obj.name,
+                "%s is ready. This domain is accessible on the public internet." % obj.name,
             )
         return HttpResponseRedirect(".")
 
