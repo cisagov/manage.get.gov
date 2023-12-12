@@ -2,7 +2,6 @@
 
 import argparse
 from datetime import date
-import datetime
 import logging
 
 from django.core.management import BaseCommand
