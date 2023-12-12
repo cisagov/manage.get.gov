@@ -91,7 +91,7 @@ class User(AbstractUser):
 
         # A new incoming user who is being invited to be a domain manager (that is,
         # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
-        if DomainInvitation.objects.filter(email=email, status=DomainInvitation.INVITED).exists():
+        if DomainInvitation.objects.filter(email=email, status=DomainInvitation.DomainInvitationStatus.INVITED).exists():
             return False
 
         return True
