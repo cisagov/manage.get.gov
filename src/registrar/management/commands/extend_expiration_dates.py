@@ -2,13 +2,14 @@
 
 import argparse
 from datetime import date
+import datetime
 import logging
 
 from django.core.management import BaseCommand
 from epplibwrapper.errors import RegistryError
 from registrar.models import Domain
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-
+from datetime import datetime
 try:
     from epplib.exceptions import TransportError
 except ImportError:
@@ -27,6 +28,7 @@ class Command(BaseCommand):
         self.update_success = []
         self.update_skipped = []
         self.update_failed = []
+        self.expiration_cutoff = date(2023, 11, 15)
 
     def add_arguments(self, parser):
         """Add command line arguments."""
@@ -68,7 +70,7 @@ class Command(BaseCommand):
         self.check_if_positive_int(limit_parse, "limitParse")
 
         valid_domains = Domain.objects.filter(
-            expiration_date__gte=date(2023, 11, 15), state=Domain.State.READY
+            expiration_date__gte=self.expiration_cutoff, state=Domain.State.READY
         ).order_by("name")
 
         domains_to_change_count = valid_domains.count()
@@ -81,49 +83,44 @@ class Command(BaseCommand):
         self.prompt_user_to_proceed(extension_amount, domains_to_change_count)
 
         for domain in valid_domains:
-            is_idempotent = self.idempotence_check(domain, extension_amount)
-            if not disable_idempotence and not is_idempotent:
-                self.update_skipped.append(domain.name)
-                logger.info(f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}")
+            try:
+                is_idempotent = self.idempotence_check(domain, extension_amount)
+                if not disable_idempotence and not is_idempotent:
+                    self.update_skipped.append(domain.name)
+                    logger.info(f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}")
+                else:
+                    domain.renew_domain(extension_amount)
+            # Catches registry errors. Failures indicate bad data, or a faulty connection.
+            except (RegistryError, KeyError, TransportError) as err:
+                self.update_failed.append(domain.name)
+                logger.error(
+                    f"{TerminalColors.FAIL}" f"Failed to update expiration date for {domain}" f"{TerminalColors.ENDC}"
+                )
+                logger.error(err)
             else:
-                self.extend_expiration_date_on_domain(domain, extension_amount, debug)
-
-        self.log_script_run_summary(debug)
-
-    def extend_expiration_date_on_domain(self, domain: Domain, extension_amount: int, debug: bool):
-        """
-        Given a particular domain,
-        extend the expiration date by the period specified in extension_amount
-        """
-        try:
-            domain.renew_domain(extension_amount)
-        except (RegistryError, TransportError) as err:
-            logger.error(
-                f"{TerminalColors.FAIL}" f"Failed to update expiration date for {domain}" f"{TerminalColors.ENDC}"
-            )
-            logger.error(err)
-        except Exception as err:
-            self.log_script_run_summary(debug)
-            raise err
-        else:
-            self.update_success.append(domain.name)
-            logger.info(
-                f"{TerminalColors.OKCYAN}" f"Successfully updated expiration date for {domain}" f"{TerminalColors.ENDC}"
-            )
+                self.update_success.append(domain.name)
+                logger.info(
+                    f"{TerminalColors.OKCYAN}" f"Successfully updated expiration date for {domain}" f"{TerminalColors.ENDC}"
+                )
+            finally:
+                self.log_script_run_summary(debug)
 
     # == Helper functions == #
-    def idempotence_check(self, domain, extension_amount):
+    def idempotence_check(self, domain: Domain, extension_amount):
         """Determines if the proposed operation violates idempotency"""
-        proposed_date = self.add_years(domain.registry_expiration_date, extension_amount)
         # Because our migration data had a hard stop date, we can determine if our change
-        # is valid simply checking if adding two years to our current date yields a greater date
-        # than the proposed.
-        # CAVEAT: This check stops working after a year has elapsed between when this script
-        # was ran, and when it was ran again. This is good enough for now, but a more robust
-        # solution would be a DB flag.
-        extension_from_today = self.add_years(date.today(), extension_amount + 1)
-        is_idempotent = proposed_date < extension_from_today
-        return is_idempotent
+        # is valid simply checking the date is within a valid range and it was updated
+        # in epp on the current day.
+        # CAVEAT: This check stops working a day after it is ran (for some domains) and
+        # if the domain was updated by a user on the day it was ran. A more robust 
+        # solution would be a db flag
+        proposed_date = self.add_years(domain.registry_expiration_date, extension_amount)
+        minimum_extension_date = self.add_years(self.expiration_cutoff, extension_amount)
+        maximum_extension_date = self.add_years(date(2025, 12, 31), extension_amount)
+
+        valid_range = minimum_extension_date <= proposed_date <= maximum_extension_date
+
+        return valid_range
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
         """Asks if the user wants to proceed with this action"""
