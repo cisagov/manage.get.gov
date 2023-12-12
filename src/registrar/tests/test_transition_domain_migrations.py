@@ -90,7 +90,7 @@ class TestExtendExpirationDates(MockEppLib):
         self.run_extend_expiration_dates()
 
         current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
-        x = TransitionDomain.objects.filter(domain_name=current_domain.name).get()
+
         self.assertEqual(desired_domain, current_domain)
         # Explicitly test the expiration date
         self.assertEqual(current_domain.expiration_date, datetime.date(2024, 11, 15))
