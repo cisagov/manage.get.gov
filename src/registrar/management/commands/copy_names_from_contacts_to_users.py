@@ -25,16 +25,10 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
-        parser.add_argument(
-            "--limitParse",
-            default=0,
-            help="Sets max number of records (contacts) to copy, set to 0 to copy all entries",
-        )
-
     # ======================================================
     # ===================== PRINTING  ======================
     # ======================================================
-    def print_debug_mode_statements(self, debug_on: bool, debug_max_entries_to_parse: int):
+    def print_debug_mode_statements(self, debug_on: bool):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
         TerminalHelper.print_conditional(
@@ -45,45 +39,27 @@ class Command(BaseCommand):
             {TerminalColors.ENDC}
             """,
         )
-        TerminalHelper.print_conditional(
-            debug_max_entries_to_parse > 0,
-            f"""{TerminalColors.OKCYAN}
-            ----------LIMITER ON----------
-            Parsing of entries will be limited to
-            {debug_max_entries_to_parse} lines per file.")
-            Detailed print statements activated.
-            {TerminalColors.ENDC}
-            """,
-        )
-
-    def parse_limit_reached(self, debug_max_entries_to_parse: bool, total_rows_parsed: int) -> bool:
-        if debug_max_entries_to_parse > 0 and total_rows_parsed/2 >= debug_max_entries_to_parse:
-            logger.info(
-                f"""{TerminalColors.YELLOW}
-                ----PARSE LIMIT REACHED.  HALTING PARSER.----
-                {TerminalColors.ENDC}
-                """
-            )
-            return True
-        return False
 
     def print_summary_of_findings(
         self,
-        updated_user_records,
         skipped_contacts,
+        eligible_users,
+        processed_users,
         debug_on,
     ):
         """Prints to terminal a summary of findings from
         copying first and last names from contacts to users"""
 
-        total_updated_user_entries = len(updated_user_records)
-        total_skipped_contacts_entries = len(skipped_contacts)
+        total_eligible_users = len(eligible_users)
+        total_skipped_contacts = len(skipped_contacts)
+        total_processed_users = len(processed_users)
 
         logger.info(
             f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
-            Updated {total_updated_user_entries} users
-            Skipped {total_skipped_contacts_entries} contacts
+            Skipped {total_skipped_contacts} contacts
+            Found {total_eligible_users} users linked to contacts
+            Processed {total_processed_users} users
             {TerminalColors.ENDC}
             """  # noqa
         )
@@ -93,11 +69,14 @@ class Command(BaseCommand):
             debug_on,
             f"""{TerminalColors.YELLOW}
             ======= DEBUG OUTPUT =======
-            Updated User records:
-            {updated_user_records}
+            Users who have a linked contact:
+            {eligible_users}
+            
+            Processed users (users who have a linked contact and a missing first or last name):
+            {processed_users}
             
             ===== SKIPPED CONTACTS =====
-                {skipped_contacts}
+            {skipped_contacts}
 
             {TerminalColors.ENDC}
             """,
@@ -112,35 +91,35 @@ class Command(BaseCommand):
 
         Returns the corresponding User object.
         """
-
-        # Create some local variables to make data tracing easier
-        contact_email = contact.email
-        contact_first_name = contact.first_name
-        contact_lastname = contact.last_name
-
+        
         user_exists = User.objects.filter(contact=contact).exists()
         if user_exists:
             try:
                 # ----------------------- UPDATE USER -----------------------
                 # ---- GET THE USER
-                target_user = User.objects.get(contact=contact)
+                eligible_user = User.objects.get(contact=contact)
+                processed_user = None
                 # DEBUG:
                 TerminalHelper.print_conditional(
                     debug_on,
                     f"""{TerminalColors.YELLOW}
-                    > Found linked entry in User table for: {contact_first_name} {contact_lastname} {contact_email}
+                    > Found linked entry in User table for:
+                    {contact.email} {contact.first_name} {contact.last_name}
                     {TerminalColors.ENDC}""",  # noqa
                 )
 
                 # ---- UPDATE THE USER IF IT DOES NOT HAVE A FIRST AND LAST NAMES
                 # ---- LET'S KEEP A LIGHT TOUCH
-                if not target_user.first_name or not target_user.last_name:
-                    target_user.first_name = contact_first_name
-                    target_user.last_name = contact_lastname
-                
-                target_user.save()
+                if not eligible_user.first_name or not eligible_user.last_name:
+                    processed_user = eligible_user
+                    processed_user.first_name = contact.first_name
+                    processed_user.last_name = contact.last_name
+                    processed_user.save()
 
-                return (target_user)
+                return (
+                    eligible_user,
+                    processed_user,
+                )
 
             except Exception as E:
                 logger.warning(
@@ -148,10 +127,14 @@ class Command(BaseCommand):
                     {TerminalColors.FAIL}
                     !!! ERROR: An exception occured in the
                     User table for the following user:
-                    {contact_email}
+                    {contact.email} {contact.first_name} {contact.last_name}
+                    
+                    Exception is: {E}
                     ----------TERMINATING----------"""
                 )
                 sys.exit()
+        else:
+            return None, None
 
     # ======================================================
     # ================= PROCESS CONTACTS  ==================
@@ -161,54 +144,49 @@ class Command(BaseCommand):
     def process_contacts(
         self,
         debug_on,
-        skipped_user_entries,
-        updated_user_entries,
-        debug_max_entries_to_parse,
-        total_rows_parsed,
+        skipped_contacts,
+        eligible_users,
+        processed_users,
     ):
         for contact in Contact.objects.all():
-            # Create some local variables to make data tracing easier
-            contact_email = contact.email
-            contact_first_name = contact.first_name
-            contact_last_name = contact.last_name
-
+            
             # DEBUG:
-            # TerminalHelper.print_conditional(
-            #     debug_on,
-            #     f"{TerminalColors.OKCYAN}"
-            #     "Processing Contact: "
-            #     f"{contact_email},"
-            #     f" {contact_first_name},"
-            #     f" {contact_last_name}"
-            #     f"{TerminalColors.ENDC}",  # noqa
-            # )
+            TerminalHelper.print_conditional(
+                debug_on,
+                f"{TerminalColors.OKCYAN}"
+                "Processing Contact: "
+                f"{contact.email},"
+                f" {contact.first_name},"
+                f" {contact.last_name}"
+                f"{TerminalColors.ENDC}",  # noqa
+            )
 
             # ======================================================
             # ====================== USER  =======================
-            target_user = self.update_user(contact, debug_on)
+            (eligible_user, processed_user) = self.update_user(contact, debug_on)
 
             debug_string = ""
-            if target_user:
+            if eligible_user:
                 # ---------------- UPDATED ----------------
-                updated_user_entries.append(contact.email)
-                debug_string = f"updated user: {target_user}"
+                eligible_users.append(contact.email)
+                debug_string = f"eligible user: {eligible_user}"
+                if processed_user:
+                    processed_users.append(contact.email)
+                    debug_string = f"processed user: {processed_user}"
             else:
-                skipped_user_entries.append(contact.email)
+                skipped_contacts.append(contact.email)
                 debug_string = f"skipped user: {contact.email}"
 
             # DEBUG:
-            # TerminalHelper.print_conditional(
-            #     debug_on,
-            #     (f"{TerminalColors.OKCYAN} {debug_string} {TerminalColors.ENDC}"),
-            # )
+            TerminalHelper.print_conditional(
+                debug_on,
+                (f"{TerminalColors.OKCYAN} {debug_string} {TerminalColors.ENDC}"),
+            )
 
-            # ------------------ Parse limit reached? ------------------
-            # Check parse limit and exit loop if parse limit has been reached
-            if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
-                break
         return (
-            skipped_user_entries,
-            updated_user_entries,
+            skipped_contacts,
+            eligible_users,
+            processed_users,
         )
 
     # ======================================================
@@ -224,19 +202,17 @@ class Command(BaseCommand):
 
         # grab command line arguments and store locally...
         debug_on = options.get("debug")
-        debug_max_entries_to_parse = int(options.get("limitParse"))  # set to 0 to parse all entries
 
-        self.print_debug_mode_statements(debug_on, debug_max_entries_to_parse)
-
-        # users we UPDATED
-        updated_user_entries = []
+        self.print_debug_mode_statements(debug_on)
 
         # users we SKIPPED
-        skipped_user_entries = []
-
-        # if we are limiting our parse (for testing purposes, keep
-        # track of total rows parsed)
-        total_rows_parsed = 0
+        skipped_contacts = []
+        
+        # users we found that are linked to contacts
+        eligible_users = []
+        
+        # users we PROCESSED
+        processed_users = []
 
         logger.info(
             f"""{TerminalColors.OKCYAN}
@@ -252,18 +228,19 @@ class Command(BaseCommand):
             {TerminalColors.ENDC}"""
         )
         (
-            skipped_user_entries,
-            updated_user_entries,
+            skipped_contacts,
+            eligible_users,
+            processed_users,
         ) = self.process_contacts(
             debug_on,
-            skipped_user_entries,
-            updated_user_entries,
-            debug_max_entries_to_parse,
-            total_rows_parsed,
+            skipped_contacts,
+            eligible_users,
+            processed_users,
         )
 
         self.print_summary_of_findings(
-            updated_user_entries,
-            skipped_user_entries,
+            skipped_contacts,
+            eligible_users,
+            processed_users,
             debug_on,
         )
