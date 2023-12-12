@@ -32,7 +32,7 @@ class TestExtendExpirationDates(MockEppLib):
         TransitionDomain.objects.get_or_create(
             username="testytester@mail.com",
             domain_name="waterbutpurple.gov",
-            expiration_date=datetime.date(2023, 11, 15)
+            epp_expiration_date=datetime.date(2023, 11, 15)
         )
         # Create a domain with an invalid expiration date
         Domain.objects.get_or_create(
@@ -41,7 +41,7 @@ class TestExtendExpirationDates(MockEppLib):
         TransitionDomain.objects.get_or_create(
             username="themoonisactuallycheese@mail.com",
             domain_name="fake.gov",
-            expiration_date=datetime.date(2022, 5, 25)
+            epp_expiration_date=datetime.date(2022, 5, 25)
         )
         # Create a domain with an invalid state
         Domain.objects.get_or_create(
@@ -50,7 +50,7 @@ class TestExtendExpirationDates(MockEppLib):
         TransitionDomain.objects.get_or_create(
             username="fakeneeded@mail.com",
             domain_name="fakeneeded.gov",
-            expiration_date=datetime.date(2023, 11, 15)
+            epp_expiration_date=datetime.date(2023, 11, 15)
         )
 
     def tearDown(self):
