@@ -69,7 +69,7 @@ class OpenIdConnectBackend(ModelBackend):
         # Overwrite first_name and last_name if not empty string
         for key, value in kwargs.items():
             # Check if the key is not first_name or last_name or value is not empty string
-            if key not in ['first_name', 'last_name'] or value:
+            if key not in ["first_name", "last_name"] or value:
                 setattr(user, key, value)
         user.save()
 

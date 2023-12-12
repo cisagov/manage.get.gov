@@ -63,7 +63,7 @@ class Command(BaseCommand):
             {TerminalColors.ENDC}
             """  # noqa
         )
-            
+
         # DEBUG:
         TerminalHelper.print_conditional(
             debug_on,
@@ -91,7 +91,7 @@ class Command(BaseCommand):
 
         Returns the corresponding User object.
         """
-        
+
         user_exists = User.objects.filter(contact=contact).exists()
         if user_exists:
             try:
@@ -105,7 +105,7 @@ class Command(BaseCommand):
                     f"""{TerminalColors.YELLOW}
                     > Found linked user for contact:
                     {contact} {contact.email} {contact.first_name} {contact.last_name}
-                    > The linked user is {eligible_user}
+                    > The linked user is {eligible_user} {eligible_user.username}
                     {TerminalColors.ENDC}""",  # noqa
                 )
 
@@ -113,8 +113,10 @@ class Command(BaseCommand):
                 # ---- LET'S KEEP A LIGHT TOUCH
                 if not eligible_user.first_name or not eligible_user.last_name:
                     processed_user = eligible_user
-                    processed_user.first_name = contact.first_name
-                    processed_user.last_name = contact.last_name
+                    # (expression has type "str | None", variable has type "str | int | Combinable")
+                    # so we'll ignore type
+                    processed_user.first_name = contact.first_name  # type: ignore
+                    processed_user.last_name = contact.last_name  # type: ignore
                     processed_user.save()
 
                 return (
@@ -140,7 +142,7 @@ class Command(BaseCommand):
     # ======================================================
     # ================= PROCESS CONTACTS  ==================
     # ======================================================
-    
+
     # C901 'Command.handle' is too complex
     def process_contacts(
         self,
@@ -150,7 +152,6 @@ class Command(BaseCommand):
         processed_users,
     ):
         for contact in Contact.objects.all():
-            
             # DEBUG:
             TerminalHelper.print_conditional(
                 debug_on,
@@ -208,10 +209,10 @@ class Command(BaseCommand):
 
         # users we SKIPPED
         skipped_contacts = []
-        
+
         # users we found that are linked to contacts
         eligible_users = []
-        
+
         # users we PROCESSED
         processed_users = []
 

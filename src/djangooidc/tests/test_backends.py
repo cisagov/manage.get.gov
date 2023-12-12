@@ -4,8 +4,8 @@ from django.utils import timezone
 from registrar.models import User
 from ..backends import OpenIdConnectBackend  # Adjust the import path based on your project structure
 
-class OpenIdConnectBackendTestCase(TestCase):
 
+class OpenIdConnectBackendTestCase(TestCase):
     def setUp(self):
         self.backend = OpenIdConnectBackend()
         self.kwargs = {
@@ -56,10 +56,10 @@ class OpenIdConnectBackendTestCase(TestCase):
         """Test that authenticate updates an existing user if it finds one.
         For this test, given_name and family_name are not supplied"""
         # Create an existing user with the same username and with first and last names
-        existing_user = User.objects.create_user(username="test_user",first_name="John",last_name="Doe")
+        existing_user = User.objects.create_user(username="test_user", first_name="John", last_name="Doe")
 
         # Remove given_name and family_name from the input, self.kwargs
-        self.kwargs.pop("given_name", None) 
+        self.kwargs.pop("given_name", None)
         self.kwargs.pop("family_name", None)
 
         # Ensure that the authenticate method updates the existing user
@@ -79,7 +79,7 @@ class OpenIdConnectBackendTestCase(TestCase):
         """Test that authenticate updates an existing user if it finds one.
         For this test, given_name and family_name are supplied and overwrite"""
         # Create an existing user with the same username and with first and last names
-        existing_user = User.objects.create_user(username="test_user",first_name="WillBe",last_name="Replaced")
+        existing_user = User.objects.create_user(username="test_user", first_name="WillBe", last_name="Replaced")
 
         # Ensure that the authenticate method updates the existing user
         # and preserves existing first and last names

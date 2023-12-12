@@ -58,7 +58,7 @@ def openid(request):
     request.session["next"] = request.GET.get("next", "/")
 
     try:
-        logger.info('openid() calls create_authn_request in oidc')
+        logger.info("openid() calls create_authn_request in oidc")
         return CLIENT.create_authn_request(request.session)
     except Exception as err:
         return error_page(request, err)
@@ -72,22 +72,23 @@ def login_callback(request):
         # test for need for identity verification and if it is satisfied
         # if not satisfied, redirect user to login with stepped up acr_value
         if requires_step_up_auth(userinfo):
-            logger.info('login_callback() calls get_step_up_acr_value and create_authn_request in oidc')
+            logger.info("login_callback() calls get_step_up_acr_value and create_authn_request in oidc")
             # add acr_value to request.session
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
             return CLIENT.create_authn_request(request.session)
-        
-        logger.info(f'login_callback() before calling authenticate: {userinfo}')
-        
+
+        logger.info(f"login_callback() before calling authenticate: {userinfo}")
+
         try:
             user_in_db = User.objects.get(username=userinfo["sub"])
-            
+
             if user_in_db:
-                logger.info(f"This user exists in the DB (before authenticate): {user_in_db.first_name} {user_in_db.last_name}")
+                logger.info(
+                    f"This user exists in the DB (before authenticate): {user_in_db.first_name} {user_in_db.last_name}"
+                )
         except:
             pass
-        
-        
+
         user = authenticate(request=request, **userinfo)
         if user:
             login(request, user)

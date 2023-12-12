@@ -654,10 +654,9 @@ class TestUser(TestCase):
         """A new user who's neither transitioned nor invited should
         return True when tested with class method needs_identity_verification"""
         self.assertTrue(User.needs_identity_verification(self.user.email, self.user.username))
-        
+
 
 class TestContact(TestCase):
-
     def setUp(self):
         self.email = "mayor@igorville.gov"
         self.user, _ = User.objects.get_or_create(email=self.email, first_name="Rachid", last_name="Mrad")
@@ -675,29 +674,28 @@ class TestContact(TestCase):
         self.assertEqual(self.contact.last_name, "Mrad")
         self.assertEqual(self.user.first_name, "Rachid")
         self.assertEqual(self.user.last_name, "Mrad")
-        
+
         self.contact.first_name = "Joey"
         self.contact.last_name = "Baloney"
         self.contact.save()
-        
+
         # Refresh the user object to reflect the changes made in the database
         self.user.refresh_from_db()
-        
-        # Updating the contact's first and last names propagate to the user 
+
+        # Updating the contact's first and last names propagate to the user
         self.assertEqual(self.contact.first_name, "Joey")
         self.assertEqual(self.contact.last_name, "Baloney")
         self.assertEqual(self.user.first_name, "Joey")
         self.assertEqual(self.user.last_name, "Baloney")
-        
+
     def test_saving_contact_does_not_update_user_email(self):
-        """When a contact's email is updated, the change is not propagated to the lined user."""        
+        """When a contact's email is updated, the change is not propagated to the lined user."""
         self.contact.email = "joey.baloney@diaperville.com"
         self.contact.save()
-        
+
         # Refresh the user object to reflect the changes made in the database
         self.user.refresh_from_db()
-        
-        # Updating the contact's email does not propagate 
+
+        # Updating the contact's email does not propagate
         self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
         self.assertEqual(self.user.email, "mayor@igorville.gov")
-        
