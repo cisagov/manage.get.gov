@@ -19,25 +19,16 @@ class DomainApplication(TimeStampedModel):
 
     """A registrant's application for a new domain."""
 
-    # #### Constants for choice fields ####
-    STARTED = "started"
-    SUBMITTED = "submitted"
-    IN_REVIEW = "in review"
-    ACTION_NEEDED = "action needed"
-    APPROVED = "approved"
-    WITHDRAWN = "withdrawn"
-    REJECTED = "rejected"
-    INELIGIBLE = "ineligible"
-    STATUS_CHOICES = [
-        (STARTED, STARTED),
-        (SUBMITTED, SUBMITTED),
-        (IN_REVIEW, IN_REVIEW),
-        (ACTION_NEEDED, ACTION_NEEDED),
-        (APPROVED, APPROVED),
-        (WITHDRAWN, WITHDRAWN),
-        (REJECTED, REJECTED),
-        (INELIGIBLE, INELIGIBLE),
-    ]
+    # Constants for choice fields
+    class ApplicationStatus(models.TextChoices):
+        STARTED = "started", "Started"
+        SUBMITTED = "submitted", "Submitted"
+        IN_REVIEW = "in review", "In review"
+        ACTION_NEEDED = "action needed", "Action needed"
+        APPROVED = "approved", "Approved"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+        REJECTED = "rejected", "Rejected"
+        INELIGIBLE = "ineligible", "Ineligible"
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -363,8 +354,8 @@ class DomainApplication(TimeStampedModel):
 
     # #### Internal fields about the application #####
     status = FSMField(
-        choices=STATUS_CHOICES,  # possible states as an array of constants
-        default=STARTED,  # sensible default
+        choices=ApplicationStatus.choices,  # possible states as an array of constants
+        default=ApplicationStatus.STARTED,  # sensible default
         protected=False,  # can change state directly, particularly in Django admin
     )
     # This is the application user who created this application. The contact
@@ -592,7 +583,11 @@ class DomainApplication(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
-    @transition(field="status", source=[STARTED, ACTION_NEEDED, WITHDRAWN], target=SUBMITTED)
+    @transition(
+        field="status",
+        source=[ApplicationStatus.STARTED, ApplicationStatus.ACTION_NEEDED, ApplicationStatus.WITHDRAWN],
+        target=ApplicationStatus.SUBMITTED,
+    )
     def submit(self):
         """Submit an application that is started.
 
@@ -618,7 +613,7 @@ class DomainApplication(TimeStampedModel):
             "emails/submission_confirmation_subject.txt",
         )
 
-    @transition(field="status", source=SUBMITTED, target=IN_REVIEW)
+    @transition(field="status", source=ApplicationStatus.SUBMITTED, target=ApplicationStatus.IN_REVIEW)
     def in_review(self):
         """Investigate an application that has been submitted.
 
@@ -630,7 +625,11 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_in_review_subject.txt",
         )
 
-    @transition(field="status", source=[IN_REVIEW, REJECTED], target=ACTION_NEEDED)
+    @transition(
+        field="status",
+        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.REJECTED],
+        target=ApplicationStatus.ACTION_NEEDED,
+    )
     def action_needed(self):
         """Send back an application that is under investigation or rejected.
 
@@ -644,8 +643,13 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[SUBMITTED, IN_REVIEW, REJECTED, INELIGIBLE],
-        target=APPROVED,
+        source=[
+            ApplicationStatus.SUBMITTED,
+            ApplicationStatus.IN_REVIEW,
+            ApplicationStatus.REJECTED,
+            ApplicationStatus.INELIGIBLE,
+        ],
+        target=ApplicationStatus.APPROVED,
     )
     def approve(self):
         """Approve an application that has been submitted.
@@ -678,7 +682,11 @@ class DomainApplication(TimeStampedModel):
             "emails/status_change_approved_subject.txt",
         )
 
-    @transition(field="status", source=[SUBMITTED, IN_REVIEW], target=WITHDRAWN)
+    @transition(
+        field="status",
+        source=[ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW],
+        target=ApplicationStatus.WITHDRAWN,
+    )
     def withdraw(self):
         """Withdraw an application that has been submitted."""
         self._send_status_update_email(
@@ -689,8 +697,8 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[IN_REVIEW, APPROVED],
-        target=REJECTED,
+        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.APPROVED],
+        target=ApplicationStatus.REJECTED,
         conditions=[domain_is_not_active],
     )
     def reject(self):
@@ -698,7 +706,7 @@ class DomainApplication(TimeStampedModel):
 
         As side effects this will delete the domain and domain_information
         (will cascade), and send an email notification."""
-        if self.status == self.APPROVED:
+        if self.status == self.ApplicationStatus.APPROVED:
             domain_state = self.approved_domain.state
             # Only reject if it exists on EPP
             if domain_state != Domain.State.UNKNOWN:
@@ -714,8 +722,8 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[IN_REVIEW, APPROVED],
-        target=INELIGIBLE,
+        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.APPROVED],
+        target=ApplicationStatus.INELIGIBLE,
         conditions=[domain_is_not_active],
     )
     def reject_with_prejudice(self):
@@ -727,7 +735,7 @@ class DomainApplication(TimeStampedModel):
         permissions classes test against. This will also delete the domain
         and domain_information (will cascade) when they exist."""
 
-        if self.status == self.APPROVED:
+        if self.status == self.ApplicationStatus.APPROVED:
             domain_state = self.approved_domain.state
             # Only reject if it exists on EPP
             if domain_state != Domain.State.UNKNOWN:
