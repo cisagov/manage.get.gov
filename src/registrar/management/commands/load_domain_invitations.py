@@ -62,7 +62,7 @@ class Command(BaseCommand):
                         DomainInvitation(
                             email=email_address.lower(),
                             domain=domain,
-                            status=DomainInvitation.INVITED,
+                            status=DomainInvitation.DomainInvitationStatus.INVITED,
                         )
                     )
         logger.info("Creating %d invitations", len(to_create))

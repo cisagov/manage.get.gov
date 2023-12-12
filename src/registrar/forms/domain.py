@@ -302,7 +302,7 @@ class DomainDnssecForm(forms.Form):
 
 
 class DomainDsdataForm(forms.Form):
-    """Form for adding or editing DNSSEC DS Data to a domain."""
+    """Form for adding or editing DNSSEC DS data to a domain."""
 
     def validate_hexadecimal(value):
         """
