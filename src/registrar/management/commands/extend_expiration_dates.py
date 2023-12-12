@@ -10,6 +10,8 @@ from epplibwrapper.errors import RegistryError
 from registrar.models import Domain
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from datetime import datetime
+
+from registrar.models.transition_domain import TransitionDomain
 try:
     from epplib.exceptions import TransportError
 except ImportError:
@@ -90,6 +92,10 @@ class Command(BaseCommand):
                     logger.info(f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}")
                 else:
                     domain.renew_domain(extension_amount)
+                    self.update_success.append(domain.name)
+                    logger.info(
+                        f"{TerminalColors.OKCYAN}" f"Successfully updated expiration date for {domain}" f"{TerminalColors.ENDC}"
+                    )
             # Catches registry errors. Failures indicate bad data, or a faulty connection.
             except (RegistryError, KeyError, TransportError) as err:
                 self.update_failed.append(domain.name)
@@ -97,30 +103,30 @@ class Command(BaseCommand):
                     f"{TerminalColors.FAIL}" f"Failed to update expiration date for {domain}" f"{TerminalColors.ENDC}"
                 )
                 logger.error(err)
-            else:
-                self.update_success.append(domain.name)
-                logger.info(
-                    f"{TerminalColors.OKCYAN}" f"Successfully updated expiration date for {domain}" f"{TerminalColors.ENDC}"
-                )
-            finally:
+            except Exception as err:
                 self.log_script_run_summary(debug)
+                raise err
+        self.log_script_run_summary(debug)
 
     # == Helper functions == #
     def idempotence_check(self, domain: Domain, extension_amount):
         """Determines if the proposed operation violates idempotency"""
         # Because our migration data had a hard stop date, we can determine if our change
         # is valid simply checking the date is within a valid range and it was updated
-        # in epp on the current day.
-        # CAVEAT: This check stops working a day after it is ran (for some domains) and
-        # if the domain was updated by a user on the day it was ran. A more robust 
-        # solution would be a db flag
-        proposed_date = self.add_years(domain.registry_expiration_date, extension_amount)
+        # in epp or not.
+        # CAVEAT: This is a workaround. A more robust solution would be a db flag
+        current_expiration_date = domain.registry_expiration_date
+        transition_domains = TransitionDomain.objects.filter(
+            domain_name=domain.name,
+            epp_expiration_date=current_expiration_date
+        )
+        proposed_date = self.add_years(current_expiration_date, extension_amount)
         minimum_extension_date = self.add_years(self.expiration_cutoff, extension_amount)
         maximum_extension_date = self.add_years(date(2025, 12, 31), extension_amount)
 
         valid_range = minimum_extension_date <= proposed_date <= maximum_extension_date
 
-        return valid_range
+        return valid_range and transition_domains.count() > 0
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
         """Asks if the user wants to proceed with this action"""
