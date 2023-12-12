@@ -54,13 +54,32 @@ class OpenIdConnectBackendTestCase(TestCase):
 
     def test_authenticate_with_existing_user_no_name(self):
         """Test that authenticate updates an existing user if it finds one.
-        For this test, given_name and family_name are supplied"""
+        For this test, given_name and family_name are not supplied"""
         # Create an existing user with the same username and with first and last names
         existing_user = User.objects.create_user(username="test_user",first_name="John",last_name="Doe")
 
         # Remove given_name and family_name from the input, self.kwargs
         self.kwargs.pop("given_name", None) 
         self.kwargs.pop("family_name", None)
+
+        # Ensure that the authenticate method updates the existing user
+        # and preserves existing first and last names
+        user = self.backend.authenticate(request=None, **self.kwargs)
+        self.assertIsNotNone(user)
+        self.assertIsInstance(user, User)
+        self.assertEqual(user, existing_user)  # The same user instance should be returned
+
+        # Verify that user fields are correctly updated
+        self.assertEqual(user.first_name, "John")
+        self.assertEqual(user.last_name, "Doe")
+        self.assertEqual(user.email, "john.doe@example.com")
+        self.assertEqual(user.phone, "123456789")
+
+    def test_authenticate_with_existing_user_different_name(self):
+        """Test that authenticate updates an existing user if it finds one.
+        For this test, given_name and family_name are supplied and overwrite"""
+        # Create an existing user with the same username and with first and last names
+        existing_user = User.objects.create_user(username="test_user",first_name="WillBe",last_name="Replaced")
 
         # Ensure that the authenticate method updates the existing user
         # and preserves existing first and last names
