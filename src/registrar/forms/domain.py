@@ -239,7 +239,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the form of 12345 or 12345-6789.",
+                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
             )
         ],
     )
@@ -302,7 +302,7 @@ class DomainDnssecForm(forms.Form):
 
 
 class DomainDsdataForm(forms.Form):
-    """Form for adding or editing DNSSEC DS Data to a domain."""
+    """Form for adding or editing DNSSEC DS data to a domain."""
 
     def validate_hexadecimal(value):
         """
