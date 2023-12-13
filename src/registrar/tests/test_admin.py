@@ -322,6 +322,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
         self.superuser = create_superuser()
         self.staffuser = create_user()
+        self.client = Client(HTTP_HOST="localhost:8080")
 
     def test_short_org_name_in_applications_list(self):
         """
@@ -841,6 +842,50 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Assert that DomainInformation got Deleted
         with self.assertRaises(DomainInformation.DoesNotExist):
             domain_information.refresh_from_db()
+
+    def test_has_correct_filters(self):
+        """Tests if DomainApplicationAdmin has the correct filters"""
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        readonly_fields = self.admin.get_list_filter(request)
+        expected_fields = ("status", "organization_type", DomainApplicationAdmin.InvestigatorFilter)
+
+        self.assertEqual(readonly_fields, expected_fields)
+    
+    def test_displays_investigator_filter(self):
+        """Tests if DomainApplicationAdmin displays the investigator filter"""
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainapplication/",
+            {},
+            follow=True,
+        )
+
+        expected_sort_column = "sortable column-investigator"
+        self.assertContains(response, expected_sort_column, count=1)
+
+    def test_investigator_filter(self):
+        """Tests the custom investigator filter"""
+        # Creates multiple domain applications
+        multiple_unalphabetical_domain_objects("application")
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+
+        response = self.client.get(
+            "/admin/registrar/domainapplication/",
+            {
+                "investigator": 1,
+            },
+            follow=True,
+        )
+
+        # The "multiple_unalphabetical_domain_objects" function will create
+        # user objects with a first name that contains "first_name:investigator".
+        # We can simply count how many times this appears in the table to determine
+        # how many records exist.
+        self.assertContains(response, "first_name:investigator", count=1)
 
     def tearDown(self):
         super().tearDown()
