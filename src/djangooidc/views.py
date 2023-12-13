@@ -58,7 +58,6 @@ def openid(request):
     request.session["next"] = request.GET.get("next", "/")
 
     try:
-        logger.info("openid() calls create_authn_request in oidc")
         return CLIENT.create_authn_request(request.session)
     except Exception as err:
         return error_page(request, err)
