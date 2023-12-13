@@ -214,7 +214,6 @@ class Client(oic.Client):
             raise o_e.AuthenticationFailed(locator=state)
 
         logger.debug("user info: %s" % info_response)
-
         return info_response.to_dict()
 
     def _request_token(self, state, code, session):
