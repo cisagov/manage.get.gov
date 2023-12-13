@@ -1,6 +1,4 @@
-from django.db.models import F
 from django.shortcuts import render
-from django.utils import timezone
 
 from registrar.models import DomainApplication, Domain, UserDomainRole
 
@@ -16,7 +14,7 @@ def index(request):
         context["domain_applications"] = applications.exclude(status="approved")
 
         user_domain_roles = UserDomainRole.objects.filter(user=request.user)
-        domain_ids = user_domain_roles.values_list('domain_id', flat=True)
+        domain_ids = user_domain_roles.values_list("domain_id", flat=True)
         domains = Domain.objects.filter(id__in=domain_ids)
 
         context["domains"] = domains
