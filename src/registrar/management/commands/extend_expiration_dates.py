@@ -90,6 +90,7 @@ class Command(BaseCommand):
                     self.update_skipped.append(domain.name)
                     logger.info(f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}")
                 else:
+                    logger.info("What is the amount? {}")
                     domain.renew_domain(extension_amount)
                     self.update_success.append(domain.name)
                     logger.info(
@@ -120,13 +121,8 @@ class Command(BaseCommand):
         transition_domains = TransitionDomain.objects.filter(
             domain_name=domain.name, epp_expiration_date=current_expiration_date
         )
-        proposed_date = self.add_years(current_expiration_date, extension_amount)
-        minimum_extension_date = self.add_years(self.expiration_cutoff, extension_amount)
-        maximum_extension_date = self.add_years(date(2025, 12, 31), extension_amount)
 
-        valid_range = minimum_extension_date <= proposed_date <= maximum_extension_date
-
-        return valid_range and transition_domains.count() > 0
+        return transition_domains.count() > 0
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
         """Asks if the user wants to proceed with this action"""
