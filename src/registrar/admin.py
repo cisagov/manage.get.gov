@@ -11,6 +11,8 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
+from registrar.models.user import User
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from registrar.utility import csv_export
 from . import models
@@ -546,6 +548,18 @@ class DomainApplicationAdminForm(forms.ModelForm):
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
+    class InvestigatorFilter(admin.SimpleListFilter):
+        title = 'investigator'
+        parameter_name = 'investigator'
+
+        def lookups(self, request, model_admin):
+            valid_user_ids = UserDomainRole.objects.filter(role=UserDomainRole.Roles.MANAGER).values_list('user__id', flat=True)
+            privileged_users = User.objects.filter(id__in=valid_user_ids)
+            return [(user.id, user) for user in privileged_users]
+
+        def queryset(self, request, queryset):
+            print(f"look here: {self.value()}")
+            return queryset.filter(investigator=self.value())
 
     # Columns
     list_display = [
@@ -558,7 +572,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     # Filters
-    list_filter = ("status", "organization_type", "investigator")
+    list_filter = ("status", "organization_type", InvestigatorFilter)
 
     # Search
     search_fields = [
@@ -640,6 +654,10 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         if db_field.name in ("current_websites", "alternative_domains"):
             kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def get_queryset(self, request):
+        query_set = super().get_queryset(request)
+        return query_set.order_by("requested_domain__name")
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
