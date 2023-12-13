@@ -90,7 +90,6 @@ class Command(BaseCommand):
                     self.update_skipped.append(domain.name)
                     logger.info(f"{TerminalColors.YELLOW}" f"Skipping update for {domain}" f"{TerminalColors.ENDC}")
                 else:
-                    logger.info("What is the amount? {}")
                     domain.renew_domain(extension_amount)
                     self.update_success.append(domain.name)
                     logger.info(
@@ -208,18 +207,3 @@ class Command(BaseCommand):
                 {TerminalColors.ENDC}
                 """
             )
-
-    # We use this manual approach rather than relative delta due to our
-    # github localenv not having the package installed.
-    # Credit: https://stackoverflow.com/questions/15741618/add-one-year-in-current-date-python
-    def add_years(self, old_date, years):
-        """Return a date that's `years` years after the date (or datetime)
-        object `old_date`. Return the same calendar date (month and day) in the
-        destination year, if it exists, otherwise use the following day
-        (thus changing February 29 to March 1).
-
-        """
-        try:
-            return old_date.replace(year=old_date.year + years)
-        except ValueError:
-            return old_date + (date(old_date.year + years, 1, 1) - date(old_date.year, 1, 1))
