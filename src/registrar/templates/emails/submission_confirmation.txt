@@ -21,7 +21,7 @@ NEXT STEPS
 - We’ll review your request. This usually takes 20 business days.
 
 - You can check the status of your request at any time.
-  <https://registrar.get.gov/application/{{ application.id }}>
+  <https://manage.get.gov/application/{{ application.id }}>
 
 - We’ll email you with questions or when we complete our review.
 
