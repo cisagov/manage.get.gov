@@ -659,7 +659,7 @@ class TestUser(TestCase):
 class TestContact(TestCase):
     def setUp(self):
         self.email = "mayor@igorville.gov"
-        self.user, _ = User.objects.get_or_create(email=self.email, first_name="Rachid", last_name="Mrad")
+        self.user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
     def tearDown(self):
@@ -670,10 +670,10 @@ class TestContact(TestCase):
     def test_saving_contact_updates_user_first_last_names(self):
         """When a contact is updated, we propagate the changes to the linked user if it exists."""
         # User and Contact are created and linked as expected
-        self.assertEqual(self.contact.first_name, "Rachid")
-        self.assertEqual(self.contact.last_name, "Mrad")
-        self.assertEqual(self.user.first_name, "Rachid")
-        self.assertEqual(self.user.last_name, "Mrad")
+        self.assertEqual(self.contact.first_name, "Jeff")
+        self.assertEqual(self.contact.last_name, "Lebowski")
+        self.assertEqual(self.user.first_name, "Jeff")
+        self.assertEqual(self.user.last_name, "Lebowski")
 
         self.contact.first_name = "Joey"
         self.contact.last_name = "Baloney"

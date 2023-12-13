@@ -1021,7 +1021,7 @@ class ListHeaderAdminTest(TestCase):
         # Set the GET parameters for testing
         request.GET = {
             "status": "started",
-            "investigator": "Rachid Mrad",
+            "investigator": "Jeff Lebowski",
             "q": "search_value",
         }
         # Call the get_filters method
@@ -1032,7 +1032,7 @@ class ListHeaderAdminTest(TestCase):
             filters,
             [
                 {"parameter_name": "status", "parameter_value": "started"},
-                {"parameter_name": "investigator", "parameter_value": "Rachid Mrad"},
+                {"parameter_name": "investigator", "parameter_value": "Jeff Lebowski"},
             ],
         )
 

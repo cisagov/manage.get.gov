@@ -406,8 +406,8 @@ def mock_user():
     """A simple user."""
     user_kwargs = dict(
         id=4,
-        first_name="Rachid",
-        last_name="Mrad",
+        first_name="Jeff",
+        last_name="Lebowski",
     )
     mock_user, _ = User.objects.get_or_create(**user_kwargs)
     return mock_user
