@@ -13,7 +13,7 @@
 
   {% url 'domain-dns-nameservers' pk=domain.id as url %}
 <ul>  
-<li><a href="{{ url }}">DNS name servers</a></li>
+<li><a href="{{ url }}">Name servers</a></li>
 
   {% url 'domain-dns-dnssec' pk=domain.id as url %}
   <li><a href="{{ url }}">DNSSEC</a></li>
