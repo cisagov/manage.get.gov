@@ -548,17 +548,24 @@ class DomainApplicationAdminForm(forms.ModelForm):
 class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
+
     class InvestigatorFilter(admin.SimpleListFilter):
-        title = 'investigator'
-        parameter_name = 'investigator'
+        """Custom investigator filter that only displays users with the manager role"""
+        title = "investigator"
+        parameter_name = "investigator"
 
         def lookups(self, request, model_admin):
-            valid_user_ids = UserDomainRole.objects.filter(role=UserDomainRole.Roles.MANAGER).values_list('user__id', flat=True)
+            """Lookup reimplementation, gets users by the MANAGER role.
+            Returns a list of tuples consisting of (user.id, user)
+            """
+            valid_user_ids = UserDomainRole.objects.filter(role=UserDomainRole.Roles.MANAGER).values_list(
+                "user__id", flat=True
+            )
             privileged_users = User.objects.filter(id__in=valid_user_ids)
             return [(user.id, user) for user in privileged_users]
 
         def queryset(self, request, queryset):
-            print(f"look here: {self.value()}")
+            """Custom queryset implementation, filters by investigator"""
             return queryset.filter(investigator=self.value())
 
     # Columns
