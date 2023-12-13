@@ -162,7 +162,7 @@ class AuditedAdminMockData:
         user = User.objects.get_or_create(
             first_name="{} first_name:{}".format(item_name, short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
-            username="{} username:{}".format(item_name, str(uuid.uuid4())[:8]),
+            username="{} username:{}".format(item_name + str(uuid.uuid4())[:8], short_hand),
         )[0]
         return user
 

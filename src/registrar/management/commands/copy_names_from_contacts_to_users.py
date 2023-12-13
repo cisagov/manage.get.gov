@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = """Copy first and last names from a contact to
     a related user if it exists and if its first and last name
-    properties are null"""
+    properties are null or blank strings."""
 
     # ======================================================
     # ===================== ARGUMENTS  =====================
@@ -112,12 +112,12 @@ class Command(BaseCommand):
                 # ---- UPDATE THE USER IF IT DOES NOT HAVE A FIRST AND LAST NAMES
                 # ---- LET'S KEEP A LIGHT TOUCH
                 if not eligible_user.first_name and not eligible_user.last_name:
-                    processed_user = eligible_user
                     # (expression has type "str | None", variable has type "str | int | Combinable")
                     # so we'll ignore type
-                    processed_user.first_name = contact.first_name  # type: ignore
-                    processed_user.last_name = contact.last_name  # type: ignore
-                    processed_user.save()
+                    eligible_user.first_name = contact.first_name  # type: ignore
+                    eligible_user.last_name = contact.last_name  # type: ignore
+                    eligible_user.save()
+                    processed_user = eligible_user
 
                 return (
                     eligible_user,
@@ -147,9 +147,9 @@ class Command(BaseCommand):
     def process_contacts(
         self,
         debug_on,
-        skipped_contacts,
-        eligible_users,
-        processed_users,
+        skipped_contacts=[],
+        eligible_users=[],
+        processed_users=[],
     ):
         for contact in Contact.objects.all():
             # DEBUG:
@@ -207,15 +207,6 @@ class Command(BaseCommand):
 
         self.print_debug_mode_statements(debug_on)
 
-        # users we SKIPPED
-        skipped_contacts = []
-
-        # users we found that are linked to contacts
-        eligible_users = []
-
-        # users we PROCESSED
-        processed_users = []
-
         logger.info(
             f"""{TerminalColors.OKCYAN}
             ==========================
@@ -235,9 +226,6 @@ class Command(BaseCommand):
             processed_users,
         ) = self.process_contacts(
             debug_on,
-            skipped_contacts,
-            eligible_users,
-            processed_users,
         )
 
         self.print_summary_of_findings(
