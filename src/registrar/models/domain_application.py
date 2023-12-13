@@ -547,6 +547,14 @@ class DomainApplication(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
+    # submission date records when application is submitted
+    submission_date = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Date submitted",
+    )
+
     def __str__(self):
         try:
             if self.requested_domain and self.requested_domain.name:
