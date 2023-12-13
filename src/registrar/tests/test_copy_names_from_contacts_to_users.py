@@ -11,7 +11,7 @@ from registrar.management.commands.copy_names_from_contacts_to_users import Comm
 class TestDataUpdates(TestCase):
     def setUp(self):
         """We cannot setup the user details because contacts will override the first and last names in its save method
-        so we will initiate the users, setup the contacts and link them, and leave the rest of the setup for the test(s).
+        so we will initiate the users, setup the contacts and link them, and leave the rest of the setup to the test(s).
         """
 
         self.user1 = User.objects.create(username="user1")

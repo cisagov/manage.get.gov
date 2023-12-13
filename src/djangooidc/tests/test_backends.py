@@ -1,6 +1,4 @@
 from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
 from registrar.models import User
 from ..backends import OpenIdConnectBackend  # Adjust the import path based on your project structure
 

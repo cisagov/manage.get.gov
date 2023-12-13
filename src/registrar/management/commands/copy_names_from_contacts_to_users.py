@@ -71,10 +71,10 @@ class Command(BaseCommand):
             ======= DEBUG OUTPUT =======
             Users who have a linked contact:
             {eligible_users}
-            
+
             Processed users (users who have a linked contact and a missing first or last name):
             {processed_users}
-            
+
             ===== SKIPPED CONTACTS =====
             {skipped_contacts}
 
@@ -131,7 +131,7 @@ class Command(BaseCommand):
                     !!! ERROR: An exception occured in the
                     User table for the following user:
                     {contact.email} {contact.first_name} {contact.last_name}
-                    
+
                     Exception is: {E}
                     ----------TERMINATING----------"""
                 )
