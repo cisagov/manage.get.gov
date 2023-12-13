@@ -166,7 +166,7 @@ class AuditedAdminMockData:
             phone="(555) 555 5555",
         )[0]
         return contact
-    
+
     def dummy_user(self, item_name, short_hand):
         """Creates a dummy user object,
         but with a shorthand and support for multiple"""
