@@ -654,7 +654,7 @@ class TestUser(TestCase):
         """A new user who's neither transitioned nor invited should
         return True when tested with class method needs_identity_verification"""
         self.assertTrue(User.needs_identity_verification(self.user.email, self.user.username))
-        
+
     def test_check_domain_invitations_on_login_caps_email(self):
         """A DomainInvitation with an email address with capital letters should match
         a User record whose email address is not in caps"""
@@ -713,4 +713,3 @@ class TestContact(TestCase):
         # Updating the contact's email does not propagate
         self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
         self.assertEqual(self.user.email, "mayor@igorville.gov")
-
