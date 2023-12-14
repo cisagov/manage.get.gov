@@ -5,7 +5,6 @@
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
 
-    
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2{% if not domain.is_expired %}{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %} dotgov-status-box--action-need{% endif %}{% endif %}"
         role="region"

@@ -1613,7 +1613,7 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(e)
 
     def _extract_data_from_response(self, data_response):
-        """extract datea from response from registry"""
+        """extract data from response from registry"""
         data = data_response.res_data[0]
         return {
             "auth_info": getattr(data, "auth_info", ...),
