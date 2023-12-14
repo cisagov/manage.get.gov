@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0055_alter_domain_state_alter_domainapplication_status_and_more"),
+        ("registrar", "0056_alter_domain_state_alter_domainapplication_status_and_more"),
     ]
 
     operations = [
