@@ -653,15 +653,25 @@ class DomainAddUserView(DomainFormBaseView):
         # created a new invitation in the database, so send an email
         domainInfoResults = DomainInformation.objects.filter(domain=self.object)
         domainInfo = domainInfoResults.first()
-        first = ""
-        last = ""
+        first: str = ""
+        last: str = ""
         if requester is not None:
             first = requester.first_name
             last = requester.last_name
         elif domainInfo is not None:
             first = domainInfo.creator.first_name
             last = domainInfo.creator.last_name
-        full_name = f"{first} {last}"
+        else:
+            # This edgecase would be unusual if encountered. We don't want to handle this here. Rather, we would
+            # want to fix this upstream where it is happening.
+            raise ValueError("Can't send email. The given DomainInformation object has no requestor or creator.")
+
+        if first and last:
+            full_name = f"{first} {last}"
+        else:
+            # This edgecase would be unusual if encountered. We don't want to handle this here. Rather, we would
+            # want to fix this upstream where it is happening.
+            raise ValueError("Can't send email. First and last names are none.")
 
         try:
             send_templated_email(
@@ -702,7 +712,7 @@ class DomainAddUserView(DomainFormBaseView):
     def form_valid(self, form):
         """Add the specified user on this domain."""
         requested_email = form.cleaned_data["email"]
-        requester = None
+        requester = self.request.user
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
