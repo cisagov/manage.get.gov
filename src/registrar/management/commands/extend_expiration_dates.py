@@ -74,7 +74,7 @@ class Command(BaseCommand):
         valid_domains = Domain.objects.filter(
             expiration_date__gte=self.expiration_minimum_cutoff,
             expiration_date__lte=self.expiration_maximum_cutoff,
-            state=Domain.State.READY
+            state=Domain.State.READY,
         ).order_by("name")
 
         domains_to_change_count = valid_domains.count()
