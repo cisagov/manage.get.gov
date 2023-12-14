@@ -134,7 +134,7 @@ class Command(BaseCommand):
             ==Proposed Changes==
             Domains to change: {domains_to_change_count}
             """,
-            prompt_title="Do you wish to proceed?",
+            prompt_title="Do you wish to proceed with these changes?",
         )
 
         logger.info(f"{TerminalColors.MAGENTA}" "Preparing to extend expiration dates..." f"{TerminalColors.ENDC}")
