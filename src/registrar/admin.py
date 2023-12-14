@@ -555,13 +555,10 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         parameter_name = "investigator"
 
         def lookups(self, request, model_admin):
-            """Lookup reimplementation, gets users by the MANAGER role.
+            """Lookup reimplementation, gets users of is_staff.
             Returns a list of tuples consisting of (user.id, user)
             """
-            valid_user_ids = UserDomainRole.objects.filter(role=UserDomainRole.Roles.MANAGER).values_list(
-                "user__id", flat=True
-            )
-            privileged_users = User.objects.filter(id__in=valid_user_ids)
+            privileged_users = User.objects.filter(is_staff=True)
             return [(user.id, user) for user in privileged_users]
 
         def queryset(self, request, queryset):
@@ -663,6 +660,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_queryset(self, request):
+        """Queryset reimplementation to order the table alphabetically"""
         query_set = super().get_queryset(request)
         return query_set.order_by("requested_domain__name")
 

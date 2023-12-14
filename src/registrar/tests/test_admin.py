@@ -848,6 +848,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         request = self.factory.get("/")
         request.user = self.superuser
 
+        # Grab the current list of table filters
         readonly_fields = self.admin.get_list_filter(request)
         expected_fields = ("status", "organization_type", DomainApplicationAdmin.InvestigatorFilter)
 
@@ -859,12 +860,36 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.client.login(username="staffuser", password=p)
         response = self.client.get(
             "/admin/registrar/domainapplication/",
-            {},
-            follow=True,
         )
+        
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
 
+        # Add the role manager to the investigator
+        UserDomainRole.objects.get_or_create(
+            user=application.investigator,
+            role=UserDomainRole.Roles.MANAGER,
+            domain=Domain.objects.create(name="SomeGuy.gov")
+        )
+        
+        # First, make sure that there is still an investigator field to begin with
         expected_sort_column = "sortable column-investigator"
         self.assertContains(response, expected_sort_column, count=1)
+
+        # Then, test if the filter actually exists
+        self.assertIn("filters", response.context)
+        # Assert the content of filters and search_query
+        filters = response.context["filters"]
+        self.assertEqual(
+            filters,
+            [
+                {"parameter_name": "status", "parameter_value": "started"},
+                {
+                    "parameter_name": "investigator",
+                    "parameter_value": "test",
+                },
+            ],
+        )
 
     def test_investigator_filter(self):
         """Tests the custom investigator filter"""
