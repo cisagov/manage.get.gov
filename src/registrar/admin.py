@@ -543,7 +543,27 @@ class DomainApplicationAdminForm(forms.ModelForm):
                 self.fields["status"].widget.choices = available_transitions
 
 
-class DomainApplicationAdmin(ListHeaderAdmin):
+class OrderableFieldsMixin:
+    orderable_fields = []
+
+    def __new__(cls, *args, **kwargs):
+        new_class = super().__new__(cls)
+        for field, sort_field in cls.orderable_fields:
+            setattr(new_class, f'get_{field}', cls._create_orderable_field_method(field, sort_field))
+        return new_class
+
+    @classmethod
+    def _create_orderable_field_method(cls, field, sort_field):
+        def method(obj):
+            attr = getattr(obj, field)
+            return attr
+        method.__name__ = f'get_{field}'
+        method.admin_order_field = f'{field}__{sort_field}'
+        method.short_description = field.replace('_', ' ').title()
+        return method
+
+
+class DomainApplicationAdmin(ListHeaderAdmin, OrderableFieldsMixin):
 
     """Custom domain applications admin class."""
 
@@ -553,17 +573,16 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "status",
         "organization_type",
         "created_at",
-        "submitter",
-        "investigator",
+        "get_submitter",
+        "get_investigator",
     ]
 
-    def get_requested_domain(self, obj):
-        return obj.requested_domain
-    get_requested_domain.admin_order_field = 'requested_domain__name'  # Allows column order sorting
-    get_requested_domain.short_description = 'Requested Domain'  # Sets column's header
-
-
-    ordering = ['requested_domain__name']
+    orderable_fields = [
+        ('requested_domain', 'name'),
+        # TODO figure out sorting twice at once
+        ("submitter", "first_name"),
+        ("investigator", "first_name"),
+    ]
 
     # Filters
     list_filter = ("status", "organization_type", "investigator")
