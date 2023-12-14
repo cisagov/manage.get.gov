@@ -89,7 +89,8 @@ class Command(BaseCommand):
         """Given a contact with a first_name and last_name, find & update an existing
         corresponding user if her first_name and last_name are null.
 
-        Returns the corresponding User object.
+        Returns tuple of eligible (is linked to the contact) and processed
+        (first and last are blank) users.
         """
 
         user_exists = User.objects.filter(contact=contact).exists()
@@ -124,7 +125,7 @@ class Command(BaseCommand):
                     processed_user,
                 )
 
-            except Exception as E:
+            except Exception as error:
                 logger.warning(
                     f"""
                     {TerminalColors.FAIL}
@@ -132,7 +133,7 @@ class Command(BaseCommand):
                     User table for the following user:
                     {contact.email} {contact.first_name} {contact.last_name}
 
-                    Exception is: {E}
+                    Exception is: {error}
                     ----------TERMINATING----------"""
                 )
                 sys.exit()
@@ -143,7 +144,6 @@ class Command(BaseCommand):
     # ================= PROCESS CONTACTS  ==================
     # ======================================================
 
-    # C901 'Command.handle' is too complex
     def process_contacts(
         self,
         debug_on,
@@ -152,7 +152,6 @@ class Command(BaseCommand):
         processed_users=[],
     ):
         for contact in Contact.objects.all():
-            # DEBUG:
             TerminalHelper.print_conditional(
                 debug_on,
                 f"{TerminalColors.OKCYAN}"
@@ -160,7 +159,7 @@ class Command(BaseCommand):
                 f"{contact.email},"
                 f" {contact.first_name},"
                 f" {contact.last_name}"
-                f"{TerminalColors.ENDC}",  # noqa
+                f"{TerminalColors.ENDC}",
             )
 
             # ======================================================
