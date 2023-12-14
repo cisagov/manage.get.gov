@@ -100,7 +100,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
         self.assertContains(response, "igorville.gov", count=2)
-        self.assertContains(response, "DNS Needed")
+        self.assertContains(response, "DNS needed")
         # clean up
         role.delete()
 
@@ -804,7 +804,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- AO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = org_contact_result.follow()
-        self.assertContains(ao_page, "Domain requests from executive branch agencies")
+        self.assertContains(ao_page, "Executive branch federal agencies")
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1079,11 +1079,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         Make sure the long name is displaying in the application summary
         page (manage your application)
         """
-        completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Edit" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "Federal: an agency of the U.S. government")
 
 
@@ -1941,19 +1941,19 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(updated_page, "Enable DNSSEC")
 
     def test_ds_form_loads_with_no_domain_data(self):
-        """DNSSEC Add DS Data page loads when there is no
+        """DNSSEC Add DS data page loads when there is no
         domain DNSSEC data and shows a button to Add new record"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}))
-        self.assertContains(page, "You have no DS Data added")
+        self.assertContains(page, "You have no DS data added")
         self.assertContains(page, "Add new record")
 
     def test_ds_form_loads_with_ds_data(self):
-        """DNSSEC Add DS Data page loads when there is
+        """DNSSEC Add DS data page loads when there is
         domain DNSSEC DS data and shows the data"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
-        self.assertContains(page, "DS Data record 1")
+        self.assertContains(page, "DS data record 1")
 
     def test_ds_data_form_modal(self):
         """When user clicks on save, a modal pops up."""
@@ -1974,7 +1974,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(response, "Trigger Disable DNSSEC Modal")
 
     def test_ds_data_form_submits(self):
-        """DS Data form submits successfully
+        """DS data form submits successfully
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1991,10 +1991,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
-        self.assertContains(page, "The DS Data records for this domain have been updated.")
+        self.assertContains(page, "The DS data records for this domain have been updated.")
 
     def test_ds_data_form_invalid(self):
-        """DS Data form errors with invalid data (missing required fields)
+        """DS data form errors with invalid data (missing required fields)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2017,7 +2017,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
     def test_ds_data_form_invalid_keytag(self):
-        """DS Data form errors with invalid data (key tag too large)
+        """DS data form errors with invalid data (key tag too large)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2040,7 +2040,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_chars(self):
-        """DS Data form errors with invalid data (digest contains non hexadecimal chars)
+        """DS data form errors with invalid data (digest contains non hexadecimal chars)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2063,7 +2063,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_sha1(self):
-        """DS Data form errors with invalid data (digest is invalid sha-1)
+        """DS data form errors with invalid data (digest is invalid sha-1)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2086,7 +2086,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_sha256(self):
-        """DS Data form errors with invalid data (digest is invalid sha-256)
+        """DS data form errors with invalid data (digest is invalid sha-256)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2117,13 +2117,13 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Manage" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2137,13 +2137,13 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.user.status = "ineligible"
         self.user.save()
 
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Manage" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "Chief Tester")
         self.assertContains(detail_page, "testy@town.com")
@@ -2152,13 +2152,13 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_withdraw(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Manage" link
-        detail_page = home_page.click("Manage")
+        detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
         self.assertContains(detail_page, "Chief Tester")
@@ -2182,7 +2182,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status_no_permissions(self):
         """Can't access applications without being the creator."""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         other_user = User()
         other_user.save()
         application.creator = other_user
@@ -2202,7 +2202,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
     def test_approved_application_not_in_active_requests(self):
         """An approved application is not shown in the Active
         Requests table on home.html."""
-        application = completed_application(status=DomainApplication.APPROVED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")

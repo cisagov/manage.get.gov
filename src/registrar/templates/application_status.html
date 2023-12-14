@@ -31,7 +31,7 @@
              Status:
           </span>
           {% if domainapplication.status == 'approved' %} Approved 
-          {% elif domainapplication.status == 'in review' %} In Review 
+          {% elif domainapplication.status == 'in review' %} In review 
           {% elif domainapplication.status == 'rejected' %} Rejected
           {% elif domainapplication.status == 'submitted' %} Submitted
           {% elif domainapplication.status == 'ineligible' %} Ineligible
@@ -111,7 +111,7 @@
 
     {% include "includes/summary_item.html" with title='Other employees from your organization' value=domainapplication.other_contacts.all contact='true' list='true' heading_level=heading_level %}
 
-    {% include "includes/summary_item.html" with title='Anything else we should know' value=domainapplication.anything_else|default:"No" heading_level=heading_level %}
+    {% include "includes/summary_item.html" with title='Anything else?' value=domainapplication.anything_else|default:"No" heading_level=heading_level %}
 
   {% endwith %}
   </div>

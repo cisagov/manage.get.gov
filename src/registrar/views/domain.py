@@ -280,6 +280,7 @@ class DomainNameserversView(DomainFormBaseView):
                 form.fields["server"].required = True
             else:
                 form.fields["server"].required = False
+                form.fields["server"].label += " (optional)"
             form.fields["domain"].initial = self.object.name
         return formset
 
@@ -433,7 +434,7 @@ class DomainDsDataView(DomainFormBaseView):
         return initial_data
 
     def get_success_url(self):
-        """Redirect to the DS Data page for the domain."""
+        """Redirect to the DS data page for the domain."""
         return reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
@@ -472,7 +473,7 @@ class DomainDsDataView(DomainFormBaseView):
             modal_button = (
                 '<button type="submit" '
                 'class="usa-button usa-button--secondary" '
-                'name="disable-override-click">Remove all DS Data</button>'
+                'name="disable-override-click">Remove all DS data</button>'
             )
 
             # context to back out of a broken form on all fields delete
@@ -522,7 +523,7 @@ class DomainDsDataView(DomainFormBaseView):
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
-            messages.success(self.request, "The DS Data records for this domain have been updated.")
+            messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
             return super().form_valid(formset)
 
@@ -643,7 +644,46 @@ class DomainAddUserView(DomainFormBaseView):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
-    def _make_invitation(self, email_address):
+    def _send_domain_invitation_email(self, email: str, add_success=True):
+        """Performs the sending of the domain invitation email,
+        does not make a domain information object
+        email: string- email to send to
+        add_success: bool- default True indicates:
+          adding a success message to the view if the email sending succeeds"""
+        # created a new invitation in the database, so send an email
+        domainInfoResults = DomainInformation.objects.filter(domain=self.object)
+        domainInfo = domainInfoResults.first()
+        first = ""
+        last = ""
+        if domainInfo is not None:
+            first = domainInfo.creator.first_name
+            last = domainInfo.creator.last_name
+        full_name = f"{first} {last}"
+
+        try:
+            send_templated_email(
+                "emails/domain_invitation.txt",
+                "emails/domain_invitation_subject.txt",
+                to_address=email,
+                context={
+                    "domain_url": self._domain_abs_url(),
+                    "domain": self.object,
+                    "full_name": full_name,
+                },
+            )
+        except EmailSendingError:
+            messages.warning(self.request, "Could not send email invitation.")
+            logger.warn(
+                "Could not sent email invitation to %s for domain %s",
+                email,
+                self.object,
+                exc_info=True,
+            )
+        else:
+            if add_success:
+                messages.success(self.request, f"Invited {email} to this domain.")
+
+    def _make_invitation(self, email_address: str):
         """Make a Domain invitation for this email and redirect with a message."""
         invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         if not created:
@@ -653,34 +693,7 @@ class DomainAddUserView(DomainFormBaseView):
                 f"{email_address} has already been invited to this domain.",
             )
         else:
-            # created a new invitation in the database, so send an email
-            domaininfo = DomainInformation.objects.filter(domain=self.object)
-            first = domaininfo.first().creator.first_name
-            last = domaininfo.first().creator.last_name
-            full_name = f"{first} {last}"
-
-            try:
-                send_templated_email(
-                    "emails/domain_invitation.txt",
-                    "emails/domain_invitation_subject.txt",
-                    to_address=email_address,
-                    context={
-                        "domain_url": self._domain_abs_url(),
-                        "domain": self.object,
-                        "full_name": full_name,
-                    },
-                )
-            except EmailSendingError:
-                messages.warning(self.request, "Could not send email invitation.")
-                logger.warn(
-                    "Could not sent email invitation to %s for domain %s",
-                    email_address,
-                    self.object,
-                    exc_info=True,
-                )
-            else:
-                messages.success(self.request, f"Invited {email_address} to this domain.")
-
+            self._send_domain_invitation_email(email=email_address)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
@@ -692,6 +705,9 @@ class DomainAddUserView(DomainFormBaseView):
         except User.DoesNotExist:
             # no matching user, go make an invitation
             return self._make_invitation(requested_email)
+        else:
+            # if user already exists then just send an email
+            self._send_domain_invitation_email(requested_email, add_success=False)
 
         try:
             UserDomainRole.objects.create(

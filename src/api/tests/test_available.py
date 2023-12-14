@@ -15,7 +15,7 @@ from epplibwrapper import (
     commands,
 )
 
-API_BASE_PATH = "/api/v1/available/"
+API_BASE_PATH = "/api/v1/available/?domain="
 
 
 class AvailableViewTest(MockEppLib):
@@ -69,8 +69,8 @@ class AvailableViewTest(MockEppLib):
         self.assertTrue(check_domain_available("igorville.gov"))
         # input is lowercased so GSA.GOV should also not be available
         self.assertFalse(check_domain_available("GSA.gov"))
-        # input is lowercased so IGORVILLE.GOV should also not be available
-        self.assertFalse(check_domain_available("IGORVILLE.gov"))
+        # input is lowercased so IGORVILLE.GOV should also be available
+        self.assertTrue(check_domain_available("IGORVILLE.gov"))
 
     def test_domain_available_dotgov(self):
         """Domain searches work without trailing .gov"""

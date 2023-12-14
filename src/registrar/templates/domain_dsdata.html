@@ -1,13 +1,13 @@
 {% extends "domain_base.html" %}
 {% load static field_helpers url_helpers %}
 
-{% block title %}DS Data | {{ domain.name }} | {% endblock %}
+{% block title %}DS data | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
   {% if domain.dnssecdata is None %}
   <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
     <div class="usa-alert__body">
-      You have no DS Data added. Enable DNSSEC by adding DS Data.
+      You have no DS data added. Enable DNSSEC by adding DS data.
     </div>
   </div>
   {% endif %}
@@ -16,11 +16,11 @@
     {% include "includes/form_errors.html" with form=form %}
   {% endfor %}
 
-  <h1>DS Data</h1>
+  <h1>DS data</h1>
 
   <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
 
-  <p>Enter the values given by your DNS provider for DS Data.</p>
+  <p>Enter the values given by your DNS provider for DS data.</p>
 
   {% include "includes/required_fields.html" %}
 
@@ -31,9 +31,9 @@
     {% for form in formset %}
     <fieldset class="repeatable-form">
 
-      <legend class="sr-only">DS Data record {{forloop.counter}}</legend>
+      <legend class="sr-only">DS data record {{forloop.counter}}</legend>
 
-      <h2 class="margin-top-0">DS Data record {{forloop.counter}}</h2>
+      <h2 class="margin-top-0">DS data record {{forloop.counter}}</h2>
 
       <div class="grid-row grid-gap-2 flex-end">
         <div class="tablet:grid-col-4">

@@ -295,7 +295,7 @@ sudo sntp -sS time.nist.gov
 ```
 
 ## Connection pool
-To handle our connection to the registry, we utilize a connection pool to keep a socket open to increase responsiveness. In order to accomplish this, we are utilizing a heavily modified version of the (geventconnpool)[https://github.com/rasky/geventconnpool] library.
+To handle our connection to the registry, we utilize a connection pool to keep a socket open to increase responsiveness. In order to accomplish this, we are utilizing a heavily modified version of the [geventconnpool](https://github.com/rasky/geventconnpool) library.
 
 ### Settings
 The config for the connection pool exists inside the `settings.py` file.
@@ -320,3 +320,35 @@ Our connection pool has a built-in `pool_status` object which you can call at an
 * Should return true
 
 If you have multiple instances (staging for example), then repeat commands 1-5 for each instance you want to test. 
+
+## Adding a S3 instance to your sandbox
+This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
+
+To associate a S3 instance to your sandbox, follow these steps:
+1. Navigate to https://dashboard.fr.cloud.gov/login
+2. Select your sandbox from the `Applications` tab
+3. Click `Services` on the application nav bar
+4. Add a new service (plus symbol)
+5. Click `Marketplace Service`
+6. On the `Select the service` dropdown, select `s3`
+7. Under the dropdown on `Select Plan`, select `basic-sandbox`
+8. Under `Service Instance` enter `getgov-s3` for the name
+
+See this [resource](https://cloud.gov/docs/services/s3/) for information on associating an S3 instance with your sandbox through the CLI. 
+
+### Testing your S3 instance locally
+To test the S3 bucket associated with your sandbox, you will need to add four additional variables to your `.env` file. These are as follows:
+
+```
+AWS_S3_ACCESS_KEY_ID = "{string value of `access_key_id` in getgov-s3}"
+AWS_S3_SECRET_ACCESS_KEY = "{string value of `secret_access_key` in getgov-s3}"
+AWS_S3_REGION = "{string value of `region` in getgov-s3}"
+AWS_S3_BUCKET_NAME = "{string value of `bucket` in getgov-s3}"
+```
+
+You can view these variables by running the following command:
+```
+cf env getgov-{app name}
+```
+
+Then, copy the variables under the section labled `s3`.

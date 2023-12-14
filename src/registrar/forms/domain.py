@@ -181,6 +181,9 @@ class ContactForm(forms.ModelForm):
         for field_name in self.required:
             self.fields[field_name].required = True
 
+        # Set custom form label
+        self.fields["middle_name"].label = "Middle name (optional)"
+
         # Set custom error messages
         self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}
         self.fields["last_name"].error_messages = {"required": "Enter your last name / family name."}
@@ -190,7 +193,7 @@ class ContactForm(forms.ModelForm):
         self.fields["email"].error_messages = {
             "required": "Enter your email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages = {"required": "Enter your phone number."}
+        self.fields["phone"].error_messages["required"] = "Enter your phone number."
 
 
 class AuthorizingOfficialContactForm(ContactForm):
@@ -213,14 +216,14 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages = {"required": "Enter a phone number for your authorizing official."}
+        self.fields["phone"].error_messages["required"] = "Enter a phone number for your authorizing official."
 
 
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
     security_email = forms.EmailField(
-        label="Security email",
+        label="Security email (optional)",
         required=False,
         error_messages={
             "invalid": str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
@@ -236,7 +239,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the form of 12345 or 12345-6789.",
+                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
             )
         ],
     )
@@ -299,7 +302,7 @@ class DomainDnssecForm(forms.Form):
 
 
 class DomainDsdataForm(forms.Form):
-    """Form for adding or editing DNSSEC DS Data to a domain."""
+    """Form for adding or editing DNSSEC DS data to a domain."""
 
     def validate_hexadecimal(value):
         """

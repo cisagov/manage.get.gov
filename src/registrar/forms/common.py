@@ -1,6 +1,6 @@
 # common.py
 #
-# ALGORITHM_CHOICES are options for alg attribute in DS Data
+# ALGORITHM_CHOICES are options for alg attribute in DS data
 # reference:
 # https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml
 ALGORITHM_CHOICES = [
@@ -18,7 +18,7 @@ ALGORITHM_CHOICES = [
     (15, "(15) Ed25519"),
     (16, "(16) Ed448"),
 ]
-# DIGEST_TYPE_CHOICES are options for digestType attribute in DS Data
+# DIGEST_TYPE_CHOICES are options for digestType attribute in DS data
 # reference: https://datatracker.ietf.org/doc/html/rfc4034#appendix-A.2
 DIGEST_TYPE_CHOICES = [
     (1, "(1) SHA-1"),

@@ -18,7 +18,7 @@
             Status:
           </span>
             {% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED%}
-              DNS Needed
+              DNS needed
             {% else %}
                 {{ domain.state|title }}
             {% endif %}

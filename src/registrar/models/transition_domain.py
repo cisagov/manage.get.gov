@@ -4,7 +4,7 @@ from .utility.time_stamped_model import TimeStampedModel
 
 class StatusChoices(models.TextChoices):
     READY = "ready", "Ready"
-    ON_HOLD = "on hold", "On Hold"
+    ON_HOLD = "on hold", "On hold"
     UNKNOWN = "unknown", "Unknown"
 
 
@@ -42,6 +42,12 @@ class TransitionDomain(TimeStampedModel):
         default=False,
         verbose_name="email sent",
         help_text="indicates whether email was sent",
+    )
+    processed = models.BooleanField(
+        null=False,
+        default=True,
+        verbose_name="Processed",
+        help_text="Indicates whether this TransitionDomain was already processed",
     )
     organization_type = models.TextField(
         max_length=255,
@@ -84,7 +90,7 @@ class TransitionDomain(TimeStampedModel):
     middle_name = models.TextField(
         null=True,
         blank=True,
-        help_text="Middle name",
+        help_text="Middle name (optional)",
     )
     last_name = models.TextField(
         null=True,

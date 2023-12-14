@@ -30,7 +30,7 @@ class TestFormValidation(MockEppLib):
         form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(
             form.errors["zipcode"],
-            ["Enter a zip code in the form of 12345 or 12345-6789."],
+            ["Enter a zip code in the required format, like 12345 or 12345-6789."],
         )
 
     def test_org_contact_zip_valid(self):
@@ -69,6 +69,24 @@ class TestFormValidation(MockEppLib):
     def test_requested_domain_ending_dotcom_invalid(self):
         """don't accept domains ending other than .gov."""
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency.com"})
+        self.assertEqual(
+            form.errors["requested_domain"],
+            ["Enter the .gov domain you want without any periods."],
+        )
+
+    def test_requested_domain_two_dots_invalid(self):
+        """don't accept domains that are subdomains"""
+        form = DotGovDomainForm(data={"requested_domain": "sub.top-level-agency.gov"})
+        self.assertEqual(
+            form.errors["requested_domain"],
+            ["Enter the .gov domain you want without any periods."],
+        )
+        form = DotGovDomainForm(data={"requested_domain": ".top-level-agency.gov"})
+        self.assertEqual(
+            form.errors["requested_domain"],
+            ["Enter the .gov domain you want without any periods."],
+        )
+        form = DotGovDomainForm(data={"requested_domain": "..gov"})
         self.assertEqual(
             form.errors["requested_domain"],
             ["Enter the .gov domain you want without any periods."],

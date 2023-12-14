@@ -18,6 +18,7 @@
   <link rel="apple-touch-icon" size="180x180" 
   href="{% static 'img/registrar/favicons/favicon-180.png' %}"
   >
+  <script type="application/javascript" src="{% static 'js/get-gov-admin.js' %}" defer></script>
 {% endblock %}
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}

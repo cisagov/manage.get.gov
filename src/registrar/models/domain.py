@@ -122,20 +122,20 @@ class Domain(TimeStampedModel, DomainHelper):
         """These capture (some of) the states a domain object can be in."""
 
         # the state is indeterminate
-        UNKNOWN = "unknown"
+        UNKNOWN = "unknown", "Unknown"
 
         # The domain object exists in the registry
         # but nameservers don't exist for it yet
-        DNS_NEEDED = "dns needed"
+        DNS_NEEDED = "dns needed", "Dns needed"
 
         # Domain has had nameservers set, may or may not be active
-        READY = "ready"
+        READY = "ready", "Ready"
 
         # Registrar manually changed state to client hold
-        ON_HOLD = "on hold"
+        ON_HOLD = "on hold", "On hold"
 
         # previously existed but has been deleted from the registry
-        DELETED = "deleted"
+        DELETED = "deleted", "Deleted"
 
     class Cache(property):
         """
@@ -174,7 +174,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """Check if a domain is available."""
         if not cls.string_could_be_domain(domain):
             raise ValueError("Not a valid domain: %s" % str(domain))
-        req = commands.CheckDomain([domain])
+        domain_name = domain.lower()
+        req = commands.CheckDomain([domain_name])
         return registry.send(req, cleaned=True).res_data[0].avail
 
     @classmethod

@@ -4,12 +4,14 @@ from enum import IntEnum
 class ErrorCode(IntEnum):
     """
     Overview of registry response codes from RFC 5730. See RFC 5730 for full text.
-
+        - 0 System connection error
         - 1000 - 1500 Success
         - 2000 - 2308 Registrar did something silly
         - 2400 - 2500 Registry did something silly
         - 2501 - 2502 Something malicious or abusive may have occurred
     """
+
+    TRANSPORT_ERROR = 0
 
     COMMAND_COMPLETED_SUCCESSFULLY = 1000
     COMMAND_COMPLETED_SUCCESSFULLY_ACTION_PENDING = 1001
@@ -66,6 +68,9 @@ class RegistryError(Exception):
 
     def should_retry(self):
         return self.code == ErrorCode.COMMAND_FAILED
+
+    def is_transport_error(self):
+        return self.code == ErrorCode.TRANSPORT_ERROR
 
     # connection errors have error code of None and [Errno 99] in the err message
     def is_connection_error(self):
