@@ -1195,7 +1195,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e)
                     logger.error(e.code)
                     raise e
-                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state != Domain.State.DELETED:
+                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state == Domain.State.UNKNOWN:
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.dns_needed_from_unknown()
