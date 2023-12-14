@@ -649,12 +649,8 @@ class DomainAddUserView(DomainFormBaseView):
         email: string- email to send to
         add_success: bool- default True indicates:
           adding a success message to the view if the email sending succeeds"""
-        # created a new invitation in the database, so send an email
-        if requester is None:
-            # This edgecase would be unusual if encountered. We don't want to handle this here. Rather, we would
-            # want to fix this upstream where it is happening.
-            raise ValueError("Can't send email. The given DomainInformation object has no requestor or creator.")
 
+        # Check if the email requester has a valid email address
         if requester.email is not None and requester.email.strip() != "":
             requester_email = requester.email
         else:
