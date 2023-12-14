@@ -660,11 +660,11 @@ class TestUser(TestCase):
         a User record whose email address is not in caps"""
         # create DomainInvitation with CAPS email that matches User email
         # on a case-insensitive match
-        CAPS_EMAIL = "MAYOR@igorville.gov"
+        caps_email = "MAYOR@igorville.gov"
         # mock the domain invitation save routine
         with patch("registrar.models.DomainInvitation.save") as save_mock:
-            DomainInvitation.objects.get_or_create(email=CAPS_EMAIL, domain=self.domain)
+            DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
             self.user.check_domain_invitations_on_login()
             # if check_domain_invitations_on_login properly matches exactly one
             # Domain Invitation, then save routine should be called exactly once
-            save_mock.assert_called_once
+            save_mock.assert_called_once()
