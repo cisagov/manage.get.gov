@@ -877,16 +877,73 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertIn("filters", response.context)
         # Assert the content of filters and search_query
         filters = response.context["filters"]
-        print(response.context.__dict__)
+
+        # Ensure that the format is correct. We will test the value later in the test.
         self.assertEqual(
             filters,
             [
                 {
                     "parameter_name": "investigator",
-                    "parameter_value": "4",
+                    "parameter_value": str(investigator_user.id),
                 },
             ],
         )
+
+        # Manually test the returned values
+        request = self.factory.get("/admin/registrar/domainapplication/")
+        # Set the GET parameters for testing
+        request.GET = {
+            "investigator__id__exact": investigator_user.id,
+        }
+        # Call the get_filters method
+        filters = self.admin.get_filters(request)
+
+        # Assert the filters extracted from the request GET
+        self.assertEqual(
+            filters,
+            [
+                {
+                    "parameter_name": "investigator",
+                    # We intentionally test a weird value, to see what happens
+                    "parameter_value": "SomeGuy first_name:investigator SomeGuy last_name:investigator",
+                },
+            ],
+        )
+
+    def test_investigator_filter_filters_correctly(self):
+        """Tests the investigator filter"""
+
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
+        investigator_user = User.objects.filter(username=application.investigator.username).get()
+        investigator_user.is_staff = True
+        investigator_user.save()
+
+        # Create a second mock DomainApplication object, to test filtering
+        application: DomainApplication = generic_domain_object("application", "BadGuy")
+        another_user = User.objects.filter(username=application.investigator.username).get()
+        another_user.is_staff = True
+        another_user.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainapplication/",
+            {
+                "investigator__id__exact": investigator_user.id,
+            },
+            follow=True,
+        )
+
+        expected_name = "SomeGuy first_name:investigator SomeGuy last_name:investigator"
+        # We expect to see this four times, two of them are from the html for the filter,
+        # the other two are the html from the list entry in the table.
+        self.assertContains(response, expected_name, count=4)
+
+        # Check that we don't also get the thing we aren't filtering for.
+        # We expect to see this two times, two of them are from the html for the filter.
+        unexpected_name = "BadGuy first_name:investigator BadGuy last_name:investigator"
+        self.assertContains(response, unexpected_name, count=2)
 
     def tearDown(self):
         super().tearDown()

@@ -553,7 +553,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         """Custom investigator filter that only displays users with the manager role"""
 
         title = "investigator"
-        parameter_name = "investigator"
+        # Match the old param name to avoid unnecessary refactoring
+        parameter_name = "investigator__id__exact"
 
         def lookups(self, request, model_admin):
             """Lookup reimplementation, gets users of is_staff.
@@ -564,7 +565,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
         def queryset(self, request, queryset):
             """Custom queryset implementation, filters by investigator"""
-            return queryset.filter(investigator=self.value())
+            return queryset.filter(investigator__id__exact=self.value())
 
     # Columns
     list_display = [
