@@ -1355,29 +1355,55 @@ class TestDomainManagers(TestDomainOverview):
         out the boto3 SES email sending here.
         """
         # make sure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        add_page.form["email"] = EMAIL
+        add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_result = add_page.form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
 
-        self.assertContains(success_page, EMAIL)
+        self.assertContains(success_page, email_address)
         self.assertContains(success_page, "Cancel")  # link to cancel invitation
-        self.assertTrue(DomainInvitation.objects.filter(email=EMAIL).exists())
+        self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
+
+    @boto3_mocking.patching
+    def test_domain_invitation_created_for_caps_email(self):
+        """Add user on a nonexistent email with CAPS creates an invitation to lowercase email.
+
+        Adding a non-existent user sends an email as a side-effect, so mock
+        out the boto3 SES email sending here.
+        """
+        # make sure there is no user with this email
+        email_address = "mayor@igorville.gov"
+        caps_email_address = "MAYOR@igorville.gov"
+        User.objects.filter(email=email_address).delete()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = caps_email_address
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result = add_page.form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+
+        self.assertContains(success_page, email_address)
+        self.assertContains(success_page, "Cancel")  # link to cancel invitation
+        self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
 
     @boto3_mocking.patching
     def test_domain_invitation_email_sent(self):
         """Inviting a non-existent user sends them an email."""
         # make sure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
@@ -1386,28 +1412,28 @@ class TestDomainManagers(TestDomainOverview):
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = EMAIL
+            add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             add_page.form.submit()
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
             FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
-            Destination={"ToAddresses": [EMAIL]},
+            Destination={"ToAddresses": [email_address]},
             Content=ANY,
         )
 
     def test_domain_invitation_cancel(self):
         """Posting to the delete view deletes an invitation."""
-        EMAIL = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=EMAIL)
+        email_address = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
         self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the delete view as a different user should fail."""
-        EMAIL = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=EMAIL)
+        email_address = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
         other_user = User()
         other_user.save()
@@ -1419,20 +1445,20 @@ class TestDomainManagers(TestDomainOverview):
     @boto3_mocking.patching
     def test_domain_invitation_flow(self):
         """Send an invitation to a new user, log in and load the dashboard."""
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        add_page.form["email"] = EMAIL
+        add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         add_page.form.submit()
 
         # user was invited, create them
-        new_user = User.objects.create(username=EMAIL, email=EMAIL)
+        new_user = User.objects.create(username=email_address, email=email_address)
         # log them in to `self.app`
         self.app.set_user(new_user.username)
         # and manually call the on each login callback
