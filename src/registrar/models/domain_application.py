@@ -122,7 +122,7 @@ class DomainApplication(TimeStampedModel):
 
         FEDERAL = (
             "federal",
-            "Federal: an agency of the U.S. government's executive, legislative, or judicial branches",
+            "Federal: an agency of the U.S. government’s executive, legislative, or judicial branches",
         )
         INTERSTATE = "interstate", "Interstate: an organization of two or more states"
         STATE_OR_TERRITORY = (
@@ -139,7 +139,7 @@ class DomainApplication(TimeStampedModel):
         CITY = "city", "City: a city, town, township, village, etc."
         SPECIAL_DISTRICT = (
             "special_district",
-            "Special district: an independent organization within a single state",
+            "Special district: an independent government that delivers specialized, essential services",
         )
         SCHOOL_DISTRICT = (
             "school_district",
