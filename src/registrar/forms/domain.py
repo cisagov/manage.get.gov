@@ -28,6 +28,17 @@ class DomainAddUserForm(forms.Form):
 
     email = forms.EmailField(label="Email")
 
+    def clean(self):
+        """clean form data by lowercasing email"""
+        cleaned_data = super().clean()
+
+        # Lowercase the value of the 'email' field
+        email_value = cleaned_data.get("email")
+        if email_value:
+            cleaned_data["email"] = email_value.lower()
+
+        return cleaned_data
+
 
 class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
