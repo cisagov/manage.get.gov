@@ -668,3 +668,48 @@ class TestUser(TestCase):
             # if check_domain_invitations_on_login properly matches exactly one
             # Domain Invitation, then save routine should be called exactly once
             save_mock.assert_called_once()
+
+
+class TestContact(TestCase):
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
+        self.contact, _ = Contact.objects.get_or_create(user=self.user)
+
+    def tearDown(self):
+        super().tearDown()
+        Contact.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_saving_contact_updates_user_first_last_names(self):
+        """When a contact is updated, we propagate the changes to the linked user if it exists."""
+        # User and Contact are created and linked as expected
+        self.assertEqual(self.contact.first_name, "Jeff")
+        self.assertEqual(self.contact.last_name, "Lebowski")
+        self.assertEqual(self.user.first_name, "Jeff")
+        self.assertEqual(self.user.last_name, "Lebowski")
+
+        self.contact.first_name = "Joey"
+        self.contact.last_name = "Baloney"
+        self.contact.save()
+
+        # Refresh the user object to reflect the changes made in the database
+        self.user.refresh_from_db()
+
+        # Updating the contact's first and last names propagate to the user
+        self.assertEqual(self.contact.first_name, "Joey")
+        self.assertEqual(self.contact.last_name, "Baloney")
+        self.assertEqual(self.user.first_name, "Joey")
+        self.assertEqual(self.user.last_name, "Baloney")
+
+    def test_saving_contact_does_not_update_user_email(self):
+        """When a contact's email is updated, the change is not propagated to the lined user."""
+        self.contact.email = "joey.baloney@diaperville.com"
+        self.contact.save()
+
+        # Refresh the user object to reflect the changes made in the database
+        self.user.refresh_from_db()
+
+        # Updating the contact's email does not propagate
+        self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
+        self.assertEqual(self.user.email, "mayor@igorville.gov")

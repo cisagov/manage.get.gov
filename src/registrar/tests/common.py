@@ -5,6 +5,7 @@ import logging
 from contextlib import contextmanager
 import random
 from string import ascii_uppercase
+import uuid
 from django.test import TestCase
 from unittest.mock import MagicMock, Mock, patch
 from typing import List, Dict
@@ -161,7 +162,7 @@ class AuditedAdminMockData:
         user = User.objects.get_or_create(
             first_name="{} first_name:{}".format(item_name, short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
-            username="{} username:{}".format(item_name, short_hand),
+            username="{} username:{}".format(item_name + str(uuid.uuid4())[:8], short_hand),
         )[0]
         return user
 
@@ -405,8 +406,8 @@ def mock_user():
     """A simple user."""
     user_kwargs = dict(
         id=4,
-        first_name="Rachid",
-        last_name="Mrad",
+        first_name="Jeff",
+        last_name="Lebowski",
     )
     mock_user, _ = User.objects.get_or_create(**user_kwargs)
     return mock_user
