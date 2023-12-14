@@ -666,7 +666,7 @@ class DomainAddUserView(DomainFormBaseView):
             # want to fix this upstream where it is happening.
             raise ValueError("Can't send email. The given DomainInformation object has no requestor or creator.")
 
-        # Attempt to grab the first and last names. As a last resort, just use the email. 
+        # Attempt to grab the first and last names. As a last resort, just use the email.
         if first and last:
             full_name = f"{first} {last}"
         elif requester.email is not None and requester.email.strip() != "":
