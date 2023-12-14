@@ -17,7 +17,6 @@ from django.views.generic.edit import FormMixin
 
 from registrar.models import (
     Domain,
-    DomainInformation,
     DomainInvitation,
     User,
     UserDomainRole,

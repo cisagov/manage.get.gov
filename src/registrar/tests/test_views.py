@@ -1,5 +1,5 @@
 from unittest import skip
-from unittest.mock import MagicMock, ANY, call, patch
+from unittest.mock import MagicMock, ANY, patch
 
 from django.conf import settings
 from django.test import Client, TestCase
