@@ -1,5 +1,5 @@
 from unittest import skip
-from unittest.mock import MagicMock, ANY, patch
+from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import Client, TestCase
@@ -1423,15 +1423,15 @@ class TestDomainManagers(TestDomainOverview):
                     "Text": {
                         "Data": "\nHi.\n\nFirst Last has added you as a manager on igorville.gov.\n\n"
                         "YOU NEED A LOGIN.GOV ACCOUNT\nYou’ll need a Login.gov account to manage your .gov domain. "
-                        "Login.gov provides\na simple and secure process for signing into many government services with "
-                        "one\naccount. If you don’t already have one, follow these steps to create your\nLogin.gov "
+                        "Login.gov provides\na simple and secure process for signing into many government services with"
+                        " one\naccount. If you don’t already have one, follow these steps to create your\nLogin.gov "
                         "account <https://login.gov/help/get-started/create-your-account/>.\n\nDOMAIN MANAGEMENT\nAs a "
-                        ".gov domain manager you can add or update information about your domain.\nYou’ll also serve as "
-                        "a contact for your .gov domain. Please keep your contact\ninformation updated. "
-                        "Learn more about domain management <https://get.gov/help/>.\n\nSOMETHING WRONG?\nIf you’re not "
+                        ".gov domain manager you can add or update information about your domain.\nYou’ll also serve as"
+                        " a contact for your .gov domain. Please keep your contact\ninformation updated. "
+                        " Learn more about domain management <https://get.gov/help/>.\n\nSOMETHING WRONG?\nIf you’re not"
                         "affiliated with igorville.gov or think you received this\nmessage in error, contact the "
-                        ".gov team <https://get.gov/help/#contact-us>.\n\n\nTHANK YOU\n\n.Gov helps the public identify "
-                        "official, trusted information. "
+                        ".gov team <https://get.gov/help/#contact-us>.\n\n\nTHANK YOU\n\n.Gov helps the public identify"
+                        " official, trusted information. "
                         "Thank you for\nusing a .gov domain.\n\n-------------------------------------------------------"
                         "---------\n\nThe .gov team\nContact us: <https://get.gov/contact/>\nVisit <https://get.gov>\n"
                     }
