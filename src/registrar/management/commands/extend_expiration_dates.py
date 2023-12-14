@@ -29,7 +29,8 @@ class Command(BaseCommand):
         self.update_success = []
         self.update_skipped = []
         self.update_failed = []
-        self.expiration_cutoff = date(2023, 11, 15)
+        self.expiration_minimum_cutoff = date(2023, 11, 15)
+        self.expiration_maximum_cutoff = date(2023, 12, 30)
 
     def add_arguments(self, parser):
         """Add command line arguments."""
@@ -71,7 +72,9 @@ class Command(BaseCommand):
         self.check_if_positive_int(limit_parse, "limitParse")
 
         valid_domains = Domain.objects.filter(
-            expiration_date__gte=self.expiration_cutoff, state=Domain.State.READY
+            expiration_date__gte=self.expiration_minimum_cutoff,
+            expiration_date__lte=self.expiration_maximum_cutoff,
+            state=Domain.State.READY
         ).order_by("name")
 
         domains_to_change_count = valid_domains.count()
