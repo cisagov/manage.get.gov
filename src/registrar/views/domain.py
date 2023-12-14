@@ -434,7 +434,7 @@ class DomainDsDataView(DomainFormBaseView):
         return initial_data
 
     def get_success_url(self):
-        """Redirect to the DS Data page for the domain."""
+        """Redirect to the DS data page for the domain."""
         return reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
@@ -473,7 +473,7 @@ class DomainDsDataView(DomainFormBaseView):
             modal_button = (
                 '<button type="submit" '
                 'class="usa-button usa-button--secondary" '
-                'name="disable-override-click">Remove all DS Data</button>'
+                'name="disable-override-click">Remove all DS data</button>'
             )
 
             # context to back out of a broken form on all fields delete
@@ -523,7 +523,7 @@ class DomainDsDataView(DomainFormBaseView):
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
-            messages.success(self.request, "The DS Data records for this domain have been updated.")
+            messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
             return super().form_valid(formset)
 

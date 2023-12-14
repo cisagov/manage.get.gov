@@ -100,7 +100,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
         self.assertContains(response, "igorville.gov", count=2)
-        self.assertContains(response, "DNS Needed")
+        self.assertContains(response, "DNS needed")
         # clean up
         role.delete()
 
@@ -804,7 +804,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- AO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = org_contact_result.follow()
-        self.assertContains(ao_page, "Domain requests from executive branch agencies")
+        self.assertContains(ao_page, "Executive branch federal agencies")
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1079,7 +1079,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         Make sure the long name is displaying in the application summary
         page (manage your application)
         """
-        completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Edit" link
@@ -1355,29 +1355,55 @@ class TestDomainManagers(TestDomainOverview):
         out the boto3 SES email sending here.
         """
         # make sure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        add_page.form["email"] = EMAIL
+        add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_result = add_page.form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
 
-        self.assertContains(success_page, EMAIL)
+        self.assertContains(success_page, email_address)
         self.assertContains(success_page, "Cancel")  # link to cancel invitation
-        self.assertTrue(DomainInvitation.objects.filter(email=EMAIL).exists())
+        self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
+
+    @boto3_mocking.patching
+    def test_domain_invitation_created_for_caps_email(self):
+        """Add user on a nonexistent email with CAPS creates an invitation to lowercase email.
+
+        Adding a non-existent user sends an email as a side-effect, so mock
+        out the boto3 SES email sending here.
+        """
+        # make sure there is no user with this email
+        email_address = "mayor@igorville.gov"
+        caps_email_address = "MAYOR@igorville.gov"
+        User.objects.filter(email=email_address).delete()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = caps_email_address
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result = add_page.form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+
+        self.assertContains(success_page, email_address)
+        self.assertContains(success_page, "Cancel")  # link to cancel invitation
+        self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
 
     @boto3_mocking.patching
     def test_domain_invitation_email_sent(self):
         """Inviting a non-existent user sends them an email."""
         # make sure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
@@ -1386,28 +1412,28 @@ class TestDomainManagers(TestDomainOverview):
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = EMAIL
+            add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             add_page.form.submit()
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
             FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
-            Destination={"ToAddresses": [EMAIL]},
+            Destination={"ToAddresses": [email_address]},
             Content=ANY,
         )
 
     def test_domain_invitation_cancel(self):
         """Posting to the delete view deletes an invitation."""
-        EMAIL = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=EMAIL)
+        email_address = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
         self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the delete view as a different user should fail."""
-        EMAIL = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=EMAIL)
+        email_address = "mayor@igorville.gov"
+        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
         other_user = User()
         other_user.save()
@@ -1419,20 +1445,20 @@ class TestDomainManagers(TestDomainOverview):
     @boto3_mocking.patching
     def test_domain_invitation_flow(self):
         """Send an invitation to a new user, log in and load the dashboard."""
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        add_page.form["email"] = EMAIL
+        add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         add_page.form.submit()
 
         # user was invited, create them
-        new_user = User.objects.create(username=EMAIL, email=EMAIL)
+        new_user = User.objects.create(username=email_address, email=email_address)
         # log them in to `self.app`
         self.app.set_user(new_user.username)
         # and manually call the on each login callback
@@ -1941,19 +1967,19 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(updated_page, "Enable DNSSEC")
 
     def test_ds_form_loads_with_no_domain_data(self):
-        """DNSSEC Add DS Data page loads when there is no
+        """DNSSEC Add DS data page loads when there is no
         domain DNSSEC data and shows a button to Add new record"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}))
-        self.assertContains(page, "You have no DS Data added")
+        self.assertContains(page, "You have no DS data added")
         self.assertContains(page, "Add new record")
 
     def test_ds_form_loads_with_ds_data(self):
-        """DNSSEC Add DS Data page loads when there is
+        """DNSSEC Add DS data page loads when there is
         domain DNSSEC DS data and shows the data"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
-        self.assertContains(page, "DS Data record 1")
+        self.assertContains(page, "DS data record 1")
 
     def test_ds_data_form_modal(self):
         """When user clicks on save, a modal pops up."""
@@ -1974,7 +2000,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(response, "Trigger Disable DNSSEC Modal")
 
     def test_ds_data_form_submits(self):
-        """DS Data form submits successfully
+        """DS data form submits successfully
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -1991,10 +2017,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
-        self.assertContains(page, "The DS Data records for this domain have been updated.")
+        self.assertContains(page, "The DS data records for this domain have been updated.")
 
     def test_ds_data_form_invalid(self):
-        """DS Data form errors with invalid data (missing required fields)
+        """DS data form errors with invalid data (missing required fields)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2017,7 +2043,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
     def test_ds_data_form_invalid_keytag(self):
-        """DS Data form errors with invalid data (key tag too large)
+        """DS data form errors with invalid data (key tag too large)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2040,7 +2066,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_chars(self):
-        """DS Data form errors with invalid data (digest contains non hexadecimal chars)
+        """DS data form errors with invalid data (digest contains non hexadecimal chars)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2063,7 +2089,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_sha1(self):
-        """DS Data form errors with invalid data (digest is invalid sha-1)
+        """DS data form errors with invalid data (digest is invalid sha-1)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2086,7 +2112,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         )
 
     def test_ds_data_form_invalid_digest_sha256(self):
-        """DS Data form errors with invalid data (digest is invalid sha-256)
+        """DS data form errors with invalid data (digest is invalid sha-256)
 
         Uses self.app WebTest because we need to interact with forms.
         """
@@ -2117,7 +2143,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2137,7 +2163,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.user.status = "ineligible"
         self.user.save()
 
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2152,7 +2178,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_withdraw(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2182,7 +2208,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
 
     def test_application_status_no_permissions(self):
         """Can't access applications without being the creator."""
-        application = completed_application(status=DomainApplication.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
         other_user = User()
         other_user.save()
         application.creator = other_user
@@ -2202,7 +2228,7 @@ class TestApplicationStatus(TestWithUser, WebTest):
     def test_approved_application_not_in_active_requests(self):
         """An approved application is not shown in the Active
         Requests table on home.html."""
-        application = completed_application(status=DomainApplication.APPROVED, user=self.user)
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")

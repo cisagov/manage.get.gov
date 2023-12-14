@@ -527,14 +527,14 @@ class DomainApplicationAdminForm(forms.ModelForm):
             current_state = application.status
 
             # first option in status transitions is current state
-            available_transitions = [(current_state, current_state)]
+            available_transitions = [(current_state, application.get_status_display())]
 
             transitions = get_available_FIELD_transitions(
                 application, models.DomainApplication._meta.get_field("status")
             )
 
             for transition in transitions:
-                available_transitions.append((transition.target, transition.target))
+                available_transitions.append((transition.target, transition.target.label))
 
             # only set the available transitions if the user is not restricted
             # from editing the domain application; otherwise, the form will be
@@ -650,10 +650,10 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
                 if (
                     obj
-                    and original_obj.status == models.DomainApplication.APPROVED
+                    and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
                     and (
-                        obj.status == models.DomainApplication.REJECTED
-                        or obj.status == models.DomainApplication.INELIGIBLE
+                        obj.status == models.DomainApplication.ApplicationStatus.REJECTED
+                        or obj.status == models.DomainApplication.ApplicationStatus.INELIGIBLE
                     )
                     and not obj.domain_is_not_active()
                 ):
@@ -675,14 +675,14 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 else:
                     if obj.status != original_obj.status:
                         status_method_mapping = {
-                            models.DomainApplication.STARTED: None,
-                            models.DomainApplication.SUBMITTED: obj.submit,
-                            models.DomainApplication.IN_REVIEW: obj.in_review,
-                            models.DomainApplication.ACTION_NEEDED: obj.action_needed,
-                            models.DomainApplication.APPROVED: obj.approve,
-                            models.DomainApplication.WITHDRAWN: obj.withdraw,
-                            models.DomainApplication.REJECTED: obj.reject,
-                            models.DomainApplication.INELIGIBLE: (obj.reject_with_prejudice),
+                            models.DomainApplication.ApplicationStatus.STARTED: None,
+                            models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
+                            models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
+                            models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
+                            models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
+                            models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
+                            models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
+                            models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
                         }
                         selected_method = status_method_mapping.get(obj.status)
                         if selected_method is None:
@@ -752,6 +752,7 @@ class TransitionDomainAdmin(ListHeaderAdmin):
         "domain_name",
         "status",
         "email_sent",
+        "processed",
     ]
 
     search_fields = ["username", "domain_name"]

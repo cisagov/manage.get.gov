@@ -2,7 +2,7 @@
 
 {% load static %}
 
-{% block title %} Hello {% endblock %}
+{% block title %} Home | {% endblock %}
 
 {% block content %}
 <main id="main-content" class="grid-container">
@@ -53,7 +53,7 @@
           <td data-sort-value="{{ domain.created_time|date:"U" }}" data-label="Date created">{{ domain.created_time|date }}</td>
           <td data-label="Status">
             {% if domain.state == "unknown" or domain.state == "dns needed"%}
-                DNS Needed
+                DNS needed
             {% else %}
                 {{ domain.state|title }}
             {% endif %}
@@ -87,7 +87,7 @@
       aria-live="polite"
     ></div>
     {% else %}
-    <p>You don't have any registered domains yet</p>
+    <p>You don't have any registered domains.</p>
     {% endif %}
   </section>
 
@@ -95,7 +95,7 @@
     <h2>Domain requests</h2>
     {% if domain_applications %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
-      <caption class="sr-only">Your domain applications</caption>
+      <caption class="sr-only">Your domain requests</caption>
       <thead>
         <tr>
           <th data-sortable scope="col" role="columnheader">Domain name</th>
@@ -111,7 +111,7 @@
             {{ application.requested_domain.name|default:"New domain request" }}
           </th>
           <td data-sort-value="{{ application.created_at|date:"U" }}" data-label="Date created">{{ application.created_at|date }}</td>
-          <td data-label="Status">{{ application.status|title }}</td>
+          <td data-label="Status">{{ application.get_status_display }}</td>
           <td>
              {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
               <a href="{% url 'edit-application' application.pk %}">
@@ -138,7 +138,7 @@
       aria-live="polite"
     ></div>
     {% else %}
-    <p>You don't have any active domain requests right now</p>
+    <p>You haven't requested any domains.</p>
     <!-- <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p> -->
     {% endif %}
   </section>

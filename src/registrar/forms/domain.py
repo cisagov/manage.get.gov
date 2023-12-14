@@ -28,6 +28,17 @@ class DomainAddUserForm(forms.Form):
 
     email = forms.EmailField(label="Email")
 
+    def clean(self):
+        """clean form data by lowercasing email"""
+        cleaned_data = super().clean()
+
+        # Lowercase the value of the 'email' field
+        email_value = cleaned_data.get("email")
+        if email_value:
+            cleaned_data["email"] = email_value.lower()
+
+        return cleaned_data
+
 
 class DomainNameserverForm(forms.Form):
     """Form for changing nameservers."""
@@ -239,7 +250,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the form of 12345 or 12345-6789.",
+                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
             )
         ],
     )
@@ -302,7 +313,7 @@ class DomainDnssecForm(forms.Form):
 
 
 class DomainDsdataForm(forms.Form):
-    """Form for adding or editing DNSSEC DS Data to a domain."""
+    """Form for adding or editing DNSSEC DS data to a domain."""
 
     def validate_hexadecimal(value):
         """

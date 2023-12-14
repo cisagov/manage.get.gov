@@ -49,28 +49,28 @@ class DomainApplicationFixture:
     # },
     DA = [
         {
-            "status": "started",
-            "organization_name": "Example - Finished but not Submitted",
+            "status": DomainApplication.ApplicationStatus.STARTED,
+            "organization_name": "Example - Finished but not submitted",
         },
         {
-            "status": "submitted",
-            "organization_name": "Example - Submitted but pending Investigation",
+            "status": DomainApplication.ApplicationStatus.SUBMITTED,
+            "organization_name": "Example - Submitted but pending investigation",
         },
         {
-            "status": "in review",
-            "organization_name": "Example - In Investigation",
+            "status": DomainApplication.ApplicationStatus.IN_REVIEW,
+            "organization_name": "Example - In investigation",
         },
         {
-            "status": "in review",
+            "status": DomainApplication.ApplicationStatus.IN_REVIEW,
             "organization_name": "Example - Approved",
         },
         {
-            "status": "withdrawn",
+            "status": DomainApplication.ApplicationStatus.WITHDRAWN,
             "organization_name": "Example - Withdrawn",
         },
         {
-            "status": "action needed",
-            "organization_name": "Example - Action Needed",
+            "status": DomainApplication.ApplicationStatus.ACTION_NEEDED,
+            "organization_name": "Example - Action needed",
         },
         {
             "status": "rejected",
@@ -214,7 +214,9 @@ class DomainFixture(DomainApplicationFixture):
 
         for user in users:
             # approve one of each users in review status domains
-            application = DomainApplication.objects.filter(creator=user, status=DomainApplication.IN_REVIEW).last()
+            application = DomainApplication.objects.filter(
+                creator=user, status=DomainApplication.ApplicationStatus.IN_REVIEW
+            ).last()
             logger.debug(f"Approving {application} for {user}")
             application.approve()
             application.save()
