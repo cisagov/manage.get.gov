@@ -549,13 +549,21 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Columns
     list_display = [
-        "requested_domain",
+        "get_requested_domain",
         "status",
         "organization_type",
         "created_at",
         "submitter",
         "investigator",
     ]
+
+    def get_requested_domain(self, obj):
+        return obj.requested_domain
+    get_requested_domain.admin_order_field = 'requested_domain__name'  # Allows column order sorting
+    get_requested_domain.short_description = 'Requested Domain'  # Sets column's header
+
+
+    ordering = ['requested_domain__name']
 
     # Filters
     list_filter = ("status", "organization_type", "investigator")
