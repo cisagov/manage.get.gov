@@ -97,7 +97,9 @@ def available(request, domain=""):
         if check_domain_available(domain):
             return JsonResponse({"available": True, "code": "success", "message": DOMAIN_API_MESSAGES["success"]})
         else:
-            return JsonResponse({"available": False, "code": "unavailable", "message": DOMAIN_API_MESSAGES["unavailable"]})
+            return JsonResponse(
+                {"available": False, "code": "unavailable", "message": DOMAIN_API_MESSAGES["unavailable"]}
+            )
     except Exception:
         return JsonResponse({"available": False, "code": "error", "message": DOMAIN_API_MESSAGES["error"]})
 
