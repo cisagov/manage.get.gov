@@ -804,7 +804,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # ---- AO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_page = org_contact_result.follow()
-        self.assertContains(ao_page, "Domain requests from executive branch agencies")
+        self.assertContains(ao_page, "Executive branch federal agencies")
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
