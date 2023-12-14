@@ -12,7 +12,6 @@ from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
 from registrar.models.user import User
-from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from registrar.utility import csv_export
 from . import models
