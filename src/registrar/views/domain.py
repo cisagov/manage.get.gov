@@ -651,32 +651,17 @@ class DomainAddUserView(DomainFormBaseView):
         add_success: bool- default True indicates:
           adding a success message to the view if the email sending succeeds"""
         # created a new invitation in the database, so send an email
-        domainInfoResults = DomainInformation.objects.filter(domain=self.object)
-        domainInfo = domainInfoResults.first()
-        first: str = ""
-        last: str = ""
-        if requester is not None:
-            first = requester.first_name
-            last = requester.last_name
-        elif domainInfo is not None:
-            first = domainInfo.creator.first_name
-            last = domainInfo.creator.last_name
-        else:
+        if requester is None:
             # This edgecase would be unusual if encountered. We don't want to handle this here. Rather, we would
             # want to fix this upstream where it is happening.
             raise ValueError("Can't send email. The given DomainInformation object has no requestor or creator.")
 
-        # Attempt to grab the first and last names. As a last resort, just use the email.
-        if first and last:
-            full_name = f"{first} {last}"
-        elif requester.email is not None and requester.email.strip() != "":
-            full_name = requester.email
-        elif domainInfo.creator.email is not None and domainInfo.creator.email.strip() != "":
-            full_name = domainInfo.creator.email
+        if requester.email is not None and requester.email.strip() != "":
+            requester_email = requester.email
         else:
             # This edgecase would be unusual if encountered. We don't want to handle this here. Rather, we would
             # want to fix this upstream where it is happening.
-            raise ValueError("Can't send email. First and last names, as well as the email, are none.")
+            raise ValueError("Can't send email. No email exists for the requester.")
 
         try:
             send_templated_email(
@@ -686,7 +671,7 @@ class DomainAddUserView(DomainFormBaseView):
                 context={
                     "domain_url": self._domain_abs_url(),
                     "domain": self.object,
-                    "full_name": full_name,
+                    "requester_email": requester_email,
                 },
             )
         except EmailSendingError:
