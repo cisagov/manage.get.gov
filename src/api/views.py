@@ -91,15 +91,15 @@ def available(request, domain=""):
     # validate that the given domain could be a domain name and fail early if
     # not.
     if not (DraftDomain.string_could_be_domain(domain) or DraftDomain.string_could_be_domain(domain + ".gov")):
-        return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["invalid"]})
+        return JsonResponse({"available": False, "code": "invalid", "message": DOMAIN_API_MESSAGES["invalid"]})
     # a domain is available if it is NOT in the list of current domains
     try:
         if check_domain_available(domain):
-            return JsonResponse({"available": True, "message": DOMAIN_API_MESSAGES["success"]})
+            return JsonResponse({"available": True, "code": "success", "message": DOMAIN_API_MESSAGES["success"]})
         else:
-            return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["unavailable"]})
+            return JsonResponse({"available": False, "code": "unavailable", "message": DOMAIN_API_MESSAGES["unavailable"]})
     except Exception:
-        return JsonResponse({"available": False, "message": DOMAIN_API_MESSAGES["error"]})
+        return JsonResponse({"available": False, "code": "error", "message": DOMAIN_API_MESSAGES["error"]})
 
 
 @require_http_methods(["GET"])
