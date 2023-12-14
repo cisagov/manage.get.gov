@@ -5,6 +5,7 @@ import logging
 
 from django.apps import apps
 from django.db import models
+from django.forms import ValidationError
 from django_fsm import FSMField, transition  # type: ignore
 from registrar.models.domain import Domain
 

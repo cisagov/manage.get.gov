@@ -660,6 +660,13 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # Removes invalid investigator options from the investigator dropdown
+        if db_field.name == "investigator":
+            kwargs["queryset"] = User.objects.filter(is_staff=True)
+            return db_field.formfield(**kwargs)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     def get_queryset(self, request):
         """Queryset reimplementation to order the table alphabetically"""
         query_set = super().get_queryset(request)
