@@ -1373,6 +1373,32 @@ class TestDomainManagers(TestDomainOverview):
         self.assertTrue(DomainInvitation.objects.filter(email=EMAIL).exists())
 
     @boto3_mocking.patching
+    def test_domain_invitation_created_for_caps_email(self):
+        """Add user on a nonexistent email with CAPS creates an invitation to lowercase email.
+
+        Adding a non-existent user sends an email as a side-effect, so mock
+        out the boto3 SES email sending here.
+        """
+        # make sure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        CAPS_EMAIL = "MAYOR@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = CAPS_EMAIL
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result = add_page.form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+
+        self.assertContains(success_page, EMAIL)
+        self.assertContains(success_page, "Cancel")  # link to cancel invitation
+        self.assertTrue(DomainInvitation.objects.filter(email=EMAIL).exists())
+
+    @boto3_mocking.patching
     def test_domain_invitation_email_sent(self):
         """Inviting a non-existent user sends them an email."""
         # make sure there is no user with this email
