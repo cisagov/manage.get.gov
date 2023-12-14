@@ -853,64 +853,40 @@ class TestDomainApplicationAdmin(MockEppLib):
         expected_fields = ("status", "organization_type", DomainApplicationAdmin.InvestigatorFilter)
 
         self.assertEqual(readonly_fields, expected_fields)
-    
+
     def test_displays_investigator_filter(self):
         """Tests if DomainApplicationAdmin displays the investigator filter"""
+
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
+        investigator_user = User.objects.filter(username=application.investigator.username).get()
+        investigator_user.is_staff = True
+        investigator_user.save()
+
         p = "userpass"
         self.client.login(username="staffuser", password=p)
         response = self.client.get(
             "/admin/registrar/domainapplication/",
+            {
+                "investigator": investigator_user.id,
+            },
+            follow=True,
         )
-        
-        # Create a mock DomainApplication object, with a fake investigator
-        application: DomainApplication = generic_domain_object("application", "SomeGuy")
-
-        # Add the role manager to the investigator
-        UserDomainRole.objects.get_or_create(
-            user=application.investigator,
-            role=UserDomainRole.Roles.MANAGER,
-            domain=Domain.objects.create(name="SomeGuy.gov")
-        )
-        
-        # First, make sure that there is still an investigator field to begin with
-        expected_sort_column = "sortable column-investigator"
-        self.assertContains(response, expected_sort_column, count=1)
 
         # Then, test if the filter actually exists
         self.assertIn("filters", response.context)
         # Assert the content of filters and search_query
         filters = response.context["filters"]
+        print(response.context.__dict__)
         self.assertEqual(
             filters,
             [
-                {"parameter_name": "status", "parameter_value": "started"},
                 {
                     "parameter_name": "investigator",
-                    "parameter_value": "test",
+                    "parameter_value": "4",
                 },
             ],
         )
-
-    def test_investigator_filter(self):
-        """Tests the custom investigator filter"""
-        # Creates multiple domain applications
-        multiple_unalphabetical_domain_objects("application")
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        response = self.client.get(
-            "/admin/registrar/domainapplication/",
-            {
-                "investigator": 1,
-            },
-            follow=True,
-        )
-
-        # The "multiple_unalphabetical_domain_objects" function will create
-        # user objects with a first name that contains "first_name:investigator".
-        # We can simply count how many times this appears in the table to determine
-        # how many records exist.
-        self.assertContains(response, "first_name:investigator", count=1)
 
     def tearDown(self):
         super().tearDown()

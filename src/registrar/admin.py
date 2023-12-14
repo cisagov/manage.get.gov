@@ -551,6 +551,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
+
         title = "investigator"
         parameter_name = "investigator"
 
