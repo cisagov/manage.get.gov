@@ -103,6 +103,7 @@
           id="toggle-submit-domain-request"
           aria-labelledby="Are you sure you want to continue?"
           aria-describedby="Your DNSSEC records will be deleted from the registry."
+          data-force-action
         >
             {% include 'includes/modal.html' with modal_heading="You are about to submit a domain request for yourcity.gov." modal_description="Once you submit this request, you won’t be able to make further edits until it’s reviewed by our staff. You’ll only be able to withdraw your request." modal_button=modal_button|safe %}
         </div>
