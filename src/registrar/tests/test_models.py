@@ -654,3 +654,62 @@ class TestUser(TestCase):
         """A new user who's neither transitioned nor invited should
         return True when tested with class method needs_identity_verification"""
         self.assertTrue(User.needs_identity_verification(self.user.email, self.user.username))
+
+    def test_check_domain_invitations_on_login_caps_email(self):
+        """A DomainInvitation with an email address with capital letters should match
+        a User record whose email address is not in caps"""
+        # create DomainInvitation with CAPS email that matches User email
+        # on a case-insensitive match
+        caps_email = "MAYOR@igorville.gov"
+        # mock the domain invitation save routine
+        with patch("registrar.models.DomainInvitation.save") as save_mock:
+            DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
+            self.user.check_domain_invitations_on_login()
+            # if check_domain_invitations_on_login properly matches exactly one
+            # Domain Invitation, then save routine should be called exactly once
+            save_mock.assert_called_once()
+
+
+class TestContact(TestCase):
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
+        self.contact, _ = Contact.objects.get_or_create(user=self.user)
+
+    def tearDown(self):
+        super().tearDown()
+        Contact.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_saving_contact_updates_user_first_last_names(self):
+        """When a contact is updated, we propagate the changes to the linked user if it exists."""
+        # User and Contact are created and linked as expected
+        self.assertEqual(self.contact.first_name, "Jeff")
+        self.assertEqual(self.contact.last_name, "Lebowski")
+        self.assertEqual(self.user.first_name, "Jeff")
+        self.assertEqual(self.user.last_name, "Lebowski")
+
+        self.contact.first_name = "Joey"
+        self.contact.last_name = "Baloney"
+        self.contact.save()
+
+        # Refresh the user object to reflect the changes made in the database
+        self.user.refresh_from_db()
+
+        # Updating the contact's first and last names propagate to the user
+        self.assertEqual(self.contact.first_name, "Joey")
+        self.assertEqual(self.contact.last_name, "Baloney")
+        self.assertEqual(self.user.first_name, "Joey")
+        self.assertEqual(self.user.last_name, "Baloney")
+
+    def test_saving_contact_does_not_update_user_email(self):
+        """When a contact's email is updated, the change is not propagated to the lined user."""
+        self.contact.email = "joey.baloney@diaperville.com"
+        self.contact.save()
+
+        # Refresh the user object to reflect the changes made in the database
+        self.user.refresh_from_db()
+
+        # Updating the contact's email does not propagate
+        self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
+        self.assertEqual(self.user.email, "mayor@igorville.gov")

@@ -493,3 +493,34 @@ The `load_organization_data` script has five optional parameters. These are as f
 | 3 | **directory**                    | Specifies the directory containing the files that will be parsed. Defaults to "migrationdata" |
 | 4 | **domain_additional_filename**   | Specifies the filename of domain_additional. Used as an override for the JSON. Has no default. |
 | 5 | **organization_adhoc_filename**  | Specifies the filename of organization_adhoc. Used as an override for the JSON. Has no default. |
+
+
+## Extend Domain Extension Dates
+This section outlines how to extend the expiration date of all ready domains (or a select subset) by a defined period of time. 
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Extend domains
+```./manage.py extend_expiration_dates```
+
+### Running locally
+```docker-compose exec app ./manage.py extend_expiration_dates```
+
+##### Optional parameters
+|   | Parameter                  | Description                                                                 |
+|:-:|:-------------------------- |:----------------------------------------------------------------------------|
+| 1 | **extensionAmount**        | Determines the period of time to extend by, in years. Defaults to 1 year.   |
+| 2 | **debug**                  | Increases logging detail. Defaults to False.                                |
+| 3 | **limitParse**             | Determines how many domains to parse. Defaults to all.                      |
+| 4 | **disableIdempotentCheck** | Boolean that determines if we should check for idempotence or not. Compares the proposed extension date to the value in TransitionDomains. Defaults to False. |
