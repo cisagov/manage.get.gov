@@ -654,9 +654,13 @@ class DomainAddUserView(DomainFormBaseView):
         if requester.email is not None and requester.email.strip() != "":
             requester_email = requester.email
         else:
-            # This edgecase would be unusual if encountered. We don't want to handle this here. Rather, we would
-            # want to fix this upstream where it is happening.
-            raise ValueError("Can't send email. No email exists for the requester.")
+            messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
+            logger.error(
+                f"Can't send email to '{email}' on domain '{self.object}'." 
+                f"No email exists for the requester '{requester.username}'.",
+                exc_info=True,
+            )
+            return None
 
         try:
             send_templated_email(

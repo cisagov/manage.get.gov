@@ -6,7 +6,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from .common import MockEppLib, completed_application, create_user  # type: ignore
-
+from django.contrib.messages import get_messages
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -1459,6 +1459,7 @@ class TestDomainManagers(TestDomainOverview):
         # Check that the requesters first/last name do not exist
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
+        self.assertNotIn("First Last", email_content)
 
     @boto3_mocking.patching
     def test_domain_invitation_email_has_email_as_requester(self):
@@ -1496,55 +1497,7 @@ class TestDomainManagers(TestDomainOverview):
         # Check that the requesters first/last name do not exist
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
-
-    @boto3_mocking.patching
-    def test_domain_invitation_email_throws_exception_non_existent(self):
-        """Inviting a non existent user sends them an email, with email as the name."""
-        # make sure there is no user with this email
-        email_address = "mayor@igorville.gov"
-        User.objects.filter(email=email_address).delete()
-
-        # Give the user who is sending the email an invalid email address
-        requester = User.objects.filter(email="info@example.com").get()
-        requester.email = ""
-        requester.save()
-
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
-
-        mock_client = MagicMock()
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaisesMessage(ValueError, "Can't send email. No email exists for the requester"):
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit()
-
-    @boto3_mocking.patching
-    def test_domain_invitation_email_throws_exception(self):
-        """Inviting a user sends them an email, with email as the name."""
-        # make sure there is no user with this email
-        # Create a fake user object
-        email_address = "mayor@igorville.gov"
-        User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
-
-        # Give the user who is sending the email an invalid email address
-        requester = User.objects.filter(email="info@example.com").get()
-        requester.email = ""
-        requester.save()
-
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
-
-        mock_client = MagicMock()
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaisesMessage(ValueError, "Can't send email. No email exists for the requester"):
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit()
+        self.assertNotIn("First Last", email_content)
 
     def test_domain_invitation_cancel(self):
         """Posting to the delete view deletes an invitation."""
