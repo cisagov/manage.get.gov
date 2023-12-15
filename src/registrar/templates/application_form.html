@@ -85,15 +85,27 @@
               class="usa-button usa-button--outline"
             >Save and return to manage your domains</button>
             {% else %}
-            <button
-              type="submit"
+            <a
+              href="#toggle-submit-domain-request"
               class="usa-button usa-button--big dotgov-button--green"
-            >Submit your domain request</button>
+              aria-controls="toggle-submit-domain-request"
+              data-open-modal
+              >Submit your domain request</a
+            >
             {% endif %}
           </div>
 {% endblock %}
 
         </form>
+
+        <div
+          class="usa-modal"
+          id="toggle-submit-domain-request"
+          aria-labelledby="Are you sure you want to continue?"
+          aria-describedby="Your DNSSEC records will be deleted from the registry."
+        >
+            {% include 'includes/modal.html' with modal_heading="You are about to submit a domain request for yourcity.gov." modal_description="Once you submit this request, you won’t be able to make further edits until it’s reviewed by our staff. You’ll only be able to withdraw your request." modal_button=modal_button|safe %}
+        </div>
 
 {% block after_form_content %}{% endblock %}
 

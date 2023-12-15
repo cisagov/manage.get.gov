@@ -18,8 +18,8 @@ class TestDataUpdates(TestCase):
         self.user2 = User.objects.create(username="user2")
         self.user3 = User.objects.create(username="user3")
         self.user4 = User.objects.create(username="user4")
-        # The last user created triggers the creation of a contact and attaches itself to it. @Neil wth is going on?
-        # This bs_user defuses that situation so we can test the code.
+        # The last user created triggers the creation of a contact and attaches itself to it. See signals.
+        # This bs_user defuses that situation (unwanted user-contact pairing) so we can test the code.
         self.bs_user = User.objects.create()
 
         self.contact1 = Contact.objects.create(
