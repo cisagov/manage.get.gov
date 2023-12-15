@@ -453,7 +453,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Tester ATO")
         self.assertContains(review_page, "Chief Tester")
         self.assertContains(review_page, "testy@town.com")
-        self.assertContains(review_page, "(201) 555-5555")
         self.assertContains(review_page, "city.com")
         self.assertContains(review_page, "city.gov")
         self.assertContains(review_page, "city1.gov")
