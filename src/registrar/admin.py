@@ -22,6 +22,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 
 logger = logging.getLogger(__name__)
 
+
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
 class MultiFieldSortableChangeList(admin.views.main.ChangeList):
     """
@@ -41,6 +42,7 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
         ...
 
     """
+
     def get_ordering(self, request, queryset):
         """
         Returns the list of ordering fields for the change list.
@@ -51,17 +53,16 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
         ordering field.
         """
         params = self.params
-        ordering = list(self.model_admin.get_ordering(request)
-                        or self._get_default_ordering())
-        
+        ordering = list(self.model_admin.get_ordering(request) or self._get_default_ordering())
+
         if ORDER_VAR in params:
             # Clear ordering and used params
             ordering = []
 
-            order_params = params[ORDER_VAR].split('.')
+            order_params = params[ORDER_VAR].split(".")
             for p in order_params:
                 try:
-                    none, pfx, idx = p.rpartition('-')
+                    none, pfx, idx = p.rpartition("-")
                     field_name = self.list_display[int(idx)]
 
                     order_fields = self.get_ordering_field(field_name)
@@ -83,10 +84,10 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
         # ordering fields so we can guarantee a deterministic order across all
         # database backends.
         pk_name = self.lookup_opts.pk.name
-        if not (set(ordering) & set(['pk', '-pk', pk_name, '-' + pk_name])):
+        if not (set(ordering) & set(["pk", "-pk", pk_name, "-" + pk_name])):
             # The two sets do not intersect, meaning the pk isn't present. So
             # we add it.
-            ordering.append('-pk')
+            ordering.append("-pk")
 
         return ordering
 
@@ -136,6 +137,16 @@ class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
 
 class ListHeaderAdmin(AuditedAdmin):
     """Custom admin to add a descriptive subheader to list views."""
+
+    def get_changelist(self, request, **kwargs):
+        """Returns a custom ChangeList class, as opposed to the default.
+        This is so we can override the behaviour of the `admin_order_field` field.
+        By default, django does not support ordering by multiple fields for this 
+        particular field (i.e. self.admin_order_field=["first_name", "last_name"] is invalid).
+
+        Reference: https://code.djangoproject.com/ticket/31975
+        """
+        return MultiFieldSortableChangeList
 
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
@@ -628,9 +639,9 @@ class DomainApplicationAdmin(ListHeaderAdmin, OrderableFieldsMixin):
     ]
 
     orderable_fk_fields = [
-        ('requested_domain', 'name'),
-        ("submitter", ["first_name"]),
-        ("investigator", "first_name"),
+        ("requested_domain", "name"),
+        ("submitter", ["first_name", "last_name"]),
+        ("investigator", ["first_name", "last_name"]),
     ]
 
     # Filters
@@ -709,9 +720,6 @@ class DomainApplicationAdmin(ListHeaderAdmin, OrderableFieldsMixin):
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
-    
-    def get_changelist(self, request, **kwargs):
-        return MultiFieldSortableChangeList
 
     # lists in filter_horizontal are not sorted properly, sort them
     # by website

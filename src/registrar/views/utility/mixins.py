@@ -14,13 +14,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class OrderableFieldsMixin:
     orderable_fk_fields = []
 
     def __new__(cls, *args, **kwargs):
         new_class = super().__new__(cls)
         for field, sort_field in cls.orderable_fk_fields:
-            setattr(new_class, f'get_{field}', cls._create_orderable_field_method(field, sort_field))
+            setattr(new_class, f"get_{field}", cls._create_orderable_field_method(field, sort_field))
         return new_class
 
     @classmethod
@@ -28,9 +29,19 @@ class OrderableFieldsMixin:
         def method(obj):
             attr = getattr(obj, field)
             return attr
-        method.__name__ = f'get_{field}'
-        method.admin_order_field = f'{field}__{sort_field}'
-        method.short_description = field.replace('_', ' ').title()
+
+        method.__name__ = f"get_{field}"
+
+        if isinstance(sort_field, list):
+            sort_list = []
+            for sort_field_item in sort_field:
+                order_field_string = f"{field}__{sort_field_item}"
+                sort_list.append(order_field_string)
+            method.admin_order_field = sort_list
+        else:
+            method.admin_order_field = f"{field}__{sort_field}"
+
+        method.short_description = field.replace("_", " ").title()
         return method
 
 
