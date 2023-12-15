@@ -13,6 +13,8 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
 from registrar.models.utility.admin_sort_fields import AdminSortFields
 from registrar.utility import csv_export
+from registrar.views.utility.mixins import OrderableFieldsMixin
+from django.contrib.admin.views.main import ORDER_VAR
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
@@ -20,24 +22,73 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 
 logger = logging.getLogger(__name__)
 
-class OrderableFieldsMixin:
-    orderable_fk_fields = []
+# Based off of this excellent example: https://djangosnippets.org/snippets/10471/
+class MultiFieldSortableChangeList(admin.views.main.ChangeList):
+    """
+    This class overrides the behavior of column sorting in django admin tables in order
+    to allow multi field sorting
 
-    def __new__(cls, *args, **kwargs):
-        new_class = super().__new__(cls)
-        for field, sort_field in cls.orderable_fk_fields:
-            setattr(new_class, f'get_{field}', cls._create_orderable_field_method(field, sort_field))
-        return new_class
 
-    @classmethod
-    def _create_orderable_field_method(cls, field, sort_field):
-        def method(obj):
-            attr = getattr(obj, field)
-            return attr
-        method.__name__ = f'get_{field}'
-        method.admin_order_field = f'{field}__{sort_field}'
-        method.short_description = field.replace('_', ' ').title()
-        return method
+    Usage:
+
+    class MyCustomAdmin(admin.ModelAdmin):
+
+        ...
+
+        def get_changelist(self, request, **kwargs):
+            return MultiFieldSortableChangeList
+
+        ...
+
+    """
+    def get_ordering(self, request, queryset):
+        """
+        Returns the list of ordering fields for the change list.
+        First we check the get_ordering() method in model admin, then we check
+        the object's default ordering. Then, any manually-specified ordering
+        from the query string overrides anything. Finally, a deterministic
+        order is guaranteed by ensuring the primary key is used as the last
+        ordering field.
+        """
+        params = self.params
+        ordering = list(self.model_admin.get_ordering(request)
+                        or self._get_default_ordering())
+        
+        if ORDER_VAR in params:
+            # Clear ordering and used params
+            ordering = []
+
+            order_params = params[ORDER_VAR].split('.')
+            for p in order_params:
+                try:
+                    none, pfx, idx = p.rpartition('-')
+                    field_name = self.list_display[int(idx)]
+
+                    order_fields = self.get_ordering_field(field_name)
+
+                    if isinstance(order_fields, list):
+                        for order_field in order_fields:
+                            if order_field:
+                                ordering.append(pfx + order_field)
+                    else:
+                        ordering.append(pfx + order_fields)
+
+                except (IndexError, ValueError) as err:
+                    continue  # Invalid ordering specified, skip it.
+
+        # Add the given query's ordering fields, if any.
+        ordering.extend(queryset.query.order_by)
+
+        # Ensure that the primary key is systematically present in the list of
+        # ordering fields so we can guarantee a deterministic order across all
+        # database backends.
+        pk_name = self.lookup_opts.pk.name
+        if not (set(ordering) & set(['pk', '-pk', pk_name, '-' + pk_name])):
+            # The two sets do not intersect, meaning the pk isn't present. So
+            # we add it.
+            ordering.append('-pk')
+
+        return ordering
 
 
 class CustomLogEntryAdmin(LogEntryAdmin):
@@ -578,8 +629,7 @@ class DomainApplicationAdmin(ListHeaderAdmin, OrderableFieldsMixin):
 
     orderable_fk_fields = [
         ('requested_domain', 'name'),
-        # TODO figure out sorting twice at once
-        ("submitter", "first_name"),
+        ("submitter", ["first_name"]),
         ("investigator", "first_name"),
     ]
 
@@ -659,6 +709,9 @@ class DomainApplicationAdmin(ListHeaderAdmin, OrderableFieldsMixin):
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
+    
+    def get_changelist(self, request, **kwargs):
+        return MultiFieldSortableChangeList
 
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
