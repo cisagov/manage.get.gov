@@ -19,7 +19,6 @@
         "http://localhost:8080/register/other_contacts/",
         "http://localhost:8080/register/anything_else/",
         "http://localhost:8080/register/requirements/",
-        "http://localhost:8080/register/review/",
         "http://localhost:8080/register/finished/"
     ]
 }
