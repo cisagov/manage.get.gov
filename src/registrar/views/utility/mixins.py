@@ -16,9 +16,16 @@ logger = logging.getLogger(__name__)
 
 
 class OrderableFieldsMixin:
+    """
+    Mixin to add multi-field ordering capabilities to a Django ModelAdmin on admin_order_field.
+    """
     orderable_fk_fields = []
 
     def __new__(cls, *args, **kwargs):
+        """
+        This magic method is called when a new instance of the class (or subclass) is created.
+        It dynamically adds a new method to the class for each field in `orderable_fk_fields`.
+        """
         new_class = super().__new__(cls)
         for field, sort_field in cls.orderable_fk_fields:
             setattr(new_class, f"get_{field}", cls._create_orderable_field_method(field, sort_field))
@@ -26,7 +33,54 @@ class OrderableFieldsMixin:
 
     @classmethod
     def _create_orderable_field_method(cls, field, sort_field):
+        """
+        This class method is a factory for creating dynamic methods that will be attached to the ModelAdmin subclass.
+        It is used to customize how fk fields are ordered. By default, fks are ordered by id, so if you wish to
+        order by "name" instead, you need to manually override that.
+
+
+        In essence, this function will more or less generate code that looks like this, 
+        for a given tuple defined in orderable_fk_fields:
+        
+        ```
+        def get_requested_domain(self, obj):
+            return obj.requested_domain
+        # Allows column order sorting
+        get_requested_domain.admin_order_field = "requested_domain__name"
+        # Sets column's header 
+        get_requested_domain.short_description = "requested domain"  
+        ```
+
+        Or for fields with multiple order_fields:
+
+        ```
+        def get_submitter(self, obj):
+            return obj.submitter
+        # Allows column order sorting
+        get_requested_domain.admin_order_field = ["submitter__first_name", "submitter__last_name"] 
+        # Sets column's header 
+        get_requested_domain.short_description = "submitter"  
+        ```
+
+        Parameters:
+        cls: The class that this method is being called on. In the context of this mixin, it would be the ModelAdmin subclass.
+        field: A string representing the name of the attribute that the dynamic method will fetch from the model instance.
+        sort_field: A string or list of strings representing the field(s) 
+        that Django should sort by when the column is clicked in the admin interface.
+
+        Returns:
+        method: The dynamically created method.
+
+        The dynamically created method has the following attributes:
+        __name__: A string representing the name of the method. This is set to "get_{field}".
+        admin_order_field: A string or list of strings representing the field(s) that Django should sort by when the column is clicked in the admin interface.
+        short_description: A string used as the column header in the admin interface. Will replace underscores with spaces.
+        """
         def method(obj):
+            """
+            The dynamically created method. 
+            When called on a model instance, it returns the value of the specified attribute.
+            """
             attr = getattr(obj, field)
             return attr
 
@@ -41,7 +95,7 @@ class OrderableFieldsMixin:
         else:
             method.admin_order_field = f"{field}__{sort_field}"
 
-        method.short_description = field.replace("_", " ").title()
+        method.short_description = field.replace("_", " ")
         return method
 
 

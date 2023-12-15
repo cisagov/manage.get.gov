@@ -135,7 +135,7 @@ class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
         return self.form_field_order_helper(form_field, db_field)
 
 
-class ListHeaderAdmin(AuditedAdmin):
+class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
     """Custom admin to add a descriptive subheader to list views."""
 
     def get_changelist(self, request, **kwargs):
@@ -423,11 +423,17 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
 
     _meta = Meta()
 
+    # TODO - maybe instead of get we just call it "sort"?
     # Columns
     list_display = [
-        "user",
-        "domain",
+        "get_user",
+        "get_domain",
         "role",
+    ]
+    
+    orderable_fk_fields = [
+        ("domain", "name"),
+        ("user", ["first_name", "last_name"]),
     ]
 
     # Search
@@ -490,13 +496,20 @@ class DomainInvitationAdmin(ListHeaderAdmin):
 
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""
+    
+    # TODO - include the orderable fk fields inside list display
 
     # Columns
     list_display = [
-        "domain",
+        "get_domain",
         "organization_type",
         "created_at",
-        "submitter",
+        "get_submitter",
+    ]
+
+    orderable_fk_fields = [
+        ("domain", "name"),
+        ("submitter", ["first_name", "last_name"]),
     ]
 
     # Filters
@@ -624,7 +637,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
                 self.fields["status"].widget.choices = available_transitions
 
 
-class DomainApplicationAdmin(ListHeaderAdmin, OrderableFieldsMixin):
+class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
 
@@ -720,7 +733,7 @@ class DomainApplicationAdmin(ListHeaderAdmin, OrderableFieldsMixin):
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
-
+    
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
     def formfield_for_manytomany(self, db_field, request, **kwargs):
