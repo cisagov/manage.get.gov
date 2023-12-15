@@ -564,7 +564,10 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
         def queryset(self, request, queryset):
             """Custom queryset implementation, filters by investigator"""
-            return queryset.filter(investigator__id__exact=self.value())
+            if self.value() is None:
+                return queryset
+            else:
+                return queryset.filter(investigator__id__exact=self.value())
 
     # Columns
     list_display = [
