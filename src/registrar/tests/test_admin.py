@@ -845,9 +845,9 @@ class TestDomainApplicationAdmin(MockEppLib):
 
     def test_table_sorted_alphabetically(self):
         """Tests if DomainApplicationAdmin table is sorted alphabetically"""
-        self.max_diff = None
         # Creates a list of DomainApplications in scrambled order
         multiple_unalphabetical_domain_objects("application")
+
         request = self.factory.get("/")
         request.user = self.superuser
 
