@@ -227,8 +227,6 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages["required"] = "Enter a phone number for your authorizing official."
-
 
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
