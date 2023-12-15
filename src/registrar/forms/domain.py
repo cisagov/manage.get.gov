@@ -228,6 +228,7 @@ class AuthorizingOfficialContactForm(ContactForm):
             "required": "Enter an email address in the required format, like name@example.com."
         }
 
+
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
