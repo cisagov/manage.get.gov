@@ -329,10 +329,6 @@ class AuthorizingOfficialForm(RegistrarForm):
         label="First name / given name",
         error_messages={"required": ("Enter the first name / given name of your authorizing official.")},
     )
-    middle_name = forms.CharField(
-        required=False,
-        label="Middle name (optional)",
-    )
     last_name = forms.CharField(
         label="Last name / family name",
         error_messages={"required": ("Enter the last name / family name of your authorizing official.")},
@@ -349,10 +345,6 @@ class AuthorizingOfficialForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
-    )
-    phone = PhoneNumberField(
-        label="Phone",
-        error_messages={"required": "Enter the phone number for your authorizing official."},
     )
 
 
