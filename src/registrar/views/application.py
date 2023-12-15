@@ -321,12 +321,19 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-        # Create HTML for the submit button:
         # The on-page submit button is just a trigger for the modal;
         # the submit button we're adding to context will get passed to
         # the modal and is the button that triggers the actual domain
         # application submission (via post -> goto_next_step -> done).
         modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
+        # We'll concatenate the modal header here for passing along to the
+        # modal include. NOTE: We are able to 'fast-forward' a domain application
+        # by tyoing in review in the URL. The submit button still shows, hence
+        # the if/else.
+        if self.application.requested_domain:
+            modal_heading = 'You are about to submit a domain request for ' + str(self.application.requested_domain)
+        else:
+            modal_heading = 'You are about to submit an incomplete request'
         return {
             "form_titles": self.TITLES,
             "steps": self.steps,
@@ -334,6 +341,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             "visited": self.storage.get("step_history", []),
             "is_federal": self.application.is_federal(),
             "modal_button": modal_button,
+            "modal_heading": modal_heading,
         }
 
     def get_step_list(self) -> list:

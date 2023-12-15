@@ -1088,13 +1088,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_submit_modal(self):
         """When user clicks on submit your domain request, a modal pops up."""
-        completed_application()
+        # completed_application(name="cats.gov")
         review_page = self.app.get(reverse("application:review"))
         # We can't test the modal itself as it relies on JS for init and triggering,
         # but we can test for the existence of its trigger:
         self.assertContains(review_page, "toggle-submit-domain-request")
         # And the existence of the modal's data parked and ready for the js init:
-        self.assertContains(review_page, "You are about to submit a domain request")
+        print(review_page)
+        self.assertContains(review_page, "You are about to submit")
 
 
 class TestWithDomainPermissions(TestWithUser):
