@@ -331,9 +331,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # by tyoing in review in the URL. The submit button still shows, hence
         # the if/else.
         if self.application.requested_domain:
-            modal_heading = 'You are about to submit a domain request for ' + str(self.application.requested_domain)
+            modal_heading = "You are about to submit a domain request for " + str(self.application.requested_domain)
         else:
-            modal_heading = 'You are about to submit an incomplete request'
+            modal_heading = "You are about to submit an incomplete request"
         return {
             "form_titles": self.TITLES,
             "steps": self.steps,

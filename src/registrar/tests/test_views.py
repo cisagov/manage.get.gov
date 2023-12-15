@@ -164,6 +164,9 @@ class DomainApplicationTests(TestWithUser, WebTest):
         this test work.
 
         This test also looks for the long organization name on the summary page.
+
+        This also tests for the presence of a modal trigger and the dynamic test
+        in the modal header on the submit page.
         """
         num_pages_tested = 0
         # elections, type_of_work, tribal_government, no_other_contacts
@@ -471,6 +474,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "testy2@town.com")
         self.assertContains(review_page, "(201) 555-5557")
         self.assertContains(review_page, "Nothing else.")
+
+        # We can't test the modal itself as it relies on JS for init and triggering,
+        # but we can test for the existence of its trigger:
+        self.assertContains(review_page, "toggle-submit-domain-request")
+        # And the existence of the modal's data parked and ready for the js init.
+        # The next assert also tests for the passed requested domain context from
+        # the view > application_form > modal
+        self.assertContains(review_page, "You are about to submit a domain request for city.gov")
 
         # final submission results in a redirect to the "finished" URL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1086,16 +1097,17 @@ class DomainApplicationTests(TestWithUser, WebTest):
         detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "Federal: an agency of the U.S. government")
 
-    def test_submit_modal(self):
-        """When user clicks on submit your domain request, a modal pops up."""
-        # completed_application(name="cats.gov")
+    def test_submit_modal_no_domain_text_fallback(self):
+        """When user clicks on submit your domain request and the requested domain
+        is null (possible through url direct access to the review page), present
+        fallback copy in the modal's header.
+
+        NOTE: This may be a moot point if we implement a more solid pattern in the
+        future, like not a submit action at all on the review page."""
+
         review_page = self.app.get(reverse("application:review"))
-        # We can't test the modal itself as it relies on JS for init and triggering,
-        # but we can test for the existence of its trigger:
         self.assertContains(review_page, "toggle-submit-domain-request")
-        # And the existence of the modal's data parked and ready for the js init:
-        print(review_page)
-        self.assertContains(review_page, "You are about to submit")
+        self.assertContains(review_page, "You are about to submit an incomplete request")
 
 
 class TestWithDomainPermissions(TestWithUser):
