@@ -48,7 +48,6 @@ class CustomLogEntryAdmin(LogEntryAdmin):
 class AdminSortFields:
     def get_queryset(db_field):
         """This is a helper function for formfield_for_manytomany and formfield_for_foreignkey"""
-        logger.info(f"getting queryset for {db_field.name}")
         # customize sorting
         if db_field.name in (
             "other_contacts",
