@@ -122,7 +122,7 @@ class DomainApplication(TimeStampedModel):
 
         FEDERAL = (
             "federal",
-            "Federal: an agency of the U.S. government’s executive, legislative, or judicial branches",
+            "Federal: an agency of the U.S. government’s legislative, executive, or judicial branches",
         )
         INTERSTATE = "interstate", "Interstate: an organization of two or more states"
         STATE_OR_TERRITORY = (
