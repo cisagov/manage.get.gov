@@ -45,22 +45,32 @@ class CustomLogEntryAdmin(LogEntryAdmin):
     add_form_template = "admin/change_form_no_submit.html"
 
 
-class AdminSortFields():
-
+class AdminSortFields:
     def get_queryset(db_field):
         """This is a helper function for formfield_for_manytomany and formfield_for_foreignkey"""
         logger.info(f"getting queryset for {db_field.name}")
         # customize sorting
-        if db_field.name in ("other_contacts", "authorizing_official", "submitter",):
+        if db_field.name in (
+            "other_contacts",
+            "authorizing_official",
+            "submitter",
+        ):
             # Sort contacts by first_name, then last_name, then email
-            return models.Contact.objects.all().order_by(Concat("first_name","last_name","email"))
+            return models.Contact.objects.all().order_by(Concat("first_name", "last_name", "email"))
         elif db_field.name in ("current_websites", "alternative_domains"):
             # sort web sites
             return models.Website.objects.all().order_by("website")
-        elif db_field.name in ("creator", "user", "investigator",):
+        elif db_field.name in (
+            "creator",
+            "user",
+            "investigator",
+        ):
             # Sort users by first_name, then last_name, then email
-            return models.User.objects.all().order_by(Concat("first_name","last_name","email"))
-        elif db_field.name in ("domain", "approved_domain",):
+            return models.User.objects.all().order_by(Concat("first_name", "last_name", "email"))
+        elif db_field.name in (
+            "domain",
+            "approved_domain",
+        ):
             # Sort domains by name
             return models.Domain.objects.all().order_by("name")
         elif db_field.name in ("requested_domain",):
@@ -85,7 +95,7 @@ class AuditedAdmin(admin.ModelAdmin):
                 object_id=object_id,
             )
         )
-    
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
@@ -99,7 +109,7 @@ class AuditedAdmin(admin.ModelAdmin):
             + " If more than one value is selected, the change/delete/view actions will be disabled."
         )
         return formfield
-    
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """customize the behavior of formfields with foreign key relationships.  this will customize
         the behavior of selects.  customized behavior includes sorting of objects in list"""
@@ -809,7 +819,7 @@ class DomainInformationInline(admin.StackedInline):
             + " If more than one value is selected, the change/delete/view actions will be disabled."
         )
         return formfield
-    
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """customize the behavior of formfields with foreign key relationships.  this will customize
         the behavior of selects.  customized behavior includes sorting of objects in list"""
