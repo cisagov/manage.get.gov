@@ -21,6 +21,8 @@ from registrar.models import (
     DomainInformation,
     User,
     DomainInvitation,
+    Contact,
+    Website
 )
 from registrar.models.user_domain_role import UserDomainRole
 from .common import (
@@ -971,6 +973,8 @@ class TestDomainApplicationAdmin(MockEppLib):
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
 
 
 class DomainInvitationAdminTest(TestCase):
