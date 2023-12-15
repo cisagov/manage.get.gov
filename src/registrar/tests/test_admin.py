@@ -852,7 +852,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         request.user = self.superuser
 
         # Get the expected list of alphabetically sorted DomainApplications
-        expected_order = DomainApplication.objects.order_by('requested_domain__name')
+        expected_order = DomainApplication.objects.order_by("requested_domain__name")
 
         # Get the returned queryset
         queryset = self.admin.get_queryset(request)
