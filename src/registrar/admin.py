@@ -268,7 +268,7 @@ class MyUserAdmin(BaseUserAdmin):
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
-    ordering = ['first_name', 'last_name', 'email']
+    ordering = ["first_name", "last_name", "email"]
 
     # Let's define First group
     # (which should in theory be the ONLY group)
@@ -849,7 +849,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for domain
-    ordering = ['name']
+    ordering = ["name"]
 
     def organization_type(self, obj):
         return obj.domain_info.get_organization_type_display()
