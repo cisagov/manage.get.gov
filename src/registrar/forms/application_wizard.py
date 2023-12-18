@@ -15,7 +15,6 @@ from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility import errors
 
 logger = logging.getLogger(__name__)
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 
 
 class RegistrarForm(forms.Form):
@@ -558,7 +557,6 @@ class YourContactForm(RegistrarForm):
 
 class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
-        # required=False, #is required, but validate in clean() instead to allow for custom form deletion condition
         label="First name / given name",
         error_messages={"required": "Enter the first name / given name of this contact."},
     )
@@ -567,12 +565,10 @@ class OtherContactsForm(RegistrarForm):
         label="Middle name (optional)",
     )
     last_name = forms.CharField(
-        # required=False, #is required, but validate in clean() instead to allow for custom form deletion condition
         label="Last name / family name",
         error_messages={"required": "Enter the last name / family name of this contact."},
     )
     title = forms.CharField(
-        # required=False, #is required, but validate in clean() instead to allow for custom form deletion condition
         label="Title or role in your organization",
         error_messages={
             "required": (
@@ -581,40 +577,19 @@ class OtherContactsForm(RegistrarForm):
         },
     )
     email = forms.EmailField(
-        # required=False, #is required, but validate in clean() instead to allow for custom form deletion condition
         label="Email",
         error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
     )
     phone = PhoneNumberField(
-        # required=False, #is required, but validate in clean() instead to allow for custom form deletion condition
         label="Phone",
         error_messages={"required": "Enter a phone number for this contact."},
     )
-        
-   
 
     # Override clean in order to correct validation logic
     def clean(self): 
-        cleaned = self.cleaned_data # super().clean()
-        TerminalHelper.print_debug(f"""{TerminalColors.MAGENTA} CLEANING... 
-                                       FIELDS:
-                                       {self.fields}
-                                       CLEANED:
-                                       {cleaned}{TerminalColors.ENDC}""")
-        
+        cleaned = super().clean() #self.cleaned_data <---Why does this cause a CORS error?
         form_is_empty = all(v is None or v == '' for v in cleaned.values())
-        # if not form_is_empty:  #TODO: add check for "marked for deleteion" when implementing button
-            #Validation Logic
-            # if not self.cleaned_data["first_name"]:
-            #     self.add_error('first_name', "Enter the first name / given name of this contact.")
-            # if not self.cleaned_data["last_name"]:
-            #     self.add_error('last_name', "Enter the last name / family name of this contact.")
-            # if not self.cleaned_data["title"]:
-            #     self.add_error('title', "Enter the title or role in your organization of this contact (e.g., Chief Information Officer).")
         if form_is_empty:
-            TerminalHelper.print_debug(f"""{TerminalColors.MAGENTA} ***** BLANK FORM DETECTED ******* 
-                                       {TerminalColors.ENDC}""") 
-            
             # clear any errors raised by the form fields
             # (before this clean() method is run, each field
             # performs its own clean, which could result in
@@ -627,54 +602,19 @@ class OtherContactsForm(RegistrarForm):
                     del self.errors[field]
         return cleaned
 
-        
-    #     # Always return a value to use as the new cleaned data, even if
-    #     # this method didn't change it.
-    #     return data
-
-        # for field in self.fields.values():
-        #     isBlank = field is None or field == ''
-        #     TerminalHelper.print_debug(f"""{TerminalColors.YELLOW} {field} is blank = {isBlank} {TerminalColors.ENDC}""")
-
-    
-        #         TerminalHelper.print_debug(f"""{TerminalColors.YELLOW} {field.required} {TerminalColors.ENDC}""")
-        #     return None
-        # return super().clean()
-    
-    # def _should_delete_form(self, form):
-    #     TerminalHelper.print_debug(f"{TerminalColors.MAGENTA} SHOULD DELETE FORM?...{TerminalColors.ENDC}")
-    #     """Return whether or not the form was marked for deletion."""
-    #     return all(field is None or field == '' for field in self.fields.values())
-
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
 
-    # def get_deletion_widget(self):
-    #         delete_button = '<button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record">Delete</button>'
-    #         return delete_button
-
-    #     # if form.cleaned_data.get(forms.formsets.DELETION_FIELD_NAME):
-    #     #     return True  # marked for delete
-    #     # fields = ('name', 'question', 'amount', 'measure', 'comment')
-    #     print(form.cleaned_data)
-    #     if not any(form.cleaned_data):
-    #         return True
-    #     return False
-
     def should_delete(self, cleaned):
-        # TerminalHelper.print_debug(f"{TerminalColors.MAGENTA} SHOULD DELETE OTHER CONTACTS?... {cleaned.values()}{TerminalColors.ENDC}")
         empty = (isinstance(v, str) and (v.strip() == "" or v == None) for v in cleaned.values())
         return all(empty)
-    
 
     def to_database(self, obj: DomainApplication):
-        TerminalHelper.print_debug(f"{TerminalColors.OKCYAN} TO DATABASE {TerminalColors.ENDC}")
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def from_database(cls, obj):
-        TerminalHelper.print_debug(f"{TerminalColors.OKCYAN} FROM DATABASE {TerminalColors.ENDC}")
         return super().from_database(obj, cls.JOIN, cls.on_fetch)
 
 
@@ -683,7 +623,6 @@ OtherContactsFormSet = forms.formset_factory(
     extra=1,
     absolute_max=1500,  # django default; use `max_num` to limit entries
     formset=BaseOtherContactsFormSet,
-    # can_delete=True  #TODO: use when implementing delete button?
 )
 
 
