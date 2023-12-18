@@ -101,7 +101,7 @@ class User(AbstractUser):
         """When a user first arrives on the site, we need to retrieve any domain
         invitations that match their email address."""
         for invitation in DomainInvitation.objects.filter(
-            email=self.email, status=DomainInvitation.DomainInvitationStatus.INVITED
+            email__iexact=self.email, status=DomainInvitation.DomainInvitationStatus.INVITED
         ):
             try:
                 invitation.retrieve()
