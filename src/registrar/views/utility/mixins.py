@@ -25,14 +25,18 @@ class OrderableFieldsMixin:
         """
         This magic method is called when a new instance of the class (or subclass) is created.
         It dynamically adds a new method to the class for each field in `orderable_fk_fields`.
+        Then, it will update the `list_display` attribute such that it uses these generated methods.
         """
         new_class = super().__new__(cls)
 
+        # If the class doesn't define anything for orderable_fk_fields, then we should
+        # just skip this additional logic 
+        if not hasattr(cls, "orderable_fk_fields") or len(cls.orderable_fk_fields) == 0:
+            return new_class
+
         # Check if the list_display attribute exists, and if it does, create a local copy of that list.
-        list_display_exists = hasattr(cls, "list_display")
-        new_list_display = []
-        if list_display_exists and isinstance(cls.list_display, list):
-            new_list_display = cls.list_display.copy()
+        list_display_exists = hasattr(cls, "list_display") and isinstance(cls.list_display, list)
+        new_list_display = cls.list_display.copy() if list_display_exists else []
 
         for field, sort_field in cls.orderable_fk_fields:
             updated_name = f"get_{field}"
