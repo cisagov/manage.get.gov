@@ -1503,7 +1503,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
         self.assertNotIn("First Last", email_content)
-    
+
     @boto3_mocking.patching
     def test_domain_invitation_email_has_email_as_requester_staff(self):
         """Inviting a user sends them an email, with email as the name."""
