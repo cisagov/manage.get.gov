@@ -1229,6 +1229,23 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
+    
+    @boto3_mocking.patching
+    def _send_mock_invitation_emails(self, domain, email_address, follow=False):
+        """Email helper. Mocks a user clicking the invitation user"""
+        mock_client = MagicMock()
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            if follow:
+                 add_page.form.submit().follow()
+            else:
+                add_page.form.submit()
+
+        return mock_client
 
 
 class TestDomainDetail(TestDomainOverview):
@@ -1311,6 +1328,7 @@ class TestDomainDetail(TestDomainOverview):
 
 
 class TestDomainManagers(TestDomainOverview):
+
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
@@ -1405,15 +1423,8 @@ class TestDomainManagers(TestDomainOverview):
         User.objects.filter(email=email_address).delete()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
-
-        mock_client = MagicMock()
-        mock_client_instance = mock_client.return_value
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+        
+        mock_client_instance = self._send_mock_invitation_emails(self.domain, email_address)
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1434,15 +1445,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        mock_client = MagicMock()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+        mock_client_instance = self._send_mock_invitation_emails(self.domain, email_address)
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1475,15 +1478,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        mock_client = MagicMock()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+        mock_client_instance = self._send_mock_invitation_emails(self.domain, email_address)
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1503,25 +1498,19 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
         self.assertNotIn("First Last", email_content)
-    
-    @boto3_mocking.patching
+
     def test_domain_invitation_email_has_email_as_requester_staff(self):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
         email_address = "mayor@igorville.gov"
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
 
+        self.user.is_staff = True
+        self.user.save()
+
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        mock_client = MagicMock()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+        mock_client_instance = self._send_mock_invitation_emails(self.domain, email_address).return_value
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1565,7 +1554,7 @@ class TestDomainManagers(TestDomainOverview):
                 add_page.form["email"] = email_address
                 self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
                 add_page.form.submit().follow()
-
+        
         expected_message_content = "Can't send invitation email. No email is associated with your account."
 
         # Grab the message content
