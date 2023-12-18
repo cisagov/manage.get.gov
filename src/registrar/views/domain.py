@@ -650,10 +650,13 @@ class DomainAddUserView(DomainFormBaseView):
         add_success: bool- default True indicates:
           adding a success message to the view if the email sending succeeds"""
 
+        # Set a default email address to send to for staff
+        requester_email = "help@get.gov"
+
         # Check if the email requester has a valid email address
-        if requester.email is not None and requester.email.strip() != "":
+        if not requester.is_staff and requester.email is not None and requester.email.strip() != "":
             requester_email = requester.email
-        else:
+        elif not requester.is_staff:
             messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
             logger.error(
                 f"Can't send email to '{email}' on domain '{self.object}'." 
