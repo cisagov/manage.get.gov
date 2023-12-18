@@ -947,6 +947,24 @@ class TestDomainApplicationAdmin(MockEppLib):
         unexpected_name = "BadGuy first_name:investigator BadGuy last_name:investigator"
         self.assertContains(response, unexpected_name, count=2)
 
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+
+
+class TestDomainApplicationAdminTable(MockEppLib):
+    """Tests the table for DomainApplicationAdmin"""
+    def setUp(self):
+        """Enables epplib patching, and creates a fake admin object"""
+        super().setUp()
+        self.site = AdminSite()
+        self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
+    
     def test_table_sorted_alphabetically(self):
         """Tests if DomainApplicationAdmin table is sorted alphabetically"""
         # Creates a list of DomainApplications in scrambled order
@@ -968,6 +986,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         )
 
     def tearDown(self):
+        """Delete all associated domain objects"""
         super().tearDown()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
