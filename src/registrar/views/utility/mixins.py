@@ -27,17 +27,37 @@ class OrderableFieldsMixin:
         It dynamically adds a new method to the class for each field in `orderable_fk_fields`.
         """
         new_class = super().__new__(cls)
+
+        # Check if the list_display attribute exists, and if it does, create a local copy of that list.
+        list_display_exists = hasattr(cls, "list_display")
+        new_list_display = []
+        if list_display_exists and isinstance(cls.list_display, list):
+            new_list_display = cls.list_display.copy()
+
         for field, sort_field in cls.orderable_fk_fields:
-            setattr(new_class, f"get_{field}", cls._create_orderable_field_method(field, sort_field))
+            updated_name = f"get_{field}"
+
+            # For each item in orderable_fk_fields, create a function and associate it with admin_order_field. 
+            setattr(new_class, updated_name, cls._create_orderable_field_method(field, sort_field))
+
+            # Update the list_display variable to use our newly created functions
+            if list_display_exists and field in cls.list_display:
+                index = new_list_display.index(field)
+                new_list_display[index] = updated_name
+            elif list_display_exists:
+                new_list_display.append(updated_name)
+
+        # Replace the old list with the updated one
+        if list_display_exists:
+            cls.list_display = new_list_display
+
         return new_class
 
     @classmethod
     def _create_orderable_field_method(cls, field, sort_field):
         """
         This class method is a factory for creating dynamic methods that will be attached to the ModelAdmin subclass.
-        It is used to customize how fk fields are ordered. By default, fks are ordered by id, so if you wish to
-        order by "name" instead, you need to manually override that.
-
+        It is used to customize how fk fields are ordered. 
 
         In essence, this function will more or less generate code that looks like this, 
         for a given tuple defined in orderable_fk_fields:
@@ -47,7 +67,7 @@ class OrderableFieldsMixin:
             return obj.requested_domain
         # Allows column order sorting
         get_requested_domain.admin_order_field = "requested_domain__name"
-        # Sets column's header 
+        # Sets column's header name
         get_requested_domain.short_description = "requested domain"  
         ```
 
@@ -65,8 +85,7 @@ class OrderableFieldsMixin:
         Parameters:
         cls: The class that this method is being called on. In the context of this mixin, it would be the ModelAdmin subclass.
         field: A string representing the name of the attribute that the dynamic method will fetch from the model instance.
-        sort_field: A string or list of strings representing the field(s) 
-        that Django should sort by when the column is clicked in the admin interface.
+        sort_field: A string or list of strings representing the field(s) to sort by (ex: "name" or "creator")
 
         Returns:
         method: The dynamically created method.
@@ -78,23 +97,29 @@ class OrderableFieldsMixin:
         """
         def method(obj):
             """
-            The dynamically created method. 
-            When called on a model instance, it returns the value of the specified attribute.
+            Method factory.
             """
             attr = getattr(obj, field)
             return attr
 
+        # Set the function name. For instance, if the field is "domain",
+        # then this will generate a function called "get_domain"
         method.__name__ = f"get_{field}"
 
+        # Check if a list is passed in, or just a string.
         if isinstance(sort_field, list):
             sort_list = []
             for sort_field_item in sort_field:
                 order_field_string = f"{field}__{sort_field_item}"
                 sort_list.append(order_field_string)
+            # If its a list, return an array of fields to sort on.
+            # For instance, ["creator__first_name", "creator__last_name"]
             method.admin_order_field = sort_list
         else:
+            # If its not a list, just return a string
             method.admin_order_field = f"{field}__{sort_field}"
 
+        # Infer the column name in a similar manner to how Django does
         method.short_description = field.replace("_", " ")
         return method
 

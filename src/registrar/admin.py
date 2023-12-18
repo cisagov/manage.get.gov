@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class MultiFieldSortableChangeList(admin.views.main.ChangeList):
     """
     This class overrides the behavior of column sorting in django admin tables in order
-    to allow multi field sorting
+    to allow for multi field sorting on admin_order_field
 
 
     Usage:
@@ -46,11 +46,9 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
     def get_ordering(self, request, queryset):
         """
         Returns the list of ordering fields for the change list.
-        First we check the get_ordering() method in model admin, then we check
-        the object's default ordering. Then, any manually-specified ordering
-        from the query string overrides anything. Finally, a deterministic
-        order is guaranteed by ensuring the primary key is used as the last
-        ordering field.
+        
+        Mostly identical to the base implementation, except that now it can return
+        a list of order_field objects rather than just one.
         """
         params = self.params
         ordering = list(self.model_admin.get_ordering(request) or self._get_default_ordering())
@@ -74,7 +72,7 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
                     else:
                         ordering.append(pfx + order_fields)
 
-                except (IndexError, ValueError) as err:
+                except (IndexError, ValueError):
                     continue  # Invalid ordering specified, skip it.
 
         # Add the given query's ordering fields, if any.
@@ -423,11 +421,10 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
 
     _meta = Meta()
 
-    # TODO - maybe instead of get we just call it "sort"?
     # Columns
     list_display = [
-        "get_user",
-        "get_domain",
+        "user",
+        "domain",
         "role",
     ]
     
@@ -496,15 +493,13 @@ class DomainInvitationAdmin(ListHeaderAdmin):
 
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""
-    
-    # TODO - include the orderable fk fields inside list display
 
     # Columns
     list_display = [
-        "get_domain",
+        "domain",
         "organization_type",
         "created_at",
-        "get_submitter",
+        "submitter",
     ]
 
     orderable_fk_fields = [
@@ -643,12 +638,12 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Columns
     list_display = [
-        "get_requested_domain",
+        "requested_domain",
         "status",
         "organization_type",
         "created_at",
-        "get_submitter",
-        "get_investigator",
+        "submitter",
+        "investigator",
     ]
 
     orderable_fk_fields = [
