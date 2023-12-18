@@ -587,6 +587,7 @@ class OtherContactsForm(RegistrarForm):
 
     # Override clean in order to correct validation logic
     def clean(self):
+        # NOTE: using self.cleaned_data directly apparently causes a CORS error
         cleaned = super().clean()
         form_is_empty = all(v is None or v == "" for v in cleaned.values())
         if form_is_empty:
