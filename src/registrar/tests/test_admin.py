@@ -315,48 +315,6 @@ class TestDomainApplicationAdminForm(TestCase):
             DomainApplication._meta.get_field("status").choices,
         )
 
-
-class TestDomainApplicationAdminTable(MockEppLib):
-    """Tests the table for DomainApplicationAdmin"""
-    def setUp(self):
-        """Enables epplib patching, and creates a fake admin object"""
-        super().setUp()
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.superuser = create_superuser()
-        self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
-    
-    def test_table_sorted_alphabetically(self):
-        """Tests if DomainApplicationAdmin table is sorted alphabetically"""
-        # Creates a list of DomainApplications in scrambled order
-        multiple_unalphabetical_domain_objects("application")
-
-        request = self.factory.get("/")
-        request.user = self.superuser
-
-        # Get the expected list of alphabetically sorted DomainApplications
-        expected_order = DomainApplication.objects.order_by("requested_domain__name")
-
-        # Get the returned queryset
-        queryset = self.admin.get_queryset(request)
-
-        # Check the order
-        self.assertEqual(
-            list(queryset),
-            list(expected_order),
-        )
-
-    def tearDown(self):
-        """Delete all associated domain objects"""
-        super().tearDown()
-        Domain.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        DomainApplication.objects.all().delete()
-        User.objects.all().delete()
-        Contact.objects.all().delete()
-        Website.objects.all().delete()
-
-
 class TestDomainApplicationAdmin(MockEppLib):
     def setUp(self):
         super().setUp()
@@ -987,6 +945,56 @@ class TestDomainApplicationAdmin(MockEppLib):
         # We expect to see this two times, two of them are from the html for the filter.
         unexpected_name = "BadGuy first_name:investigator BadGuy last_name:investigator"
         self.assertContains(response, unexpected_name, count=2)
+
+    def test_table_sorted_alphabetically(self):
+        """Tests if DomainApplicationAdmin table is sorted alphabetically"""
+
+        # Create a list of DomainApplications in scrambled order
+        application_1: DomainApplication = generic_domain_object("application", "CupOfTea")
+        another_user_1 = User.objects.filter(username=application_1.investigator.username).get()
+        another_user_1.is_staff = True
+        another_user_1.save()
+
+        application_2: DomainApplication = generic_domain_object("application", "Xylophone")
+        another_user_2 = User.objects.filter(username=application_2.investigator.username).get()
+        another_user_2.is_staff = True
+        another_user_2.save()
+
+        application_3: DomainApplication = generic_domain_object("application", "Blue")
+        another_user_3 = User.objects.filter(username=application_3.investigator.username).get()
+        another_user_3.is_staff = True
+        another_user_3.save()
+
+        application_4: DomainApplication = generic_domain_object("application", "BadGuy")
+        another_user_4 = User.objects.filter(username=application_4.investigator.username).get()
+        another_user_4.is_staff = True
+        another_user_4.save()
+
+        application_5: DomainApplication = generic_domain_object("application", "AppleMan")
+        application_5 = User.objects.filter(username=application_5.investigator.username).get()
+        application_5.is_staff = True
+        application_5.save()
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        # Get the expected list of alphabetically sorted DomainApplications
+        expected_order = DomainApplication.objects.order_by("requested_domain__name")
+
+        # First, ensure that our test data is not alphabetical
+        self.assertEqual(
+            list(DomainApplication.objects.all()),
+            list(expected_order)
+        )
+
+        # Get the returned queryset
+        queryset = self.admin.get_queryset(request)
+
+        # Then, Check the order of the queryset
+        self.assertEqual(
+            list(queryset),
+            list(expected_order),
+        )
 
     def tearDown(self):
         super().tearDown()
