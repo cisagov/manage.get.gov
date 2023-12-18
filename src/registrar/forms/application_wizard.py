@@ -586,9 +586,9 @@ class OtherContactsForm(RegistrarForm):
     )
 
     # Override clean in order to correct validation logic
-    def clean(self): 
-        cleaned = super().clean() #self.cleaned_data <---Why does this cause a CORS error?
-        form_is_empty = all(v is None or v == '' for v in cleaned.values())
+    def clean(self):
+        cleaned = super().clean()
+        form_is_empty = all(v is None or v == "" for v in cleaned.values())
         if form_is_empty:
             # clear any errors raised by the form fields
             # (before this clean() method is run, each field
@@ -650,6 +650,7 @@ class AnythingElseForm(RegistrarForm):
             )
         ],
     )
+
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
