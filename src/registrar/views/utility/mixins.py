@@ -19,6 +19,7 @@ class OrderableFieldsMixin:
     """
     Mixin to add multi-field ordering capabilities to a Django ModelAdmin on admin_order_field.
     """
+    custom_sort_name_prefix = "get_sortable_"
     orderable_fk_fields = []
 
     def __new__(cls, *args, **kwargs):
@@ -39,7 +40,7 @@ class OrderableFieldsMixin:
         new_list_display = cls.list_display.copy() if list_display_exists else []
 
         for field, sort_field in cls.orderable_fk_fields:
-            updated_name = f"get_{field}"
+            updated_name = cls.custom_sort_name_prefix + field
 
             # For each item in orderable_fk_fields, create a function and associate it with admin_order_field. 
             setattr(new_class, updated_name, cls._create_orderable_field_method(field, sort_field))
@@ -67,23 +68,23 @@ class OrderableFieldsMixin:
         for a given tuple defined in orderable_fk_fields:
         
         ```
-        def get_requested_domain(self, obj):
+        def get_sortable_requested_domain(self, obj):
             return obj.requested_domain
         # Allows column order sorting
-        get_requested_domain.admin_order_field = "requested_domain__name"
+        get_sortable_requested_domain.admin_order_field = "requested_domain__name"
         # Sets column's header name
-        get_requested_domain.short_description = "requested domain"  
+        get_sortable_requested_domain.short_description = "requested domain"  
         ```
 
         Or for fields with multiple order_fields:
 
         ```
-        def get_submitter(self, obj):
+        def get_sortable_submitter(self, obj):
             return obj.submitter
         # Allows column order sorting
-        get_requested_domain.admin_order_field = ["submitter__first_name", "submitter__last_name"] 
+        get_sortable_submitter.admin_order_field = ["submitter__first_name", "submitter__last_name"] 
         # Sets column's header 
-        get_requested_domain.short_description = "submitter"  
+        get_sortable_submitter.short_description = "submitter"  
         ```
 
         Parameters:
@@ -96,19 +97,28 @@ class OrderableFieldsMixin:
 
         The dynamically created method has the following attributes:
         __name__: A string representing the name of the method. This is set to "get_{field}".
-        admin_order_field: A string or list of strings representing the field(s) that Django should sort by when the column is clicked in the admin interface.
+        admin_order_field: A string or list of strings representing the field(s) that 
+        Django should sort by when the column is clicked in the admin interface.
         short_description: A string used as the column header in the admin interface. Will replace underscores with spaces.
         """
         def method(obj):
             """
-            Method factory.
+            Template method for patterning. 
+
+            Returns (example): 
+            ```
+            def get_submitter(self, obj):
+                return obj.submitter
+            ```
             """
             attr = getattr(obj, field)
             return attr
 
         # Set the function name. For instance, if the field is "domain",
-        # then this will generate a function called "get_domain"
-        method.__name__ = f"get_{field}"
+        # then this will generate a function called "get_sort_domain".
+        # This is done rather than just setting the name to the attribute to avoid
+        # naming conflicts.
+        method.__name__ = cls.custom_sort_name_prefix + field
 
         # Check if a list is passed in, or just a string.
         if isinstance(sort_field, list):

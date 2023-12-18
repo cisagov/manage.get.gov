@@ -134,7 +134,8 @@ class AuditedAdmin(admin.ModelAdmin, AdminSortFields):
 
 
 class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
-    """Custom admin to add a descriptive subheader to list views."""
+    """Custom admin to add a descriptive subheader to list views 
+    and custom table sort behaviour"""
 
     def get_changelist(self, request, **kwargs):
         """Returns a custom ChangeList class, as opposed to the default.
