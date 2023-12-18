@@ -6,7 +6,6 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from .common import MockEppLib, completed_application, create_user  # type: ignore
-from django.contrib.messages import get_messages
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -1498,6 +1497,69 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
         self.assertNotIn("First Last", email_content)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_displays_error_non_existent(self):
+        """Inviting a non existent user sends them an email, with email as the name."""
+        # make sure there is no user with this email
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
+
+        # Give the user who is sending the email an invalid email address
+        self.user.email = ""
+        self.user.save()
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        mock_client = MagicMock()
+
+        mock_error_message = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with patch("django.contrib.messages.error") as mock_error_message:
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit().follow()
+
+        expected_message_content = "Can't send invitation email. No email is associated with your account."
+
+        # Grab the message content
+        returned_error_message = mock_error_message.call_args[0][1]
+
+        # Check that the message content is what we expect
+        self.assertEqual(expected_message_content, returned_error_message)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_displays_error(self):
+        """When the requesting user has no email, an error is displayed"""
+        # make sure there is no user with this email
+        # Create a fake user object
+        email_address = "mayor@igorville.gov"
+        User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
+
+        # Give the user who is sending the email an invalid email address
+        self.user.email = ""
+        self.user.save()
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        mock_client = MagicMock()
+
+        mock_error_message = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with patch("django.contrib.messages.error") as mock_error_message:
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit().follow()
+
+        expected_message_content = "Can't send invitation email. No email is associated with your account."
+
+        # Grab the message content
+        returned_error_message = mock_error_message.call_args[0][1]
+
+        # Check that the message content is what we expect
+        self.assertEqual(expected_message_content, returned_error_message)
 
     def test_domain_invitation_cancel(self):
         """Posting to the delete view deletes an invitation."""
