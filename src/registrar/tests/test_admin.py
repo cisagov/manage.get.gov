@@ -316,6 +316,47 @@ class TestDomainApplicationAdminForm(TestCase):
         )
 
 
+class TestDomainApplicationAdminTable(MockEppLib):
+    """Tests the table for DomainApplicationAdmin"""
+    def setUp(self):
+        """Enables epplib patching, and creates a fake admin object"""
+        super().setUp()
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
+        self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
+    
+    def test_table_sorted_alphabetically(self):
+        """Tests if DomainApplicationAdmin table is sorted alphabetically"""
+        # Creates a list of DomainApplications in scrambled order
+        multiple_unalphabetical_domain_objects("application")
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        # Get the expected list of alphabetically sorted DomainApplications
+        expected_order = DomainApplication.objects.order_by("requested_domain__name")
+
+        # Get the returned queryset
+        queryset = self.admin.get_queryset(request)
+
+        # Check the order
+        self.assertEqual(
+            list(queryset),
+            list(expected_order),
+        )
+
+    def tearDown(self):
+        """Delete all associated domain objects"""
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
+
+
 class TestDomainApplicationAdmin(MockEppLib):
     def setUp(self):
         super().setUp()
@@ -948,45 +989,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertContains(response, unexpected_name, count=2)
 
     def tearDown(self):
-        super().tearDown()
-        Domain.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        DomainApplication.objects.all().delete()
-        User.objects.all().delete()
-        Contact.objects.all().delete()
-        Website.objects.all().delete()
-
-
-class TestDomainApplicationAdminTable(MockEppLib):
-    """Tests the table for DomainApplicationAdmin"""
-    def setUp(self):
-        """Enables epplib patching, and creates a fake admin object"""
-        super().setUp()
-        self.site = AdminSite()
-        self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
-    
-    def test_table_sorted_alphabetically(self):
-        """Tests if DomainApplicationAdmin table is sorted alphabetically"""
-        # Creates a list of DomainApplications in scrambled order
-        multiple_unalphabetical_domain_objects("application")
-
-        request = self.factory.get("/")
-        request.user = self.superuser
-
-        # Get the expected list of alphabetically sorted DomainApplications
-        expected_order = DomainApplication.objects.order_by("requested_domain__name")
-
-        # Get the returned queryset
-        queryset = self.admin.get_queryset(request)
-
-        # Check the order
-        self.assertEqual(
-            list(queryset),
-            list(expected_order),
-        )
-
-    def tearDown(self):
-        """Delete all associated domain objects"""
         super().tearDown()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
