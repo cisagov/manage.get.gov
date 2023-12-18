@@ -1311,6 +1311,12 @@ class TestDomainDetail(TestDomainOverview):
 
 
 class TestDomainManagers(TestDomainOverview):
+    def tearDown(self):
+        """Ensure that the user has its original permissions"""
+        super().tearDown()
+        self.user.is_staff = False
+        self.user.save()
+
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
@@ -1429,9 +1435,6 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.filter(email=email_address).delete()
 
-        self.user.is_staff = False
-        self.user.save()
-
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         mock_client = MagicMock()
@@ -1470,9 +1473,6 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
 
-        self.user.is_staff = False
-        self.user.save()
-
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         mock_client = MagicMock()
@@ -1510,6 +1510,10 @@ class TestDomainManagers(TestDomainOverview):
         # Create a fake user object
         email_address = "mayor@igorville.gov"
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
+
+        # Make sure the user is staff
+        self.user.is_staff = True
+        self.user.save()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
@@ -1551,8 +1555,8 @@ class TestDomainManagers(TestDomainOverview):
 
         # Give the user who is sending the email an invalid email address
         self.user.email = ""
-        self.user.is_staff = False
         self.user.save()
+
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         mock_client = MagicMock()
@@ -1584,8 +1588,8 @@ class TestDomainManagers(TestDomainOverview):
 
         # Give the user who is sending the email an invalid email address
         self.user.email = ""
-        self.user.is_staff = False
         self.user.save()
+
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         mock_client = MagicMock()
