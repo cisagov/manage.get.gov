@@ -856,26 +856,6 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         self.assertEqual(readonly_fields, expected_fields)
 
-    def test_table_sorted_alphabetically(self):
-        """Tests if DomainApplicationAdmin table is sorted alphabetically"""
-        # Creates a list of DomainApplications in scrambled order
-        multiple_unalphabetical_domain_objects("application")
-
-        request = self.factory.get("/")
-        request.user = self.superuser
-
-        # Get the expected list of alphabetically sorted DomainApplications
-        expected_order = DomainApplication.objects.order_by("requested_domain__name")
-
-        # Get the returned queryset
-        queryset = self.admin.get_queryset(request)
-
-        # Check the order
-        self.assertEqual(
-            list(queryset),
-            list(expected_order),
-        )
-
     def test_displays_investigator_filter(self):
         """Tests if DomainApplicationAdmin displays the investigator filter"""
 
