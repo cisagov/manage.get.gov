@@ -13,7 +13,7 @@ from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 
-from .utility import DomainApplicationPermissionView, ApplicationWizardPermissionView
+from .utility import DomainApplicationPermissionView, DomainApplicationPermissionWithdrawView, ApplicationWizardPermissionView
 
 logger = logging.getLogger(__name__)
 
@@ -544,7 +544,7 @@ class ApplicationStatus(DomainApplicationPermissionView):
     template_name = "application_status.html"
 
 
-class ApplicationWithdrawConfirmation(DomainApplicationPermissionView):
+class ApplicationWithdrawConfirmation(DomainApplicationPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
 
     The DomainApplicationPermissionView restricts access so that only the
@@ -554,7 +554,7 @@ class ApplicationWithdrawConfirmation(DomainApplicationPermissionView):
     template_name = "application_withdraw_confirmation.html"
 
 
-class ApplicationWithdrawn(DomainApplicationPermissionView):
+class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
     # this view renders no template
     template_name = ""
 
