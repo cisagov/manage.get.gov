@@ -836,6 +836,11 @@ class MockEppLib(TestCase):
         ex_date=datetime.date(2023, 2, 15),
     )
 
+    mockMaximumRenewedDomainExpDate = fakedEppObject(
+        "fakemaximum.gov",
+        ex_date=datetime.date(2024, 12, 31),
+    )
+
     mockRecentRenewedDomainExpDate = fakedEppObject(
         "waterbutpurple.gov",
         ex_date=datetime.date(2024, 11, 15),
@@ -947,6 +952,11 @@ class MockEppLib(TestCase):
         elif getattr(_request, "name", None) == "fakeneeded.gov":
             return MagicMock(
                 res_data=[self.mockDnsNeededRenewedDomainExpDate],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif getattr(_request, "name", None) == "fakemaximum.gov":
+            return MagicMock(
+                res_data=[self.mockMaximumRenewedDomainExpDate],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
         else:

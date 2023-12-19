@@ -321,12 +321,21 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
+        # Build the submit button that we'll pass to the modal.
+        modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
+        # Concatenate the modal header that we'll pass to the modal.
+        if self.application.requested_domain:
+            modal_heading = "You are about to submit a domain request for " + str(self.application.requested_domain)
+        else:
+            modal_heading = "You are about to submit an incomplete request"
         return {
             "form_titles": self.TITLES,
             "steps": self.steps,
             # Add information about which steps should be unlocked
             "visited": self.storage.get("step_history", []),
             "is_federal": self.application.is_federal(),
+            "modal_button": modal_button,
+            "modal_heading": modal_heading,
         }
 
     def get_step_list(self) -> list:

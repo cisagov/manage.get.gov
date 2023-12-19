@@ -52,6 +52,15 @@ class TestExtendExpirationDates(MockEppLib):
             domain_name="fakeneeded.gov",
             epp_expiration_date=datetime.date(2023, 11, 15),
         )
+        # Create a domain with a date greater than the maximum
+        Domain.objects.get_or_create(
+            name="fakemaximum.gov", state=Domain.State.READY, expiration_date=datetime.date(2024, 12, 31)
+        )
+        TransitionDomain.objects.get_or_create(
+            username="fakemaximum@mail.com",
+            domain_name="fakemaximum.gov",
+            epp_expiration_date=datetime.date(2024, 12, 31),
+        )
 
     def tearDown(self):
         """Deletes all DB objects related to migrations"""
@@ -113,6 +122,25 @@ class TestExtendExpirationDates(MockEppLib):
         # will skip all dates less than date(2023, 11, 15), meaning that this domain
         # should not be affected by the change.
         self.assertEqual(current_domain.expiration_date, datetime.date(2022, 5, 25))
+
+    def test_extends_expiration_date_skips_maximum_date(self):
+        """
+        Tests that the extend_expiration_dates method correctly skips domains
+        with an expiration date more than a certain threshold.
+        """
+        desired_domain = Domain.objects.filter(name="fakemaximum.gov").get()
+        desired_domain.expiration_date = datetime.date(2024, 12, 31)
+
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+
+        current_domain = Domain.objects.filter(name="fakemaximum.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the expiration date. The extend_expiration_dates script
+        # will skip all dates less than date(2023, 11, 15), meaning that this domain
+        # should not be affected by the change.
+        self.assertEqual(current_domain.expiration_date, datetime.date(2024, 12, 31))
 
     def test_extends_expiration_date_skips_non_ready(self):
         """

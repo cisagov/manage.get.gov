@@ -12,7 +12,7 @@
   <p>You can enter your name servers, as well as other DNS-related information, in the following sections:</p>
 
   {% url 'domain-dns-nameservers' pk=domain.id as url %}
-<ul>  
+<ul class="usa-list">
 <li><a href="{{ url }}">Name servers</a></li>
 
   {% url 'domain-dns-dnssec' pk=domain.id as url %}
