@@ -164,7 +164,7 @@ class DomainApplicationPermissionWithdraw(DomainApplicationPermission):
         if not self.request.user.is_authenticated:
             return False
 
-        # only users with admin role can withdraw a domain request
+        # Restricted users should not be able to withdraw domain requests
         if self.request.user.is_restricted():
             return False
 
