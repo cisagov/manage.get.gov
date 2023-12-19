@@ -659,7 +659,7 @@ class DomainAddUserView(DomainFormBaseView):
         elif not requester.is_staff:
             messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
             logger.error(
-                f"Can't send email to '{email}' on domain '{self.object}'." 
+                f"Can't send email to '{email}' on domain '{self.object}'."
                 f"No email exists for the requester '{requester.username}'.",
                 exc_info=True,
             )
