@@ -168,6 +168,8 @@ class DomainApplicationPermissionWithdraw(DomainApplicationPermission):
         if self.request.user.is_restricted():
             return False
 
+        return True
+
 
 class ApplicationWizardPermission(PermissionsLoginMixin):
 

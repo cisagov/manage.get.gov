@@ -86,7 +86,7 @@ class DomainApplicationPermissionWithdrawView(DomainApplicationPermissionWithdra
     # DetailView property for what model this is viewing
     model = DomainApplication
     # variable name in template context for the model object
-    context_object_name = "domainapplicationwithdraw"
+    context_object_name = "domainapplication"
 
     # Abstract property enforces NotImplementedError on an attribute.
     @property
