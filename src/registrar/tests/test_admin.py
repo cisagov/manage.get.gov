@@ -330,14 +330,14 @@ class TestDomainApplicationAdmin(MockEppLib):
             user=self.superuser,
             admin=self.admin,
             url="/admin/registrar/DomainApplication/",
-            model=DomainApplication
+            model=DomainApplication,
         )
 
     def test_domain_sortable(self):
         """Tests if the DomainApplication sorts by domain correctly"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
-        
+
         multiple_unalphabetical_domain_objects("application")
 
         # Assert that our sort works correctly
@@ -359,16 +359,22 @@ class TestDomainApplicationAdmin(MockEppLib):
         new_user.save()
 
         # Assert that our sort works correctly
-        self.test_helper.assert_table_sorted("5", (
-            "submitter__first_name",
-            "submitter__last_name",
-        ))
+        self.test_helper.assert_table_sorted(
+            "5",
+            (
+                "submitter__first_name",
+                "submitter__last_name",
+            ),
+        )
 
         # Assert that sorting in reverse works correctly
-        self.test_helper.assert_table_sorted("-5", (
-            "-submitter__first_name",
-            "-submitter__last_name",
-        ))
+        self.test_helper.assert_table_sorted(
+            "-5",
+            (
+                "-submitter__first_name",
+                "-submitter__last_name",
+            ),
+        )
 
     def test_investigator_sortable(self):
         """Tests if the DomainApplication sorts by domain correctly"""
@@ -382,16 +388,22 @@ class TestDomainApplicationAdmin(MockEppLib):
         new_user.save()
 
         # Assert that our sort works correctly
-        self.test_helper.assert_table_sorted("6", (
-            "investigator__first_name",
-            "investigator__last_name",
-        ))
+        self.test_helper.assert_table_sorted(
+            "6",
+            (
+                "investigator__first_name",
+                "investigator__last_name",
+            ),
+        )
 
         # Assert that sorting in reverse works correctly
-        self.test_helper.assert_table_sorted("-6", (
-            "-investigator__first_name",
-            "-investigator__last_name",
-        ))
+        self.test_helper.assert_table_sorted(
+            "-6",
+            (
+                "-investigator__first_name",
+                "-investigator__last_name",
+            ),
+        )
 
     def test_short_org_name_in_applications_list(self):
         """
@@ -975,7 +987,7 @@ class DomainInformationAdminTest(TestCase):
             user=self.superuser,
             admin=self.admin,
             url="/admin/registrar/DomainInformation/",
-            model=DomainInformation
+            model=DomainInformation,
         )
 
         # Create fake DomainInformation objects
@@ -1017,14 +1029,10 @@ class DomainInformationAdminTest(TestCase):
         self.client.login(username="superuser", password=p)
 
         # Assert that our sort works correctly
-        self.test_helper.assert_table_sorted(
-            "1", ("domain__name",)
-        )
+        self.test_helper.assert_table_sorted("1", ("domain__name",))
 
         # Assert that sorting in reverse works correctly
-        self.test_helper.assert_table_sorted(
-            "-1", ("-domain__name",)
-        )
+        self.test_helper.assert_table_sorted("-1", ("-domain__name",))
 
     def test_submitter_sortable(self):
         """Tests if DomainInformation sorts by submitter correctly"""
@@ -1054,7 +1062,7 @@ class UserDomainRoleAdminTest(TestCase):
             user=self.superuser,
             admin=self.admin,
             url="/admin/registrar/UserDomainRole/",
-            model=UserDomainRole
+            model=UserDomainRole,
         )
 
     def tearDown(self):

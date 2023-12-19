@@ -92,14 +92,16 @@ def less_console_noise(output_stream=None):
             # we opened output_stream so we have to close it
             output_stream.close()
 
+
 class GenericTestHelper(TestCase):
     """A helper class that contains various helper functions for TestCases"""
+
     def __init__(self, admin, model=None, url=None, user=None, factory=None, **kwargs):
         """
         Parameters:
             admin (ModelAdmin): The Django ModelAdmin instance associated with the model.
-            model (django.db.models.Model, optional): The Django model associated with the admin page. 
-            url (str, optional): The URL of the Django Admin page to test. 
+            model (django.db.models.Model, optional): The Django model associated with the admin page.
+            url (str, optional): The URL of the Django Admin page to test.
             user (User, optional): The Django User who is making the request.
             factory (RequestFactory, optional): An instance of Django's RequestFactory.
         """
@@ -109,7 +111,7 @@ class GenericTestHelper(TestCase):
         self.admin = admin
         self.model = model
         self.url = url
-    
+
     def assert_table_sorted(self, o_index, sort_fields):
         """
         This helper function validates the sorting functionality of a Django Admin table view.
