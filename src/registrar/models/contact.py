@@ -59,6 +59,16 @@ class Contact(TimeStampedModel):
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
         return " ".join(names) if names else "Unknown"
 
+    def save(self, *args, **kwargs):
+        # Call the parent class's save method to perform the actual save
+        super().save(*args, **kwargs)
+
+        # Update the related User object's first_name and last_name
+        if self.user:
+            self.user.first_name = self.first_name
+            self.user.last_name = self.last_name
+            self.user.save()
+
     def __str__(self):
         if self.first_name or self.last_name:
             return self.get_formatted_name()
