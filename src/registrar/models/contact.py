@@ -59,12 +59,12 @@ class Contact(TimeStampedModel):
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
         return " ".join(names) if names else "Unknown"
 
-    def save(self, *args, **kwargs):
+    def save(self, enable_custom_save=True, *args, **kwargs):
         # Call the parent class's save method to perform the actual save
         super().save(*args, **kwargs)
 
         # Update the related User object's first_name and last_name
-        if self.user:
+        if self.user and enable_custom_save:
             self.user.first_name = self.first_name
             self.user.last_name = self.last_name
             self.user.save()
