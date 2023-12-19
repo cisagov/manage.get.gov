@@ -1013,7 +1013,10 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertNotIn(application_2, current_dropdown)
 
     def test_investigator_list_is_alphabetically_sorted(self):
-        """ """
+        """
+        This test verifies that filter list for the 'investigator'
+        is displayed alphabetically
+        """
         # Create a mock DomainApplication object, with a fake investigator
         application: DomainApplication = generic_domain_object("application", "SomeGuy")
         investigator_user = User.objects.filter(username=application.investigator.username).get()
