@@ -213,6 +213,9 @@ class AuthorizingOfficialContactForm(ContactForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Overriding bc phone not required in this form
+        self.fields["phone"] = forms.IntegerField(required=False)
+
         # Set custom error messages
         self.fields["first_name"].error_messages = {
             "required": "Enter the first name / given name of your authorizing official."
