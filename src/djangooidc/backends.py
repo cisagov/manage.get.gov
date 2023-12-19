@@ -46,8 +46,14 @@ class OpenIdConnectBackend(ModelBackend):
                 # defaults _will_ be updated, these are not fallbacks
                 "defaults": openid_data,
             }
-            user, created = UserModel.objects.update_or_create(**args)
-            if created:
+
+            user, created = UserModel.objects.get_or_create(**args)
+
+            if not created:
+                # If user exists, update existing user
+                self.update_existing_user(user, args["defaults"])
+            else:
+                # If user is created, configure the user
                 user = self.configure_user(user, **kwargs)
         else:
             try:
@@ -57,6 +63,16 @@ class OpenIdConnectBackend(ModelBackend):
         # run this callback for a each login
         user.on_each_login()
         return user
+
+    def update_existing_user(self, user, kwargs):
+        """Update other fields without overwriting first_name and last_name.
+        Overwrite first_name and last_name if not empty string"""
+
+        for key, value in kwargs.items():
+            # Check if the key is not first_name or last_name or value is not empty string
+            if key not in ["first_name", "last_name"] or value:
+                setattr(user, key, value)
+        user.save()
 
     def clean_username(self, username):
         """

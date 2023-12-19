@@ -87,7 +87,7 @@
       aria-live="polite"
     ></div>
     {% else %}
-    <p>You don't have any registered domains yet</p>
+    <p>You don't have any registered domains.</p>
     {% endif %}
   </section>
 
@@ -95,7 +95,7 @@
     <h2>Domain requests</h2>
     {% if domain_applications %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
-      <caption class="sr-only">Your domain applications</caption>
+      <caption class="sr-only">Your domain requests</caption>
       <thead>
         <tr>
           <th data-sortable scope="col" role="columnheader">Domain name</th>
@@ -138,7 +138,7 @@
       aria-live="polite"
     ></div>
     {% else %}
-    <p>You don't have any active domain requests right now</p>
+    <p>You haven't requested any domains.</p>
     <!-- <p><a href="{% url 'application:' %}" class="usa-button">Start a new domain request</a></p> -->
     {% endif %}
   </section>

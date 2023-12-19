@@ -5,6 +5,7 @@ import logging
 from contextlib import contextmanager
 import random
 from string import ascii_uppercase
+import uuid
 from django.test import TestCase
 from unittest.mock import MagicMock, Mock, patch
 from typing import List, Dict
@@ -161,7 +162,7 @@ class AuditedAdminMockData:
         user = User.objects.get_or_create(
             first_name="{} first_name:{}".format(item_name, short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
-            username="{} username:{}".format(item_name, short_hand),
+            username="{} username:{}".format(item_name + str(uuid.uuid4())[:8], short_hand),
         )[0]
         return user
 
@@ -405,8 +406,8 @@ def mock_user():
     """A simple user."""
     user_kwargs = dict(
         id=4,
-        first_name="Rachid",
-        last_name="Mrad",
+        first_name="Jeff",
+        last_name="Lebowski",
     )
     mock_user, _ = User.objects.get_or_create(**user_kwargs)
     return mock_user
@@ -619,6 +620,17 @@ class MockEppLib(TestCase):
         ],
         ex_date=datetime.date(2023, 5, 25),
     )
+    mockDataExtensionDomain = fakedEppObject(
+        "fakePw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+        ex_date=datetime.date(2023, 11, 15),
+    )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
         "123", "123@mail.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
     )
@@ -819,6 +831,21 @@ class MockEppLib(TestCase):
         ex_date=datetime.date(2023, 5, 25),
     )
 
+    mockDnsNeededRenewedDomainExpDate = fakedEppObject(
+        "fakeneeded.gov",
+        ex_date=datetime.date(2023, 2, 15),
+    )
+
+    mockMaximumRenewedDomainExpDate = fakedEppObject(
+        "fakemaximum.gov",
+        ex_date=datetime.date(2024, 12, 31),
+    )
+
+    mockRecentRenewedDomainExpDate = fakedEppObject(
+        "waterbutpurple.gov",
+        ex_date=datetime.date(2024, 11, 15),
+    )
+
     def _mockDomainName(self, _name, _avail=False):
         return MagicMock(
             res_data=[
@@ -917,6 +944,21 @@ class MockEppLib(TestCase):
     def mockRenewDomainCommand(self, _request, cleaned):
         if getattr(_request, "name", None) == "fake-error.gov":
             raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
+        elif getattr(_request, "name", None) == "waterbutpurple.gov":
+            return MagicMock(
+                res_data=[self.mockRecentRenewedDomainExpDate],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif getattr(_request, "name", None) == "fakeneeded.gov":
+            return MagicMock(
+                res_data=[self.mockDnsNeededRenewedDomainExpDate],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
+        elif getattr(_request, "name", None) == "fakemaximum.gov":
+            return MagicMock(
+                res_data=[self.mockMaximumRenewedDomainExpDate],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
         else:
             return MagicMock(
                 res_data=[self.mockRenewedDomainExpDate],
@@ -942,6 +984,7 @@ class MockEppLib(TestCase):
                 self.infoDomainTwoHosts if self.mockedSendFunction.call_count == 5 else self.infoDomainNoHost,
                 None,
             ),
+            "waterbutpurple.gov": (self.mockDataExtensionDomain, None),
             "nameserverwithip.gov": (self.infoDomainHasIP, None),
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),

@@ -43,6 +43,12 @@ class TransitionDomain(TimeStampedModel):
         verbose_name="email sent",
         help_text="indicates whether email was sent",
     )
+    processed = models.BooleanField(
+        null=False,
+        default=True,
+        verbose_name="Processed",
+        help_text="Indicates whether this TransitionDomain was already processed",
+    )
     organization_type = models.TextField(
         max_length=255,
         null=True,
