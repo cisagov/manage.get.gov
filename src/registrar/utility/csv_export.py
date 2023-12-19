@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
 from registrar.models.public_contact import PublicContact
@@ -10,9 +11,18 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
     # write columns headers to writer
     writer.writerow(columns)
 
-    domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
+    
+    print(f"filter_condition {filter_condition}")
+    if 'domain__created_at__gt' in filter_condition:
+        
+        domainInfos = DomainInformation.objects.filter(domain__state=Domain.State.DELETED).order_by("domain__deleted_at")
+        print(f"filtering by deleted {domainInfos}")
+    else:
+        domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
+
     for domainInfo in domainInfos:
         security_contacts = domainInfo.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
+        print(f"regular filtering {domainInfos}")
         # For linter
         ao = " "
         if domainInfo.authorizing_official:
@@ -31,9 +41,11 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             "State": domainInfo.state_territory,
             "AO": ao,
             "AO email": domainInfo.authorizing_official.email if domainInfo.authorizing_official else " ",
-            "Security Contact Email": security_contacts[0].email if security_contacts else " ",
+            "Security contact email": security_contacts[0].email if security_contacts else " ",
             "Status": domainInfo.domain.state,
-            "Expiration Date": domainInfo.domain.expiration_date,
+            "Expiration date": domainInfo.domain.expiration_date,
+            "Created at": domainInfo.domain.created_at,
+            "Deleted at": domainInfo.domain.deleted_at,
         }
         writer.writerow([FIELDS.get(column, "") for column in columns])
 
@@ -50,9 +62,9 @@ def export_data_type_to_csv(csv_file):
         "State",
         "AO",
         "AO email",
-        "Security Contact Email",
+        "Security contact email",
         "Status",
-        "Expiration Date",
+        "Expiration date",
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
@@ -81,7 +93,7 @@ def export_data_full_to_csv(csv_file):
         "Organization name",
         "City",
         "State",
-        "Security Contact Email",
+        "Security contact email",
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
@@ -110,7 +122,7 @@ def export_data_federal_to_csv(csv_file):
         "Organization name",
         "City",
         "State",
-        "Security Contact Email",
+        "Security contact email",
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
@@ -126,5 +138,55 @@ def export_data_federal_to_csv(csv_file):
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
         ],
+    }
+    export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+    
+def export_data_growth_to_csv(csv_file, start_date, end_date):
+    
+    print(f'start_date {start_date}')
+    print(f'end_date {end_date}')
+    
+    # Check if start_date is not empty before using strptime
+    if start_date:
+        start_date_formatted = datetime.strptime(start_date, "%Y-%m-%d")
+        print(f'start_date_formatted {start_date_formatted}')
+    else:
+        # Handle the case where start_date is missing or empty
+        print('ON NO')
+        start_date_formatted = None  # Replace with appropriate handling
+        
+    if end_date:
+        end_date_formatted = datetime.strptime(end_date, "%Y-%m-%d")
+        print(f'start_date_formatted {end_date_formatted}')
+    else:
+        # Handle the case where start_date is missing or empty
+        print('ON NO')
+        end_date_formatted = None  # Replace with appropriate handling
+    
+    writer = csv.writer(csv_file)
+    # define columns to include in export
+    columns = [
+        "Domain name",
+        "Domain type",
+        "Agency",
+        "Organization name",
+        "City",
+        "State",
+        "Security contact email",
+        "Created at",
+        "Expiration date",
+    ]
+    # Coalesce is used to replace federal_type of None with ZZZZZ
+    sort_fields = [
+        "created_at",
+        "domain__name",
+    ]
+    filter_condition = {
+        "domain__state__in": [
+            Domain.State.UNKNOWN,
+            Domain.State.DELETED,
+        ],
+        "domain__expiration_date__lt": end_date_formatted,
+        "domain__created_at__gt": start_date_formatted,
     }
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)

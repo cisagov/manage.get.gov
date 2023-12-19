@@ -275,3 +275,54 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     viewLink.setAttribute('href', viewLink.getAttribute('data-href-template').replace('__fk__', elementPk));
     viewLink.setAttribute('title', viewLink.getAttribute('title-template').replace('selected item', elementText));
 }
+
+// function performDataLookup(e) {
+//     e.preventDefault();  // Prevent the default form submission
+
+//     console.log('Form submitted!');
+
+
+//     var form = document.getElementById("exportDataForm");
+//     var formData = new FormData(form);
+
+//     // Perform an AJAX request to fetch data
+//     fetch('/admin/', {
+//       method: 'POST',
+//       body: formData,
+//     })
+//     .then(response => {
+//         if (!response.ok) {
+//             console.log(response);
+//             console.log(`HTTP error! Status: ${response.status}`);
+//             throw new Error(`HTTP error! Status: ${response.status}`);
+//         }
+//         return response.json();
+//     })
+//     .then(data => {
+//         // Handle the data (update the result div, for example)
+//         document.getElementById("dataResult").innerText = JSON.stringify(data);
+//     })
+//     .catch(error => console.error('Error:', error));
+//   }
+
+  (function (){
+
+    document.getElementById('exportLink').addEventListener('click', function(event) {
+        event.preventDefault();  // Prevent the default link behavior
+        
+        // Get the selected start and end dates
+        var startDate = document.getElementById('start').value;
+        var endDate = document.getElementById('end').value;
+        
+        var exportUrl = document.getElementById('exportLink').dataset.exportUrl;
+
+        // Build the URL with parameters
+        exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
+    
+        // Redirect to the export URL
+        window.location.href = exportUrl;
+      });
+
+
+    // document.getElementById('exportDataForm').addEventListener('submit', performDataLookup);
+})();

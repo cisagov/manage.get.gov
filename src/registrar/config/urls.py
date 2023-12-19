@@ -9,6 +9,10 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
+# from registrar.views.admin_views import export_data
+from registrar.views.admin_views import ExportData
+
+
 from registrar.views.application import Step
 from registrar.views.utility import always_404
 from api.views import available, get_current_federal, get_current_full
@@ -50,6 +54,8 @@ urlpatterns = [
         RedirectView.as_view(pattern_name="logout", permanent=False),
     ),
     path("admin/", admin.site.urls),
+    # path('export_data/', export_data, name='admin_export_data'),
+    path('export_data/', ExportData.as_view(), name='admin_export_data'),
     path(
         "application/<id>/edit/",
         views.ApplicationWizard.as_view(),

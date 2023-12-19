@@ -33,6 +33,7 @@ from django.db.models import DateField
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
+from django.utils import timezone
 
 from .public_contact import PublicContact
 
@@ -959,6 +960,12 @@ class Domain(TimeStampedModel, DomainHelper):
         null=True,
         help_text=("Duplication of registry's expiration date saved for ease of reporting"),
     )
+    
+    deleted_at = DateField(
+        null=True,
+        editable=False,
+        help_text="Deleted at date",
+    )
 
     def isActive(self):
         return self.state == Domain.State.CREATED
@@ -1279,6 +1286,8 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_domain()
+            self.deleted_at = timezone.now()
+            self.save()
         except RegistryError as err:
             logger.error(f"Could not delete domain. Registry returned error: {err}")
             raise err
