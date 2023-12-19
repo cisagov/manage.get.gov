@@ -3,7 +3,6 @@ from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
 from django.contrib import messages
 from django.urls import reverse
-from django.contrib.sessions.middleware import SessionMiddleware
 from registrar.admin import (
     DomainAdmin,
     DomainApplicationAdmin,
@@ -13,6 +12,8 @@ from registrar.admin import (
     MyUserAdmin,
     AuditedAdmin,
     ContactAdmin,
+    DomainInformationAdmin,
+    UserDomainRoleAdmin,
 )
 from registrar.models import (
     Domain,
@@ -33,6 +34,7 @@ from .common import (
     create_ready_domain,
     multiple_unalphabetical_domain_objects,
     MockEppLib,
+    GenericTestHelper,
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
@@ -323,71 +325,73 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
         self.superuser = create_superuser()
         self.staffuser = create_user()
-
-    def _assert_sort_helper(self, o_index, sort_field):
-        # 'o' (ordering) is based off the index position in the list_filter object, plus one.
-        # Q: Why is this not working??
-        # domain_index = self.admin.list_filter.index("domain") + 1
-        dummy_request = self.factory.get(
-            "/admin/registrar/DomainApplication/",
-            {
-                "o": o_index
-            },
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/DomainApplication/",
+            model=DomainApplication
         )
-        dummy_request.user = self.superuser
-
-        # Mock a user request
-        middleware = SessionMiddleware(lambda req: req)
-        middleware.process_request(dummy_request)
-        dummy_request.session.save()
-
-        expected_sort_order = list(DomainApplication.objects.order_by(*sort_field))
-
-        # Use changelist_view to get the sorted queryset
-        response = self.admin.changelist_view(dummy_request)
-        response.render()  # Render the response before accessing its content
-        returned_sort_order = list(response.context_data["cl"].result_list)
-
-        self.assertEqual(expected_sort_order, returned_sort_order)
 
     def test_domain_sortable(self):
+        """Tests if the DomainApplication sorts by domain correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+        
+        multiple_unalphabetical_domain_objects("application")
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted("1", ("requested_domain__name",))
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted("-1", ("-requested_domain__name",))
+
+    def test_submitter_sortable(self):
         """Tests if the DomainApplication sorts by domain correctly"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
         multiple_unalphabetical_domain_objects("application")
 
-        # Assert that our sort works correctly
-        self._assert_sort_helper("1", ("requested_domain__name",))
-
-        # Assert that sorting in reverse works correctly
-        self._assert_sort_helper("-1", ("-requested_domain__name",))
-    
-    def test_submitter_sortable(self):
-        """Tests if the UserDomainrole sorts by domain correctly"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
-
-        multiple_unalphabetical_domain_objects("application")
+        additional_application = generic_domain_object("application", "Xylophone")
+        new_user = User.objects.filter(username=additional_application.investigator.username).get()
+        new_user.first_name = "Xylophonic"
+        new_user.save()
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("1", ("submitter__first_name", "submitter__last_name",))
-        
+        self.test_helper.assert_table_sorted("5", (
+            "submitter__first_name",
+            "submitter__last_name",
+        ))
+
         # Assert that sorting in reverse works correctly
-        self._assert_sort_helper("-1", ("-submitter__first_name", "-submitter__last_name",))
-    
+        self.test_helper.assert_table_sorted("-5", (
+            "-submitter__first_name",
+            "-submitter__last_name",
+        ))
+
     def test_investigator_sortable(self):
-        """Tests if the UserDomainrole sorts by domain correctly"""
+        """Tests if the DomainApplication sorts by domain correctly"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
         multiple_unalphabetical_domain_objects("application")
+        additional_application = generic_domain_object("application", "Xylophone")
+        new_user = User.objects.filter(username=additional_application.investigator.username).get()
+        new_user.first_name = "Xylophonic"
+        new_user.save()
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("1", "investigator")
-        
+        self.test_helper.assert_table_sorted("6", (
+            "investigator__first_name",
+            "investigator__last_name",
+        ))
+
         # Assert that sorting in reverse works correctly
-        #self._assert_sort_helper("-1", "-investigator")
+        self.test_helper.assert_table_sorted("-6", (
+            "-investigator__first_name",
+            "-investigator__last_name",
+        ))
 
     def test_short_org_name_in_applications_list(self):
         """
@@ -961,34 +965,42 @@ class DomainInformationAdminTest(TestCase):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
         self.factory = RequestFactory()
-        self.admin = ListHeaderAdmin(model=DomainInformation, admin_site=self.site)
+        self.admin = DomainInformationAdmin(model=DomainInformation, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
         self.mock_data_generator = AuditedAdminMockData()
+
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/DomainInformation/",
+            model=DomainInformation
+        )
 
         # Create fake DomainInformation objects
         DomainInformation.objects.create(
             creator=self.mock_data_generator.dummy_user("fake", "creator"),
             domain=self.mock_data_generator.dummy_domain("Apple"),
-            submitter=self.mock_data_generator.dummy_contact("Zebra", "submitter")
+            submitter=self.mock_data_generator.dummy_contact("Zebra", "submitter"),
         )
 
         DomainInformation.objects.create(
             creator=self.mock_data_generator.dummy_user("fake", "creator"),
             domain=self.mock_data_generator.dummy_domain("Zebra"),
-            submitter=self.mock_data_generator.dummy_contact("Apple", "submitter")
+            submitter=self.mock_data_generator.dummy_contact("Apple", "submitter"),
         )
 
         DomainInformation.objects.create(
             creator=self.mock_data_generator.dummy_user("fake", "creator"),
             domain=self.mock_data_generator.dummy_domain("Circus"),
-            submitter=self.mock_data_generator.dummy_contact("Xylophone", "submitter")
+            submitter=self.mock_data_generator.dummy_contact("Xylophone", "submitter"),
         )
 
         DomainInformation.objects.create(
             creator=self.mock_data_generator.dummy_user("fake", "creator"),
             domain=self.mock_data_generator.dummy_domain("Xylophone"),
-            submitter=self.mock_data_generator.dummy_contact("Circus", "submitter")
+            submitter=self.mock_data_generator.dummy_contact("Circus", "submitter"),
         )
 
     def tearDown(self):
@@ -999,43 +1011,34 @@ class DomainInformationAdminTest(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
 
-    def _assert_sort_helper(self, o_index, sort_field):
-        # 'o' (ordering) is based off the index position in the list_filter object, plus one.
-        # Q: Why is this not working??
-        # domain_index = self.admin.list_filter.index("domain") + 1
-        dummy_request = self.factory.get(
-            "/admin/registrar/DomainInformation/",
-            {
-                "o": o_index
-            },
-        )
-        dummy_request.user = self.superuser
-
-        expected_sort_order = list(DomainInformation.objects.order_by(sort_field))
-        returned_sort_order = list(self.admin.get_queryset(dummy_request))
-        self.assertEqual(expected_sort_order, returned_sort_order)
-
     def test_domain_sortable(self):
         """Tests if DomainInformation sorts by domain correctly"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("1", "domain")
-        
+        self.test_helper.assert_table_sorted(
+            "1", ("domain__name",)
+        )
+
         # Assert that sorting in reverse works correctly
-        #self._assert_sort_helper("-1", "-domain")
-    
+        self.test_helper.assert_table_sorted(
+            "-1", ("-domain__name",)
+        )
+
     def test_submitter_sortable(self):
         """Tests if DomainInformation sorts by submitter correctly"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("1", "submitter")
-        
+        self.test_helper.assert_table_sorted(
+            "4",
+            ("submitter__first_name", "submitter__last_name"),
+        )
+
         # Assert that sorting in reverse works correctly
-        #self._assert_sort_helper("-1", "-submitter")
+        self.test_helper.assert_table_sorted("-4", ("-submitter__first_name", "-submitter__last_name"))
 
 
 class UserDomainRoleAdminTest(TestCase):
@@ -1043,31 +1046,22 @@ class UserDomainRoleAdminTest(TestCase):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
         self.factory = RequestFactory()
-        self.admin = ListHeaderAdmin(model=UserDomainRole, admin_site=self.site)
+        self.admin = UserDomainRoleAdmin(model=UserDomainRole, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/UserDomainRole/",
+            model=UserDomainRole
+        )
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
         User.objects.all().delete()
         Domain.objects.all().delete()
         UserDomainRole.objects.all().delete()
-
-    def _assert_sort_helper(self, o_index, sort_field):
-        # 'o' (ordering) is based off the index position in the list_filter object, plus one.
-        # Q: Why is this not working??
-        # domain_index = self.admin.list_filter.index("domain") + 1
-        dummy_request = self.factory.get(
-            "/admin/registrar/userdomainrole/",
-            {
-                "o": o_index
-            },
-        )
-        dummy_request.user = self.superuser
-
-        expected_sort_order = list(UserDomainRole.objects.order_by(sort_field))
-        returned_sort_order = list(self.admin.get_queryset(dummy_request))
-        self.assertEqual(expected_sort_order, returned_sort_order)
 
     def test_domain_sortable(self):
         """Tests if the UserDomainrole sorts by domain correctly"""
@@ -1085,11 +1079,11 @@ class UserDomainRoleAdminTest(TestCase):
             UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("2", "domain")
-        
+        self.test_helper.assert_table_sorted("2", ("domain__name",))
+
         # Assert that sorting in reverse works correctly
-        self._assert_sort_helper("-2", "-domain")
-    
+        self.test_helper.assert_table_sorted("-2", ("-domain__name",))
+
     def test_user_sortable(self):
         """Tests if the UserDomainrole sorts by user correctly"""
         p = "adminpass"
@@ -1106,10 +1100,10 @@ class UserDomainRoleAdminTest(TestCase):
             UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("1", "user")
-        
+        self.test_helper.assert_table_sorted("1", ("user__first_name", "user__last_name"))
+
         # Assert that sorting in reverse works correctly
-        self._assert_sort_helper("-1", "-user")
+        self.test_helper.assert_table_sorted("-1", ("-user__first_name", "-user__last_name"))
 
     def test_email_not_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
