@@ -723,6 +723,7 @@ class Domain(TimeStampedModel, DomainHelper):
             fax=contact.fax,
         )  # type: ignore
 
+        updateContact.dislcose = self._disclose_fields(contact=contact)
         try:
             registry.send(updateContact, cleaned=True)
         except RegistryError as e:
