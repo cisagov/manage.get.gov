@@ -562,7 +562,9 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             """Lookup reimplementation, gets users of is_staff.
             Returns a list of tuples consisting of (user.id, user)
             """
-            privileged_users = User.objects.filter(is_staff=True)
+            privileged_users = User.objects.filter(is_staff=True).order_by(
+                "first_name", "last_name", "email"
+            )
             return [(user.id, user) for user in privileged_users]
 
         def queryset(self, request, queryset):

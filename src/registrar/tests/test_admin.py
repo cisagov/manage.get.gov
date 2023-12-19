@@ -838,7 +838,12 @@ class TestDomainApplicationAdmin(MockEppLib):
             domain_information.refresh_from_db()
 
     def test_has_correct_filters(self):
-        """Tests if DomainApplicationAdmin has the correct filters"""
+        """
+        This test verifies that DomainApplicationAdmin has the correct filters set up.
+
+        It retrieves the current list of filters from DomainApplicationAdmin
+        and checks that it matches the expected list of filters.
+        """
         request = self.factory.get("/")
         request.user = self.superuser
 
@@ -849,7 +854,15 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(readonly_fields, expected_fields)
 
     def test_table_sorted_alphabetically(self):
-        """Tests if DomainApplicationAdmin table is sorted alphabetically"""
+        """
+        This test verifies that the DomainApplicationAdmin table is sorted alphabetically
+        by the 'requested_domain__name' field.
+
+        It creates a list of DomainApplication instances in a non-alphabetical order,
+        then retrieves the queryset from the DomainApplicationAdmin and checks
+        that it matches the expected queryset,
+        which is sorted alphabetically by the 'requested_domain__name' field.
+        """
         # Creates a list of DomainApplications in scrambled order
         multiple_unalphabetical_domain_objects("application")
 
@@ -869,7 +882,18 @@ class TestDomainApplicationAdmin(MockEppLib):
         )
 
     def test_displays_investigator_filter(self):
-        """Tests if DomainApplicationAdmin displays the investigator filter"""
+        """
+        This test verifies that the investigator filter in the admin interface for
+        the DomainApplication model displays correctly.
+
+        It creates two DomainApplication instances, each with a different investigator.
+        It then simulates a staff user logging in and applying the investigator filter
+        on the DomainApplication admin page.
+
+        We then test if the page displays the filter we expect, but we do not test
+        if we get back the correct response in the table. This is to isolate if
+        the filter displays correctly, when the filter isn't filtering correctly.
+        """
 
         # Create a mock DomainApplication object, with a fake investigator
         application: DomainApplication = generic_domain_object("application", "SomeGuy")
@@ -893,7 +917,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Assert the content of filters and search_query
         filters = response.context["filters"]
 
-        # Ensure that the format is correct. We will test the value later in the test.
         self.assertEqual(
             filters,
             [
@@ -905,7 +928,18 @@ class TestDomainApplicationAdmin(MockEppLib):
         )
 
     def test_investigator_filter_filters_correctly(self):
-        """Tests the investigator filter"""
+        """
+        This test verifies that the investigator filter in the admin interface for
+        the DomainApplication model works correctly.
+
+        It creates two DomainApplication instances, each with a different investigator.
+        It then simulates a staff user logging in and applying the investigator filter
+        on the DomainApplication admin page.
+
+        It then verifies that it was applied correctly.
+        The test checks that the response contains the expected DomainApplication pbjects
+        in the table.
+        """
 
         # Create a mock DomainApplication object, with a fake investigator
         application: DomainApplication = generic_domain_object("application", "SomeGuy")
@@ -937,6 +971,77 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Check that we don't also get the thing we aren't filtering for.
         unexpected_name = "BadGuy first_name:creator BadGuy last_name:creator"
         self.assertContains(response, unexpected_name, count=0)
+
+    def test_investigator_dropdown_displays_only_staff(self):
+        """
+        This test verifies that the dropdown for the 'investigator' field in the DomainApplicationAdmin
+        interface only displays users who are marked as staff.
+
+        It creates two DomainApplication instances, one with an investigator
+        who is a staff user and another with an investigator who is not a staff user.
+
+        It then retrieves the queryset for the 'investigator' dropdown from DomainApplicationAdmin
+        and checks that it matches the expected queryset, which only includes staff users.
+        """
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
+        investigator_user = User.objects.filter(username=application.investigator.username).get()
+        investigator_user.is_staff = True
+        investigator_user.save()
+
+        # Create a mock DomainApplication object, with a user that is not staff
+        application_2: DomainApplication = generic_domain_object("application", "SomeOtherGuy")
+        investigator_user_2 = User.objects.filter(username=application_2.investigator.username).get()
+        investigator_user_2.is_staff = False
+        investigator_user_2.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+
+        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+
+        # Get the actual field from the model's meta information
+        investigator_field = DomainApplication._meta.get_field("investigator")
+
+        # We should only be displaying staff users, in alphabetical order
+        expected_dropdown = list(User.objects.filter(is_staff=True))
+        current_dropdown = list(self.admin.formfield_for_foreignkey(investigator_field, request).queryset)
+
+        self.assertEqual(expected_dropdown, current_dropdown)
+
+        # Non staff users should not be in the list
+        self.assertNotIn(application_2, current_dropdown)
+
+    def test_investigator_list_is_alphabetically_sorted(self):
+        """ """
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
+        investigator_user = User.objects.filter(username=application.investigator.username).get()
+        investigator_user.is_staff = True
+        investigator_user.save()
+
+        application_2: DomainApplication = generic_domain_object("application", "AGuy")
+        investigator_user_2 = User.objects.filter(username=application_2.investigator.username).get()
+        investigator_user_2.first_name = "AGuy"
+        investigator_user_2.is_staff = True
+        investigator_user_2.save()
+
+        application_3: DomainApplication = generic_domain_object("application", "FinalGuy")
+        investigator_user_3 = User.objects.filter(username=application_3.investigator.username).get()
+        investigator_user_3.first_name = "FinalGuy"
+        investigator_user_3.is_staff = True
+        investigator_user_3.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        request = RequestFactory().get("/")
+
+        expected_list = list(User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email"))
+
+        # Get the actual sorted list of investigators from the lookups method
+        actual_list = [item for _, item in self.admin.InvestigatorFilter.lookups(self, request, self.admin)]
+
+        self.assertEqual(expected_list, actual_list)
 
     def tearDown(self):
         super().tearDown()
