@@ -489,6 +489,9 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
+    
+    # Table ordering
+    ordering = ["domain__name"]
 
     # lists in filter_horizontal are not sorted properly, sort them
     # by first_name
@@ -656,6 +659,9 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
+    # Table ordering
+    ordering = ["requested_domain__name"]
+
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
     def formfield_for_manytomany(self, db_field, request, **kwargs):
@@ -669,11 +675,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             kwargs["queryset"] = User.objects.filter(is_staff=True)
             return db_field.formfield(**kwargs)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-    def get_queryset(self, request):
-        """Queryset reimplementation to order the table alphabetically"""
-        query_set = super().get_queryset(request)
-        return query_set.order_by("requested_domain__name")
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -844,6 +845,9 @@ class DomainAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/domain_change_form.html"
     change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state", "expiration_date"]
+
+    # Table ordering
+    ordering = ["name"]
 
     def export_data_type(self, request):
         # match the CSV example with all the fields
