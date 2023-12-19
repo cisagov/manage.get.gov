@@ -46,7 +46,7 @@ def handle_profile(sender, instance, **kwargs):
 
     if len(contacts) >= 1 and is_new_user:  # a matching contact
         contacts[0].user = instance
-        contacts[0].save()
+        contacts[0].save(enable_custom_save=False)
 
         if len(contacts) > 1:  # multiple matches
             logger.warning(
