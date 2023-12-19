@@ -3,7 +3,7 @@ from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
 from django.contrib import messages
 from django.urls import reverse
-
+from django.contrib.sessions.middleware import SessionMiddleware
 from registrar.admin import (
     DomainAdmin,
     DomainApplicationAdmin,
@@ -336,22 +336,32 @@ class TestDomainApplicationAdmin(MockEppLib):
         )
         dummy_request.user = self.superuser
 
-        expected_sort_order = list(DomainApplication.objects.order_by(sort_field))
-        returned_sort_order = list(self.admin.get_queryset(dummy_request))
+        # Mock a user request
+        middleware = SessionMiddleware(lambda req: req)
+        middleware.process_request(dummy_request)
+        dummy_request.session.save()
+
+        expected_sort_order = list(DomainApplication.objects.order_by(*sort_field))
+
+        # Use changelist_view to get the sorted queryset
+        response = self.admin.changelist_view(dummy_request)
+        response.render()  # Render the response before accessing its content
+        returned_sort_order = list(response.context_data["cl"].result_list)
+
         self.assertEqual(expected_sort_order, returned_sort_order)
 
     def test_domain_sortable(self):
-        """Tests if the UserDomainrole sorts by domain correctly"""
+        """Tests if the DomainApplication sorts by domain correctly"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
 
         multiple_unalphabetical_domain_objects("application")
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("1", "requested_domain")
-        
+        self._assert_sort_helper("1", ("requested_domain__name",))
+
         # Assert that sorting in reverse works correctly
-        self._assert_sort_helper("-1", "-requested_domain")
+        self._assert_sort_helper("-1", ("-requested_domain__name",))
     
     def test_submitter_sortable(self):
         """Tests if the UserDomainrole sorts by domain correctly"""
@@ -361,10 +371,10 @@ class TestDomainApplicationAdmin(MockEppLib):
         multiple_unalphabetical_domain_objects("application")
 
         # Assert that our sort works correctly
-        self._assert_sort_helper("1", "submitter")
+        self._assert_sort_helper("1", ("submitter__first_name", "submitter__last_name",))
         
         # Assert that sorting in reverse works correctly
-        #self._assert_sort_helper("-1", "-submitter")
+        self._assert_sort_helper("-1", ("-submitter__first_name", "-submitter__last_name",))
     
     def test_investigator_sortable(self):
         """Tests if the UserDomainrole sorts by domain correctly"""
