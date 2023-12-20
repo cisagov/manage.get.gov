@@ -7,6 +7,7 @@ from registrar.forms.application_wizard import (
     DotGovDomainForm,
     AuthorizingOfficialForm,
     OrganizationContactForm,
+    OtherContactsFormSet,
     YourContactForm,
     OtherContactsForm,
     RequirementsForm,
@@ -16,6 +17,9 @@ from registrar.forms.application_wizard import (
     AboutYourOrganizationForm,
 )
 from registrar.forms.domain import ContactForm
+from registrar.models.contact import Contact
+from registrar.models.domain import Domain
+from registrar.models.domain_application import DomainApplication
 from registrar.tests.common import MockEppLib
 from django.contrib.auth import get_user_model
 
@@ -257,3 +261,87 @@ class TestContactForm(TestCase):
     def test_contact_form_email_invalid2(self):
         form = ContactForm(data={"email": "@"})
         self.assertEqual(form.errors["email"], ["Enter a valid email address."])
+
+
+# class TestOtherContactFormset(TestCase):
+
+#     def setUp(self):
+#         ao, _ = Contact.objects.get_or_create(
+#             first_name="Testy",
+#             last_name="Tester",
+#             title="Chief Tester",
+#             email="testy@town.com",
+#             phone="(555) 555 5555",
+#         )
+#         domain, _ = Domain.objects.get_or_create(name="city.gov")
+#         other, _ = Contact.objects.get_or_create(
+#             first_name="Testy2",
+#             last_name="Tester2",
+#             title="Another Tester",
+#             email="testy2@town.com",
+#             phone="(555) 555 5557",
+#         )
+#         you, _ = Contact.objects.get_or_create(
+#             first_name="Testy you",
+#             last_name="Tester you",
+#             title="Admin Tester",
+#             email="testy-admin@town.com",
+#             phone="(555) 555 5556",
+#         )
+#         application, _ = DomainApplication.objects.get_or_create(
+#             organization_type="federal",
+#             federal_type="executive",
+#             purpose="Purpose of the site",
+#             anything_else="No",
+#             is_policy_acknowledged=True,
+#             organization_name="Testorg",
+#             address_line1="address 1",
+#             state_territory="NY",
+#             zipcode="10002",
+#             authorizing_official=ao,
+#             requested_domain=domain,
+#             submitter=you,
+#             creator=self.user,
+#         )
+#         application.other_contacts.add(other)
+        
+#         self.contact1 = OtherContactsForm()
+#         self.contact2 = OtherContactsForm()
+#         self.formset = OtherContactsFormSet(initial=[{self.contact1}])
+
+#     def tearDown(self):
+#         Contact.objects.all().delete()
+#         Domain.objects.all().delete()
+#         DomainApplication.objects.all().delete()
+#         super().tearDown()
+
+#     def test_add_form(self):
+#         # Add a new form to the formset
+#         self.formset.
+
+#         # Assert that the formset has three forms
+#         self.assertEqual(len(self.formset.forms), 3)
+
+#         # Assert that the new form is present in the database.
+#         self.assertEqual(Form.objects.count(), 2)
+
+#     def test_delete_form(self):
+#         # Delete the first form from the formset
+#         self.formset.delete_form(0)
+
+#         # Assert that the formset has two forms
+#         self.assertEqual(len(self.formset.forms), 2)
+
+#     def test_newly_cleared_form_is_valid(self):
+#         # Save the formset
+#         self.formset.save()
+
+#         # Assert that the two books were saved to the database
+#         self.assertEqual(Book.objects.count(), 2)
+    
+#     def test_newly_cleared_form_is_deleted_on_save(self):
+#         # Save the formset
+#         self.formset.save()
+
+#         # Assert that the two books were saved to the database
+#         self.assertEqual(Book.objects.count(), 2)
