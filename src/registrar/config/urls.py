@@ -53,9 +53,8 @@ urlpatterns = [
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
     ),
-    path("admin/", admin.site.urls),
-    # path('export_data/', export_data, name='admin_export_data'),
     path('export_data/', ExportData.as_view(), name='admin_export_data'),
+    path("admin/", admin.site.urls),
     path(
         "application/<id>/edit/",
         views.ApplicationWizard.as_view(),

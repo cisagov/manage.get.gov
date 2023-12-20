@@ -1,8 +1,8 @@
-{% load static field_helpers%}
 
 <form method="post" id="exportDataForm" action="{% url 'admin_export_data' %}">
     {% csrf_token %}
 
+    <p>The context test 1: {{ test }}</p>
 
     {% for field in form %}
         <div class="form-field">
@@ -14,6 +14,8 @@
         </div>
     {% endfor %}
 
+    <p>The context test 2: {{ test }}</p>
 
-    <button type="submit">Export</button>
+
+    <button type="submit">Exportss</button>
 </form>

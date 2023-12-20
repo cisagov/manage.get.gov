@@ -5,6 +5,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.public_contact import PublicContact
 from django.db.models import Value
 from django.db.models.functions import Coalesce
+from itertools import chain
 
 
 def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
@@ -13,14 +14,20 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
 
     
     print(f"filter_condition {filter_condition}")
+    domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
+    
     if 'domain__created_at__gt' in filter_condition:
         
-        domainInfos = DomainInformation.objects.filter(domain__state=Domain.State.DELETED).order_by("domain__deleted_at")
+        deleted_domainInfos = DomainInformation.objects.filter(domain__state=Domain.State.DELETED).order_by("domain__deleted_at")
         print(f"filtering by deleted {domainInfos}")
+        
+        # Combine the two querysets into a single iterable
+        all_domainInfos = list(chain(domainInfos, deleted_domainInfos))
     else:
-        domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
+        all_domainInfos = list(domainInfos)
+        
 
-    for domainInfo in domainInfos:
+    for domainInfo in all_domainInfos:
         security_contacts = domainInfo.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
         print(f"regular filtering {domainInfos}")
         # For linter
@@ -153,14 +160,16 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
     else:
         # Handle the case where start_date is missing or empty
         print('ON NO')
+        # TODO: use Nov 1 2023
         start_date_formatted = None  # Replace with appropriate handling
         
     if end_date:
         end_date_formatted = datetime.strptime(end_date, "%Y-%m-%d")
-        print(f'start_date_formatted {end_date_formatted}')
+        print(f'end_date_formatted {end_date_formatted}')
     else:
         # Handle the case where start_date is missing or empty
         print('ON NO')
+        # TODO: use now
         end_date_formatted = None  # Replace with appropriate handling
     
     writer = csv.writer(csv_file)
@@ -172,11 +181,11 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
         "Organization name",
         "City",
         "State",
-        "Security contact email",
+        "Status",
         "Created at",
+        "Deleted at",
         "Expiration date",
     ]
-    # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
         "created_at",
         "domain__name",
@@ -186,7 +195,7 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
             Domain.State.UNKNOWN,
             Domain.State.DELETED,
         ],
-        "domain__expiration_date__lt": end_date_formatted,
+        "domain__created_at__lt": end_date_formatted,
         "domain__created_at__gt": start_date_formatted,
     }
     export_domains_to_writer(writer, columns, sort_fields, filter_condition)

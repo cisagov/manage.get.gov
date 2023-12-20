@@ -6,13 +6,20 @@
     <div class="custom-content module">
         <h2>Welcome to the Custom Admin Homepage!</h2>
 
-        {% comment %} {% include "export_data.html" %} {% endcomment %}
+        {% comment %} 
+            Inputs of type date suck for accessibility.
+            We'll need to replace those guys with a django form once we figure out how to hook one onto this page.
+            The challenge is in the path definition in urls. Itdoes NOT like admin/export_data/
+
+            {% include "export_data.html" %}
+        {% endcomment %}
 
         <label for="start">Start date:</label>
         <input type="date" id="start" name="trip-start" value="2018-07-22" min="2018-01-01" />
         <label for="end">End date:</label>
         <input type="date" id="end" name="trip-end" value="2023-12-19" min="2023-12-01" />
 
+        {% comment %} TODO: add a aria label or something {% endcomment %}
         <a id="exportLink" data-export-url="{% url 'admin_export_data' %}" href="#" class="button">Export</a>
 
     </div>

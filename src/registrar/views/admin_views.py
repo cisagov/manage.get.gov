@@ -21,16 +21,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def export_data(self):
-    """CSV download"""
-    print('VIEW')
-    # Federal only
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
-    csv_export.export_data_growth_to_csv(response)
-    return response
 
 class ExportData(View):
+    
+    template_name = "admin/index.html"
+    form_class = DataExportForm
+
+    
+    def get_context_data(self, **kwargs):
+        print('VIE VIE VIE')
+        context = super().get_context_data(**kwargs)
+        context['form'] = self.form_class()
+        context['test'] = 'testing the context'
+        return context
     
     def get(self, request, *args, **kwargs):
         # Get start_date and end_date from the request's GET parameters
@@ -52,23 +55,5 @@ class ExportData(View):
         # csv_export.export_data_growth_to_csv(response)
         
         return response
-    
-    
-# class ExportData(TemplateView):
-#     """Django form"""
-    
-#     template_name = "export_data.html"
-#     form_class = DataExportForm
-    
-#     def form_valid(self, form):
-#         print('Form is valid')
-#         # Form is valid, perform data export logic here
-#         return JsonResponse({'message': 'Data exported successfully!'}, content_type='application/json')
 
-#     def form_invalid(self, form):
-#         print('Form is invalid')
-#         # Form is invalid, return error response
-#         return JsonResponse({'error': 'Invalid form data'}, status=400, content_type='application/json')
-    
-        
         
