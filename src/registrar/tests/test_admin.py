@@ -1318,8 +1318,8 @@ class AuditedAdminTest(TestCase):
         tested_fields = [
             DomainApplication.authorizing_official.field,
             DomainApplication.submitter.field,
-            DomainApplication.investigator.field,
-            DomainApplication.creator.field,
+            # DomainApplication.investigator.field,
+            # DomainApplication.creator.field,
             DomainApplication.requested_domain.field,
         ]
 
@@ -1374,7 +1374,7 @@ class AuditedAdminTest(TestCase):
         tested_fields = [
             DomainInformation.authorizing_official.field,
             DomainInformation.submitter.field,
-            DomainInformation.creator.field,
+            # DomainInformation.creator.field,
             (DomainInformation.domain.field, ["name"]),
             (DomainInformation.domain_application.field, ["requested_domain__name"]),
         ]

@@ -5,6 +5,7 @@ import logging
 from contextlib import contextmanager
 import random
 from string import ascii_uppercase
+import uuid
 from django.test import TestCase
 from unittest.mock import MagicMock, Mock, patch
 from typing import List, Dict
@@ -228,14 +229,14 @@ class AuditedAdminMockData:
         user = User.objects.get_or_create(
             first_name="{} first_name:{}".format(item_name, short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
-            username="{} username:{}".format(item_name, short_hand),
+            username="{} username:{}".format(item_name + str(uuid.uuid4())[:8], short_hand),
         )[0]
         return user
 
     def dummy_contact(self, item_name, short_hand):
         """Creates a dummy contact object"""
         contact = Contact.objects.get_or_create(
-            first_name="{} first_name:{}".format(item_name + "fake_contact", short_hand),
+            first_name="{} first_name:{}".format(item_name, short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
             title="{} title:{}".format(item_name, short_hand),
             email="{}testy@town.com".format(item_name),
