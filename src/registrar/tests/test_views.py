@@ -2256,10 +2256,6 @@ class TestApplicationStatus(TestWithUser, WebTest):
                     page = self.client.get(reverse(url_name, kwargs={"pk": application.pk}))
                     self.assertEqual(page.status_code, 403)
 
-        # reset user status from restricted to unrestricted
-        self.user.status = None
-        self.user.save()
-
     def test_application_status_no_permissions(self):
         """Can't access applications without being the creator."""
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
