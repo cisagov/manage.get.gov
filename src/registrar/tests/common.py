@@ -235,7 +235,7 @@ class AuditedAdminMockData:
     def dummy_contact(self, item_name, short_hand):
         """Creates a dummy contact object"""
         contact = Contact.objects.get_or_create(
-            first_name="{} first_name:{}".format(item_name, short_hand),
+            first_name="{} first_name:{}".format(item_name + "fake_contact", short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
             title="{} title:{}".format(item_name, short_hand),
             email="{}testy@town.com".format(item_name),
