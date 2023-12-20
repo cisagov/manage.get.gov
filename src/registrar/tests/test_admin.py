@@ -1110,8 +1110,8 @@ class AuditedAdminTest(TestCase):
         tested_fields = [
             DomainApplication.authorizing_official.field,
             DomainApplication.submitter.field,
-            # DomainApplication.investigator.field,
-            # DomainApplication.creator.field,
+            DomainApplication.investigator.field,
+            DomainApplication.creator.field,
             DomainApplication.requested_domain.field,
         ]
 
@@ -1163,10 +1163,11 @@ class AuditedAdminTest(TestCase):
             )
 
     def test_alphabetically_sorted_fk_fields_domain_information(self):
+        self.maxDiff = None
         tested_fields = [
             DomainInformation.authorizing_official.field,
             DomainInformation.submitter.field,
-            # DomainInformation.creator.field,
+            #DomainInformation.creator.field,
             (DomainInformation.domain.field, ["name"]),
             (DomainInformation.domain_application.field, ["requested_domain__name"]),
         ]

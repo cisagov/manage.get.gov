@@ -753,4 +753,4 @@ class TestContact(TestCase):
 
         # Updating the contact's email does not propagate
         self.assertEqual(self.invalid_contact.email, "joey.baloney@diaperville.com")
-        self.assertEqual(self.invalid_user.email, "mayor@igorville.gov")
+        self.assertEqual(self.invalid_user.email, "intern@igorville.gov")
