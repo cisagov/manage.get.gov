@@ -159,8 +159,7 @@ class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
     """Does the logged-in user have access to withdraw this domain application?"""
 
     def has_permission(self):
-        """Check if this user has access to withdraw this domain application.
-        """
+        """Check if this user has access to withdraw this domain application."""
         if not self.request.user.is_authenticated:
             return False
 

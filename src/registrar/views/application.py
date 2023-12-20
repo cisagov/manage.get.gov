@@ -13,7 +13,11 @@ from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 
-from .utility import DomainApplicationPermissionView, DomainApplicationPermissionWithdrawView, ApplicationWizardPermissionView
+from .utility import (
+    DomainApplicationPermissionView,
+    DomainApplicationPermissionWithdrawView,
+    ApplicationWizardPermissionView,
+)
 
 logger = logging.getLogger(__name__)
 
