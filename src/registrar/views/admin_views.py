@@ -6,7 +6,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 
 from registrar.utility import csv_export
-from ..forms import DataExportForm
 from django.views.generic import TemplateView
 
 from registrar.models import (
@@ -23,10 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class ExportData(View):
-    
-    template_name = "admin/index.html"
-    form_class = DataExportForm
-
     
     def get_context_data(self, **kwargs):
         print('VIE VIE VIE')
