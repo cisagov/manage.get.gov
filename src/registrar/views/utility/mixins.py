@@ -26,7 +26,8 @@ class PermissionsLoginMixin(PermissionRequiredMixin):
 
 class DomainPermission(PermissionsLoginMixin):
 
-    """Does the logged-in user have access to this domain?"""
+    """Permission mixin that redirects to domain if user has access,
+    otherwise 403"""
 
     def has_permission(self):
         """Check if this user has access to this domain.
@@ -134,7 +135,8 @@ class DomainPermission(PermissionsLoginMixin):
 
 class DomainApplicationPermission(PermissionsLoginMixin):
 
-    """Does the logged-in user have access to this domain application?"""
+    """Permission mixin that redirects to domain application if user
+    has access, otherwise 403"""
 
     def has_permission(self):
         """Check if this user has access to this domain application.
@@ -156,7 +158,8 @@ class DomainApplicationPermission(PermissionsLoginMixin):
 
 class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
 
-    """Does the logged-in user have access to withdraw this domain application?"""
+    """Permission mixin that redirects to withdraw action on domain application
+    if user has access, otherwise 403"""
 
     def has_permission(self):
         """Check if this user has access to withdraw this domain application."""
@@ -178,7 +181,8 @@ class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
 
 class ApplicationWizardPermission(PermissionsLoginMixin):
 
-    """Does the logged-in user have permission to start or edit an application?"""
+    """Permission mixin that redirects to start or edit domain application if
+    user has access, otherwise 403"""
 
     def has_permission(self):
         """Check if this user has permission to start or edit an application.
@@ -195,7 +199,8 @@ class ApplicationWizardPermission(PermissionsLoginMixin):
 
 class DomainInvitationPermission(PermissionsLoginMixin):
 
-    """Does the logged-in user have access to this domain invitation?
+    """Permission mixin that redirects to domain invitation if user has
+    access, otherwise 403"
 
     A user has access to a domain invitation if they have a role on the
     associated domain.
