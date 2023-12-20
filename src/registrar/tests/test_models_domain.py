@@ -1962,6 +1962,9 @@ class TestExpirationDate(MockEppLib):
         """
         super().setUp()
         # for the tests, need a domain in the ready state
+        # mock data for self.domain includes the following dates:
+        # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
+        # ex_date=datetime.date(2023, 5, 25)
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         # for the test, need a domain that will raise an exception
         self.domain_w_error, _ = Domain.objects.get_or_create(name="fake-error.gov", state=Domain.State.READY)
@@ -1987,12 +1990,59 @@ class TestExpirationDate(MockEppLib):
         with self.assertRaises(RegistryError):
             self.domain_w_error.renew_domain()
 
+    def test_is_expired(self):
+        """assert that is_expired returns true for expiration_date in past"""
+        # force fetch_cache to be called
+        self.domain.statuses
+        self.assertTrue(self.domain.is_expired)
+
+    def test_is_not_expired(self):
+        """assert that is_expired returns false for expiration in future"""
+        # to do this, need to mock value returned from timezone.now
+        # set now to 2023-01-01
+        mocked_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        # force fetch_cache which sets the expiration date to 2023-05-25
+        self.domain.statuses
+
+        with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+            self.assertFalse(self.domain.is_expired())
+
     def test_expiration_date_updated_on_info_domain_call(self):
         """assert that expiration date in db is updated on info domain call"""
         # force fetch_cache to be called
         self.domain.statuses
         test_date = datetime.date(2023, 5, 25)
         self.assertEquals(self.domain.expiration_date, test_date)
+
+
+class TestCreationDate(MockEppLib):
+    """Created_at in domain model is updated from EPP"""
+
+    def setUp(self):
+        """
+        Domain exists in registry
+        """
+        super().setUp()
+        # for the tests, need a domain with a creation date
+        self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        # creation_date returned from mockDataInfoDomain with creation date:
+        # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
+        self.creation_date = datetime.datetime(2023, 5, 25, 19, 45, 35)
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
+    def test_creation_date_setter_not_implemented(self):
+        """assert that the setter for creation date is not implemented and will raise error"""
+        with self.assertRaises(NotImplementedError):
+            self.domain.creation_date = datetime.date.today()
+
+    def test_creation_date_updated_on_info_domain_call(self):
+        """assert that creation date in db is updated on info domain call"""
+        # force fetch_cache to be called
+        self.domain.statuses
+        self.assertEquals(self.domain.created_at, self.creation_date)
 
 
 class TestAnalystClientHold(MockEppLib):

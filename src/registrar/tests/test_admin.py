@@ -623,6 +623,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "no_other_contacts_rationale",
             "anything_else",
             "is_policy_acknowledged",
+            "submission_date",
             "current_websites",
             "other_contacts",
             "alternative_domains",
