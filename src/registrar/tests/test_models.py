@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from registrar.models import (
     Contact,
@@ -97,17 +97,23 @@ class TestDomainApplication(TestCase):
     def test_status_fsm_submit_fail(self):
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user)
-        with self.assertRaises(ValueError):
-            # can't submit an application with a null domain name
-            application.submit()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(ValueError):
+                # can't submit an application with a null domain name
+                application.submit()
 
     def test_status_fsm_submit_succeed(self):
         user, _ = User.objects.get_or_create()
         site = DraftDomain.objects.create(name="igorville.gov")
         application = DomainApplication.objects.create(creator=user, requested_domain=site)
+
         # no submitter email so this emits a log warning
-        with less_console_noise():
-            application.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                application.submit()
         self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
 
     def test_submit_sends_email(self):
@@ -121,7 +127,10 @@ class TestDomainApplication(TestCase):
             submitter=contact,
         )
         application.save()
-        application.submit()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            application.submit()
 
         # check to see if an email was sent
         self.assertGreater(
@@ -141,8 +150,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.submit()
 
     def test_transition_not_allowed_in_review_submitted(self):
         """Create an application with status in review and call submit
@@ -150,8 +161,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.submit()
 
     def test_transition_not_allowed_approved_submitted(self):
         """Create an application with status approved and call submit
@@ -159,8 +172,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.submit()
 
     def test_transition_not_allowed_rejected_submitted(self):
         """Create an application with status rejected and call submit
@@ -168,8 +183,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.submit()
 
     def test_transition_not_allowed_ineligible_submitted(self):
         """Create an application with status ineligible and call submit
@@ -177,8 +194,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.submit()
 
     def test_transition_not_allowed_started_in_review(self):
         """Create an application with status started and call in_review
@@ -186,8 +205,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.in_review()
 
     def test_transition_not_allowed_in_review_in_review(self):
         """Create an application with status in review and call in_review
@@ -195,8 +216,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.in_review()
 
     def test_transition_not_allowed_approved_in_review(self):
         """Create an application with status approved and call in_review
@@ -204,8 +227,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.in_review()
 
     def test_transition_not_allowed_action_needed_in_review(self):
         """Create an application with status action needed and call in_review
@@ -213,8 +238,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.in_review()
 
     def test_transition_not_allowed_rejected_in_review(self):
         """Create an application with status rejected and call in_review
@@ -222,8 +249,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.in_review()
 
     def test_transition_not_allowed_withdrawn_in_review(self):
         """Create an application with status withdrawn and call in_review
@@ -231,8 +260,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.in_review()
 
     def test_transition_not_allowed_ineligible_in_review(self):
         """Create an application with status ineligible and call in_review
@@ -240,8 +271,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.in_review()
 
     def test_transition_not_allowed_started_action_needed(self):
         """Create an application with status started and call action_needed
@@ -249,8 +282,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.action_needed()
 
     def test_transition_not_allowed_submitted_action_needed(self):
         """Create an application with status submitted and call action_needed
@@ -258,8 +293,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.action_needed()
 
     def test_transition_not_allowed_action_needed_action_needed(self):
         """Create an application with status action needed and call action_needed
@@ -267,17 +304,21 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.action_needed()
 
     def test_transition_not_allowed_approved_action_needed(self):
         """Create an application with status approved and call action_needed
         against transition rules"""
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
+        
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.action_needed()
 
     def test_transition_not_allowed_withdrawn_action_needed(self):
         """Create an application with status withdrawn and call action_needed
@@ -285,8 +326,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.action_needed()
 
     def test_transition_not_allowed_ineligible_action_needed(self):
         """Create an application with status ineligible and call action_needed
@@ -294,8 +337,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.action_needed()
 
     def test_transition_not_allowed_started_approved(self):
         """Create an application with status started and call approve
@@ -303,8 +348,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.approve()
 
     def test_transition_not_allowed_approved_approved(self):
         """Create an application with status approved and call approve
@@ -312,8 +359,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.approve()
 
     def test_transition_not_allowed_action_needed_approved(self):
         """Create an application with status action needed and call approve
@@ -321,8 +370,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.approve()
 
     def test_transition_not_allowed_withdrawn_approved(self):
         """Create an application with status withdrawn and call approve
@@ -330,8 +381,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.approve()
 
     def test_transition_not_allowed_started_withdrawn(self):
         """Create an application with status started and call withdraw
@@ -339,8 +392,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.withdraw()
 
     def test_transition_not_allowed_approved_withdrawn(self):
         """Create an application with status approved and call withdraw
@@ -348,8 +403,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.withdraw()
 
     def test_transition_not_allowed_action_needed_withdrawn(self):
         """Create an application with status action needed and call withdraw
@@ -357,8 +414,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.withdraw()
 
     def test_transition_not_allowed_rejected_withdrawn(self):
         """Create an application with status rejected and call withdraw
@@ -366,8 +425,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.withdraw()
 
     def test_transition_not_allowed_withdrawn_withdrawn(self):
         """Create an application with status withdrawn and call withdraw
@@ -375,8 +436,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.withdraw()
 
     def test_transition_not_allowed_ineligible_withdrawn(self):
         """Create an application with status ineligible and call withdraw
@@ -384,8 +447,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.withdraw()
 
     def test_transition_not_allowed_started_rejected(self):
         """Create an application with status started and call reject
@@ -393,8 +458,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject()
 
     def test_transition_not_allowed_submitted_rejected(self):
         """Create an application with status submitted and call reject
@@ -402,8 +469,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject()
 
     def test_transition_not_allowed_action_needed_rejected(self):
         """Create an application with status action needed and call reject
@@ -411,8 +480,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject()
 
     def test_transition_not_allowed_withdrawn_rejected(self):
         """Create an application with status withdrawn and call reject
@@ -420,8 +491,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject()
 
     def test_transition_not_allowed_rejected_rejected(self):
         """Create an application with status rejected and call reject
@@ -429,8 +502,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject()
 
     def test_transition_not_allowed_ineligible_rejected(self):
         """Create an application with status ineligible and call reject
@@ -438,8 +513,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject()
 
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
@@ -454,11 +531,13 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
-        # Use patch to temporarily replace is_active with the custom implementation
-        with patch.object(Domain, "is_active", custom_is_active):
-            # Now, when you call is_active on Domain, it will return True
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # Use patch to temporarily replace is_active with the custom implementation
+            with patch.object(Domain, "is_active", custom_is_active):
+                # Now, when you call is_active on Domain, it will return True
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject()
 
     def test_transition_not_allowed_started_ineligible(self):
         """Create an application with status started and call reject
@@ -466,8 +545,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject_with_prejudice()
 
     def test_transition_not_allowed_submitted_ineligible(self):
         """Create an application with status submitted and call reject
@@ -475,8 +556,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject_with_prejudice()
 
     def test_transition_not_allowed_action_needed_ineligible(self):
         """Create an application with status action needed and call reject
@@ -484,8 +567,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject_with_prejudice()
 
     def test_transition_not_allowed_withdrawn_ineligible(self):
         """Create an application with status withdrawn and call reject
@@ -493,8 +578,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject_with_prejudice()
 
     def test_transition_not_allowed_rejected_ineligible(self):
         """Create an application with status rejected and call reject
@@ -502,8 +589,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject_with_prejudice()
 
     def test_transition_not_allowed_ineligible_ineligible(self):
         """Create an application with status ineligible and call reject
@@ -511,8 +600,10 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with self.assertRaises(TransitionNotAllowed):
+                application.reject_with_prejudice()
 
     def test_transition_not_allowed_approved_ineligible_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
@@ -527,11 +618,13 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
         # Use patch to temporarily replace is_active with the custom implementation
-        with patch.object(Domain, "is_active", custom_is_active):
-            # Now, when you call is_active on Domain, it will return True
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+            with patch.object(Domain, "is_active", custom_is_active):
+                # Now, when you call is_active on Domain, it will return True
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject_with_prejudice()
 
 
 class TestPermissions(TestCase):
