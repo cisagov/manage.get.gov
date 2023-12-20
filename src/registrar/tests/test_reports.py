@@ -14,7 +14,8 @@ from django.conf import settings
 from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
-
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
@@ -75,7 +76,7 @@ class CsvReportsTest(TestCase):
         mock_client = MagicMock()
         fake_open = mock_open()
         expected_file_content = [
-            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
+            call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
             call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
             call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
         ]
@@ -94,7 +95,7 @@ class CsvReportsTest(TestCase):
         mock_client = MagicMock()
         fake_open = mock_open()
         expected_file_content = [
-            call("Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\r\n"),
+            call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
             call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,, \r\n"),
             call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,, \r\n"),
             call("adomain2.gov,Interstate,,,,, \r\n"),
@@ -175,7 +176,7 @@ class CsvReportsTest(TestCase):
 
         # Check that the response contains what we expect
         expected_file_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,"
         ).encode()
@@ -207,7 +208,7 @@ class CsvReportsTest(TestCase):
 
         # Check that the response contains what we expect
         expected_file_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security Contact Email\n"
+            "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,\n"
             "adomain2.gov,Interstate,,,,,"
@@ -231,6 +232,8 @@ class ExportDataTest(TestCase):
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
+        self.domain_5, _ = Domain.objects.get_or_create(name="bdomain5.gov", state=Domain.State.DELETED, deleted_at=datetime(2023, 11, 1))
+        self.domain_6, _ = Domain.objects.get_or_create(name="bdomain6.gov", state=Domain.State.DELETED, deleted_at=datetime(1980, 10, 16))
 
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -253,6 +256,18 @@ class ExportDataTest(TestCase):
         self.domain_information_4, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_4,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+        self.domain_information_5, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_5,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+        self.domain_information_6, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_6,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
         )
@@ -285,7 +300,7 @@ class ExportDataTest(TestCase):
             "Submitter title",
             "Submitter email",
             "Submitter phone",
-            "Security Contact Email",
+            "Security contact email",
             "Status",
         ]
         sort_fields = ["domain__name"]
@@ -311,7 +326,7 @@ class ExportDataTest(TestCase):
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,AO,"
             "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
-            "Security Contact Email,Status\n"
+            "Security contact email,Status\n"
             "adomain2.gov,Interstate,dnsneeded\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,ready\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,onhold\n"
@@ -338,7 +353,7 @@ class ExportDataTest(TestCase):
             "Organization name",
             "City",
             "State",
-            "Security Contact Email",
+            "Security contact email",
         ]
         sort_fields = ["domain__name", "federal_agency", "organization_type"]
         filter_condition = {
@@ -364,7 +379,7 @@ class ExportDataTest(TestCase):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,"
-            "State,Security Contact Email\n"
+            "State,Security contact email\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home\n"
         )
@@ -375,3 +390,130 @@ class ExportDataTest(TestCase):
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
 
         self.assertEqual(csv_content, expected_content)
+        
+    def test_export_domains_to_writer_with_date_filter_pulls_domains_in_range(self):
+        """Test that domains that are READY and in range are pulled when the growth report conditions
+        are applied to export_domains_to_writer."""
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        writer = csv.writer(csv_file)
+
+        # Define columns, sort fields, and filter condition
+        columns = [
+            "Domain name",
+            "Domain type",
+            "Agency",
+            "Organization name",
+            "City",
+            "State",
+            "Status",
+            "Deleted at",
+            "Expiration date",
+        ]
+        sort_fields = ["created_at","domain__name",]
+        filter_condition = {
+            "domain__state__in": [
+                Domain.State.READY,
+            ],
+            "domain__created_at__lt": timezone.make_aware(datetime.now() + timedelta(days=1)),
+            "domain__created_at__gt": timezone.make_aware(datetime.now() - timedelta(days=1)),
+        }
+        filter_conditions_for_additional_domains = {
+            "domain__state__in": [
+                Domain.State.DELETED,
+            ],
+            "domain__deleted_at__lt": timezone.make_aware(datetime.now() + timedelta(days=1)),
+            "domain__deleted_at__gt": timezone.make_aware(datetime.now() - timedelta(days=1)),
+        }
+
+        # Call the export function
+        export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+
+        # Read the content into a variable
+        csv_content = csv_file.read()
+        
+        print(f'csv_content {csv_content}')
+        
+        # We expect READY domains,
+        # federal only
+        # sorted alphabetially by domain name
+        expected_content = (
+            "Domain name,Domain type,Agency,Organization name,City,"
+            "State,Status,Deleted at,Expiration date\n"
+            "cdomain1.gov,Federal-Executive,World War I Centennial Commission,ready,\n"
+        )
+
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        
+        self.assertEqual(csv_content, expected_content)
+        
+    def test_export_domains_to_writer_with_date_filter_pulls_appropriate_deleted_domains(self):
+        """When domain__created_at__gt is in filters, we know it's a growth report
+        and we need to fetch the domainInfos for the deleted domains that are within
+        the date range. However, deleted domains that were deleted at a date outside 
+        the range do not get pulled."""
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        writer = csv.writer(csv_file)
+
+        # Define columns, sort fields, and filter condition
+        columns = [
+            "Domain name",
+            "Domain type",
+            "Agency",
+            "Organization name",
+            "City",
+            "State",
+            "Status",
+            "Deleted at",
+            "Expiration date",
+        ]
+        sort_fields = ["created_at","domain__name",]
+        filter_condition = {
+            "domain__state__in": [
+                Domain.State.READY,
+            ],
+            "domain__created_at__lt": timezone.make_aware(datetime(2023, 10, 1)),
+            "domain__created_at__gt": timezone.make_aware(datetime(2023, 12, 1)),
+        }
+        filter_conditions_for_additional_domains = {
+            "domain__state__in": [
+                Domain.State.DELETED,
+            ],
+            "domain__deleted_at__lt": timezone.make_aware(datetime(2023, 10, 1)),
+            "domain__deleted_at__gt": timezone.make_aware(datetime(2023, 12, 1)),
+        }
+
+        # Call the export function
+        export_domains_to_writer(writer, columns, sort_fields, filter_condition, filter_conditions_for_additional_domains)
+
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+
+        # Read the content into a variable
+        csv_content = csv_file.read()
+        
+        print(f'csv_content {csv_content}')
+        
+        # We expect READY domains,
+        # federal only
+        # sorted alphabetially by domain name
+        expected_content = (
+            "Domain name,Domain type,Agency,Organization name,City,"
+            "State,Status,Deleted at,Expiration date\n"
+            "bdomain5.gov,Federal,Armed Forces Retirement Home,deleted,2023-11-01,\n"
+        )
+
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        
+        self.assertEqual(csv_content, expected_content)
+

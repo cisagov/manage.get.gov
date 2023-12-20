@@ -7,20 +7,25 @@ from registrar.models.public_contact import PublicContact
 from django.db.models import Value
 from django.db.models.functions import Coalesce
 from itertools import chain
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
+def export_domains_to_writer(writer, columns, sort_fields, filter_condition, filter_condition_for_additional_domains=None):
     # write columns headers to writer
     writer.writerow(columns)
+    
+    logger.info('export_domains_to_writer')
+    logger.info(filter_condition)
+    logger.info(filter_condition_for_additional_domains)
 
     # Get the domainInfos    
     domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
     
-    # domain__created_at__gt is in filter_conditions. This means that we're querrying for the growth report and
-    # need to fetch the domainInfos for the deleted domains. This is an OR situation so we can' combine the filters
-    # in one query which would be an AND operation.   
-    if 'domain__created_at__gt' in filter_condition:
+    # Condition is true for export_data_growth_to_csv. This is an OR situation so we can' combine the filters
+    # in one query.   
+    if filter_condition_for_additional_domains is not None and 'domain__deleted_at__lt' in filter_condition_for_additional_domains:
+        logger.info("Fetching deleted domains")
         deleted_domainInfos = DomainInformation.objects.filter(domain__state=Domain.State.DELETED).order_by("domain__deleted_at")        
         # Combine the two querysets into a single iterable
         all_domainInfos = list(chain(domainInfos, deleted_domainInfos))
@@ -30,7 +35,6 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
 
     for domainInfo in all_domainInfos:
         security_contacts = domainInfo.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
-        print(f"regular filtering {domainInfos}")
         # For linter
         ao = " "
         if domainInfo.authorizing_official:
@@ -152,19 +156,19 @@ def export_data_federal_to_csv(csv_file):
 def export_data_growth_to_csv(csv_file, start_date, end_date):
     
     if start_date:
-        start_date_formatted = datetime.strptime(start_date, "%Y-%m-%d")
+        start_date_formatted = timezone.make_aware(datetime.strptime(start_date, "%Y-%m-%d"))
     else:
         # Handle the case where start_date is missing or empty
         # Default to a date that's prior to our first deployment
         logger.error(f"Error fetching the start date, will default to 12023/1/1")
-        start_date_formatted = datetime(2023, 11, 1)  # Replace with appropriate handling
+        start_date_formatted = timezone.make_aware(datetime(2023, 11, 1))  # Replace with appropriate handling
         
     if end_date:
-        end_date_formatted = datetime.strptime(end_date, "%Y-%m-%d")
+        end_date_formatted = timezone.make_aware(datetime.strptime(end_date, "%Y-%m-%d"))
     else:
         # Handle the case where end_date is missing or empty
         logger.error(f"Error fetching the end date, will default to now()")
-        end_date_formatted = datetime.now()  # Replace with appropriate handling
+        end_date_formatted = timezone.make_aware(datetime.now())  # Replace with appropriate handling
     
     writer = csv.writer(csv_file)
     # define columns to include in export
@@ -186,10 +190,16 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
     ]
     filter_condition = {
         "domain__state__in": [
-            Domain.State.UNKNOWN,
+            Domain.State.READY,
+        ],
+        "domain__created_at__lt": end_date_formatted,
+        "domain__created_at__gt": start_date_formatted,
+    }
+    filter_condition_for_additional_domains = {
+        "domain__state__in": [
             Domain.State.DELETED,
         ],
         "domain__created_at__lt": end_date_formatted,
         "domain__created_at__gt": start_date_formatted,
     }
-    export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+    export_domains_to_writer(writer, columns, sort_fields, filter_condition, filter_condition_for_additional_domains)
