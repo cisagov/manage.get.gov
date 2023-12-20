@@ -1,4 +1,5 @@
 import csv
+import logging
 from datetime import datetime
 from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
@@ -7,20 +8,20 @@ from django.db.models import Value
 from django.db.models.functions import Coalesce
 from itertools import chain
 
+logger = logging.getLogger(__name__)
 
 def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
     # write columns headers to writer
     writer.writerow(columns)
 
-    
-    print(f"filter_condition {filter_condition}")
+    # Get the domainInfos    
     domainInfos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
     
+    # domain__created_at__gt is in filter_conditions. This means that we're querrying for the growth report and
+    # need to fetch the domainInfos for the deleted domains. This is an OR situation so we can' combine the filters
+    # in one query which would be an AND operation.   
     if 'domain__created_at__gt' in filter_condition:
-        
-        deleted_domainInfos = DomainInformation.objects.filter(domain__state=Domain.State.DELETED).order_by("domain__deleted_at")
-        print(f"filtering by deleted {domainInfos}")
-        
+        deleted_domainInfos = DomainInformation.objects.filter(domain__state=Domain.State.DELETED).order_by("domain__deleted_at")        
         # Combine the two querysets into a single iterable
         all_domainInfos = list(chain(domainInfos, deleted_domainInfos))
     else:
@@ -150,27 +151,20 @@ def export_data_federal_to_csv(csv_file):
     
 def export_data_growth_to_csv(csv_file, start_date, end_date):
     
-    print(f'start_date {start_date}')
-    print(f'end_date {end_date}')
-    
-    # Check if start_date is not empty before using strptime
     if start_date:
         start_date_formatted = datetime.strptime(start_date, "%Y-%m-%d")
-        print(f'start_date_formatted {start_date_formatted}')
     else:
         # Handle the case where start_date is missing or empty
-        print('ON NO')
-        # TODO: use Nov 1 2023
-        start_date_formatted = None  # Replace with appropriate handling
+        # Default to a date that's prior to our first deployment
+        logger.error(f"Error fetching the start date, will default to 12023/1/1")
+        start_date_formatted = datetime(2023, 11, 1)  # Replace with appropriate handling
         
     if end_date:
         end_date_formatted = datetime.strptime(end_date, "%Y-%m-%d")
-        print(f'end_date_formatted {end_date_formatted}')
     else:
-        # Handle the case where start_date is missing or empty
-        print('ON NO')
-        # TODO: use now
-        end_date_formatted = None  # Replace with appropriate handling
+        # Handle the case where end_date is missing or empty
+        logger.error(f"Error fetching the end date, will default to now()")
+        end_date_formatted = datetime.now()  # Replace with appropriate handling
     
     writer = csv.writer(csv_file)
     # define columns to include in export

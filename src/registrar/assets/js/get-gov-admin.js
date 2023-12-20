@@ -276,53 +276,27 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     viewLink.setAttribute('title', viewLink.getAttribute('title-template').replace('selected item', elementText));
 }
 
-// function performDataLookup(e) {
-//     e.preventDefault();  // Prevent the default form submission
+/** An IIFE for admin in DjangoAdmin to listen to clicks on the growth report export button,
+ * attach the seleted start and end dates to a url that'll trigger the view, and finally
+ * redirect to that url.
+*/
+(function (){
 
-//     console.log('Form submitted!');
+    let exportGrowthReportButton = document.getElementById('exportLink');
 
+    if (exportGrowthReportButton) {
+        exportGrowthReportButton.addEventListener('click', function() {
+            // Get the selected start and end dates
+            let startDate = document.getElementById('start').value;
+            let endDate = document.getElementById('end').value;
+            let exportUrl = document.getElementById('exportLink').dataset.exportUrl;
 
-//     var form = document.getElementById("exportDataForm");
-//     var formData = new FormData(form);
-
-//     // Perform an AJAX request to fetch data
-//     fetch('/admin/', {
-//       method: 'POST',
-//       body: formData,
-//     })
-//     .then(response => {
-//         if (!response.ok) {
-//             console.log(response);
-//             console.log(`HTTP error! Status: ${response.status}`);
-//             throw new Error(`HTTP error! Status: ${response.status}`);
-//         }
-//         return response.json();
-//     })
-//     .then(data => {
-//         // Handle the data (update the result div, for example)
-//         document.getElementById("dataResult").innerText = JSON.stringify(data);
-//     })
-//     .catch(error => console.error('Error:', error));
-//   }
-
-  (function (){
-
-    document.getElementById('exportLink').addEventListener('click', function(event) {
-        event.preventDefault();  // Prevent the default link behavior
+            // Build the URL with parameters
+            exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
         
-        // Get the selected start and end dates
-        var startDate = document.getElementById('start').value;
-        var endDate = document.getElementById('end').value;
-        
-        var exportUrl = document.getElementById('exportLink').dataset.exportUrl;
+            // Redirect to the export URL
+            window.location.href = exportUrl;
+        });
+    }
 
-        // Build the URL with parameters
-        exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
-    
-        // Redirect to the export URL
-        window.location.href = exportUrl;
-      });
-
-
-    // document.getElementById('exportDataForm').addEventListener('submit', performDataLookup);
 })();

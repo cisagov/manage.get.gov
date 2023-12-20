@@ -10,6 +10,8 @@
             Inputs of type date suck for accessibility.
             We'll need to replace those guys with a django form once we figure out how to hook one onto this page.
             The challenge is in the path definition in urls. Itdoes NOT like admin/export_data/
+
+            See the commit "Review for ticket #999"
         {% endcomment %}
 
         <label for="start">Start date:</label>
@@ -17,8 +19,7 @@
         <label for="end">End date:</label>
         <input type="date" id="end" name="trip-end" value="2023-12-19" min="2023-12-01" />
 
-        {% comment %} TODO: add a aria label or something {% endcomment %}
-        <a id="exportLink" data-export-url="{% url 'admin_export_data' %}" href="#" class="button">Export</a>
+        <button id="exportLink" data-export-url="{% url 'admin_export_data' %}" type="button" class="button">Export</button>
 
     </div>
 </div>
