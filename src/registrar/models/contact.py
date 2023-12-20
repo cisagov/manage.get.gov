@@ -64,7 +64,7 @@ class Contact(TimeStampedModel):
         super().save(*args, **kwargs)
 
         # Update the related User object's first_name and last_name
-        if self.user and not self.user.first_name or not self.user.last_name:
+        if self.user and (not self.user.first_name or not self.user.last_name):
             self.user.first_name = self.first_name
             self.user.last_name = self.last_name
             self.user.save()

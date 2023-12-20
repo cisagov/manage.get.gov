@@ -29,7 +29,7 @@ class Command(BaseCommand):
         self.update_success = []
         self.update_skipped = []
         self.update_failed = []
-        self.expiration_minimum_cutoff = date(2023, 11, 15)
+        self.expiration_minimum_cutoff = date(2023, 11, 1)
         self.expiration_maximum_cutoff = date(2023, 12, 30)
 
     def add_arguments(self, parser):
