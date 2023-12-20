@@ -1163,7 +1163,6 @@ class AuditedAdminTest(TestCase):
             )
 
     def test_alphabetically_sorted_fk_fields_domain_information(self):
-        self.maxDiff = None
         tested_fields = [
             DomainInformation.authorizing_official.field,
             DomainInformation.submitter.field,
