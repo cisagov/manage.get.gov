@@ -154,7 +154,7 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         return True
 
 
-class DomainApplicationPermissionWithdraw(DomainApplicationPermission):
+class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
 
     """Does the logged-in user have access to withdraw this domain application?"""
 
@@ -162,6 +162,12 @@ class DomainApplicationPermissionWithdraw(DomainApplicationPermission):
         """Check if this user has access to withdraw this domain application.
         """
         if not self.request.user.is_authenticated:
+            return False
+
+        # user needs to be the creator of the application
+        # this query is empty if there isn't a domain application with this
+        # id and this user as creator
+        if not DomainApplication.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
             return False
 
         # Restricted users should not be able to withdraw domain requests
