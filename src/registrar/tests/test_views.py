@@ -1553,7 +1553,7 @@ class TestDomainNameservers(TestDomainOverview):
         # attempt to submit the form without two hosts, both subdomains,
         # only one has ips
         nameservers_page.form["form-1-server"] = "ns2.igorville.gov"
-        
+
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200

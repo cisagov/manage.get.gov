@@ -572,7 +572,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
-    
+
     @boto3_mocking.patching
     def test_save_model_sets_restricted_status_on_user(self):
         # make sure there is no user with this email

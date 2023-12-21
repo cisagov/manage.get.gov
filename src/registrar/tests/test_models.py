@@ -313,7 +313,7 @@ class TestDomainApplication(TestCase):
         against transition rules"""
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        
+
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
@@ -624,7 +624,7 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-        # Use patch to temporarily replace is_active with the custom implementation
+            # Use patch to temporarily replace is_active with the custom implementation
             with patch.object(Domain, "is_active", custom_is_active):
                 # Now, when you call is_active on Domain, it will return True
                 with self.assertRaises(TransitionNotAllowed):
@@ -640,7 +640,7 @@ class TestPermissions(TestCase):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
-        
+
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():

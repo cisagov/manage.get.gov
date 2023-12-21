@@ -250,7 +250,7 @@ class TestDomainCache(MockEppLib):
 
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain application must result in a domain"""
-    
+
     @boto3_mocking.patching
     def test_approved_application_creates_domain_locally(self):
         """
