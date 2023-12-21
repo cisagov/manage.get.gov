@@ -13,7 +13,6 @@ from typing import Any
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
 
-
 from registrar.utility.errors import (
     ActionNotAllowed,
     NameserverError,
@@ -297,6 +296,7 @@ class Domain(TimeStampedModel, DomainHelper):
         while non-subordinate hosts MUST NOT.
         """
         try:
+            # attempt to retrieve hosts from registry and store in cache and db
             hosts = self._get_property("hosts")
         except Exception as err:
             # If exception raised returning hosts from registry, get from db

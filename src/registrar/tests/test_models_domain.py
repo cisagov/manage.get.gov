@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 import datetime
-from registrar.models import Domain
+from registrar.models import Domain, Host, HostIP
 
 from unittest import skip
 from registrar.models.domain_application import DomainApplication
@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 class TestDomainCache(MockEppLib):
     def tearDown(self):
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -1512,6 +1514,61 @@ class TestRegistrantNameservers(MockEppLib):
         with self.assertRaises(ActionNotAllowed):
             domain.nameservers = [self.nameserver1, self.nameserver2]
 
+    def test_nameserver_returns_on_registry_error(self):
+        """
+        Scenario: Nameservers previously set through EPP and stored in registrar's database.
+            Registry is unavailable and throws exception when attempting to build cache from 
+            registry. Nameservers retrieved from database.
+        """
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        # set the host and host_ips directly in the database; this is normally handled through
+        # fetch_cache
+        host, _ = Host.objects.get_or_create(domain=domain, name="ns1.fake.gov")
+        host_ip, _ = HostIP.objects.get_or_create(host=host, address="1.1.1.1")
+
+        # mock that registry throws an error on 
+
+        def side_effect(_request, cleaned):
+            raise RegistryError(code=ErrorCode.COMMAND_FAILED)
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        nameservers = domain.nameservers
+
+        self.assertEqual(len(nameservers), 1)
+        self.assertEqual(nameservers[0][0], "ns1.fake.gov")
+        self.assertEqual(nameservers[0][1], ["1.1.1.1"])
+
+        patcher.stop()
+
+    def test_nameservers_stored_on_fetch_cache(self):
+        """
+        Scenario: Nameservers are stored in db when they are retrieved from fetch_cache.
+            Verify the success of this by asserting get_or_create calls to db.
+            The mocked data for the EPP calls returns a host name
+            of 'fake.host.com' from InfoDomain and an array of 2 IPs: 1.2.3.4 and 2.3.4.5
+            from InfoHost
+        """
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        # mock the get_or_create methods for Host and HostIP
+        with patch.object(Host.objects, 'get_or_create') as mock_host_get_or_create, \
+            patch.object(HostIP.objects, 'get_or_create') as mock_host_ip_get_or_create:
+            # Set the return value for the mocks
+            mock_host_get_or_create.return_value = (Host(), True)
+            mock_host_ip_get_or_create.return_value = (HostIP(), True)
+        
+            # force fetch_cache to be called, which will return above documented mocked hosts
+            domain.nameservers
+            # assert that the mocks are called
+            mock_host_get_or_create.assert_called_once_with(domain=domain, name='fake.host.com')
+            # Retrieve the mocked_host from the return value of the mock
+            actual_mocked_host, _ = mock_host_get_or_create.return_value
+            mock_host_ip_get_or_create.assert_called_with(address='2.3.4.5', host=actual_mocked_host)
+            self.assertEqual(mock_host_ip_get_or_create.call_count, 2)
+
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
         """
@@ -1530,6 +1587,8 @@ class TestRegistrantNameservers(MockEppLib):
             domain.nameservers = [("ns1.failednameserver.gov", ["4.5.6"])]
 
     def tearDown(self):
+        HostIP.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         return super().tearDown()
 
