@@ -41,7 +41,7 @@ def write_row(writer, columns, domain_info):
         "Status": domain_info.domain.state,
         "Expiration date": domain_info.domain.expiration_date,
         "Created at": domain_info.domain.created_at,
-        "Ready at": domain_info.domain.first_ready_at,
+        "First ready at": domain_info.domain.first_ready_at,
         "Deleted at": domain_info.domain.deleted_at,
     }
     writer.writerow([FIELDS.get(column, "") for column in columns])
@@ -67,10 +67,7 @@ def export_domains_to_writer(
 
     # Condition is true for export_data_growth_to_csv. This is an OR situation so we can' combine the filters
     # in one query.
-    if (
-        filter_condition_for_additional_domains is not None
-        and "domain__deleted_at__lt" in filter_condition_for_additional_domains
-    ):
+    if filter_condition_for_additional_domains is not None:
         # Get the deleted domain infos
         deleted_domainInfos = get_domain_infos(
             filter_condition_for_additional_domains, sort_fields_for_additional_domains
@@ -222,18 +219,18 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
         "State",
         "Status",
         "Created at",
-        "Ready at",
+        "First ready at",
         "Deleted at",
         "Expiration date",
     ]
     sort_fields = [
-        "created_at",
+        "domain__first_ready_at",
         "domain__name",
     ]
     filter_condition = {
         "domain__state__in": [Domain.State.READY],
-        "domain__first_ready_at__lt": end_date_formatted,
-        "domain__first_ready_at__gt": start_date_formatted,
+        "domain__first_ready_at__lte": end_date_formatted,
+        "domain__first_ready_at__gte": start_date_formatted,
     }
 
     # We also want domains deleted between sar and end dates, sorted
@@ -243,8 +240,8 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
     ]
     filter_condition_for_additional_domains = {
         "domain__state__in": [Domain.State.DELETED],
-        "domain__created_at__lt": end_date_formatted,
-        "domain__created_at__gt": start_date_formatted,
+        "domain__deleted_at__lte": end_date_formatted,
+        "domain__deleted_at__gte": start_date_formatted,
     }
 
     export_domains_to_writer(

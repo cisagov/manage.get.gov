@@ -796,6 +796,7 @@ class DomainAdmin(ListHeaderAdmin):
         "organization_type",
         "state",
         "created_at",
+        "first_ready_at",
         "deleted_at",
         "expiration_date",
     ]

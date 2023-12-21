@@ -492,15 +492,15 @@ class ExportDataTest(TestCase):
             "domain__state__in": [
                 Domain.State.READY,
             ],
-            "domain__first_ready_at__lt": end_date,
-            "domain__first_ready_at__gt": start_date,
+            "domain__first_ready_at__lte": end_date,
+            "domain__first_ready_at__gte": start_date,
         }
         filter_conditions_for_additional_domains = {
             "domain__state__in": [
                 Domain.State.DELETED,
             ],
-            "domain__deleted_at__lt": end_date,
-            "domain__deleted_at__gt": start_date,
+            "domain__deleted_at__lte": end_date,
+            "domain__deleted_at__gte": start_date,
         }
 
         # Call the export function
