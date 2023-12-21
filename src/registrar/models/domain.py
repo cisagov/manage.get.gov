@@ -299,11 +299,12 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             hosts = self._get_property("hosts")
         except Exception as err:
-            # Do not raise error when missing nameservers
-            # this is a standard occurence when a domain
-            # is first created
-            logger.info("Domain is missing nameservers %s" % err)
-            return []
+            # If exception raised returning hosts from registry, get from db
+            hosts = []
+            for host in self.host.all():
+                host_name = host.name
+                ips = [ip.address for ip in host.ip.all()]
+                hosts.append({"name": host_name, "addrs": ips})
 
         # TODO-687 fix this return value
         hostList = []
