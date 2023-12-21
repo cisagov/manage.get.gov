@@ -257,7 +257,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         ao_form["authorizing_official-last_name"] = "Tester ATO"
         ao_form["authorizing_official-title"] = "Chief Tester"
         ao_form["authorizing_official-email"] = "testy@town.com"
-        ao_form["authorizing_official-phone"] = "(201) 555 5555"
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -268,7 +267,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEqual(application.authorizing_official.last_name, "Tester ATO")
         self.assertEqual(application.authorizing_official.title, "Chief Tester")
         self.assertEqual(application.authorizing_official.email, "testy@town.com")
-        self.assertEqual(application.authorizing_official.phone, "(201) 555 5555")
         # the post request should return a redirect to the next form in
         # the application
         self.assertEqual(ao_result.status_code, 302)
@@ -458,7 +456,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Tester ATO")
         self.assertContains(review_page, "Chief Tester")
         self.assertContains(review_page, "testy@town.com")
-        self.assertContains(review_page, "(201) 555-5555")
         self.assertContains(review_page, "city.com")
         self.assertContains(review_page, "city.gov")
         self.assertContains(review_page, "city1.gov")
@@ -886,7 +883,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         ao_form["authorizing_official-last_name"] = "Tester ATO"
         ao_form["authorizing_official-title"] = "Chief Tester"
         ao_form["authorizing_official-email"] = "testy@town.com"
-        ao_form["authorizing_official-phone"] = "(201) 555 5555"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_result = ao_form.submit()
