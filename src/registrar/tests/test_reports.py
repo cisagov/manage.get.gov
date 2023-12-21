@@ -227,7 +227,7 @@ class ExportDataTest(TestCase):
             username=username, first_name=first_name, last_name=last_name, email=email
         )
 
-        self.domain_1, _ = Domain.objects.get_or_create(name="cdomain1.gov", state=Domain.State.READY)
+        self.domain_1, _ = Domain.objects.get_or_create(name="cdomain1.gov", state=Domain.State.READY, ready_at=timezone.now())
         self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
@@ -237,7 +237,10 @@ class ExportDataTest(TestCase):
         self.domain_7, _ = Domain.objects.get_or_create(name="xdomain7.gov", state=Domain.State.DELETED, deleted_at=timezone.now())
         self.domain_8, _ = Domain.objects.get_or_create(name="sdomain8.gov", state=Domain.State.DELETED, deleted_at=timezone.now())
         # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today()) and a specific time (using datetime.min.time()).
+        # Deleted yesterday
         self.domain_9, _ = Domain.objects.get_or_create(name="zdomain9.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime.combine(date.today() - timedelta(days=1), datetime.min.time())))
+        # ready tomorrow
+        self.domain_10, _ = Domain.objects.get_or_create(name="adomain10.gov", state=Domain.State.READY, ready_at=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())))
         
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
@@ -290,6 +293,12 @@ class ExportDataTest(TestCase):
         self.domain_information_9, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_9,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+        self.domain_information_10, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_10,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
         )
@@ -349,6 +358,7 @@ class ExportDataTest(TestCase):
             "Domain name,Domain type,Agency,Organization name,City,State,AO,"
             "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
             "Security contact email,Status\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,ready\n"
             "adomain2.gov,Interstate,dnsneeded\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission,ready\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,onhold\n"
@@ -402,6 +412,7 @@ class ExportDataTest(TestCase):
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,"
             "State,Security contact email\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home\n"
             "cdomain1.gov,Federal - Executive,World War I Centennial Commission\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home\n"
         )
@@ -415,15 +426,16 @@ class ExportDataTest(TestCase):
         
     def test_export_domains_to_writer_with_date_filter_pulls_domains_in_range(self):
         """Test that domains that are 
-            1. READY and their created_at dates are in range
+            1. READY and their ready_at dates are in range
             2. DELETED and their deleted_at dates are in range
         are pulled when the growth report conditions are applied to export_domains_to_writed.
-        Test that ready domains display first and deleted second, sorted according to 
-        specified keys.
+        Test that ready domains are sorted by ready_at/deleted_at dates first, names second.
         
         We considered testing export_data_growth_to_csv which calls export_domains_to_writer
         and would have been easy to set up, but expected_content would contain created_at dates
-        which are hard to mock."""
+        which are hard to mock.
+        
+        TODO: Simplify is created_at is not needed for the report."""
         
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -452,8 +464,8 @@ class ExportDataTest(TestCase):
             "domain__state__in": [
                 Domain.State.READY,
             ],
-            "domain__created_at__lt": end_date,
-            "domain__created_at__gt": start_date,
+            "domain__ready_at__lt": end_date,
+            "domain__ready_at__gt": start_date,
         }
         filter_conditions_for_additional_domains = {
             "domain__state__in": [
@@ -477,7 +489,8 @@ class ExportDataTest(TestCase):
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,"
             "State,Status,Expiration date\n"
-            "cdomain1.gov,Federal-Executive,World War I Centennial Commission,ready\n"
+            "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,ready,\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,ready,\n"
             "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
             "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
             "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"

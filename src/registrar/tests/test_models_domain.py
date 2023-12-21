@@ -1112,6 +1112,7 @@ class TestRegistrantNameservers(MockEppLib):
             Then `commands.CreateHost` and `commands.UpdateDomain` is sent
                 to the registry
             And `domain.is_active` returns False
+            And domain.ready_at is null
         """
 
         # set 1 nameserver
@@ -1137,6 +1138,8 @@ class TestRegistrantNameservers(MockEppLib):
         # check that status is still NOT READY
         # as you have less than 2 nameservers
         self.assertFalse(self.domain.is_active())
+        
+        self.assertEqual(self.domain.ready_at, None)
 
     def test_user_adds_two_nameservers(self):
         """
@@ -1146,6 +1149,7 @@ class TestRegistrantNameservers(MockEppLib):
             Then `commands.CreateHost` and `commands.UpdateDomain` is sent
                 to the registry
             And `domain.is_active` returns True
+            And domain.ready_at is not null
         """
 
         # set 2 nameservers
@@ -1176,6 +1180,7 @@ class TestRegistrantNameservers(MockEppLib):
         self.assertEqual(4, self.mockedSendFunction.call_count)
         # check that status is READY
         self.assertTrue(self.domain.is_active())
+        self.assertNotEqual(self.domain.ready_at, None)
 
     def test_user_adds_too_many_nameservers(self):
         """
@@ -2248,11 +2253,14 @@ class TestAnalystDelete(MockEppLib):
             When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
+            
+            The deleted_at date is set.
         """
         # Put the domain in client hold
         self.domain.place_client_hold()
         # Delete it...
         self.domain.deletedInEpp()
+        self.domain.save()
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
@@ -2267,6 +2275,9 @@ class TestAnalystDelete(MockEppLib):
 
         # Domain should have the right state
         self.assertEqual(self.domain.state, Domain.State.DELETED)
+        
+        # Domain should have a deleted_at
+        self.assertNotEqual(self.domain.deleted_at, None)
 
         # Cache should be invalidated
         self.assertEqual(self.domain._cache, {})
@@ -2286,6 +2297,7 @@ class TestAnalystDelete(MockEppLib):
         # Delete it
         with self.assertRaises(RegistryError) as err:
             domain.deletedInEpp()
+            domain.save()
             self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
         self.mockedSendFunction.assert_has_calls(
             [
@@ -2309,12 +2321,18 @@ class TestAnalystDelete(MockEppLib):
             and domain is of `state` is `READY`
             Then an FSM error is returned
             And `state` is not set to `DELETED`
+            
+            The deleted_at date is still null.
         """
         self.assertEqual(self.domain.state, Domain.State.READY)
         with self.assertRaises(TransitionNotAllowed) as err:
             self.domain.deletedInEpp()
+            self.domain.save()
             self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
         # Domain should not be deleted
         self.assertNotEqual(self.domain, None)
         # Domain should have the right state
         self.assertEqual(self.domain.state, Domain.State.READY)
+        
+        # deleted_at should be null
+        self.assertEqual(self.domain.deleted_at, None)
