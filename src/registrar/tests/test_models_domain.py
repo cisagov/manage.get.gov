@@ -29,8 +29,9 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from .common import MockEppLib
+from .common import MockEppLib, less_console_noise
 import logging
+import boto3_mocking  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +250,8 @@ class TestDomainCache(MockEppLib):
 
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain application must result in a domain"""
-
+    
+    @boto3_mocking.patching
     def test_approved_application_creates_domain_locally(self):
         """
         Scenario: Analyst approves a domain application
@@ -260,10 +262,14 @@ class TestDomainCreation(MockEppLib):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
-        # skip using the submit method
-        application.status = DomainApplication.ApplicationStatus.SUBMITTED
-        # transition to approve state
-        application.approve()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                # skip using the submit method
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                # transition to approve state
+                application.approve()
         # should have information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(domain)

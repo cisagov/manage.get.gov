@@ -26,6 +26,7 @@ from registrar.models.user_domain_role import UserDomainRole
 from .common import (
     completed_application,
     generic_domain_object,
+    less_console_noise,
     mock_user,
     create_superuser,
     create_user,
@@ -348,17 +349,18 @@ class TestDomainApplicationAdmin(MockEppLib):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Create a sample application
-            application = completed_application()
+            with less_console_noise():
+                # Create a sample application
+                application = completed_application()
 
-            # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+                # Create a mock request
+                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-            # Modify the application's property
-            application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
 
-            # Use the model admin's save_model method
-            self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -389,17 +391,18 @@ class TestDomainApplicationAdmin(MockEppLib):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
+            with less_console_noise():
+                # Create a sample application
+                application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-            # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+                # Create a mock request
+                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-            # Modify the application's property
-            application.status = DomainApplication.ApplicationStatus.IN_REVIEW
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.IN_REVIEW
 
-            # Use the model admin's save_model method
-            self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -430,17 +433,18 @@ class TestDomainApplicationAdmin(MockEppLib):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+            with less_console_noise():
+                # Create a sample application
+                application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-            # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+                # Create a mock request
+                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-            # Modify the application's property
-            application.status = DomainApplication.ApplicationStatus.APPROVED
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.APPROVED
 
-            # Use the model admin's save_model method
-            self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -461,6 +465,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
 
+    @boto3_mocking.patching
     def test_save_model_sets_approved_domain(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -472,11 +477,14 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-        # Modify the application's property
-        application.status = DomainApplication.ApplicationStatus.APPROVED
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.APPROVED
 
-        # Use the model admin's save_model method
-        self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
         self.assertEqual(application.requested_domain.name, application.approved_domain.name)
@@ -491,17 +499,18 @@ class TestDomainApplicationAdmin(MockEppLib):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+            with less_console_noise():
+                # Create a sample application
+                application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-            # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+                # Create a mock request
+                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-            # Modify the application's property
-            application.status = DomainApplication.ApplicationStatus.ACTION_NEEDED
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.ACTION_NEEDED
 
-            # Use the model admin's save_model method
-            self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -532,17 +541,18 @@ class TestDomainApplicationAdmin(MockEppLib):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+            with less_console_noise():
+                # Create a sample application
+                application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-            # Create a mock request
-            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+                # Create a mock request
+                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-            # Modify the application's property
-            application.status = DomainApplication.ApplicationStatus.REJECTED
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.REJECTED
 
-            # Use the model admin's save_model method
-            self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
         call_args = mock_client_instance.send_email.call_args
@@ -562,7 +572,8 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Perform assertions on the mock call itself
         mock_client_instance.send_email.assert_called_once()
-
+    
+    @boto3_mocking.patching
     def test_save_model_sets_restricted_status_on_user(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -574,11 +585,14 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-        # Modify the application's property
-        application.status = DomainApplication.ApplicationStatus.INELIGIBLE
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.INELIGIBLE
 
-        # Use the model admin's save_model method
-        self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
         # Test that approved domain exists and equals requested domain
         self.assertEqual(application.creator.status, "restricted")

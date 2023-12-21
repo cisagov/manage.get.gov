@@ -1349,6 +1349,7 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
+    @boto3_mocking.patching
     def test_domain_user_add_form(self):
         """Adding an existing user works."""
         other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
@@ -1358,7 +1359,11 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = "mayor@igorville.gov"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result = add_page.form.submit()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                success_result = add_page.form.submit()
 
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
@@ -1387,7 +1392,12 @@ class TestDomainManagers(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result = add_page.form.submit()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                success_result = add_page.form.submit()
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
 
@@ -1413,7 +1423,12 @@ class TestDomainManagers(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = caps_email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result = add_page.form.submit()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                success_result = add_page.form.submit()
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
 
@@ -1433,11 +1448,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
             FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
@@ -1478,7 +1494,11 @@ class TestDomainManagers(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        add_page.form.submit()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                add_page.form.submit()
 
         # user was invited, create them
         new_user = User.objects.create(username=email_address, email=email_address)
@@ -1533,6 +1553,7 @@ class TestDomainNameservers(TestDomainOverview):
         # attempt to submit the form without two hosts, both subdomains,
         # only one has ips
         nameservers_page.form["form-1-server"] = "ns2.igorville.gov"
+        
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200

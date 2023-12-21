@@ -260,8 +260,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.in_review()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.in_review()
 
     def test_transition_not_allowed_ineligible_in_review(self):
         """Create an application with status ineligible and call in_review
@@ -326,8 +327,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.action_needed()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.action_needed()
 
     def test_transition_not_allowed_ineligible_action_needed(self):
         """Create an application with status ineligible and call action_needed
@@ -381,8 +383,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.approve()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.approve()
 
     def test_transition_not_allowed_started_withdrawn(self):
         """Create an application with status started and call withdraw
@@ -436,8 +439,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.withdraw()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.withdraw()
 
     def test_transition_not_allowed_ineligible_withdrawn(self):
         """Create an application with status ineligible and call withdraw
@@ -491,8 +495,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject()
 
     def test_transition_not_allowed_rejected_rejected(self):
         """Create an application with status rejected and call reject
@@ -578,8 +583,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject_with_prejudice()
 
     def test_transition_not_allowed_rejected_ineligible(self):
         """Create an application with status rejected and call reject
@@ -629,13 +635,18 @@ class TestPermissions(TestCase):
 
     """Test the User-Domain-Role connection."""
 
+    @boto3_mocking.patching
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
-        # skip using the submit method
-        application.status = DomainApplication.ApplicationStatus.SUBMITTED
-        application.approve()
+        
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                # skip using the submit method
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                application.approve()
 
         # should be a role for this user
         domain = Domain.objects.get(name="igorville.gov")
@@ -646,13 +657,18 @@ class TestDomainInfo(TestCase):
 
     """Test creation of Domain Information when approved."""
 
+    @boto3_mocking.patching
     def test_approval_creates_info(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
-        # skip using the submit method
-        application.status = DomainApplication.ApplicationStatus.SUBMITTED
-        application.approve()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                # skip using the submit method
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                application.approve()
 
         # should be an information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
@@ -754,11 +770,12 @@ class TestUser(TestCase):
         caps_email = "MAYOR@igorville.gov"
         # mock the domain invitation save routine
         with patch("registrar.models.DomainInvitation.save") as save_mock:
-            DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
-            self.user.check_domain_invitations_on_login()
-            # if check_domain_invitations_on_login properly matches exactly one
-            # Domain Invitation, then save routine should be called exactly once
-            save_mock.assert_called_once()
+            with less_console_noise():
+                DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
+                self.user.check_domain_invitations_on_login()
+                # if check_domain_invitations_on_login properly matches exactly one
+                # Domain Invitation, then save routine should be called exactly once
+                save_mock.assert_called_once()
 
 
 class TestContact(TestCase):
