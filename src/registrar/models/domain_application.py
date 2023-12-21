@@ -736,7 +736,7 @@ class DomainApplication(TimeStampedModel):
                 self.approved_domain = None
             except Exception as err:
                 logger.error(err)
-                logger.error("Can't querry an approved domain while attempting a DA reject()")
+                logger.error("Can't query an approved domain while attempting a DA reject()")
 
         self._send_status_update_email(
             "action needed",
