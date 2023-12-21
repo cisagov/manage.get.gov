@@ -40,11 +40,11 @@ class Command(BaseCommand):
         return whitelist
 
     def remove_entries(self, source_filename, whitelist, output_filename, sep):
+        whitelisted_domains = set()
+        failed_to_whitelist = set()
         with open(source_filename, 'r') as source_file, open(output_filename, 'w') as output_file:
             reader = csv.reader(source_file, delimiter=sep)
             writer = csv.writer(output_file, delimiter=sep)
-            whitelisted_domains = []
-            failed_to_whitelist = []
 
             logger.info(f"Preparing to whitelist {len(whitelist)} domains")
             for row in reader:
@@ -52,23 +52,45 @@ class Command(BaseCommand):
                     domain_name = row[0].upper()
                     if domain_name in whitelist:
                         writer.writerow(row)
-                        whitelisted_domains.append(domain_name)
+                        whitelisted_domains.add(domain_name)
                 except Exception as err:
                     logger.error(f"Failed to whitelist {domain_name}")
                     logger.error(err)
-                    failed_to_whitelist.append(domain_name)
-            logger.info(
-                f"{TerminalColors.OKGREEN}"
-                f"Whitelisted {len(whitelisted_domains)} domains: {whitelisted_domains}"
-                f"{TerminalColors.ENDC}"
-            )
+                    failed_to_whitelist.add(domain_name)
+
+        logger.info(
+            f"{TerminalColors.OKGREEN}"
+            f"Whitelisted {len(whitelisted_domains)} domains: {whitelisted_domains}"
+            f"{TerminalColors.ENDC}"
+        )
+
+        if len(failed_to_whitelist) > 0:
             logger.error(
                 f"{TerminalColors.FAIL}"
-                f"Failed to whitelist {len(failed_to_whitelist)} domains: {failed_to_whitelist}}"
+                f"Failed to whitelist {len(failed_to_whitelist)} domains: {failed_to_whitelist}"
                 f"{TerminalColors.ENDC}"
             )
+
+        if len(whitelist) > len(whitelisted_domains):
+            missing_count = len(whitelist) - len(whitelisted_domains)
+            missing_items = []
+            for item in whitelist:
+                if item not in whitelisted_domains:
+                    missing_items.append(item)
             logger.info(
-                f"{TerminalColors.OKBLUE}"
-                f"File {output_filename} was created"
+                f"{TerminalColors.YELLOW}"
+                f"Not all domains were parsed. Missing {missing_count} domains: {missing_items}"
                 f"{TerminalColors.ENDC}"
             )
+        elif len(whitelist) < len(whitelisted_domains):
+            logger.info(
+                f"{TerminalColors.YELLOW}"
+                f"Duplicate Domains Added"
+                f"{TerminalColors.ENDC}"
+            )
+
+        logger.info(
+            f"{TerminalColors.OKBLUE}"
+            f"File {output_filename} was created"
+            f"{TerminalColors.ENDC}"
+        )
