@@ -610,6 +610,12 @@ class NoOtherContactsForm(RegistrarForm):
             "we can contact to help us assess your eligibility for a .gov domain."
         ),
         widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                1000,
+                message="Response must be less than 1000 characters.",
+            )
+        ],
     )
 
 
