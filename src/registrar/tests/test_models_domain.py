@@ -1517,7 +1517,7 @@ class TestRegistrantNameservers(MockEppLib):
     def test_nameserver_returns_on_registry_error(self):
         """
         Scenario: Nameservers previously set through EPP and stored in registrar's database.
-            Registry is unavailable and throws exception when attempting to build cache from 
+            Registry is unavailable and throws exception when attempting to build cache from
             registry. Nameservers retrieved from database.
         """
         domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
@@ -1526,7 +1526,7 @@ class TestRegistrantNameservers(MockEppLib):
         host, _ = Host.objects.get_or_create(domain=domain, name="ns1.fake.gov")
         host_ip, _ = HostIP.objects.get_or_create(host=host, address="1.1.1.1")
 
-        # mock that registry throws an error on 
+        # mock that registry throws an error on the InfoHost send
 
         def side_effect(_request, cleaned):
             raise RegistryError(code=ErrorCode.COMMAND_FAILED)
@@ -1554,19 +1554,20 @@ class TestRegistrantNameservers(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
 
         # mock the get_or_create methods for Host and HostIP
-        with patch.object(Host.objects, 'get_or_create') as mock_host_get_or_create, \
-            patch.object(HostIP.objects, 'get_or_create') as mock_host_ip_get_or_create:
+        with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
+            HostIP.objects, "get_or_create"
+        ) as mock_host_ip_get_or_create:
             # Set the return value for the mocks
             mock_host_get_or_create.return_value = (Host(), True)
             mock_host_ip_get_or_create.return_value = (HostIP(), True)
-        
+
             # force fetch_cache to be called, which will return above documented mocked hosts
             domain.nameservers
             # assert that the mocks are called
-            mock_host_get_or_create.assert_called_once_with(domain=domain, name='fake.host.com')
+            mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.host.com")
             # Retrieve the mocked_host from the return value of the mock
             actual_mocked_host, _ = mock_host_get_or_create.return_value
-            mock_host_ip_get_or_create.assert_called_with(address='2.3.4.5', host=actual_mocked_host)
+            mock_host_ip_get_or_create.assert_called_with(address="2.3.4.5", host=actual_mocked_host)
             self.assertEqual(mock_host_ip_get_or_create.call_count, 2)
 
     @skip("not implemented yet")
