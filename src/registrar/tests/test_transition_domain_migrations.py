@@ -1019,7 +1019,7 @@ class TestMigrations(TestCase):
             expected_missing_domain_informations,
             expected_missing_domain_invitations,
         )
-    
+
     @boto3_mocking.patching
     def test_send_domain_invitations_email(self):
         """Can send only a single domain invitation email."""
@@ -1029,7 +1029,7 @@ class TestMigrations(TestCase):
 
         # this is one of the email addresses in data/test_contacts.txt
         output_stream = StringIO()
-        
+
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # also have to re-point the logging handlers to output_stream
