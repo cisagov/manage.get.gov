@@ -100,9 +100,10 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(ValueError):
-                # can't submit an application with a null domain name
-                application.submit()
+            with less_console_noise():
+                with self.assertRaises(ValueError):
+                    # can't submit an application with a null domain name
+                    application.submit()
 
     def test_status_fsm_submit_succeed(self):
         user, _ = User.objects.get_or_create()
@@ -151,8 +152,9 @@ class TestDomainApplication(TestCase):
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
         with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
-            with self.assertRaises(TransitionNotAllowed):
-                application.submit()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.submit()
 
     def test_transition_not_allowed_in_review_submitted(self):
         """Create an application with status in review and call submit
@@ -161,8 +163,9 @@ class TestDomainApplication(TestCase):
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
         with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
-            with self.assertRaises(TransitionNotAllowed):
-                application.submit()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.submit()
 
     def test_transition_not_allowed_approved_submitted(self):
         """Create an application with status approved and call submit
@@ -172,8 +175,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.submit()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.submit()
 
     def test_transition_not_allowed_rejected_submitted(self):
         """Create an application with status rejected and call submit
@@ -183,8 +187,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.submit()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.submit()
 
     def test_transition_not_allowed_ineligible_submitted(self):
         """Create an application with status ineligible and call submit
@@ -194,8 +199,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.submit()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.submit()
 
     def test_transition_not_allowed_started_in_review(self):
         """Create an application with status started and call in_review
@@ -205,8 +211,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.in_review()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.in_review()
 
     def test_transition_not_allowed_in_review_in_review(self):
         """Create an application with status in review and call in_review
@@ -216,8 +223,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.in_review()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.in_review()
 
     def test_transition_not_allowed_approved_in_review(self):
         """Create an application with status approved and call in_review
@@ -227,8 +235,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.in_review()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.in_review()
 
     def test_transition_not_allowed_action_needed_in_review(self):
         """Create an application with status action needed and call in_review
@@ -238,8 +247,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.in_review()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.in_review()
 
     def test_transition_not_allowed_rejected_in_review(self):
         """Create an application with status rejected and call in_review
@@ -249,8 +259,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.in_review()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.in_review()
 
     def test_transition_not_allowed_withdrawn_in_review(self):
         """Create an application with status withdrawn and call in_review
@@ -272,8 +283,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.in_review()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.in_review()
 
     def test_transition_not_allowed_started_action_needed(self):
         """Create an application with status started and call action_needed
@@ -283,8 +295,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.action_needed()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.action_needed()
 
     def test_transition_not_allowed_submitted_action_needed(self):
         """Create an application with status submitted and call action_needed
@@ -294,8 +307,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.action_needed()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.action_needed()
 
     def test_transition_not_allowed_action_needed_action_needed(self):
         """Create an application with status action needed and call action_needed
@@ -305,8 +319,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.action_needed()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.action_needed()
 
     def test_transition_not_allowed_approved_action_needed(self):
         """Create an application with status approved and call action_needed
@@ -316,8 +331,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.action_needed()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.action_needed()
 
     def test_transition_not_allowed_withdrawn_action_needed(self):
         """Create an application with status withdrawn and call action_needed
@@ -339,8 +355,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.action_needed()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.action_needed()
 
     def test_transition_not_allowed_started_approved(self):
         """Create an application with status started and call approve
@@ -350,8 +367,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.approve()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.approve()
 
     def test_transition_not_allowed_approved_approved(self):
         """Create an application with status approved and call approve
@@ -361,8 +379,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.approve()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.approve()
 
     def test_transition_not_allowed_action_needed_approved(self):
         """Create an application with status action needed and call approve
@@ -372,8 +391,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.approve()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.approve()
 
     def test_transition_not_allowed_withdrawn_approved(self):
         """Create an application with status withdrawn and call approve
@@ -395,8 +415,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.withdraw()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.withdraw()
 
     def test_transition_not_allowed_approved_withdrawn(self):
         """Create an application with status approved and call withdraw
@@ -406,8 +427,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.withdraw()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.withdraw()
 
     def test_transition_not_allowed_action_needed_withdrawn(self):
         """Create an application with status action needed and call withdraw
@@ -417,8 +439,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.withdraw()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.withdraw()
 
     def test_transition_not_allowed_rejected_withdrawn(self):
         """Create an application with status rejected and call withdraw
@@ -428,8 +451,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.withdraw()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.withdraw()
 
     def test_transition_not_allowed_withdrawn_withdrawn(self):
         """Create an application with status withdrawn and call withdraw
@@ -451,8 +475,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.withdraw()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.withdraw()
 
     def test_transition_not_allowed_started_rejected(self):
         """Create an application with status started and call reject
@@ -462,8 +487,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject()
 
     def test_transition_not_allowed_submitted_rejected(self):
         """Create an application with status submitted and call reject
@@ -473,8 +499,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject()
 
     def test_transition_not_allowed_action_needed_rejected(self):
         """Create an application with status action needed and call reject
@@ -484,8 +511,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject()
 
     def test_transition_not_allowed_withdrawn_rejected(self):
         """Create an application with status withdrawn and call reject
@@ -507,8 +535,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject()
 
     def test_transition_not_allowed_ineligible_rejected(self):
         """Create an application with status ineligible and call reject
@@ -518,8 +547,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject()
 
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
@@ -536,11 +566,12 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Use patch to temporarily replace is_active with the custom implementation
-            with patch.object(Domain, "is_active", custom_is_active):
-                # Now, when you call is_active on Domain, it will return True
-                with self.assertRaises(TransitionNotAllowed):
-                    application.reject()
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        application.reject()
 
     def test_transition_not_allowed_started_ineligible(self):
         """Create an application with status started and call reject
@@ -550,8 +581,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject_with_prejudice()
 
     def test_transition_not_allowed_submitted_ineligible(self):
         """Create an application with status submitted and call reject
@@ -561,8 +593,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject_with_prejudice()
 
     def test_transition_not_allowed_action_needed_ineligible(self):
         """Create an application with status action needed and call reject
@@ -572,8 +605,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject_with_prejudice()
 
     def test_transition_not_allowed_withdrawn_ineligible(self):
         """Create an application with status withdrawn and call reject
@@ -595,8 +629,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject_with_prejudice()
 
     def test_transition_not_allowed_ineligible_ineligible(self):
         """Create an application with status ineligible and call reject
@@ -606,8 +641,9 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+            with less_console_noise():
+                with self.assertRaises(TransitionNotAllowed):
+                    application.reject_with_prejudice()
 
     def test_transition_not_allowed_approved_ineligible_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
@@ -624,11 +660,12 @@ class TestDomainApplication(TestCase):
 
         mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            # Use patch to temporarily replace is_active with the custom implementation
-            with patch.object(Domain, "is_active", custom_is_active):
-                # Now, when you call is_active on Domain, it will return True
-                with self.assertRaises(TransitionNotAllowed):
-                    application.reject_with_prejudice()
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        application.reject_with_prejudice()
 
 
 class TestPermissions(TestCase):

@@ -14,11 +14,12 @@ from registrar.models import (
 )
 
 from django.core.management import call_command
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from registrar.models.contact import Contact
 
 from .common import MockEppLib, less_console_noise
+import boto3_mocking  # type: ignore
 
 
 class TestExtendExpirationDates(MockEppLib):
@@ -1018,7 +1019,8 @@ class TestMigrations(TestCase):
             expected_missing_domain_informations,
             expected_missing_domain_invitations,
         )
-
+    
+    @boto3_mocking.patching
     def test_send_domain_invitations_email(self):
         """Can send only a single domain invitation email."""
         with less_console_noise():
@@ -1027,9 +1029,12 @@ class TestMigrations(TestCase):
 
         # this is one of the email addresses in data/test_contacts.txt
         output_stream = StringIO()
-        # also have to re-point the logging handlers to output_stream
-        with less_console_noise(output_stream):
-            call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
+        
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # also have to re-point the logging handlers to output_stream
+            with less_console_noise(output_stream):
+                call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
 
         # Check that we had the right numbers in our output
         output = output_stream.getvalue()
@@ -1037,6 +1042,7 @@ class TestMigrations(TestCase):
         self.assertIn("Found 1 transition domains", output)
         self.assertTrue("would send email to testuser@gmail.com", output)
 
+    @boto3_mocking.patching
     def test_send_domain_invitations_two_emails(self):
         """Can send only a single domain invitation email."""
         with less_console_noise():
@@ -1045,11 +1051,14 @@ class TestMigrations(TestCase):
 
         # these are two email addresses in data/test_contacts.txt
         output_stream = StringIO()
-        # also have to re-point the logging handlers to output_stream
-        with less_console_noise(output_stream):
-            call_command(
-                "send_domain_invitations", "testuser@gmail.com", "agustina.wyman7@test.com", stdout=output_stream
-            )
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # also have to re-point the logging handlers to output_stream
+            with less_console_noise(output_stream):
+                call_command(
+                    "send_domain_invitations", "testuser@gmail.com", "agustina.wyman7@test.com", stdout=output_stream
+                )
 
         # Check that we had the right numbers in our output
         output = output_stream.getvalue()
