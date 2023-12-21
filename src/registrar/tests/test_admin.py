@@ -716,6 +716,7 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "Cannot edit an application with a restricted creator.",
             )
 
+    @boto3_mocking.patching
     def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
@@ -737,9 +738,12 @@ class TestDomainApplicationAdmin(MockEppLib):
             stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
             stack.enter_context(patch.object(messages, "error"))
 
-            # Simulate saving the model
-            application.status = DomainApplication.ApplicationStatus.REJECTED
-            self.admin.save_model(request, application, None, True)
+            mock_client = MagicMock()
+            with boto3_mocking.clients.handler_for("sesv2", mock_client):
+                with less_console_noise():
+                    # Simulate saving the model
+                    application.status = DomainApplication.ApplicationStatus.REJECTED
+                    self.admin.save_model(request, application, None, True)
 
             # Assert that the error message was called with the correct argument
             messages.error.assert_called_once_with(
