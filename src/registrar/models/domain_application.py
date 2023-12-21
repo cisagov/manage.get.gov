@@ -561,8 +561,8 @@ class DomainApplication(TimeStampedModel):
             return not self.approved_domain.is_active()
         return True
 
-    def _send_status_update_email(self, new_status, email_template, email_template_subject):
-        """Send a atatus update email to the submitter.
+    def _send_status_update_email(self, new_status, email_template, email_template_subject, do_fake_send_email=False):
+        """Send a status update email to the submitter.
 
         The email goes to the email address that the submitter gave as their
         contact information. If there is not submitter information, then do
@@ -571,7 +571,12 @@ class DomainApplication(TimeStampedModel):
 
         if self.submitter is None or self.submitter.email is None:
             logger.warning(f"Cannot send {new_status} email, no submitter email address.")
-            return
+            return None
+
+        if do_fake_send_email:
+            logger.info(f"Email was not sent. Would send {new_status} to email: {self.submitter.email}")
+            return None
+
         try:
             send_templated_email(
                 email_template,
@@ -651,7 +656,7 @@ class DomainApplication(TimeStampedModel):
         ],
         target=ApplicationStatus.APPROVED,
     )
-    def approve(self):
+    def approve(self, do_fake_send_email=False):
         """Approve an application that has been submitted.
 
         This has substantial side-effects because it creates another database
@@ -680,6 +685,7 @@ class DomainApplication(TimeStampedModel):
             "application approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
+            do_fake_send_email,
         )
 
     @transition(
