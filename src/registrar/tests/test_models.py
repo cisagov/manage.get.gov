@@ -734,7 +734,7 @@ class TestContact(TestCase):
         self.assertEqual(self.user.last_name, "Lebowski")
 
     def test_saving_contact_does_not_update_user_email(self):
-        """When a contact's email is updated, the change is not propagated to the lined user."""
+        """When a contact's email is updated, the change is not propagated to the user."""
         self.contact.email = "joey.baloney@diaperville.com"
         self.contact.save()
 
@@ -746,7 +746,8 @@ class TestContact(TestCase):
         self.assertEqual(self.user.email, "mayor@igorville.gov")
 
     def test_saving_contact_does_not_update_user_email_when_none(self):
-        """When a contact's email is updated, the change is not propagated to the lined user."""
+        """When a contact's email is updated, and the first/last name is none,
+        the change is not propagated to the user."""
         self.invalid_contact.email = "joey.baloney@diaperville.com"
         self.invalid_contact.save()
 
