@@ -33,7 +33,7 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
-from registrar.views.application import ApplicationWizard, Step
+from registrar.views.application import ApplicationStatus, ApplicationWizard, Step
 
 from .common import less_console_noise
 
@@ -741,6 +741,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             phone="(555) 555 5555",
         )
         domain, _ = DraftDomain.objects.get_or_create(name="fakeSite.gov")
+        current, _ = Website.objects.get_or_create(website="city.com")
         you, _ = Contact.objects.get_or_create(
             first_name="Testy you",
             last_name="Tester you",
@@ -769,14 +770,23 @@ class DomainApplicationTests(TestWithUser, WebTest):
             requested_domain=domain,
             submitter=you,
             creator=self.user,
+            status="started"
         )
         application.other_contacts.add(other)
+        application.current_websites.add(current)
+
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # prime the form by visiting /edit
         url = reverse("edit-application", kwargs={"id": application.pk})
-        response = self.client.get(url)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         url = reverse("application:other_contacts")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         other_contacts_page = self.client.get(url, follow=True)
 
         # ====== METHOD 2 -- prime form
