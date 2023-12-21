@@ -960,13 +960,13 @@ class Domain(TimeStampedModel, DomainHelper):
         null=True,
         help_text=("Duplication of registry's expiration date saved for ease of reporting"),
     )
-    
+
     deleted_at = DateField(
         null=True,
         editable=False,
         help_text="Deleted at date",
     )
-    
+
     ready_at = DateField(
         null=True,
         editable=False,

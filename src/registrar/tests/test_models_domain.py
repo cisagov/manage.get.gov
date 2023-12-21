@@ -1138,7 +1138,7 @@ class TestRegistrantNameservers(MockEppLib):
         # check that status is still NOT READY
         # as you have less than 2 nameservers
         self.assertFalse(self.domain.is_active())
-        
+
         self.assertEqual(self.domain.ready_at, None)
 
     def test_user_adds_two_nameservers(self):
@@ -2253,7 +2253,7 @@ class TestAnalystDelete(MockEppLib):
             When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
-            
+
             The deleted_at date is set.
         """
         # Put the domain in client hold
@@ -2275,7 +2275,7 @@ class TestAnalystDelete(MockEppLib):
 
         # Domain should have the right state
         self.assertEqual(self.domain.state, Domain.State.DELETED)
-        
+
         # Domain should have a deleted_at
         self.assertNotEqual(self.domain.deleted_at, None)
 
@@ -2321,7 +2321,7 @@ class TestAnalystDelete(MockEppLib):
             and domain is of `state` is `READY`
             Then an FSM error is returned
             And `state` is not set to `DELETED`
-            
+
             The deleted_at date is still null.
         """
         self.assertEqual(self.domain.state, Domain.State.READY)
@@ -2333,6 +2333,6 @@ class TestAnalystDelete(MockEppLib):
         self.assertNotEqual(self.domain, None)
         # Domain should have the right state
         self.assertEqual(self.domain.state, Domain.State.READY)
-        
+
         # deleted_at should be null
         self.assertEqual(self.domain.deleted_at, None)

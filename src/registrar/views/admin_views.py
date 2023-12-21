@@ -2,8 +2,6 @@
 
 from django.http import HttpResponse
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
 
 from registrar.utility import csv_export
 
@@ -13,19 +11,16 @@ logger = logging.getLogger(__name__)
 
 
 class ExportData(View):
-    
     def get(self, request, *args, **kwargs):
         # Get start_date and end_date from the request's GET parameters
         # #999: not needed if we switch to django forms
-        start_date = request.GET.get('start_date', '')
-        end_date = request.GET.get('end_date', '')
+        start_date = request.GET.get("start_date", "")
+        end_date = request.GET.get("end_date", "")
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="growth-from-{start_date}-to-{end_date}.csv"'
         # For #999: set export_data_growth_to_csv to return the resulting queryset, which we can then use
-        # in context to display this data in the template. 
+        # in context to display this data in the template.
         csv_export.export_data_growth_to_csv(response, start_date, end_date)
-        
-        return response
 
-        
+        return response

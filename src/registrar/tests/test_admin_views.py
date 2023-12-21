@@ -1,7 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from registrar.tests.common import create_superuser
-from registrar.views.admin_views import ExportData
 
 
 class TestViews(TestCase):
@@ -10,16 +9,15 @@ class TestViews(TestCase):
         self.superuser = create_superuser()
 
     def test_export_data_view(self):
-        
         self.client.force_login(self.superuser)
-        
+
         # Reverse the URL for the admin index page
         admin_index_url = reverse("admin:index")
 
         # Make a GET request to the admin index page
         response = self.client.get(admin_index_url)
-        
-        print(f'response1 {response}')
+
+        print(f"response1 {response}")
 
         # Assert that the response status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
@@ -39,14 +37,10 @@ class TestViews(TestCase):
 
         # Assert that the response status code is 200 (OK) or the expected status code
         self.assertEqual(response.status_code, 200)
-        
+
         # Assert that the content type is CSV
         self.assertEqual(response["Content-Type"], "text/csv")
 
         # Check if the filename in the Content-Disposition header matches the expected pattern
-        expected_filename = f'growth-from-{start_date}-to-{end_date}.csv'
+        expected_filename = f"growth-from-{start_date}-to-{end_date}.csv"
         self.assertIn(f'attachment; filename="{expected_filename}"', response["Content-Disposition"])
-
-
-
-    

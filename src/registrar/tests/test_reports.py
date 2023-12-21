@@ -6,7 +6,11 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.domain import Domain
 from registrar.models.user import User
 from django.contrib.auth import get_user_model
-from registrar.utility.csv_export import export_domains_to_writer, get_default_start_date, get_default_end_date, export_data_growth_to_csv
+from registrar.utility.csv_export import (
+    export_domains_to_writer,
+    get_default_start_date,
+    get_default_end_date,
+)
 from django.core.management import call_command
 from unittest.mock import MagicMock, call, mock_open, patch
 from api.views import get_current_federal, get_current_full
@@ -16,6 +20,7 @@ import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
 from datetime import date, datetime, timedelta
 from django.utils import timezone
+
 
 class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
@@ -227,21 +232,40 @@ class ExportDataTest(TestCase):
             username=username, first_name=first_name, last_name=last_name, email=email
         )
 
-        self.domain_1, _ = Domain.objects.get_or_create(name="cdomain1.gov", state=Domain.State.READY, ready_at=timezone.now())
+        self.domain_1, _ = Domain.objects.get_or_create(
+            name="cdomain1.gov", state=Domain.State.READY, ready_at=timezone.now()
+        )
         self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
-        self.domain_5, _ = Domain.objects.get_or_create(name="bdomain5.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime(2023, 11, 1)))
-        self.domain_6, _ = Domain.objects.get_or_create(name="bdomain6.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime(1980, 10, 16)))
-        self.domain_7, _ = Domain.objects.get_or_create(name="xdomain7.gov", state=Domain.State.DELETED, deleted_at=timezone.now())
-        self.domain_8, _ = Domain.objects.get_or_create(name="sdomain8.gov", state=Domain.State.DELETED, deleted_at=timezone.now())
-        # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today()) and a specific time (using datetime.min.time()).
+        self.domain_5, _ = Domain.objects.get_or_create(
+            name="bdomain5.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime(2023, 11, 1))
+        )
+        self.domain_6, _ = Domain.objects.get_or_create(
+            name="bdomain6.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime(1980, 10, 16))
+        )
+        self.domain_7, _ = Domain.objects.get_or_create(
+            name="xdomain7.gov", state=Domain.State.DELETED, deleted_at=timezone.now()
+        )
+        self.domain_8, _ = Domain.objects.get_or_create(
+            name="sdomain8.gov", state=Domain.State.DELETED, deleted_at=timezone.now()
+        )
+        # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today())
+        # and a specific time (using datetime.min.time()).
         # Deleted yesterday
-        self.domain_9, _ = Domain.objects.get_or_create(name="zdomain9.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime.combine(date.today() - timedelta(days=1), datetime.min.time())))
+        self.domain_9, _ = Domain.objects.get_or_create(
+            name="zdomain9.gov",
+            state=Domain.State.DELETED,
+            deleted_at=timezone.make_aware(datetime.combine(date.today() - timedelta(days=1), datetime.min.time())),
+        )
         # ready tomorrow
-        self.domain_10, _ = Domain.objects.get_or_create(name="adomain10.gov", state=Domain.State.READY, ready_at=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())))
-        
+        self.domain_10, _ = Domain.objects.get_or_create(
+            name="adomain10.gov",
+            state=Domain.State.READY,
+            ready_at=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())),
+        )
+
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_1,
@@ -423,24 +447,25 @@ class ExportDataTest(TestCase):
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
 
         self.assertEqual(csv_content, expected_content)
-        
+
     def test_export_domains_to_writer_with_date_filter_pulls_domains_in_range(self):
-        """Test that domains that are 
+        """Test that domains that are
             1. READY and their ready_at dates are in range
             2. DELETED and their deleted_at dates are in range
         are pulled when the growth report conditions are applied to export_domains_to_writed.
         Test that ready domains are sorted by ready_at/deleted_at dates first, names second.
-        
+
         We considered testing export_data_growth_to_csv which calls export_domains_to_writer
         and would have been easy to set up, but expected_content would contain created_at dates
         which are hard to mock.
-        
+
         TODO: Simplify is created_at is not needed for the report."""
-        
+
         # Create a CSV file in memory
         csv_file = StringIO()
         writer = csv.writer(csv_file)
-        # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today()) and a specific time (using datetime.min.time()).
+        # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today())
+        # and a specific time (using datetime.min.time()).
         end_date = timezone.make_aware(datetime.combine(date.today() + timedelta(days=2), datetime.min.time()))
         start_date = timezone.make_aware(datetime.combine(date.today() - timedelta(days=2), datetime.min.time()))
 
@@ -455,7 +480,10 @@ class ExportDataTest(TestCase):
             "Status",
             "Expiration date",
         ]
-        sort_fields = ["created_at","domain__name",]
+        sort_fields = [
+            "created_at",
+            "domain__name",
+        ]
         sort_fields_for_additional_domains = [
             "domain__deleted_at",
             "domain__name",
@@ -476,15 +504,22 @@ class ExportDataTest(TestCase):
         }
 
         # Call the export function
-        export_domains_to_writer(writer, columns, sort_fields, filter_condition, sort_fields_for_additional_domains, filter_conditions_for_additional_domains)
+        export_domains_to_writer(
+            writer,
+            columns,
+            sort_fields,
+            filter_condition,
+            sort_fields_for_additional_domains,
+            filter_conditions_for_additional_domains,
+        )
 
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
 
         # Read the content into a variable
         csv_content = csv_file.read()
-                
-        # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name 
+
+        # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name
         # and DELETED domains deleted between today-2 and today+2, sorted by deleted_at then name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,"
@@ -500,12 +535,13 @@ class ExportDataTest(TestCase):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        
+
         self.assertEqual(csv_content, expected_content)
-        
+
+
 class HelperFunctions(TestCase):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
-    
+
     def test_get_default_start_date(self):
         expected_date = timezone.make_aware(datetime(2023, 11, 1))
         actual_date = get_default_start_date()
