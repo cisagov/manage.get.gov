@@ -1,10 +1,12 @@
 """Utilities for sending emails."""
 
 import boto3
-
+import logging
 from django.conf import settings
 from django.template.loader import get_template
 
+
+logger = logging.getLogger(__name__)
 
 class EmailSendingError(RuntimeError):
 
@@ -20,7 +22,7 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
     context as Django's HTML templates. context gives additional information
     that the template may use.
     """
-    print(f"An email was sent! Template name: {template_name} to {to_address}")
+    logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
     template = get_template(template_name)
     email_body = template.render(context=context)
 
