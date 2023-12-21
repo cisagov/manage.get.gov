@@ -774,7 +774,7 @@ class DomainApplication(TimeStampedModel):
                 self.approved_domain = None
             except Exception as err:
                 logger.error(err)
-                logger.error("Can't querry an approved domain while attempting a DA reject_with_prejudice()")
+                logger.error("Can't query an approved domain while attempting a DA reject_with_prejudice()")
 
         self.creator.restrict_user()
 
