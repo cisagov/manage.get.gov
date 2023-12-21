@@ -98,7 +98,7 @@ class TestDomainApplication(TestCase):
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(ValueError):
                 # can't submit an application with a null domain name
@@ -110,7 +110,7 @@ class TestDomainApplication(TestCase):
         application = DomainApplication.objects.create(creator=user, requested_domain=site)
 
         # no submitter email so this emits a log warning
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 application.submit()
@@ -128,9 +128,9 @@ class TestDomainApplication(TestCase):
         )
         application.save()
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            application.submit()
+        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+            with less_console_noise():
+                application.submit()
 
         # check to see if an email was sent
         self.assertGreater(
@@ -150,8 +150,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
             with self.assertRaises(TransitionNotAllowed):
                 application.submit()
 
@@ -161,8 +160,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
             with self.assertRaises(TransitionNotAllowed):
                 application.submit()
 
@@ -172,7 +170,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.submit()
@@ -183,7 +181,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.submit()
@@ -194,7 +192,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.submit()
@@ -205,7 +203,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.in_review()
@@ -216,7 +214,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.in_review()
@@ -227,7 +225,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.in_review()
@@ -238,7 +236,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.in_review()
@@ -249,7 +247,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.in_review()
@@ -260,7 +258,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.in_review()
@@ -271,7 +269,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.in_review()
@@ -282,7 +280,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.action_needed()
@@ -293,7 +291,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.action_needed()
@@ -304,7 +302,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.action_needed()
@@ -315,7 +313,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.action_needed()
@@ -326,7 +324,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.action_needed()
@@ -337,7 +335,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.action_needed()
@@ -348,7 +346,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.approve()
@@ -359,7 +357,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.approve()
@@ -370,7 +368,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.approve()
@@ -381,7 +379,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.approve()
@@ -392,7 +390,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.withdraw()
@@ -403,7 +401,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.withdraw()
@@ -414,7 +412,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.withdraw()
@@ -425,7 +423,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.withdraw()
@@ -436,7 +434,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.withdraw()
@@ -447,7 +445,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.withdraw()
@@ -458,7 +456,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject()
@@ -469,7 +467,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject()
@@ -480,7 +478,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject()
@@ -491,7 +489,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject()
@@ -502,7 +500,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject()
@@ -513,7 +511,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject()
@@ -531,7 +529,7 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # Use patch to temporarily replace is_active with the custom implementation
             with patch.object(Domain, "is_active", custom_is_active):
@@ -545,7 +543,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject_with_prejudice()
@@ -556,7 +554,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject_with_prejudice()
@@ -567,7 +565,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject_with_prejudice()
@@ -578,7 +576,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject_with_prejudice()
@@ -589,7 +587,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject_with_prejudice()
@@ -600,7 +598,7 @@ class TestDomainApplication(TestCase):
 
         application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with self.assertRaises(TransitionNotAllowed):
                 application.reject_with_prejudice()
@@ -618,7 +616,7 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
         # Use patch to temporarily replace is_active with the custom implementation
             with patch.object(Domain, "is_active", custom_is_active):

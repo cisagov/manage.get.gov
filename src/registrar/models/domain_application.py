@@ -574,7 +574,7 @@ class DomainApplication(TimeStampedModel):
             return None
 
         if do_fake_send_email:
-            logger.info(f"Email was not sent. Would send {new_status} to email: {self.submitter.email}")
+            logger.info(f"Email was not sent. Would send {new_status} email: {self.submitter.email}")
             return None
 
         try:
