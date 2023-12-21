@@ -674,7 +674,8 @@ class TestContact(TestCase):
     def setUp(self):
         self.email_for_invalid = "intern@igorville.gov"
         self.invalid_user, _ = User.objects.get_or_create(
-            username=self.email_for_invalid, email=self.email_for_invalid, first_name="", last_name="")
+            username=self.email_for_invalid, email=self.email_for_invalid, first_name="", last_name=""
+        )
         self.invalid_contact, _ = Contact.objects.get_or_create(user=self.invalid_user)
 
         self.email = "mayor@igorville.gov"
@@ -695,7 +696,7 @@ class TestContact(TestCase):
         self.assertEqual(self.invalid_contact.last_name, "")
         self.assertEqual(self.invalid_user.first_name, "")
         self.assertEqual(self.invalid_user.last_name, "")
-        
+
         # Manually update the contact - mimicking production (pre-existing data)
         self.invalid_contact.first_name = "Joey"
         self.invalid_contact.last_name = "Baloney"
@@ -709,7 +710,7 @@ class TestContact(TestCase):
         self.assertEqual(self.invalid_contact.last_name, "Baloney")
         self.assertEqual(self.invalid_user.first_name, "Joey")
         self.assertEqual(self.invalid_user.last_name, "Baloney")
-    
+
     def test_saving_contact_does_not_update_user_first_last_names(self):
         """When a contact is updated, we avoid propagating the changes to the linked user if it already has a value"""
 
@@ -743,7 +744,7 @@ class TestContact(TestCase):
         # Updating the contact's email does not propagate
         self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
         self.assertEqual(self.user.email, "mayor@igorville.gov")
-    
+
     def test_saving_contact_does_not_update_user_email_when_none(self):
         """When a contact's email is updated, the change is not propagated to the lined user."""
         self.invalid_contact.email = "joey.baloney@diaperville.com"
