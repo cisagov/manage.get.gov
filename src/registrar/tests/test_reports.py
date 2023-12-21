@@ -382,10 +382,10 @@ class ExportDataTest(TestCase):
             "Domain name,Domain type,Agency,Organization name,City,State,AO,"
             "AO email,Submitter,Submitter title,Submitter email,Submitter phone,"
             "Security contact email,Status\n"
-            "adomain10.gov,Federal,Armed Forces Retirement Home,ready\n"
-            "adomain2.gov,Interstate,dnsneeded\n"
-            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,ready\n"
-            "ddomain3.gov,Federal,Armed Forces Retirement Home,onhold\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
+            "adomain2.gov,Interstate,Dns needed\n"
+            "cdomain1.gov,Federal - Executive,World War I Centennial Commission,Ready\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,On hold\n"
         )
 
         # Normalize line endings and remove commas,
@@ -524,11 +524,11 @@ class ExportDataTest(TestCase):
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,"
             "State,Status,Expiration date\n"
-            "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,ready,\n"
-            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,ready,\n"
-            "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
-            "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
-            "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
+            "cdomain1.gov,Federal-Executive,World War I Centennial Commission,,,,Ready,\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,Ready,\n"
+            "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
+            "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
+            "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,Deleted,\n"
         )
 
         # Normalize line endings and remove commas,

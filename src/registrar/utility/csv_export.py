@@ -38,7 +38,7 @@ def write_row(writer, columns, domain_info):
         "AO": ao,
         "AO email": domain_info.authorizing_official.email if domain_info.authorizing_official else " ",
         "Security contact email": security_contacts[0].email if security_contacts else " ",
-        "Status": domain_info.domain.state,
+        "Status": domain_info.domain.get_state_display(),
         "Expiration date": domain_info.domain.expiration_date,
         "Created at": domain_info.domain.created_at,
         "First ready at": domain_info.domain.first_ready_at,

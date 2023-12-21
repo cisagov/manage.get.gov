@@ -284,6 +284,10 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
 
     // Get the current date in the format YYYY-MM-DD
     var currentDate = new Date().toISOString().split('T')[0];
+
+    // Default the value of the start date input field to the current date
+    let startDateInput =document.getElementById('start');
+    startDateInput.value = currentDate;
     
     // Default the value of the end date input field to the current date
     let endDateInput =document.getElementById('end');
@@ -294,7 +298,7 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     if (exportGrowthReportButton) {
         exportGrowthReportButton.addEventListener('click', function() {
             // Get the selected start and end dates
-            let startDate = document.getElementById('start').value;
+            let startDate = startDateInput.value;
             let endDate = endDateInput.value;
             let exportUrl = document.getElementById('exportLink').dataset.exportUrl;
 
