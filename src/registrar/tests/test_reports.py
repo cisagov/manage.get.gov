@@ -6,7 +6,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.domain import Domain
 from registrar.models.user import User
 from django.contrib.auth import get_user_model
-from registrar.utility.csv_export import export_domains_to_writer
+from registrar.utility.csv_export import export_domains_to_writer, get_default_start_date, get_default_end_date, export_data_growth_to_csv
 from django.core.management import call_command
 from unittest.mock import MagicMock, call, mock_open, patch
 from api.views import get_current_federal, get_current_full
@@ -14,7 +14,7 @@ from django.conf import settings
 from botocore.exceptions import ClientError
 import boto3_mocking
 from registrar.utility.s3_bucket import S3ClientError, S3ClientErrorCodes  # type: ignore
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from django.utils import timezone
 
 class CsvReportsTest(TestCase):
@@ -232,9 +232,13 @@ class ExportDataTest(TestCase):
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
-        self.domain_5, _ = Domain.objects.get_or_create(name="bdomain5.gov", state=Domain.State.DELETED, deleted_at=datetime(2023, 11, 1))
-        self.domain_6, _ = Domain.objects.get_or_create(name="bdomain6.gov", state=Domain.State.DELETED, deleted_at=datetime(1980, 10, 16))
-
+        self.domain_5, _ = Domain.objects.get_or_create(name="bdomain5.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime(2023, 11, 1)))
+        self.domain_6, _ = Domain.objects.get_or_create(name="bdomain6.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime(1980, 10, 16)))
+        self.domain_7, _ = Domain.objects.get_or_create(name="xdomain7.gov", state=Domain.State.DELETED, deleted_at=timezone.now())
+        self.domain_8, _ = Domain.objects.get_or_create(name="sdomain8.gov", state=Domain.State.DELETED, deleted_at=timezone.now())
+        # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today()) and a specific time (using datetime.min.time()).
+        self.domain_9, _ = Domain.objects.get_or_create(name="zdomain9.gov", state=Domain.State.DELETED, deleted_at=timezone.make_aware(datetime.combine(date.today() - timedelta(days=1), datetime.min.time())))
+        
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_1,
@@ -268,6 +272,24 @@ class ExportDataTest(TestCase):
         self.domain_information_6, _ = DomainInformation.objects.get_or_create(
             creator=self.user,
             domain=self.domain_6,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+        self.domain_information_7, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_7,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+        self.domain_information_8, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_8,
+            organization_type="federal",
+            federal_agency="Armed Forces Retirement Home",
+        )
+        self.domain_information_9, _ = DomainInformation.objects.get_or_create(
+            creator=self.user,
+            domain=self.domain_9,
             organization_type="federal",
             federal_agency="Armed Forces Retirement Home",
         )
@@ -392,11 +414,23 @@ class ExportDataTest(TestCase):
         self.assertEqual(csv_content, expected_content)
         
     def test_export_domains_to_writer_with_date_filter_pulls_domains_in_range(self):
-        """Test that domains that are READY and in range are pulled when the growth report conditions
-        are applied to export_domains_to_writer."""
+        """Test that domains that are 
+            1. READY and their created_at dates are in range
+            2. DELETED and their deleted_at dates are in range
+        are pulled when the growth report conditions are applied to export_domains_to_writed.
+        Test that ready domains display first and deleted second, sorted according to 
+        specified keys.
+        
+        We considered testing export_data_growth_to_csv which calls export_domains_to_writer
+        and would have been easy to set up, but expected_content would contain created_at dates
+        which are hard to mock."""
+        
         # Create a CSV file in memory
         csv_file = StringIO()
         writer = csv.writer(csv_file)
+        # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today()) and a specific time (using datetime.min.time()).
+        end_date = timezone.make_aware(datetime.combine(date.today() + timedelta(days=2), datetime.min.time()))
+        start_date = timezone.make_aware(datetime.combine(date.today() - timedelta(days=2), datetime.min.time()))
 
         # Define columns, sort fields, and filter condition
         columns = [
@@ -407,43 +441,46 @@ class ExportDataTest(TestCase):
             "City",
             "State",
             "Status",
-            "Deleted at",
             "Expiration date",
         ]
         sort_fields = ["created_at","domain__name",]
+        sort_fields_for_additional_domains = [
+            "domain__deleted_at",
+            "domain__name",
+        ]
         filter_condition = {
             "domain__state__in": [
                 Domain.State.READY,
             ],
-            "domain__created_at__lt": timezone.make_aware(datetime.now() + timedelta(days=1)),
-            "domain__created_at__gt": timezone.make_aware(datetime.now() - timedelta(days=1)),
+            "domain__created_at__lt": end_date,
+            "domain__created_at__gt": start_date,
         }
         filter_conditions_for_additional_domains = {
             "domain__state__in": [
                 Domain.State.DELETED,
             ],
-            "domain__deleted_at__lt": timezone.make_aware(datetime.now() + timedelta(days=1)),
-            "domain__deleted_at__gt": timezone.make_aware(datetime.now() - timedelta(days=1)),
+            "domain__deleted_at__lt": end_date,
+            "domain__deleted_at__gt": start_date,
         }
 
         # Call the export function
-        export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+        export_domains_to_writer(writer, columns, sort_fields, filter_condition, sort_fields_for_additional_domains, filter_conditions_for_additional_domains)
 
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
 
         # Read the content into a variable
         csv_content = csv_file.read()
-        
-        print(f'csv_content {csv_content}')
-        
-        # We expect READY domains,
-        # federal only
-        # sorted alphabetially by domain name
+                
+        # We expect READY domains first, created between today-2 and today+2, sorted by created_at then name 
+        # and DELETED domains deleted between today-2 and today+2, sorted by deleted_at then name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,"
-            "State,Status,Deleted at,Expiration date\n"
-            "cdomain1.gov,Federal-Executive,World War I Centennial Commission,ready,\n"
+            "State,Status,Expiration date\n"
+            "cdomain1.gov,Federal-Executive,World War I Centennial Commission,ready\n"
+            "zdomain9.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
+            "sdomain8.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
+            "xdomain7.gov,Federal,Armed Forces Retirement Home,,,,deleted,\n"
         )
 
         # Normalize line endings and remove commas,
@@ -453,67 +490,16 @@ class ExportDataTest(TestCase):
         
         self.assertEqual(csv_content, expected_content)
         
-    def test_export_domains_to_writer_with_date_filter_pulls_appropriate_deleted_domains(self):
-        """When domain__created_at__gt is in filters, we know it's a growth report
-        and we need to fetch the domainInfos for the deleted domains that are within
-        the date range. However, deleted domains that were deleted at a date outside 
-        the range do not get pulled."""
-        # Create a CSV file in memory
-        csv_file = StringIO()
-        writer = csv.writer(csv_file)
+class HelperFunctions(TestCase):
+    """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
+    
+    def test_get_default_start_date(self):
+        expected_date = timezone.make_aware(datetime(2023, 11, 1))
+        actual_date = get_default_start_date()
+        self.assertEqual(actual_date, expected_date)
 
-        # Define columns, sort fields, and filter condition
-        columns = [
-            "Domain name",
-            "Domain type",
-            "Agency",
-            "Organization name",
-            "City",
-            "State",
-            "Status",
-            "Deleted at",
-            "Expiration date",
-        ]
-        sort_fields = ["created_at","domain__name",]
-        filter_condition = {
-            "domain__state__in": [
-                Domain.State.READY,
-            ],
-            "domain__created_at__lt": timezone.make_aware(datetime(2023, 10, 1)),
-            "domain__created_at__gt": timezone.make_aware(datetime(2023, 12, 1)),
-        }
-        filter_conditions_for_additional_domains = {
-            "domain__state__in": [
-                Domain.State.DELETED,
-            ],
-            "domain__deleted_at__lt": timezone.make_aware(datetime(2023, 10, 1)),
-            "domain__deleted_at__gt": timezone.make_aware(datetime(2023, 12, 1)),
-        }
-
-        # Call the export function
-        export_domains_to_writer(writer, columns, sort_fields, filter_condition, filter_conditions_for_additional_domains)
-
-        # Reset the CSV file's position to the beginning
-        csv_file.seek(0)
-
-        # Read the content into a variable
-        csv_content = csv_file.read()
-        
-        print(f'csv_content {csv_content}')
-        
-        # We expect READY domains,
-        # federal only
-        # sorted alphabetially by domain name
-        expected_content = (
-            "Domain name,Domain type,Agency,Organization name,City,"
-            "State,Status,Deleted at,Expiration date\n"
-            "bdomain5.gov,Federal,Armed Forces Retirement Home,deleted,2023-11-01,\n"
-        )
-
-        # Normalize line endings and remove commas,
-        # spaces and leading/trailing whitespace
-        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
-        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        
-        self.assertEqual(csv_content, expected_content)
-
+    def test_get_default_end_date(self):
+        # Note: You may need to mock timezone.now() for accurate testing
+        expected_date = timezone.now()
+        actual_date = get_default_end_date()
+        self.assertEqual(actual_date.date(), expected_date.date())

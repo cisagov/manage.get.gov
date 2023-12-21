@@ -282,13 +282,20 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
 */
 (function (){
 
+    // Get the current date in the format YYYY-MM-DD
+    var currentDate = new Date().toISOString().split('T')[0];
+    
+    // Default the value of the end date input field to the current date
+    let endDateInput =document.getElementById('end');
+    endDateInput.value = currentDate;
+
     let exportGrowthReportButton = document.getElementById('exportLink');
 
     if (exportGrowthReportButton) {
         exportGrowthReportButton.addEventListener('click', function() {
             // Get the selected start and end dates
             let startDate = document.getElementById('start').value;
-            let endDate = document.getElementById('end').value;
+            let endDate = endDateInput.value;
             let exportUrl = document.getElementById('exportLink').dataset.exportUrl;
 
             // Build the URL with parameters
