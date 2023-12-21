@@ -233,7 +233,7 @@ class ExportDataTest(TestCase):
         )
 
         self.domain_1, _ = Domain.objects.get_or_create(
-            name="cdomain1.gov", state=Domain.State.READY, ready_at=timezone.now()
+            name="cdomain1.gov", state=Domain.State.READY, first_ready_at=timezone.now()
         )
         self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
@@ -263,7 +263,7 @@ class ExportDataTest(TestCase):
         self.domain_10, _ = Domain.objects.get_or_create(
             name="adomain10.gov",
             state=Domain.State.READY,
-            ready_at=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())),
+            first_ready_at=timezone.make_aware(datetime.combine(date.today() + timedelta(days=1), datetime.min.time())),
         )
 
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
@@ -450,10 +450,10 @@ class ExportDataTest(TestCase):
 
     def test_export_domains_to_writer_with_date_filter_pulls_domains_in_range(self):
         """Test that domains that are
-            1. READY and their ready_at dates are in range
+            1. READY and their first_ready_at dates are in range
             2. DELETED and their deleted_at dates are in range
         are pulled when the growth report conditions are applied to export_domains_to_writed.
-        Test that ready domains are sorted by ready_at/deleted_at dates first, names second.
+        Test that ready domains are sorted by first_ready_at/deleted_at dates first, names second.
 
         We considered testing export_data_growth_to_csv which calls export_domains_to_writer
         and would have been easy to set up, but expected_content would contain created_at dates
@@ -492,8 +492,8 @@ class ExportDataTest(TestCase):
             "domain__state__in": [
                 Domain.State.READY,
             ],
-            "domain__ready_at__lt": end_date,
-            "domain__ready_at__gt": start_date,
+            "domain__first_ready_at__lt": end_date,
+            "domain__first_ready_at__gt": start_date,
         }
         filter_conditions_for_additional_domains = {
             "domain__state__in": [

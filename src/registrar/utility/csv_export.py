@@ -41,7 +41,7 @@ def write_row(writer, columns, domain_info):
         "Status": domain_info.domain.state,
         "Expiration date": domain_info.domain.expiration_date,
         "Created at": domain_info.domain.created_at,
-        "Ready at": domain_info.domain.ready_at,
+        "Ready at": domain_info.domain.first_ready_at,
         "Deleted at": domain_info.domain.deleted_at,
     }
     writer.writerow([FIELDS.get(column, "") for column in columns])
@@ -232,8 +232,8 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
     ]
     filter_condition = {
         "domain__state__in": [Domain.State.READY],
-        "domain__ready_at__lt": end_date_formatted,
-        "domain__ready_at__gt": start_date_formatted,
+        "domain__first_ready_at__lt": end_date_formatted,
+        "domain__first_ready_at__gt": start_date_formatted,
     }
 
     # We also want domains deleted between sar and end dates, sorted
