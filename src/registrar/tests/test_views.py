@@ -740,8 +740,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(555) 555 5555",
         )
-        domain, _ = DraftDomain.objects.get_or_create(name="fakeSite.gov")
-        current, _ = Website.objects.get_or_create(website="city.com")
         you, _ = Contact.objects.get_or_create(
             first_name="Testy you",
             last_name="Tester you",
@@ -767,27 +765,25 @@ class DomainApplicationTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             authorizing_official=ao,
-            requested_domain=domain,
             submitter=you,
             creator=self.user,
             status="started"
         )
         application.other_contacts.add(other)
-        application.current_websites.add(current)
 
+
+        # prime the form by visiting /edit
+        edit_app_page = self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        # prime the form by visiting /edit
-        url = reverse("edit-application", kwargs={"id": application.pk})
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        url = reverse("application:other_contacts")
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        other_contacts_page = self.client.get(url, follow=True)
+
 
         # ====== METHOD 2 -- prime form
         # other_contacts_page = self.app.get(reverse("application:other_contacts"))
@@ -824,8 +820,22 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # # Go back to the previous step
         # other_contacts_page = self.app.get(reverse("application:other_contacts"))
 
-        # clear the form
+        ##### ^ The commented out method doesn't work because it creates a duplicate application entry ####
+
         other_contacts_form = other_contacts_page.forms[0]
+
+        # DEBUG print statements
+        for f in other_contacts_form.fields:
+            if not "submit" in f:
+                print(f)
+                print(other_contacts_form[f].value)
+        
+        # Minimal check to ensure the form is loaded with data (if this part of 
+        # the application doesn't work, we should be equipped with other unit
+        # tests to flag it)
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+
+        # clear the form
         other_contacts_form["other_contacts-0-first_name"] = ""
         other_contacts_form["other_contacts-0-middle_name"] = ""
         other_contacts_form["other_contacts-0-last_name"] = ""
@@ -833,6 +843,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_form["other_contacts-0-email"] = ""
         other_contacts_form["other_contacts-0-phone"] = ""
 
+        # DEBUG print statements
         for f in other_contacts_form.fields:
             if not "submit" in f:
                 print(f)
