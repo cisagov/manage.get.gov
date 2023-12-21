@@ -385,6 +385,34 @@ class TestDomainStatuses(MockEppLib):
         """Domain 'revert_client_hold' method causes the registry to change statuses"""
         raise
 
+    def test_first_ready_at(self):
+        """
+        first_ready_at is set when a domain is first transitioned to READY. It does not get overwritten
+        in case the domain gets out of and back into READY.
+        """
+        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
+        self.assertEqual(domain.first_ready_at, None)
+
+        domain.ready()
+
+        # check that status is READY
+        self.assertTrue(domain.is_active())
+        self.assertNotEqual(domain.first_ready_at, None)
+
+        # Capture the value of first_ready_at
+        first_ready_at = domain.first_ready_at
+
+        # change domain status
+        domain.dns_needed()
+        self.assertFalse(domain.is_active())
+
+        # change  back to READY
+        domain.ready()
+        self.assertTrue(domain.is_active())
+
+        # assert that the value of first_ready_at has not changed
+        self.assertEqual(domain.first_ready_at, first_ready_at)
+
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
@@ -1112,7 +1140,7 @@ class TestRegistrantNameservers(MockEppLib):
             Then `commands.CreateHost` and `commands.UpdateDomain` is sent
                 to the registry
             And `domain.is_active` returns False
-            And domain.ready_at is null
+            And domain.first_ready_at is null
         """
 
         # set 1 nameserver
@@ -1139,7 +1167,7 @@ class TestRegistrantNameservers(MockEppLib):
         # as you have less than 2 nameservers
         self.assertFalse(self.domain.is_active())
 
-        self.assertEqual(self.domain.ready_at, None)
+        self.assertEqual(self.domain.first_ready_at, None)
 
     def test_user_adds_two_nameservers(self):
         """
@@ -1149,7 +1177,7 @@ class TestRegistrantNameservers(MockEppLib):
             Then `commands.CreateHost` and `commands.UpdateDomain` is sent
                 to the registry
             And `domain.is_active` returns True
-            And domain.ready_at is not null
+            And domain.first_ready_at is not null
         """
 
         # set 2 nameservers
@@ -1180,7 +1208,7 @@ class TestRegistrantNameservers(MockEppLib):
         self.assertEqual(4, self.mockedSendFunction.call_count)
         # check that status is READY
         self.assertTrue(self.domain.is_active())
-        self.assertNotEqual(self.domain.ready_at, None)
+        self.assertNotEqual(self.domain.first_ready_at, None)
 
     def test_user_adds_too_many_nameservers(self):
         """

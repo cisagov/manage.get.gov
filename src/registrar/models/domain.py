@@ -967,7 +967,7 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text="Deleted at date",
     )
 
-    ready_at = DateField(
+    first_ready_at = DateField(
         null=True,
         editable=False,
         help_text="The last time this domain moved into the READY state",
@@ -1336,7 +1336,11 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         logger.info("Changing to ready state")
         logger.info("able to transition to ready state")
-        self.ready_at = timezone.now()
+        # if self.first_ready_at is not None, this means that his
+        # domain wasr READY, then not READY, then is READY again.
+        # We do not want to overwrite first_ready_at.
+        if self.first_ready_at is None:
+            self.first_ready_at = timezone.now()
 
     @transition(
         field="state",
