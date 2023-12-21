@@ -2225,6 +2225,33 @@ class TestApplicationStatus(TestWithUser, WebTest):
         home_page = self.app.get("/")
         self.assertContains(home_page, "Withdrawn")
 
+    def test_application_withdraw_no_permissions(self):
+        """Can't withdraw applications as a restricted user."""
+        self.user.status = User.RESTRICTED
+        self.user.save()
+        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
+        application.save()
+
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "city.gov")
+        # click the "Manage" link
+        detail_page = home_page.click("Manage", index=0)
+        self.assertContains(detail_page, "city.gov")
+        self.assertContains(detail_page, "city1.gov")
+        self.assertContains(detail_page, "Chief Tester")
+        self.assertContains(detail_page, "testy@town.com")
+        self.assertContains(detail_page, "Admin Tester")
+        self.assertContains(detail_page, "Status:")
+        # Restricted user trying to withdraw results in 403 error
+        with less_console_noise():
+            for url_name in [
+                "application-withdraw-confirmation",
+                "application-withdrawn",
+            ]:
+                with self.subTest(url_name=url_name):
+                    page = self.client.get(reverse(url_name, kwargs={"pk": application.pk}))
+                    self.assertEqual(page.status_code, 403)
+
     def test_application_status_no_permissions(self):
         """Can't access applications without being the creator."""
         application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
