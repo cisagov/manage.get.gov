@@ -530,7 +530,7 @@ def completed_application(
 ):
     """A completed domain application."""
     if not user:
-        user = get_user_model().objects.create(username="username")
+        user = get_user_model().objects.create(username="username" + str(uuid.uuid4())[:8])
     ao, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",

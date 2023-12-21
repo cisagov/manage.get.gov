@@ -26,20 +26,52 @@ boto3_mocking.clients.register_handler("sesv2", MockSESClient)
 # with AWS SES, so mock that out in all of these test cases
 @boto3_mocking.patching
 class TestDomainApplication(TestCase):
+    def setUp(self):
+        self.started_application = completed_application(
+            status=DomainApplication.ApplicationStatus.STARTED, name="started.gov"
+        )
+        self.submitted_application = completed_application(
+            status=DomainApplication.ApplicationStatus.SUBMITTED, name="submitted.gov"
+        )
+        self.in_review_application = completed_application(
+            status=DomainApplication.ApplicationStatus.IN_REVIEW, name="in-review.gov"
+        )
+        self.action_needed_application = completed_application(
+            status=DomainApplication.ApplicationStatus.ACTION_NEEDED, name="action-needed.gov"
+        )
+        self.approved_application = completed_application(
+            status=DomainApplication.ApplicationStatus.APPROVED, name="approved.gov"
+        )
+        self.withdrawn_application = completed_application(
+            status=DomainApplication.ApplicationStatus.WITHDRAWN, name="withdrawn.gov"
+        )
+        self.rejected_application = completed_application(
+            status=DomainApplication.ApplicationStatus.REJECTED, name="rejected.gov"
+        )
+        self.ineligible_application = completed_application(
+            status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
+        )
+
+    def assertNotRaises(self, exception_type):
+        """Helper method for testing allowed transitions."""
+        return self.assertRaises(Exception, None, exception_type)
+
     def test_empty_create_fails(self):
-        """Can't create a completely empty domain application."""
+        """Can't create a completely empty domain application.
+        NOTE: something about theexception this test raises messes up with the
+        atomic block in a custom tearDown method for the parent test class."""
         with self.assertRaisesRegex(IntegrityError, "creator"):
             DomainApplication.objects.create()
 
     def test_minimal_create(self):
         """Can create with just a creator."""
-        user, _ = User.objects.get_or_create()
+        user, _ = User.objects.get_or_create(username="testy")
         application = DomainApplication.objects.create(creator=user)
         self.assertEqual(application.status, DomainApplication.ApplicationStatus.STARTED)
 
     def test_full_create(self):
         """Can create with all fields."""
-        user, _ = User.objects.get_or_create()
+        user, _ = User.objects.get_or_create(username="testy")
         contact = Contact.objects.create()
         com_website, _ = Website.objects.get_or_create(website="igorville.com")
         gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
@@ -69,7 +101,7 @@ class TestDomainApplication(TestCase):
 
     def test_domain_info(self):
         """Can create domain info with all fields."""
-        user, _ = User.objects.get_or_create()
+        user, _ = User.objects.get_or_create(username="testy")
         contact = Contact.objects.create()
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         information = DomainInformation.objects.create(
@@ -95,14 +127,14 @@ class TestDomainApplication(TestCase):
         self.assertEqual(information.id, domain.domain_info.id)
 
     def test_status_fsm_submit_fail(self):
-        user, _ = User.objects.get_or_create()
+        user, _ = User.objects.get_or_create(username="testy")
         application = DomainApplication.objects.create(creator=user)
         with self.assertRaises(ValueError):
             # can't submit an application with a null domain name
             application.submit()
 
     def test_status_fsm_submit_succeed(self):
-        user, _ = User.objects.get_or_create()
+        user, _ = User.objects.get_or_create(username="testy")
         site = DraftDomain.objects.create(name="igorville.gov")
         application = DomainApplication.objects.create(creator=user, requested_domain=site)
         # no submitter email so this emits a log warning
@@ -112,7 +144,7 @@ class TestDomainApplication(TestCase):
 
     def test_submit_sends_email(self):
         """Create an application and submit it and see if email was sent."""
-        user, _ = User.objects.get_or_create()
+        user, _ = User.objects.get_or_create(username="testy")
         contact = Contact.objects.create(email="test@test.gov")
         domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         application = DomainApplication.objects.create(
@@ -135,320 +167,251 @@ class TestDomainApplication(TestCase):
             0,
         )
 
-    def test_transition_not_allowed_submitted_submitted(self):
-        """Create an application with status submitted and call submit
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
-
-    def test_transition_not_allowed_in_review_submitted(self):
-        """Create an application with status in review and call submit
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
-
-    def test_transition_not_allowed_approved_submitted(self):
-        """Create an application with status approved and call submit
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
-
-    def test_transition_not_allowed_rejected_submitted(self):
-        """Create an application with status rejected and call submit
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
-
-    def test_transition_not_allowed_ineligible_submitted(self):
-        """Create an application with status ineligible and call submit
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.submit()
-
-    def test_transition_not_allowed_started_in_review(self):
-        """Create an application with status started and call in_review
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
-
-    def test_transition_not_allowed_in_review_in_review(self):
-        """Create an application with status in review and call in_review
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
-
-    def test_transition_not_allowed_approved_in_review(self):
-        """Create an application with status approved and call in_review
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
-
-    def test_transition_not_allowed_action_needed_in_review(self):
-        """Create an application with status action needed and call in_review
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
-
-    def test_transition_not_allowed_rejected_in_review(self):
-        """Create an application with status rejected and call in_review
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
-
-    def test_transition_not_allowed_withdrawn_in_review(self):
-        """Create an application with status withdrawn and call in_review
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
-
-    def test_transition_not_allowed_ineligible_in_review(self):
-        """Create an application with status ineligible and call in_review
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.in_review()
-
-    def test_transition_not_allowed_started_action_needed(self):
-        """Create an application with status started and call action_needed
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
-
-    def test_transition_not_allowed_submitted_action_needed(self):
-        """Create an application with status submitted and call action_needed
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
-
-    def test_transition_not_allowed_action_needed_action_needed(self):
-        """Create an application with status action needed and call action_needed
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
-
-    def test_transition_not_allowed_approved_action_needed(self):
-        """Create an application with status approved and call action_needed
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
-
-    def test_transition_not_allowed_withdrawn_action_needed(self):
-        """Create an application with status withdrawn and call action_needed
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
-
-    def test_transition_not_allowed_ineligible_action_needed(self):
-        """Create an application with status ineligible and call action_needed
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.action_needed()
-
-    def test_transition_not_allowed_started_approved(self):
-        """Create an application with status started and call approve
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
-
-    def test_transition_not_allowed_approved_approved(self):
-        """Create an application with status approved and call approve
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
-
-    def test_transition_not_allowed_action_needed_approved(self):
-        """Create an application with status action needed and call approve
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
-
-    def test_transition_not_allowed_withdrawn_approved(self):
-        """Create an application with status withdrawn and call approve
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.approve()
-
-    def test_transition_not_allowed_started_withdrawn(self):
-        """Create an application with status started and call withdraw
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
-
-    def test_transition_not_allowed_approved_withdrawn(self):
-        """Create an application with status approved and call withdraw
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
-
-    def test_transition_not_allowed_action_needed_withdrawn(self):
-        """Create an application with status action needed and call withdraw
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
-
-    def test_transition_not_allowed_rejected_withdrawn(self):
-        """Create an application with status rejected and call withdraw
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
-
-    def test_transition_not_allowed_withdrawn_withdrawn(self):
-        """Create an application with status withdrawn and call withdraw
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
-
-    def test_transition_not_allowed_ineligible_withdrawn(self):
-        """Create an application with status ineligible and call withdraw
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.withdraw()
-
-    def test_transition_not_allowed_started_rejected(self):
-        """Create an application with status started and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
-
-    def test_transition_not_allowed_submitted_rejected(self):
-        """Create an application with status submitted and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
-
-    def test_transition_not_allowed_action_needed_rejected(self):
-        """Create an application with status action needed and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
-
-    def test_transition_not_allowed_withdrawn_rejected(self):
-        """Create an application with status withdrawn and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
-
-    def test_transition_not_allowed_rejected_rejected(self):
-        """Create an application with status rejected and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
-
-    def test_transition_not_allowed_ineligible_rejected(self):
-        """Create an application with status ineligible and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject()
+    def test_submit_transition_allowed(self):
+        """
+        Test that calling submit from allowable statuses does raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.started_application, TransitionNotAllowed),
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.withdrawn_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.submit()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_submit_transition_not_allowed(self):
+        """
+        Test that calling submit against transition rules raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.submitted_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.submit()
+
+    def test_in_review_transition_allowed(self):
+        """
+        Test that calling in_review from allowable statuses does raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.submitted_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.in_review()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_in_review_transition_not_allowed(self):
+        """
+        Test that calling in_review against transition rules raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.started_application, TransitionNotAllowed),
+            (self.in_review_application, TransitionNotAllowed),
+            (self.withdrawn_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.in_review()
+
+    def test_action_needed_transition_allowed(self):
+        """
+        Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.action_needed()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_action_needed_transition_not_allowed(self):
+        """
+        Test that calling action_needed against transition rules raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.started_application, TransitionNotAllowed),
+            (self.submitted_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.withdrawn_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.action_needed()
+
+    def test_approved_transition_allowed(self):
+        """
+        Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.submitted_application, TransitionNotAllowed),
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.approve()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_approved_transition_not_allowed(self):
+        """
+        Test that calling action_needed against transition rules raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.started_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.withdrawn_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.approve()
+
+    def test_withdraw_transition_allowed(self):
+        """
+        Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.submitted_application, TransitionNotAllowed),
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.withdraw()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_withdraw_transition_not_allowed(self):
+        """
+        Test that calling action_needed against transition rules raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.started_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.withdrawn_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.withdraw()
+
+    def test_reject_transition_allowed(self):
+        """
+        Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.reject()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_reject_transition_not_allowed(self):
+        """
+        Test that calling action_needed against transition rules raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.started_application, TransitionNotAllowed),
+            (self.submitted_application, TransitionNotAllowed),
+            (self.withdrawn_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.reject()
+
+    def test_reject_with_prejudice_transition_allowed(self):
+        """
+        Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.reject_with_prejudice()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_reject_with_prejudice_transition_not_allowed(self):
+        """
+        Test that calling action_needed against transition rules raises TransitionNotAllowed.
+        """
+        test_cases = [
+            (self.started_application, TransitionNotAllowed),
+            (self.submitted_application, TransitionNotAllowed),
+            (self.withdrawn_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.reject_with_prejudice()
 
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
         is active, and call reject against transition rules"""
 
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        application.approved_domain = domain
-        application.save()
+        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
+        self.approved_application.approved_domain = domain
+        self.approved_application.save()
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
@@ -458,70 +421,15 @@ class TestDomainApplication(TestCase):
         with patch.object(Domain, "is_active", custom_is_active):
             # Now, when you call is_active on Domain, it will return True
             with self.assertRaises(TransitionNotAllowed):
-                application.reject()
-
-    def test_transition_not_allowed_started_ineligible(self):
-        """Create an application with status started and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.STARTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
-
-    def test_transition_not_allowed_submitted_ineligible(self):
-        """Create an application with status submitted and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
-
-    def test_transition_not_allowed_action_needed_ineligible(self):
-        """Create an application with status action needed and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
-
-    def test_transition_not_allowed_withdrawn_ineligible(self):
-        """Create an application with status withdrawn and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
-
-    def test_transition_not_allowed_rejected_ineligible(self):
-        """Create an application with status rejected and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
-
-    def test_transition_not_allowed_ineligible_ineligible(self):
-        """Create an application with status ineligible and call reject
-        against transition rules"""
-
-        application = completed_application(status=DomainApplication.ApplicationStatus.INELIGIBLE)
-
-        with self.assertRaises(TransitionNotAllowed):
-            application.reject_with_prejudice()
+                self.approved_application.reject()
 
     def test_transition_not_allowed_approved_ineligible_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
         is active, and call reject_with_prejudice against transition rules"""
 
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        application.approved_domain = domain
-        application.save()
+        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
+        self.approved_application.approved_domain = domain
+        self.approved_application.save()
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
@@ -531,7 +439,7 @@ class TestDomainApplication(TestCase):
         with patch.object(Domain, "is_active", custom_is_active):
             # Now, when you call is_active on Domain, it will return True
             with self.assertRaises(TransitionNotAllowed):
-                application.reject_with_prejudice()
+                self.approved_application.reject_with_prejudice()
 
 
 class TestPermissions(TestCase):
@@ -674,12 +582,13 @@ class TestContact(TestCase):
     def setUp(self):
         self.email_for_invalid = "intern@igorville.gov"
         self.invalid_user, _ = User.objects.get_or_create(
-            username=self.email_for_invalid, email=self.email_for_invalid, first_name="", last_name="")
+            username=self.email_for_invalid, email=self.email_for_invalid, first_name="", last_name=""
+        )
         self.invalid_contact, _ = Contact.objects.get_or_create(user=self.invalid_user)
 
         self.email = "mayor@igorville.gov"
-        self.existing_user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
-        self.existing_contact, _ = Contact.objects.get_or_create(user=self.existing_user)
+        self.user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
+        self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
     def tearDown(self):
         super().tearDown()
@@ -689,13 +598,14 @@ class TestContact(TestCase):
     def test_saving_contact_updates_user_first_last_names(self):
         """When a contact is updated, we propagate the changes to the linked user if it exists."""
 
-        # User and Contact are created and linked as expected
+        # User and Contact are created and linked as expected.
+        # An empty User object should create an empty contact.
         self.assertEqual(self.invalid_contact.first_name, "")
         self.assertEqual(self.invalid_contact.last_name, "")
         self.assertEqual(self.invalid_user.first_name, "")
         self.assertEqual(self.invalid_user.last_name, "")
-        
-        # Manually update the contact - mimicking production
+
+        # Manually update the contact - mimicking production (pre-existing data)
         self.invalid_contact.first_name = "Joey"
         self.invalid_contact.last_name = "Baloney"
         self.invalid_contact.save()
@@ -708,43 +618,44 @@ class TestContact(TestCase):
         self.assertEqual(self.invalid_contact.last_name, "Baloney")
         self.assertEqual(self.invalid_user.first_name, "Joey")
         self.assertEqual(self.invalid_user.last_name, "Baloney")
-    
+
     def test_saving_contact_does_not_update_user_first_last_names(self):
         """When a contact is updated, we avoid propagating the changes to the linked user if it already has a value"""
 
         # User and Contact are created and linked as expected
-        self.assertEqual(self.existing_contact.first_name, "Jeff")
-        self.assertEqual(self.existing_contact.last_name, "Lebowski")
-        self.assertEqual(self.existing_user.first_name, "Jeff")
-        self.assertEqual(self.existing_user.last_name, "Lebowski")
+        self.assertEqual(self.contact.first_name, "Jeff")
+        self.assertEqual(self.contact.last_name, "Lebowski")
+        self.assertEqual(self.user.first_name, "Jeff")
+        self.assertEqual(self.user.last_name, "Lebowski")
 
-        self.existing_contact.first_name = "Joey"
-        self.existing_contact.last_name = "Baloney"
-        self.existing_contact.save()
+        self.contact.first_name = "Joey"
+        self.contact.last_name = "Baloney"
+        self.contact.save()
 
         # Refresh the user object to reflect the changes made in the database
-        self.existing_user.refresh_from_db()
+        self.user.refresh_from_db()
 
         # Updating the contact's first and last names propagate to the user
-        self.assertEqual(self.existing_contact.first_name, "Joey")
-        self.assertEqual(self.existing_contact.last_name, "Baloney")
-        self.assertEqual(self.existing_user.first_name, "Jeff")
-        self.assertEqual(self.existing_user.last_name, "Lebowski")
+        self.assertEqual(self.contact.first_name, "Joey")
+        self.assertEqual(self.contact.last_name, "Baloney")
+        self.assertEqual(self.user.first_name, "Jeff")
+        self.assertEqual(self.user.last_name, "Lebowski")
 
     def test_saving_contact_does_not_update_user_email(self):
-        """When a contact's email is updated, the change is not propagated to the lined user."""
-        self.existing_contact.email = "joey.baloney@diaperville.com"
-        self.existing_contact.save()
+        """When a contact's email is updated, the change is not propagated to the user."""
+        self.contact.email = "joey.baloney@diaperville.com"
+        self.contact.save()
 
         # Refresh the user object to reflect the changes made in the database
-        self.existing_user.refresh_from_db()
+        self.user.refresh_from_db()
 
         # Updating the contact's email does not propagate
-        self.assertEqual(self.existing_contact.email, "joey.baloney@diaperville.com")
-        self.assertEqual(self.existing_user.email, "mayor@igorville.gov")
-    
+        self.assertEqual(self.contact.email, "joey.baloney@diaperville.com")
+        self.assertEqual(self.user.email, "mayor@igorville.gov")
+
     def test_saving_contact_does_not_update_user_email_when_none(self):
-        """When a contact's email is updated, the change is not propagated to the lined user."""
+        """When a contact's email is updated, and the first/last name is none,
+        the change is not propagated to the user."""
         self.invalid_contact.email = "joey.baloney@diaperville.com"
         self.invalid_contact.save()
 
