@@ -50,13 +50,13 @@ class Command(BaseCommand):
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction, help="Increases log chattiness")
         parser.add_argument(
             "--minDate",
-            type=self.valid_date,
+            type=self.get_valid_date,
             default="2023-11-01",
             help="Sets the minimum date cutoff (YYYY-MM-DD)",
         )
         parser.add_argument(
             "--maxDate",
-            type=self.valid_date,
+            type=self.get_valid_date,
             default="2024-12-30",
             help="Sets the maximum date cutoff (YYYY-MM-DD)",
         )
@@ -139,12 +139,14 @@ class Command(BaseCommand):
 
         return transition_domains.count() > 0
 
-    def valid_date(self, string):
-        """Checks if the given string is a valid date in the format YYYY-MM-DD"""
+    def get_valid_date(self, date_string) -> date:
+        """Returns a date object from a date string.
+        Checks if the given string is a valid date in the format YYYY-MM-DD.
+        """
         try:
-            return datetime.strptime(string, "%Y-%m-%d").date()
+            return datetime.strptime(date_string, "%Y-%m-%d").date()
         except ValueError as err:
-            msg = f"Not a valid date: '{string}'"
+            msg = f"Not a valid date: '{date_string}'"
             raise argparse.ArgumentTypeError(msg) from err
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
