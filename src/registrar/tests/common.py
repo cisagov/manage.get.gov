@@ -1094,6 +1094,8 @@ class MockEppLib(TestCase):
                 email=contact.email,
                 voice=contact.voice,
                 fax=contact.fax,
+                disclose=di,
+                auth_info=ai,
             )
 
     def tearDown(self):
