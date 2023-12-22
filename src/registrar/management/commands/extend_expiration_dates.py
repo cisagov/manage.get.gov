@@ -77,12 +77,8 @@ class Command(BaseCommand):
         disable_idempotence = options.get("disableIdempotentCheck")
         debug = options.get("debug")
         
-        min_date_str = options.get("minDate")
-        max_date_str = options.get("maxDate")
-
-        # Convert date strings to date objects
-        expiration_minimum_cutoff = datetime.strptime(min_date_str, "%Y-%m-%d").date()
-        expiration_maximum_cutoff = datetime.strptime(max_date_str, "%Y-%m-%d").date()
+        expiration_minimum_cutoff = options.get("minDate")
+        expiration_maximum_cutoff = options.get("maxDate")
 
         # Does a check to see if parse_limit is a positive int.
         # Raise an error if not.
