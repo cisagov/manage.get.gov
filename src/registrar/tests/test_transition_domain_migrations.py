@@ -14,7 +14,7 @@ from registrar.models import (
 )
 
 from django.core.management import call_command
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from registrar.models.contact import Contact
 
