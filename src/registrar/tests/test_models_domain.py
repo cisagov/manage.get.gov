@@ -29,7 +29,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from .common import MockEppLib, less_console_noise
+from .common import MockEppLib, MockSESClient, less_console_noise
 import logging
 import boto3_mocking  # type: ignore
 
@@ -263,8 +263,7 @@ class TestDomainCreation(MockEppLib):
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
             with less_console_noise():
                 # skip using the submit method
                 application.status = DomainApplication.ApplicationStatus.SUBMITTED

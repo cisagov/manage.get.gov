@@ -19,8 +19,8 @@ from registrar.models.transition_domain import TransitionDomain  # type: ignore
 from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
-boto3_mocking.clients.register_handler("sesv2", MockSESClient)
 
+boto3_mocking.clients.register_handler("sesv2", MockSESClient)
 
 # The DomainApplication submit method has a side effect of sending an email
 # with AWS SES, so mock that out in all of these test cases
@@ -51,6 +51,12 @@ class TestDomainApplication(TestCase):
         self.ineligible_application = completed_application(
             status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
         )
+
+        self.mock_client = MockSESClient()
+    
+    def tearDown(self):
+        super().tearDown()
+        self.mock_client.EMAILS_SENT.clear()
 
     def assertNotRaises(self, exception_type):
         """Helper method for testing allowed transitions."""
@@ -130,8 +136,8 @@ class TestDomainApplication(TestCase):
         user, _ = User.objects.get_or_create(username="testy")
         application = DomainApplication.objects.create(creator=user)
 
-        mock_client = MockSESClient
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 with self.assertRaises(ValueError):
                     # can't submit an application with a null domain name
@@ -143,8 +149,8 @@ class TestDomainApplication(TestCase):
         application = DomainApplication.objects.create(creator=user, requested_domain=site)
 
         # no submitter email so this emits a log warning
-        mock_client = MockSESClient
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 application.submit()
         self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
@@ -161,7 +167,8 @@ class TestDomainApplication(TestCase):
         )
         application.save()
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 application.submit()
 
@@ -187,8 +194,9 @@ class TestDomainApplication(TestCase):
             (self.action_needed_application, TransitionNotAllowed),
             (self.withdrawn_application, TransitionNotAllowed),
         ]
-
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -208,7 +216,8 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -227,7 +236,8 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -246,7 +256,8 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -264,7 +275,8 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -284,7 +296,8 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -302,7 +315,8 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -310,6 +324,19 @@ class TestDomainApplication(TestCase):
                             application.approve()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
+    
+    def test_approved_skips_sending_email(self):
+        """
+        Test that calling .approve with send_email=False doesn't actually send
+        an email
+        """
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                self.submitted_application.approve(send_email=False)
+
+        # Assert that no emails were sent
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 0)
 
     def test_approved_transition_not_allowed(self):
         """
@@ -322,7 +349,8 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -339,7 +367,8 @@ class TestDomainApplication(TestCase):
             (self.action_needed_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -360,7 +389,8 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -377,7 +407,8 @@ class TestDomainApplication(TestCase):
             (self.approved_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -398,7 +429,8 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -416,7 +448,8 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -436,7 +469,8 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
@@ -455,7 +489,8 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Use patch to temporarily replace is_active with the custom implementation
                 with patch.object(Domain, "is_active", custom_is_active):
@@ -475,7 +510,8 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Use patch to temporarily replace is_active with the custom implementation
                 with patch.object(Domain, "is_active", custom_is_active):
@@ -485,8 +521,15 @@ class TestDomainApplication(TestCase):
 
 
 class TestPermissions(TestCase):
-
     """Test the User-Domain-Role connection."""
+
+    def setUp(self):
+        super().setUp()
+        self.mock_client = MockSESClient()
+    
+    def tearDown(self):
+        super().tearDown()
+        self.mock_client.EMAILS_SENT.clear()
 
     @boto3_mocking.patching
     def test_approval_creates_role(self):
@@ -494,8 +537,8 @@ class TestPermissions(TestCase):
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # skip using the submit method
                 application.status = DomainApplication.ApplicationStatus.SUBMITTED
@@ -510,14 +553,22 @@ class TestDomainInfo(TestCase):
 
     """Test creation of Domain Information when approved."""
 
+    def setUp(self):
+        super().setUp()
+        self.mock_client = MockSESClient()
+    
+    def tearDown(self):
+        super().tearDown()
+        self.mock_client.EMAILS_SENT.clear()
+
     @boto3_mocking.patching
     def test_approval_creates_info(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # skip using the submit method
                 application.status = DomainApplication.ApplicationStatus.SUBMITTED

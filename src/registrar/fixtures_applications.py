@@ -221,5 +221,5 @@ class DomainFixture(DomainApplicationFixture):
 
             # We don't want fixtures sending out real emails to
             # fake email addresses, so we just skip that and log it instead
-            application.approve(do_fake_send_email=True)
+            application.approve(send_email=False)
             application.save()
