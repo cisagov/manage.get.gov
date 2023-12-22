@@ -1,7 +1,7 @@
 """Data migration: Extends expiration dates for valid domains"""
 
 import argparse
-from datetime import date
+from datetime import date, datetime
 import logging
 
 from django.core.management import BaseCommand
@@ -29,8 +29,6 @@ class Command(BaseCommand):
         self.update_success = []
         self.update_skipped = []
         self.update_failed = []
-        self.expiration_minimum_cutoff = date(2023, 11, 1)
-        self.expiration_maximum_cutoff = date(2023, 12, 30)
 
     def add_arguments(self, parser):
         """Add command line arguments."""
@@ -50,6 +48,18 @@ class Command(BaseCommand):
             "--disableIdempotentCheck", action=argparse.BooleanOptionalAction, help="Disable script idempotence"
         )
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction, help="Increases log chattiness")
+        parser.add_argument(
+            "--minDate",
+            type=self.valid_date,
+            default="2023-11-01",
+            help="Sets the minimum date cutoff (YYYY-MM-DD)",
+        )
+        parser.add_argument(
+            "--maxDate",
+            type=self.valid_date,
+            default="2024-12-30",
+            help="Sets the maximum date cutoff (YYYY-MM-DD)",
+        )
 
     def handle(self, **options):
         """
@@ -66,14 +76,21 @@ class Command(BaseCommand):
         limit_parse = options.get("limitParse")
         disable_idempotence = options.get("disableIdempotentCheck")
         debug = options.get("debug")
+        
+        min_date_str = options.get("minDate")
+        max_date_str = options.get("maxDate")
+
+        # Convert date strings to date objects
+        expiration_minimum_cutoff = datetime.strptime(min_date_str, "%Y-%m-%d").date()
+        expiration_maximum_cutoff = datetime.strptime(max_date_str, "%Y-%m-%d").date()
 
         # Does a check to see if parse_limit is a positive int.
         # Raise an error if not.
         self.check_if_positive_int(limit_parse, "limitParse")
 
         valid_domains = Domain.objects.filter(
-            expiration_date__gte=self.expiration_minimum_cutoff,
-            expiration_date__lte=self.expiration_maximum_cutoff,
+            expiration_date__gte=expiration_minimum_cutoff,
+            expiration_date__lte=expiration_maximum_cutoff,
             state=Domain.State.READY,
         ).order_by("name")
 
@@ -125,6 +142,14 @@ class Command(BaseCommand):
         )
 
         return transition_domains.count() > 0
+
+    def valid_date(self, string):
+        """Checks if the given string is a valid date in the format YYYY-MM-DD"""
+        try:
+            return datetime.strptime(string, "%Y-%m-%d").date()
+        except ValueError as err:
+            msg = f"Not a valid date: '{string}'"
+            raise argparse.ArgumentTypeError(msg) from err
 
     def prompt_user_to_proceed(self, extension_amount, domains_to_change_count):
         """Asks if the user wants to proceed with this action"""
