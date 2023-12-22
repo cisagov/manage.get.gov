@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 
 from registrar.models.contact import Contact
 
-from .common import MockEppLib, less_console_noise
+from .common import MockEppLib, MockSESClient, less_console_noise
 import boto3_mocking  # type: ignore
 
 
@@ -1030,8 +1030,7 @@ class TestMigrations(TestCase):
         # this is one of the email addresses in data/test_contacts.txt
         output_stream = StringIO()
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
             # also have to re-point the logging handlers to output_stream
             with less_console_noise(output_stream):
                 call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
@@ -1052,8 +1051,7 @@ class TestMigrations(TestCase):
         # these are two email addresses in data/test_contacts.txt
         output_stream = StringIO()
 
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
             # also have to re-point the logging handlers to output_stream
             with less_console_noise(output_stream):
                 call_command(
