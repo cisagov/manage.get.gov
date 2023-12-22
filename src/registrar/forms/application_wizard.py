@@ -608,7 +608,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
 
     def should_delete(self, cleaned):
-        empty = (isinstance(v, str) and (v.strip() == "" or v == None) for v in cleaned.values())
+        empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
         return all(empty)
 
     def to_database(self, obj: DomainApplication):

@@ -33,7 +33,7 @@ from registrar.models import (
     UserDomainRole,
     User,
 )
-from registrar.views.application import ApplicationStatus, ApplicationWizard, Step
+from registrar.views.application import ApplicationWizard, Step
 
 from .common import less_console_noise
 
@@ -767,13 +767,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
             authorizing_official=ao,
             submitter=you,
             creator=self.user,
-            status="started"
+            status="started",
         )
         application.other_contacts.add(other)
 
-
         # prime the form by visiting /edit
-        edit_app_page = self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -784,53 +783,15 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_page = self.app.get(reverse("application:other_contacts"))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-
-        # ====== METHOD 2 -- prime form
-        # other_contacts_page = self.app.get(reverse("application:other_contacts"))
-        # session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # # Fill in the other contact form
-        # other_contacts_form = other_contacts_page.forms[0]
-        # other_contacts_form["other_contacts-0-first_name"] = "Testy2"
-        # other_contacts_form["other_contacts-0-last_name"] = "Tester2"
-        # other_contacts_form["other_contacts-0-title"] = "Another Tester"
-        # other_contacts_form["other_contacts-0-email"] = "testy2@town.com"
-        # other_contacts_form["other_contacts-0-phone"] = "(201) 555 5557"
-
-        # # for f in other_contacts_form.fields:
-        # #     if not "submit" in f:
-        # #         print(f)
-        # #         print(other_contacts_form[f].value)
-
-        # # Submit the form
-        # other_contacts_result = other_contacts_form.submit()
-        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # # validate that data from this step are being saved
-        # application = DomainApplication.objects.get()  # there's only one
-        # self.assertEqual(
-        #     application.other_contacts.count(),
-        #     1,
-        # )
-        # # Verify user is taken to "anything else" page
-        # self.assertEqual(other_contacts_result.status_code, 302)
-        # self.assertEqual(other_contacts_result["Location"], "/register/anything_else/")
-
-        # # Go back to the previous step
-        # other_contacts_page = self.app.get(reverse("application:other_contacts"))
-
-        ##### ^ The commented out method doesn't work because it creates a duplicate application entry ####
-
         other_contacts_form = other_contacts_page.forms[0]
 
         # DEBUG print statements
         for f in other_contacts_form.fields:
-            if not "submit" in f:
+            if "submit" not in f:
                 print(f)
                 print(other_contacts_form[f].value)
-        
-        # Minimal check to ensure the form is loaded with data (if this part of 
+
+        # Minimal check to ensure the form is loaded with data (if this part of
         # the application doesn't work, we should be equipped with other unit
         # tests to flag it)
         self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
@@ -845,7 +806,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # DEBUG print statements
         for f in other_contacts_form.fields:
-            if not "submit" in f:
+            if "submit" not in f:
                 print(f)
                 print(other_contacts_form[f].value)
 
@@ -865,8 +826,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         expected_url_slug = str(Step.NO_OTHER_CONTACTS)
         actual_url_slug = no_contacts_page.request.path.split("/")[-2]
         self.assertEqual(expected_url_slug, actual_url_slug)
-
-        
 
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
