@@ -772,13 +772,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
     
-    # lists in filter_horizontal are not sorted properly, sort them
-    # by website
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        if db_field.name in ("current_websites", "alternative_domains"):
-            kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
-        return super().formfield_for_manytomany(db_field, request, **kwargs)
-
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
         if obj and obj.creator.status != models.User.RESTRICTED:
