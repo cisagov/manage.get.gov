@@ -38,22 +38,27 @@ class Command(BaseCommand):
             default=1,
             help="Determines the period (in years) to extend expiration dates by",
         )
+
         parser.add_argument(
             "--limitParse",
             type=int,
             default=0,
             help="Sets a cap on the number of records to parse",
         )
+
         parser.add_argument(
             "--disableIdempotentCheck", action=argparse.BooleanOptionalAction, help="Disable script idempotence"
         )
+
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction, help="Increases log chattiness")
+
         parser.add_argument(
             "--minDate",
             type=self.get_valid_date,
             default="2023-11-01",
             help="Sets the minimum date cutoff (YYYY-MM-DD)",
         )
+
         parser.add_argument(
             "--maxDate",
             type=self.get_valid_date,
@@ -76,7 +81,7 @@ class Command(BaseCommand):
         limit_parse = options.get("limitParse")
         disable_idempotence = options.get("disableIdempotentCheck")
         debug = options.get("debug")
-        
+
         expiration_minimum_cutoff = options.get("minDate")
         expiration_maximum_cutoff = options.get("maxDate")
 
