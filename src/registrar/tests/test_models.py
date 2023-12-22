@@ -20,8 +20,6 @@ from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
 
-boto3_mocking.clients.register_handler("sesv2", MockSESClient)
-
 # The DomainApplication submit method has a side effect of sending an email
 # with AWS SES, so mock that out in all of these test cases
 @boto3_mocking.patching
