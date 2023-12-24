@@ -262,7 +262,7 @@ class OrganizationContactForm(RegistrarForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
+                message="Enter a zip code in the form of 12345 or 12345-6789.",
             )
         ],
     )
@@ -554,6 +554,45 @@ class YourContactForm(RegistrarForm):
         error_messages={"required": "Enter your phone number."},
     )
 
+class OtherContactsYesNoForm(RegistrarForm):
+    YES_NO_CHOICES = {
+        "yes":"Yes", 
+        "no":"No"}
+    yes_no = forms.ChoiceField(widget=forms.RadioSelect, choices=YES_NO_CHOICES)
+
+    def __init__(self, *args, **kwargs):
+        has_other_contacts = kwargs.pop("yes_no", None)
+        super(RegistrarForm, self).__init__(*args, **kwargs)
+    
+    # Override clean in order to correct validation logic
+    def clean(self):
+        # NOTE: using self.cleaned_data directly apparently causes a CORS error
+        cleaned = super().clean()
+        form_is_empty = all(v is None or v == "" for v in cleaned.values())
+        if form_is_empty:
+            # clear any errors raised by the form fields
+            # (before this clean() method is run, each field
+            # performs its own clean, which could result in
+            # errors that we wish to ignore at this point)
+            #
+            # NOTE: we cannot just clear() the errors list.
+            # That causes problems.
+            for field in self.fields:
+                if field in self.errors:
+                    del self.errors[field]
+        return cleaned
+
+    def to_database(self, obj: DomainApplication | Contact):
+        cleaned = super().clean()
+        has_other_contacts = cleaned.pop("yes_no")
+        # If "no" is selected, delete all "other contact" entries
+        obj.save()
+
+    def from_database(cls, obj: DomainApplication | Contact | None):
+        """Returns a dict of form field values gotten from `obj`."""
+        if obj is None:
+            return {}
+        return {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
 
 class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
@@ -585,12 +624,30 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter a phone number for this contact."},
     )
 
+    # Override clean in order to correct validation logic
+    def clean(self):
+        # NOTE: using self.cleaned_data directly apparently causes a CORS error
+        cleaned = super().clean()
+        form_is_empty = all(v is None or v == "" for v in cleaned.values())
+        if form_is_empty:
+            # clear any errors raised by the form fields
+            # (before this clean() method is run, each field
+            # performs its own clean, which could result in
+            # errors that we wish to ignore at this point)
+            #
+            # NOTE: we cannot just clear() the errors list.
+            # That causes problems.
+            for field in self.fields:
+                if field in self.errors:
+                    del self.errors[field]
+        return cleaned
+
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
 
     def should_delete(self, cleaned):
-        empty = (isinstance(v, str) and not v.strip() for v in cleaned.values())
+        empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
         return all(empty)
 
     def to_database(self, obj: DomainApplication):

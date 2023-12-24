@@ -476,8 +476,25 @@ class YourContact(ApplicationWizard):
 
 
 class OtherContacts(ApplicationWizard):
+    # template_name = "application_other_contacts.html"
+    # forms = [forms.OtherContactsFormSet]
+
     template_name = "application_other_contacts.html"
-    forms = [forms.OtherContactsFormSet]
+    forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet]
+
+    # def get(self, request):
+    #     parent_form = forms.OtherContactsYesNoForm()
+    #     child_formset = forms.OtherContactsFormSet()
+    #     return render(request, 'application_other_contacts.html', {'yes_no_form': parent_form, 'forms': child_formset})
+
+    # def post(self, request):
+    #     parent_form = forms.OtherContactsYesNoForm(request.POST)
+    #     child_formset = forms.OtherContactsFormSet(request.POST, request.FILES)
+    #     if parent_form.is_valid() and child_formset.is_valid():
+    #         parent_form.save()
+    #         child_formset.save()
+    #         return redirect('my_success_url')
+    #     return render(request, 'application_other_contacts.html', {'yes_no_form': parent_form, 'other_contact_formset': child_formset})
 
 
 class NoOtherContacts(ApplicationWizard):
