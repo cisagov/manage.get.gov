@@ -34,7 +34,6 @@ from django.db.models import DateField
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
-from django.utils import timezone
 
 from .public_contact import PublicContact
 
