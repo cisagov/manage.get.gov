@@ -202,7 +202,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return self._get_property("cr_date")
 
     @creation_date.setter  # type: ignore
-    def creation_date(self, ex_date: date):
+    def creation_date(self, cr_date: date):
         """
         Direct setting of the creation date in the registry is not implemented.
 
@@ -1651,7 +1651,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return dnssec_data
 
     def _update_hosts_and_contacts(self, cleaned, fetch_hosts, fetch_contacts):
-        """Capture and store old hosts and contacts from cache if the don't exist"""
+        """Capture and store old hosts and contacts from cache if they don't exist"""
         old_cache_hosts = self._cache.get("hosts")
         old_cache_contacts = self._cache.get("contacts")
 
