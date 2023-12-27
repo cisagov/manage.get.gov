@@ -6,10 +6,17 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.public_contact import PublicContact
 from django.db.models import Value
 from django.db.models.functions import Coalesce
-from itertools import chain
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+
+def write_header(writer, columns):
+    """
+    Receives params from the parent methods and outputs a CSV with a header row.
+    Works with write_header as longas the same writer object is passed.
+    """
+    writer.writerow(columns)
 
 
 def get_domain_infos(filter_condition, sort_fields):
@@ -47,38 +54,24 @@ def write_row(writer, columns, domain_info):
     writer.writerow([FIELDS.get(column, "") for column in columns])
 
 
-def export_domains_to_writer(
+def write_body(
     writer,
     columns,
     sort_fields,
     filter_condition,
-    sort_fields_for_additional_domains=None,
-    filter_condition_for_additional_domains=None,
 ):
     """
     Receives params from the parent methods and outputs a CSV with fltered and sorted domains.
-    The 'additional' params enable us to concatenate 2 different filtered lists.
+    Works with write_header as longas the same writer object is passed.
     """
-    # write columns headers to writer
-    writer.writerow(columns)
 
     # Get the domainInfos
-    domainInfos = get_domain_infos(filter_condition, sort_fields)
+    domain_infos = get_domain_infos(filter_condition, sort_fields)
 
-    # Condition is true for export_data_growth_to_csv. This is an OR situation so we can' combine the filters
-    # in one query.
-    if filter_condition_for_additional_domains is not None:
-        # Get the deleted domain infos
-        deleted_domainInfos = get_domain_infos(
-            filter_condition_for_additional_domains, sort_fields_for_additional_domains
-        )
-        # Combine the two querysets into a single iterable
-        all_domainInfos = list(chain(domainInfos, deleted_domainInfos))
-    else:
-        all_domainInfos = list(domainInfos)
+    all_domain_infos = list(domain_infos)
 
     # Write rows to CSV
-    for domain_info in all_domainInfos:
+    for domain_info in all_domain_infos:
         write_row(writer, columns, domain_info)
 
 
@@ -114,7 +107,8 @@ def export_data_type_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+    write_header(writer, columns)
+    write_body(writer, columns, sort_fields, filter_condition)
 
 
 def export_data_full_to_csv(csv_file):
@@ -145,7 +139,8 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+    write_header(writer, columns)
+    write_body(writer, columns, sort_fields, filter_condition)
 
 
 def export_data_federal_to_csv(csv_file):
@@ -177,7 +172,8 @@ def export_data_federal_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+    write_header(writer, columns)
+    write_body(writer, columns, sort_fields, filter_condition)
 
 
 def get_default_start_date():
@@ -194,7 +190,7 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
     """
     Growth report:
     Receive start and end dates from the view, parse them.
-    Request from export_domains_to_writer READY domains that are created between
+    Request from write_body READY domains that are created between
     the start and end dates, as well as DELETED domains that are deleted between
     the start and end dates. Specify sort params for both lists.
     """
@@ -234,21 +230,16 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
     }
 
     # We also want domains deleted between sar and end dates, sorted
-    sort_fields_for_additional_domains = [
+    sort_fields_for_deleted_domains = [
         "domain__deleted_at",
         "domain__name",
     ]
-    filter_condition_for_additional_domains = {
+    filter_condition_for_deleted_domains = {
         "domain__state__in": [Domain.State.DELETED],
         "domain__deleted_at__lte": end_date_formatted,
         "domain__deleted_at__gte": start_date_formatted,
     }
 
-    export_domains_to_writer(
-        writer,
-        columns,
-        sort_fields,
-        filter_condition,
-        sort_fields_for_additional_domains,
-        filter_condition_for_additional_domains,
-    )
+    write_header(writer, columns)
+    write_body(writer, columns, sort_fields, filter_condition)
+    write_body(writer, columns, sort_fields_for_deleted_domains, filter_condition_for_deleted_domains)

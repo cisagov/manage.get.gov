@@ -7,7 +7,8 @@ from registrar.models.domain import Domain
 from registrar.models.user import User
 from django.contrib.auth import get_user_model
 from registrar.utility.csv_export import (
-    export_domains_to_writer,
+    write_header,
+    write_body,
     get_default_start_date,
     get_default_end_date,
 )
@@ -40,7 +41,6 @@ class CsvReportsTest(TestCase):
         self.domain_1, _ = Domain.objects.get_or_create(name="cdomain1.gov", state=Domain.State.READY)
         self.domain_2, _ = Domain.objects.get_or_create(name="adomain2.gov", state=Domain.State.DNS_NEEDED)
         self.domain_3, _ = Domain.objects.get_or_create(name="ddomain3.gov", state=Domain.State.ON_HOLD)
-        self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
         self.domain_4, _ = Domain.objects.get_or_create(name="bdomain4.gov", state=Domain.State.UNKNOWN)
 
         self.domain_information_1, _ = DomainInformation.objects.get_or_create(
@@ -333,8 +333,8 @@ class ExportDataTest(TestCase):
         User.objects.all().delete()
         super().tearDown()
 
-    def test_export_domains_to_writer(self):
-        """Test that export_domains_to_writer returns the
+    def test_write_body(self):
+        """Test that write_body returns the
         existing domain, test that sort by domain name works,
         test that filter works"""
         # Create a CSV file in memory
@@ -367,8 +367,9 @@ class ExportDataTest(TestCase):
             ],
         }
 
-        # Call the export function
-        export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+        # Call the export functions
+        write_header(writer, columns)
+        write_body(writer, columns, sort_fields, filter_condition)
 
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
@@ -395,7 +396,7 @@ class ExportDataTest(TestCase):
 
         self.assertEqual(csv_content, expected_content)
 
-    def test_export_domains_to_writer_additional(self):
+    def test_write_body_additional(self):
         """An additional test for filters and multi-column sort"""
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -421,8 +422,9 @@ class ExportDataTest(TestCase):
             ],
         }
 
-        # Call the export function
-        export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+        # Call the export functions
+        write_header(writer, columns)
+        write_body(writer, columns, sort_fields, filter_condition)
 
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
@@ -448,14 +450,14 @@ class ExportDataTest(TestCase):
 
         self.assertEqual(csv_content, expected_content)
 
-    def test_export_domains_to_writer_with_date_filter_pulls_domains_in_range(self):
+    def test_write_body_with_date_filter_pulls_domains_in_range(self):
         """Test that domains that are
             1. READY and their first_ready_at dates are in range
             2. DELETED and their deleted_at dates are in range
         are pulled when the growth report conditions are applied to export_domains_to_writed.
         Test that ready domains are sorted by first_ready_at/deleted_at dates first, names second.
 
-        We considered testing export_data_growth_to_csv which calls export_domains_to_writer
+        We considered testing export_data_growth_to_csv which calls write_body
         and would have been easy to set up, but expected_content would contain created_at dates
         which are hard to mock.
 
@@ -484,7 +486,7 @@ class ExportDataTest(TestCase):
             "created_at",
             "domain__name",
         ]
-        sort_fields_for_additional_domains = [
+        sort_fields_for_deleted_domains = [
             "domain__deleted_at",
             "domain__name",
         ]
@@ -495,7 +497,7 @@ class ExportDataTest(TestCase):
             "domain__first_ready_at__lte": end_date,
             "domain__first_ready_at__gte": start_date,
         }
-        filter_conditions_for_additional_domains = {
+        filter_conditions_for_deleted_domains = {
             "domain__state__in": [
                 Domain.State.DELETED,
             ],
@@ -503,14 +505,19 @@ class ExportDataTest(TestCase):
             "domain__deleted_at__gte": start_date,
         }
 
-        # Call the export function
-        export_domains_to_writer(
+        # Call the export functions
+        write_header(writer, columns)
+        write_body(
             writer,
             columns,
             sort_fields,
             filter_condition,
-            sort_fields_for_additional_domains,
-            filter_conditions_for_additional_domains,
+        )
+        write_body(
+            writer,
+            columns,
+            sort_fields_for_deleted_domains,
+            filter_conditions_for_deleted_domains,
         )
 
         # Reset the CSV file's position to the beginning
