@@ -721,7 +721,7 @@ class Domain(TimeStampedModel, DomainHelper):
             email=contact.email,
             voice=contact.voice,
             fax=contact.fax,
-            auth_info = epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+            auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
         )  # type: ignore
 
         updateContact.disclose = self._disclose_fields(contact=contact)  # type: ignore
