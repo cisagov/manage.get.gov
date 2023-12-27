@@ -6,6 +6,7 @@ import logging
 from django.apps import apps
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
+from django.utils import timezone
 from registrar.models.domain import Domain
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -547,6 +548,14 @@ class DomainApplication(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
+    # submission date records when application is submitted
+    submission_date = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Date submitted",
+    )
+
     def __str__(self):
         try:
             if self.requested_domain and self.requested_domain.name:
@@ -616,6 +625,10 @@ class DomainApplication(TimeStampedModel):
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
+
+        # Update submission_date to today
+        self.submission_date = timezone.now().date()
+        self.save()
 
         self._send_status_update_email(
             "submission confirmation",

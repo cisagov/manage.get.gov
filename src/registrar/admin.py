@@ -12,6 +12,7 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
+from registrar.models.user import User
 from registrar.utility import csv_export
 from . import models
 from auditlog.models import LogEntry  # type: ignore
@@ -538,6 +539,9 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    # Table ordering
+    ordering = ["domain__name"]
+
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 1 conditions that determine which fields are read-only:
@@ -589,6 +593,27 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     """Custom domain applications admin class."""
 
+    class InvestigatorFilter(admin.SimpleListFilter):
+        """Custom investigator filter that only displays users with the manager role"""
+
+        title = "investigator"
+        # Match the old param name to avoid unnecessary refactoring
+        parameter_name = "investigator__id__exact"
+
+        def lookups(self, request, model_admin):
+            """Lookup reimplementation, gets users of is_staff.
+            Returns a list of tuples consisting of (user.id, user)
+            """
+            privileged_users = User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email")
+            return [(user.id, user) for user in privileged_users]
+
+        def queryset(self, request, queryset):
+            """Custom queryset implementation, filters by investigator"""
+            if self.value() is None:
+                return queryset
+            else:
+                return queryset.filter(investigator__id__exact=self.value())
+
     # Columns
     list_display = [
         "requested_domain",
@@ -600,7 +625,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     # Filters
-    list_filter = ("status", "organization_type", "investigator")
+    list_filter = ("status", "organization_type", InvestigatorFilter)
 
     # Search
     search_fields = [
@@ -675,6 +700,23 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
+
+    # Table ordering
+    ordering = ["requested_domain__name"]
+
+    # lists in filter_horizontal are not sorted properly, sort them
+    # by website
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name in ("current_websites", "alternative_domains"):
+            kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # Removes invalid investigator options from the investigator dropdown
+        if db_field.name == "investigator":
+            kwargs["queryset"] = User.objects.filter(is_staff=True)
+            return db_field.formfield(**kwargs)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -864,6 +906,9 @@ class DomainAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/domain_change_form.html"
     change_list_template = "django/admin/domain_change_list.html"
     readonly_fields = ["state", "expiration_date"]
+
+    # Table ordering
+    ordering = ["name"]
 
     def export_data_type(self, request):
         # match the CSV example with all the fields
