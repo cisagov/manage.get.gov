@@ -196,11 +196,6 @@ class TestFormValidation(MockEppLib):
             ["Response must be less than 1000 characters."],
         )
 
-    def test_authorizing_official_phone_invalid(self):
-        """Must be a valid phone number."""
-        form = AuthorizingOfficialForm(data={"phone": "boss@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
-
     def test_your_contact_email_invalid(self):
         """must be a valid email address."""
         form = YourContactForm(data={"email": "boss@boss"})

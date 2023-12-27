@@ -203,7 +203,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return self._get_property("cr_date")
 
     @creation_date.setter  # type: ignore
-    def creation_date(self, ex_date: date):
+    def creation_date(self, cr_date: date):
         """
         Direct setting of the creation date in the registry is not implemented.
 
