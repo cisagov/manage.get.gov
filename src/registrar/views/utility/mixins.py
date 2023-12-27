@@ -1,6 +1,5 @@
 """Permissions-related mixin classes."""
 
-from typing import List, Tuple
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from registrar.models import (
@@ -22,7 +21,7 @@ class OrderableFieldsMixin:
     """
 
     custom_sort_name_prefix = "get_sortable_"
-    orderable_fk_fields = [] # type: ignore
+    orderable_fk_fields = []  # type: ignore
 
     def __new__(cls, *args, **kwargs):
         """
@@ -63,7 +62,8 @@ class OrderableFieldsMixin:
     @classmethod
     def _create_orderable_field_method(cls, field, sort_field):
         """
-        This class method is a factory for creating dynamic methods that will be attached to the ModelAdmin subclass.
+        This class method is a factory for creating dynamic methods that will be attached
+        to the ModelAdmin subclass.
         It is used to customize how fk fields are ordered.
 
         In essence, this function will more or less generate code that looks like this,
@@ -90,9 +90,12 @@ class OrderableFieldsMixin:
         ```
 
         Parameters:
-        cls: The class that this method is being called on. In the context of this mixin, it would be the ModelAdmin subclass.
-        field: A string representing the name of the attribute that the dynamic method will fetch from the model instance.
-        sort_field: A string or list of strings representing the field(s) to sort by (ex: "name" or "creator")
+        cls: The class that this method is being called on. In the context of this mixin,
+        it would be the ModelAdmin subclass.
+        field: A string representing the name of the attribute that
+        the dynamic method will fetch from the model instance.
+        sort_field: A string or list of strings representing the
+        field(s) to sort by (ex: "name" or "creator")
 
         Returns:
         method: The dynamically created method.
@@ -101,7 +104,8 @@ class OrderableFieldsMixin:
         __name__: A string representing the name of the method. This is set to "get_{field}".
         admin_order_field: A string or list of strings representing the field(s) that
         Django should sort by when the column is clicked in the admin interface.
-        short_description: A string used as the column header in the admin interface. Will replace underscores with spaces.
+        short_description: A string used as the column header in the admin interface.
+        Will replace underscores with spaces.
         """
 
         def method(obj):
