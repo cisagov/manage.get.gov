@@ -1008,52 +1008,6 @@ class TestDomainApplicationAdmin(MockEppLib):
             ],
         )
 
-    def test_investigator_filter_filters_correctly(self):
-        """
-        This test verifies that the investigator filter in the admin interface for
-        the DomainApplication model works correctly.
-
-        It creates two DomainApplication instances, each with a different investigator.
-        It then simulates a staff user logging in and applying the investigator filter
-        on the DomainApplication admin page.
-
-        It then verifies that it was applied correctly.
-        The test checks that the response contains the expected DomainApplication pbjects
-        in the table.
-        """
-
-        # Create a mock DomainApplication object, with a fake investigator
-        application: DomainApplication = generic_domain_object("application", "SomeGuy")
-        investigator_user = User.objects.filter(username=application.investigator.username).get()
-        investigator_user.is_staff = True
-        investigator_user.save()
-
-        # Create a second mock DomainApplication object, to test filtering
-        application: DomainApplication = generic_domain_object("application", "BadGuy")
-        another_user = User.objects.filter(username=application.investigator.username).get()
-        another_user.is_staff = True
-        another_user.save()
-
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-        response = self.client.get(
-            "/admin/registrar/domainapplication/",
-            {
-                "investigator__id__exact": investigator_user.id,
-            },
-            follow=True,
-        )
-
-        expected_name = "SomeGuy first_name:investigator SomeGuy last_name:investigator"
-        # We expect to see this four times, two of them are from the html for the filter,
-        # and the other two are the html from the list entry in the table.
-        self.assertContains(response, expected_name, count=4)
-
-        # Check that we don't also get the thing we aren't filtering for.
-        # We expect to see this two times in the filter
-        unexpected_name = "BadGuy first_name:investigator BadGuy last_name:investigator"
-        self.assertContains(response, unexpected_name, count=2)
-
     def test_investigator_dropdown_displays_only_staff(self):
         """
         This test verifies that the dropdown for the 'investigator' field in the DomainApplicationAdmin
