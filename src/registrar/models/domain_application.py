@@ -6,6 +6,7 @@ import logging
 from django.apps import apps
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
+from django.utils import timezone
 from registrar.models.domain import Domain
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -122,7 +123,7 @@ class DomainApplication(TimeStampedModel):
 
         FEDERAL = (
             "federal",
-            "Federal: an agency of the U.S. government's executive, legislative, or judicial branches",
+            "Federal: an agency of the U.S. government’s legislative, executive, or judicial branches",
         )
         INTERSTATE = "interstate", "Interstate: an organization of two or more states"
         STATE_OR_TERRITORY = (
@@ -139,7 +140,7 @@ class DomainApplication(TimeStampedModel):
         CITY = "city", "City: a city, town, township, village, etc."
         SPECIAL_DISTRICT = (
             "special_district",
-            "Special district: an independent organization within a single state",
+            "Special district: an independent government that delivers specialized, essential services",
         )
         SCHOOL_DISTRICT = (
             "school_district",
@@ -547,6 +548,14 @@ class DomainApplication(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
+    # submission date records when application is submitted
+    submission_date = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Date submitted",
+    )
+
     def __str__(self):
         try:
             if self.requested_domain and self.requested_domain.name:
@@ -585,7 +594,12 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.STARTED, ApplicationStatus.ACTION_NEEDED, ApplicationStatus.WITHDRAWN],
+        source=[
+            ApplicationStatus.STARTED,
+            ApplicationStatus.IN_REVIEW,
+            ApplicationStatus.ACTION_NEEDED,
+            ApplicationStatus.WITHDRAWN,
+        ],
         target=ApplicationStatus.SUBMITTED,
     )
     def submit(self):
@@ -607,13 +621,27 @@ class DomainApplication(TimeStampedModel):
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
 
+        # Update submission_date to today
+        self.submission_date = timezone.now().date()
+        self.save()
+
         self._send_status_update_email(
             "submission confirmation",
             "emails/submission_confirmation.txt",
             "emails/submission_confirmation_subject.txt",
         )
 
-    @transition(field="status", source=ApplicationStatus.SUBMITTED, target=ApplicationStatus.IN_REVIEW)
+    @transition(
+        field="status",
+        source=[
+            ApplicationStatus.SUBMITTED,
+            ApplicationStatus.ACTION_NEEDED,
+            ApplicationStatus.APPROVED,
+            ApplicationStatus.REJECTED,
+            ApplicationStatus.INELIGIBLE,
+        ],
+        target=ApplicationStatus.IN_REVIEW,
+    )
     def in_review(self):
         """Investigate an application that has been submitted.
 
@@ -627,7 +655,12 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.REJECTED],
+        source=[
+            ApplicationStatus.IN_REVIEW,
+            ApplicationStatus.APPROVED,
+            ApplicationStatus.REJECTED,
+            ApplicationStatus.INELIGIBLE,
+        ],
         target=ApplicationStatus.ACTION_NEEDED,
     )
     def action_needed(self):
@@ -646,8 +679,8 @@ class DomainApplication(TimeStampedModel):
         source=[
             ApplicationStatus.SUBMITTED,
             ApplicationStatus.IN_REVIEW,
+            ApplicationStatus.ACTION_NEEDED,
             ApplicationStatus.REJECTED,
-            ApplicationStatus.INELIGIBLE,
         ],
         target=ApplicationStatus.APPROVED,
     )
@@ -684,7 +717,7 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW],
+        source=[ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED],
         target=ApplicationStatus.WITHDRAWN,
     )
     def withdraw(self):
@@ -697,7 +730,7 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.APPROVED],
+        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED, ApplicationStatus.APPROVED],
         target=ApplicationStatus.REJECTED,
         conditions=[domain_is_not_active],
     )
@@ -707,13 +740,17 @@ class DomainApplication(TimeStampedModel):
         As side effects this will delete the domain and domain_information
         (will cascade), and send an email notification."""
         if self.status == self.ApplicationStatus.APPROVED:
-            domain_state = self.approved_domain.state
-            # Only reject if it exists on EPP
-            if domain_state != Domain.State.UNKNOWN:
-                self.approved_domain.deletedInEpp()
-                self.approved_domain.save()
-            self.approved_domain.delete()
-            self.approved_domain = None
+            try:
+                domain_state = self.approved_domain.state
+                # Only reject if it exists on EPP
+                if domain_state != Domain.State.UNKNOWN:
+                    self.approved_domain.deletedInEpp()
+                    self.approved_domain.save()
+                self.approved_domain.delete()
+                self.approved_domain = None
+            except Exception as err:
+                logger.error(err)
+                logger.error("Can't query an approved domain while attempting a DA reject()")
 
         self._send_status_update_email(
             "action needed",
@@ -723,7 +760,12 @@ class DomainApplication(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.APPROVED],
+        source=[
+            ApplicationStatus.IN_REVIEW,
+            ApplicationStatus.ACTION_NEEDED,
+            ApplicationStatus.APPROVED,
+            ApplicationStatus.REJECTED,
+        ],
         target=ApplicationStatus.INELIGIBLE,
         conditions=[domain_is_not_active],
     )
@@ -737,13 +779,17 @@ class DomainApplication(TimeStampedModel):
         and domain_information (will cascade) when they exist."""
 
         if self.status == self.ApplicationStatus.APPROVED:
-            domain_state = self.approved_domain.state
-            # Only reject if it exists on EPP
-            if domain_state != Domain.State.UNKNOWN:
-                self.approved_domain.deletedInEpp()
-                self.approved_domain.save()
-            self.approved_domain.delete()
-            self.approved_domain = None
+            try:
+                domain_state = self.approved_domain.state
+                # Only reject if it exists on EPP
+                if domain_state != Domain.State.UNKNOWN:
+                    self.approved_domain.deletedInEpp()
+                    self.approved_domain.save()
+                self.approved_domain.delete()
+                self.approved_domain = None
+            except Exception as err:
+                logger.error(err)
+                logger.error("Can't query an approved domain while attempting a DA reject_with_prejudice()")
 
         self.creator.restrict_user()
 

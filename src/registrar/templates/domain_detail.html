@@ -6,7 +6,7 @@
   <div class="margin-top-4 tablet:grid-col-10">
 
     <div
-        class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED%} dotgov-status-box--action-need{% endif %}"
+        class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2{% if not domain.is_expired %}{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %} dotgov-status-box--action-need{% endif %}{% endif %}"
         role="region"
         aria-labelledby="summary-box-key-information"
     >
@@ -17,7 +17,9 @@
           <span class="text-bold text-primary-darker">
             Status:
           </span>
-            {% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED%}
+            {% if domain.is_expired %}
+              Expired
+            {% elif domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED%}
               DNS needed
             {% else %}
                 {{ domain.state|title }}
@@ -26,13 +28,16 @@
       </div>
     </div>
     <br>
+    
+
+    {% include "includes/domain_dates.html" %}
 
     {% url 'domain-dns-nameservers' pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=domain.is_editable %}
     {% else %}
       {% if domain.is_editable %}
-      <h2 class="margin-top-neg-1"> DNS name servers </h2>
+      <h2 class="margin-top-3"> DNS name servers </h2>
       <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
       <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
       {% else %}

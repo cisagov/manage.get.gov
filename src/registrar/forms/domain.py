@@ -213,6 +213,9 @@ class AuthorizingOfficialContactForm(ContactForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Overriding bc phone not required in this form
+        self.fields["phone"] = forms.IntegerField(required=False)
+
         # Set custom error messages
         self.fields["first_name"].error_messages = {
             "required": "Enter the first name / given name of your authorizing official."
@@ -227,7 +230,6 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
-        self.fields["phone"].error_messages["required"] = "Enter a phone number for your authorizing official."
 
 
 class DomainSecurityEmailForm(forms.Form):

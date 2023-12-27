@@ -158,7 +158,6 @@ class CsvReportsTest(TestCase):
     @boto3_mocking.patching
     def test_load_federal_report(self):
         """Tests the get_current_federal api endpoint"""
-        self.maxDiff = None
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
 
