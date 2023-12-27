@@ -922,7 +922,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             [
                 {
                     "parameter_name": "investigator",
-                    "parameter_value": "SomeGuy first_name:creator SomeGuy last_name:creator",
+                    "parameter_value": "SomeGuy first_name:investigator SomeGuy last_name:investigator",
                 },
             ],
         )
@@ -963,14 +963,15 @@ class TestDomainApplicationAdmin(MockEppLib):
             follow=True,
         )
 
-        expected_name = "SomeGuy first_name:creator SomeGuy last_name:creator"
-        # We expect to see this six times, two of them are from the html for the filter,
-        # two are from the page content, and the other two are the html from the list entry in the table.
-        self.assertContains(response, expected_name, count=6)
+        expected_name = "SomeGuy first_name:investigator SomeGuy last_name:investigator"
+        # We expect to see this four times, two of them are from the html for the filter,
+        # and the other two are the html from the list entry in the table.
+        self.assertContains(response, expected_name, count=4)
 
         # Check that we don't also get the thing we aren't filtering for.
-        unexpected_name = "BadGuy first_name:creator BadGuy last_name:creator"
-        self.assertContains(response, unexpected_name, count=0)
+        # We expect to see this two times in the filter
+        unexpected_name = "BadGuy first_name:investigator BadGuy last_name:investigator"
+        self.assertContains(response, unexpected_name, count=2)
 
     def test_investigator_dropdown_displays_only_staff(self):
         """
