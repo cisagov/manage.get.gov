@@ -1,5 +1,6 @@
 """Permissions-related mixin classes."""
 
+from typing import List
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from registrar.models import (
@@ -19,8 +20,9 @@ class OrderableFieldsMixin:
     """
     Mixin to add multi-field ordering capabilities to a Django ModelAdmin on admin_order_field.
     """
+
     custom_sort_name_prefix = "get_sortable_"
-    orderable_fk_fields = []
+    orderable_fk_fields: List[(str, List[str])] = []
 
     def __new__(cls, *args, **kwargs):
         """
@@ -31,7 +33,7 @@ class OrderableFieldsMixin:
         new_class = super().__new__(cls)
 
         # If the class doesn't define anything for orderable_fk_fields, then we should
-        # just skip this additional logic 
+        # just skip this additional logic
         if not hasattr(cls, "orderable_fk_fields") or len(cls.orderable_fk_fields) == 0:
             return new_class
 
@@ -42,7 +44,7 @@ class OrderableFieldsMixin:
         for field, sort_field in cls.orderable_fk_fields:
             updated_name = cls.custom_sort_name_prefix + field
 
-            # For each item in orderable_fk_fields, create a function and associate it with admin_order_field. 
+            # For each item in orderable_fk_fields, create a function and associate it with admin_order_field.
             setattr(new_class, updated_name, cls._create_orderable_field_method(field, sort_field))
 
             # Update the list_display variable to use our newly created functions
@@ -62,18 +64,18 @@ class OrderableFieldsMixin:
     def _create_orderable_field_method(cls, field, sort_field):
         """
         This class method is a factory for creating dynamic methods that will be attached to the ModelAdmin subclass.
-        It is used to customize how fk fields are ordered. 
+        It is used to customize how fk fields are ordered.
 
-        In essence, this function will more or less generate code that looks like this, 
+        In essence, this function will more or less generate code that looks like this,
         for a given tuple defined in orderable_fk_fields:
-        
+
         ```
         def get_sortable_requested_domain(self, obj):
             return obj.requested_domain
         # Allows column order sorting
         get_sortable_requested_domain.admin_order_field = "requested_domain__name"
         # Sets column's header name
-        get_sortable_requested_domain.short_description = "requested domain"  
+        get_sortable_requested_domain.short_description = "requested domain"
         ```
 
         Or for fields with multiple order_fields:
@@ -82,9 +84,9 @@ class OrderableFieldsMixin:
         def get_sortable_submitter(self, obj):
             return obj.submitter
         # Allows column order sorting
-        get_sortable_submitter.admin_order_field = ["submitter__first_name", "submitter__last_name"] 
-        # Sets column's header 
-        get_sortable_submitter.short_description = "submitter"  
+        get_sortable_submitter.admin_order_field = ["submitter__first_name", "submitter__last_name"]
+        # Sets column's header
+        get_sortable_submitter.short_description = "submitter"
         ```
 
         Parameters:
@@ -97,15 +99,16 @@ class OrderableFieldsMixin:
 
         The dynamically created method has the following attributes:
         __name__: A string representing the name of the method. This is set to "get_{field}".
-        admin_order_field: A string or list of strings representing the field(s) that 
+        admin_order_field: A string or list of strings representing the field(s) that
         Django should sort by when the column is clicked in the admin interface.
         short_description: A string used as the column header in the admin interface. Will replace underscores with spaces.
         """
+
         def method(obj):
             """
-            Template method for patterning. 
+            Template method for patterning.
 
-            Returns (example): 
+            Returns (example):
             ```
             def get_submitter(self, obj):
                 return obj.submitter

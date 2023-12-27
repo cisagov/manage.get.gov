@@ -47,7 +47,7 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
     def get_ordering(self, request, queryset):
         """
         Returns the list of ordering fields for the change list.
-        
+
         Mostly identical to the base implementation, except that now it can return
         a list of order_field objects rather than just one.
         """
@@ -189,13 +189,13 @@ class AuditedAdmin(admin.ModelAdmin):
 
 
 class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
-    """Custom admin to add a descriptive subheader to list views 
+    """Custom admin to add a descriptive subheader to list views
     and custom table sort behaviour"""
 
     def get_changelist(self, request, **kwargs):
         """Returns a custom ChangeList class, as opposed to the default.
         This is so we can override the behaviour of the `admin_order_field` field.
-        By default, django does not support ordering by multiple fields for this 
+        By default, django does not support ordering by multiple fields for this
         particular field (i.e. self.admin_order_field=["first_name", "last_name"] is invalid).
 
         Reference: https://code.djangoproject.com/ticket/31975
@@ -478,7 +478,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "domain",
         "role",
     ]
-    
+
     orderable_fk_fields = [
         ("domain", "name"),
         ("user", ["first_name", "last_name"]),
