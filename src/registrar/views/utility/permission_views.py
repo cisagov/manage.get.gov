@@ -8,6 +8,7 @@ from registrar.models import Domain, DomainApplication, DomainInvitation
 from .mixins import (
     DomainPermission,
     DomainApplicationPermission,
+    DomainApplicationPermissionWithdraw,
     DomainInvitationPermission,
     ApplicationWizardPermission,
 )
@@ -57,6 +58,26 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 class DomainApplicationPermissionView(DomainApplicationPermission, DetailView, abc.ABC):
 
     """Abstract base view for domain applications that enforces permissions
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+    # DetailView property for what model this is viewing
+    model = DomainApplication
+    # variable name in template context for the model object
+    context_object_name = "domainapplication"
+
+    # Abstract property enforces NotImplementedError on an attribute.
+    @property
+    @abc.abstractmethod
+    def template_name(self):
+        raise NotImplementedError
+
+
+class DomainApplicationPermissionWithdrawView(DomainApplicationPermissionWithdraw, DetailView, abc.ABC):
+
+    """Abstract base view for domain application withdraw function
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.

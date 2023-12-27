@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load url_helpers %}
 
 {% block title %}Thanks for your domain request! | {% endblock %}
 
@@ -14,21 +15,22 @@
         />
     <h1>Thanks for your domain request!</h1>
   </span>
-  <p>We'll email a copy of your request to you.</p>
+  <p>We’ll email a copy of your request to you.</p>
 
   <h2>Next steps in this process</h2>
 
-  <p> We'll review your request. This usually takes 20 business days. During
-  this review we'll verify that your:</p> 
+  <p> We’ll review your request. This usually takes 20 business days. During
+  this review we’ll verify that:</p> 
   <ul class="usa-list">
-    <li>Organization is eligible for a .gov domain</li>
-    <li>Authorizing official approves your request</li> 
-    <li>Domain meets our naming requirements</li>
+    <li>Your organization is eligible for a .gov domain.</li>
+    <li>You work at the organization and/or can make requests on its behalf.</li> 
+    <li>Your requested domain meets our naming requirements.</li>
   </ul>
 
-  <p> You can <a href="{% url 'home' %}">check the status</a>
-      of your request at any time. We'll email you with any questions or when we 
-      complete our review.</p>
+  <p> We’ll email you if we have questions and when we complete our review. You can <a href="{% url 'home' %}">check the status</a>
+      of your request at any time on the registrar homepage.</p> 
+  
+  <p> <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact' %}">Contact us if you need help during this process</a>.</p>
 
 </main>
 {% endblock %}

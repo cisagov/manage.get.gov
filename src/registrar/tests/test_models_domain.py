@@ -761,7 +761,6 @@ class TestRegistrantContacts(MockEppLib):
             self.assertEqual(expected_contact.email, actual_contact.email)
 
     def test_convert_public_contact_to_epp(self):
-        self.maxDiff = None
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
         dummy_contact = domain.get_default_security_contact()
         test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=True).__dict__
