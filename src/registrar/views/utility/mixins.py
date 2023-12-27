@@ -1,6 +1,6 @@
 """Permissions-related mixin classes."""
 
-from typing import List
+from typing import List, Tuple
 from django.contrib.auth.mixins import PermissionRequiredMixin
 
 from registrar.models import (
@@ -22,7 +22,7 @@ class OrderableFieldsMixin:
     """
 
     custom_sort_name_prefix = "get_sortable_"
-    orderable_fk_fields: List[(str, List[str])] = []
+    orderable_fk_fields: List[Tuple[str, List[str]]] = []
 
     def __new__(cls, *args, **kwargs):
         """
