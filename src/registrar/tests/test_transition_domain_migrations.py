@@ -707,17 +707,19 @@ class TestMigrations(TestCase):
     def run_master_script(self):
         # noqa here (E501) because splitting this up makes it
         # confusing to read.
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-            return_value=True,
-        ):
-            call_command(
-                "master_domain_migrations",
-                runMigrations=True,
-                migrationDirectory=self.test_data_file_location,
-                migrationJSON=self.migration_json_filename,
-                disablePrompts=True,
-            )
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
+                call_command(
+                    "master_domain_migrations",
+                    runMigrations=True,
+                    migrationDirectory=self.test_data_file_location,
+                    migrationJSON=self.migration_json_filename,
+                    disablePrompts=True,
+                )
 
     def compare_tables(
         self,
@@ -1030,7 +1032,8 @@ class TestMigrations(TestCase):
         # this is one of the email addresses in data/test_contacts.txt
         output_stream = StringIO()
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # also have to re-point the logging handlers to output_stream
             with less_console_noise(output_stream):
                 call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
@@ -1051,7 +1054,8 @@ class TestMigrations(TestCase):
         # these are two email addresses in data/test_contacts.txt
         output_stream = StringIO()
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
             # also have to re-point the logging handlers to output_stream
             with less_console_noise(output_stream):
                 call_command(
