@@ -22,7 +22,7 @@ class OrderableFieldsMixin:
     """
 
     custom_sort_name_prefix = "get_sortable_"
-    orderable_fk_fields: List[Tuple[str, List[str]]] = []
+    orderable_fk_fields = [] # type: ignore
 
     def __new__(cls, *args, **kwargs):
         """
