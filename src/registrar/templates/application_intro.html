@@ -2,8 +2,8 @@
 {% load static form_helpers url_helpers %}
 
 {% block content %}
-<div class="grid-container">
-  <div class="grid-row grid-gap">
+<main id="main-content" class="grid-container">
+    <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
 
     <form class="usa-form usa-form--large" method="post" novalidate>
         {% csrf_token %}
@@ -27,5 +27,5 @@
         </form>
 
   </div>
-</div>
+</main>
 {% endblock %}
