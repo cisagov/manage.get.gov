@@ -114,7 +114,7 @@ class UserGroup(Group):
                 )
 
                 cisa_analysts_group.save()
-                logger.debug("CISA Analyt permissions added to group " + cisa_analysts_group.name)
+                logger.debug("CISA Analyst permissions added to group " + cisa_analysts_group.name)
         except Exception as e:
             logger.error(f"Error creating analyst permissions group: {e}")
 
