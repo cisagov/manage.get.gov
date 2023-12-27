@@ -555,44 +555,18 @@ class YourContactForm(RegistrarForm):
     )
 
 class OtherContactsYesNoForm(RegistrarForm):
-    YES_NO_CHOICES = {
-        "yes":"Yes", 
-        "no":"No"}
-    yes_no = forms.ChoiceField(widget=forms.RadioSelect, choices=YES_NO_CHOICES)
+    has_other_contacts = forms.TypedChoiceField(
+        coerce=lambda x: x =='False', 
+        choices=((False, 'No'), (True, 'Yes')), 
+        widget=forms.RadioSelect
+        )
 
-    def __init__(self, *args, **kwargs):
-        has_other_contacts = kwargs.pop("yes_no", None)
-        super(RegistrarForm, self).__init__(*args, **kwargs)
-    
-    # Override clean in order to correct validation logic
-    def clean(self):
-        # NOTE: using self.cleaned_data directly apparently causes a CORS error
-        cleaned = super().clean()
-        form_is_empty = all(v is None or v == "" for v in cleaned.values())
-        if form_is_empty:
-            # clear any errors raised by the form fields
-            # (before this clean() method is run, each field
-            # performs its own clean, which could result in
-            # errors that we wish to ignore at this point)
-            #
-            # NOTE: we cannot just clear() the errors list.
-            # That causes problems.
-            for field in self.fields:
-                if field in self.errors:
-                    del self.errors[field]
-        return cleaned
-
-    def to_database(self, obj: DomainApplication | Contact):
-        cleaned = super().clean()
-        has_other_contacts = cleaned.pop("yes_no")
-        # If "no" is selected, delete all "other contact" entries
-        obj.save()
-
-    def from_database(cls, obj: DomainApplication | Contact | None):
-        """Returns a dict of form field values gotten from `obj`."""
-        if obj is None:
-            return {}
-        return {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
+    # def to_database(self, obj: DomainApplication | Contact):
+    #     cleaned = super().clean()
+    #     has_other_contacts = cleaned.pop("yes_no")
+    #     # If "no" is selected, delete all "other contact" entries
+    #     # TODO:
+    #     obj.save()
 
 class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
@@ -647,8 +621,9 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
 
     def should_delete(self, cleaned):
-        empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
-        return all(empty)
+        form_is_empty = all(isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
+        should_delete = form_is_empty
+        return should_delete
 
     def to_database(self, obj: DomainApplication):
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
@@ -664,7 +639,16 @@ OtherContactsFormSet = forms.formset_factory(
     absolute_max=1500,  # django default; use `max_num` to limit entries
     formset=BaseOtherContactsFormSet,
 )
-
+    
+# inlineformset_factory(Parent, Child, form=ChildForm, extra=1)
+# OtherContactsFormSet = forms.inlineformset_factory(
+#     OtherContactsYesNoForm, 
+#     OtherContactsForm,
+#     form=OtherContactsForm,
+#     extra=1,
+#     absolute_max=1500,  # django default; use `max_num` to limit entries
+#     formset=BaseOtherContactsFormSet,
+# )
 
 class NoOtherContactsForm(RegistrarForm):
     no_other_contacts_rationale = forms.CharField(

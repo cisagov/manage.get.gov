@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
+from registrar.management.commands.utility.terminal_helper import TerminalColors
 from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
@@ -482,19 +483,78 @@ class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet]
 
-    # def get(self, request):
-    #     parent_form = forms.OtherContactsYesNoForm()
-    #     child_formset = forms.OtherContactsFormSet()
-    #     return render(request, 'application_other_contacts.html', {'yes_no_form': parent_form, 'forms': child_formset})
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["has_other_contacts"] = self.application.has_other_contacts
+        return context
 
-    # def post(self, request):
-    #     parent_form = forms.OtherContactsYesNoForm(request.POST)
-    #     child_formset = forms.OtherContactsFormSet(request.POST, request.FILES)
-    #     if parent_form.is_valid() and child_formset.is_valid():
-    #         parent_form.save()
-    #         child_formset.save()
-    #         return redirect('my_success_url')
-    #     return render(request, 'application_other_contacts.html', {'yes_no_form': parent_form, 'other_contact_formset': child_formset})
+    def post(self, request, *args, **kwargs) -> HttpResponse:
+
+        ApplicationWizard.post(self, request, *args, **kwargs)
+
+        parent_form = forms.OtherContactsYesNoForm(request.POST)
+        child_formset = forms.OtherContactsFormSet(request.POST, request.FILES)
+
+        has_other_contacts_selected = False
+        if parent_form.is_valid():
+            has_other_contacts_selected = parent_form.cleaned_data["has_other_contacts"]
+
+        logger.info(f"""{TerminalColors.MAGENTA} Parent's cleaned data:
+                    
+                    {parent_form.cleaned_data}
+
+                    """)
+        
+
+        for f in parent_form.fields:
+            if "submit" not in f:
+                print(f)
+                print(parent_form[f].value)
+
+        if has_other_contacts_selected:
+            # Validate and save everything as normal
+            return ApplicationWizard.post(self, request, *args, **kwargs)
+        else:
+            # We want to override the natural validation path so that
+            # no other contacts data is saved and any existing other contacts
+            # are deleted...
+            # We'll do this by clearing all data from the fields in other contacts.
+            # This will trigger a deletion of any existing other contacts.
+            # (see the clean function for the Other Contacts Formset)
+            for form in child_formset:
+                form.reset()
+            # for field in child_formset.fields:
+            #     field.clear()
+
+        return self.goto_next_step()
+        
+    # def post(self, request, *args, **kwargs):
+    #     user_profile_form = UserProfileForm(request.POST)
+    #     avatar_upload_form = AvatarUploadForm(request.POST, request.FILES)
+
+    #     if user_profile_form.is_valid() and avatar_upload_form.is_valid():
+    #         # Process data from the user profile form
+    #         username = user_profile_form.cleaned_data['username']
+    #         email = user_profile_form.cleaned_data['email']
+
+    #         # Process data from the avatar upload form
+    #         avatar = avatar_upload_form.cleaned_data['avatar']
+
+    #         # Now you can perform any necessary actions with the data
+
+    #         # For demonstration purposes, we'll just print the data
+    #         print(f"Username: {username}")
+    #         print(f"Email: {email}")
+    #         print(f"Avatar: {avatar}")
+
+    #         # You can save data to the database, update models, etc., as needed
+
+    #         # Redirect or render a success page
+    #         return HttpResponse("Forms submitted successfully!")
+
+    #     else:
+    #         # If any form is not valid, re-render the template with error messages
+    #         return self.render_to_response(self.get_context_data())
 
 
 class NoOtherContacts(ApplicationWizard):

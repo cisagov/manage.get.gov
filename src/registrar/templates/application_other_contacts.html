@@ -1,3 +1,24 @@
+<script type="text/javascript">
+
+  // document.getElementById("languages").addEventListener('click', function (event) {
+  //     if (event.target && event.target.matches("input[type='radio']")) {
+  //         // do something here ...
+  //     }
+  // });
+  
+  // $(function() {
+    $('input[name="other_contacts-has_other_contacts"]').on('click', function() {
+        if ($(this).val() == '0') {
+            $('#other_contacts_formset').show();
+        }
+        else {
+            $('#other_contacts_formset').hide();
+            // TODO: clear all forms (on submit ONLY) if NO is selected
+        }
+    });
+  // })
+  </script>
+
 {% extends 'application_form.html' %}
 {% load static field_helpers %}
 
@@ -17,9 +38,16 @@
 {% endblock %}
 
 {% block form_fields %}
-  {{ forms.0.management_form }}
-  {# forms.0 is a formset and this iterates over its forms #}
-  {% for form in forms.0.forms %}
+  {{ forms.0 }}
+  {# forms.0 is a small yes/no form that toggles the visibility of "other contact" formset #}
+  <!-- {% for val, choice in forms.0.VIEWS %}
+  <option value="{{v}}">{{val}}</option>
+  {% endfor %} -->
+
+  <div id="other_contacts_formset">
+  {{ forms.1.management_form }}
+  {# forms.1 is a formset and this iterates over its forms #}
+  {% for form in forms.1.forms %}
     <fieldset class="usa-fieldset">
       <legend>
         <h2>Organization contact {{ forloop.counter }} (optional)</h2>
@@ -47,4 +75,5 @@
       <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
     </svg><span class="margin-left-05">Add another contact</span>
   </button>
+</div>
 {% endblock %}
