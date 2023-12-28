@@ -10,7 +10,6 @@ from django.views.generic import RedirectView
 
 from registrar import views
 
-# from registrar.views.admin_views import export_data
 from registrar.views.admin_views import ExportData
 
 

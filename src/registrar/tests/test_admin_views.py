@@ -17,8 +17,6 @@ class TestViews(TestCase):
         # Make a GET request to the admin index page
         response = self.client.get(admin_index_url)
 
-        print(f"response1 {response}")
-
         # Assert that the response status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
 
@@ -32,8 +30,6 @@ class TestViews(TestCase):
 
         # Make a GET request to the export data page
         response = self.client.get(export_data_url)
-
-        print(response)
 
         # Assert that the response status code is 200 (OK) or the expected status code
         self.assertEqual(response.status_code, 200)

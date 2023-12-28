@@ -1354,8 +1354,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         logger.info("Changing to ready state")
         logger.info("able to transition to ready state")
-        # if self.first_ready_at is not None, this means that his
-        # domain wasr READY, then not READY, then is READY again.
+        # if self.first_ready_at is not None, this means that this
+        # domain was READY, then not READY, then is READY again.
         # We do not want to overwrite first_ready_at.
         if self.first_ready_at is None:
             self.first_ready_at = timezone.now()
