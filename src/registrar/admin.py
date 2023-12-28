@@ -887,10 +887,10 @@ class DomainAdmin(ListHeaderAdmin):
         "name",
         "organization_type",
         "state",
+        "expiration_date",
         "created_at",
         "first_ready_at",
         "deleted_at",
-        "expiration_date",
     ]
 
     # this ordering effects the ordering of results
