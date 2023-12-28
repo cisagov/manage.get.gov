@@ -9,7 +9,7 @@ import uuid
 from django.test import TestCase
 from unittest.mock import MagicMock, Mock, patch
 from typing import List, Dict
-
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 
@@ -91,6 +91,73 @@ def less_console_noise(output_stream=None):
         if output_stream is None:
             # we opened output_stream so we have to close it
             output_stream.close()
+
+
+class GenericTestHelper(TestCase):
+    """A helper class that contains various helper functions for TestCases"""
+
+    def __init__(self, admin, model=None, url=None, user=None, factory=None, **kwargs):
+        """
+        Parameters:
+            admin (ModelAdmin): The Django ModelAdmin instance associated with the model.
+            model (django.db.models.Model, optional): The Django model associated with the admin page.
+            url (str, optional): The URL of the Django Admin page to test.
+            user (User, optional): The Django User who is making the request.
+            factory (RequestFactory, optional): An instance of Django's RequestFactory.
+        """
+        super().__init__()
+        self.factory = factory
+        self.user = user
+        self.admin = admin
+        self.model = model
+        self.url = url
+
+    def assert_table_sorted(self, o_index, sort_fields):
+        """
+        This helper function validates the sorting functionality of a Django Admin table view.
+
+        It creates a mock HTTP GET request to the provided URL with a specific ordering parameter,
+        and compares the returned sorted queryset with the expected sorted queryset.
+
+        Parameters:
+        o_index (str): The index of the field in the table to sort by. This is passed as a string
+                    to the 'o' parameter in the GET request.
+        sort_fields (tuple): The fields of the model to sort by. These fields are used to generate
+                            the expected sorted queryset.
+
+
+        Example Usage:
+        ```
+        self.assert_sort_helper(
+            self.factory, self.superuser, self.admin, self.url, DomainInformation, "1", ("domain__name",)
+        )
+        ```
+
+        The function asserts that the returned sorted queryset from the admin page matches the
+        expected sorted queryset. If the assertion fails, it means the sorting functionality
+        on the admin page is not working as expected.
+        """
+        # 'o' is a search param defined by the current index position in the
+        # table, plus one.
+        dummy_request = self.factory.get(
+            self.url,
+            {"o": o_index},
+        )
+        dummy_request.user = self.user
+
+        # Mock a user request
+        middleware = SessionMiddleware(lambda req: req)
+        middleware.process_request(dummy_request)
+        dummy_request.session.save()
+
+        expected_sort_order = list(self.model.objects.order_by(*sort_fields))
+
+        # Use changelist_view to get the sorted queryset
+        response = self.admin.changelist_view(dummy_request)
+        response.render()  # Render the response before accessing its content
+        returned_sort_order = list(response.context_data["cl"].result_list)
+
+        self.assertEqual(expected_sort_order, returned_sort_order)
 
 
 class MockUserLogin:
@@ -273,6 +340,7 @@ class AuditedAdminMockData:
                 creator: User = self.dummy_user(item_name, "creator"),
             }
         """  # noqa
+        creator = self.dummy_user(item_name, "creator")
         common_args = dict(
             organization_type=org_type,
             federal_type=federal_type,
@@ -287,7 +355,7 @@ class AuditedAdminMockData:
             anything_else="There is more",
             authorizing_official=self.dummy_contact(item_name, "authorizing_official"),
             submitter=self.dummy_contact(item_name, "submitter"),
-            creator=self.dummy_user(item_name, "creator"),
+            creator=creator,
         )
         return common_args
 

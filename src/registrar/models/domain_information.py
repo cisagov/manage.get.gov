@@ -245,4 +245,4 @@ class DomainInformation(TimeStampedModel):
         return domain_info
 
     class Meta:
-        verbose_name_plural = "Domain Information"
+        verbose_name_plural = "Domain information"

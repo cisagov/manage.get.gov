@@ -14,12 +14,81 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
 from registrar.models.user import User
 from registrar.utility import csv_export
+from registrar.views.utility.mixins import OrderableFieldsMixin
+from django.contrib.admin.views.main import ORDER_VAR
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 
 logger = logging.getLogger(__name__)
+
+
+# Based off of this excellent example: https://djangosnippets.org/snippets/10471/
+class MultiFieldSortableChangeList(admin.views.main.ChangeList):
+    """
+    This class overrides the behavior of column sorting in django admin tables in order
+    to allow for multi field sorting on admin_order_field
+
+
+    Usage:
+
+    class MyCustomAdmin(admin.ModelAdmin):
+
+        ...
+
+        def get_changelist(self, request, **kwargs):
+            return MultiFieldSortableChangeList
+
+        ...
+
+    """
+
+    def get_ordering(self, request, queryset):
+        """
+        Returns the list of ordering fields for the change list.
+
+        Mostly identical to the base implementation, except that now it can return
+        a list of order_field objects rather than just one.
+        """
+        params = self.params
+        ordering = list(self.model_admin.get_ordering(request) or self._get_default_ordering())
+
+        if ORDER_VAR in params:
+            # Clear ordering and used params
+            ordering = []
+
+            order_params = params[ORDER_VAR].split(".")
+            for p in order_params:
+                try:
+                    none, pfx, idx = p.rpartition("-")
+                    field_name = self.list_display[int(idx)]
+
+                    order_fields = self.get_ordering_field(field_name)
+
+                    if isinstance(order_fields, list):
+                        for order_field in order_fields:
+                            if order_field:
+                                ordering.append(pfx + order_field)
+                    else:
+                        ordering.append(pfx + order_fields)
+
+                except (IndexError, ValueError):
+                    continue  # Invalid ordering specified, skip it.
+
+        # Add the given query's ordering fields, if any.
+        ordering.extend(queryset.query.order_by)
+
+        # Ensure that the primary key is systematically present in the list of
+        # ordering fields so we can guarantee a deterministic order across all
+        # database backends.
+        pk_name = self.lookup_opts.pk.name
+        if not (set(ordering) & set(["pk", "-pk", pk_name, "-" + pk_name])):
+            # The two sets do not intersect, meaning the pk isn't present. So
+            # we add it.
+            ordering.append("-pk")
+
+        return ordering
 
 
 class CustomLogEntryAdmin(LogEntryAdmin):
@@ -119,8 +188,19 @@ class AuditedAdmin(admin.ModelAdmin):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class ListHeaderAdmin(AuditedAdmin):
-    """Custom admin to add a descriptive subheader to list views."""
+class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
+    """Custom admin to add a descriptive subheader to list views
+    and custom table sort behaviour"""
+
+    def get_changelist(self, request, **kwargs):
+        """Returns a custom ChangeList class, as opposed to the default.
+        This is so we can override the behaviour of the `admin_order_field` field.
+        By default, django does not support ordering by multiple fields for this
+        particular field (i.e. self.admin_order_field=["first_name", "last_name"] is invalid).
+
+        Reference: https://code.djangoproject.com/ticket/31975
+        """
+        return MultiFieldSortableChangeList
 
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
@@ -399,6 +479,11 @@ class UserDomainRoleAdmin(ListHeaderAdmin):
         "role",
     ]
 
+    orderable_fk_fields = [
+        ("domain", "name"),
+        ("user", ["first_name", "last_name", "email"]),
+    ]
+
     # Search
     search_fields = [
         "user__first_name",
@@ -466,6 +551,11 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "organization_type",
         "created_at",
         "submitter",
+    ]
+
+    orderable_fk_fields = [
+        ("domain", "name"),
+        ("submitter", ["first_name", "last_name"]),
     ]
 
     # Filters
@@ -622,6 +712,12 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "created_at",
         "submitter",
         "investigator",
+    ]
+
+    orderable_fk_fields = [
+        ("requested_domain", "name"),
+        ("submitter", ["first_name", "last_name"]),
+        ("investigator", ["first_name", "last_name"]),
     ]
 
     # Filters
