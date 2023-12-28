@@ -136,7 +136,8 @@ html[data-theme="dark"] {
 }
 
 #branding h1,
-h1, h2, h3 {
+h1, h2, h3,
+.module h2 {
     font-weight: font-weight('bold');
 }
 
