@@ -944,6 +944,72 @@ class OrganizationDataLoader:
         else:
             logger.warning(f"Updated existing {field_name} to '{changed_value}' on {domain_name}")
 
+class MigrationDataFileLoader:
+    def __init__(self, files_to_load: List[EnumFilenames], options: TransitionDomainArguments):
+        all_valid_files = self.get_file_map(options)
+
+        # Get the list of files we want to load, and coerce them
+        # into the right format.
+        desired_files = []
+        for file in all_valid_files:
+            if file[0] in files_to_load:
+                desired_files.append(file)
+            else:
+                raise Exception("Invalid file type specified")
+        
+        # Specify which files we want to load
+        options.pattern_map_params = desired_files
+
+        self.file_data_helper = ExtraTransitionDomain(options)
+
+        # Load data from all specified files
+        self.file_data_helper.parse_all_files(infer_filenames=False)
+
+        # Store the file data in a variable
+        self.file_data = self.file_data_helper.file_data
+    
+    def get_file_map(self, options: TransitionDomainArguments):
+        """Returns metadata about how we should parse desired files"""
+        file_map = [
+            (
+                EnumFilenames.AGENCY_ADHOC,
+                options.agency_adhoc_filename,
+                AgencyAdhoc,
+                "agencyid",
+            ),
+            (
+                EnumFilenames.DOMAIN_ADDITIONAL,
+                options.domain_additional_filename,
+                DomainAdditionalData,
+                "domainname",
+            ),
+            (
+                EnumFilenames.DOMAIN_ESCROW,
+                options.domain_escrow_filename,
+                DomainEscrow,
+                "domainname",
+            ),
+            (
+                EnumFilenames.DOMAIN_ADHOC,
+                options.domain_adhoc_filename,
+                DomainTypeAdhoc,
+                "domaintypeid",
+            ),
+            (
+                EnumFilenames.ORGANIZATION_ADHOC,
+                options.organization_adhoc_filename,
+                OrganizationAdhoc,
+                "orgid",
+            ),
+            (
+                EnumFilenames.AUTHORITY_ADHOC,
+                options.authority_adhoc_filename,
+                AuthorityAdhoc,
+                "authorityid",
+            ),
+        ]
+        return file_map
+
 
 class ExtraTransitionDomain:
     """Helper class to aid in storing TransitionDomain data spread across
