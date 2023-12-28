@@ -713,13 +713,18 @@ class TestMigrations(TestCase):
                 "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
                 return_value=True,
             ):
-                call_command(
-                    "master_domain_migrations",
-                    runMigrations=True,
-                    migrationDirectory=self.test_data_file_location,
-                    migrationJSON=self.migration_json_filename,
-                    disablePrompts=True,
-                )
+                with patch(
+                    "registrar.utility.email.send_templated_email",
+                    return_value=None
+                ):
+                    call_command(
+                        "master_domain_migrations",
+                        runMigrations=True,
+                        migrationDirectory=self.test_data_file_location,
+                        migrationJSON=self.migration_json_filename,
+                        disablePrompts=True,
+                    )
+        print(f"here: {mock_client.EMAILS_SENT}")
 
     def compare_tables(
         self,
