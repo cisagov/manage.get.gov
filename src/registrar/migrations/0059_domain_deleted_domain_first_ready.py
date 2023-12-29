@@ -11,12 +11,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="domain",
-            name="deleted_at",
+            name="deleted",
             field=models.DateField(editable=False, help_text="Deleted at date", null=True),
         ),
         migrations.AddField(
             model_name="domain",
-            name="first_ready_at",
+            name="first_ready",
             field=models.DateField(
                 editable=False, help_text="The last time this domain moved into the READY state", null=True
             ),
