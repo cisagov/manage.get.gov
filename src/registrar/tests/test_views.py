@@ -785,7 +785,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
 
-
         # Minimal check to ensure the form is loaded with data (if this part of
         # the application doesn't work, we should be equipped with other unit
         # tests to flag it)
@@ -798,7 +797,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_form["other_contacts-0-title"] = ""
         other_contacts_form["other_contacts-0-email"] = ""
         other_contacts_form["other_contacts-0-phone"] = ""
-
 
         # Submit the now empty form
         result = other_contacts_form.submit()

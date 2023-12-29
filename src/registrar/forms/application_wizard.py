@@ -9,7 +9,6 @@ from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 
 from api.views import DOMAIN_API_MESSAGES
-from registrar.management.commands.utility.terminal_helper import TerminalColors
 
 from registrar.models import Contact, DomainApplication, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
@@ -586,23 +585,21 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter a phone number for this contact."},
     )
 
-
     # Override clean in order to correct validation logic
     def clean(self):
         # NOTE: using self.cleaned_data directly apparently causes a CORS error
         cleaned = super().clean()
-        form_is_empty = all(v is None or v == "" for v in cleaned.values()) 
-        
+        form_is_empty = all(v is None or v == "" for v in cleaned.values())
+
         # NOTE: Phone number and email do NOT show up in cleaned values.
         # I have spent hours tyring to figure out why, but have no idea...
         # so for now we will grab their values from the raw data...
         for i in self.data:
-            if 'phone' in i or 'email' in i:
+            if "phone" in i or "email" in i:
                 # check if it has data
                 field_value = self.data.get(i)
                 # update the bool on whether the form is actually empty
                 form_is_empty = field_value == "" or field_value is None
-
 
         if form_is_empty:
             # clear any errors raised by the form fields
@@ -616,7 +613,6 @@ class OtherContactsForm(RegistrarForm):
                 if field in self.errors:
                     del self.errors[field]
 
-        
         return cleaned
 
 
