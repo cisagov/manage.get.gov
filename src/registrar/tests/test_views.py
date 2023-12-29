@@ -799,11 +799,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         other_contacts_form["other_contacts-0-email"] = ""
         other_contacts_form["other_contacts-0-phone"] = ""
 
-        # DEBUG print statements
-        for f in other_contacts_form.fields:
-            if "submit" not in f:
-                print(f)
-                print(other_contacts_form[f].value)
 
         # Submit the now empty form
         result = other_contacts_form.submit()
