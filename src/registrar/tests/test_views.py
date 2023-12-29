@@ -785,11 +785,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
 
-        # DEBUG print statements
-        for f in other_contacts_form.fields:
-            if "submit" not in f:
-                print(f)
-                print(other_contacts_form[f].value)
 
         # Minimal check to ensure the form is loaded with data (if this part of
         # the application doesn't work, we should be equipped with other unit
