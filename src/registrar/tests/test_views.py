@@ -28,6 +28,8 @@ from registrar.models import (
     DomainInvitation,
     Contact,
     PublicContact,
+    Host,
+    HostIP,
     Website,
     UserDomainRole,
     User,
@@ -1173,6 +1175,8 @@ class TestWithDomainPermissions(TestWithUser):
             DomainApplication.objects.all().delete()
             DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
+            HostIP.objects.all().delete()
+            Host.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
         except ValueError:  # pass if already deleted
