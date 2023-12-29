@@ -17,7 +17,6 @@ from django.views.generic.edit import FormMixin
 
 from registrar.models import (
     Domain,
-    DomainInformation,
     DomainInvitation,
     User,
     UserDomainRole,
@@ -644,21 +643,27 @@ class DomainAddUserView(DomainFormBaseView):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
-    def _send_domain_invitation_email(self, email: str, add_success=True):
+    def _send_domain_invitation_email(self, email: str, requester: User, add_success=True):
         """Performs the sending of the domain invitation email,
         does not make a domain information object
         email: string- email to send to
         add_success: bool- default True indicates:
           adding a success message to the view if the email sending succeeds"""
-        # created a new invitation in the database, so send an email
-        domainInfoResults = DomainInformation.objects.filter(domain=self.object)
-        domainInfo = domainInfoResults.first()
-        first = ""
-        last = ""
-        if domainInfo is not None:
-            first = domainInfo.creator.first_name
-            last = domainInfo.creator.last_name
-        full_name = f"{first} {last}"
+
+        # Set a default email address to send to for staff
+        requester_email = "help@get.gov"
+
+        # Check if the email requester has a valid email address
+        if not requester.is_staff and requester.email is not None and requester.email.strip() != "":
+            requester_email = requester.email
+        elif not requester.is_staff:
+            messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
+            logger.error(
+                f"Can't send email to '{email}' on domain '{self.object}'."
+                f"No email exists for the requester '{requester.username}'.",
+                exc_info=True,
+            )
+            return None
 
         try:
             send_templated_email(
@@ -668,7 +673,7 @@ class DomainAddUserView(DomainFormBaseView):
                 context={
                     "domain_url": self._domain_abs_url(),
                     "domain": self.object,
-                    "full_name": full_name,
+                    "requester_email": requester_email,
                 },
             )
         except EmailSendingError:
@@ -683,7 +688,7 @@ class DomainAddUserView(DomainFormBaseView):
             if add_success:
                 messages.success(self.request, f"Invited {email} to this domain.")
 
-    def _make_invitation(self, email_address: str):
+    def _make_invitation(self, email_address: str, requester: User):
         """Make a Domain invitation for this email and redirect with a message."""
         invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         if not created:
@@ -693,21 +698,22 @@ class DomainAddUserView(DomainFormBaseView):
                 f"{email_address} has already been invited to this domain.",
             )
         else:
-            self._send_domain_invitation_email(email=email_address)
+            self._send_domain_invitation_email(email=email_address, requester=requester)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
         """Add the specified user on this domain."""
         requested_email = form.cleaned_data["email"]
+        requester = self.request.user
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
-            return self._make_invitation(requested_email)
+            return self._make_invitation(requested_email, requester)
         else:
             # if user already exists then just send an email
-            self._send_domain_invitation_email(requested_email, add_success=False)
+            self._send_domain_invitation_email(requested_email, requester, add_success=False)
 
         try:
             UserDomainRole.objects.create(

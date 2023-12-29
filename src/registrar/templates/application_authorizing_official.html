@@ -6,7 +6,9 @@
     Who is the authorizing official for your organization?
   </h2>
 
-<p>Your authorizing official is a person within your organization who can authorize your domain request. This person must be in a role of significant, executive responsibility within the organization.</p>
+  {% if not is_federal %}
+  <p>Your authorizing official is a person within your organization who can authorize your domain request. This person must be in a role of significant, executive responsibility within the organization.</p>
+  {% endif %}
 
   <div class="ao_example">
     {% include "includes/ao_example.html" %}
@@ -25,17 +27,11 @@
 
     {% input_with_errors forms.0.first_name %}
 
-    {% input_with_errors forms.0.middle_name %}
-
     {% input_with_errors forms.0.last_name %}
 
     {% input_with_errors forms.0.title %}
 
     {% input_with_errors forms.0.email %}
-
-    {% with add_class="usa-input--medium" %}
-      {% input_with_errors forms.0.phone %}
-    {% endwith %}
 
   </fieldset>
 {% endblock %}
