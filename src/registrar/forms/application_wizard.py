@@ -587,19 +587,12 @@ class OtherContactsForm(RegistrarForm):
 
     # Override clean in order to correct validation logic
     def clean(self):
-        # NOTE: using self.cleaned_data directly apparently causes a CORS error
-        cleaned = super().clean()
-        form_is_empty = all(v is None or v == "" for v in cleaned.values())
 
-        # NOTE: Phone number and email do NOT show up in cleaned values.
-        # I have spent hours tyring to figure out why, but have no idea...
-        # so for now we will grab their values from the raw data...
-        for i in self.data:
-            if "phone" in i or "email" in i:
-                # check if it has data
-                field_value = self.data.get(i)
-                # update the bool on whether the form is actually empty
-                form_is_empty = field_value == "" or field_value is None
+        form_is_empty = True
+        for name, field in self.fields.items():
+            value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
+            if value is not None and value != "":
+                form_is_empty = False
 
         if form_is_empty:
             # clear any errors raised by the form fields
@@ -613,7 +606,7 @@ class OtherContactsForm(RegistrarForm):
                 if field in self.errors:
                     del self.errors[field]
 
-        return cleaned
+        return self.cleaned_data
 
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
