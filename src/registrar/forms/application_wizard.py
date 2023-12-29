@@ -639,16 +639,6 @@ OtherContactsFormSet = forms.formset_factory(
     absolute_max=1500,  # django default; use `max_num` to limit entries
     formset=BaseOtherContactsFormSet,
 )
-    
-# inlineformset_factory(Parent, Child, form=ChildForm, extra=1)
-# OtherContactsFormSet = forms.inlineformset_factory(
-#     OtherContactsYesNoForm, 
-#     OtherContactsForm,
-#     form=OtherContactsForm,
-#     extra=1,
-#     absolute_max=1500,  # django default; use `max_num` to limit entries
-#     formset=BaseOtherContactsFormSet,
-# )
 
 class NoOtherContactsForm(RegistrarForm):
     no_other_contacts_rationale = forms.CharField(

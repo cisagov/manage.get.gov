@@ -483,35 +483,32 @@ class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet]
 
-    def get_context_data(self):
-        context = super().get_context_data()
-        context["has_other_contacts"] = self.application.has_other_contacts
-        return context
+    # def get_context_data(self):
+    #     context = super().get_context_data()
+    #     context["has_other_contacts"] = self.application.has_other_contacts
+    #     return context
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
-
-        ApplicationWizard.post(self, request, *args, **kwargs)
-
         parent_form = forms.OtherContactsYesNoForm(request.POST)
         child_formset = forms.OtherContactsFormSet(request.POST, request.FILES)
 
-        has_other_contacts_selected = False
+        has_other_contacts_selected = parent_form.data.get('other_contacts-has_other_contacts')
         if parent_form.is_valid():
-            has_other_contacts_selected = parent_form.cleaned_data["has_other_contacts"]
+            logger.info(f"""{TerminalColors.OKGREEN} FORM VALIDATED
+                {TerminalColors.ENDC} """)
+            has_other_contacts_selected = parent_form.data.get('other_contacts-has_other_contacts')
 
-        logger.info(f"""{TerminalColors.MAGENTA} Parent's cleaned data:
-                    
-                    {parent_form.cleaned_data}
 
-                    """)
-        
-
-        for f in parent_form.fields:
-            if "submit" not in f:
-                print(f)
-                print(parent_form[f].value)
-
-        if has_other_contacts_selected:
+        # NOTE: since we are by-passing clean() [this is necessary because the radio
+        # buttons are bound to a read-only field and, by default, do not get cleaned]
+        # we have also by-passed the to_python method that would have deserialized
+        # the radio button's data into boolean values.  
+        #
+        # I have decided to forgo deserialization since A) it isn't really needed
+        # (we can process the string values) and B) this is so small and localized
+        # that it shouldn't pose any significant technical debt or refactoring risk, if any.
+        if has_other_contacts_selected == 'True':
+            logger.info(f"""{TerminalColors.OKGREEN} Other contacts selected!""")
             # Validate and save everything as normal
             return ApplicationWizard.post(self, request, *args, **kwargs)
         else:
@@ -521,12 +518,37 @@ class OtherContacts(ApplicationWizard):
             # We'll do this by clearing all data from the fields in other contacts.
             # This will trigger a deletion of any existing other contacts.
             # (see the clean function for the Other Contacts Formset)
-            for form in child_formset:
-                form.reset()
+            logger.info(f"""
+                {TerminalColors.YELLOW}--------------------------
+
+                {TerminalColors.MAGENTA}child_formset
+                {child_formset}
+
+                {TerminalColors.MAGENTA}POST
+                {request.POST}
+
+                {TerminalColors.YELLOW}--------------------------
+                {TerminalColors.ENDC}""")
+           
+            if child_formset.is_valid():
+                logger.info(f"""{TerminalColors.YELLOW} Clearing formset {child_formset}!""")
+                logger.info(f"""{TerminalColors.OKCYAN} Clearing {child_formset.cleaned_data}""")
+                child_formset.cleaned_data = {}
+            else:
+                logger.info(f"""{TerminalColors.FAIL} We had an issue""")
+                logger.info(f"""{TerminalColors.YELLOW} Clearing formset {child_formset.name}!""")
+                logger.info(f"""{TerminalColors.OKCYAN} Clearing {child_formset.cleaned_data}""")
+
+            
+            # child_formset.save()           
             # for field in child_formset.fields:
             #     field.clear()
 
-        return self.goto_next_step()
+            return ApplicationWizard.post(self, request, *args, **kwargs)
+
+        
+
+        # return self.goto_next_step()
         
     # def post(self, request, *args, **kwargs):
     #     user_profile_form = UserProfileForm(request.POST)
