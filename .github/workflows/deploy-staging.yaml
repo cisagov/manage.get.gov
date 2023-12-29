@@ -36,4 +36,4 @@ jobs:
           cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: staging
-          cf_manifest: "ops/manifests/manifest-staging.yaml --strategy rolling"
+          cf_manifest: "ops/manifests/manifest-staging.yaml"
