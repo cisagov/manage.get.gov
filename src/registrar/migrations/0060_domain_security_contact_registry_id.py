@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0058_delete_nameserver"),
+        ("registrar", "0059_delete_nameserver"),
     ]
 
     operations = [
