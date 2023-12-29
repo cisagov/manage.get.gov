@@ -45,6 +45,7 @@ class Command(BaseCommand):
         # Get the domain names from TransitionDomain
         td_agencies = transition_domains.values_list("domain_name", "federal_agency").distinct()
 
+        # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
             info_to_inspect=f"""
