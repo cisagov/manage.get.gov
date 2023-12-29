@@ -1660,7 +1660,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _update_hosts_and_contacts(self, cleaned, fetch_hosts, fetch_contacts):
         """
         Update hosts and contacts if fetch_hosts and/or fetch_contacts.
-        Additionally, capture and cache old hosts and contacts from cache if they 
+        Additionally, capture and cache old hosts and contacts from cache if they
         don't exist in cleaned
         """
         old_cache_hosts = self._cache.get("hosts")
