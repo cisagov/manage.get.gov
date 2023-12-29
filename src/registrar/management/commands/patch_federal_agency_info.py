@@ -61,25 +61,27 @@ class Command(BaseCommand):
 
         for di in domain_info_to_fix:
             domain_name = di.domain.name
-            if domain_name in td_dict and td_dict.get(domain_name) is not None:
-                # Grab existing federal_agency data
-                di.federal_agency = td_dict.get(domain_name)
-                # Append it to our update list
+            federal_agency = td_dict.get(domain_name)
+
+            # If agency exists on a TransitionDomain, update the related DomainInformation object
+            if domain_name in td_dict and federal_agency is not None:
+                di.federal_agency = federal_agency
                 self.di_to_update.append(di)
-                if debug:
-                    logger.info(
-                        f"{TerminalColors.OKCYAN}Updated {di}{TerminalColors.ENDC}"
-                    )
+                log_message = f"{TerminalColors.OKCYAN}Updated {di}{TerminalColors.ENDC}"
             else:
                 self.di_skipped.append(di)
-                if debug:
-                    logger.info(
-                        f"{TerminalColors.YELLOW}Skipping update for {di}{TerminalColors.ENDC}"
-                    )
-        
+                log_message = f"{TerminalColors.YELLOW}Skipping update for {di}{TerminalColors.ENDC}"
+            
+            # Log the action if debug mode is on
+            if debug:
+                logger.info(log_message)
+
+        # Bulk update the federal agency field in DomainInformation objects
         DomainInformation.objects.bulk_update(self.di_to_update, ["federal_agency"])
 
+        # Get a list of each domain we changed
         corrected_domains = DomainInformation.objects.filter(domain__name__in=domain_names)
+
         # After the update has happened, do a sweep of what we get back.
         # If the fields we expect to update are still None, then something is wrong.
         for di in corrected_domains:
