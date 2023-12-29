@@ -713,10 +713,7 @@ class TestMigrations(TestCase):
                 "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
                 return_value=True,
             ):
-                with patch(
-                    "registrar.utility.email.send_templated_email",
-                    return_value=None
-                ):
+                with patch("registrar.utility.email.send_templated_email", return_value=None):
                     call_command(
                         "master_domain_migrations",
                         runMigrations=True,
