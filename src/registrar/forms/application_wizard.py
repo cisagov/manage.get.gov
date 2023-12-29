@@ -591,27 +591,6 @@ class OtherContactsForm(RegistrarForm):
     def clean(self):
         # NOTE: using self.cleaned_data directly apparently causes a CORS error
         cleaned = super().clean()
-        
-        logger.info(f"""
-                    {TerminalColors.MAGENTA}form data:
-                    {TerminalColors.OKBLUE}{self.data}
-
-                    {TerminalColors.MAGENTA}form cleaned:
-                    {TerminalColors.OKBLUE}{cleaned}
-
-
-            {self.data.items}
-                    {TerminalColors.ENDC}
-                    
-                    """)
-        
-        # for f in self.fields:
-        #     logger.info(f"""
-        #     {TerminalColors.YELLOW}{f}
-        #     {self.data.get(f)}
-        #     {TerminalColors.ENDC}
-        #     """)
-        
         form_is_empty = all(v is None or v == "" for v in cleaned.values()) 
         
         # NOTE: Phone number and email do NOT show up in cleaned values.
@@ -619,17 +598,10 @@ class OtherContactsForm(RegistrarForm):
         # so for now we will grab their values from the raw data...
         for i in self.data:
             if 'phone' in i or 'email' in i:
+                # check if it has data
                 field_value = self.data.get(i)
-                logger.info(f"""
-                {TerminalColors.YELLOW}{i}
-                {self.data.get(i)}
-                {TerminalColors.ENDC}
-                """)
+                # update the bool on whether the form is actually empty
                 form_is_empty = field_value == "" or field_value is None
-                logger.info(f"""
-                {TerminalColors.OKCYAN}empty? {form_is_empty}
-                {TerminalColors.ENDC}
-                """)
 
 
         if form_is_empty:
@@ -641,11 +613,7 @@ class OtherContactsForm(RegistrarForm):
             # NOTE: we cannot just clear() the errors list.
             # That causes problems.
             for field in self.fields:
-                if field in self.errors:  # and field in cleaned
-                    logger.info(f"""
-                    {TerminalColors.FAIL}removing {field}
-                    {TerminalColors.ENDC}
-                    """)
+                if field in self.errors:
                     del self.errors[field]
 
         
