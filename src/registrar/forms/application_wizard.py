@@ -585,12 +585,21 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter a phone number for this contact."},
     )
 
-    # Override clean in order to correct validation logic
     def clean(self):
+        """
+        This method overrides the default behavior for forms.
+        This cleans the form after field validation has already taken place.
+        In this override, allow for a form which is empty to be considered
+        valid even though certain required fields have not passed field 
+        validation
+        """
 
+        # Set form_is_empty to True initially
         form_is_empty = True
         for name, field in self.fields.items():
+            # get the value of the field from the widget
             value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
+            # if any field in the submitted form is not empty, set form_is_empty to False
             if value is not None and value != "":
                 form_is_empty = False
 
