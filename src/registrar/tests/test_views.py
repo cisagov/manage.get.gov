@@ -142,6 +142,19 @@ class DomainApplicationTests(TestWithUser, WebTest):
         intro_page = self.app.get(reverse("application:"))
         self.assertContains(intro_page, "You're about to start your .gov domain request")
 
+    def test_application_form_intro_is_skipped_when_edit_access(self):
+        """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
+        completed_application(status=DomainApplication.ApplicationStatus.STARTED, user=self.user)
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "city.gov")
+        # click the "Edit" link
+        detail_page = home_page.click("Edit", index=0)
+        # Check that the response is a redirect
+        self.assertEqual(detail_page.status_code, 302)
+        # You can access the 'Location' header to get the redirect URL
+        redirect_url = detail_page.url
+        self.assertEqual(redirect_url, "/register/organization_type/")
+
     def test_application_form_empty_submit(self):
         """Tests empty submit on the first page after the acknowledgement page"""
         intro_page = self.app.get(reverse("application:"))
