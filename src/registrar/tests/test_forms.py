@@ -216,7 +216,7 @@ class TestFormValidation(MockEppLib):
 
     def test_other_contact_email_invalid(self):
         """must be a valid email address."""
-        form = OtherContactsForm(data={"email": "boss@boss"})
+        form = OtherContactsForm(data={"email": "splendid@boss"})
         self.assertEqual(
             form.errors["email"],
             ["Enter an email address in the required format, like name@example.com."],
@@ -224,7 +224,7 @@ class TestFormValidation(MockEppLib):
 
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
-        form = OtherContactsForm(data={"phone": "boss@boss"})
+        form = OtherContactsForm(data={"phone": "super@boss"})
         self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
 
     def test_requirements_form_blank(self):

@@ -9,6 +9,7 @@ from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 
 from api.views import DOMAIN_API_MESSAGES
+from registrar.management.commands.utility.terminal_helper import TerminalColors
 
 from registrar.models import Contact, DomainApplication, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
@@ -262,7 +263,7 @@ class OrganizationContactForm(RegistrarForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the form of 12345 or 12345-6789.",
+                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
             )
         ],
     )
@@ -585,11 +586,52 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter a phone number for this contact."},
     )
 
+
     # Override clean in order to correct validation logic
     def clean(self):
         # NOTE: using self.cleaned_data directly apparently causes a CORS error
         cleaned = super().clean()
-        form_is_empty = all(v is None or v == "" for v in cleaned.values())
+        
+        logger.info(f"""
+                    {TerminalColors.MAGENTA}form data:
+                    {TerminalColors.OKBLUE}{self.data}
+
+                    {TerminalColors.MAGENTA}form cleaned:
+                    {TerminalColors.OKBLUE}{cleaned}
+
+
+            {self.data.items}
+                    {TerminalColors.ENDC}
+                    
+                    """)
+        
+        # for f in self.fields:
+        #     logger.info(f"""
+        #     {TerminalColors.YELLOW}{f}
+        #     {self.data.get(f)}
+        #     {TerminalColors.ENDC}
+        #     """)
+        
+        form_is_empty = all(v is None or v == "" for v in cleaned.values()) 
+        
+        # NOTE: Phone number and email do NOT show up in cleaned values.
+        # I have spent hours tyring to figure out why, but have no idea...
+        # so for now we will grab their values from the raw data...
+        for i in self.data:
+            if 'phone' in i or 'email' in i:
+                field_value = self.data.get(i)
+                logger.info(f"""
+                {TerminalColors.YELLOW}{i}
+                {self.data.get(i)}
+                {TerminalColors.ENDC}
+                """)
+                form_is_empty = field_value == "" or field_value is None
+                logger.info(f"""
+                {TerminalColors.OKCYAN}empty? {form_is_empty}
+                {TerminalColors.ENDC}
+                """)
+
+
         if form_is_empty:
             # clear any errors raised by the form fields
             # (before this clean() method is run, each field
@@ -599,8 +641,14 @@ class OtherContactsForm(RegistrarForm):
             # NOTE: we cannot just clear() the errors list.
             # That causes problems.
             for field in self.fields:
-                if field in self.errors:
+                if field in self.errors:  # and field in cleaned
+                    logger.info(f"""
+                    {TerminalColors.FAIL}removing {field}
+                    {TerminalColors.ENDC}
+                    """)
                     del self.errors[field]
+
+        
         return cleaned
 
 
