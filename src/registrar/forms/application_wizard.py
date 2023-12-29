@@ -591,7 +591,9 @@ class OtherContactsForm(RegistrarForm):
         cleaned = super().clean()
         form_is_empty = all(v is None or v == "" for v in cleaned.values())
 
-        # NOTE: Phone number and email do NOT show up in cleaned values.
+        # ==== UNIT TEST BANDAID ====
+        # NOTE: Phone number and email do NOT show up in cleaned values
+        # This is for UNIT TESTS only.  The page itself loads cleaned data just fine.
         # I have spent hours tyring to figure out why, but have no idea...
         # so for now we will grab their values from the raw data...
         for i in self.data:
