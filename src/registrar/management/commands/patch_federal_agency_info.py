@@ -1,16 +1,12 @@
 """"""
 import argparse
-import json
 import logging
 
-import os
 from typing import List
 
 from django.core.management import BaseCommand
-from registrar.management.commands.utility.epp_data_containers import AgencyAdhoc, AuthorityAdhoc, DomainAdditionalData, EnumFilenames
-from registrar.management.commands.utility.extra_transition_domain_helper import ExtraTransitionDomain, MigrationDataFileLoader
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-from registrar.management.commands.utility.transition_domain_arguments import TransitionDomainArguments
+from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
 from django.db.models import Q
 
@@ -36,6 +32,11 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         debug = options.get("debug")
+
+        # Update the "federal_agency" field
+        self.patch_agency_info(debug)
+
+    def patch_agency_info(self, debug):
         domain_info_to_fix = DomainInformation.objects.filter(Q(federal_agency=None) | Q(federal_agency=""))
 
         domain_names = domain_info_to_fix.values_list('domain__name', flat=True)
@@ -51,7 +52,7 @@ class Command(BaseCommand):
             Number of DomainInformation objects to change: {len(td_agencies)}
             The following DomainInformation objects will be modified: {td_agencies}
             """,
-            prompt_title="Do you wish to update organization address data for DomainInformation as well?",
+            prompt_title="Do you wish to patch federal_agency data?",
         )
         logger.info("Updating...")
 
@@ -78,10 +79,11 @@ class Command(BaseCommand):
         
         DomainInformation.objects.bulk_update(self.di_to_update, ["federal_agency"])
 
+        corrected_domains = DomainInformation.objects.filter(domain__name__in=domain_names)
         # After the update has happened, do a sweep of what we get back.
         # If the fields we expect to update are still None, then something is wrong.
-        for di in domain_info_to_fix:
-            if domain_name in td_dict and td_dict.get(domain_name) is not None:
+        for di in corrected_domains:
+            if domain_name in td_dict and td_dict.get(domain_name) is None:
                 logger.info(
                     f"{TerminalColors.FAIL}Failed to update {di}{TerminalColors.ENDC}"
                 )
@@ -129,7 +131,7 @@ class Command(BaseCommand):
                 ============= FINISHED ===============
                 Updated {update_success_count} DomainInformation entries
 
-                ----- SOME AGENCY DATA WAS NONE -----
+                ----- SOME AGENCY DATA WAS NONE (NEEDS MANUAL PATCHING) -----
                 Skipped updating {update_skipped_count} DomainInformation entries
                 {TerminalColors.ENDC}
                 """
