@@ -976,7 +976,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     security_contact_registry_id = TextField(
         null=True,
-        help_text=("Duplication of registry's security contact id for when registry unavailable"),
+        help_text=("Duplication of registry's security contact id for when the registry is unavailable"),
         editable=False,
     )
 
@@ -1124,7 +1124,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # if contact type is security, attempt to retrieve registry id
             # for the security contact from domain.security_contact_registry_id
             if contact_type_choice == PublicContact.ContactTypeChoices.SECURITY and self.security_contact_registry_id:
-                logger.info(self.security_contact_registry_id)
+                logger.info(f"Could not access registry, using fallback value of {self.security_contact_registry_id}")
                 contacts = {PublicContact.ContactTypeChoices.SECURITY: self.security_contact_registry_id}
             else:
                 logger.error(f"Could not find {contact_type_choice}: {error}")
@@ -1747,8 +1747,9 @@ class Domain(TimeStampedModel, DomainHelper):
         if fetch_contacts:
             cleaned_contacts = cleaned["contacts"]
             security_contact_registry_id = ""
-            if cleaned_contacts[PublicContact.ContactTypeChoices.SECURITY]:
-                security_contact_registry_id = cleaned_contacts[PublicContact.ContactTypeChoices.SECURITY]
+            security_contact = cleaned_contacts[PublicContact.ContactTypeChoices.SECURITY]
+            if security_contact:
+                security_contact_registry_id = security_contact
             self.security_contact_registry_id = security_contact_registry_id
             self.save()
 
