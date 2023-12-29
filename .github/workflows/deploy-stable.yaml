@@ -36,4 +36,4 @@ jobs:
           cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: stable
-          cf_manifest: "ops/manifests/manifest-stable.yaml"
+          cf_manifest: "ops/manifests/manifest-stable.yaml --strategy rolling"

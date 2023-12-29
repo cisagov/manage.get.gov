@@ -37,4 +37,4 @@ jobs:
           cf_password: ${{ secrets.CF_DEVELOPMENT_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: development
-          push_arguments: "-f ops/manifests/manifest-development.yaml"
+          push_arguments: "-f ops/manifests/manifest-development.yaml --strategy rolling"
