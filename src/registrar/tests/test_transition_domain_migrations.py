@@ -79,6 +79,27 @@ class TestPatchAgencyInfo(TestCase):
         # Check that the federal_agency field was not updated
         self.assertIsNone(self.domain_info.federal_agency)
 
+    def test_patch_agency_info_skips_valid_domains(self):
+        """
+        Tests that the `patch_federal_agency_info` command logs INFO and
+        does not update the `federal_agency` field
+        of a `DomainInformation` object
+        """
+        self.domain_info.federal_agency = "unchanged"
+        self.domain_info.save()
+
+        with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="INFO") as context:
+            self.call_patch_federal_agency_info()
+
+        # Check that the correct log message was output
+        self.assertIn("FINISHED", context.output[1])
+
+        # Reload the domain_info object from the database
+        self.domain_info.refresh_from_db()
+
+        # Check that the federal_agency field was not updated
+        self.assertEqual(self.domain_info.federal_agency, "unchanged")
+
 
 class TestExtendExpirationDates(MockEppLib):
     def setUp(self):
