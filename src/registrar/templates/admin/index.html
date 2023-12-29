@@ -4,7 +4,8 @@
 <div id="content-main">
     {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
     <div class="custom-content module">
-        <h2>Domain growth report</h2>
+        <h2>Reports</h2>
+        <h3>Domain growth report</h3>
 
         {% comment %} 
             Inputs of type date suck for accessibility.
@@ -14,7 +15,7 @@
             See the commit "Review for ticket #999"
         {% endcomment %}
 
-        <div class="display-flex flex-align-baseline flex-justify margin-y-2">
+        <div class="display-flex flex-align-baseline flex-justify margin-y-1">
             <div>
                 <label for="start">Start date:</label>
                 <input type="date" id="start" name="start" value="2018-07-22" min="2018-01-01" />

@@ -141,6 +141,12 @@ h1, h2, h3,
     font-weight: font-weight('bold');
 }
 
+.module h3 {
+    padding: 0;
+    color: var(--primary);
+    margin: units(2) 0 units(1) 0;
+}
+
 .change-list {
     .usa-table--striped tbody tr:nth-child(odd) td,
     .usa-table--striped tbody tr:nth-child(odd) th,
