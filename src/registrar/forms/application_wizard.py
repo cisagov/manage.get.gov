@@ -590,7 +590,7 @@ class OtherContactsForm(RegistrarForm):
         This method overrides the default behavior for forms.
         This cleans the form after field validation has already taken place.
         In this override, allow for a form which is empty to be considered
-        valid even though certain required fields have not passed field 
+        valid even though certain required fields have not passed field
         validation
         """
 
