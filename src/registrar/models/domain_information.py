@@ -229,6 +229,7 @@ class DomainInformation(TimeStampedModel):
         da_dict.pop("alternative_domains", None)
         da_dict.pop("requested_domain", None)
         da_dict.pop("approved_domain", None)
+        da_dict.pop("submission_date", None)
         other_contacts = da_dict.pop("other_contacts", [])
         domain_info = cls(**da_dict)
         domain_info.domain_application = domain_application
@@ -244,4 +245,4 @@ class DomainInformation(TimeStampedModel):
         return domain_info
 
     class Meta:
-        verbose_name_plural = "Domain Information"
+        verbose_name_plural = "Domain information"

@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 import datetime
-from registrar.models import Domain
+from registrar.models import Domain, Host, HostIP
 
 from unittest import skip
 from registrar.models.domain_application import DomainApplication
@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 class TestDomainCache(MockEppLib):
     def tearDown(self):
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -1511,6 +1513,62 @@ class TestRegistrantNameservers(MockEppLib):
         with self.assertRaises(ActionNotAllowed):
             domain.nameservers = [self.nameserver1, self.nameserver2]
 
+    def test_nameserver_returns_on_registry_error(self):
+        """
+        Scenario: Nameservers previously set through EPP and stored in registrar's database.
+            Registry is unavailable and throws exception when attempting to build cache from
+            registry. Nameservers retrieved from database.
+        """
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        # set the host and host_ips directly in the database; this is normally handled through
+        # fetch_cache
+        host, _ = Host.objects.get_or_create(domain=domain, name="ns1.fake.gov")
+        host_ip, _ = HostIP.objects.get_or_create(host=host, address="1.1.1.1")
+
+        # mock that registry throws an error on the InfoHost send
+
+        def side_effect(_request, cleaned):
+            raise RegistryError(code=ErrorCode.COMMAND_FAILED)
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        nameservers = domain.nameservers
+
+        self.assertEqual(len(nameservers), 1)
+        self.assertEqual(nameservers[0][0], "ns1.fake.gov")
+        self.assertEqual(nameservers[0][1], ["1.1.1.1"])
+
+        patcher.stop()
+
+    def test_nameservers_stored_on_fetch_cache(self):
+        """
+        Scenario: Nameservers are stored in db when they are retrieved from fetch_cache.
+            Verify the success of this by asserting get_or_create calls to db.
+            The mocked data for the EPP calls returns a host name
+            of 'fake.host.com' from InfoDomain and an array of 2 IPs: 1.2.3.4 and 2.3.4.5
+            from InfoHost
+        """
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        # mock the get_or_create methods for Host and HostIP
+        with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
+            HostIP.objects, "get_or_create"
+        ) as mock_host_ip_get_or_create:
+            # Set the return value for the mocks
+            mock_host_get_or_create.return_value = (Host(), True)
+            mock_host_ip_get_or_create.return_value = (HostIP(), True)
+
+            # force fetch_cache to be called, which will return above documented mocked hosts
+            domain.nameservers
+            # assert that the mocks are called
+            mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.host.com")
+            # Retrieve the mocked_host from the return value of the mock
+            actual_mocked_host, _ = mock_host_get_or_create.return_value
+            mock_host_ip_get_or_create.assert_called_with(address="2.3.4.5", host=actual_mocked_host)
+            self.assertEqual(mock_host_ip_get_or_create.call_count, 2)
+
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
         """
@@ -1529,6 +1587,8 @@ class TestRegistrantNameservers(MockEppLib):
             domain.nameservers = [("ns1.failednameserver.gov", ["4.5.6"])]
 
     def tearDown(self):
+        HostIP.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         return super().tearDown()
 
@@ -1961,6 +2021,9 @@ class TestExpirationDate(MockEppLib):
         """
         super().setUp()
         # for the tests, need a domain in the ready state
+        # mock data for self.domain includes the following dates:
+        # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
+        # ex_date=datetime.date(2023, 5, 25)
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         # for the test, need a domain that will raise an exception
         self.domain_w_error, _ = Domain.objects.get_or_create(name="fake-error.gov", state=Domain.State.READY)
@@ -1986,12 +2049,59 @@ class TestExpirationDate(MockEppLib):
         with self.assertRaises(RegistryError):
             self.domain_w_error.renew_domain()
 
+    def test_is_expired(self):
+        """assert that is_expired returns true for expiration_date in past"""
+        # force fetch_cache to be called
+        self.domain.statuses
+        self.assertTrue(self.domain.is_expired)
+
+    def test_is_not_expired(self):
+        """assert that is_expired returns false for expiration in future"""
+        # to do this, need to mock value returned from timezone.now
+        # set now to 2023-01-01
+        mocked_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        # force fetch_cache which sets the expiration date to 2023-05-25
+        self.domain.statuses
+
+        with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+            self.assertFalse(self.domain.is_expired())
+
     def test_expiration_date_updated_on_info_domain_call(self):
         """assert that expiration date in db is updated on info domain call"""
         # force fetch_cache to be called
         self.domain.statuses
         test_date = datetime.date(2023, 5, 25)
         self.assertEquals(self.domain.expiration_date, test_date)
+
+
+class TestCreationDate(MockEppLib):
+    """Created_at in domain model is updated from EPP"""
+
+    def setUp(self):
+        """
+        Domain exists in registry
+        """
+        super().setUp()
+        # for the tests, need a domain with a creation date
+        self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        # creation_date returned from mockDataInfoDomain with creation date:
+        # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
+        self.creation_date = datetime.datetime(2023, 5, 25, 19, 45, 35)
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        super().tearDown()
+
+    def test_creation_date_setter_not_implemented(self):
+        """assert that the setter for creation date is not implemented and will raise error"""
+        with self.assertRaises(NotImplementedError):
+            self.domain.creation_date = datetime.date.today()
+
+    def test_creation_date_updated_on_info_domain_call(self):
+        """assert that creation date in db is updated on info domain call"""
+        # force fetch_cache to be called
+        self.domain.statuses
+        self.assertEquals(self.domain.created_at, self.creation_date)
 
 
 class TestAnalystClientHold(MockEppLib):

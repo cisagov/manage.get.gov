@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi.
 
-{{ full_name }} has added you as a manager on {{ domain.name }}.
+{{ requester_email }} has added you as a manager on {{ domain.name }}.
 
 YOU NEED A LOGIN.GOV ACCOUNT
 You’ll need a Login.gov account to manage your .gov domain. Login.gov provides

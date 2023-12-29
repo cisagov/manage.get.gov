@@ -1,7 +1,6 @@
-from django.db.models import F
 from django.shortcuts import render
 
-from registrar.models import DomainApplication
+from registrar.models import DomainApplication, Domain, UserDomainRole
 
 
 def index(request):
@@ -14,12 +13,9 @@ def index(request):
         # the active applications table
         context["domain_applications"] = applications.exclude(status="approved")
 
-        domains = request.user.permissions.values(
-            "role",
-            pk=F("domain__id"),
-            name=F("domain__name"),
-            created_time=F("domain__created_at"),
-            state=F("domain__state"),
-        )
+        user_domain_roles = UserDomainRole.objects.filter(user=request.user)
+        domain_ids = user_domain_roles.values_list("domain_id", flat=True)
+        domains = Domain.objects.filter(id__in=domain_ids)
+
         context["domains"] = domains
     return render(request, "home.html", context)

@@ -6,7 +6,6 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from .common import MockEppLib, completed_application, create_user  # type: ignore
-
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -29,6 +28,8 @@ from registrar.models import (
     DomainInvitation,
     Contact,
     PublicContact,
+    Host,
+    HostIP,
     Website,
     UserDomainRole,
     User,
@@ -100,7 +101,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/")
         # count = 2 because it is also in screenreader content
         self.assertContains(response, "igorville.gov", count=2)
-        self.assertContains(response, "DNS needed")
+        self.assertContains(response, "Expired")
         # clean up
         role.delete()
 
@@ -1323,6 +1324,8 @@ class TestWithDomainPermissions(TestWithUser):
             DomainApplication.objects.all().delete()
             DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
+            HostIP.objects.all().delete()
+            Host.objects.all().delete()
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
         except ValueError:  # pass if already deleted
@@ -1480,6 +1483,12 @@ class TestDomainDetail(TestDomainOverview):
 
 
 class TestDomainManagers(TestDomainOverview):
+    def tearDown(self):
+        """Ensure that the user has its original permissions"""
+        super().tearDown()
+        self.user.is_staff = False
+        self.user.save()
+
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
@@ -1583,12 +1592,196 @@ class TestDomainManagers(TestDomainOverview):
             add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             add_page.form.submit()
+
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
             FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
             Destination={"ToAddresses": [email_address]},
             Content=ANY,
         )
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_has_email_as_requester_non_existent(self):
+        """Inviting a non existent user sends them an email, with email as the name."""
+        # make sure there is no user with this email
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
+
+        # check the mock instance to see if `send_email` was called right
+        mock_client_instance.send_email.assert_called_once_with(
+            FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
+            Destination={"ToAddresses": [email_address]},
+            Content=ANY,
+        )
+
+        # Check the arguments passed to send_email method
+        _, kwargs = mock_client_instance.send_email.call_args
+
+        # Extract the email content, and check that the message is as we expect
+        email_content = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+        self.assertIn("info@example.com", email_content)
+
+        # Check that the requesters first/last name do not exist
+        self.assertNotIn("First", email_content)
+        self.assertNotIn("Last", email_content)
+        self.assertNotIn("First Last", email_content)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_has_email_as_requester(self):
+        """Inviting a user sends them an email, with email as the name."""
+        # Create a fake user object
+        email_address = "mayor@igorville.gov"
+        User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
+
+        # check the mock instance to see if `send_email` was called right
+        mock_client_instance.send_email.assert_called_once_with(
+            FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
+            Destination={"ToAddresses": [email_address]},
+            Content=ANY,
+        )
+
+        # Check the arguments passed to send_email method
+        _, kwargs = mock_client_instance.send_email.call_args
+
+        # Extract the email content, and check that the message is as we expect
+        email_content = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+        self.assertIn("info@example.com", email_content)
+
+        # Check that the requesters first/last name do not exist
+        self.assertNotIn("First", email_content)
+        self.assertNotIn("Last", email_content)
+        self.assertNotIn("First Last", email_content)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_has_email_as_requester_staff(self):
+        """Inviting a user sends them an email, with email as the name."""
+        # Create a fake user object
+        email_address = "mayor@igorville.gov"
+        User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
+
+        # Make sure the user is staff
+        self.user.is_staff = True
+        self.user.save()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        mock_client = MagicMock()
+        mock_client_instance = mock_client.return_value
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
+
+        # check the mock instance to see if `send_email` was called right
+        mock_client_instance.send_email.assert_called_once_with(
+            FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
+            Destination={"ToAddresses": [email_address]},
+            Content=ANY,
+        )
+
+        # Check the arguments passed to send_email method
+        _, kwargs = mock_client_instance.send_email.call_args
+
+        # Extract the email content, and check that the message is as we expect
+        email_content = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+        self.assertIn("help@get.gov", email_content)
+
+        # Check that the requesters first/last name do not exist
+        self.assertNotIn("First", email_content)
+        self.assertNotIn("Last", email_content)
+        self.assertNotIn("First Last", email_content)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_displays_error_non_existent(self):
+        """Inviting a non existent user sends them an email, with email as the name."""
+        # make sure there is no user with this email
+        email_address = "mayor@igorville.gov"
+        User.objects.filter(email=email_address).delete()
+
+        # Give the user who is sending the email an invalid email address
+        self.user.email = ""
+        self.user.save()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        mock_client = MagicMock()
+
+        mock_error_message = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with patch("django.contrib.messages.error") as mock_error_message:
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit().follow()
+
+        expected_message_content = "Can't send invitation email. No email is associated with your account."
+
+        # Grab the message content
+        returned_error_message = mock_error_message.call_args[0][1]
+
+        # Check that the message content is what we expect
+        self.assertEqual(expected_message_content, returned_error_message)
+
+    @boto3_mocking.patching
+    def test_domain_invitation_email_displays_error(self):
+        """When the requesting user has no email, an error is displayed"""
+        # make sure there is no user with this email
+        # Create a fake user object
+        email_address = "mayor@igorville.gov"
+        User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
+
+        # Give the user who is sending the email an invalid email address
+        self.user.email = ""
+        self.user.save()
+
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+
+        mock_client = MagicMock()
+
+        mock_error_message = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with patch("django.contrib.messages.error") as mock_error_message:
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit().follow()
+
+        expected_message_content = "Can't send invitation email. No email is associated with your account."
+
+        # Grab the message content
+        returned_error_message = mock_error_message.call_args[0][1]
+
+        # Check that the message content is what we expect
+        self.assertEqual(expected_message_content, returned_error_message)
 
     def test_domain_invitation_cancel(self):
         """Posting to the delete view deletes an invitation."""

@@ -3,7 +3,6 @@ from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
 from django.contrib import messages
 from django.urls import reverse
-
 from registrar.admin import (
     DomainAdmin,
     DomainApplicationAdmin,
@@ -13,17 +12,13 @@ from registrar.admin import (
     MyUserAdmin,
     AuditedAdmin,
     ContactAdmin,
+    DomainInformationAdmin,
     UserDomainRoleAdmin,
 )
-from registrar.models import (
-    Domain,
-    DomainApplication,
-    DomainInformation,
-    User,
-    DomainInvitation,
-)
+from registrar.models import Domain, DomainApplication, DomainInformation, User, DomainInvitation, Contact, Website
 from registrar.models.user_domain_role import UserDomainRole
 from .common import (
+    AuditedAdminMockData,
     completed_application,
     generic_domain_object,
     mock_user,
@@ -32,6 +27,7 @@ from .common import (
     create_ready_domain,
     multiple_unalphabetical_domain_objects,
     MockEppLib,
+    GenericTestHelper,
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
@@ -322,6 +318,86 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.admin = DomainApplicationAdmin(model=DomainApplication, admin_site=self.site)
         self.superuser = create_superuser()
         self.staffuser = create_user()
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/DomainApplication/",
+            model=DomainApplication,
+        )
+
+    def test_domain_sortable(self):
+        """Tests if the DomainApplication sorts by domain correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        multiple_unalphabetical_domain_objects("application")
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted("1", ("requested_domain__name",))
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted("-1", ("-requested_domain__name",))
+
+    def test_submitter_sortable(self):
+        """Tests if the DomainApplication sorts by domain correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        multiple_unalphabetical_domain_objects("application")
+
+        additional_application = generic_domain_object("application", "Xylophone")
+        new_user = User.objects.filter(username=additional_application.investigator.username).get()
+        new_user.first_name = "Xylophonic"
+        new_user.save()
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted(
+            "5",
+            (
+                "submitter__first_name",
+                "submitter__last_name",
+            ),
+        )
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted(
+            "-5",
+            (
+                "-submitter__first_name",
+                "-submitter__last_name",
+            ),
+        )
+
+    def test_investigator_sortable(self):
+        """Tests if the DomainApplication sorts by domain correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        multiple_unalphabetical_domain_objects("application")
+        additional_application = generic_domain_object("application", "Xylophone")
+        new_user = User.objects.filter(username=additional_application.investigator.username).get()
+        new_user.first_name = "Xylophonic"
+        new_user.save()
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted(
+            "6",
+            (
+                "investigator__first_name",
+                "investigator__last_name",
+            ),
+        )
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted(
+            "-6",
+            (
+                "-investigator__first_name",
+                "-investigator__last_name",
+            ),
+        )
 
     def test_short_org_name_in_applications_list(self):
         """
@@ -623,6 +699,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "no_other_contacts_rationale",
             "anything_else",
             "is_policy_acknowledged",
+            "submission_date",
             "current_websites",
             "other_contacts",
             "alternative_domains",
@@ -842,12 +919,178 @@ class TestDomainApplicationAdmin(MockEppLib):
         with self.assertRaises(DomainInformation.DoesNotExist):
             domain_information.refresh_from_db()
 
+    def test_has_correct_filters(self):
+        """
+        This test verifies that DomainApplicationAdmin has the correct filters set up.
+
+        It retrieves the current list of filters from DomainApplicationAdmin
+        and checks that it matches the expected list of filters.
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        # Grab the current list of table filters
+        readonly_fields = self.admin.get_list_filter(request)
+        expected_fields = ("status", "organization_type", DomainApplicationAdmin.InvestigatorFilter)
+
+        self.assertEqual(readonly_fields, expected_fields)
+
+    def test_table_sorted_alphabetically(self):
+        """
+        This test verifies that the DomainApplicationAdmin table is sorted alphabetically
+        by the 'requested_domain__name' field.
+
+        It creates a list of DomainApplication instances in a non-alphabetical order,
+        then retrieves the queryset from the DomainApplicationAdmin and checks
+        that it matches the expected queryset,
+        which is sorted alphabetically by the 'requested_domain__name' field.
+        """
+        # Creates a list of DomainApplications in scrambled order
+        multiple_unalphabetical_domain_objects("application")
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        # Get the expected list of alphabetically sorted DomainApplications
+        expected_order = DomainApplication.objects.order_by("requested_domain__name")
+
+        # Get the returned queryset
+        queryset = self.admin.get_queryset(request)
+
+        # Check the order
+        self.assertEqual(
+            list(queryset),
+            list(expected_order),
+        )
+
+    def test_displays_investigator_filter(self):
+        """
+        This test verifies that the investigator filter in the admin interface for
+        the DomainApplication model displays correctly.
+
+        It creates two DomainApplication instances, each with a different investigator.
+        It then simulates a staff user logging in and applying the investigator filter
+        on the DomainApplication admin page.
+
+        We then test if the page displays the filter we expect, but we do not test
+        if we get back the correct response in the table. This is to isolate if
+        the filter displays correctly, when the filter isn't filtering correctly.
+        """
+
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
+        investigator_user = User.objects.filter(username=application.investigator.username).get()
+        investigator_user.is_staff = True
+        investigator_user.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        response = self.client.get(
+            "/admin/registrar/domainapplication/",
+            {
+                "investigator__id__exact": investigator_user.id,
+            },
+            follow=True,
+        )
+
+        # Then, test if the filter actually exists
+        self.assertIn("filters", response.context)
+
+        # Assert the content of filters and search_query
+        filters = response.context["filters"]
+
+        self.assertEqual(
+            filters,
+            [
+                {
+                    "parameter_name": "investigator",
+                    "parameter_value": "SomeGuy first_name:investigator SomeGuy last_name:investigator",
+                },
+            ],
+        )
+
+    def test_investigator_dropdown_displays_only_staff(self):
+        """
+        This test verifies that the dropdown for the 'investigator' field in the DomainApplicationAdmin
+        interface only displays users who are marked as staff.
+
+        It creates two DomainApplication instances, one with an investigator
+        who is a staff user and another with an investigator who is not a staff user.
+
+        It then retrieves the queryset for the 'investigator' dropdown from DomainApplicationAdmin
+        and checks that it matches the expected queryset, which only includes staff users.
+        """
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
+        investigator_user = User.objects.filter(username=application.investigator.username).get()
+        investigator_user.is_staff = True
+        investigator_user.save()
+
+        # Create a mock DomainApplication object, with a user that is not staff
+        application_2: DomainApplication = generic_domain_object("application", "SomeOtherGuy")
+        investigator_user_2 = User.objects.filter(username=application_2.investigator.username).get()
+        investigator_user_2.is_staff = False
+        investigator_user_2.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+
+        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+
+        # Get the actual field from the model's meta information
+        investigator_field = DomainApplication._meta.get_field("investigator")
+
+        # We should only be displaying staff users, in alphabetical order
+        expected_dropdown = list(User.objects.filter(is_staff=True))
+        current_dropdown = list(self.admin.formfield_for_foreignkey(investigator_field, request).queryset)
+
+        self.assertEqual(expected_dropdown, current_dropdown)
+
+        # Non staff users should not be in the list
+        self.assertNotIn(application_2, current_dropdown)
+
+    def test_investigator_list_is_alphabetically_sorted(self):
+        """
+        This test verifies that filter list for the 'investigator'
+        is displayed alphabetically
+        """
+        # Create a mock DomainApplication object, with a fake investigator
+        application: DomainApplication = generic_domain_object("application", "SomeGuy")
+        investigator_user = User.objects.filter(username=application.investigator.username).get()
+        investigator_user.is_staff = True
+        investigator_user.save()
+
+        application_2: DomainApplication = generic_domain_object("application", "AGuy")
+        investigator_user_2 = User.objects.filter(username=application_2.investigator.username).get()
+        investigator_user_2.first_name = "AGuy"
+        investigator_user_2.is_staff = True
+        investigator_user_2.save()
+
+        application_3: DomainApplication = generic_domain_object("application", "FinalGuy")
+        investigator_user_3 = User.objects.filter(username=application_3.investigator.username).get()
+        investigator_user_3.first_name = "FinalGuy"
+        investigator_user_3.is_staff = True
+        investigator_user_3.save()
+
+        p = "userpass"
+        self.client.login(username="staffuser", password=p)
+        request = RequestFactory().get("/")
+
+        expected_list = list(User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email"))
+
+        # Get the actual sorted list of investigators from the lookups method
+        actual_list = [item for _, item in self.admin.InvestigatorFilter.lookups(self, request, self.admin)]
+
+        self.assertEqual(expected_list, actual_list)
+
     def tearDown(self):
         super().tearDown()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainApplication.objects.all().delete()
         User.objects.all().delete()
+        Contact.objects.all().delete()
+        Website.objects.all().delete()
 
 
 class DomainInvitationAdminTest(TestCase):
@@ -890,20 +1133,146 @@ class DomainInvitationAdminTest(TestCase):
         self.assertContains(response, retrieved_html, count=1)
 
 
+class DomainInformationAdminTest(TestCase):
+    def setUp(self):
+        """Setup environment for a mock admin user"""
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.admin = DomainInformationAdmin(model=DomainInformation, admin_site=self.site)
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+        self.mock_data_generator = AuditedAdminMockData()
+
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/DomainInformation/",
+            model=DomainInformation,
+        )
+
+        # Create fake DomainInformation objects
+        DomainInformation.objects.create(
+            creator=self.mock_data_generator.dummy_user("fake", "creator"),
+            domain=self.mock_data_generator.dummy_domain("Apple"),
+            submitter=self.mock_data_generator.dummy_contact("Zebra", "submitter"),
+        )
+
+        DomainInformation.objects.create(
+            creator=self.mock_data_generator.dummy_user("fake", "creator"),
+            domain=self.mock_data_generator.dummy_domain("Zebra"),
+            submitter=self.mock_data_generator.dummy_contact("Apple", "submitter"),
+        )
+
+        DomainInformation.objects.create(
+            creator=self.mock_data_generator.dummy_user("fake", "creator"),
+            domain=self.mock_data_generator.dummy_domain("Circus"),
+            submitter=self.mock_data_generator.dummy_contact("Xylophone", "submitter"),
+        )
+
+        DomainInformation.objects.create(
+            creator=self.mock_data_generator.dummy_user("fake", "creator"),
+            domain=self.mock_data_generator.dummy_domain("Xylophone"),
+            submitter=self.mock_data_generator.dummy_contact("Circus", "submitter"),
+        )
+
+    def tearDown(self):
+        """Delete all Users, Domains, and UserDomainRoles"""
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        Domain.objects.all().delete()
+        Contact.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_domain_sortable(self):
+        """Tests if DomainInformation sorts by domain correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted("1", ("domain__name",))
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted("-1", ("-domain__name",))
+
+    def test_submitter_sortable(self):
+        """Tests if DomainInformation sorts by submitter correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted(
+            "4",
+            ("submitter__first_name", "submitter__last_name"),
+        )
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted("-4", ("-submitter__first_name", "-submitter__last_name"))
+
+
 class UserDomainRoleAdminTest(TestCase):
     def setUp(self):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
         self.factory = RequestFactory()
-        self.admin = ListHeaderAdmin(model=UserDomainRoleAdmin, admin_site=None)
+        self.admin = UserDomainRoleAdmin(model=UserDomainRole, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+        self.test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url="/admin/registrar/UserDomainRole/",
+            model=UserDomainRole,
+        )
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
         User.objects.all().delete()
         Domain.objects.all().delete()
         UserDomainRole.objects.all().delete()
+
+    def test_domain_sortable(self):
+        """Tests if the UserDomainrole sorts by domain correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        fake_user = User.objects.create(
+            username="dummyuser", first_name="Stewart", last_name="Jones", email="AntarcticPolarBears@example.com"
+        )
+
+        # Create a list of UserDomainRoles that are in random order
+        mocks_to_create = ["jkl.gov", "ghi.gov", "abc.gov", "def.gov"]
+        for name in mocks_to_create:
+            fake_domain = Domain.objects.create(name=name)
+            UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted("2", ("domain__name",))
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted("-2", ("-domain__name",))
+
+    def test_user_sortable(self):
+        """Tests if the UserDomainrole sorts by user correctly"""
+        p = "adminpass"
+        self.client.login(username="superuser", password=p)
+
+        mock_data_generator = AuditedAdminMockData()
+
+        fake_domain = Domain.objects.create(name="igorville.gov")
+        # Create a list of UserDomainRoles that are in random order
+        mocks_to_create = ["jkl", "ghi", "abc", "def"]
+        for name in mocks_to_create:
+            # Creates a fake "User" object
+            fake_user = mock_data_generator.dummy_user(name, "user")
+            UserDomainRole.objects.create(user=fake_user, domain=fake_domain, role="manager")
+
+        # Assert that our sort works correctly
+        self.test_helper.assert_table_sorted("1", ("user__first_name", "user__last_name"))
+
+        # Assert that sorting in reverse works correctly
+        self.test_helper.assert_table_sorted("-1", ("-user__first_name", "-user__last_name"))
 
     def test_email_not_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
