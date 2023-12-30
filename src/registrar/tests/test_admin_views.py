@@ -38,5 +38,5 @@ class TestViews(TestCase):
         self.assertEqual(response["Content-Type"], "text/csv")
 
         # Check if the filename in the Content-Disposition header matches the expected pattern
-        expected_filename = f"growth-from-{start_date}-to-{end_date}.csv"
+        expected_filename = f"domain-growth-report-{start_date}-to-{end_date}.csv"
         self.assertIn(f'attachment; filename="{expected_filename}"', response["Content-Disposition"])
