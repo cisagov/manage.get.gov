@@ -499,10 +499,8 @@ class OtherContacts(ApplicationWizard):
             has_other_contacts_selected = parent_form.data.get('other_contacts-has_other_contacts')
 
 
-        # NOTE: since we are by-passing clean() [this is necessary because the radio
-        # buttons are bound to a read-only field and, by default, do not get cleaned]
-        # we have also by-passed the to_python method that would have deserialized
-        # the radio button's data into boolean values.  
+        # NOTE: since radio buttons are bound to a read-only field and, by default, do not get cleaned,
+        # we need to access their data outside of the typical validation chain. 
         #
         # I have decided to forgo deserialization since A) it isn't really needed
         # (we can process the string values) and B) this is so small and localized
@@ -518,31 +516,39 @@ class OtherContacts(ApplicationWizard):
             # We'll do this by clearing all data from the fields in other contacts.
             # This will trigger a deletion of any existing other contacts.
             # (see the clean function for the Other Contacts Formset)
+            logger.info(f"""{TerminalColors.OKBLUE} Clearing formset""")
             logger.info(f"""
                 {TerminalColors.YELLOW}--------------------------
 
                 {TerminalColors.MAGENTA}child_formset
                 {child_formset}
 
-                {TerminalColors.MAGENTA}POST
-                {request.POST}
-
                 {TerminalColors.YELLOW}--------------------------
                 {TerminalColors.ENDC}""")
-           
-            if child_formset.is_valid():
-                logger.info(f"""{TerminalColors.YELLOW} Clearing formset {child_formset}!""")
-                logger.info(f"""{TerminalColors.OKCYAN} Clearing {child_formset.cleaned_data}""")
-                child_formset.cleaned_data = {}
-            else:
-                logger.info(f"""{TerminalColors.FAIL} We had an issue""")
-                logger.info(f"""{TerminalColors.YELLOW} Clearing formset {child_formset.name}!""")
-                logger.info(f"""{TerminalColors.OKCYAN} Clearing {child_formset.cleaned_data}""")
-
             
-            # child_formset.save()           
-            # for field in child_formset.fields:
-            #     field.clear()
+            # child_formset.data = {}
+        
+            logger.info(f"""{TerminalColors.YELLOW} Before Clear:
+                        
+                         {child_formset.data}
+""")
+            
+            child_formset.data = {}
+            if child_formset.is_valid():
+                logger.info(f"""{TerminalColors.OKBLUE} Is VALID""")
+                cleaned = child_formset.cleaned_data
+
+            logger.info(f"""{TerminalColors.YELLOW} After Clear:
+                        
+                         {child_formset.data}
+""")
+            # for form in child_formset.forms:
+            #     logger.info(f"""{TerminalColors.OKBLUE} Clearing form: {form}!""")
+            #     logger.info(f"""{TerminalColors.OKBLUE} Clearing form data: {form.data}!""")
+            #     form.data = {}
+                     
+            # for form in child_formset.forms:
+            #     form.data = {}
 
             return ApplicationWizard.post(self, request, *args, **kwargs)
 
