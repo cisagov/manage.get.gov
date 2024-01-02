@@ -39,11 +39,7 @@ class TestPatchAgencyInfo(TestCase):
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit", return_value=True)
     def call_patch_federal_agency_info(self, mock_prompt):
         """Calls the patch_federal_agency_info command and mimics a keypress"""
-        call_command(
-            "patch_federal_agency_info",
-            "registrar/tests/data/fake_current_full.csv",
-            debug=True
-        )
+        call_command("patch_federal_agency_info", "registrar/tests/data/fake_current_full.csv", debug=True)
 
     def test_patch_agency_info(self):
         """
@@ -82,6 +78,32 @@ class TestPatchAgencyInfo(TestCase):
 
         # Check that the federal_agency field was not updated
         self.assertIsNone(self.domain_info.federal_agency)
+
+    def test_patch_agency_info_skip_updates_data(self):
+        """
+        Tests that the `patch_federal_agency_info` command logs a warning but
+        updates the DomainInformation object, because an record exists in the
+        provided current-full.csv file.
+        """
+        # Set federal_agency to None to simulate a skip
+        self.transition_domain.federal_agency = None
+        self.transition_domain.save()
+
+        # Change the domain name to something parsable in the .csv
+        self.domain.name = "cdomain1.gov"
+        self.domain.save()
+
+        with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="WARNING") as context:
+            self.call_patch_federal_agency_info()
+
+        # Check that the correct log message was output
+        self.assertIn("SOME AGENCY DATA WAS NONE", context.output[0])
+
+        # Reload the domain_info object from the database
+        self.domain_info.refresh_from_db()
+
+        # Check that the federal_agency field was not updated
+        self.assertEqual(self.domain_info.federal_agency, "World War I Centennial Commission")
 
     def test_patch_agency_info_skips_valid_domains(self):
         """
