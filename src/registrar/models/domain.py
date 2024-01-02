@@ -976,7 +976,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     security_contact_registry_id = TextField(
         null=True,
-        help_text=("Duplication of registry's security contact id for when the registry unavailable"),
+        help_text=("Duplication of registry's security contact id for when registry unavailable"),
         editable=False,
     )
 
