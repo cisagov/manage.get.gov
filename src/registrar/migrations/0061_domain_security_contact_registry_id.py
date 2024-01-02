@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             name="security_contact_registry_id",
             field=models.TextField(
                 editable=False,
-                help_text="Duplication of registry's security contact id for when registry is unavailable",
+                help_text="Duplication of registry's security contact id for when registry unavailable",
                 null=True,
             ),
         ),
