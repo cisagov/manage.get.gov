@@ -979,6 +979,18 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text=("Duplication of registry's security contact id for when the registry is unavailable"),
         editable=False,
     )
+    
+    deleted = DateField(
+        null=True,
+        editable=False,
+        help_text="Deleted at date",
+    )
+
+    first_ready = DateField(
+        null=True,
+        editable=False,
+        help_text="The last time this domain moved into the READY state",
+    )
 
     def isActive(self):
         return self.state == Domain.State.CREATED
@@ -1315,6 +1327,7 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_domain()
+            self.deleted = timezone.now()
         except RegistryError as err:
             logger.error(f"Could not delete domain. Registry returned error: {err}")
             raise err
@@ -1358,6 +1371,11 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         logger.info("Changing to ready state")
         logger.info("able to transition to ready state")
+        # if self.first_ready is not None, this means that this
+        # domain was READY, then not READY, then is READY again.
+        # We do not want to overwrite first_ready.
+        if self.first_ready is None:
+            self.first_ready = timezone.now()
 
     @transition(
         field="state",

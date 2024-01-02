@@ -387,6 +387,34 @@ class TestDomainStatuses(MockEppLib):
         """Domain 'revert_client_hold' method causes the registry to change statuses"""
         raise
 
+    def test_first_ready(self):
+        """
+        first_ready is set when a domain is first transitioned to READY. It does not get overwritten
+        in case the domain gets out of and back into READY.
+        """
+        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
+        self.assertEqual(domain.first_ready, None)
+
+        domain.ready()
+
+        # check that status is READY
+        self.assertTrue(domain.is_active())
+        self.assertNotEqual(domain.first_ready, None)
+
+        # Capture the value of first_ready
+        first_ready = domain.first_ready
+
+        # change domain status
+        domain.dns_needed()
+        self.assertFalse(domain.is_active())
+
+        # change  back to READY
+        domain.ready()
+        self.assertTrue(domain.is_active())
+
+        # assert that the value of first_ready has not changed
+        self.assertEqual(domain.first_ready, first_ready)
+
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
@@ -1157,6 +1185,7 @@ class TestRegistrantNameservers(MockEppLib):
             Then `commands.CreateHost` and `commands.UpdateDomain` is sent
                 to the registry
             And `domain.is_active` returns False
+            And domain.first_ready is null
         """
 
         # set 1 nameserver
@@ -1183,6 +1212,8 @@ class TestRegistrantNameservers(MockEppLib):
         # as you have less than 2 nameservers
         self.assertFalse(self.domain.is_active())
 
+        self.assertEqual(self.domain.first_ready, None)
+
     def test_user_adds_two_nameservers(self):
         """
         Scenario: Registrant adds 2 or more nameservers, thereby activating the domain
@@ -1191,6 +1222,7 @@ class TestRegistrantNameservers(MockEppLib):
             Then `commands.CreateHost` and `commands.UpdateDomain` is sent
                 to the registry
             And `domain.is_active` returns True
+            And domain.first_ready is not null
         """
 
         # set 2 nameservers
@@ -1221,6 +1253,7 @@ class TestRegistrantNameservers(MockEppLib):
         self.assertEqual(4, self.mockedSendFunction.call_count)
         # check that status is READY
         self.assertTrue(self.domain.is_active())
+        self.assertNotEqual(self.domain.first_ready, None)
 
     def test_user_adds_too_many_nameservers(self):
         """
@@ -2401,11 +2434,14 @@ class TestAnalystDelete(MockEppLib):
             When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
+
+            The deleted date is set.
         """
         # Put the domain in client hold
         self.domain.place_client_hold()
         # Delete it...
         self.domain.deletedInEpp()
+        self.domain.save()
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
@@ -2420,6 +2456,9 @@ class TestAnalystDelete(MockEppLib):
 
         # Domain should have the right state
         self.assertEqual(self.domain.state, Domain.State.DELETED)
+
+        # Domain should have a deleted
+        self.assertNotEqual(self.domain.deleted, None)
 
         # Cache should be invalidated
         self.assertEqual(self.domain._cache, {})
@@ -2439,6 +2478,7 @@ class TestAnalystDelete(MockEppLib):
         # Delete it
         with self.assertRaises(RegistryError) as err:
             domain.deletedInEpp()
+            domain.save()
             self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
         self.mockedSendFunction.assert_has_calls(
             [
@@ -2462,12 +2502,18 @@ class TestAnalystDelete(MockEppLib):
             and domain is of `state` is `READY`
             Then an FSM error is returned
             And `state` is not set to `DELETED`
+
+            The deleted date is still null.
         """
         self.assertEqual(self.domain.state, Domain.State.READY)
         with self.assertRaises(TransitionNotAllowed) as err:
             self.domain.deletedInEpp()
+            self.domain.save()
             self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
         # Domain should not be deleted
         self.assertNotEqual(self.domain, None)
         # Domain should have the right state
         self.assertEqual(self.domain.state, Domain.State.READY)
+
+        # deleted should be null
+        self.assertEqual(self.domain.deleted, None)

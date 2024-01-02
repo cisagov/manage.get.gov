@@ -727,6 +727,92 @@ class DomainApplicationTests(TestWithUser, WebTest):
         actual_url_slug = no_contacts_page.request.path.split("/")[-2]
         self.assertEqual(expected_url_slug, actual_url_slug)
 
+    def test_application_delete_other_contact(self):
+        """Other contacts can be deleted after being saved to database."""
+        # Populate the databse with a domain application that
+        # has 1 "other contact" assigned to it
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(555) 555 5555",
+        )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(555) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(555) 555 5557",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(other)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+
+        # Minimal check to ensure the form is loaded with data (if this part of
+        # the application doesn't work, we should be equipped with other unit
+        # tests to flag it)
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+
+        # clear the form
+        other_contacts_form["other_contacts-0-first_name"] = ""
+        other_contacts_form["other_contacts-0-middle_name"] = ""
+        other_contacts_form["other_contacts-0-last_name"] = ""
+        other_contacts_form["other_contacts-0-title"] = ""
+        other_contacts_form["other_contacts-0-email"] = ""
+        other_contacts_form["other_contacts-0-phone"] = ""
+
+        # Submit the now empty form
+        result = other_contacts_form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the contact we saved earlier has been removed from the database
+        application = DomainApplication.objects.get()  # There are no contacts anymore
+        self.assertEqual(
+            application.other_contacts.count(),
+            0,
+        )
+
+        # Verify that on submit, user is advanced to "no contacts" page
+        no_contacts_page = result.follow()
+        expected_url_slug = str(Step.NO_OTHER_CONTACTS)
+        actual_url_slug = no_contacts_page.request.path.split("/")[-2]
+        self.assertEqual(expected_url_slug, actual_url_slug)
+
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
         type_page = self.app.get(reverse("application:")).follow()
