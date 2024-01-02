@@ -25,8 +25,7 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             security_email = security_contacts[0].email
 
         # These are default emails that should not be displayed in the csv report
-        disallowed_emails = ["registrar@dotgov.gov"]
-        if security_email and security_email.lower() in disallowed_emails:
+        if security_email is not None and security_email.lower() == "registrar@dotgov.gov":
             security_email = "(blank)"
 
         # create a dictionary of fields which can be included in output
