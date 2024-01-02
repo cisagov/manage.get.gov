@@ -979,7 +979,7 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text=("Duplication of registry's security contact id for when the registry is unavailable"),
         editable=False,
     )
-    
+
     deleted = DateField(
         null=True,
         editable=False,
