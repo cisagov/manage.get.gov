@@ -17,9 +17,13 @@
 {% endblock %}
 
 {% block form_fields %}
-  {{ forms.0.management_form }}
-  {# forms.0 is a formset and this iterates over its forms #}
-  {% for form in forms.0.forms %}
+
+  {{ forms.0 }}
+  {# forms.0 is a small yes/no form that toggles the visibility of "other contact" formset #}
+
+  {{ forms.1.management_form }}
+  {# forms.1 is a formset and this iterates over its forms #}
+  {% for form in forms.1.forms %}
     <fieldset class="usa-fieldset">
       <legend>
         <h2>Organization contact {{ forloop.counter }} (optional)</h2>
@@ -41,6 +45,10 @@
 
     </fieldset>
   {% endfor %}
+
+  {% with attr_maxlength=1000 %}
+    {% input_with_errors forms.2.no_other_contacts_rationale %}
+  {% endwith %}
 
   <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">

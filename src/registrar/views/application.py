@@ -373,6 +373,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
+        # Log the keys and values of request.POST
+        for key, value in request.POST.items():
+            logger.info("Key: %s, Value: %s", key, value)
         # if accessing this class directly, redirect to the first step
         if self.__class__ == ApplicationWizard:
             return self.goto(self.steps.first)
@@ -481,7 +484,24 @@ class YourContact(ApplicationWizard):
 
 class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
-    forms = [forms.OtherContactsFormSet]
+    forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
+
+    def post(self, request, *args, **kwargs) -> HttpResponse:
+        parent_form = forms.OtherContactsYesNoForm(request.POST)
+        other_contacts_formset = forms.OtherContactsFormSet(request.POST, request.FILES)
+        no_other_contacts_form = forms.NoOtherContactsForm(request.POST)
+
+        logger.info("in post")
+        has_other_contacts_selected = parent_form.data.get('other_contacts-has_other_contacts')
+        logger.info(f"has other contacts = {has_other_contacts_selected}")
+        if parent_form.is_valid():
+            if has_other_contacts_selected:
+                logger.info("has other contacts")
+                other_contacts_formset.data = {}
+            else:
+                logger.info("doesn't have other contacts")
+                no_other_contacts_form.data = {}
+        super().post(request, *args, **kwargs)
 
 
 class NoOtherContacts(ApplicationWizard):

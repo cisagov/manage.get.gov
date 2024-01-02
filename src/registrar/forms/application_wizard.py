@@ -39,9 +39,11 @@ class RegistrarForm(forms.Form):
 
         Does nothing if form is not valid.
         """
+        logger.info(f"to_database called on {self.__class__.__name__}")
         if not self.is_valid():
             return
         for name, value in self.cleaned_data.items():
+            logger.info(f"{name}: {value}")
             setattr(obj, name, value)
         obj.save()
 
@@ -546,6 +548,21 @@ class YourContactForm(RegistrarForm):
         error_messages={"required": "Enter your phone number."},
     )
 
+
+class OtherContactsYesNoForm(RegistrarForm):
+    has_other_contacts = forms.TypedChoiceField(
+        choices=(
+            (True, "Yes, I can name other employees."),
+            (False, "No (We'll ask you to explain why).")
+        ),
+        widget=forms.RadioSelect
+        )
+
+    def is_valid(self):
+        val = super().is_valid()
+        logger.info(f"yes no form is valid = {val}")
+        return val
+    
 
 class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
