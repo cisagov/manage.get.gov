@@ -110,7 +110,13 @@ class Command(BaseCommand):
             reader = csv.DictReader(requested_file, delimiter=seperator)
             # Return a dictionary with the domain name as the key,
             # and the row information as the value
-            dict_data = {row.get("Domain Name").lower(): row for row in reader}
+            dict_data = {}
+            for row in reader:
+                domain_name = row.get("Domain Name")
+                if domain_name is not None:
+                    domain_name = domain_name.lower()
+                    row[domain_name] = row
+
             return dict_data
 
     def patch_agency_info(self, debug):

@@ -39,7 +39,11 @@ class TestPatchAgencyInfo(TestCase):
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit", return_value=True)
     def call_patch_federal_agency_info(self, mock_prompt):
         """Calls the patch_federal_agency_info command and mimics a keypress"""
-        call_command("patch_federal_agency_info", debug=True)
+        call_command(
+            "patch_federal_agency_info",
+            "registrar/tests/data/fake_current_full.csv",
+            debug=True
+        )
 
     def test_patch_agency_info(self):
         """
