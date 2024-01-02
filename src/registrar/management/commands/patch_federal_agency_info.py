@@ -1,7 +1,8 @@
 """Loops through each valid DomainInformation object and updates its agency value"""
 import argparse
+import csv
 import logging
-
+import os
 from typing import List
 
 from django.core.management import BaseCommand
@@ -20,27 +21,103 @@ class Command(BaseCommand):
     def __init__(self):
         super().__init__()
         self.di_to_update: List[DomainInformation] = []
-
-        # Stores the domain_name for logging purposes
-        self.di_failed_to_update: List[str] = []
-        self.di_skipped: List[str] = []
+        self.di_failed_to_update: List[DomainInformation] = []
+        self.di_skipped: List[DomainInformation] = []
 
     def add_arguments(self, parser):
         """Adds command line arguments"""
+        parser.add_argument(
+            "current_full_filepath",
+            help="TBD",
+        )
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
+        parser.add_argument("--sep", default=",", help="Delimiter character")
 
-    def handle(self, **kwargs):
+    def handle(self, current_full_filepath, **kwargs):
         """Loops through each valid DomainInformation object and updates its agency value"""
         debug = kwargs.get("debug")
+        seperator = kwargs.get("sep")
 
-        # Update the "federal_agency" field
+        # Check if the provided file path is valid
+        if not os.path.isfile(current_full_filepath):
+            raise argparse.ArgumentTypeError(f"Invalid file path '{current_full_filepath}'")
+
+        # === Update the "federal_agency" field === #
         self.patch_agency_info(debug)
+
+        # === Try to process anything that was skipped === #
+        if len(self.di_skipped) > 0:
+            self.process_skipped_records(current_full_filepath, seperator, debug)
+
+            # Clear the old skipped list, and log the run summary
+            self.di_skipped.clear()
+            self.log_script_run_summary(debug)
+
+    def process_skipped_records(self, file_path, seperator, debug):
+        """If we encounter any DomainInformation records that do not have data in the associated
+        TransitionDomain record, then check the associated current-full.csv file for this
+        information."""
+        self.di_to_update.clear()
+        self.di_failed_to_update.clear()
+        # Code execution will stop here if the user prompts "N"
+        TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=True,
+            info_to_inspect=f"""
+            ==File location==
+            current-full.csv filepath: {file_path}
+
+            ==Proposed Changes==
+            Number of DomainInformation objects to change: {len(self.di_skipped)}
+            The following DomainInformation objects will be modified: {self.di_skipped}
+            """,
+            prompt_title="Do you wish to patch skipped records?",
+        )
+        logger.info("Updating...")
+
+        file_data = self.read_current_full(file_path, seperator)
+        for di in self.di_skipped:
+            domain_name = di.domain.name
+            row = file_data.get(domain_name)
+            fed_agency = None
+            if row is not None and "Agency" in row:
+                fed_agency = row.get("Agency")
+
+            # Determine if we should update this record or not.
+            # If we don't get any data back, something went wrong.
+            if fed_agency is not None:
+                di.federal_agency = fed_agency
+                self.di_to_update.append(di)
+                if debug:
+                    logger.info(
+                        f"{TerminalColors.OKCYAN}"
+                        f"Updating {di}"
+                        f"{TerminalColors.ENDC}"
+                    )
+            else:
+                self.di_failed_to_update.append(di)
+                logger.error(
+                    f"{TerminalColors.FAIL}"
+                    f"Could not update {di}. No information found."
+                    f"{TerminalColors.ENDC}"
+                )
+
+        # Bulk update the federal agency field in DomainInformation objects
+        DomainInformation.objects.bulk_update(self.di_to_update, ["federal_agency"])
+
+    def read_current_full(self, file_path, seperator):
+        """Reads the current-full.csv file and stores it in a dictionary"""
+        with open(file_path, "r") as requested_file:
+            reader = csv.DictReader(requested_file, delimiter=seperator)
+            # Return a dictionary with the domain name as the key,
+            # and the row information as the value
+            dict_data = {row.get("Domain Name").lower(): row for row in reader}
+            return dict_data
 
     def patch_agency_info(self, debug):
         """
-        Updates the `federal_agency` field of each valid `DomainInformation` object based on the corresponding
-        `TransitionDomain` object. Skips the update if the `TransitionDomain` object does not exist or its
-        `federal_agency` field is `None`. Logs the update, skip, and failure actions if debug mode is on.
+        Updates the federal_agency field of each valid DomainInformation object based on the corresponding
+        TransitionDomain object. Skips the update if the TransitionDomain object does not exist or its
+        federal_agency field is None. Logs the update, skip, and failure actions if debug mode is on.
         After all updates, logs a summary of the results.
         """
         empty_agency_query = Q(federal_agency=None) | Q(federal_agency="")
@@ -57,8 +134,8 @@ class Command(BaseCommand):
             system_exit_on_terminate=True,
             info_to_inspect=f"""
             ==Proposed Changes==
-            Number of DomainInformation objects to change: {len(td_agencies)}
-            The following DomainInformation objects will be modified: {td_agencies}
+            Number of DomainInformation objects to change: {len(domain_info_to_fix)}
+            The following DomainInformation objects will be modified: {domain_info_to_fix}
             """,
             prompt_title="Do you wish to patch federal_agency data?",
         )
@@ -138,7 +215,7 @@ class Command(BaseCommand):
                 ============= FINISHED ===============
                 Updated {update_success_count} DomainInformation entries
 
-                ----- SOME AGENCY DATA WAS NONE (NEEDS MANUAL PATCHING) -----
+                ----- SOME AGENCY DATA WAS NONE (WILL BE PATCHED AUTOMATICALLY) -----
                 Skipped updating {update_skipped_count} DomainInformation entries
                 {TerminalColors.ENDC}
                 """
