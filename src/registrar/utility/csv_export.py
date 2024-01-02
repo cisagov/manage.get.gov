@@ -19,6 +19,16 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             first_name = domainInfo.authorizing_official.first_name or ""
             last_name = domainInfo.authorizing_official.last_name or ""
             ao = first_name + " " + last_name
+
+        security_email = " "
+        if security_contacts:
+            security_email = security_contacts[0].email
+
+        # These are default emails that should not be displayed in the csv report
+        disallowed_emails = ["registrar@dotgov.gov"]
+        if security_email and security_email.lower() in disallowed_emails:
+            security_email = "(blank)"
+
         # create a dictionary of fields which can be included in output
         FIELDS = {
             "Domain name": domainInfo.domain.name,
@@ -31,7 +41,7 @@ def export_domains_to_writer(writer, columns, sort_fields, filter_condition):
             "State": domainInfo.state_territory,
             "AO": ao,
             "AO email": domainInfo.authorizing_official.email if domainInfo.authorizing_official else " ",
-            "Security Contact Email": security_contacts[0].email if security_contacts else " ",
+            "Security Contact Email": security_email,
             "Status": domainInfo.domain.state,
             "Expiration Date": domainInfo.domain.expiration_date,
         }
