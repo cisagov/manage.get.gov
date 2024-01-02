@@ -136,7 +136,7 @@ class Command(BaseCommand):
         self.log_script_run_summary(debug)
 
         # Tracks if this script was successful. If any errors are found, something went very wrong.
-        was_success = len(self.di_failed_to_update) != 0
+        was_success = len(self.di_failed_to_update) == 0
         return was_success
 
     def process_skipped_records(self, file_path, seperator, debug):
