@@ -18,6 +18,7 @@ from registrar.admin import (
 from registrar.models import Domain, DomainApplication, DomainInformation, User, DomainInvitation, Contact, Website
 from registrar.models.user_domain_role import UserDomainRole
 from .common import (
+    MockSESClient,
     completed_application,
     generic_domain_object,
     less_console_noise,
@@ -340,7 +341,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
@@ -382,7 +383,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
@@ -424,7 +425,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
@@ -472,7 +473,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 # Modify the application's property
@@ -490,7 +491,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
@@ -532,7 +533,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
@@ -580,7 +581,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 # Modify the application's property
