@@ -654,8 +654,10 @@ class TestDomainApplicationAdmin(MockEppLib):
 
     def test_readonly_when_restricted_creator(self):
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        application.creator.status = User.RESTRICTED
-        application.creator.save()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.creator.status = User.RESTRICTED
+                application.creator.save()
 
         request = self.factory.get("/")
         request.user = self.superuser
@@ -733,8 +735,10 @@ class TestDomainApplicationAdmin(MockEppLib):
     def test_saving_when_restricted_creator(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        application.creator.status = User.RESTRICTED
-        application.creator.save()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.creator.status = User.RESTRICTED
+                application.creator.save()
 
         # Create a request object with a superuser
         request = self.factory.get("/")
@@ -756,8 +760,10 @@ class TestDomainApplicationAdmin(MockEppLib):
     def test_change_view_with_restricted_creator(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        application.creator.status = User.RESTRICTED
-        application.creator.save()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.creator.status = User.RESTRICTED
+                application.creator.save()
 
         with patch("django.contrib.messages.warning") as mock_warning:
             # Create a request object with a superuser
