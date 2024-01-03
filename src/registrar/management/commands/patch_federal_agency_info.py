@@ -128,7 +128,7 @@ class Command(BaseCommand):
         # After the update has happened, do a sweep of what we get back.
         # If the fields we expect to update are still None, then something is wrong.
         for di in corrected_domains:
-            if domain_name in td_dict and td_dict.get(domain_name) is not None and di.federal_agency is None:
+            if di not in self.di_skipped and di.federal_agency is None:
                 logger.info(f"{TerminalColors.FAIL}Failed to update {di}{TerminalColors.ENDC}")
                 self.di_failed_to_update.append(di)
 
