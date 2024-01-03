@@ -328,6 +328,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             url="/admin/registrar/DomainApplication/",
             model=DomainApplication,
         )
+        self.mock_client = MockSESClient()
 
     def test_domain_sortable(self):
         """Tests if the DomainApplication sorts by domain correctly"""
@@ -422,10 +423,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MockSESClient()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Create a sample application
                 application = completed_application()
@@ -440,8 +438,8 @@ class TestDomainApplicationAdmin(MockEppLib):
                 self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
-        call_args = mock_client_instance.send_email.call_args
-        args, kwargs = call_args
+        call_args = self.mock_client.EMAILS_SENT
+        kwargs = call_args[0]["kwargs"]
 
         # Retrieve the email details from the arguments
         from_email = kwargs.get("FromEmailAddress")
@@ -455,8 +453,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(to_email, EMAIL)
         self.assertIn(expected_string, email_body)
 
-        # Perform assertions on the mock call itself
-        mock_client_instance.send_email.assert_called_once()
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
     @boto3_mocking.patching
     def test_save_model_sends_in_review_email(self):
@@ -464,10 +461,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MockSESClient()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Create a sample application
                 application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
@@ -482,8 +476,8 @@ class TestDomainApplicationAdmin(MockEppLib):
                 self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
-        call_args = mock_client_instance.send_email.call_args
-        args, kwargs = call_args
+        call_args = self.mock_client.EMAILS_SENT
+        kwargs = call_args[0]["kwargs"]
 
         # Retrieve the email details from the arguments
         from_email = kwargs.get("FromEmailAddress")
@@ -497,8 +491,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(to_email, EMAIL)
         self.assertIn(expected_string, email_body)
 
-        # Perform assertions on the mock call itself
-        mock_client_instance.send_email.assert_called_once()
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
     @boto3_mocking.patching
     def test_save_model_sends_approved_email(self):
@@ -506,10 +499,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MockSESClient()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Create a sample application
                 application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
@@ -524,8 +514,8 @@ class TestDomainApplicationAdmin(MockEppLib):
                 self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
-        call_args = mock_client_instance.send_email.call_args
-        args, kwargs = call_args
+        call_args = self.mock_client.EMAILS_SENT
+        kwargs = call_args[0]["kwargs"]
 
         # Retrieve the email details from the arguments
         from_email = kwargs.get("FromEmailAddress")
@@ -539,8 +529,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(to_email, EMAIL)
         self.assertIn(expected_string, email_body)
 
-        # Perform assertions on the mock call itself
-        mock_client_instance.send_email.assert_called_once()
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
     @boto3_mocking.patching
     def test_save_model_sets_approved_domain(self):
@@ -554,8 +543,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Modify the application's property
                 application.status = DomainApplication.ApplicationStatus.APPROVED
@@ -572,10 +560,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MockSESClient()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Create a sample application
                 application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
@@ -590,8 +575,8 @@ class TestDomainApplicationAdmin(MockEppLib):
                 self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
-        call_args = mock_client_instance.send_email.call_args
-        args, kwargs = call_args
+        call_args = self.mock_client.EMAILS_SENT
+        kwargs = call_args[0]["kwargs"]
 
         # Retrieve the email details from the arguments
         from_email = kwargs.get("FromEmailAddress")
@@ -605,8 +590,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(to_email, EMAIL)
         self.assertIn(expected_string, email_body)
 
-        # Perform assertions on the mock call itself
-        mock_client_instance.send_email.assert_called_once()
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
     @boto3_mocking.patching
     def test_save_model_sends_rejected_email(self):
@@ -614,10 +598,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        mock_client = MockSESClient()
-        mock_client_instance = mock_client.return_value
-
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Create a sample application
                 application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
@@ -632,8 +613,8 @@ class TestDomainApplicationAdmin(MockEppLib):
                 self.admin.save_model(request, application, form=None, change=True)
 
         # Access the arguments passed to send_email
-        call_args = mock_client_instance.send_email.call_args
-        args, kwargs = call_args
+        call_args = self.mock_client.EMAILS_SENT
+        kwargs = call_args[0]["kwargs"]
 
         # Retrieve the email details from the arguments
         from_email = kwargs.get("FromEmailAddress")
@@ -647,8 +628,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(to_email, EMAIL)
         self.assertIn(expected_string, email_body)
 
-        # Perform assertions on the mock call itself
-        mock_client_instance.send_email.assert_called_once()
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
     @boto3_mocking.patching
     def test_save_model_sets_restricted_status_on_user(self):
@@ -662,8 +642,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a mock request
         request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # Modify the application's property
                 application.status = DomainApplication.ApplicationStatus.INELIGIBLE
@@ -816,8 +795,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
             stack.enter_context(patch.object(messages, "error"))
 
-            mock_client = MagicMock()
-            with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 with less_console_noise():
                     # Simulate saving the model
                     application.status = DomainApplication.ApplicationStatus.REJECTED
@@ -850,10 +828,11 @@ class TestDomainApplicationAdmin(MockEppLib):
             # Patch Domain.is_active and django.contrib.messages.error simultaneously
             stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
             stack.enter_context(patch.object(messages, "error"))
-
-            # Simulate saving the model
-            application.status = DomainApplication.ApplicationStatus.REJECTED
-            self.admin.save_model(request, application, None, True)
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                with less_console_noise():
+                    # Simulate saving the model
+                    application.status = DomainApplication.ApplicationStatus.REJECTED
+                    self.admin.save_model(request, application, None, True)
 
             # Assert that the error message was never called
             messages.error.assert_not_called()
@@ -1110,6 +1089,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         User.objects.all().delete()
         Contact.objects.all().delete()
         Website.objects.all().delete()
+        self.mock_client.EMAILS_SENT.clear()
 
 
 class DomainInvitationAdminTest(TestCase):
