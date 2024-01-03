@@ -149,8 +149,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
         """Test that an info message appears when user has multiple applications already"""
         # create and submit an application
         application = completed_application(user=self.user)
-        application.submit()
-        application.save()
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                application.submit()
+                application.save()
 
         # now, attempt to create another one
         with less_console_noise():

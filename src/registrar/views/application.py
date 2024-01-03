@@ -1,5 +1,5 @@
 import logging
-
+import boto3_mocking # type: ignore
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
@@ -7,9 +7,11 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
+from api.tests.common import less_console_noise
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
+from registrar.tests.common import MockSESClient
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 
@@ -569,6 +571,9 @@ class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
         to withdraw and send back to homepage.
         """
         application = DomainApplication.objects.get(id=self.kwargs["pk"])
-        application.withdraw()
-        application.save()
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                application.withdraw()
+                application.save()
         return HttpResponseRedirect(reverse("home"))
