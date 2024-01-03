@@ -265,7 +265,8 @@ class TestDomainCreation(MockEppLib):
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
 
-        with boto3_mocking.clients.handler_for("sesv2", MockSESClient):
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 # skip using the submit method
                 application.status = DomainApplication.ApplicationStatus.SUBMITTED
