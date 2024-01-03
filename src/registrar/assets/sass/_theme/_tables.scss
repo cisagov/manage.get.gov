@@ -25,6 +25,10 @@
     color: color('primary-darker');
     padding-bottom: units(2px);
   }
+  td.shift-action-button {
+    padding-right: 0;
+    transform: translateX(10px);
+  }
 }
 
 .dotgov-table {

@@ -625,6 +625,21 @@ class DomainUsersView(DomainBaseView):
 
     template_name = "domain_users.html"
 
+    def get_context_data(self, **kwargs):
+        """The initial value for the form (which is a formset here)."""
+        context = super().get_context_data(**kwargs)
+
+        # Create HTML for the modal button
+        modal_button = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="disable_dnssec">Confirm</button>'
+        )
+
+        context["modal_button"] = modal_button
+
+        return context
+
 
 class DomainAddUserView(DomainFormBaseView):
     """Inside of a domain's user management, a form for adding users.

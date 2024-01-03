@@ -31,6 +31,7 @@
       <tr>
         <th data-sortable scope="col" role="columnheader">Email</th>
         <th data-sortable scope="col" role="columnheader">Role</th>
+        <th scope="col" role="columnheader"><span class="sr-only">Action</span></th>
       </tr>
     </thead>
     <tbody>
@@ -40,6 +41,28 @@
           {{ permission.user.email }}
         </th>
         <td data-label="Role">{{ permission.role|title }}</td>
+        <td class="shift-action-button">
+          <a
+          id="button-toggle-user-alert-{{ forloop.counter }}"
+          href="#toggle-user-alert-{{ forloop.counter }}"
+          class="usa-button--unstyled"
+          aria-controls="toggle-user-alert-{{ forloop.counter }}"
+          data-open-modal
+          >Remove</a
+        >
+        {# Use data-force-action to take esc out of the equation and pass cancel_button_resets_ds_form to effectuate a reset in the view #}
+        <div
+          class="usa-modal"
+          id="toggle-user-alert-{{ forloop.counter }}"
+          aria-labelledby="Are you sure you want to continue?"
+          aria-describedby="Your DNSSEC records will be deleted from the registry."
+          data-force-action
+        >
+          <form method="POST" action="{% url "invitation-delete" pk=permission.user.id %}">
+            {% include 'includes/modal.html' with modal_heading="Warning: You are about to remove all DS records on your domain" modal_description="To fully disable DNSSEC: In addition to removing your DS records here you’ll also need to delete the DS records at your DNS host. To avoid causing your domain to appear offline you should wait to delete your DS records at your DNS host until the Time to Live (TTL) expires. This is often less than 24 hours, but confirm with your provider." modal_button=modal_button|safe %}
+          </form>
+        </div>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
