@@ -59,7 +59,8 @@ class TestDomainAdmin(MockEppLib):
         """
         self.client.force_login(self.superuser)
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 application.approve()
 
