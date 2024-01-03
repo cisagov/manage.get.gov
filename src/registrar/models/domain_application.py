@@ -576,6 +576,9 @@ class DomainApplication(TimeStampedModel):
         The email goes to the email address that the submitter gave as their
         contact information. If there is not submitter information, then do
         nothing.
+
+        send_email: bool -> Used to bypass the send_templated_email function, in the event
+        we just want to log that an email would have been sent, rather than actually sending one.
         """
 
         if self.submitter is None or self.submitter.email is None:

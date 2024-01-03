@@ -1,4 +1,5 @@
 import logging
+
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
