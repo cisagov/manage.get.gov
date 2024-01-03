@@ -444,8 +444,9 @@ class ExportDataTest(MockEppLib):
         # Invoke setter
         self.domain_3.security_contact
 
-        # Call the export function
-        export_domains_to_writer(writer, columns, sort_fields, filter_condition)
+        # Call the export functions
+        write_header(writer, columns)
+        write_body(writer, columns, sort_fields, filter_condition)
 
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
