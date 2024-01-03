@@ -101,6 +101,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         self,
         obj: DomainApplication,
         join: str,
+        reverse_joins: list,
         should_delete: Callable,
         pre_update: Callable,
         pre_create: Callable,
@@ -133,7 +134,17 @@ class RegistrarFormSet(forms.BaseFormSet):
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
-                    if getattr(db_obj, related_name).count() > 1:
+                    number_of_reverse_joins = 0
+                    
+                    for rel in reverse_joins:
+                        count = getattr(db_obj, rel).count()
+                        logger.info(f"Count for {rel}: {count}")
+                        # Increment the counter if the count is greater than 0
+                        if count > 0:
+                            number_of_reverse_joins += 1
+                    
+                    if any(getattr(db_obj, rel).count() > 1 for rel in reverse_joins) or number_of_reverse_joins > 1:
+                        logger.info("Object is joined to something")
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
                     else:
@@ -377,7 +388,7 @@ class BaseCurrentSitesFormSet(RegistrarFormSet):
         return website.strip() == ""
 
     def to_database(self, obj: DomainApplication):
-        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(obj, self.JOIN, [], self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def from_database(cls, obj):
@@ -434,7 +445,7 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
             return {}
 
     def to_database(self, obj: DomainApplication):
-        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(obj, self.JOIN, [], self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def on_fetch(cls, query):
@@ -655,6 +666,7 @@ class OtherContactsForm(RegistrarForm):
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
+    REVERSE_JOINS = ["authorizing_official", "submitted_applications", "contact_applications", "information_authorizing_official", "submitted_applications_information", "contact_applications_information"]
 
     def __init__(self, *args, **kwargs):
         self.formset_data_marked_for_deletion = False
@@ -668,12 +680,12 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         
     def should_delete(self, cleaned):
         empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
-        logger.info(f"should_delete => {all(empty)}")
+        logger.info(f"should_delete => {all(empty) or self.formset_data_marked_for_deletion}")
         return all(empty) or self.formset_data_marked_for_deletion
 
     def to_database(self, obj: DomainApplication):
         logger.info("to_database called on BaseOtherContactsFormSet")
-        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(obj, self.JOIN, self.REVERSE_JOINS, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def from_database(cls, obj):
