@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .common import MockEppLib, completed_application, create_user  # type: ignore
+from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -1451,7 +1451,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 success_result = add_page.form.submit()
@@ -1484,7 +1484,7 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 success_result = add_page.form.submit()
@@ -1515,7 +1515,7 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = caps_email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MagicMock()
+        mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():
                 success_result = add_page.form.submit()
@@ -1545,6 +1545,7 @@ class TestDomainManagers(TestDomainOverview):
                 add_page.form["email"] = email_address
                 self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
                 add_page.form.submit()
+
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
             FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
@@ -1565,11 +1566,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1603,11 +1605,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1645,11 +1648,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1684,15 +1688,15 @@ class TestDomainManagers(TestDomainOverview):
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         mock_client = MagicMock()
-
         mock_error_message = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with patch("django.contrib.messages.error") as mock_error_message:
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit().follow()
+                with less_console_noise():
+                    add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    add_page.form["email"] = email_address
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    add_page.form.submit().follow()
 
         expected_message_content = "Can't send invitation email. No email is associated with your account."
 
@@ -1721,11 +1725,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_error_message = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with patch("django.contrib.messages.error") as mock_error_message:
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit().follow()
+                with less_console_noise():
+                    add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    add_page.form["email"] = email_address
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    add_page.form.submit().follow()
 
         expected_message_content = "Can't send invitation email. No email is associated with your account."
 
@@ -1739,7 +1744,11 @@ class TestDomainManagers(TestDomainOverview):
         """Posting to the delete view deletes an invitation."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
-        self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        mock_client.EMAILS_SENT.clear()
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
@@ -1751,8 +1760,11 @@ class TestDomainManagers(TestDomainOverview):
         other_user = User()
         other_user.save()
         self.client.force_login(other_user)
-        with less_console_noise():  # permission denied makes console errors
-            result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():  # permission denied makes console errors
+                result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        
         self.assertEqual(result.status_code, 403)
 
     @boto3_mocking.patching
@@ -2163,8 +2175,10 @@ class TestDomainSecurityEmail(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         security_email_page.form["security_email"] = "mayor@igorville.gov"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        with less_console_noise():  # swallow log warning message
-            result = security_email_page.form.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():  # swallow log warning message
+                result = security_email_page.form.submit()
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
