@@ -32,7 +32,7 @@ def write_row(writer, columns, domain_info):
         first_name = domain_info.authorizing_official.first_name or ""
         last_name = domain_info.authorizing_official.last_name or ""
         ao = first_name + " " + last_name
-    
+
     security_email = " "
     if security_contacts:
         security_email = security_contacts[0].email
