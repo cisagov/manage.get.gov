@@ -983,6 +983,10 @@ class DomainAdmin(ListHeaderAdmin):
         "name",
         "organization_type",
         "state",
+        "expiration_date",
+        "created_at",
+        "first_ready",
+        "deleted",
     ]
 
     # this ordering effects the ordering of results
@@ -1001,7 +1005,7 @@ class DomainAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain name."
     change_form_template = "django/admin/domain_change_form.html"
     change_list_template = "django/admin/domain_change_list.html"
-    readonly_fields = ["state", "expiration_date"]
+    readonly_fields = ["state", "expiration_date", "first_ready", "deleted"]
 
     # Table ordering
     ordering = ["name"]
@@ -1246,8 +1250,9 @@ admin.site.register(models.DomainInvitation, DomainInvitationAdmin)
 admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
-admin.site.register(models.Host, MyHostAdmin)
-admin.site.register(models.Nameserver, MyHostAdmin)
+# Host and HostIP removed from django admin because changes in admin
+# do not propogate to registry and logic not applied
+# admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)

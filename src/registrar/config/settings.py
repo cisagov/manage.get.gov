@@ -210,7 +210,6 @@ STATICFILES_DIRS = [
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "registrar" / "templates"],
         # look for templates inside installed apps
         #     required by django-debug-toolbar
         "APP_DIRS": True,
