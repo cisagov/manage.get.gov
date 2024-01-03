@@ -487,21 +487,124 @@ class OtherContacts(ApplicationWizard):
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
-        parent_form = forms.OtherContactsYesNoForm(request.POST)
-        other_contacts_formset = forms.OtherContactsFormSet(request.POST, request.FILES)
-        no_other_contacts_form = forms.NoOtherContactsForm(request.POST)
+        """This method handles POST requests."""
+        # Log the keys and values of request.POST
+        for key, value in request.POST.items():
+            logger.info("Key: %s, Value: %s", key, value)
+        # if accessing this class directly, redirect to the first step
+        if self.__class__ == ApplicationWizard:
+            return self.goto(self.steps.first)
 
-        logger.info("in post")
-        has_other_contacts_selected = parent_form.data.get('other_contacts-has_other_contacts')
-        logger.info(f"has other contacts = {has_other_contacts_selected}")
-        if parent_form.is_valid():
-            if has_other_contacts_selected:
+        # which button did the user press?
+        button: str = request.POST.get("submit_button", "")
+
+        forms = self.get_forms(use_post=True)
+        # forms is now set as follows:
+        # forms.0 is yes no form
+        # forms.1 - forms.length-1 are other contacts forms
+        # forms.length is no other contacts form
+        yes_no_form = forms[0]
+        other_contacts_forms = forms[1]
+        no_other_contacts_form = forms[2]
+
+        all_forms_valid = True
+        # test first for yes_no_form validity
+        if yes_no_form.is_valid():
+            logger.info("yes no form is valid")
+            # test for has_contacts
+            if yes_no_form.cleaned_data.get('has_other_contacts'):
                 logger.info("has other contacts")
-                other_contacts_formset.data = {}
+                # remove data from no_other_contacts_form and set
+                # form to always_valid
+                no_other_contacts_form.remove_form_data()
+                # test that the other_contacts_forms and no_other_contacts_forms are valid
+                if not self.is_valid(forms[1:]):
+                    all_forms_valid = False
             else:
-                logger.info("doesn't have other contacts")
-                no_other_contacts_form.data = {}
-        super().post(request, *args, **kwargs)
+                logger.info("has no other contacts")
+                # remove data from each other_contacts_form
+                other_contacts_forms.remove_form_data()
+                # test that the other_contacts_forms and no_other_contacts_forms are valid
+                if not self.is_valid(forms[1:]):
+                    all_forms_valid = False
+        else:
+            all_forms_valid = False
+
+        if all_forms_valid:
+            logger.info("all forms are valid")
+            # always save progress
+            self.save(forms)
+        else:
+            context = self.get_context_data()
+            context["forms"] = forms
+            return render(request, self.template_name, context)
+
+        # if user opted to save their progress,
+        # return them to the page they were already on
+        if button == "save":
+            messages.success(request, "Your progress has been saved!")
+            return self.goto(self.steps.current)
+        # if user opted to save progress and return,
+        # return them to the home page
+        if button == "save_and_return":
+            return HttpResponseRedirect(reverse("home"))
+        # otherwise, proceed as normal
+        return self.goto_next_step()
+    
+    # def post(self, request, *args, **kwargs) -> HttpResponse:
+    #     parent_form = forms.OtherContactsYesNoForm(request.POST, **kwargs)
+    #     other_contacts_formset = forms.OtherContactsFormSet(request.POST, **kwargs)
+    #     no_other_contacts_form = forms.NoOtherContactsForm(request.POST, **kwargs)
+
+    #     logger.info("in post")
+    #     has_other_contacts_selected = parent_form.data.get('other_contacts-has_other_contacts')
+    #     logger.info(f"has other contacts = {has_other_contacts_selected}")
+    #     if has_other_contacts_selected:
+    #         logger.info("has other contacts")
+    #         other_contacts_formset.data = {}
+    #     else:
+    #         logger.info("doesn't have other contacts")
+    #         no_other_contacts_form.data = {}
+    #     return super().post(request, *args, **kwargs)
+
+    # def is_valid(self, forms: list) -> bool:
+    #     """Returns True if all forms in the wizard are valid."""
+    #     if forms[0].is_valid():
+    #         # test for has_contacts
+    #         if forms[0].cleaned_data.get('has_other_contacts'):
+    #             logger.info("testing validity on other contacts")
+    #             validity_list = []
+
+    #             # Iterate over the sublist of forms from index 2 to the second-to-last index
+    #             for form in forms[1:-1]:
+    #                 # Check if the form is valid and append the result to the validity_list
+    #                 logger.info(f"testing validity of form of type {form.__class__.__name__}")
+    #                 validity_list.append(form.is_valid())
+
+    #             # Check if all elements in validity_list are True
+    #             return all(validity_list)
+    #             # return all(form.is_valid() for form in forms[2:-2])
+    #         else:
+    #             logger.info("testing validity on no other contacts")
+    #             return forms[-1].is_valid()
+    #         # if has contacts , return if next length-2 are valid
+    #         # else return last form in list is valid
+    #     else:
+    #         return False
+    #     # are_valid = (form.is_valid() for form in forms)
+    #     # return all(are_valid)
+
+
+    # def save(self, forms: list):
+    #     """
+    #     Unpack the form responses onto the model object properties.
+
+    #     Saves the application to the database.
+    #     """
+    #     logger.info("in save")
+    #     for form in forms:
+    #         if form is not None and hasattr(form, "to_database"):
+    #             form.to_database(self.application)
 
 
 class NoOtherContacts(ApplicationWizard):

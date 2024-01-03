@@ -551,6 +551,7 @@ class YourContactForm(RegistrarForm):
 
 class OtherContactsYesNoForm(RegistrarForm):
     has_other_contacts = forms.TypedChoiceField(
+        coerce=lambda x: x.lower() == 'true',
         choices=(
             (True, "Yes, I can name other employees."),
             (False, "No (We'll ask you to explain why).")
@@ -594,6 +595,15 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter a phone number for this contact."},
     )
 
+    def __init__(self, *args, **kwargs):
+        self.form_data_deleted = False
+        super().__init__(*args, **kwargs)
+
+    def remove_form_data(self):
+        logger.info("removing form data from other contact")
+        self.data = {}
+        self.form_data_deleted = True
+
     def clean(self):
         """
         This method overrides the default behavior for forms.
@@ -603,28 +613,34 @@ class OtherContactsForm(RegistrarForm):
         validation
         """
 
-        # Set form_is_empty to True initially
-        form_is_empty = True
-        for name, field in self.fields.items():
-            # get the value of the field from the widget
-            value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
-            # if any field in the submitted form is not empty, set form_is_empty to False
-            if value is not None and value != "":
-                form_is_empty = False
+        if self.form_data_deleted:
+            # Set form_is_empty to True initially
+            form_is_empty = True
+            for name, field in self.fields.items():
+                # get the value of the field from the widget
+                value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
+                # if any field in the submitted form is not empty, set form_is_empty to False
+                if value is not None and value != "":
+                    form_is_empty = False
 
-        if form_is_empty:
-            # clear any errors raised by the form fields
-            # (before this clean() method is run, each field
-            # performs its own clean, which could result in
-            # errors that we wish to ignore at this point)
-            #
-            # NOTE: we cannot just clear() the errors list.
-            # That causes problems.
-            for field in self.fields:
-                if field in self.errors:
-                    del self.errors[field]
+            if form_is_empty:
+                # clear any errors raised by the form fields
+                # (before this clean() method is run, each field
+                # performs its own clean, which could result in
+                # errors that we wish to ignore at this point)
+                #
+                # NOTE: we cannot just clear() the errors list.
+                # That causes problems.
+                for field in self.fields:
+                    if field in self.errors:
+                        del self.errors[field]
 
         return self.cleaned_data
+
+    def is_valid(self):
+        val = super().is_valid()
+        logger.info(f"other contacts form is valid = {val}")
+        return val
 
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
@@ -635,11 +651,17 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         return all(empty)
 
     def to_database(self, obj: DomainApplication):
+        logger.info("to_database called on BaseOtherContactsFormSet")
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def from_database(cls, obj):
         return super().from_database(obj, cls.JOIN, cls.on_fetch)
+
+    def remove_form_data(self):
+        logger.info("removing form data from other contact set")
+        for form in self.forms:
+            form.remove_form_data()
 
 
 OtherContactsFormSet = forms.formset_factory(
@@ -666,6 +688,63 @@ class NoOtherContactsForm(RegistrarForm):
             )
         ],
     )
+
+    def __init__(self, *args, **kwargs):
+        self.form_data_marked_for_deletion = False
+        super().__init__(*args, **kwargs)
+
+    def remove_form_data(self):
+        logger.info("removing form data from no other contacts")
+        # self.data = {"no_other_contacts_rationale": ""}
+        self.form_data_marked_for_deletion = True
+    
+    def clean(self):
+        """
+        This method overrides the default behavior for forms.
+        This cleans the form after field validation has already taken place.
+        In this override, remove errors associated with the form if form data
+        is marked for deletion.
+        """
+
+        if self.form_data_marked_for_deletion:
+            # clear any errors raised by the form fields
+            # (before this clean() method is run, each field
+            # performs its own clean, which could result in
+            # errors that we wish to ignore at this point)
+            #
+            # NOTE: we cannot just clear() the errors list.
+            # That causes problems.
+            for field in self.fields:
+                if field in self.errors:
+                    del self.errors[field]
+
+        return self.cleaned_data
+        
+    def to_database(self, obj):
+        """
+        This method overrides the behavior of RegistrarForm.
+        If form data is marked for deletion, set relevant fields
+        to None before saving.
+        Do nothing if form is not valid.
+        """
+        logger.info(f"to_database called on {self.__class__.__name__}")
+        if not self.is_valid():
+            return
+        if self.form_data_marked_for_deletion:
+            for field_name, _ in self.fields.items():
+                logger.info(f"{field_name}: None")
+                setattr(obj, field_name, None)
+        else:
+            for name, value in self.cleaned_data.items():
+                logger.info(f"{name}: {value}")
+                setattr(obj, name, value)
+        obj.save()
+ 
+    def is_valid(self):
+        """This is for debugging only and can be deleted"""
+        val = super().is_valid()
+        logger.info(f"no other contacts form is valid = {val}")
+        return val
 
 
 class AnythingElseForm(RegistrarForm):
