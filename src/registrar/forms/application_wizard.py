@@ -646,6 +646,10 @@ class OtherContactsForm(RegistrarForm):
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
 
+    def __init__(self, *args, **kwargs):
+        self.formset_data_marked_for_deletion = False
+        super().__init__(*args, **kwargs)
+
     def should_delete(self, cleaned):
         empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
         return all(empty)
@@ -660,14 +664,24 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
 
     def remove_form_data(self):
         logger.info("removing form data from other contact set")
+        self.formset_data_marked_for_deletion = True
         for form in self.forms:
             form.remove_form_data()
+
+    def is_valid(self):
+        if self.formset_data_marked_for_deletion:
+            self.validate_min = False
+        val = super().is_valid()
+        logger.info(f"other contacts form set is valid = {val}")
+        return val
 
 
 OtherContactsFormSet = forms.formset_factory(
     OtherContactsForm,
     extra=1,
     absolute_max=1500,  # django default; use `max_num` to limit entries
+    min_num=1,
+    validate_min=True,
     formset=BaseOtherContactsFormSet,
 )
 
