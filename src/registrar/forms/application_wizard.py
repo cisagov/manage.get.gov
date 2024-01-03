@@ -116,7 +116,8 @@ class RegistrarFormSet(forms.BaseFormSet):
         obj.save()
 
         query = getattr(obj, join).order_by("created_at").all()  # order matters
-
+        logger.info(obj._meta.get_field(join).related_query_name())
+        related_name = obj._meta.get_field(join).related_query_name()
         # the use of `zip` pairs the forms in the formset with the
         # related objects gotten from the database -- there should always be
         # at least as many forms as database entries: extra forms means new
@@ -132,7 +133,12 @@ class RegistrarFormSet(forms.BaseFormSet):
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
-                    db_obj.delete()
+                    if getattr(db_obj, related_name).count() > 1:
+                        # Remove the specific relationship without deleting the object
+                        getattr(db_obj, related_name).remove(self.application)
+                    else:
+                        # If there are no other relationships, delete the object
+                        db_obj.delete()
                     continue
                 else:
                     pre_update(db_obj, cleaned)
