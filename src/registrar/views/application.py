@@ -1,6 +1,6 @@
 import logging
 
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect, QueryDict
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.safestring import mark_safe
@@ -412,6 +412,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         """
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
+                logger.info(f"saving form {form.__class__.__name__}")
                 form.to_database(self.application)
 
 
@@ -486,87 +487,6 @@ class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
 
-    # def post(self, request, *args, **kwargs) -> HttpResponse:
-    #     """This method handles POST requests."""
-    #     # Log the keys and values of request.POST
-    #     for key, value in request.POST.items():
-    #         logger.info("Key: %s, Value: %s", key, value)
-    #     # if accessing this class directly, redirect to the first step
-    #     if self.__class__ == ApplicationWizard:
-    #         return self.goto(self.steps.first)
-
-    #     # which button did the user press?
-    #     button: str = request.POST.get("submit_button", "")
-
-    #     forms = self.get_forms(use_post=True)
-    #     # forms is now set as follows:
-    #     # forms.0 is yes no form
-    #     # forms.1 - forms.length-1 are other contacts forms
-    #     # forms.length is no other contacts form
-    #     yes_no_form = forms[0]
-    #     other_contacts_forms = forms[1]
-    #     no_other_contacts_form = forms[2]
-
-    #     all_forms_valid = True
-    #     # test first for yes_no_form validity
-    #     if yes_no_form.is_valid():
-    #         logger.info("yes no form is valid")
-    #         # test for has_contacts
-    #         if yes_no_form.cleaned_data.get('has_other_contacts'):
-    #             logger.info("has other contacts")
-    #             # remove data from no_other_contacts_form and set
-    #             # form to always_valid
-    #             no_other_contacts_form.remove_form_data()
-    #             # test that the other_contacts_forms and no_other_contacts_forms are valid
-    #             if not self.is_valid(forms[1:]):
-    #                 all_forms_valid = False
-    #         else:
-    #             logger.info("has no other contacts")
-    #             # remove data from each other_contacts_form
-    #             other_contacts_forms.remove_form_data()
-    #             # test that the other_contacts_forms and no_other_contacts_forms are valid
-    #             if not self.is_valid(forms[1:]):
-    #                 all_forms_valid = False
-    #     else:
-    #         all_forms_valid = False
-
-    #     if all_forms_valid:
-    #         logger.info("all forms are valid")
-    #         # always save progress
-    #         self.save(forms)
-    #     else:
-    #         context = self.get_context_data()
-    #         context["forms"] = forms
-    #         return render(request, self.template_name, context)
-
-    #     # if user opted to save their progress,
-    #     # return them to the page they were already on
-    #     if button == "save":
-    #         messages.success(request, "Your progress has been saved!")
-    #         return self.goto(self.steps.current)
-    #     # if user opted to save progress and return,
-    #     # return them to the home page
-    #     if button == "save_and_return":
-    #         return HttpResponseRedirect(reverse("home"))
-    #     # otherwise, proceed as normal
-    #     return self.goto_next_step()
-    
-    # def post(self, request, *args, **kwargs) -> HttpResponse:
-    #     parent_form = forms.OtherContactsYesNoForm(request.POST, **kwargs)
-    #     other_contacts_formset = forms.OtherContactsFormSet(request.POST, **kwargs)
-    #     no_other_contacts_form = forms.NoOtherContactsForm(request.POST, **kwargs)
-
-    #     logger.info("in post")
-    #     has_other_contacts_selected = parent_form.data.get('other_contacts-has_other_contacts')
-    #     logger.info(f"has other contacts = {has_other_contacts_selected}")
-    #     if has_other_contacts_selected:
-    #         logger.info("has other contacts")
-    #         other_contacts_formset.data = {}
-    #     else:
-    #         logger.info("doesn't have other contacts")
-    #         no_other_contacts_form.data = {}
-    #     return super().post(request, *args, **kwargs)
-
     def is_valid(self, forms: list) -> bool:
         """Overrides default behavior defined in ApplicationWizard.
         Depending on value in other_contacts_yes_no_form, marks forms in
@@ -593,7 +513,15 @@ class OtherContacts(ApplicationWizard):
                 logger.info("has no other contacts")
                 # remove data from each other_contacts_form
                 other_contacts_forms.mark_formset_for_deletion()
-                # test that the other_contacts_forms and no_other_contacts_forms are valid
+                # set the delete data to on in each form
+                # Create a mutable copy of the QueryDict    
+                # mutable_data = QueryDict(mutable=True)
+                # mutable_data.update(self.request.POST.copy())
+
+                # for i, form in enumerate(other_contacts_forms.forms):
+                #     form_prefix = f'other_contacts-{i}'
+                #     mutable_data[f'{form_prefix}-deleted'] = 'on'
+                #     other_contacts_forms.forms[i].data = mutable_data.copy() 
                 all_forms_valid = all(form.is_valid() for form in forms[1:])
         else:
             all_forms_valid = False

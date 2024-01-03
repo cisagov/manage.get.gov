@@ -126,6 +126,9 @@ class RegistrarFormSet(forms.BaseFormSet):
         for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
             cleaned = post_data.cleaned_data if post_data is not None else {}
 
+            logger.info(f"in _to_database for {self.__class__.__name__}")
+            logger.info(db_obj)
+            logger.info(cleaned)
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
@@ -136,7 +139,7 @@ class RegistrarFormSet(forms.BaseFormSet):
                     db_obj.save()
 
             # no matching database object, create it
-            elif db_obj is None and cleaned:
+            elif db_obj is None and cleaned and not cleaned.get('delete', False):
                 kwargs = pre_create(db_obj, cleaned)
                 getattr(obj, join).create(**kwargs)
 
@@ -601,7 +604,7 @@ class OtherContactsForm(RegistrarForm):
 
     def mark_form_for_deletion(self):
         logger.info("removing form data from other contact")
-        self.data = {}
+        # self.data = {}
         self.form_data_marked_for_deletion = True
 
     def clean(self):
@@ -615,25 +618,26 @@ class OtherContactsForm(RegistrarForm):
 
         if self.form_data_marked_for_deletion:
             # Set form_is_empty to True initially
-            form_is_empty = True
-            for name, field in self.fields.items():
-                # get the value of the field from the widget
-                value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
-                # if any field in the submitted form is not empty, set form_is_empty to False
-                if value is not None and value != "":
-                    form_is_empty = False
+            # form_is_empty = True
+            # for name, field in self.fields.items():
+            #     # get the value of the field from the widget
+            #     value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
+            #     # if any field in the submitted form is not empty, set form_is_empty to False
+            #     if value is not None and value != "":
+            #         form_is_empty = False
 
-            if form_is_empty:
-                # clear any errors raised by the form fields
-                # (before this clean() method is run, each field
-                # performs its own clean, which could result in
-                # errors that we wish to ignore at this point)
-                #
-                # NOTE: we cannot just clear() the errors list.
-                # That causes problems.
-                for field in self.fields:
-                    if field in self.errors:
-                        del self.errors[field]
+            # if form_is_empty:
+            #     # clear any errors raised by the form fields
+            #     # (before this clean() method is run, each field
+            #     # performs its own clean, which could result in
+            #     # errors that we wish to ignore at this point)
+            #     #
+            #     # NOTE: we cannot just clear() the errors list.
+            #     # That causes problems.
+            for field in self.fields:
+                if field in self.errors:
+                    del self.errors[field]
+            return {'delete': True}
 
         return self.cleaned_data
 
@@ -650,9 +654,16 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         self.formset_data_marked_for_deletion = False
         super().__init__(*args, **kwargs)
 
+    def pre_update(self, db_obj, cleaned):
+        """Code to run before an item in the formset is saved."""
+
+        for key, value in cleaned.items():
+            setattr(db_obj, key, value)
+        
     def should_delete(self, cleaned):
         empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
-        return all(empty)
+        logger.info(f"should_delete => {all(empty)}")
+        return all(empty) or self.formset_data_marked_for_deletion
 
     def to_database(self, obj: DomainApplication):
         logger.info("to_database called on BaseOtherContactsFormSet")
@@ -686,6 +697,7 @@ OtherContactsFormSet = forms.formset_factory(
     absolute_max=1500,  # django default; use `max_num` to limit entries
     min_num=1,
     validate_min=True,
+    # can_delete=True,
     formset=BaseOtherContactsFormSet,
 )
 

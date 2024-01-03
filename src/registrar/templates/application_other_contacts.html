@@ -29,6 +29,10 @@
         <h2>Organization contact {{ forloop.counter }} (optional)</h2>
       </legend>
 
+      {% if forms.1.can_delete %}
+        {{ form.DELETE }}
+      {% endif %}
+
       {% input_with_errors form.first_name %}
 
       {% input_with_errors form.middle_name %}
