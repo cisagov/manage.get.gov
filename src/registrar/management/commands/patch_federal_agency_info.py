@@ -56,7 +56,7 @@ class Command(BaseCommand):
             # Clear the old skipped list, and log the run summary
             self.di_skipped.clear()
             self.log_script_run_summary(debug)
-        else:
+        elif not was_success:
             # This code should never execute. This can only occur if bulk_update somehow fails,
             # which may indicate some sort of data corruption.
             logger.error(
@@ -107,11 +107,11 @@ class Command(BaseCommand):
             log_message = None
 
             # If agency exists on a TransitionDomain, update the related DomainInformation object
-            if domain_name in td_dict and federal_agency is not None:
+            if domain_name in td_dict:
                 di.federal_agency = federal_agency
                 self.di_to_update.append(di)
                 log_message = f"{TerminalColors.OKCYAN}Updated {di}{TerminalColors.ENDC}"
-            elif domain_name not in td_dict:
+            else:
                 self.di_skipped.append(di)
                 log_message = f"{TerminalColors.YELLOW}Skipping update for {di}{TerminalColors.ENDC}"
 
@@ -128,7 +128,7 @@ class Command(BaseCommand):
         # After the update has happened, do a sweep of what we get back.
         # If the fields we expect to update are still None, then something is wrong.
         for di in corrected_domains:
-            if domain_name in td_dict and td_dict.get(domain_name) is None:
+            if domain_name in td_dict and td_dict.get(domain_name) is not None and di.federal_agency is None:
                 logger.info(f"{TerminalColors.FAIL}Failed to update {di}{TerminalColors.ENDC}")
                 self.di_failed_to_update.append(di)
 
