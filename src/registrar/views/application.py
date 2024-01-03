@@ -42,7 +42,6 @@ class Step(StrEnum):
     PURPOSE = "purpose"
     YOUR_CONTACT = "your_contact"
     OTHER_CONTACTS = "other_contacts"
-    NO_OTHER_CONTACTS = "no_other_contacts"
     ANYTHING_ELSE = "anything_else"
     REQUIREMENTS = "requirements"
     REVIEW = "review"
@@ -89,7 +88,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
-        Step.NO_OTHER_CONTACTS: _("No other employees from your organization?"),
         Step.ANYTHING_ELSE: _("Anything else?"),
         Step.REQUIREMENTS: _("Requirements for operating .gov domains"),
         Step.REVIEW: _("Review and submit your domain request"),
@@ -102,7 +100,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
         Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
-        Step.NO_OTHER_CONTACTS: lambda w: w.from_model("show_no_other_contacts_rationale", False),
     }
 
     def __init__(self):
@@ -526,11 +523,6 @@ class OtherContacts(ApplicationWizard):
         else:
             all_forms_valid = False
         return all_forms_valid
-
-
-class NoOtherContacts(ApplicationWizard):
-    template_name = "application_no_other_contacts.html"
-    forms = [forms.NoOtherContactsForm]
 
 
 class AnythingElse(ApplicationWizard):

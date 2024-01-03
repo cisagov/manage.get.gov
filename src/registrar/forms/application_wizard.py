@@ -96,6 +96,16 @@ class RegistrarFormSet(forms.BaseFormSet):
         Hint: Subclass should call `self._to_database(...)`.
         """
         raise NotImplementedError
+    
+    def test_if_more_than_one_join(self, db_obj, rel, related_name):
+        
+        logger.info(f"rel: {rel} | related_name: {related_name}")
+        
+        threshold = 0
+        if rel == related_name:
+            threshold = 1
+            
+        return getattr(db_obj, rel) is not None and getattr(db_obj, rel).count() > threshold
 
     def _to_database(
         self,
@@ -133,17 +143,8 @@ class RegistrarFormSet(forms.BaseFormSet):
             logger.info(cleaned)
             # matching database object exists, update it
             if db_obj is not None and cleaned:
-                if should_delete(cleaned):
-                    number_of_reverse_joins = 0
-                    
-                    for rel in reverse_joins:
-                        count = getattr(db_obj, rel).count()
-                        logger.info(f"Count for {rel}: {count}")
-                        # Increment the counter if the count is greater than 0
-                        if count > 0:
-                            number_of_reverse_joins += 1
-                    
-                    if any(getattr(db_obj, rel).count() > 1 for rel in reverse_joins) or number_of_reverse_joins > 1:
+                if should_delete(cleaned):             
+                    if any(self.test_if_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
                         logger.info("Object is joined to something")
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
@@ -666,7 +667,7 @@ class OtherContactsForm(RegistrarForm):
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
-    REVERSE_JOINS = ["authorizing_official", "submitted_applications", "contact_applications", "information_authorizing_official", "submitted_applications_information", "contact_applications_information"]
+    REVERSE_JOINS = ["user", "authorizing_official", "submitted_applications", "contact_applications", "information_authorizing_official", "submitted_applications_information", "contact_applications_information"]
 
     def __init__(self, *args, **kwargs):
         self.formset_data_marked_for_deletion = False
