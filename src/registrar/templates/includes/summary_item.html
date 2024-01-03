@@ -47,6 +47,15 @@
         {% if value|length == 1 %}
             {% if users %}
               <p class="margin-top-0">{{ value.0.user.email }} </p>
+            {% elif domains %}
+              {{ value.0.0 }}
+              {% if value.0.1 %}
+                ({% spaceless %}
+                {% for addr in value.0.1 %}
+                  {{addr}}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                {% endspaceless %})
+              {% endif %}
             {% else %}
               <p class="margin-top-0">{{ value | first }} </p>
             {% endif %}

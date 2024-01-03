@@ -10,7 +10,8 @@ from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignor
 from django.db import models
 from django.utils import timezone
 from typing import Any
-
+from registrar.models.host import Host
+from registrar.models.host_ip import HostIP
 
 from registrar.utility.errors import (
     ActionNotAllowed,
@@ -295,13 +296,15 @@ class Domain(TimeStampedModel, DomainHelper):
         while non-subordinate hosts MUST NOT.
         """
         try:
+            # attempt to retrieve hosts from registry and store in cache and db
             hosts = self._get_property("hosts")
-        except Exception as err:
-            # Do not raise error when missing nameservers
-            # this is a standard occurence when a domain
-            # is first created
-            logger.info("Domain is missing nameservers %s" % err)
-            return []
+        except Exception:
+            # If exception raised returning hosts from registry, get from db
+            hosts = []
+            for hostobj in self.host.all():
+                host_name = hostobj.name
+                ips = [ip.address for ip in hostobj.ip.all()]
+                hosts.append({"name": host_name, "addrs": ips})
 
         # TODO-687 fix this return value
         hostList = []
@@ -730,8 +733,10 @@ class Domain(TimeStampedModel, DomainHelper):
             email=contact.email,
             voice=contact.voice,
             fax=contact.fax,
+            auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
         )  # type: ignore
 
+        updateContact.disclose = self._disclose_fields(contact=contact)  # type: ignore
         try:
             registry.send(updateContact, cleaned=True)
         except RegistryError as e:
@@ -967,6 +972,18 @@ class Domain(TimeStampedModel, DomainHelper):
     expiration_date = DateField(
         null=True,
         help_text=("Duplication of registry's expiration date saved for ease of reporting"),
+    )
+
+    deleted = DateField(
+        null=True,
+        editable=False,
+        help_text="Deleted at date",
+    )
+
+    first_ready = DateField(
+        null=True,
+        editable=False,
+        help_text="The last time this domain moved into the READY state",
     )
 
     def isActive(self):
@@ -1298,6 +1315,7 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_domain()
+            self.deleted = timezone.now()
         except RegistryError as err:
             logger.error(f"Could not delete domain. Registry returned error: {err}")
             raise err
@@ -1341,6 +1359,11 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         logger.info("Changing to ready state")
         logger.info("able to transition to ready state")
+        # if self.first_ready is not None, this means that this
+        # domain was READY, then not READY, then is READY again.
+        # We do not want to overwrite first_ready.
+        if self.first_ready is None:
+            self.first_ready = timezone.now()
 
     @transition(
         field="state",
@@ -1605,6 +1628,8 @@ class Domain(TimeStampedModel, DomainHelper):
             cache = self._extract_data_from_response(data_response)
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
+            if fetch_hosts:
+                self._update_hosts_and_ips_in_db(cleaned)
             self._update_dates(cleaned)
 
             self._cache = cleaned
@@ -1651,7 +1676,11 @@ class Domain(TimeStampedModel, DomainHelper):
         return dnssec_data
 
     def _update_hosts_and_contacts(self, cleaned, fetch_hosts, fetch_contacts):
-        """Capture and store old hosts and contacts from cache if they don't exist"""
+        """
+        Update hosts and contacts if fetch_hosts and/or fetch_contacts.
+        Additionally, capture and cache old hosts and contacts from cache if they
+        don't exist in cleaned
+        """
         old_cache_hosts = self._cache.get("hosts")
         old_cache_contacts = self._cache.get("contacts")
 
@@ -1665,6 +1694,50 @@ class Domain(TimeStampedModel, DomainHelper):
             cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
             if old_cache_contacts is not None:
                 cleaned["contacts"] = old_cache_contacts
+
+    def _update_hosts_and_ips_in_db(self, cleaned):
+        """Update hosts and host_ips in database if retrieved from registry.
+        Only called when fetch_hosts is True.
+
+        Parameters:
+            self: the domain to be updated with hosts and ips from cleaned
+            cleaned: dict containing hosts.  Hosts are provided as a list of dicts, e.g.
+                [{"name": "ns1.example.com",}, {"name": "ns1.example.gov"}, "addrs": ["0.0.0.0"])]
+        """
+        cleaned_hosts = cleaned["hosts"]
+        # Get all existing hosts from the database for this domain
+        existing_hosts_in_db = Host.objects.filter(domain=self)
+        # Identify hosts to delete
+        cleaned_host_names = set(cleaned_host["name"] for cleaned_host in cleaned_hosts)
+        hosts_to_delete_from_db = [
+            existing_host for existing_host in existing_hosts_in_db if existing_host.name not in cleaned_host_names
+        ]
+        # Delete hosts and their associated HostIP instances
+        for host_to_delete in hosts_to_delete_from_db:
+            # Delete associated HostIP instances
+            HostIP.objects.filter(host=host_to_delete).delete()
+            # Delete the host itself
+            host_to_delete.delete()
+        # Update or create Hosts and HostIPs
+        for cleaned_host in cleaned_hosts:
+            # Check if the cleaned_host already exists
+            host_in_db, host_created = Host.objects.get_or_create(domain=self, name=cleaned_host["name"])
+            # Get cleaned list of ips for update
+            cleaned_ips = cleaned_host["addrs"]
+            if not host_created:
+                # Get all existing ips from the database for this host
+                existing_ips_in_db = HostIP.objects.filter(host=host_in_db)
+                # Identify IPs to delete
+                ips_to_delete_from_db = [
+                    existing_ip for existing_ip in existing_ips_in_db if existing_ip.address not in cleaned_ips
+                ]
+                # Delete IPs
+                for ip_to_delete in ips_to_delete_from_db:
+                    # Delete the ip
+                    ip_to_delete.delete()
+            # Update or create HostIP instances
+            for ip_address in cleaned_ips:
+                HostIP.objects.get_or_create(address=ip_address, host=host_in_db)
 
     def _update_dates(self, cleaned):
         """Update dates (expiration and creation) from cleaned"""

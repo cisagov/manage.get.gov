@@ -10,8 +10,8 @@ class HostIP(TimeStampedModel):
 
     The registry is the source of truth for this data.
 
-    This model exists ONLY to allow a new registrant to draft DNS entries
-    before their application is approved.
+    This model exists to make hosts/nameservers and ip addresses
+    available when registry is not available.
     """
 
     address = models.CharField(

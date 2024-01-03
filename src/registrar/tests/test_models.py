@@ -20,6 +20,7 @@ from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
 
+# Test comment for push -- will remove
 # The DomainApplication submit method has a side effect of sending an email
 # with AWS SES, so mock that out in all of these test cases
 @boto3_mocking.patching
