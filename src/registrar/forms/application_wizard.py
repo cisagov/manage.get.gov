@@ -596,13 +596,13 @@ class OtherContactsForm(RegistrarForm):
     )
 
     def __init__(self, *args, **kwargs):
-        self.form_data_deleted = False
+        self.form_data_marked_for_deletion = False
         super().__init__(*args, **kwargs)
 
-    def remove_form_data(self):
+    def mark_form_for_deletion(self):
         logger.info("removing form data from other contact")
         self.data = {}
-        self.form_data_deleted = True
+        self.form_data_marked_for_deletion = True
 
     def clean(self):
         """
@@ -613,7 +613,7 @@ class OtherContactsForm(RegistrarForm):
         validation
         """
 
-        if self.form_data_deleted:
+        if self.form_data_marked_for_deletion:
             # Set form_is_empty to True initially
             form_is_empty = True
             for name, field in self.fields.items():
@@ -662,11 +662,15 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
     def from_database(cls, obj):
         return super().from_database(obj, cls.JOIN, cls.on_fetch)
 
-    def remove_form_data(self):
+    def mark_formset_for_deletion(self):
+        """Mark other contacts formset for deletion.
+        Updates forms in formset as well to mark them for deletion.
+        This has an effect on validity checks and to_database methods.
+        """
         logger.info("removing form data from other contact set")
         self.formset_data_marked_for_deletion = True
         for form in self.forms:
-            form.remove_form_data()
+            form.mark_form_for_deletion()
 
     def is_valid(self):
         if self.formset_data_marked_for_deletion:
@@ -707,9 +711,11 @@ class NoOtherContactsForm(RegistrarForm):
         self.form_data_marked_for_deletion = False
         super().__init__(*args, **kwargs)
 
-    def remove_form_data(self):
+    def mark_form_for_deletion(self):
+        """Marks no_other_contacts form for deletion.
+        This changes behavior of validity checks and to_database
+        methods."""
         logger.info("removing form data from no other contacts")
-        # self.data = {"no_other_contacts_rationale": ""}
         self.form_data_marked_for_deletion = True
     
     def clean(self):
