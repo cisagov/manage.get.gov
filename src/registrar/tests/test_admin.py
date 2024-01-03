@@ -37,7 +37,6 @@ from unittest.mock import patch
 from unittest import skip
 
 from django.conf import settings
-from unittest.mock import MagicMock
 import boto3_mocking  # type: ignore
 import logging
 
