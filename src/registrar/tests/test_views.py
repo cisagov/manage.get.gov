@@ -1764,7 +1764,7 @@ class TestDomainManagers(TestDomainOverview):
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with less_console_noise():  # permission denied makes console errors
                 result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
-        
+
         self.assertEqual(result.status_code, 403)
 
     @boto3_mocking.patching
