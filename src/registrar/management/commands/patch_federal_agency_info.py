@@ -134,7 +134,6 @@ class Command(BaseCommand):
 
         # === Log results and return data === #
         self.log_script_run_summary(debug)
-
         # Tracks if this script was successful. If any errors are found, something went very wrong.
         was_success = len(self.di_failed_to_update) == 0
         return was_success
@@ -143,8 +142,7 @@ class Command(BaseCommand):
         """If we encounter any DomainInformation records that do not have data in the associated
         TransitionDomain record, then check the associated current-full.csv file for this
         information."""
-        self.di_to_update.clear()
-        self.di_failed_to_update.clear()
+
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
