@@ -681,7 +681,17 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
 
     def __init__(self, *args, **kwargs):
         self.formset_data_marked_for_deletion = False
-        super().__init__(*args, **kwargs)
+        self.application = kwargs.pop("application", None)
+        super(RegistrarFormSet, self).__init__(*args, **kwargs)
+        # quick workaround to ensure that the HTML `required`
+        # attribute shows up on required fields for any forms
+        # in the formset which have data already (stated another
+        # way: you can leave a form in the formset blank, but
+        # if you opt to fill it out, you must fill it out _right_)
+        for index in range(max(self.initial_form_count(), 1)):
+            self.forms[index].use_required_attribute = True
+            
+        # self.forms[0].use_required_attribute = True
 
     def pre_update(self, db_obj, cleaned):
         """Code to run before an item in the formset is saved."""
