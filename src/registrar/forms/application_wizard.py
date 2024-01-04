@@ -757,6 +757,11 @@ class NoOtherContactsForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
+        error_messages={
+            "required": (
+                "Rationale for no other employees is required."
+            )
+        },
     )
 
     def __init__(self, *args, **kwargs):
