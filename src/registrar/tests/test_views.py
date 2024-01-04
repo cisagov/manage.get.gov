@@ -109,7 +109,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/register/", follow=True)
         self.assertContains(
             response,
-            "What kind of U.S.-based government organization do you represent?",
+            "You’re about to start your .gov domain request.",
         )
 
     def test_domain_application_form_with_ineligible_user(self):
@@ -138,11 +138,44 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_user(self.user.username)
         self.TITLES = ApplicationWizard.TITLES
 
+    def test_application_form_intro_acknowledgement(self):
+        """Tests that user is presented with intro acknowledgement page"""
+        intro_page = self.app.get(reverse("application:"))
+        self.assertContains(intro_page, "You’re about to start your .gov domain request")
+
+    def test_application_form_intro_is_skipped_when_edit_access(self):
+        """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
+        completed_application(status=DomainApplication.ApplicationStatus.STARTED, user=self.user)
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "city.gov")
+        # click the "Edit" link
+        detail_page = home_page.click("Edit", index=0)
+        # Check that the response is a redirect
+        self.assertEqual(detail_page.status_code, 302)
+        # You can access the 'Location' header to get the redirect URL
+        redirect_url = detail_page.url
+        self.assertEqual(redirect_url, "/register/organization_type/")
+
     def test_application_form_empty_submit(self):
-        # 302 redirect to the first form
-        page = self.app.get(reverse("application:")).follow()
+        """Tests empty submit on the first page after the acknowledgement page"""
+        intro_page = self.app.get(reverse("application:"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         # submitting should get back the same page if the required field is empty
-        result = page.forms[0].submit()
+        result = type_page.forms[0].submit()
         self.assertIn("What kind of U.S.-based government organization do you represent?", result)
 
     def test_application_multiple_applications_exist(self):
@@ -157,8 +190,18 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # now, attempt to create another one
         with less_console_noise():
-            page = self.app.get("/register/").follow()
-            self.assertContains(page, "You cannot submit this request yet")
+            intro_page = self.app.get(reverse("application:"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            intro_form = intro_page.forms[0]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            intro_result = intro_form.submit()
+
+            # follow first redirect
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            type_page = intro_result.follow()
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+            self.assertContains(type_page, "You cannot submit this request yet")
 
     @boto3_mocking.patching
     def test_application_form_submission(self):
@@ -177,11 +220,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
         SKIPPED_PAGES = 4
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -540,11 +592,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_conditional_federal(self):
         """Federal branch question is shown for federal organizations."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -586,11 +647,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_conditional_elections(self):
         """Election question is shown for other organizations."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -631,11 +701,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_section_skipping(self):
         """Can skip forward and back in sections"""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -659,11 +738,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_nonfederal(self):
         """Non-federal organizations don't have to provide their federal agency."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -695,11 +783,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_about_your_organization_special(self):
         """Special districts have to answer an additional question."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -818,11 +915,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -837,12 +943,22 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_tribal_government(self):
         """Tribal organizations have to answer an additional question."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         type_form = type_page.forms[0]
         type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.TRIBAL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -857,11 +973,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
 
     def test_application_ao_dynamic_text(self):
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -919,12 +1044,22 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(ao_page, "Domain requests from cities")
 
     def test_application_dotgov_domain_dynamic_text(self):
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         # ---- TYPE PAGE  ----
         type_form = type_page.forms[0]
         type_form["organization_type-organization_type"] = "federal"
@@ -1168,8 +1303,22 @@ class DomainApplicationTests(TestWithUser, WebTest):
         Make sure the long name is displaying in the application form,
         org step
         """
-        request = self.app.get(reverse("application:")).follow()
-        self.assertContains(request, "Federal: an agency of the U.S. government")
+        intro_page = self.app.get(reverse("application:"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+
+        self.assertContains(type_page, "Federal: an agency of the U.S. government")
 
     def test_long_org_name_in_application_manage(self):
         """
