@@ -756,19 +756,26 @@ class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMe
         return f"Successfully canceled invitation for {self.object.email}."
 
 
-class DomainDeleteUserView(UserDomainRolePermissionDeleteView, SuccessMessageMixin):
+class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
     """Inside of a domain's user management, a form for deleting users.
     """
     object: UserDomainRole  # workaround for type mismatch in DeleteView
 
     def get_object(self, queryset=None):
         """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""
-        domain_id = self.kwargs.get('pk')
-        user_id = self.kwargs.get('user_pk')
+        domain_id = self.kwargs.get("pk")
+        user_id = self.kwargs.get("user_pk")
         return UserDomainRole.objects.get(domain=domain_id, user=user_id)
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
     def get_success_message(self, cleaned_data):
-        return f"Successfully removed manager for {self.object.email}."
+        return f"Successfully removed manager for {self.object.user.email}."
+
+    def form_valid(self, form):
+        """Delete the specified user on this domain."""
+        super().form_valid(form)
+        messages.success(self.request, f"Successfully removed manager for {self.object.user.email}.")
+
+        return redirect(self.get_success_url())
