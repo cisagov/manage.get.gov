@@ -506,7 +506,11 @@ function toggleTwoDomElements(ele1, ele2, index) {
 
   function handleRadioButtonChange() {
       // Check the value of the selected radio button
-      let selectedValue = document.querySelector('input[name="other_contacts-has_other_contacts"]:checked').value;
+      // Attempt to find the radio button element that is checked
+      let radioButtonChecked = document.querySelector('input[name="other_contacts-has_other_contacts"]:checked');
+
+      // Check if the element exists before accessing its value
+      let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
 
       switch (selectedValue) {
           case 'True':

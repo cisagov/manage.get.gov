@@ -831,9 +831,9 @@ class DomainApplication(TimeStampedModel):
             DomainApplication.OrganizationChoices.INTERSTATE,
         ]
 
-    def show_no_other_contacts_rationale(self) -> bool:
-        """Show this step if the other contacts are blank."""
-        return not self.other_contacts.exists()
+    def has_rationale(self) -> bool:
+        """Does this application have no_other_contacts_rationale"""
+        return bool(self.no_other_contacts_rationale)
 
     def has_other_contacts(self) -> bool:
         """Does this application have other contacts listed?"""

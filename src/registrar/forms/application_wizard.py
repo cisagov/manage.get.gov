@@ -571,14 +571,24 @@ class YourContactForm(RegistrarForm):
 
 
 class OtherContactsYesNoForm(RegistrarForm):
-    has_other_contacts = forms.TypedChoiceField(
-        coerce=lambda x: x.lower() == 'true',
-        choices=(
-            (True, "Yes, I can name other employees."),
-            (False, "No (We'll ask you to explain why).")
-        ),
-        widget=forms.RadioSelect
-        )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.application and self.application.has_other_contacts():
+            default_value = True
+        elif self.application and self.application.has_rationale():
+            default_value = False
+        else:
+            default_value = None
+
+        self.fields['has_other_contacts'] = forms.TypedChoiceField(
+            coerce=lambda x: x.lower() == 'true' if x is not None else None,
+            choices=(
+                (True, "Yes, I can name other employees."),
+                (False, "No (We'll ask you to explain why).")
+            ),
+            initial=default_value,
+            widget=forms.RadioSelect
+            )
 
     def is_valid(self):
         val = super().is_valid()
