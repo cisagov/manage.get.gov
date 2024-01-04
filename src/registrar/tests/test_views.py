@@ -109,7 +109,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/register/", follow=True)
         self.assertContains(
             response,
-            "You're about to start your .gov domain request.",
+            "You’re about to start your .gov domain request.",
         )
 
     def test_domain_application_form_with_ineligible_user(self):
@@ -141,7 +141,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
     def test_application_form_intro_acknowledgement(self):
         """Tests that user is presented with intro acknowledgement page"""
         intro_page = self.app.get(reverse("application:"))
-        self.assertContains(intro_page, "You're about to start your .gov domain request")
+        self.assertContains(intro_page, "You’re about to start your .gov domain request")
 
     def test_application_form_intro_is_skipped_when_edit_access(self):
         """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
