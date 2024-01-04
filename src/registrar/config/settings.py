@@ -519,7 +519,7 @@ LOGIN_REQUIRED_IGNORE_PATHS = [
 ]
 
 # where to go after logging out
-LOGOUT_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "https://get.gov/"
 
 # disable dynamic client registration,
 # only the OP inside OIDC_PROVIDERS will be available
