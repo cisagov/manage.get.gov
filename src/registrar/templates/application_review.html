@@ -103,11 +103,8 @@
                 {% include "includes/contact.html" with contact=other %}
               </div>
             {% empty %}
-              None
+              {{ application.no_other_contacts_rationale|default:"Incomplete" }}
             {% endfor %}
-          {% endif %}
-          {% if step == Step.NO_OTHER_CONTACTS %}
-            {{ application.no_other_contacts_rationale|default:"Incomplete" }}
           {% endif %}
           {% if step == Step.ANYTHING_ELSE %}
             {{ application.anything_else|default:"No" }}

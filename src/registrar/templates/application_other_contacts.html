@@ -21,42 +21,47 @@
   {{ forms.0 }}
   {# forms.0 is a small yes/no form that toggles the visibility of "other contact" formset #}
 
-  {{ forms.1.management_form }}
-  {# forms.1 is a formset and this iterates over its forms #}
-  {% for form in forms.1.forms %}
-    <fieldset class="usa-fieldset">
-      <legend>
-        <h2>Organization contact {{ forloop.counter }} (optional)</h2>
-      </legend>
+    <div id="other-employees">
+        {{ forms.1.management_form }}
+        {# forms.1 is a formset and this iterates over its forms #}
+        {% for form in forms.1.forms %}
+            <fieldset class="usa-fieldset">
+            <legend>
+                <h2>Organization contact {{ forloop.counter }} (optional)</h2>
+            </legend>
 
-      {% if forms.1.can_delete %}
-        {{ form.DELETE }}
-      {% endif %}
+            {% if forms.1.can_delete %}
+                {{ form.DELETE }}
+            {% endif %}
 
-      {% input_with_errors form.first_name %}
+            {% input_with_errors form.first_name %}
 
-      {% input_with_errors form.middle_name %}
+            {% input_with_errors form.middle_name %}
 
-      {% input_with_errors form.last_name %}
+            {% input_with_errors form.last_name %}
 
-      {% input_with_errors form.title %}
+            {% input_with_errors form.title %}
 
-      {% input_with_errors form.email %}
+            {% input_with_errors form.email %}
 
-      {% with add_class="usa-input--medium" %}
-        {% input_with_errors form.phone %}
-      {% endwith %}
+            {% with add_class="usa-input--medium" %}
+                {% input_with_errors form.phone %}
+            {% endwith %}
 
-    </fieldset>
-  {% endfor %}
+            </fieldset>
+        {% endfor %}
 
-  {% with attr_maxlength=1000 %}
-    {% input_with_errors forms.2.no_other_contacts_rationale %}
-  {% endwith %}
+        <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
+            </svg><span class="margin-left-05">Add another contact</span>
+        </button>
+    </div>
 
-  <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
-    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-      <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-    </svg><span class="margin-left-05">Add another contact</span>
-  </button>
+    <div id="no-other-employees">
+        {% with attr_maxlength=1000 %}
+            {% input_with_errors forms.2.no_other_contacts_rationale %}
+        {% endwith %}
+    </div>
+
 {% endblock %}
