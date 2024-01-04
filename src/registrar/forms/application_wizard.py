@@ -577,12 +577,44 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter a phone number for this contact."},
     )
 
+    def clean(self):
+        """
+        This method overrides the default behavior for forms.
+        This cleans the form after field validation has already taken place.
+        In this override, allow for a form which is empty to be considered
+        valid even though certain required fields have not passed field
+        validation
+        """
+
+        # Set form_is_empty to True initially
+        form_is_empty = True
+        for name, field in self.fields.items():
+            # get the value of the field from the widget
+            value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
+            # if any field in the submitted form is not empty, set form_is_empty to False
+            if value is not None and value != "":
+                form_is_empty = False
+
+        if form_is_empty:
+            # clear any errors raised by the form fields
+            # (before this clean() method is run, each field
+            # performs its own clean, which could result in
+            # errors that we wish to ignore at this point)
+            #
+            # NOTE: we cannot just clear() the errors list.
+            # That causes problems.
+            for field in self.fields:
+                if field in self.errors:
+                    del self.errors[field]
+
+        return self.cleaned_data
+
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
 
     def should_delete(self, cleaned):
-        empty = (isinstance(v, str) and not v.strip() for v in cleaned.values())
+        empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
         return all(empty)
 
     def to_database(self, obj: DomainApplication):

@@ -570,17 +570,25 @@ class DomainApplication(TimeStampedModel):
             return not self.approved_domain.is_active()
         return True
 
-    def _send_status_update_email(self, new_status, email_template, email_template_subject):
-        """Send a atatus update email to the submitter.
+    def _send_status_update_email(self, new_status, email_template, email_template_subject, send_email=True):
+        """Send a status update email to the submitter.
 
         The email goes to the email address that the submitter gave as their
         contact information. If there is not submitter information, then do
         nothing.
+
+        send_email: bool -> Used to bypass the send_templated_email function, in the event
+        we just want to log that an email would have been sent, rather than actually sending one.
         """
 
         if self.submitter is None or self.submitter.email is None:
             logger.warning(f"Cannot send {new_status} email, no submitter email address.")
-            return
+            return None
+
+        if not send_email:
+            logger.info(f"Email was not sent. Would send {new_status} email: {self.submitter.email}")
+            return None
+
         try:
             send_templated_email(
                 email_template,
@@ -684,7 +692,7 @@ class DomainApplication(TimeStampedModel):
         ],
         target=ApplicationStatus.APPROVED,
     )
-    def approve(self):
+    def approve(self, send_email=True):
         """Approve an application that has been submitted.
 
         This has substantial side-effects because it creates another database
@@ -713,6 +721,7 @@ class DomainApplication(TimeStampedModel):
             "application approved",
             "emails/status_change_approved.txt",
             "emails/status_change_approved_subject.txt",
+            send_email,
         )
 
     @transition(
@@ -745,6 +754,7 @@ class DomainApplication(TimeStampedModel):
                 # Only reject if it exists on EPP
                 if domain_state != Domain.State.UNKNOWN:
                     self.approved_domain.deletedInEpp()
+                    self.approved_domain.save()
                 self.approved_domain.delete()
                 self.approved_domain = None
             except Exception as err:
@@ -783,6 +793,7 @@ class DomainApplication(TimeStampedModel):
                 # Only reject if it exists on EPP
                 if domain_state != Domain.State.UNKNOWN:
                     self.approved_domain.deletedInEpp()
+                    self.approved_domain.save()
                 self.approved_domain.delete()
                 self.approved_domain = None
             except Exception as err:

@@ -136,8 +136,15 @@ html[data-theme="dark"] {
 }
 
 #branding h1,
-h1, h2, h3 {
+h1, h2, h3,
+.module h2 {
     font-weight: font-weight('bold');
+}
+
+.module h3 {
+    padding: 0;
+    color: var(--primary);
+    margin: units(2) 0 units(1) 0;
 }
 
 .change-list {
