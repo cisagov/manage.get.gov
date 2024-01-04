@@ -385,6 +385,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             # always save progress
             self.save(forms)
         else:
+            logger.info("all forms are not valid")
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
@@ -501,26 +502,22 @@ class OtherContacts(ApplicationWizard):
             # test for has_contacts
             if other_contacts_yes_no_form.cleaned_data.get('has_other_contacts'):
                 logger.info("has other contacts")
-                # remove data from no_other_contacts_form and set
-                # form to always_valid
+                # mark the no_other_contacts_form for deletion
                 no_other_contacts_form.mark_form_for_deletion()
                 # test that the other_contacts_forms and no_other_contacts_forms are valid
                 all_forms_valid = all(form.is_valid() for form in forms[1:])
             else:
                 logger.info("has no other contacts")
-                # remove data from each other_contacts_form
+                # mark the other_contacts_forms formset for deletion
                 other_contacts_forms.mark_formset_for_deletion()
-                # set the delete data to on in each form
-                # Create a mutable copy of the QueryDict    
-                # mutable_data = QueryDict(mutable=True)
-                # mutable_data.update(self.request.POST.copy())
-
-                # for i, form in enumerate(other_contacts_forms.forms):
-                #     form_prefix = f'other_contacts-{i}'
-                #     mutable_data[f'{form_prefix}-deleted'] = 'on'
-                #     other_contacts_forms.forms[i].data = mutable_data.copy() 
                 all_forms_valid = all(form.is_valid() for form in forms[1:])
         else:
+            logger.info("yes no form is invalid")
+            # if yes no form is invalid, no choice has been made
+            # mark other forms for deletion so that their errors are not
+            # returned
+            other_contacts_forms.mark_formset_for_deletion()
+            no_other_contacts_form.mark_form_for_deletion()
             all_forms_valid = False
         return all_forms_valid
 

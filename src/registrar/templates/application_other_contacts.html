@@ -13,15 +13,25 @@
 {% endblock %}
 
 {% block form_required_fields_help_text %}
-{% include "includes/required_fields.html" %}
+{# commenting out to remove this block from this point in the page #}
 {% endblock %}
 
 {% block form_fields %}
 
-  {{ forms.0 }}
-  {# forms.0 is a small yes/no form that toggles the visibility of "other contact" formset #}
+    <fieldset class="usa-fieldset margin-top-2">
+      <legend>
+        <h2>Are there other employees who can help verify your request?</h2>
+      </legend>
+
+      {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+        {% input_with_errors forms.0.has_other_contacts %}
+      {% endwith %}
+      {# forms.0 is a small yes/no form that toggles the visibility of "other contact" formset #}
+
+    </fieldset>
 
     <div id="other-employees">
+        {% include "includes/required_fields.html" %}
         {{ forms.1.management_form }}
         {# forms.1 is a formset and this iterates over its forms #}
         {% for form in forms.1.forms %}
@@ -59,6 +69,10 @@
     </div>
 
     <div id="no-other-employees">
+        <fieldset class="usa-fieldset margin-top-2">
+          <legend>
+            <h2>No other employees from your organization?</h2>
+          </legend>
         {% with attr_maxlength=1000 %}
             {% input_with_errors forms.2.no_other_contacts_rationale %}
         {% endwith %}
