@@ -33,6 +33,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
+from registrar.views.utility.permission_views import UserDomainRolePermissionView
 
 from ..forms import (
     ContactForm,
@@ -753,3 +754,15 @@ class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMe
 
     def get_success_message(self, cleaned_data):
         return f"Successfully canceled invitation for {self.object.email}."
+
+
+class DomainDeleteUserView(UserDomainRolePermissionView, SuccessMessageMixin):
+    """Inside of a domain's user management, a form for deleting users.
+    """
+    object: UserDomainRole  # workaround for type mismatch in DeleteView
+
+    def get_success_url(self):
+        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+
+    def get_success_message(self, cleaned_data):
+        return f"Successfully removed manager for {self.object.email}."

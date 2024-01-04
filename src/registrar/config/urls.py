@@ -138,6 +138,11 @@ urlpatterns = [
         views.DomainInvitationDeleteView.as_view(http_method_names=["post"]),
         name="invitation-delete",
     ),
+    path(
+        "domain/<int:pk>/users/<int:user_pk>/delete",
+        views.DomainDeleteUserView.as_view(http_method_names=["post"]),
+        name="domain-user-delete",
+    ),
 ]
 
 # we normally would guard these with `if settings.DEBUG` but tests run with

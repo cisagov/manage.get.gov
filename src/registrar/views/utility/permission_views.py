@@ -4,6 +4,7 @@ import abc  # abstract base class
 
 from django.views.generic import DetailView, DeleteView, TemplateView
 from registrar.models import Domain, DomainApplication, DomainInvitation
+from registrar.models.user_domain_role import UserDomainRole
 
 from .mixins import (
     DomainPermission,
@@ -11,6 +12,7 @@ from .mixins import (
     DomainApplicationPermissionWithdraw,
     DomainInvitationPermission,
     ApplicationWizardPermission,
+    UserDomainRolePermission,
 )
 import logging
 
@@ -122,3 +124,32 @@ class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteVie
 
     model = DomainInvitation
     object: DomainInvitation  # workaround for type mismatch in DeleteView
+
+
+class UserDomainRolePermissionView(UserDomainRolePermission, DetailView, abc.ABC):
+
+    """Abstract base view for UserDomainRole that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+    # DetailView property for what model this is viewing
+    model = UserDomainRole
+    # variable name in template context for the model object
+    context_object_name = "userdomainrole"
+
+
+class UserDomainRolePermissionDeleteView(UserDomainRolePermissionView, DeleteView, abc.ABC):
+
+    """Abstract base view for domain application withdraw function
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+    # DetailView property for what model this is viewing
+    model = UserDomainRole
+    # variable name in template context for the model object
+    context_object_name = "userdomainrole"
+

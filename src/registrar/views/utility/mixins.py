@@ -286,6 +286,36 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         return True
 
 
+class UserDomainRolePermission(PermissionsLoginMixin):
+
+    """Permission mixin for UserDomainRole if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to this domain application.
+
+        The user is in self.request.user and the domain needs to be looked
+        up from the domain's primary key in self.kwargs["pk"]
+        """
+        domain_pk = self.kwargs["pk"]
+        user_pk = self.kwargs["user_pk"]
+        print(f"here is the user: {self.request.user} and kwargs: {domain_pk}")
+        if not self.request.user.is_authenticated:
+            return False
+        print("User was authenticated!")
+        x = UserDomainRole.objects.filter(
+            id=user_pk
+        ).get()
+        print(x)
+        # TODO - exclude the creator from this
+        if not UserDomainRole.objects.filter(
+            domain__id=domain_pk, domain__permissions__user=self.request.user
+        ).exists():
+            return False
+
+        return True
+
+
 class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
 
     """Permission mixin that redirects to withdraw action on domain application

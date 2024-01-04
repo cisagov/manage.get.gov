@@ -12,6 +12,7 @@ from .domain import (
     DomainUsersView,
     DomainAddUserView,
     DomainInvitationDeleteView,
+    DomainDeleteUserView,
 )
 from .health import *
 from .index import *
