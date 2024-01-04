@@ -299,17 +299,13 @@ class UserDomainRolePermission(PermissionsLoginMixin):
         """
         domain_pk = self.kwargs["pk"]
         user_pk = self.kwargs["user_pk"]
-        print(f"here is the user: {self.request.user} and kwargs: {domain_pk}")
+
         if not self.request.user.is_authenticated:
             return False
-        print("User was authenticated!")
-        x = UserDomainRole.objects.filter(
-            id=user_pk
-        ).get()
-        print(x)
+
         # TODO - exclude the creator from this
         if not UserDomainRole.objects.filter(
-            domain__id=domain_pk, domain__permissions__user=self.request.user
+            user=user_pk, domain=domain_pk
         ).exists():
             return False
 
