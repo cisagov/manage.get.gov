@@ -52,7 +52,9 @@
 
             {% input_with_errors form.title %}
 
-            {% input_with_errors form.email %}
+            <div class="margin-top-3">
+                {% input_with_errors form.email %}
+            </div>
 
             {% with add_class="usa-input--medium" %}
                 {% input_with_errors form.phone %}
