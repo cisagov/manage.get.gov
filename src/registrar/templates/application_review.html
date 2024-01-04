@@ -99,11 +99,14 @@
           {% if step == Step.OTHER_CONTACTS %}
             {% for other in application.other_contacts.all %}
               <div class="margin-bottom-105">
-                <div class="review__step__subheading">Contact {{ forloop.counter }}</div>
+                <p class="text-semibold margin-top-1 margin-bottom-0">Contact {{ forloop.counter }}</p>
                 {% include "includes/contact.html" with contact=other %}
               </div>
             {% empty %}
-              {{ application.no_other_contacts_rationale|default:"Incomplete" }}
+              <div class="margin-bottom-105">
+                <p class="text-semibold margin-top-1 margin-bottom-0">No other employees from your organization?</p>
+                {{ application.no_other_contacts_rationale|default:"Incomplete" }}
+              </div>
             {% endfor %}
           {% endif %}
           {% if step == Step.ANYTHING_ELSE %}

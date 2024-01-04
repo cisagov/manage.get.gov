@@ -540,11 +540,6 @@ class Review(ApplicationWizard):
         context = super().get_context_data()
         context["Step"] = Step.__members__
         context["application"] = self.application
-        # if application has no other contacts, need to change title of Step.OTHER_CONTACTS
-        if not self.application.has_other_contacts():
-            titles = context["form_titles"]
-            titles[Step.OTHER_CONTACTS] = _("No other employees from your organization?")
-            context["form_titles"] = titles
         return context
 
     def goto_next_step(self):
