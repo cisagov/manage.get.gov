@@ -1642,7 +1642,8 @@ class Domain(TimeStampedModel, DomainHelper):
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
             if fetch_hosts:
                 self._update_hosts_and_ips_in_db(cleaned)
-            self._update_security_contact_in_db(cleaned, fetch_contacts)
+            if fetch_contacts:
+                self._update_security_contact_in_db(cleaned)
             self._update_dates(cleaned)
 
             self._cache = cleaned
@@ -1752,7 +1753,7 @@ class Domain(TimeStampedModel, DomainHelper):
             for ip_address in cleaned_ips:
                 HostIP.objects.get_or_create(address=ip_address, host=host_in_db)
 
-    def _update_security_contact_in_db(self, cleaned, fetch_contacts):
+    def _update_security_contact_in_db(self, cleaned):
         """Update security contact registry id in database if retrieved from registry.
         If no value is retrieved from registry, set to empty string in db.
 
@@ -1760,16 +1761,14 @@ class Domain(TimeStampedModel, DomainHelper):
             self: the domain to be updated with security from cleaned
             cleaned: dict containing contact registry ids. Security contact is of type
                 PublicContact.ContactTypeChoices.SECURITY
-            fetch_contacts: boolean indicating whether or not fetch_contacts was called
         """
-        if fetch_contacts:
-            cleaned_contacts = cleaned["contacts"]
-            security_contact_registry_id = ""
-            security_contact = cleaned_contacts[PublicContact.ContactTypeChoices.SECURITY]
-            if security_contact:
-                security_contact_registry_id = security_contact
-            self.security_contact_registry_id = security_contact_registry_id
-            self.save()
+        cleaned_contacts = cleaned["contacts"]
+        security_contact_registry_id = ""
+        security_contact = cleaned_contacts[PublicContact.ContactTypeChoices.SECURITY]
+        if security_contact:
+            security_contact_registry_id = security_contact
+        self.security_contact_registry_id = security_contact_registry_id
+        self.save()
 
     def _update_dates(self, cleaned):
         """Update dates (expiration and creation) from cleaned"""
