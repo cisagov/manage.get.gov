@@ -809,7 +809,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         )
         
     def test_submitting_no_other_contacts_rationale_deletes_other_contacts(self):
-        """"""
+        """This also tests test_submitting_no_other_contacts_rationale_deletes_other_contacts_when_not_joined
+"""
         # Application has other contacts by default
         application = completed_application(user=self.user)
         # prime the form by visiting /edit
