@@ -218,5 +218,8 @@ class DomainFixture(DomainApplicationFixture):
                 creator=user, status=DomainApplication.ApplicationStatus.IN_REVIEW
             ).last()
             logger.debug(f"Approving {application} for {user}")
-            application.approve()
+
+            # We don't want fixtures sending out real emails to
+            # fake email addresses, so we just skip that and log it instead
+            application.approve(send_email=False)
             application.save()
