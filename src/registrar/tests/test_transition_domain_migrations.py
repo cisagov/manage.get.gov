@@ -18,7 +18,8 @@ from unittest.mock import patch
 
 from registrar.models.contact import Contact
 
-from .common import MockEppLib, less_console_noise
+from .common import MockEppLib, MockSESClient, less_console_noise
+import boto3_mocking  # type: ignore
 
 
 class TestExtendExpirationDates(MockEppLib):
@@ -706,17 +707,21 @@ class TestMigrations(TestCase):
     def run_master_script(self):
         # noqa here (E501) because splitting this up makes it
         # confusing to read.
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-            return_value=True,
-        ):
-            call_command(
-                "master_domain_migrations",
-                runMigrations=True,
-                migrationDirectory=self.test_data_file_location,
-                migrationJSON=self.migration_json_filename,
-                disablePrompts=True,
-            )
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
+                with patch("registrar.utility.email.send_templated_email", return_value=None):
+                    call_command(
+                        "master_domain_migrations",
+                        runMigrations=True,
+                        migrationDirectory=self.test_data_file_location,
+                        migrationJSON=self.migration_json_filename,
+                        disablePrompts=True,
+                    )
+        print(f"here: {mock_client.EMAILS_SENT}")
 
     def compare_tables(
         self,
@@ -1019,6 +1024,7 @@ class TestMigrations(TestCase):
             expected_missing_domain_invitations,
         )
 
+    @boto3_mocking.patching
     def test_send_domain_invitations_email(self):
         """Can send only a single domain invitation email."""
         with less_console_noise():
@@ -1027,9 +1033,12 @@ class TestMigrations(TestCase):
 
         # this is one of the email addresses in data/test_contacts.txt
         output_stream = StringIO()
-        # also have to re-point the logging handlers to output_stream
-        with less_console_noise(output_stream):
-            call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
+
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # also have to re-point the logging handlers to output_stream
+            with less_console_noise(output_stream):
+                call_command("send_domain_invitations", "testuser@gmail.com", stdout=output_stream)
 
         # Check that we had the right numbers in our output
         output = output_stream.getvalue()
@@ -1037,6 +1046,7 @@ class TestMigrations(TestCase):
         self.assertIn("Found 1 transition domains", output)
         self.assertTrue("would send email to testuser@gmail.com", output)
 
+    @boto3_mocking.patching
     def test_send_domain_invitations_two_emails(self):
         """Can send only a single domain invitation email."""
         with less_console_noise():
@@ -1045,11 +1055,14 @@ class TestMigrations(TestCase):
 
         # these are two email addresses in data/test_contacts.txt
         output_stream = StringIO()
-        # also have to re-point the logging handlers to output_stream
-        with less_console_noise(output_stream):
-            call_command(
-                "send_domain_invitations", "testuser@gmail.com", "agustina.wyman7@test.com", stdout=output_stream
-            )
+
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # also have to re-point the logging handlers to output_stream
+            with less_console_noise(output_stream):
+                call_command(
+                    "send_domain_invitations", "testuser@gmail.com", "agustina.wyman7@test.com", stdout=output_stream
+                )
 
         # Check that we had the right numbers in our output
         output = output_stream.getvalue()
