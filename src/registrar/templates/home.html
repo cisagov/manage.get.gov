@@ -141,36 +141,32 @@
             </a>
           </td>
           <td>
-            <a href="{% url 'application-status' application.pk %}">
-              
+            <a
+              id="button-toggle-delete-domain-alert-{{ forloop.counter }}"
+              href="#toggle-delete-domain-alert-{{ forloop.counter }}"
+              class="usa-button--unstyled"
+              aria-controls="toggle-delete-domain-alert-{{ forloop.counter }}"
+              data-open-modal
+            >
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+              </svg>
               Delete
             </a>
-          <a
-            id="button-toggle-delete-domain-alert-{{ forloop.counter }}"
-            href="#toggle-delete-domain-alert-{{ forloop.counter }}"
-            class="usa-button--unstyled"
-            aria-controls="toggle-delete-domain-alert-{{ forloop.counter }}"
-            data-open-modal
-          >
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-            </svg>
-            Delete
-          </a>
 
-          <div
-            class="usa-modal"
-            id="toggle-delete-domain-alert-{{ forloop.counter }}"
-            aria-labelledby="Are you sure you want to continue?"
-            aria-describedby="User will be removed"
-            data-force-action
-          >
-            <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
-              {% with heading="Are you sure you want to remove <"|add:permission.user.email|add:">?" %}
-                {% include 'includes/modal.html' with modal_heading=heading  modal_description="<"|add:permission.user.email|add:"> will no longer be able to manage the domain "|add:domain.name|add:"." modal_button=modal_button|safe %}
-              {% endwith %}
-            </form>
-          </div>
+            <div
+              class="usa-modal"
+              id="toggle-delete-domain-alert-{{ forloop.counter }}"
+              aria-labelledby="Are you sure you want to continue?"
+              aria-describedby="User will be removed"
+              data-force-action
+            >
+              <form method="POST" action="{% url "application-delete" pk=application.id %}">
+                {% with heading="Are you sure you want to delete "|add:application.requested_domain.name|add:"?" %}
+                  {% include 'includes/modal.html' with modal_heading=heading  modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                {% endwith %}
+              </form>
+            </div>
           </td>
         </tr>
         {% endfor %}

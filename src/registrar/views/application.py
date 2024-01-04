@@ -12,6 +12,7 @@ from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
+from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
 
 from .utility import (
     DomainApplicationPermissionView,
@@ -572,3 +573,10 @@ class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
         application.withdraw()
         application.save()
         return HttpResponseRedirect(reverse("home"))
+
+
+class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
+    object: DomainApplication  # workaround for type mismatch in DeleteView
+
+    def get_success_url(self):
+        return reverse("home")
