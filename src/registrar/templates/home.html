@@ -42,6 +42,7 @@
           <th data-sortable scope="col" role="columnheader">Expires</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
           <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
+          <th scope="col" role="columnheader">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
         </tr>
       </thead>
       <tbody>
@@ -80,6 +81,7 @@
               {% endif %}
             </a>
           </td>
+          <td></td>
         </tr>
         {% endfor %}
       </tbody>
@@ -104,6 +106,7 @@
           <th data-sortable scope="col" role="columnheader">Date submitted</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
           <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
+          <th scope="col" role="columnheader"><span class="usa-sr-only">Delete Action</span></th>
         </tr>
       </thead>
       <tbody>
@@ -121,21 +124,53 @@
           </td>
           <td data-label="Status">{{ application.get_status_display }}</td>
           <td>
-             {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
+            {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
               <a href="{% url 'edit-application' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
               Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }} </span>
 
-              {% else %}
+            {% else %}
               <a href="{% url 'application-status' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
               Manage <span class="usa-sr-only">{{application.requested_domain.name}} </span>
-              {% endif %}
+            {% endif %}
             </a>
+          </td>
+          <td>
+            <a href="{% url 'application-status' application.pk %}">
+              
+              Delete
+            </a>
+          <a
+            id="button-toggle-delete-domain-alert-{{ forloop.counter }}"
+            href="#toggle-delete-domain-alert-{{ forloop.counter }}"
+            class="usa-button--unstyled"
+            aria-controls="toggle-delete-domain-alert-{{ forloop.counter }}"
+            data-open-modal
+          >
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+            </svg>
+            Delete
+          </a>
+
+          <div
+            class="usa-modal"
+            id="toggle-delete-domain-alert-{{ forloop.counter }}"
+            aria-labelledby="Are you sure you want to continue?"
+            aria-describedby="User will be removed"
+            data-force-action
+          >
+            <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
+              {% with heading="Are you sure you want to remove <"|add:permission.user.email|add:">?" %}
+                {% include 'includes/modal.html' with modal_heading=heading  modal_description="<"|add:permission.user.email|add:"> will no longer be able to manage the domain "|add:domain.name|add:"." modal_button=modal_button|safe %}
+              {% endwith %}
+            </form>
+          </div>
           </td>
         </tr>
         {% endfor %}
