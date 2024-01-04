@@ -55,7 +55,7 @@
           class="usa-modal"
           id="toggle-user-alert-{{ forloop.counter }}"
           aria-labelledby="Are you sure you want to continue?"
-          aria-describedby="Your DNSSEC records will be deleted from the registry."
+          aria-describedby="User will be removed"
           data-force-action
         >
           <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
