@@ -104,8 +104,7 @@ class NameserverError(Exception):
         NameserverErrorCodes.MISSING_HOST: ("You must provide a name server to enter an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.DUPLICATE_HOST: (
-            "You've already entered this name server address. "
-            "Name server addresses must be unique."
+            "You've already entered this name server address. " "Name server addresses must be unique."
         ),
         NameserverErrorCodes.BAD_DATA: (
             "There’s something wrong with the name server information you provided. "
@@ -190,8 +189,7 @@ class SecurityEmailError(Exception):
     """
 
     _error_mapping = {
-        SecurityEmailErrorCodes.BAD_DATA: ("Enter an email address in the required format, "
-                                           "like name@example.com."),
+        SecurityEmailErrorCodes.BAD_DATA: ("Enter an email address in the required format, " "like name@example.com."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
