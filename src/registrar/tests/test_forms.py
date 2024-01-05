@@ -30,7 +30,7 @@ class TestFormValidation(MockEppLib):
         form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(
             form.errors["zipcode"],
-            ["Enter a zip code in the required format, like 12345 or 12345-6789."],
+            ["Enter a zip code in the form of 12345 or 12345-6789."],
         )
 
     def test_org_contact_zip_valid(self):
@@ -42,7 +42,7 @@ class TestFormValidation(MockEppLib):
         form = CurrentSitesForm(data={"website": "nah"})
         self.assertEqual(
             form.errors["website"],
-            ["Enter your organization's current website in the required format, like www.city.com."],
+            ["Enter your organization's current website in the required format, like example.com."],
         )
 
     def test_website_valid(self):
@@ -207,7 +207,7 @@ class TestFormValidation(MockEppLib):
     def test_your_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = YourContactForm(data={"phone": "boss@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
+        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
 
     def test_other_contact_email_invalid(self):
         """must be a valid email address."""
@@ -220,7 +220,7 @@ class TestFormValidation(MockEppLib):
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = OtherContactsForm(data={"phone": "super@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
+        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
 
     def test_requirements_form_blank(self):
         """Requirements box unchecked is an error."""
@@ -247,8 +247,8 @@ class TestFormValidation(MockEppLib):
 class TestContactForm(TestCase):
     def test_contact_form_email_invalid(self):
         form = ContactForm(data={"email": "example.net"})
-        self.assertEqual(form.errors["email"], ["Enter a valid email address."])
+        self.assertEqual(form.errors["email"], ["Enter an email address in the required format, like name@example.com."])
 
     def test_contact_form_email_invalid2(self):
         form = ContactForm(data={"email": "@"})
-        self.assertEqual(form.errors["email"], ["Enter a valid email address."])
+        self.assertEqual(form.errors["email"], ["Enter an email address in the required format, like name@example.com."])
