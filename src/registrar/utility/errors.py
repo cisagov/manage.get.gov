@@ -44,8 +44,8 @@ class GenericError(Exception):
 
     _error_mapping = {
         GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
-            "We’re experiencing a system connection error. Please wait a few minutes "
-            "and try again. If you continue to receive this error after a few tries, "
+            "We’re experiencing a system error. Please wait a few minutes "
+            "and try again. If you continue to get this error, "
             "contact help@get.gov."
         ),
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
