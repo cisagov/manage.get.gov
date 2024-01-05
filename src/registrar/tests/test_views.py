@@ -1,5 +1,4 @@
 from unittest import skip
-import unittest
 from unittest.mock import MagicMock, ANY, patch
 
 from django.conf import settings
