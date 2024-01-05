@@ -277,6 +277,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         for form in forms:
             data = form.from_database(self.application) if self.has_pk() else None
             if use_post:
+                logger.info("about to instantiate form ")
                 instantiated.append(form(self.request.POST, **kwargs))
             elif use_db:
                 instantiated.append(form(data, **kwargs))
@@ -389,6 +390,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
+        logger.info("after geting forms")
         if self.is_valid(forms):
             # always save progress
             self.save(forms)
@@ -506,10 +508,14 @@ class OtherContacts(ApplicationWizard):
         if other_contacts_yes_no_form.is_valid():
             # test for has_contacts
             if other_contacts_yes_no_form.cleaned_data.get("has_other_contacts"):
+                logger.info("has other contacts")
                 # mark the no_other_contacts_form for deletion
                 no_other_contacts_form.mark_form_for_deletion()
+                logger.info("after marking for deletion")
                 # test that the other_contacts_forms and no_other_contacts_forms are valid
                 all_forms_valid = all(form.is_valid() for form in forms[1:])
+                logger.info("after checking forms for validity")
+                logger.info(f"all forms valid = {all_forms_valid}")
             else:
                 # mark the other_contacts_forms formset for deletion
                 other_contacts_forms.mark_formset_for_deletion()

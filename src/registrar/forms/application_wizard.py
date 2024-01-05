@@ -141,6 +141,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         """
         if not self.is_valid():
             return
+        logger.info(obj)
         obj.save()
 
         query = getattr(obj, join).order_by("created_at").all()  # order matters
@@ -162,6 +163,8 @@ class RegistrarFormSet(forms.BaseFormSet):
         for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
             cleaned = post_data.cleaned_data if post_data is not None else {}
 
+            logger.info(post_data)
+            logger.info(cleaned)
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
@@ -708,6 +711,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         return all(empty) or self.formset_data_marked_for_deletion
 
     def to_database(self, obj: DomainApplication):
+        logger.info("in to_database for BaseOtherContactsFormSet")
         self._to_database(obj, self.JOIN, self.REVERSE_JOINS, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
@@ -737,6 +741,7 @@ OtherContactsFormSet = forms.formset_factory(
     extra=0,
     absolute_max=1500,  # django default; use `max_num` to limit entries
     min_num=1,
+    can_delete=True,
     validate_min=True,
     formset=BaseOtherContactsFormSet,
 )
