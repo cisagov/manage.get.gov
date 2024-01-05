@@ -35,9 +35,24 @@
         {# forms.1 is a formset and this iterates over its forms #}
         {% for form in forms.1.forms %}
             <fieldset class="usa-fieldset repeatable-form">
-            <legend>
-                <h2>Organization contact {{ forloop.counter }} (optional)</h2>
-            </legend>
+            
+            <div class="grid-row grid-gap-2 flex-end">
+
+                <div class="tablet:grid-col-8">
+                    <legend>
+                        <h2>Organization contact {{ forloop.counter }}</h2>
+                    </legend>
+                </div>    
+
+                <div class="tablet:grid-col-4">
+                    <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record margin-bottom-2">
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+                        </svg><span class="margin-left-05">Delete</span>
+                    </button>
+                </div>
+
+            </div>
 
             {% if forms.1.can_delete %}
               {{ form.DELETE }}
