@@ -441,6 +441,41 @@ class TestDomainApplication(TestCase):
             # Now, when you call is_active on Domain, it will return True
             with self.assertRaises(TransitionNotAllowed):
                 self.approved_application.reject_with_prejudice()
+                
+    def test_has_rationale_returns_true(self):
+        """has_rationale() returns true when an application has no_other_contacts_rationale"""
+        self.started_application.no_other_contacts_rationale = "You talkin' to me?"
+        self.started_application.save()
+        
+        self.assertEquals(
+            self.started_application.has_rationale(),
+            True
+        )
+        
+    def test_has_rationale_returns_false(self):
+        """has_rationale() returns false when an application has no no_other_contacts_rationale"""
+        self.assertEquals(
+            self.started_application.has_rationale(),
+            False
+        )
+        
+    def test_has_other_contacts_returns_true(self):
+        """has_other_contacts() returns true when an application has other_contacts"""
+        # completed_application has other contacts by default
+        self.assertEquals(
+            self.started_application.has_other_contacts(),
+            True
+        )
+        
+    def test_has_other_contacts_returns_false(self):
+        """has_other_contacts() returns false when an application has no other_contacts"""
+        application = completed_application(
+            status=DomainApplication.ApplicationStatus.STARTED, name="no-others.gov", has_other_contacts=False
+        )
+        self.assertEquals(
+            application.has_other_contacts(),
+            False
+        )
 
 
 class TestPermissions(TestCase):
