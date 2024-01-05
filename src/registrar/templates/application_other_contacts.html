@@ -12,12 +12,8 @@
 
 {% endblock %}
 
-{% block form_required_fields_help_text %}
-{# commenting out to remove this block from this point in the page #}
-{% endblock %}
 
 {% block form_fields %}
-
     <fieldset class="usa-fieldset margin-top-2">
       <legend>
         <h2>Are there other employees who can help verify your request?</h2>
@@ -48,6 +44,10 @@
 
             {% input_with_errors form.title %}
 
+            {% comment %} There seems to be an issue with the character counter on emails.
+            It's not counting anywhere, and in this particular instance it's
+            affecting the margin of this block. The wrapper div is a 
+            temporary workaround. {% endcomment %}
             <div class="margin-top-3">
                 {% input_with_errors form.email %}
             </div>
@@ -75,5 +75,4 @@
             {% input_with_errors forms.2.no_other_contacts_rationale %}
         {% endwith %}
     </div>
-
 {% endblock %}

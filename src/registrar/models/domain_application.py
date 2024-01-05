@@ -832,19 +832,12 @@ class DomainApplication(TimeStampedModel):
         ]
 
     def has_rationale(self) -> bool:
-        """Does this application have no_other_contacts_rationale"""
+        """Does this application have no_other_contacts_rationale?"""
         return bool(self.no_other_contacts_rationale)
 
     def has_other_contacts(self) -> bool:
         """Does this application have other contacts listed?"""
         return self.other_contacts.exists()
-    
-    # def __setattr__(self, name, value):
-    #     # Check if the attribute exists in the class
-    #     if not hasattr(self, name):
-    #         logger.info(f"{self.__class__.__name__} object has no attribute '{name}'")
-    #     # If the attribute exists, set its value
-    #     super().__setattr__(name, value)
     
     def is_federal(self) -> Union[bool, None]:
         """Is this application for a federal agency?

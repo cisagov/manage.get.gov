@@ -39,11 +39,9 @@ class RegistrarForm(forms.Form):
 
         Does nothing if form is not valid.
         """
-        logger.info(f"to_database called on {self.__class__.__name__}")
         if not self.is_valid():
             return
         for name, value in self.cleaned_data.items():
-            logger.info(f"{name}: {value}")
             setattr(obj, name, value)
         obj.save()
 
@@ -98,9 +96,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         raise NotImplementedError
     
     def test_if_more_than_one_join(self, db_obj, rel, related_name):
-        
-        logger.info(f"rel: {rel} | related_name: {related_name}")
-        
+        """Helper for finding whether an object is joined more than once."""        
         threshold = 0
         if rel == related_name:
             threshold = 1
@@ -127,25 +123,20 @@ class RegistrarFormSet(forms.BaseFormSet):
         obj.save()
 
         query = getattr(obj, join).order_by("created_at").all()  # order matters
-        logger.info(obj._meta.get_field(join).related_query_name())
         related_name = obj._meta.get_field(join).related_query_name()
+        
         # the use of `zip` pairs the forms in the formset with the
         # related objects gotten from the database -- there should always be
         # at least as many forms as database entries: extra forms means new
         # entries, but fewer forms is _not_ the correct way to delete items
         # (likely a client-side error or an attempt at data tampering)
-
         for db_obj, post_data in zip_longest(query, self.forms, fillvalue=None):
             cleaned = post_data.cleaned_data if post_data is not None else {}
 
-            logger.info(f"in _to_database for {self.__class__.__name__}")
-            logger.info(db_obj)
-            logger.info(cleaned)
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):             
                     if any(self.test_if_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
-                        logger.info("Object is joined to something")
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
                     else:
@@ -389,6 +380,8 @@ class BaseCurrentSitesFormSet(RegistrarFormSet):
         return website.strip() == ""
 
     def to_database(self, obj: DomainApplication):
+        # If we want to test against multiple joins for a website object, replace the empty array
+        # and change the JOIN in the models to allow for reverse references
         self._to_database(obj, self.JOIN, [], self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
@@ -446,6 +439,8 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
             return {}
 
     def to_database(self, obj: DomainApplication):
+        # If we want to test against multiple joins for a website object, replace the empty array and
+        # change the JOIN in the models to allow for reverse references
         self._to_database(obj, self.JOIN, [], self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
@@ -522,7 +517,7 @@ class PurposeForm(RegistrarForm):
         ],
         error_messages={"required": "Describe how you'll use the .gov domain you’re requesting."},
     )
-
+    
 
 class YourContactForm(RegistrarForm):
     def to_database(self, obj):
@@ -578,6 +573,7 @@ class OtherContactsYesNoForm(RegistrarForm):
         elif self.application and self.application.has_rationale():
             default_value = False
         else:
+            # No pre-selection for new applications
             default_value = None
 
         self.fields['has_other_contacts'] = forms.TypedChoiceField(
@@ -589,11 +585,6 @@ class OtherContactsYesNoForm(RegistrarForm):
             initial=default_value,
             widget=forms.RadioSelect
             )
-
-    def is_valid(self):
-        val = super().is_valid()
-        logger.info(f"yes no form is valid = {val}")
-        return val
     
 
 class OtherContactsForm(RegistrarForm):
@@ -631,8 +622,6 @@ class OtherContactsForm(RegistrarForm):
         super().__init__(*args, **kwargs)
 
     def mark_form_for_deletion(self):
-        logger.info("removing form data from other contact")
-        # self.data = {}
         self.form_data_marked_for_deletion = True
 
     def clean(self):
@@ -645,35 +634,20 @@ class OtherContactsForm(RegistrarForm):
         """
 
         if self.form_data_marked_for_deletion:
-            # Set form_is_empty to True initially
-            # form_is_empty = True
-            # for name, field in self.fields.items():
-            #     # get the value of the field from the widget
-            #     value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
-            #     # if any field in the submitted form is not empty, set form_is_empty to False
-            #     if value is not None and value != "":
-            #         form_is_empty = False
-
-            # if form_is_empty:
-            #     # clear any errors raised by the form fields
-            #     # (before this clean() method is run, each field
-            #     # performs its own clean, which could result in
-            #     # errors that we wish to ignore at this point)
-            #     #
-            #     # NOTE: we cannot just clear() the errors list.
-            #     # That causes problems.
+            # clear any errors raised by the form fields
+            # (before this clean() method is run, each field
+            # performs its own clean, which could result in
+            # errors that we wish to ignore at this point)
+            #
+            # NOTE: we cannot just clear() the errors list.
+            # That causes problems.
             for field in self.fields:
                 if field in self.errors:
                     del self.errors[field]
             return {'delete': True}
 
         return self.cleaned_data
-
-    def is_valid(self):
-        val = super().is_valid()
-        logger.info(f"other contacts form is valid = {val}")
-        return val
-
+    
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
@@ -684,28 +658,21 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         self.application = kwargs.pop("application", None)
         super(RegistrarFormSet, self).__init__(*args, **kwargs)
         # quick workaround to ensure that the HTML `required`
-        # attribute shows up on required fields for any forms
-        # in the formset which have data already (stated another
-        # way: you can leave a form in the formset blank, but
-        # if you opt to fill it out, you must fill it out _right_)
+        # attribute shows up on required fields for the first form
+        # in the formset plus those that have data already.
         for index in range(max(self.initial_form_count(), 1)):
             self.forms[index].use_required_attribute = True
             
-        # self.forms[0].use_required_attribute = True
-
     def pre_update(self, db_obj, cleaned):
         """Code to run before an item in the formset is saved."""
-
         for key, value in cleaned.items():
             setattr(db_obj, key, value)
         
     def should_delete(self, cleaned):
         empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
-        logger.info(f"should_delete => {all(empty) or self.formset_data_marked_for_deletion}")
         return all(empty) or self.formset_data_marked_for_deletion
 
     def to_database(self, obj: DomainApplication):
-        logger.info("to_database called on BaseOtherContactsFormSet")
         self._to_database(obj, self.JOIN, self.REVERSE_JOINS, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
@@ -717,7 +684,6 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         Updates forms in formset as well to mark them for deletion.
         This has an effect on validity checks and to_database methods.
         """
-        logger.info("removing form data from other contact set")
         self.formset_data_marked_for_deletion = True
         for form in self.forms:
             form.mark_form_for_deletion()
@@ -725,9 +691,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
     def is_valid(self):
         if self.formset_data_marked_for_deletion:
             self.validate_min = False
-        val = super().is_valid()
-        logger.info(f"other contacts form set is valid = {val}")
-        return val
+        return super().is_valid()
 
 
 OtherContactsFormSet = forms.formset_factory(
@@ -736,7 +700,6 @@ OtherContactsFormSet = forms.formset_factory(
     absolute_max=1500,  # django default; use `max_num` to limit entries
     min_num=1,
     validate_min=True,
-    # can_delete=True,
     formset=BaseOtherContactsFormSet,
 )
 
@@ -772,7 +735,6 @@ class NoOtherContactsForm(RegistrarForm):
         """Marks no_other_contacts form for deletion.
         This changes behavior of validity checks and to_database
         methods."""
-        logger.info("removing form data from no other contacts")
         self.form_data_marked_for_deletion = True
     
     def clean(self):
@@ -804,24 +766,15 @@ class NoOtherContactsForm(RegistrarForm):
         to None before saving.
         Do nothing if form is not valid.
         """
-        logger.info(f"to_database called on {self.__class__.__name__}")
         if not self.is_valid():
             return
         if self.form_data_marked_for_deletion:
             for field_name, _ in self.fields.items():
-                logger.info(f"{field_name}: None")
                 setattr(obj, field_name, None)
         else:
             for name, value in self.cleaned_data.items():
-                logger.info(f"{name}: {value}")
                 setattr(obj, name, value)
         obj.save()
- 
-    def is_valid(self):
-        """This is for debugging only and can be deleted"""
-        val = super().is_valid()
-        logger.info(f"no other contacts form is valid = {val}")
-        return val
 
 
 class AnythingElseForm(RegistrarForm):

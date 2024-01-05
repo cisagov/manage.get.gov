@@ -505,38 +505,35 @@ function toggleTwoDomElements(ele1, ele2, index) {
   let radioButtons = document.querySelectorAll('input[name="other_contacts-has_other_contacts"]');
 
   function handleRadioButtonChange() {
-      // Check the value of the selected radio button
-      // Attempt to find the radio button element that is checked
-      let radioButtonChecked = document.querySelector('input[name="other_contacts-has_other_contacts"]:checked');
+    // Check the value of the selected radio button
+    // Attempt to find the radio button element that is checked
+    let radioButtonChecked = document.querySelector('input[name="other_contacts-has_other_contacts"]:checked');
 
-      // Check if the element exists before accessing its value
-      let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
+    // Check if the element exists before accessing its value
+    let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
 
-      switch (selectedValue) {
-          case 'True':
-              console.log('Yes, I can name other employees.');
-              toggleTwoDomElements('other-employees', 'no-other-employees', 1);
-              break;
+    switch (selectedValue) {
+      case 'True':
+        toggleTwoDomElements('other-employees', 'no-other-employees', 1);
+        break;
 
-          case 'False':
-              console.log('No (We\'ll ask you to explain why).');
-              toggleTwoDomElements('other-employees', 'no-other-employees', 2);
-              break;
+      case 'False':
+        toggleTwoDomElements('other-employees', 'no-other-employees', 2);
+        break;
 
-          default:
-              console.log('Nothing selected');
-              toggleTwoDomElements('other-employees', 'no-other-employees', 0);
-      }
+      default:
+        toggleTwoDomElements('other-employees', 'no-other-employees', 0);
+    }
   }
 
-  // Add event listener to each radio button
-  if (radioButtons) {
-      radioButtons.forEach(function (radioButton) {
-          radioButton.addEventListener('change', handleRadioButtonChange);
-      });
-  }
+  if (radioButtons.length) {
+    // Add event listener to each radio button
+    radioButtons.forEach(function (radioButton) {
+      radioButton.addEventListener('change', handleRadioButtonChange);
+    });
 
-  // initiaize
-  handleRadioButtonChange();
+    // initialize
+    handleRadioButtonChange();
+  }
 })();
 

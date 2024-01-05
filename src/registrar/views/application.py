@@ -370,9 +370,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
-        # Log the keys and values of request.POST
-        for key, value in request.POST.items():
-            logger.info("Key: %s, Value: %s", key, value)
         # if accessing this class directly, redirect to the first step
         if self.__class__ == ApplicationWizard:
             return self.goto(self.steps.first)
@@ -385,7 +382,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             # always save progress
             self.save(forms)
         else:
-            logger.info("all forms are not valid")
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
@@ -410,7 +406,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         """
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
-                logger.info(f"saving form {form.__class__.__name__}")
                 form.to_database(self.application)
 
 
@@ -498,21 +493,17 @@ class OtherContacts(ApplicationWizard):
         all_forms_valid = True
         # test first for yes_no_form validity
         if other_contacts_yes_no_form.is_valid():
-            logger.info("yes no form is valid")
             # test for has_contacts
             if other_contacts_yes_no_form.cleaned_data.get('has_other_contacts'):
-                logger.info("has other contacts")
                 # mark the no_other_contacts_form for deletion
                 no_other_contacts_form.mark_form_for_deletion()
                 # test that the other_contacts_forms and no_other_contacts_forms are valid
                 all_forms_valid = all(form.is_valid() for form in forms[1:])
             else:
-                logger.info("has no other contacts")
                 # mark the other_contacts_forms formset for deletion
                 other_contacts_forms.mark_formset_for_deletion()
                 all_forms_valid = all(form.is_valid() for form in forms[1:])
         else:
-            logger.info("yes no form is invalid")
             # if yes no form is invalid, no choice has been made
             # mark other forms for deletion so that their errors are not
             # returned

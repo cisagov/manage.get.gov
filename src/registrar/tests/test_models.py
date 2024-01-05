@@ -446,7 +446,6 @@ class TestDomainApplication(TestCase):
         """has_rationale() returns true when an application has no_other_contacts_rationale"""
         self.started_application.no_other_contacts_rationale = "You talkin' to me?"
         self.started_application.save()
-        
         self.assertEquals(
             self.started_application.has_rationale(),
             True
