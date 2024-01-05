@@ -88,8 +88,9 @@ class LoggedInTests(TestWithUser):
         site = DraftDomain.objects.create(name="igorville.gov")
         application = DomainApplication.objects.create(creator=self.user, requested_domain=site)
         response = self.client.get("/")
-        # count = 2 because it is also in screenreader content
-        self.assertContains(response, "igorville.gov", count=2)
+
+        # count = 6 because it is also in screenreader content, and in the delete modal
+        self.assertContains(response, "igorville.gov", count=6)
         # clean up
         application.delete()
 

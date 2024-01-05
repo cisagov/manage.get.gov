@@ -1,4 +1,5 @@
 import logging
+from django.forms import ValidationError
 
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
@@ -576,7 +577,20 @@ class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
 
 
 class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
+    """Delete view for home that allows the end user to delete DomainApplications"""
     object: DomainApplication  # workaround for type mismatch in DeleteView
+
+    def has_permission(self):
+        """Custom override for has_permission to exclude all statuses, except WITHDRAWN and STARTED"""
+        has_perm = super().has_permission()
+        if not has_perm:
+            return False
+
+        status = self.get_object().status
+        if status not in [DomainApplication.ApplicationStatus.WITHDRAWN, DomainApplication.ApplicationStatus.STARTED]:
+            return False
+
+        return True
 
     def get_success_url(self):
         return reverse("home")
