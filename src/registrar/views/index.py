@@ -21,7 +21,7 @@ def index(request):
 
         # Determine if the user will see applications that they can delete
         valid_statuses = [DomainApplication.ApplicationStatus.STARTED, DomainApplication.ApplicationStatus.WITHDRAWN]
-        has_deletable_applications = applications.filter(status__in=valid_statuses)
+        has_deletable_applications = applications.filter(status__in=valid_statuses).exists()
         context["has_deletable_applications"] = has_deletable_applications
 
         if has_deletable_applications:
@@ -32,4 +32,5 @@ def index(request):
             )
 
             context["modal_button"] = modal_button
+
     return render(request, "home.html", context)
