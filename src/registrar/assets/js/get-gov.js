@@ -331,10 +331,10 @@ function prepareDeleteButtons(formLabel) {
  * it everywhere.
  */
 (function prepareFormsetsForms() {
+  let formIdentifier = "form"
   let repeatableForm = document.querySelectorAll(".repeatable-form");
   let container = document.querySelector("#form-container");
   let addButton = document.querySelector("#add-form");
-  let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
   let cloneIndex = 0;
   let formLabel = '';
   let isNameserversForm = document.title.includes("DNS name servers |");
@@ -343,7 +343,12 @@ function prepareDeleteButtons(formLabel) {
     formLabel = "Name server";
   } else if ((document.title.includes("DS Data |")) || (document.title.includes("Key Data |"))) {
     formLabel = "DS Data record";
+  } else if (document.title.includes("Other employees from your organization")) {
+    formLabel = "Organization contact";
+    container = document.querySelector("#other-employees");
+    formIdentifier = "other_contacts"
   }
+  let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
 
   // On load: Disable the add more button if we have 13 forms
   if (isNameserversForm && document.querySelectorAll(".repeatable-form").length == 13) {
@@ -360,7 +365,7 @@ function prepareDeleteButtons(formLabel) {
       let forms = document.querySelectorAll(".repeatable-form");
       let formNum = forms.length;
       let newForm = repeatableForm[cloneIndex].cloneNode(true);
-      let formNumberRegex = RegExp(`form-(\\d){1}-`,'g');
+      let formNumberRegex = RegExp(`${formIdentifier}-(\\d){1}-`,'g');
       let formLabelRegex = RegExp(`${formLabel} (\\d){1}`, 'g');
       // For the eample on Nameservers
       let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
@@ -393,7 +398,8 @@ function prepareDeleteButtons(formLabel) {
       }
 
       formNum++;
-      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `form-${formNum-1}-`);
+
+      newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
       newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
       newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum}`);
       container.insertBefore(newForm, addButton);
@@ -402,7 +408,7 @@ function prepareDeleteButtons(formLabel) {
       // Reset the values of each input to blank
       inputs.forEach((input) => {
         input.classList.remove("usa-input--error");
-        if (input.type === "text" || input.type === "number" || input.type === "password") {
+        if (input.type === "text" || input.type === "number" || input.type === "password" || input.type === "email" || input.type === "tel") {
           input.value = ""; // Set the value to an empty string
           
         } else if (input.type === "checkbox" || input.type === "radio") {

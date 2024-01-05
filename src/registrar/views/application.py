@@ -370,6 +370,10 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
+        
+        # Log the keys and values of request.POST
+        for key, value in request.POST.items():
+            logger.info("Key: %s, Value: %s", key, value)
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")

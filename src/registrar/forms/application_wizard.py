@@ -734,7 +734,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
 
 OtherContactsFormSet = forms.formset_factory(
     OtherContactsForm,
-    extra=1,
+    extra=0,
     absolute_max=1500,  # django default; use `max_num` to limit entries
     min_num=1,
     validate_min=True,
