@@ -348,9 +348,8 @@ class DomainNameserversView(DomainFormBaseView):
             messages.success(
                 self.request,
                 "The name servers for this domain have been updated. "
-                "Keep in mind that DNS changes may take some time to "
-                "propagate across the internet. It can take anywhere "
-                "from a few minutes to 48 hours for your changes to take place.",
+                "Note that DNS changes could take anywhere from a few minutes to "
+                "48 hours to propagate across the internet.",
             )
 
         # superclass has the redirect
