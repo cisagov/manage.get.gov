@@ -7,6 +7,7 @@ from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
+from django.db.models.fields.related import ForeignObjectRel
 
 from api.views import DOMAIN_API_MESSAGES
 
@@ -94,13 +95,13 @@ class RegistrarFormSet(forms.BaseFormSet):
         Hint: Subclass should call `self._to_database(...)`.
         """
         raise NotImplementedError
-    
+
     def test_if_more_than_one_join(self, db_obj, rel, related_name):
-        """Helper for finding whether an object is joined more than once."""        
+        """Helper for finding whether an object is joined more than once."""
         threshold = 0
         if rel == related_name:
             threshold = 1
-            
+
         return getattr(db_obj, rel) is not None and getattr(db_obj, rel).count() > threshold
 
     def _to_database(
@@ -123,8 +124,15 @@ class RegistrarFormSet(forms.BaseFormSet):
         obj.save()
 
         query = getattr(obj, join).order_by("created_at").all()  # order matters
-        related_name = obj._meta.get_field(join).related_query_name()
-        
+
+        related_name = ""
+        field = obj._meta.get_field(join)
+
+        if isinstance(field, ForeignObjectRel) and callable(field.related_query_name):
+            related_name = field.related_query_name()
+        elif hasattr(field, "related_query_name") and callable(field.related_query_name):
+            related_name = field.related_query_name()
+
         # the use of `zip` pairs the forms in the formset with the
         # related objects gotten from the database -- there should always be
         # at least as many forms as database entries: extra forms means new
@@ -135,7 +143,7 @@ class RegistrarFormSet(forms.BaseFormSet):
 
             # matching database object exists, update it
             if db_obj is not None and cleaned:
-                if should_delete(cleaned):             
+                if should_delete(cleaned):
                     if any(self.test_if_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
@@ -148,7 +156,7 @@ class RegistrarFormSet(forms.BaseFormSet):
                     db_obj.save()
 
             # no matching database object, create it
-            elif db_obj is None and cleaned and not cleaned.get('delete', False):
+            elif db_obj is None and cleaned and not cleaned.get("delete", False):
                 kwargs = pre_create(db_obj, cleaned)
                 getattr(obj, join).create(**kwargs)
 
@@ -517,7 +525,7 @@ class PurposeForm(RegistrarForm):
         ],
         error_messages={"required": "Describe how you'll use the .gov domain you’re requesting."},
     )
-    
+
 
 class YourContactForm(RegistrarForm):
     def to_database(self, obj):
@@ -576,16 +584,13 @@ class OtherContactsYesNoForm(RegistrarForm):
             # No pre-selection for new applications
             default_value = None
 
-        self.fields['has_other_contacts'] = forms.TypedChoiceField(
-            coerce=lambda x: x.lower() == 'true' if x is not None else None,
-            choices=(
-                (True, "Yes, I can name other employees."),
-                (False, "No (We'll ask you to explain why).")
-            ),
+        self.fields["has_other_contacts"] = forms.TypedChoiceField(
+            coerce=lambda x: x.lower() == "true" if x is not None else None,
+            choices=((True, "Yes, I can name other employees."), (False, "No (We'll ask you to explain why).")),
             initial=default_value,
-            widget=forms.RadioSelect
-            )
-    
+            widget=forms.RadioSelect,
+        )
+
 
 class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
@@ -644,14 +649,22 @@ class OtherContactsForm(RegistrarForm):
             for field in self.fields:
                 if field in self.errors:
                     del self.errors[field]
-            return {'delete': True}
+            return {"delete": True}
 
         return self.cleaned_data
-    
+
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
     JOIN = "other_contacts"
-    REVERSE_JOINS = ["user", "authorizing_official", "submitted_applications", "contact_applications", "information_authorizing_official", "submitted_applications_information", "contact_applications_information"]
+    REVERSE_JOINS = [
+        "user",
+        "authorizing_official",
+        "submitted_applications",
+        "contact_applications",
+        "information_authorizing_official",
+        "submitted_applications_information",
+        "contact_applications_information",
+    ]
 
     def __init__(self, *args, **kwargs):
         self.formset_data_marked_for_deletion = False
@@ -662,12 +675,12 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         # in the formset plus those that have data already.
         for index in range(max(self.initial_form_count(), 1)):
             self.forms[index].use_required_attribute = True
-            
+
     def pre_update(self, db_obj, cleaned):
         """Code to run before an item in the formset is saved."""
         for key, value in cleaned.items():
             setattr(db_obj, key, value)
-        
+
     def should_delete(self, cleaned):
         empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
         return all(empty) or self.formset_data_marked_for_deletion
@@ -720,11 +733,7 @@ class NoOtherContactsForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        error_messages={
-            "required": (
-                "Rationale for no other employees is required."
-            )
-        },
+        error_messages={"required": ("Rationale for no other employees is required.")},
     )
 
     def __init__(self, *args, **kwargs):
@@ -736,7 +745,7 @@ class NoOtherContactsForm(RegistrarForm):
         This changes behavior of validity checks and to_database
         methods."""
         self.form_data_marked_for_deletion = True
-    
+
     def clean(self):
         """
         This method overrides the default behavior for forms.
@@ -758,7 +767,7 @@ class NoOtherContactsForm(RegistrarForm):
                     del self.errors[field]
 
         return self.cleaned_data
-        
+
     def to_database(self, obj):
         """
         This method overrides the behavior of RegistrarForm.

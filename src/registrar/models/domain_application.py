@@ -838,7 +838,7 @@ class DomainApplication(TimeStampedModel):
     def has_other_contacts(self) -> bool:
         """Does this application have other contacts listed?"""
         return self.other_contacts.exists()
-    
+
     def is_federal(self) -> Union[bool, None]:
         """Is this application for a federal agency?
 

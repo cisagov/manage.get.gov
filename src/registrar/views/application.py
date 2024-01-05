@@ -494,7 +494,7 @@ class OtherContacts(ApplicationWizard):
         # test first for yes_no_form validity
         if other_contacts_yes_no_form.is_valid():
             # test for has_contacts
-            if other_contacts_yes_no_form.cleaned_data.get('has_other_contacts'):
+            if other_contacts_yes_no_form.cleaned_data.get("has_other_contacts"):
                 # mark the no_other_contacts_form for deletion
                 no_other_contacts_form.mark_form_for_deletion()
                 # test that the other_contacts_forms and no_other_contacts_forms are valid

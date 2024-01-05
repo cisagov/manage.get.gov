@@ -373,15 +373,15 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # This page has 3 forms in 1.
         # Let's set the yes/no radios to enable the other contacts fieldsets
         other_contacts_form = other_contacts_page.forms[0]
-        
+
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
-        
+
         other_contacts_form["other_contacts-0-first_name"] = "Testy2"
         other_contacts_form["other_contacts-0-last_name"] = "Tester2"
         other_contacts_form["other_contacts-0-title"] = "Another Tester"
         other_contacts_form["other_contacts-0-email"] = "testy2@town.com"
         other_contacts_form["other_contacts-0-phone"] = "(201) 555 5557"
-        
+
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         other_contacts_result = other_contacts_form.submit()
@@ -715,14 +715,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
         contact_page = type_result.follow()
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
-        
+
     def test_yes_no_form_inits_blank_for_new_application(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new applications"""
         other_contacts_page = self.app.get(reverse("application:other_contacts"))
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
-        
+
     def test_yes_no_form_inits_yes_for_application_with_other_contacts(self):
         """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
         application has other contacts"""
@@ -742,7 +742,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
-        
+
     def test_yes_no_form_inits_no_for_application_with_no_other_contacts_rationale(self):
         """On the Other Contacts page, the yes/no form gets initialized with NO selected if the
         application has no other contacts"""
@@ -764,7 +764,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
-        
+
     def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
         """When a user submits the Other Contacts form with other contacts selected, the application's
         no other contacts rationale gets deleted"""
@@ -786,19 +786,19 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
-        
+
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
-        
+
         other_contacts_form["other_contacts-0-first_name"] = "Testy"
         other_contacts_form["other_contacts-0-middle_name"] = ""
         other_contacts_form["other_contacts-0-last_name"] = "McTesterson"
         other_contacts_form["other_contacts-0-title"] = "Lord"
         other_contacts_form["other_contacts-0-email"] = "testy@abc.org"
         other_contacts_form["other_contacts-0-phone"] = "(201) 555-0123"
-        
+
         # Submit the now empty form
         other_contacts_form.submit()
-                
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the no_other_contacts_rationale we saved earlier has been removed from the database
@@ -807,12 +807,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
             application.other_contacts.count(),
             1,
         )
-        
+
         self.assertEquals(
             application.no_other_contacts_rationale,
             None,
         )
-        
+
     def test_submitting_no_other_contacts_rationale_deletes_other_contacts(self):
         """When a user submits the Other Contacts form with no other contacts selected, the application's
         other contacts get deleted for other contacts that exist and are not joined to other objects
@@ -833,14 +833,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
-        
+
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
-        
+
         other_contacts_form["other_contacts-no_other_contacts_rationale"] = "Hello again!"
-        
+
         # Submit the now empty form
         other_contacts_form.submit()
-                
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the no_other_contacts_rationale we saved earlier has been removed from the database
@@ -849,12 +849,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
             application.other_contacts.count(),
             0,
         )
-        
+
         self.assertEquals(
             application.no_other_contacts_rationale,
             "Hello again!",
         )
-        
+
     def test_submitting_no_other_contacts_rationale_removes_reference_other_contacts_when_joined(self):
         """When a user submits the Other Contacts form with no other contacts selected, the application's
         other contacts references get removed for other contacts that exist and are joined to other objects"""
@@ -898,11 +898,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
             status="started",
         )
         application.other_contacts.add(other)
-        
+
         # Now let's join the other contact to another object
         domain_info = DomainInformation.objects.create(creator=self.user)
         domain_info.other_contacts.set([other])
-        
+
         # prime the form by visiting /edit
         self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -917,14 +917,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
-        
+
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
-        
+
         other_contacts_form["other_contacts-no_other_contacts_rationale"] = "Hello again!"
-        
+
         # Submit the now empty form
         other_contacts_form.submit()
-                
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the no_other_contacts_rationale we saved earlier is no longer associated with the application
@@ -933,7 +933,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             application.other_contacts.count(),
             0,
         )
-        
+
         # Verify that the 'other' contact object still exists
         domain_info = DomainInformation.objects.get()
         self.assertEqual(
@@ -944,27 +944,27 @@ class DomainApplicationTests(TestWithUser, WebTest):
             domain_info.other_contacts.all()[0].first_name,
             "Testy2",
         )
-        
+
         self.assertEquals(
             application.no_other_contacts_rationale,
             "Hello again!",
-        )        
-        
+        )
+
     def test_if_yes_no_form_is_no_then_no_other_contacts_required(self):
         """Applicants with no other contacts have to give a reason."""
         other_contacts_page = self.app.get(reverse("application:other_contacts"))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
         response = other_contacts_page.forms[0].submit()
-        
+
         # The textarea for no other contacts returns this error message
         # Assert that it is returned, ie the no other contacts form is required
         self.assertContains(response, "Rationale for no other employees is required.")
-        
+
         # The first name field for other contacts returns this error message
         # Assert that it is not returned, ie the contacts form is not required
         self.assertNotContains(response, "Enter the first name / given name of this contact.")
-        
+
     def test_if_yes_no_form_is_yes_then_other_contacts_required(self):
         """Applicants with other contacts do not have to give a reason."""
         other_contacts_page = self.app.get(reverse("application:other_contacts"))
@@ -975,7 +975,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # The textarea for no other contacts returns this error message
         # Assert that it is not returned, ie the no other contacts form is not required
         self.assertNotContains(response, "Rationale for no other employees is required.")
-        
+
         # The first name field for other contacts returns this error message
         # Assert that it is returned, ie the contacts form is required
         self.assertContains(response, "Enter the first name / given name of this contact.")
