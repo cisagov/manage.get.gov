@@ -7,7 +7,7 @@ from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
-from django.db.models.fields.related import ForeignObjectRel
+from django.db.models.fields.related import ForeignObjectRel, OneToOneField
 
 from api.views import DOMAIN_API_MESSAGES
 
@@ -98,11 +98,33 @@ class RegistrarFormSet(forms.BaseFormSet):
 
     def test_if_more_than_one_join(self, db_obj, rel, related_name):
         """Helper for finding whether an object is joined more than once."""
+        # threshold is the number of related objects that are acceptable
+        # when determining if related objects exist. threshold is 0 for most
+        # relationships. if the relationship is related_name, we know that
+        # there is already 1 acceptable relationship (the one we are attempting
+        # to delete), so the threshold is higher
         threshold = 0
         if rel == related_name:
             threshold = 1
 
-        return getattr(db_obj, rel) is not None and getattr(db_obj, rel).count() > threshold
+        # Raise a KeyError if rel is not a defined field on the db_obj model
+        # This will help catch any errors in reverse_join config on forms
+        if rel not in db_obj._meta.get_all_field_names():
+            raise KeyError(f"{rel} is not a defined field on the {db_obj._meta.model_name} model.")
+
+        # if attr rel in db_obj is not None, then test if reference object(s) exist
+        if getattr(db_obj, rel) is not None:
+            field = db_obj._meta.get_field(rel)
+            if isinstance(field, OneToOneField):
+                # if the rel field is a OneToOne field, then we have already
+                # determined that the object exists (is not None)
+                return True
+            elif isinstance(field, ForeignObjectRel):
+                # if the rel field is a ManyToOne or ManyToMany, then we need
+                # to determine if the count of related objects is greater than
+                # the threshold
+                return getattr(db_obj, rel).count() > threshold
+        return False
 
     def _to_database(
         self,
@@ -125,9 +147,10 @@ class RegistrarFormSet(forms.BaseFormSet):
 
         query = getattr(obj, join).order_by("created_at").all()  # order matters
 
+        # get the related name for the join defined for the db_obj for this form.
+        # the related name will be the reference on a related object back to db_obj
         related_name = ""
         field = obj._meta.get_field(join)
-
         if isinstance(field, ForeignObjectRel) and callable(field.related_query_name):
             related_name = field.related_query_name()
         elif hasattr(field, "related_query_name") and callable(field.related_query_name):

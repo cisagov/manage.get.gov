@@ -12,6 +12,9 @@
 
 {% endblock %}
 
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear at this point on this page #}
+{% endblock %}
 
 {% block form_fields %}
     <fieldset class="usa-fieldset margin-top-2">
@@ -67,6 +70,7 @@
     </div>
 
     <div id="no-other-employees">
+        {% include "includes/required_fields.html" %}
         <fieldset class="usa-fieldset margin-top-2">
           <legend>
             <h2>No other employees from your organization?</h2>
