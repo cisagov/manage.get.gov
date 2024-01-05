@@ -29,6 +29,13 @@
   th.action-col-custom-width {
     width: 27% !important;
   }
+
+  // Fix margins in mobile view
+  @media screen {
+    td.tablet-margin-top-5 {
+        margin-top: 40px !important;
+    }
+  }
 }
 
 .dotgov-table {
