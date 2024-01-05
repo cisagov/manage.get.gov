@@ -179,6 +179,7 @@ class RegistrarFormSet(forms.BaseFormSet):
                     db_obj.save()
 
             # no matching database object, create it
+            # make sure not to create a database object if cleaned has 'delete' attribute
             elif db_obj is None and cleaned and not cleaned.get("delete", False):
                 kwargs = pre_create(db_obj, cleaned)
                 getattr(obj, join).create(**kwargs)
@@ -672,6 +673,9 @@ class OtherContactsForm(RegistrarForm):
             for field in self.fields:
                 if field in self.errors:
                     del self.errors[field]
+            # return empty object with only 'delete' attribute defined.
+            # this will prevent _to_database from creating an empty
+            # database object
             return {"delete": True}
 
         return self.cleaned_data
@@ -699,11 +703,6 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         for index in range(max(self.initial_form_count(), 1)):
             self.forms[index].use_required_attribute = True
 
-    def pre_update(self, db_obj, cleaned):
-        """Code to run before an item in the formset is saved."""
-        for key, value in cleaned.items():
-            setattr(db_obj, key, value)
-
     def should_delete(self, cleaned):
         empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
         return all(empty) or self.formset_data_marked_for_deletion
@@ -725,6 +724,9 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
             form.mark_form_for_deletion()
 
     def is_valid(self):
+        """Extend is_valid from RegistrarFormSet. When marking this formset for deletion, set
+        validate_min to false so that validation does not attempt to enforce a minimum
+        number of other contacts when contacts marked for deletion"""
         if self.formset_data_marked_for_deletion:
             self.validate_min = False
         return super().is_valid()
