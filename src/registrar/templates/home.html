@@ -147,7 +147,7 @@
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
-              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request"|add:forloop.counter|add:"" }} </span>
+              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }} </span>
 
             {% else %}
               <a href="{% url 'application-status' application.pk %}">
@@ -159,7 +159,7 @@
             </a>
           </td>
           {% if has_deletable_applications %}
-          <td class="tablet-margin-top-5">
+          <td class="tablet-margin-top-2">
             {% if application.status == "started" or application.status == "withdrawn"  %}
               <a
                 id="button-toggle-delete-domain-alert-{{ forloop.counter }}"

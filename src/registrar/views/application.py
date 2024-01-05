@@ -587,10 +587,12 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
             return False
 
         status = self.get_object().status
-        if status not in [DomainApplication.ApplicationStatus.WITHDRAWN, DomainApplication.ApplicationStatus.STARTED]:
+        valid_statuses = [DomainApplication.ApplicationStatus.WITHDRAWN, DomainApplication.ApplicationStatus.STARTED]
+        if status not in valid_statuses:
             return False
 
         return True
 
     def get_success_url(self):
+        """After a delete is successful, redirect to home"""
         return reverse("home")
