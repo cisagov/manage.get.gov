@@ -107,7 +107,7 @@ class RegistrarFormSet(forms.BaseFormSet):
 
         # Raise a KeyError if rel is not a defined field on the db_obj model
         # This will help catch any errors in reverse_join config on forms
-        if rel not in db_obj._meta.get_all_field_names():
+        if rel not in [field.name for field in db_obj._meta.get_fields()]:
             raise KeyError(f"{rel} is not a defined field on the {db_obj._meta.model_name} model.")
 
         # if attr rel in db_obj is not None, then test if reference object(s) exist
