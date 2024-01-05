@@ -821,6 +821,9 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         "contact_applications_information",
     ]
 
+    def get_deletion_widget(self):
+        return forms.HiddenInput(attrs={"class": "deletion"})
+    
     def __init__(self, *args, **kwargs):
         self.formset_data_marked_for_deletion = False
         self.application = kwargs.pop("application", None)
