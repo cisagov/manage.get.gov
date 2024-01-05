@@ -29,8 +29,9 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from .common import MockEppLib
+from .common import MockEppLib, MockSESClient, less_console_noise
 import logging
+import boto3_mocking  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +253,7 @@ class TestDomainCache(MockEppLib):
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain application must result in a domain"""
 
+    @boto3_mocking.patching
     def test_approved_application_creates_domain_locally(self):
         """
         Scenario: Analyst approves a domain application
@@ -262,10 +264,14 @@ class TestDomainCreation(MockEppLib):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
-        # skip using the submit method
-        application.status = DomainApplication.ApplicationStatus.SUBMITTED
-        # transition to approve state
-        application.approve()
+
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                # skip using the submit method
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                # transition to approve state
+                application.approve()
         # should have information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
         self.assertTrue(domain)
@@ -738,6 +744,50 @@ class TestRegistrantContacts(MockEppLib):
         ]
         self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
         self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
+
+    def test_security_email_returns_on_registry_error(self):
+        """
+        Scenario: Security email previously set through EPP and stored in registrar's database.
+            Registry is unavailable and throws exception when attempting to build cache from
+            registry. Security email retrieved from database.
+        """
+        # Use self.domain_contact which has been initialized with existing contacts, including securityContact
+
+        # call get_security_email to initially set the security_contact_registry_id in the domain model
+        self.domain_contact.get_security_email()
+        # invalidate the cache so the next time get_security_email is called, it has to attempt to populate cache
+        self.domain_contact._invalidate_cache()
+
+        # mock that registry throws an error on the EPP send
+        def side_effect(_request, cleaned):
+            raise RegistryError(code=ErrorCode.COMMAND_FAILED)
+
+        patcher = patch("registrar.models.domain.registry.send")
+        mocked_send = patcher.start()
+        mocked_send.side_effect = side_effect
+
+        # when get_security_email is called, the registry error will force the security contact
+        # to be retrieved using the security_contact_registry_id in the domain model
+        security_email = self.domain_contact.get_security_email()
+
+        # assert that the proper security contact was retrieved by testing the email matches expected value
+        self.assertEqual(security_email, "security@mail.gov")
+        patcher.stop()
+
+    def test_security_email_stored_on_fetch_cache(self):
+        """
+        Scenario: Security email is stored in db when security contact is retrieved from fetch_cache.
+            Verify the success of this by asserting get_or_create calls to db.
+            The mocked data for the EPP calls for the freeman.gov domain returns a security
+            contact with registry id of securityContact when InfoContact is called
+        """
+        # Use self.domain_contact which has been initialized with existing contacts, including securityContact
+
+        # force fetch_cache to be called, which will return above documented mocked hosts
+        self.domain_contact.get_security_email()
+
+        # assert that the security_contact_registry_id in the db matches "securityContact"
+        self.assertEqual(self.domain_contact.security_contact_registry_id, "securityContact")
 
     def test_not_disclosed_on_other_contacts(self):
         """

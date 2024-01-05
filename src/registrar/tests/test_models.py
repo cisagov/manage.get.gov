@@ -19,8 +19,6 @@ from registrar.models.transition_domain import TransitionDomain  # type: ignore
 from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
-boto3_mocking.clients.register_handler("sesv2", MockSESClient)
-
 
 # Test comment for push -- will remove
 # The DomainApplication submit method has a side effect of sending an email
@@ -52,6 +50,12 @@ class TestDomainApplication(TestCase):
         self.ineligible_application = completed_application(
             status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
         )
+
+        self.mock_client = MockSESClient()
+
+    def tearDown(self):
+        super().tearDown()
+        self.mock_client.EMAILS_SENT.clear()
 
     def assertNotRaises(self, exception_type):
         """Helper method for testing allowed transitions."""
@@ -130,17 +134,23 @@ class TestDomainApplication(TestCase):
     def test_status_fsm_submit_fail(self):
         user, _ = User.objects.get_or_create(username="testy")
         application = DomainApplication.objects.create(creator=user)
-        with self.assertRaises(ValueError):
-            # can't submit an application with a null domain name
-            application.submit()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                with self.assertRaises(ValueError):
+                    # can't submit an application with a null domain name
+                    application.submit()
 
     def test_status_fsm_submit_succeed(self):
         user, _ = User.objects.get_or_create(username="testy")
         site = DraftDomain.objects.create(name="igorville.gov")
         application = DomainApplication.objects.create(creator=user, requested_domain=site)
+
         # no submitter email so this emits a log warning
-        with less_console_noise():
-            application.submit()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.submit()
         self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
 
     def test_submit_sends_email(self):
@@ -154,7 +164,10 @@ class TestDomainApplication(TestCase):
             submitter=contact,
         )
         application.save()
-        application.submit()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.submit()
 
         # check to see if an email was sent
         self.assertGreater(
@@ -179,12 +192,14 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.submit()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.submit()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_submit_transition_not_allowed(self):
         """
@@ -197,10 +212,12 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.submit()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.submit()
 
     def test_in_review_transition_allowed(self):
         """
@@ -214,12 +231,14 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.in_review()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.in_review()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_in_review_transition_not_allowed(self):
         """
@@ -231,10 +250,12 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.in_review()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.in_review()
 
     def test_action_needed_transition_allowed(self):
         """
@@ -247,12 +268,14 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.action_needed()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.action_needed()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_action_needed_transition_not_allowed(self):
         """
@@ -265,10 +288,12 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.action_needed()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.action_needed()
 
     def test_approved_transition_allowed(self):
         """
@@ -281,12 +306,27 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.approve()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.approve()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_approved_skips_sending_email(self):
+        """
+        Test that calling .approve with send_email=False doesn't actually send
+        an email
+        """
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                self.submitted_application.approve(send_email=False)
+
+        # Assert that no emails were sent
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 0)
 
     def test_approved_transition_not_allowed(self):
         """
@@ -299,10 +339,12 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.approve()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.approve()
 
     def test_withdraw_transition_allowed(self):
         """
@@ -314,12 +356,14 @@ class TestDomainApplication(TestCase):
             (self.action_needed_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.withdraw()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.withdraw()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_withdraw_transition_not_allowed(self):
         """
@@ -333,10 +377,12 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.withdraw()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.withdraw()
 
     def test_reject_transition_allowed(self):
         """
@@ -348,12 +394,14 @@ class TestDomainApplication(TestCase):
             (self.approved_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.reject()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.reject()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_reject_transition_not_allowed(self):
         """
@@ -367,10 +415,12 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.reject()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.reject()
 
     def test_reject_with_prejudice_transition_allowed(self):
         """
@@ -383,12 +433,14 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.reject_with_prejudice()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.reject_with_prejudice()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_reject_with_prejudice_transition_not_allowed(self):
         """
@@ -401,10 +453,12 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.reject_with_prejudice()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.reject_with_prejudice()
 
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
@@ -418,11 +472,13 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
-        # Use patch to temporarily replace is_active with the custom implementation
-        with patch.object(Domain, "is_active", custom_is_active):
-            # Now, when you call is_active on Domain, it will return True
-            with self.assertRaises(TransitionNotAllowed):
-                self.approved_application.reject()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        self.approved_application.reject()
 
     def test_transition_not_allowed_approved_ineligible_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
@@ -436,11 +492,13 @@ class TestDomainApplication(TestCase):
         def custom_is_active(self):
             return True  # Override to return True
 
-        # Use patch to temporarily replace is_active with the custom implementation
-        with patch.object(Domain, "is_active", custom_is_active):
-            # Now, when you call is_active on Domain, it will return True
-            with self.assertRaises(TransitionNotAllowed):
-                self.approved_application.reject_with_prejudice()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        self.approved_application.reject_with_prejudice()
 
     def test_has_rationale_returns_true(self):
         """has_rationale() returns true when an application has no_other_contacts_rationale"""
@@ -466,16 +524,27 @@ class TestDomainApplication(TestCase):
 
 
 class TestPermissions(TestCase):
-
     """Test the User-Domain-Role connection."""
 
+    def setUp(self):
+        super().setUp()
+        self.mock_client = MockSESClient()
+
+    def tearDown(self):
+        super().tearDown()
+        self.mock_client.EMAILS_SENT.clear()
+
+    @boto3_mocking.patching
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
-        # skip using the submit method
-        application.status = DomainApplication.ApplicationStatus.SUBMITTED
-        application.approve()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # skip using the submit method
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                application.approve()
 
         # should be a role for this user
         domain = Domain.objects.get(name="igorville.gov")
@@ -486,13 +555,25 @@ class TestDomainInfo(TestCase):
 
     """Test creation of Domain Information when approved."""
 
+    def setUp(self):
+        super().setUp()
+        self.mock_client = MockSESClient()
+
+    def tearDown(self):
+        super().tearDown()
+        self.mock_client.EMAILS_SENT.clear()
+
+    @boto3_mocking.patching
     def test_approval_creates_info(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
         application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
-        # skip using the submit method
-        application.status = DomainApplication.ApplicationStatus.SUBMITTED
-        application.approve()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # skip using the submit method
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                application.approve()
 
         # should be an information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
@@ -594,11 +675,12 @@ class TestUser(TestCase):
         caps_email = "MAYOR@igorville.gov"
         # mock the domain invitation save routine
         with patch("registrar.models.DomainInvitation.save") as save_mock:
-            DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
-            self.user.check_domain_invitations_on_login()
-            # if check_domain_invitations_on_login properly matches exactly one
-            # Domain Invitation, then save routine should be called exactly once
-            save_mock.assert_called_once()
+            with less_console_noise():
+                DomainInvitation.objects.get_or_create(email=caps_email, domain=self.domain)
+                self.user.check_domain_invitations_on_login()
+                # if check_domain_invitations_on_login properly matches exactly one
+                # Domain Invitation, then save routine should be called exactly once
+                save_mock.assert_called_once()
 
 
 class TestContact(TestCase):

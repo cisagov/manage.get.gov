@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static form_helpers url_helpers %}
+
+{% block content %}
+<main id="main-content" class="grid-container">
+    <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
+
+    <form class="usa-form usa-form--extra-large" method="post" novalidate>
+        {% csrf_token %}
+
+        <h1>You’re about to start your .gov domain request.</h1>
+        <p>You don’t have to complete the process in one session. You can save what you enter and come back to it when you’re ready.</p>
+        <p>We’ll use the information you provide to verify your organization’s eligibility for a .gov domain. We’ll also verify that the domain you request meets our guidelines.</p>
+        <h2>Time to complete the form</h2>
+        <p>If you have <a href="{% public_site_url 'domains/before/#information-you%E2%80%99ll-need-to-complete-the-domain-request-form' %}" target="_blank" class="usa-link">all the information you need</a>,
+           completing your domain request might take around 15 minutes.</p>
+        <p><a href="{% public_site_url 'contact/' %}" target="_blank" rel="noopener noreferrer" class="usa-link">Contact us if you need help with your request</a>.</p>
+
+{% block form_buttons %}
+        <div class="stepnav">
+            <button
+              type="submit"
+              name="submit_button"
+              value="intro_acknowledge"
+              class="usa-button"
+            >Continue</button>
+        </div>
+{% endblock %}
+
+        </form>
+
+  </div>
+</main>
+{% endblock %}

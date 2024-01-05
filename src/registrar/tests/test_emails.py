@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock
 
 from django.test import TestCase
-from .common import completed_application
+from .common import completed_application, less_console_noise
 
 
 import boto3_mocking  # type: ignore
@@ -20,7 +20,8 @@ class TestEmails(TestCase):
         application = completed_application()
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
 
         # check that an email was sent
         self.assertTrue(self.mock_client.send_email.called)
@@ -56,7 +57,8 @@ class TestEmails(TestCase):
         """Test line spacing without current_website."""
         application = completed_application(has_current_website=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertNotIn("Current website for your organization:", body)
@@ -68,7 +70,8 @@ class TestEmails(TestCase):
         """Test line spacing with current_website."""
         application = completed_application(has_current_website=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("Current website for your organization:", body)
@@ -81,7 +84,8 @@ class TestEmails(TestCase):
         """Test line spacing with other contacts."""
         application = completed_application(has_other_contacts=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("Other employees from your organization:", body)
@@ -94,7 +98,8 @@ class TestEmails(TestCase):
         """Test line spacing without other contacts."""
         application = completed_application(has_other_contacts=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertNotIn("Other employees from your organization:", body)
@@ -106,7 +111,8 @@ class TestEmails(TestCase):
         """Test line spacing with alternative .gov domain."""
         application = completed_application(has_alternative_gov_domain=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("city1.gov", body)
@@ -118,7 +124,8 @@ class TestEmails(TestCase):
         """Test line spacing without alternative .gov domain."""
         application = completed_application(has_alternative_gov_domain=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertNotIn("city1.gov", body)
@@ -130,7 +137,8 @@ class TestEmails(TestCase):
         """Test line spacing with about your organization."""
         application = completed_application(has_about_your_organization=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("About your organization:", body)
@@ -142,7 +150,8 @@ class TestEmails(TestCase):
         """Test line spacing without about your organization."""
         application = completed_application(has_about_your_organization=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertNotIn("About your organization:", body)
@@ -154,7 +163,8 @@ class TestEmails(TestCase):
         """Test line spacing with anything else."""
         application = completed_application(has_anything_else=True)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         # spacing should be right between adjacent elements
@@ -165,7 +175,8 @@ class TestEmails(TestCase):
         """Test line spacing without anything else."""
         application = completed_application(has_anything_else=False)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
-            application.submit()
+            with less_console_noise():
+                application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertNotIn("Anything else", body)

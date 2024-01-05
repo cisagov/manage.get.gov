@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .common import MockEppLib, completed_application, create_user  # type: ignore
+from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -110,7 +110,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/register/", follow=True)
         self.assertContains(
             response,
-            "What kind of U.S.-based government organization do you represent?",
+            "You’re about to start your .gov domain request.",
         )
 
     def test_domain_application_form_with_ineligible_user(self):
@@ -139,24 +139,70 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_user(self.user.username)
         self.TITLES = ApplicationWizard.TITLES
 
+    def test_application_form_intro_acknowledgement(self):
+        """Tests that user is presented with intro acknowledgement page"""
+        intro_page = self.app.get(reverse("application:"))
+        self.assertContains(intro_page, "You’re about to start your .gov domain request")
+
+    def test_application_form_intro_is_skipped_when_edit_access(self):
+        """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
+        completed_application(status=DomainApplication.ApplicationStatus.STARTED, user=self.user)
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "city.gov")
+        # click the "Edit" link
+        detail_page = home_page.click("Edit", index=0)
+        # Check that the response is a redirect
+        self.assertEqual(detail_page.status_code, 302)
+        # You can access the 'Location' header to get the redirect URL
+        redirect_url = detail_page.url
+        self.assertEqual(redirect_url, "/register/organization_type/")
+
     def test_application_form_empty_submit(self):
-        # 302 redirect to the first form
-        page = self.app.get(reverse("application:")).follow()
+        """Tests empty submit on the first page after the acknowledgement page"""
+        intro_page = self.app.get(reverse("application:"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         # submitting should get back the same page if the required field is empty
-        result = page.forms[0].submit()
+        result = type_page.forms[0].submit()
         self.assertIn("What kind of U.S.-based government organization do you represent?", result)
 
     def test_application_multiple_applications_exist(self):
         """Test that an info message appears when user has multiple applications already"""
         # create and submit an application
         application = completed_application(user=self.user)
-        application.submit()
-        application.save()
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                application.submit()
+                application.save()
 
         # now, attempt to create another one
         with less_console_noise():
-            page = self.app.get("/register/").follow()
-            self.assertContains(page, "You cannot submit this request yet")
+            intro_page = self.app.get(reverse("application:"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            intro_form = intro_page.forms[0]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            intro_result = intro_form.submit()
+
+            # follow first redirect
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            type_page = intro_result.follow()
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+            self.assertContains(type_page, "You cannot submit this request yet")
 
     @boto3_mocking.patching
     def test_application_form_submission(self):
@@ -175,11 +221,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
         SKIPPED_PAGES = 3
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -543,11 +598,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_conditional_federal(self):
         """Federal branch question is shown for federal organizations."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -589,11 +653,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_conditional_elections(self):
         """Election question is shown for other organizations."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -634,11 +707,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_section_skipping(self):
         """Can skip forward and back in sections"""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -662,11 +744,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_nonfederal(self):
         """Non-federal organizations don't have to provide their federal agency."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -698,11 +789,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_about_your_organization_special(self):
         """Special districts have to answer an additional question."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -1068,11 +1168,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
@@ -1087,12 +1196,22 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_tribal_government(self):
         """Tribal organizations have to answer an additional question."""
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         type_form = type_page.forms[0]
         type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.TRIBAL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1107,11 +1226,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
 
     def test_application_ao_dynamic_text(self):
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- TYPE PAGE  ----
@@ -1169,12 +1297,22 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(ao_page, "Domain requests from cities")
 
     def test_application_dotgov_domain_dynamic_text(self):
-        type_page = self.app.get(reverse("application:")).follow()
+        intro_page = self.app.get(reverse("application:"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
         # ---- TYPE PAGE  ----
         type_form = type_page.forms[0]
         type_form["organization_type-organization_type"] = "federal"
@@ -1418,8 +1556,22 @@ class DomainApplicationTests(TestWithUser, WebTest):
         Make sure the long name is displaying in the application form,
         org step
         """
-        request = self.app.get(reverse("application:")).follow()
-        self.assertContains(request, "Federal: an agency of the U.S. government")
+        intro_page = self.app.get(reverse("application:"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+
+        self.assertContains(type_page, "Federal: an agency of the U.S. government")
 
     def test_long_org_name_in_application_manage(self):
         """
@@ -1693,6 +1845,7 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
+    @boto3_mocking.patching
     def test_domain_user_add_form(self):
         """Adding an existing user works."""
         other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
@@ -1702,7 +1855,11 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = "mayor@igorville.gov"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result = add_page.form.submit()
+
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                success_result = add_page.form.submit()
 
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
@@ -1731,7 +1888,12 @@ class TestDomainManagers(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result = add_page.form.submit()
+
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                success_result = add_page.form.submit()
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
 
@@ -1757,7 +1919,12 @@ class TestDomainManagers(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = caps_email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result = add_page.form.submit()
+
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                success_result = add_page.form.submit()
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
 
@@ -1777,11 +1944,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1803,11 +1971,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1841,11 +2010,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1883,11 +2053,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            add_page.form["email"] = email_address
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            add_page.form.submit()
+            with less_console_noise():
+                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                add_page.form["email"] = email_address
+                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                add_page.form.submit()
 
         # check the mock instance to see if `send_email` was called right
         mock_client_instance.send_email.assert_called_once_with(
@@ -1922,15 +2093,15 @@ class TestDomainManagers(TestDomainOverview):
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         mock_client = MagicMock()
-
         mock_error_message = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with patch("django.contrib.messages.error") as mock_error_message:
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit().follow()
+                with less_console_noise():
+                    add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    add_page.form["email"] = email_address
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    add_page.form.submit().follow()
 
         expected_message_content = "Can't send invitation email. No email is associated with your account."
 
@@ -1959,11 +2130,12 @@ class TestDomainManagers(TestDomainOverview):
         mock_error_message = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
             with patch("django.contrib.messages.error") as mock_error_message:
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit().follow()
+                with less_console_noise():
+                    add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    add_page.form["email"] = email_address
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    add_page.form.submit().follow()
 
         expected_message_content = "Can't send invitation email. No email is associated with your account."
 
@@ -1977,7 +2149,11 @@ class TestDomainManagers(TestDomainOverview):
         """Posting to the delete view deletes an invitation."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
-        self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        mock_client.EMAILS_SENT.clear()
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
 
@@ -1989,8 +2165,11 @@ class TestDomainManagers(TestDomainOverview):
         other_user = User()
         other_user.save()
         self.client.force_login(other_user)
-        with less_console_noise():  # permission denied makes console errors
-            result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():  # permission denied makes console errors
+                result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+
         self.assertEqual(result.status_code, 403)
 
     @boto3_mocking.patching
@@ -2006,7 +2185,11 @@ class TestDomainManagers(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        add_page.form.submit()
+
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                add_page.form.submit()
 
         # user was invited, create them
         new_user = User.objects.create(username=email_address, email=email_address)
@@ -2061,6 +2244,7 @@ class TestDomainNameservers(TestDomainOverview):
         # attempt to submit the form without two hosts, both subdomains,
         # only one has ips
         nameservers_page.form["form-1-server"] = "ns2.igorville.gov"
+
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
@@ -2396,8 +2580,10 @@ class TestDomainSecurityEmail(TestDomainOverview):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         security_email_page.form["security_email"] = "mayor@igorville.gov"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        with less_console_noise():  # swallow log warning message
-            result = security_email_page.form.submit()
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():  # swallow log warning message
+                result = security_email_page.form.submit()
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
@@ -2743,9 +2929,12 @@ class TestApplicationStatus(TestWithUser, WebTest):
         self.assertContains(detail_page, "Admin Tester")
         self.assertContains(detail_page, "Status:")
         # click the "Withdraw request" button
-        withdraw_page = detail_page.click("Withdraw request")
-        self.assertContains(withdraw_page, "Withdraw request for")
-        home_page = withdraw_page.click("Withdraw request")
+        mock_client = MockSESClient()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            with less_console_noise():
+                withdraw_page = detail_page.click("Withdraw request")
+                self.assertContains(withdraw_page, "Withdraw request for")
+                home_page = withdraw_page.click("Withdraw request")
         # confirm that it has redirected, and the status has been updated to withdrawn
         self.assertRedirects(
             home_page,

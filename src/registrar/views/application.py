@@ -206,16 +206,16 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # if accessing this class directly, redirect to the first step
         #     in other words, if `ApplicationWizard` is called as view
         #     directly by some redirect or url handler, we'll send users
-        #     to the first step in the processes; subclasses will NOT
-        #     be redirected. The purpose of this is to allow code to
+        #     either to an acknowledgement page or to the first step in
+        #     the processes (if an edit rather than a new request); subclasses
+        #     will NOT be redirected. The purpose of this is to allow code to
         #     send users "to the application wizard" without needing to
         #     know which view is first in the list of steps.
         if self.__class__ == ApplicationWizard:
-            # if starting a new application, clear the storage
             if request.path_info == self.NEW_URL_NAME:
-                del self.storage
-
-            return self.goto(self.steps.first)
+                return render(request, "application_intro.html")
+            else:
+                return self.goto(self.steps.first)
 
         self.steps.current = current_url
         context = self.get_context_data()
@@ -370,12 +370,19 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
-        # if accessing this class directly, redirect to the first step
-        if self.__class__ == ApplicationWizard:
-            return self.goto(self.steps.first)
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
+
+        # if user has acknowledged the intro message
+        if button == "intro_acknowledge":
+            if request.path_info == self.NEW_URL_NAME:
+                del self.storage
+            return self.goto(self.steps.first)
+
+        # if accessing this class directly, redirect to the first step
+        if self.__class__ == ApplicationWizard:
+            return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
         if self.is_valid(forms):
