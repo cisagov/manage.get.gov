@@ -104,7 +104,7 @@ class NameserverError(Exception):
         NameserverErrorCodes.MISSING_HOST: ("You must provide a name server to enter an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.DUPLICATE_HOST: (
-            "You've already entered this name server address. "
+            "You already entered this name server address. "
             "Name server addresses must be unique."
         ),
         NameserverErrorCodes.BAD_DATA: (
