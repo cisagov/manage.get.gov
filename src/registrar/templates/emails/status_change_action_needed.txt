@@ -4,7 +4,7 @@ Hi {{ application.submitter.first_name }}.
 We've identified an action needed to complete the review of your .gov domain request.
 
 DOMAIN REQUESTED: {{ application.requested_domain.name }}
-REQUEST RECEIVED ON: {{ application.updated_at|date }}
+REQUEST RECEIVED ON: {{ application.submission_date|date }}
 REQUEST #: {{ application.id }}
 STATUS: Action needed
 
