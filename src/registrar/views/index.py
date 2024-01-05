@@ -18,11 +18,19 @@ def index(request):
         domains = Domain.objects.filter(id__in=domain_ids)
 
         context["domains"] = domains
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="delete-application">Yes, delete request</button>'
-        )
 
-        context["modal_button"] = modal_button
+        # Determine if the user will see applications that they can delete
+        valid_statuses = [DomainApplication.ApplicationStatus.STARTED, DomainApplication.ApplicationStatus.WITHDRAWN]
+        has_deletable_applications = applications.filter(status__in=valid_statuses)
+        context["has_deletable_applications"] = has_deletable_applications
+
+        if has_deletable_applications:
+            modal_button = (
+                '<button type="submit" '
+                'class="usa-button usa-button--secondary" '
+                'name="delete-application">Yes, delete request</button>'
+            )
+
+
+            context["modal_button"] = modal_button
     return render(request, "home.html", context)

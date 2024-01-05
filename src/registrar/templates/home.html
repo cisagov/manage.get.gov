@@ -41,8 +41,13 @@
           <th data-sortable scope="col" role="columnheader">Domain name</th>
           <th data-sortable scope="col" role="columnheader">Expires</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
-          <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
-          <th scope="col" role="columnheader">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+          <th 
+            scope="col" 
+            role="columnheader" 
+            {% if has_deletable_applications %} class="action-col-custom-width" {% else %} class="width-15" {% endif %}
+          >
+            <span class="usa-sr-only">Action</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -105,7 +110,9 @@
           <th data-sortable scope="col" role="columnheader">Date submitted</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
           <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
+          {% if has_deletable_applications %}
           <th scope="col" role="columnheader"><span class="usa-sr-only">Delete Action</span></th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -139,6 +146,7 @@
             {% endif %}
             </a>
           </td>
+          {% if has_deletable_applications %}
           <td>
             {% if application.status == "started" or application.status == "withdrawn"  %}
               <a
@@ -169,6 +177,7 @@
               </div>
             {% endif %}
           </td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>

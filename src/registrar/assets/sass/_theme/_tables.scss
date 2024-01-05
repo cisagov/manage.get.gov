@@ -25,6 +25,10 @@
     color: color('primary-darker');
     padding-bottom: units(2px);
   }
+
+  th.action-col-custom-width {
+    width: 27% !important;
+  }
 }
 
 .dotgov-table {
