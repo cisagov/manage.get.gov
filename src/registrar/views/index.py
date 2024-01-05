@@ -31,6 +31,5 @@ def index(request):
                 'name="delete-application">Yes, delete request</button>'
             )
 
-
             context["modal_button"] = modal_button
     return render(request, "home.html", context)

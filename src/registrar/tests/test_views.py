@@ -94,6 +94,86 @@ class LoggedInTests(TestWithUser):
         # clean up
         application.delete()
 
+    def test_home_deletes_withdrawn_domain_application(self):
+        """Tests if the user can delete a DomainApplication in the 'withdrawn' status"""
+
+        site = DraftDomain.objects.create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user, requested_domain=site, status=DomainApplication.ApplicationStatus.WITHDRAWN
+        )
+
+        # Ensure that igorville.gov exists on the page
+        home_page = self.client.get("/")
+        self.assertContains(home_page, "igorville.gov")
+
+        # Check if the delete button exists. We can do this by checking for its id and text content.
+        self.assertContains(home_page, "Delete")
+        self.assertContains(home_page, "button-toggle-delete-domain-alert-1")
+
+        # Trigger the delete logic
+        response = self.client.post(reverse("application-delete", kwargs={"pk": application.pk}), follow=True)
+
+        self.assertNotContains(response, "igorville.gov")
+
+        # clean up
+        application.delete()
+
+    def test_home_deletes_started_domain_application(self):
+        """Tests if the user can delete a DomainApplication in the 'started' status"""
+
+        site = DraftDomain.objects.create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user, requested_domain=site, status=DomainApplication.ApplicationStatus.STARTED
+        )
+
+        # Ensure that igorville.gov exists on the page
+        home_page = self.client.get("/")
+        self.assertContains(home_page, "igorville.gov")
+
+        # Check if the delete button exists. We can do this by checking for its id and text content.
+        self.assertContains(home_page, "Delete")
+        self.assertContains(home_page, "button-toggle-delete-domain-alert-1")
+
+        # Trigger the delete logic
+        response = self.client.post(reverse("application-delete", kwargs={"pk": application.pk}), follow=True)
+
+        self.assertNotContains(response, "igorville.gov")
+
+        # clean up
+        application.delete()
+
+    def test_home_doesnt_delete_other_domain_applications(self):
+        """Tests to ensure the user can't delete Applications not in the status of STARTED or WITHDRAWN"""
+
+        # Given that we are including a subset of items that can be deleted while excluding the rest,
+        # subTest is appropriate here as otherwise we would need many duplicate tests for the same reason.
+        draft_domain = DraftDomain.objects.create(name="igorville.gov")
+        for status in DomainApplication.ApplicationStatus:
+            if status not in [
+                DomainApplication.ApplicationStatus.STARTED,
+                DomainApplication.ApplicationStatus.WITHDRAWN,
+            ]:
+                with self.subTest(status=status):
+                    application = DomainApplication.objects.create(
+                        creator=self.user, requested_domain=draft_domain, status=status
+                    )
+
+                    # Trigger the delete logic
+                    response = self.client.post(
+                        reverse("application-delete", kwargs={"pk": application.pk}), follow=True
+                    )
+
+                    # Check for a 403 error - the end user should not be allowed to do this
+                    self.assertEqual(response.status_code, 403)
+
+                    desired_application = DomainApplication.objects.filter(requested_domain=draft_domain)
+
+                    # Make sure the DomainApplication wasn't deleted
+                    self.assertEqual(desired_application.count(), 1)
+
+                    # clean up
+                    application.delete()
+
     def test_home_lists_domains(self):
         response = self.client.get("/")
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")

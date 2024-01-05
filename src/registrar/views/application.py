@@ -1,5 +1,4 @@
 import logging
-from django.forms import ValidationError
 
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
@@ -578,6 +577,7 @@ class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
 
 class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
     """Delete view for home that allows the end user to delete DomainApplications"""
+
     object: DomainApplication  # workaround for type mismatch in DeleteView
 
     def has_permission(self):
