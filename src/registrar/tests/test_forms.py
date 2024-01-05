@@ -42,7 +42,7 @@ class TestFormValidation(MockEppLib):
         form = CurrentSitesForm(data={"website": "nah"})
         self.assertEqual(
             form.errors["website"],
-            ["Enter your organization's current website in the required format, like www.city.com."],
+            ["Enter your organization’s current website in the required format, like www.city.com."],
         )
 
     def test_website_valid(self):
