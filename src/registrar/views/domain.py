@@ -196,7 +196,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
         """The form is valid, save the organization name and mailing address."""
         form.save()
 
-        messages.success(self.request, "The organization information has been updated.")
+        messages.success(self.request, "The organization information for this domain has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -224,7 +224,7 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
         """The form is valid, save the authorizing official."""
         form.save()
 
-        messages.success(self.request, "The authorizing official has been updated.")
+        messages.success(self.request, "The authorizing official for this domain has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
@@ -685,7 +685,7 @@ class DomainAddUserView(DomainFormBaseView):
             )
         else:
             if add_success:
-                messages.success(self.request, f"Invited {email} to this domain.")
+                messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _make_invitation(self, email_address: str, requester: User):
         """Make a Domain invitation for this email and redirect with a message."""
