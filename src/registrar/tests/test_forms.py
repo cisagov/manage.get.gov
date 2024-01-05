@@ -248,9 +248,9 @@ class TestContactForm(TestCase):
     def test_contact_form_email_invalid(self):
         form = ContactForm(data={"email": "example.net"})
         self.assertEqual(form.errors["email"], ["Enter an email address in the required format, "
-        "like name@example.com."])
+                                                "like name@example.com."])
 
     def test_contact_form_email_invalid2(self):
         form = ContactForm(data={"email": "@"})
         self.assertEqual(form.errors["email"], ["Enter an email address in the required format, "
-        "like name@example.com."])
+                                                "like name@example.com."])
