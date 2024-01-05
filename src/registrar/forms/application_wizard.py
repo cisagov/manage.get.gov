@@ -101,11 +101,9 @@ class RegistrarFormSet(forms.BaseFormSet):
         # threshold is the number of related objects that are acceptable
         # when determining if related objects exist. threshold is 0 for most
         # relationships. if the relationship is related_name, we know that
-        # there is already 1 acceptable relationship (the one we are attempting
-        # to delete), so the threshold is higher
-        threshold = 0
-        if rel == related_name:
-            threshold = 1
+        # there is already exactly 1 acceptable relationship (the one we are
+        # attempting to delete), so the threshold is 1
+        threshold = 1 if rel == related_name else 0
 
         # Raise a KeyError if rel is not a defined field on the db_obj model
         # This will help catch any errors in reverse_join config on forms
@@ -399,7 +397,7 @@ class CurrentSitesForm(RegistrarForm):
         required=False,
         label="Public website",
         error_messages={
-            "invalid": ("Enter your organization's current website in the required format, like www.city.com.")
+            "invalid": ("Enter your organization’s current website in the required format, like www.city.com.")
         },
     )
 
@@ -547,7 +545,7 @@ class PurposeForm(RegistrarForm):
                 message="Response must be less than 1000 characters.",
             )
         ],
-        error_messages={"required": "Describe how you'll use the .gov domain you’re requesting."},
+        error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
     )
 
 
@@ -599,19 +597,21 @@ class YourContactForm(RegistrarForm):
 
 class OtherContactsYesNoForm(RegistrarForm):
     def __init__(self, *args, **kwargs):
+        """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
+        # set the initial value based on attributes of application
         if self.application and self.application.has_other_contacts():
-            default_value = True
+            initial_value = True
         elif self.application and self.application.has_rationale():
-            default_value = False
+            initial_value = False
         else:
             # No pre-selection for new applications
-            default_value = None
+            initial_value = None
 
         self.fields["has_other_contacts"] = forms.TypedChoiceField(
-            coerce=lambda x: x.lower() == "true" if x is not None else None,
-            choices=((True, "Yes, I can name other employees."), (False, "No (We'll ask you to explain why).")),
-            initial=default_value,
+            coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
+            choices=((True, "Yes, I can name other employees."), (False, "No (We’ll ask you to explain why).")),
+            initial=initial_value,
             widget=forms.RadioSelect,
         )
 
@@ -747,7 +747,7 @@ class NoOtherContactsForm(RegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=(
-            "You don't need to provide names of other employees now, but it may "
+            "You don’t need to provide names of other employees now, but it may "
             "slow down our assessment of your eligibility. Describe why there are "
             "no other employees who can help verify your request."
         ),
