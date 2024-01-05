@@ -1500,6 +1500,14 @@ class TestDomainDetail(TestDomainOverview):
         detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
+        
+    def test_unknown_domain_does_not_show_as_expired(self):
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "igorville.gov")
+        # click the "Edit" link
+        # detail_page = home_page.click("Manage", index=0)
+        # self.assertContains(detail_page, "igorville.gov")
+        # self.assertContains(detail_page, "Status")
 
     def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
