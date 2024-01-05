@@ -102,7 +102,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         # when determining if related objects exist. threshold is 0 for most
         # relationships. if the relationship is related_name, we know that
         # there is already exactly 1 acceptable relationship (the one we are
-        # attempting to delete), so the threshold is 1
+        # attempting to delete), so the threshold is 1  
         threshold = 1 if rel == related_name else 0
 
         # Raise a KeyError if rel is not a defined field on the db_obj model
