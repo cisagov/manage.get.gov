@@ -229,6 +229,10 @@ function handleValidationClick(e) {
   }
 })();
 
+/**
+ * Delete method for formsets that diff in the view and delete in the model (Nameservers, DS Data)
+ * 
+ */
 function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
   let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
   let formToRemove = e.target.closest(".repeatable-form");
@@ -293,7 +297,6 @@ function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
 
     // Display the add more button if we have less than 13 forms
     if (isNameserversForm && forms.length <= 13) {
-      console.log('remove disabled');
       addButton.removeAttribute("disabled");
     }
 
@@ -307,22 +310,24 @@ function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
   });
 }
 
+/**
+ * Delete method for formsets using the DJANGO DELETE widget (Other Contacts)
+ * 
+ */
 function markForm(e, formLabel){
+  // Unlike removeForm, we only work with the visible forms when using DJANGO's DELETE widget
   let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
-  console.log("markForm start: " + totalShownForms)
-  
 
   if (totalShownForms == 1) {
     // toggle the radio buttons
     let radioButton = document.querySelector('input[name="other_contacts-has_other_contacts"][value="False"]');
     radioButton.checked = true;
-
     // Trigger the change event
     let event = new Event('change');
     radioButton.dispatchEvent(event);
   } else {
 
-    // Grab the hidden delete input and CHECK it
+    // Grab the hidden delete input and assign a value DJANGO will look for
     let formToRemove = e.target.closest(".repeatable-form");
     if (formToRemove) {
       let deleteInput = formToRemove.querySelector('input[class="deletion"]');
@@ -334,44 +339,34 @@ function markForm(e, formLabel){
     // Set display to 'none'
     formToRemove.style.display = 'none';
 
-
-
-    // Get all hidden fieldsets
+    //
+    // This next block is a hack to fix a page jump when a fielset is set to display none at the start of the formset but still takes
+    // a bit of space in the DOM, causing the content to jump down a bit
+    // 
+    // Get the first hidden fieldset
     const hiddenFieldset = document.querySelector('.repeatable-form[style="display: none;"]');
     let targetFieldset = null;
-
-    // Loop. If a hidden fieldset does not have any sibling out of all the previous siblings that's visible:
-    // There is no previous sibling that does not have display none
+    // If that first hidden fieldset does not have any sibling out of all the previous siblings that's visible, get the next visible fieldset
     if (hiddenFieldset && !hiddenFieldset.previousElementSibling.matches('.repeatable-form:not([style="display: none;"])')) {
       let currentSibling = hiddenFieldset.nextElementSibling;
-
       // Iterate through siblings until a visible fieldset is found
       while (currentSibling) {
         if (currentSibling.matches(':not([style="display: none;"])')) {
           targetFieldset = currentSibling;
           break;
         }
-
         currentSibling = currentSibling.nextElementSibling;
       }
     }
-
     if (targetFieldset) {
-      // Apply your logic or styles to the targetFieldset
-      targetFieldset.querySelector('h2').style.marginTop = '1rem'; // Example style
+      // Account for the space the hidden fieldsets at the top of the formset are occupying in the DOM
+      targetFieldset.querySelector('h2').style.marginTop = '1rem';
     }
-
-    // update headers on shown forms
-    console.log("markForm end: " + totalShownForms)
-
   }
   
-
+  // Update h2s on the visible forms only. We won't worry about the forms' identifiers
   let shownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`);
-
-  // let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
   let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
-
   shownForms.forEach((form, index) => {
     // Iterate over child nodes of the current element
     Array.from(form.querySelectorAll('h2')).forEach((node) => {
@@ -380,6 +375,11 @@ function markForm(e, formLabel){
   });
 }
 
+/**
+ * Prepare the namerservers, DS data and Other Contacts formsets' delete button
+ * for the last added form. We call this from the Add function
+ * 
+ */
 function prepareNewDeleteButton(btn, formLabel) {
   let formIdentifier = "form"
   let isNameserversForm = document.title.includes("DNS name servers |");
@@ -403,8 +403,8 @@ function prepareNewDeleteButton(btn, formLabel) {
 }
 
 /**
- * Prepare the namerservers and DS data forms delete buttons
- * We will call this on the forms init, and also every time we add a form
+ * Prepare the namerservers, DS data and Other Contacts formsets' delete buttons
+ * We will call this on the forms init
  * 
  */
 function prepareDeleteButtons(formLabel) {
@@ -417,7 +417,6 @@ function prepareDeleteButtons(formLabel) {
     formIdentifier = "other_contacts";
   }
   
-
   // Loop through each delete button and attach the click event listener
   deleteButtons.forEach((deleteButton) => {
     if (isOtherContactsForm) {
@@ -432,10 +431,10 @@ function prepareDeleteButtons(formLabel) {
       });
     }
   });
-
 }
 
 /**
+ * DJANGO formset's DELETE widget
  * On form load, hide deleted forms, ie. those forms with hidden input of class 'deletion'
  * with value='on'
  */
@@ -470,11 +469,14 @@ function hideDeletedForms() {
   let formLabel = '';
   let isNameserversForm = document.title.includes("DNS name servers |");
   let isOtherContactsForm = document.title.includes("Other employees from your organization");
+  // The Nameservers form st features 2 required and 11 optionals
   if (isNameserversForm) {
     cloneIndex = 2;
     formLabel = "Name server";
-  } else if ((document.title.includes("DS Data |")) || (document.title.includes("Key Data |"))) {
+  // DNSSEC: DS Data
+  } else if (document.title.includes("DS Data |")) {
     formLabel = "DS Data record";
+  // The Other Contacts form
   } else if (isOtherContactsForm) {
     formLabel = "Organization contact";
     container = document.querySelector("#other-employees");
@@ -535,6 +537,9 @@ function hideDeletedForms() {
       formNum++;
 
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
+      // For the other contacts form, we need to update the fieldset headers based on what's visible vs hidden,
+      // since the form on the backend employs Django's DELETE widget. For the other formsets, we delete the form
+      // in JS (completely remove from teh DOM) so we update the headers/labels based on total number of forms.
       if (isOtherContactsForm) {
         let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
         newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${totalShownForms + 1}`);
@@ -633,6 +638,7 @@ function hideDeletedForms() {
   }
 })();
 
+// A generic display none/block toggle function that takes an integer param to indicate how the elements toggle
 function toggleTwoDomElements(ele1, ele2, index) {
   let element1 = document.getElementById(ele1);
   let element2 = document.getElementById(ele2);
