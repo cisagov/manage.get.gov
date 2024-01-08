@@ -22,6 +22,37 @@ from .common import MockEppLib, MockSESClient, less_console_noise
 import boto3_mocking  # type: ignore
 
 
+class TestPopulateFirstReady(TestCase):
+    """Tests for the populate_first_ready script"""
+
+    def setUp(self):
+        """Creates a fake domain object"""
+        super().setUp()
+
+        Domain.objects.get_or_create(
+            name="fake.gov", state=Domain.State.READY, created_at=datetime.date(2024, 12, 31)
+        )
+
+    def tearDown(self):
+        """Deletes all DB objects related to migrations"""
+        super().tearDown()
+
+        # Delete domains
+        Domain.objects.all().delete()
+    
+    def run_populate_first_ready(self):
+        """
+        This method executes the populate_first_ready command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the populate_first_ready command with the specified arguments.
+        """
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("populate_first_ready")
+
 class TestExtendExpirationDates(MockEppLib):
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
@@ -78,10 +109,10 @@ class TestExtendExpirationDates(MockEppLib):
 
     def run_extend_expiration_dates(self):
         """
-        This method executes the transfer_transition_domains_to_domains command.
+        This method executes the extend_expiration_dates command.
 
         The 'call_command' function from Django's management framework is then used to
-        execute the load_transition_domain command with the specified arguments.
+        execute the extend_expiration_dates command with the specified arguments.
         """
         with patch(
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
