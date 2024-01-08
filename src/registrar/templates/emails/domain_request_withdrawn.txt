@@ -1,15 +1,18 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi {{ application.submitter.first_name }}.
 
-Your .gov domain request has been withdrawn.
-DOMAIN REQUESTED: {{ application.requested_domain.name }}
-REQUEST #: {{ application.id }}
-STATUS: Withdrawn
+Your .gov domain request has been withdrawn and will not be reviewed by our team.
 
+DOMAIN REQUESTED: {{ application.requested_domain.name }}
+STATUS: Withdrawn
 
 YOU CAN EDIT YOUR WITHDRAWN REQUEST
 
-The details of your withdrawn request are included below. You can edit and resubmit this application by logging into the registrar. <https://manage.get.gov/>.
+You can edit and resubmit this request by logging in to the registrar. <https://manage.get.gov/>.
+
+SOMETHING WRONG?
+
+If you didn’t ask for this domain request to be withdrawn or think you received this message in error, reply to this email. 
 
 THANK YOU
 
@@ -17,10 +20,7 @@ THANK YOU
 
 ----------------------------------------------------------------
 
-{% include 'emails/includes/application_summary.txt' %}
-----------------------------------------------------------------
-
 The .gov team
 Contact us: <https://get.gov/contact/>
-Visit <https://get.gov>
+Learn about .gov <https://get.gov>
 {% endautoescape %}
