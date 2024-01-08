@@ -260,10 +260,22 @@ function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
 
     // h2 and legend for DS form, label for nameservers  
     Array.from(form.querySelectorAll('h2, legend, label, p')).forEach((node) => {
+
+      let innerSpan = node.querySelector('span')
+      if (innerSpan) {
+        innerSpan.textContent = innerSpan.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
+      } else {
+        node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
+        node.textContent = node.textContent.replace(formExampleRegex, `ns${index + 1}`);
+      }
       
       // If the node is a nameserver label, one of the first 2 which was previously 3 and up (not required)
       // inject the USWDS required markup and make sure the INPUT is required
       if (isNameserversForm && index <= 1 && node.innerHTML.includes('server') && !node.innerHTML.includes('*')) {
+
+        // Remove the word optional
+        innerSpan.textContent = innerSpan.textContent.replace(/\s*\(\s*optional\s*\)\s*/, '');
+
         // Create a new element
         const newElement = document.createElement('abbr');
         newElement.textContent = '*';
@@ -286,13 +298,8 @@ function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
         nextInputElement.required = true;
       }
 
-      let innerSpan = node.querySelector('span')
-      if (innerSpan) {
-        innerSpan.textContent = innerSpan.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
-      } else {
-        node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
-        node.textContent = node.textContent.replace(formExampleRegex, `ns${index + 1}`);
-      }
+      
+    
     });
 
     // Display the add more button if we have less than 13 forms
@@ -469,7 +476,7 @@ function hideDeletedForms() {
   let formLabel = '';
   let isNameserversForm = document.title.includes("DNS name servers |");
   let isOtherContactsForm = document.title.includes("Other employees from your organization");
-  // The Nameservers form st features 2 required and 11 optionals
+  // The Nameservers formset features 2 required and 11 optionals
   if (isNameserversForm) {
     cloneIndex = 2;
     formLabel = "Name server";
@@ -537,16 +544,24 @@ function hideDeletedForms() {
       formNum++;
 
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
-      // For the other contacts form, we need to update the fieldset headers based on what's visible vs hidden,
-      // since the form on the backend employs Django's DELETE widget. For the other formsets, we delete the form
-      // in JS (completely remove from teh DOM) so we update the headers/labels based on total number of forms.
       if (isOtherContactsForm) {
+        // For the other contacts form, we need to update the fieldset headers based on what's visible vs hidden,
+        // since the form on the backend employs Django's DELETE widget.
         let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
         newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${totalShownForms + 1}`);
       } else {
-        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
+        // Nameservers form is cloned from index 2 which has the word optional on init, does not have the word optional
+        // if indices 0 or 1 have been deleted
+        let containsOptional = newForm.innerHTML.includes('(optional)');
+        if (isNameserversForm && !containsOptional) {
+          newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum} (optional)`);
+        } else {
+          newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
+        }
       }
       newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum}`);
+      newForm.innerHTML = newForm.innerHTML.replace(/\n/g, '');  // Remove newline characters
+      newForm.innerHTML = newForm.innerHTML.replace(/>\s*</g, '><');  // Remove spaces between tags
       container.insertBefore(newForm, addButton);
 
       newForm.style.display = 'block';
