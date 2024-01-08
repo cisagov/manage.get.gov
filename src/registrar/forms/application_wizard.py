@@ -188,6 +188,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         """Return the number of forms that are required in this FormSet."""
         logger.info("in initial_form_count")
         if self.is_bound:
+            logger.info(f"initial form count = {self.management_form.cleaned_data[INITIAL_FORM_COUNT]}")
             return self.management_form.cleaned_data[INITIAL_FORM_COUNT]
         else:
             # Use the length of the initial data if it's there, 0 otherwise.
@@ -785,6 +786,15 @@ class OtherContactsForm(RegistrarForm):
         not passed field validation
         """
 
+        # # Set form_is_empty to True initially
+        # form_is_empty = True
+        # for name, field in self.fields.items():
+        #     # get the value of the field from the widget
+        #     value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
+        #     # if any field in the submitted form is not empty, set form_is_empty to False
+        #     if value is not None and value != "":
+        #         form_is_empty = False
+
         if self.form_data_marked_for_deletion or self.cleaned_data["DELETE"]:
             # clear any errors raised by the form fields
             # (before this clean() method is run, each field
@@ -795,6 +805,7 @@ class OtherContactsForm(RegistrarForm):
             # That causes problems.
             for field in self.fields:
                 if field in self.errors:
+                    logger.info(f"deleting error {self.errors[field]}")
                     del self.errors[field]
             # return empty object with only 'delete' attribute defined.
             # this will prevent _to_database from creating an empty
@@ -848,9 +859,25 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
             self.forms[index].use_required_attribute = True
 
     def should_delete(self, cleaned):
-        empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
-        return all(empty) or self.formset_data_marked_for_deletion or cleaned.get("DELETE", False)
+        # empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
+        # empty forms should throw errors
+        return self.formset_data_marked_for_deletion or cleaned.get("DELETE", False)
 
+    def non_form_errors(self):
+        """
+        Method to override non_form_errors.
+        If minimum number of contacts is not submitted, customize the error message
+        that is returned."""
+        # Get the default non_form_errors
+        errors = super().non_form_errors()
+
+        # Check if the default error message is present
+        if 'Please submit at least 1 form.' in errors:
+            # Replace the default message with the custom message
+            errors = ['Please submit at least 1 contact.']
+
+        return errors
+    
     def pre_create(self, db_obj, cleaned):
         """Code to run before an item in the formset is created in the database."""
         # remove DELETE from cleaned

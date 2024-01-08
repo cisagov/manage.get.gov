@@ -43,6 +43,7 @@
             {% for inner in outer.forms %}
               {% include "includes/form_errors.html" with form=inner %}
             {% endfor %}
+            {% include "includes/non_form_errors.html" with form=outer %}
           {% else %}
             {% include "includes/form_errors.html" with form=outer %}
           {% endif %}

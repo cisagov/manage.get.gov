@@ -493,6 +493,11 @@ class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        logger.info(context)
+        return context
+    
     def is_valid(self, forms: list) -> bool:
         """Overrides default behavior defined in ApplicationWizard.
         Depending on value in other_contacts_yes_no_form, marks forms in
