@@ -88,10 +88,17 @@ def available(request, domain=""):
     """
     domain = request.GET.get("domain", "")
     DraftDomain = apps.get_model("registrar.DraftDomain")
+    if domain is None or domain.strip() == "":
+        # TODO - change this... should it be the regular required?
+        return JsonResponse({"available": False, "code": "invalid", "message": "This field is required"})
     # validate that the given domain could be a domain name and fail early if
     # not.
     if not (DraftDomain.string_could_be_domain(domain) or DraftDomain.string_could_be_domain(domain + ".gov")):
-        return JsonResponse({"available": False, "code": "invalid", "message": DOMAIN_API_MESSAGES["invalid"]})
+        print(f"What is the domain at this point? {domain}")
+        if "." in domain:
+            return JsonResponse({"available": False, "code": "invalid", "message": DOMAIN_API_MESSAGES["extra_dots"]})
+        else:
+            return JsonResponse({"available": False, "code": "invalid", "message": DOMAIN_API_MESSAGES["invalid"]})
     # a domain is available if it is NOT in the list of current domains
     try:
         if check_domain_available(domain):
