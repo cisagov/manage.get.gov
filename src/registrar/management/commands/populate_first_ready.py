@@ -1,6 +1,5 @@
 import argparse
 import logging
-from django.core.paginator import Paginator
 from typing import List
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper, ScriptDataHelper

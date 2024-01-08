@@ -4,8 +4,6 @@ import sys
 from django.core.paginator import Paginator
 from typing import List
 
-from registrar import models
-
 logger = logging.getLogger(__name__)
 
 
