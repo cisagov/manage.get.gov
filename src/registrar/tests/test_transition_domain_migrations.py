@@ -28,8 +28,14 @@ class TestPopulateFirstReady(TestCase):
     def setUp(self):
         """Creates a fake domain object"""
         super().setUp()
+        self.ready_domain, _ = Domain.objects.get_or_create(name="fakeready.gov", state=Domain.State.READY)
+        self.dns_needed_domain, _ = Domain.objects.get_or_create(name="fakedns.gov", state=Domain.State.DNS_NEEDED)
+        self.deleted_domain, _ = Domain.objects.get_or_create(name="fakedeleted.gov", state=Domain.State.DELETED)
+        self.hold_domain, _ = Domain.objects.get_or_create(name="fakehold.gov", state=Domain.State.ON_HOLD)
+        self.unknown_domain, _ = Domain.objects.get_or_create(name="fakeunknown.gov", state=Domain.State.UNKNOWN)
 
-        Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+        # Set a ready_at date for testing purposes
+        self.ready_at_date = datetime.date(2022, 12, 31)
 
     def tearDown(self):
         """Deletes all DB objects related to migrations"""
@@ -51,27 +57,113 @@ class TestPopulateFirstReady(TestCase):
         ):
             call_command("populate_first_ready")
 
-    def test_populate_first_ready(self):
+    def test_populate_first_ready_state_ready(self):
         """
-        Tests that the populate_first_ready works as expected
+        Tests that the populate_first_ready works as expected for the state 'ready'
         """
-        desired_domain = Domain.objects.filter(name="fake.gov").get()
-
         # Set the created at date
-        desired_domain.created_at = datetime.date(2024, 12, 31)
-        desired_domain.save()
+        self.ready_domain.created_at = self.ready_at_date
+        self.ready_domain.save()
 
-        desired_domain.first_ready = datetime.date(2024, 12, 31)
+        desired_domain = self.ready_domain
+
+        desired_domain.first_ready = self.ready_at_date
 
         # Run the expiration date script
         self.run_populate_first_ready()
 
-        current_domain = Domain.objects.filter(name="fake.gov").get()
+        self.assertEqual(desired_domain, self.ready_domain)
 
+        # Explicitly test the first_ready date
+        self.assertEqual(self.ready_domain.first_ready, self.ready_at_date)
+
+    def test_populate_first_ready_state_deleted(self):
+        """
+        Tests that the populate_first_ready works as expected for the state 'deleted'
+        """
+        # Set the created at date
+        self.deleted_domain.created_at = self.ready_at_date
+        self.deleted_domain.save()
+
+        desired_domain = self.deleted_domain
+
+        desired_domain.first_ready = self.ready_at_date
+
+        # Run the expiration date script
+        self.run_populate_first_ready()
+
+        self.assertEqual(desired_domain, self.deleted_domain)
+
+        # Explicitly test the first_ready date
+        self.assertEqual(self.deleted_domain.first_ready, self.ready_at_date)
+
+    def test_populate_first_ready_state_dns_needed(self):
+        """
+        Tests that the populate_first_ready works as expected for the state 'dns_needed'
+        """
+        # Set the created at date
+        self.dns_needed_domain.created_at = self.ready_at_date
+        self.dns_needed_domain.save()
+
+        desired_domain = self.dns_needed_domain
+
+        desired_domain.first_ready = None
+
+        # Run the expiration date script
+        self.run_populate_first_ready()
+
+        current_domain = self.dns_needed_domain
+        # The object should largely be unaltered (does not test first_ready)
         self.assertEqual(desired_domain, current_domain)
 
         # Explicitly test the first_ready date
-        self.assertEqual(current_domain.first_ready, datetime.date(2024, 12, 31))
+        self.assertNotEqual(current_domain.first_ready, self.ready_at_date)
+        self.assertEqual(current_domain.first_ready, None)
+
+    def test_populate_first_ready_state_on_hold(self):
+        """
+        Tests that the populate_first_ready works as expected for the state 'on_hold'
+        """
+        desired_domain = self.dns_needed_domain
+
+        # Set the created at date
+        desired_domain.created_at = self.ready_at_date
+        desired_domain.save()
+
+        desired_domain.first_ready = self.ready_at_date
+
+        # Run the expiration date script
+        self.run_populate_first_ready()
+
+        current_domain = self.dns_needed_domain
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the first_ready date
+        self.assertEqual(current_domain.first_ready, self.ready_at_date)
+
+    def test_populate_first_ready_state_unknown(self):
+        """
+        Tests that the populate_first_ready works as expected for the state 'unknown'
+        """
+        desired_domain = self.unknown_domain
+
+        # Set the created at date
+        desired_domain.created_at = self.ready_at_date
+        desired_domain.save()
+
+        desired_domain.first_ready = None
+
+        # Run the expiration date script
+        self.run_populate_first_ready()
+
+        current_domain = self.unknown_domain
+
+        # The object should largely be unaltered (does not test first_ready)
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the first_ready date
+        self.assertNotEqual(current_domain.first_ready, self.ready_at_date)
+        self.assertEqual(current_domain.first_ready, None)
 
 
 class TestExtendExpirationDates(MockEppLib):
