@@ -268,14 +268,12 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.action_needed()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.action_needed()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_action_needed_transition_not_allowed(self):
         """
@@ -288,12 +286,10 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            application.action_needed()
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.action_needed()
 
     def test_approved_transition_allowed(self):
         """
