@@ -20,7 +20,7 @@ class Host(TimeStampedModel):
         null=False,
         blank=False,
         default=None,  # prevent saving without a value
-        unique=True,
+        unique=False,
         help_text="Fully qualified domain name",
     )
 
