@@ -1493,13 +1493,10 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
 
 
 class TestDomainDetail(TestDomainOverview):
-    def test_domain_detail_link_works(self):
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "igorville.gov")
-        # click the "Edit" link
-        detail_page = home_page.click("Manage", index=0)
-        self.assertContains(detail_page, "igorville.gov")
-        self.assertContains(detail_page, "Status")
+
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
 
     def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
@@ -1512,6 +1509,15 @@ class TestDomainDetail(TestDomainOverview):
         with less_console_noise():
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
+
+    def test_domain_detail_link_works(self):
+        home_page = self.app.get("/")
+
+        self.assertContains(home_page, "igorville.gov")
+        # click the "Edit" link
+        detail_page = home_page.click("Manage", index=0)
+        self.assertContains(detail_page, "igorville.gov")
+        self.assertContains(detail_page, "Status")
 
     def test_domain_detail_allowed_for_on_hold(self):
         """Test that the domain overview page displays for on hold domain"""
