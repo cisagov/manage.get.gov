@@ -469,7 +469,7 @@ function hideDeletedForms() {
   let formLabel = '';
   let isNameserversForm = document.title.includes("DNS name servers |");
   let isOtherContactsForm = document.title.includes("Other employees from your organization");
-  // The Nameservers form st features 2 required and 11 optionals
+  // The Nameservers formset features 2 required and 11 optionals
   if (isNameserversForm) {
     cloneIndex = 2;
     formLabel = "Name server";
