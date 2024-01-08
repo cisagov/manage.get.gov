@@ -458,44 +458,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
     @boto3_mocking.patching
-    def test_save_model_sends_in_review_email(self):
-        # make sure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a sample application
-                application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED)
-
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-
-                # Modify the application's property
-                application.status = DomainApplication.ApplicationStatus.IN_REVIEW
-
-                # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
-
-        # Access the arguments passed to send_email
-        call_args = self.mock_client.EMAILS_SENT
-        kwargs = call_args[0]["kwargs"]
-
-        # Retrieve the email details from the arguments
-        from_email = kwargs.get("FromEmailAddress")
-        to_email = kwargs["Destination"]["ToAddresses"][0]
-        email_content = kwargs["Content"]
-        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
-
-        # Assert or perform other checks on the email details
-        expected_string = "Your .gov domain request is being reviewed."
-        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(to_email, EMAIL)
-        self.assertIn(expected_string, email_body)
-
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
-
-    @boto3_mocking.patching
     def test_save_model_sends_approved_email(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"

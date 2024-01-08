@@ -655,8 +655,8 @@ class DomainApplication(TimeStampedModel):
 
         This action is logged."""
         literal = DomainApplication.ApplicationStatus.IN_REVIEW
-        # Check if the tuple is setup correctly, then grab its value
-        in_review = literal[1] if literal and len(literal) > 1 else "In Review"
+        # Check if the tuple exists, then grab its value
+        in_review = literal if literal is not None else "In Review"
         logger.info(f"A status change occurred. {self} was changed to '{in_review}'")
 
     @transition(
@@ -675,7 +675,7 @@ class DomainApplication(TimeStampedModel):
         This action is logged."""
         literal = DomainApplication.ApplicationStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
-        action_needed = literal[1] if literal and len(literal) > 1 else "Action Needed"
+        action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
 
     @transition(
