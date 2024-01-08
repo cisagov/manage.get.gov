@@ -70,12 +70,11 @@
     </div>
 
     <div id="no-other-employees">
-        {% include "includes/required_fields.html" %}
         <fieldset class="usa-fieldset margin-top-2">
           <legend>
             <h2>No other employees from your organization?</h2>
           </legend>
-        {% with attr_maxlength=1000 %}
+        {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.2.no_other_contacts_rationale %}
         {% endwith %}
     </div>
