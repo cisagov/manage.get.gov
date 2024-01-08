@@ -64,7 +64,7 @@ class ScriptDataHelper:
                     Defaults to 1000. If you're dealing with models that have a large number of fields,
                     or large field values, you may need to decrease this value to prevent out-of-memory errors.
 
-        fields_to_update:
+        fields_to_update: Specifies which fields to update.
 
         Usage:
             bulk_update_fields(Domain, page.object_list, ["first_ready"])
