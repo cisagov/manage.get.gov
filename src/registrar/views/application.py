@@ -277,7 +277,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         for form in forms:
             data = form.from_database(self.application) if self.has_pk() else None
             if use_post:
-                logger.info("about to instantiate form ")
                 instantiated.append(form(self.request.POST, **kwargs))
             elif use_db:
                 instantiated.append(form(data, **kwargs))
@@ -371,10 +370,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
-        
-        # Log the keys and values of request.POST
-        for key, value in request.POST.items():
-            logger.info("Key: %s, Value: %s", key, value)
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
@@ -390,7 +385,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
-        logger.info("after geting forms")
         if self.is_valid(forms):
             # always save progress
             self.save(forms)
@@ -492,11 +486,6 @@ class YourContact(ApplicationWizard):
 class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        logger.info(context)
-        return context
     
     def is_valid(self, forms: list) -> bool:
         """Overrides default behavior defined in ApplicationWizard.
@@ -511,7 +500,7 @@ class OtherContacts(ApplicationWizard):
         # set all the required other_contact fields as necessary since new forms
         # were added through javascript
         for form in forms[1].forms:
-            for field_name, field in form.fields.items():
+            for _, field in form.fields.items():
                 if field.required:
                     field.widget.attrs['required'] = 'required'
 
@@ -520,14 +509,10 @@ class OtherContacts(ApplicationWizard):
         if other_contacts_yes_no_form.is_valid():
             # test for has_contacts
             if other_contacts_yes_no_form.cleaned_data.get("has_other_contacts"):
-                logger.info("has other contacts")
                 # mark the no_other_contacts_form for deletion
                 no_other_contacts_form.mark_form_for_deletion()
-                logger.info("after marking for deletion")
                 # test that the other_contacts_forms and no_other_contacts_forms are valid
                 all_forms_valid = all(form.is_valid() for form in forms[1:])
-                logger.info("after checking forms for validity")
-                logger.info(f"all forms valid = {all_forms_valid}")
             else:
                 # mark the other_contacts_forms formset for deletion
                 other_contacts_forms.mark_formset_for_deletion()

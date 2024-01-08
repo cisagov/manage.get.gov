@@ -1,12 +1,10 @@
 from __future__ import annotations  # allows forward references in annotations
 from itertools import zip_longest
 import logging
-import copy
 from typing import Callable
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
-from django.forms.utils import ErrorDict
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 from django.db.models.fields.related import ForeignObjectRel, OneToOneField
@@ -16,12 +14,8 @@ from api.views import DOMAIN_API_MESSAGES
 from registrar.models import Contact, DomainApplication, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility import errors
-from django.utils.translation import gettext_lazy as _, ngettext
 
 logger = logging.getLogger(__name__)
-
-TOTAL_FORM_COUNT = 'TOTAL_FORMS'
-INITIAL_FORM_COUNT = 'INITIAL_FORMS'
 
 class RegistrarForm(forms.Form):
     """
@@ -688,7 +682,6 @@ class OtherContactsForm(RegistrarForm):
             # That causes problems.
             for field in self.fields:
                 if field in self.errors:
-                    logger.info(f"deleting error {self.errors[field]}")
                     del self.errors[field]
             # return empty object with only 'delete' attribute defined.
             # this will prevent _to_database from creating an empty
