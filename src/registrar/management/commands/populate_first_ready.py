@@ -46,19 +46,13 @@ class Command(BaseCommand):
             except Exception as err:
                 self.failed_to_update.append(domain)
                 logger.error(err)
-                logger.error(
-                    f"{TerminalColors.FAIL}"
-                    f"Failed to update {domain}"
-                    f"{TerminalColors.ENDC}"
-                )
-        
+                logger.error(f"{TerminalColors.FAIL}" f"Failed to update {domain}" f"{TerminalColors.ENDC}")
+
         # Do a bulk update on all fields
         ScriptDataHelper.bulk_update_fields(Domain, self.to_update, ["first_ready"])
 
         # Log what happened
-        TerminalHelper.log_script_run_summary(
-            self.to_update, self.failed_to_update, self.skipped, debug
-        )
+        TerminalHelper.log_script_run_summary(self.to_update, self.failed_to_update, self.skipped, debug)
 
     def update_first_ready_for_domain(self, domain: Domain, debug: bool):
         """Grabs the created_at field and associates it with the first_ready column.

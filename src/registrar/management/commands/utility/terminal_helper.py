@@ -48,7 +48,7 @@ class ScriptDataHelper:
     """Helper method with utilities to speed up development of scripts that do DB operations"""
 
     @staticmethod
-    def bulk_update_fields(model_class, update_list, batch_size=1000):
+    def bulk_update_fields(model_class, update_list, fields_to_update, batch_size=1000):
         """
         This function performs a bulk update operation on a specified Django model class in batches.
         It uses Django's Paginator to handle large datasets in a memory-efficient manner.
@@ -64,6 +64,8 @@ class ScriptDataHelper:
                     Defaults to 1000. If you're dealing with models that have a large number of fields,
                     or large field values, you may need to decrease this value to prevent out-of-memory errors.
 
+        fields_to_update:
+
         Usage:
             bulk_update_fields(Domain, page.object_list, ["first_ready"])
         """
@@ -72,10 +74,10 @@ class ScriptDataHelper:
         paginator = Paginator(update_list, batch_size)
         for page_num in paginator.page_range:
             page = paginator.page(page_num)
-            model_class.objects.bulk_update(page.object_list, update_list)
+            model_class.objects.bulk_update(page.object_list, fields_to_update)
+
 
 class TerminalHelper:
-
     @staticmethod
     def log_script_run_summary(to_update, failed_to_update, skipped, debug: bool):
         """Prints success, failed, and skipped counts, as well as

@@ -29,9 +29,7 @@ class TestPopulateFirstReady(TestCase):
         """Creates a fake domain object"""
         super().setUp()
 
-        Domain.objects.get_or_create(
-            name="fake.gov", state=Domain.State.READY, created_at=datetime.date(2024, 12, 31)
-        )
+        Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
 
     def tearDown(self):
         """Deletes all DB objects related to migrations"""
@@ -39,7 +37,7 @@ class TestPopulateFirstReady(TestCase):
 
         # Delete domains
         Domain.objects.all().delete()
-    
+
     def run_populate_first_ready(self):
         """
         This method executes the populate_first_ready command.
@@ -52,6 +50,29 @@ class TestPopulateFirstReady(TestCase):
             return_value=True,
         ):
             call_command("populate_first_ready")
+
+    def test_populate_first_ready(self):
+        """
+        Tests that the populate_first_ready works as expected
+        """
+        desired_domain = Domain.objects.filter(name="fake.gov").get()
+
+        # Set the created at date
+        desired_domain.created_at = datetime.date(2024, 12, 31)
+        desired_domain.save()
+
+        desired_domain.first_ready = datetime.date(2024, 12, 31)
+
+        # Run the expiration date script
+        self.run_populate_first_ready()
+
+        current_domain = Domain.objects.filter(name="fake.gov").get()
+
+        self.assertEqual(desired_domain, current_domain)
+
+        # Explicitly test the first_ready date
+        self.assertEqual(current_domain.first_ready, datetime.date(2024, 12, 31))
+
 
 class TestExtendExpirationDates(MockEppLib):
     def setUp(self):
