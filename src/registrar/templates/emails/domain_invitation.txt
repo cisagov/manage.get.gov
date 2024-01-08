@@ -4,19 +4,28 @@ Hi.
 {{ requester_email }} has added you as a manager on {{ domain.name }}.
 
 YOU NEED A LOGIN.GOV ACCOUNT
+
 You’ll need a Login.gov account to manage your .gov domain. Login.gov provides
 a simple and secure process for signing into many government services with one
 account. If you don’t already have one, follow these steps to create your
 Login.gov account <https://login.gov/help/get-started/create-your-account/>.
 
+
 DOMAIN MANAGEMENT
+
 As a .gov domain manager you can add or update information about your domain.
 You’ll also serve as a contact for your .gov domain. Please keep your contact
-information updated. Learn more about domain management <https://get.gov/help/>.
+information updated. 
+
+- Learn more about domain management <https://beta.get.gov/help/domain-management>. 
+
+- Manage your domains <https://manage.get.gov>.
+
 
 SOMETHING WRONG?
+
 If you’re not affiliated with {{ domain.name }} or think you received this
-message in error, contact the .gov team <https://get.gov/help/#contact-us>.
+message in error, reply to this email.
 
 
 THANK YOU
@@ -28,5 +37,5 @@ using a .gov domain.
 
 The .gov team
 Contact us: <https://get.gov/contact/>
-Visit <https://get.gov>
+Learn about .gov <https://get.gov>
 {% endautoescape %}
