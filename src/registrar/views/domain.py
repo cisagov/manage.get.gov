@@ -630,6 +630,15 @@ class DomainUsersView(DomainBaseView):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
 
+        domain_pk = None
+        can_delete_users = False
+        if self.kwargs is not None and "pk" in self.kwargs:
+            domain_pk = self.kwargs["pk"]
+            # Prevent the end user from deleting themselves as a manager if they are the
+            # only manager that exists on a domain.
+            can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
+        context["can_delete_users"] = can_delete_users
+
         # Create HTML for the modal button
         modal_button = (
             '<button type="submit" '
