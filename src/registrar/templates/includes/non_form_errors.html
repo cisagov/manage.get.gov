@@ -1,9 +1,0 @@
-{% if form.errors %}
-  {% for error in form.non_form_errors %}
-    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
-      <div class="usa-alert__body">
-      {{ error|escape }}
-      </div>
-    </div>
-  {% endfor %}
-{% endif %}

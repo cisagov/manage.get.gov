@@ -307,7 +307,7 @@ function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
   });
 }
 
-function markForm(e){
+function markForm(e, formLabel){
   let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
   console.log("markForm start: " + totalShownForms)
   
@@ -334,84 +334,50 @@ function markForm(e){
     // Set display to 'none'
     formToRemove.style.display = 'none';
 
+
+
+    // Get all hidden fieldsets
+    const hiddenFieldset = document.querySelector('.repeatable-form[style="display: none;"]');
+    let targetFieldset = null;
+
+    // Loop. If a hidden fieldset does not have any sibling out of all the previous siblings that's visible:
+    // There is no previous sibling that does not have display none
+    if (hiddenFieldset && !hiddenFieldset.previousElementSibling.matches('.repeatable-form:not([style="display: none;"])')) {
+      let currentSibling = hiddenFieldset.nextElementSibling;
+
+      // Iterate through siblings until a visible fieldset is found
+      while (currentSibling) {
+        if (currentSibling.matches(':not([style="display: none;"])')) {
+          targetFieldset = currentSibling;
+          break;
+        }
+
+        currentSibling = currentSibling.nextElementSibling;
+      }
+    }
+
+    if (targetFieldset) {
+      // Apply your logic or styles to the targetFieldset
+      targetFieldset.querySelector('h2').style.marginTop = '1rem'; // Example style
+    }
+
     // update headers on shown forms
     console.log("markForm end: " + totalShownForms)
 
   }
   
 
-  // let shownForms = document.querySelectorAll(".repeatable-form");
-  // totalForms.setAttribute('value', `${forms.length}`);
+  let shownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`);
 
   // let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
-  // let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
-  // // For the example on Nameservers
-  // let formExampleRegex = RegExp(`ns(\\d+){1}`, 'g');
+  let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
 
-  // forms.forEach((form, index) => {
-  //   // Iterate over child nodes of the current element
-  //   Array.from(form.querySelectorAll('label, input, select')).forEach((node) => {
-  //     // Iterate through the attributes of the current node
-  //     Array.from(node.attributes).forEach((attr) => {
-  //       // Check if the attribute value matches the regex
-  //       if (formNumberRegex.test(attr.value)) {
-  //         // Replace the attribute value with the updated value
-  //         attr.value = attr.value.replace(formNumberRegex, `form-${index}-`);
-  //       }
-  //     });
-  //   });
-
-  //   // h2 and legend for DS form, label for nameservers  
-  //   Array.from(form.querySelectorAll('h2, legend, label, p')).forEach((node) => {
-      
-  //     // If the node is a nameserver label, one of the first 2 which was previously 3 and up (not required)
-  //     // inject the USWDS required markup and make sure the INPUT is required
-  //     if (isNameserversForm && index <= 1 && node.innerHTML.includes('server') && !node.innerHTML.includes('*')) {
-  //       // Create a new element
-  //       const newElement = document.createElement('abbr');
-  //       newElement.textContent = '*';
-  //       newElement.setAttribute("title", "required");
-  //       newElement.classList.add("usa-hint", "usa-hint--required");
-
-  //       // Append the new element to the label
-  //       node.appendChild(newElement);
-  //       // Find the next sibling that is an input element
-  //       let nextInputElement = node.nextElementSibling;
-
-  //       while (nextInputElement) {
-  //         if (nextInputElement.tagName === 'INPUT') {
-  //           // Found the next input element
-  //           nextInputElement.setAttribute("required", "")
-  //           break;
-  //         }
-  //         nextInputElement = nextInputElement.nextElementSibling;
-  //       }
-  //       nextInputElement.required = true;
-  //     }
-
-  //     let innerSpan = node.querySelector('span')
-  //     if (innerSpan) {
-  //       innerSpan.textContent = innerSpan.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
-  //     } else {
-  //       node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
-  //       node.textContent = node.textContent.replace(formExampleRegex, `ns${index + 1}`);
-  //     }
-  //   });
-
-  //   // Display the add more button if we have less than 13 forms
-  //   if (isNameserversForm && forms.length <= 13) {
-  //     console.log('remove disabled');
-  //     addButton.removeAttribute("disabled");
-  //   }
-
-  //   if (isNameserversForm && forms.length < 3) {
-  //     // Hide the delete buttons on the remaining nameservers
-  //     Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-  //       deleteButton.setAttribute("disabled", "true");
-  //     });
-  //   }
-  
-  // });
+  shownForms.forEach((form, index) => {
+    // Iterate over child nodes of the current element
+    Array.from(form.querySelectorAll('h2')).forEach((node) => {
+        node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
+    });
+  });
 }
 
 function prepareNewDeleteButton(btn, formLabel) {
@@ -425,7 +391,9 @@ function prepareNewDeleteButton(btn, formLabel) {
   
   if (isOtherContactsForm) {
     // We will mark the forms for deletion
-    btn.addEventListener('click', markForm);
+    btn.addEventListener('click', function(e) {
+      markForm(e, formLabel);
+    });
   } else {
     // We will remove the forms and re-order the formset
     btn.addEventListener('click', function(e) {
@@ -454,7 +422,9 @@ function prepareDeleteButtons(formLabel) {
   deleteButtons.forEach((deleteButton) => {
     if (isOtherContactsForm) {
       // We will mark the forms for deletion
-      deleteButton.addEventListener('click', markForm);
+      deleteButton.addEventListener('click', function(e) {
+        markForm(e, formLabel);
+      });
     } else {
       // We will remove the forms and re-order the formset
       deleteButton.addEventListener('click', function(e) {
@@ -565,7 +535,12 @@ function hideDeletedForms() {
       formNum++;
 
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
-      newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
+      if (isOtherContactsForm) {
+        let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
+        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${totalShownForms + 1}`);
+      } else {
+        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
+      }
       newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum}`);
       container.insertBefore(newForm, addButton);
 

@@ -774,7 +774,10 @@ class OtherContactsForm(RegistrarForm):
     )
     email = forms.EmailField(
         label="Email",
-        error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
+        error_messages={
+            "required": ("Enter an email address in the required format, like name@example.com."),
+            "invalid": ("Enter an email address in the required format, like name@example.com.")
+        },
     )
     phone = PhoneNumberField(
         label="Phone",
@@ -934,21 +937,6 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         # empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
         # empty forms should throw errors
         return self.formset_data_marked_for_deletion or cleaned.get("DELETE", False)
-
-    def non_form_errors(self):
-        """
-        Method to override non_form_errors.
-        If minimum number of contacts is not submitted, customize the error message
-        that is returned."""
-        # Get the default non_form_errors
-        errors = super().non_form_errors()
-
-        # Check if the default error message is present
-        if 'Please submit at least 1 form.' in errors:
-            # Replace the default message with the custom message
-            errors = ['Please submit at least 1 contact.']
-
-        return errors
     
     def pre_create(self, db_obj, cleaned):
         """Code to run before an item in the formset is created in the database."""
