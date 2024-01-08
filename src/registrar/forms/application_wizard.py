@@ -1,10 +1,12 @@
 from __future__ import annotations  # allows forward references in annotations
 from itertools import zip_longest
 import logging
+import copy
 from typing import Callable
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
+from django.forms.utils import ErrorDict
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 from django.db.models.fields.related import ForeignObjectRel, OneToOneField
@@ -75,6 +77,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         # if you opt to fill it out, you must fill it out _right_)
         for index in range(self.initial_form_count()):
             self.forms[index].use_required_attribute = True
+        self.totalPass = 0
 
     def should_delete(self, cleaned):
         """Should this entry be deleted from the database?"""
@@ -104,7 +107,13 @@ class RegistrarFormSet(forms.BaseFormSet):
         Clean all of self.data and populate self._errors and
         self._non_form_errors.
         """
-        logger.info("in full_clean")
+        thisPass = 0
+        if (self.totalPass):
+            thisPass = self.totalPass
+            self.totalPass += 1
+        else:
+            self.totalPass = 0
+        logger.info(f"({thisPass}) in full_clean")
         self._errors = []
         self._non_form_errors = self.error_class()
         empty_forms_count = 0
@@ -112,7 +121,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         if not self.is_bound:  # Stop further processing.
             return
 
-        logger.info("about to test management form  ")
+        logger.info(f"({thisPass}) about to test management form  ")
         if not self.management_form.is_valid():
             error = forms.ValidationError(
                 self.error_messages['missing_management_form'],
@@ -126,11 +135,12 @@ class RegistrarFormSet(forms.BaseFormSet):
             )
             self._non_form_errors.append(error)
 
-        logger.info("about to test forms in self.forms")
+        logger.info(f"({thisPass}) about to test forms in self.forms")
         for i, form in enumerate(self.forms):
-            logger.info(f"checking form {i}")
+            logger.info(f"({thisPass}) checking form {i}")
             # Empty forms are unchanged forms beyond those with initial data.
             if not form.has_changed() and i >= self.initial_form_count():
+                logger.info(f"({thisPass}) empty forms count increase condition found")
                 empty_forms_count += 1
             # Accessing errors calls full_clean() if necessary.
             # _should_delete_form() requires cleaned_data.
@@ -138,9 +148,9 @@ class RegistrarFormSet(forms.BaseFormSet):
             if self.can_delete and self._should_delete_form(form):
                 continue
             self._errors.append(form_errors)
-            logger.info("at the end of for loop processing")
+            logger.info(f"({thisPass}) at the end of for loop processing")
         try:
-            logger.info("about to test validate max and min")
+            logger.info(f"({thisPass}) about to test validate max and min")
             if (self.validate_max and
                     self.total_form_count() - len(self.deleted_forms) > self.max_num) or \
                     self.management_form.cleaned_data[TOTAL_FORM_COUNT] > self.absolute_max:
@@ -149,7 +159,7 @@ class RegistrarFormSet(forms.BaseFormSet):
                     "Please submit at most %d forms.", self.max_num) % self.max_num,
                     code='too_many_forms',
                 )
-            logger.info("between validate max and validate min")
+            logger.info(f"({thisPass}) between validate max and validate min")
             if (self.validate_min and
                     self.total_form_count() - len(self.deleted_forms) - empty_forms_count < self.min_num):
                 raise forms.ValidationError(ngettext(
@@ -157,10 +167,10 @@ class RegistrarFormSet(forms.BaseFormSet):
                     "Please submit at least %d forms.", self.min_num) % self.min_num,
                     code='too_few_forms')
             # Give self.clean() a chance to do cross-form validation.
-            logger.info("about to call clean on formset")
+            logger.info(f"({thisPass}) about to call clean on formset")
             self.clean()
         except forms.ValidationError as e:
-            logger.info(f"hit an exception {e}")
+            logger.info(f"({thisPass}) hit an exception {e}")
             self._non_form_errors = self.error_class(e.error_list)
 
     def total_form_count(self):
@@ -202,6 +212,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         # Accessing errors triggers a full clean the first time only.
         logger.info("before self.errors")
         self.errors
+        logger.info(f"self.errors = {self.errors}")
         # List comprehension ensures is_valid() is called for all forms.
         # Forms due to be deleted shouldn't cause the formset to be invalid.
         logger.info("before all isvalid")
@@ -773,6 +784,7 @@ class OtherContactsForm(RegistrarForm):
     def __init__(self, *args, **kwargs):
         self.form_data_marked_for_deletion = False
         super().__init__(*args, **kwargs)
+        self.empty_permitted=False
 
     def mark_form_for_deletion(self):
         self.form_data_marked_for_deletion = True
@@ -813,6 +825,65 @@ class OtherContactsForm(RegistrarForm):
             return {"DELETE": True}
 
         return self.cleaned_data
+    
+    def full_clean(self):
+        logger.info("in form full_clean()")
+        logger.info(self.fields)
+        self._errors = ErrorDict()
+        if not self.is_bound:  # Stop further processing.
+            logger.info("not bound")
+            return
+        self.cleaned_data = {}
+        # If the form is permitted to be empty, and none of the form data has
+        # changed from the initial data, short circuit any validation.
+        if self.empty_permitted and not self.has_changed():
+            logger.info("empty permitted and has not changed")
+            return
+
+        self._clean_fields()
+        self._clean_form()
+        self._post_clean()
+    
+    # need to remove below before merge
+    def _clean_fields(self):
+        for name, field in self.fields.items():
+            # value_from_datadict() gets the data from the data dictionaries.
+            # Each widget type knows how to retrieve its own data, because some
+            # widgets split data over several HTML fields.
+            if field.disabled:
+                value = self.get_initial_for_field(field, name)
+            else:
+                value = field.widget.value_from_datadict(self.data, self.files, self.add_prefix(name))
+            try:
+                if isinstance(field, forms.FileField):
+                    initial = self.get_initial_for_field(field, name)
+                    value = field.clean(value, initial)
+                else:
+                    value = field.clean(value)
+                self.cleaned_data[name] = value
+                if hasattr(self, 'clean_%s' % name):
+                    value = getattr(self, 'clean_%s' % name)()
+                    self.cleaned_data[name] = value
+            except forms.ValidationError as e:
+                self.add_error(name, e)
+
+    # need to remove below before merge
+    def _clean_form(self):
+        try:
+            cleaned_data = self.clean()
+        except forms.ValidationError as e:
+            self.add_error(None, e)
+        else:
+            if cleaned_data is not None:
+                self.cleaned_data = cleaned_data
+
+    # need to remove below before merge
+    def _post_clean(self):
+        """
+        An internal hook for performing additional cleaning after form cleaning
+        is complete. Used for model validation in model forms.
+        """
+        pass
     
     def is_valid(self):
         val = super().is_valid()
@@ -857,6 +928,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         # in the formset plus those that have data already.
         for index in range(max(self.initial_form_count(), 1)):
             self.forms[index].use_required_attribute = True
+        self.totalPass = 0
 
     def should_delete(self, cleaned):
         # empty = (isinstance(v, str) and (v.strip() == "" or v is None) for v in cleaned.values())
@@ -908,7 +980,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         number of other contacts when contacts marked for deletion"""
         if self.formset_data_marked_for_deletion:
             self.validate_min = False
-        logger.info("in is_valid()")
+        logger.info("in FormSet is_valid()")
         val = super().is_valid()
         logger.info(f"formset validation yields: {val}")
         return val
