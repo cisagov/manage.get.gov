@@ -780,12 +780,12 @@ class OtherContactsForm(RegistrarForm):
         """
         This method overrides the default behavior for forms.
         This cleans the form after field validation has already taken place.
-        In this override, allow for a form which is empty to be considered
-        valid even though certain required fields have not passed field
-        validation
+        In this override, allow for a form which is empty, or one marked for 
+        deletion to be considered valid even though certain required fields have 
+        not passed field validation
         """
 
-        if self.form_data_marked_for_deletion:
+        if self.form_data_marked_for_deletion or self.cleaned_data["DELETE"]:
             # clear any errors raised by the form fields
             # (before this clean() method is run, each field
             # performs its own clean, which could result in
@@ -810,6 +810,19 @@ class OtherContactsForm(RegistrarForm):
 
 
 class BaseOtherContactsFormSet(RegistrarFormSet):
+    """
+    FormSet for Other Contacts
+    
+    There are two conditions by which a form in the formset can be marked for deletion.
+    One is if the user clicks 'DELETE' button, and this is submitted in the form. The 
+    other is if the YesNo form, which is submitted with this formset, is set to No; in
+    this case, all forms in formset are marked for deletion. Both of these conditions
+    must co-exist.
+    Also, other_contacts have db relationships to multiple db objects. When attempting
+    to delete an other_contact from an application, those db relationships must be
+    tested and handled; this is configured with REVERSE_JOINS, which is an array of
+    strings representing the relationships between contact model and other models.
+    """
     JOIN = "other_contacts"
     REVERSE_JOINS = [
         "user",

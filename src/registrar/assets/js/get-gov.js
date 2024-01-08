@@ -463,9 +463,26 @@ function prepareDeleteButtons(formLabel) {
     }
   });
 
-  
+}
 
+/**
+ * On form load, hide deleted forms, ie. those forms with hidden input of class 'deletion'
+ * with value='on'
+ */
+function hideDeletedForms() {
+  let hiddenDeleteButtonsWithValueOn = document.querySelectorAll('input[type="hidden"].deletion[value="on"]');
+
+  // Iterating over the NodeList of hidden inputs
+  hiddenDeleteButtonsWithValueOn.forEach(function(hiddenInput) {
+      // Finding the closest parent element with class "repeatable-form" for each hidden input
+      var repeatableFormToHide = hiddenInput.closest('.repeatable-form');
   
+      // Checking if a matching parent element is found for each hidden input
+      if (repeatableFormToHide) {
+          // Setting the display property to "none" for each matching parent element
+          repeatableFormToHide.style.display = 'none';
+      }
+  });
 }
 
 /**
@@ -499,6 +516,9 @@ function prepareDeleteButtons(formLabel) {
   if (isNameserversForm && document.querySelectorAll(".repeatable-form").length == 13) {
     addButton.setAttribute("disabled", "true");
   }
+
+  // Hide forms which have previously been deleted
+  hideDeletedForms()
 
   // Attach click event listener on the delete buttons of the existing forms
   prepareDeleteButtons(formLabel);
