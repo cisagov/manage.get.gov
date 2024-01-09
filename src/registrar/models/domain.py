@@ -1400,7 +1400,7 @@ class Domain(TimeStampedModel, DomainHelper):
         is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
         fields = {DF.EMAIL}
-        disclose = is_security and contact.email != PublicContact.get_default_security().email
+        disclose = is_security
         # Will only disclose DF.EMAIL if its not the default
         return epp.Disclose(
             flag=disclose,
