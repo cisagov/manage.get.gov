@@ -384,7 +384,7 @@ class AlternativeDomainForm(RegistrarForm):
         """Validation code for domain names."""
         requested = self.cleaned_data.get("alternative_domain", None)
         validated = DraftDomain.validate_and_handle_errors(
-            requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR, prevent_blank=False
+            requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR, blank_ok=True
         )
         return validated
 

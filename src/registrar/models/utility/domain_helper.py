@@ -57,7 +57,7 @@ class DomainHelper:
         return domain
 
     @classmethod
-    def validate_and_handle_errors(cls, domain, error_return_type, prevent_blank=True, display_success=False):
+    def validate_and_handle_errors(cls, domain, error_return_type, blank_ok=False, display_success=False):
         """
         Validates the provided domain and handles any validation errors.
 
@@ -71,7 +71,7 @@ class DomainHelper:
         Args:
             domain (str): The domain to validate.
             error_return_type (ValidationErrorReturnType): The type of error response to return if validation fails.
-            prevent_blank (bool, optional): Whether to return an exception if the input is blank. Defaults to True.
+            blank_ok (bool, optional): Whether to return an exception if the input is blank. Defaults to False.
             display_success (bool, optional): Whether to return a success response if validation is successful. Defaults to False.
 
         Returns:
@@ -81,12 +81,9 @@ class DomainHelper:
         """  # noqa
 
         try:
-            validated = cls.validate(domain)
+            validated = cls.validate(domain, blank_ok)
         except errors.BlankValueError:
-            if not prevent_blank:
-                return DomainHelper._return_form_error_or_json_response(error_return_type, code="required")
-            else:
-                return validated
+            return DomainHelper._return_form_error_or_json_response(error_return_type, code="required")
         except errors.ExtraDotsError:
             return DomainHelper._return_form_error_or_json_response(error_return_type, code="extra_dots")
         except errors.DomainUnavailableError:
