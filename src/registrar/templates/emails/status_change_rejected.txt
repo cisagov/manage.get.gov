@@ -4,7 +4,7 @@ Hi {{ application.submitter.first_name }}.
 Your .gov domain request has been rejected.
 
 DOMAIN REQUESTED: {{ application.requested_domain.name }}
-REQUEST RECEIVED ON: {{ application.updated_at|date }}
+REQUEST RECEIVED ON: {{ application.submission_date|date }}
 REQUEST #: {{ application.id }}
 STATUS: Rejected
 

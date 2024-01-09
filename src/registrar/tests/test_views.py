@@ -2375,7 +2375,7 @@ class TestDomainNameservers(TestDomainOverview):
         # the required field.  form requires a minimum of 2 name servers
         self.assertContains(
             result,
-            "A minimum of 2 name servers are required.",
+            "At least two name servers are required.",
             count=2,
             status_code=200,
         )
@@ -2616,7 +2616,7 @@ class TestDomainNameservers(TestDomainOverview):
         # once around each required field.
         self.assertContains(
             result,
-            "A minimum of 2 name servers are required.",
+            "At least two name servers are required.",
             count=4,
             status_code=200,
         )
