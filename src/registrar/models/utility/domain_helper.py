@@ -8,9 +8,6 @@ from api.views import DOMAIN_API_MESSAGES, check_domain_available
 from registrar.utility import errors
 from epplibwrapper.errors import RegistryError
 
-class ValidationErrorReturnType(Enum):
-    JSON_RESPONSE = "JSON_RESPONSE"
-    FORM_VALIDATION_ERROR = "FORM_VALIDATION_ERROR"
 
 class DomainHelper:
     """Utility functions and constants for domain names."""
@@ -102,17 +99,15 @@ class DomainHelper:
             raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
 
         # Why is this not working??
-        """
         match return_type:
-            case ValidationErrorReturnType.FORM_VALIDATION_ERROR:
+            case ValidationErrorReturnType.FORM_VALIDATION_ERROR.value:
                 raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
-            case ValidationErrorReturnType.JSON_RESPONSE:
+            case ValidationErrorReturnType.JSON_RESPONSE.value:
                 return JsonResponse(
                     {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
                 )
             case _:
                 raise ValueError("Invalid return type specified")
-        """
 
     @classmethod
     def sld(cls, domain: str):
