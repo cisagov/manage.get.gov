@@ -20,6 +20,7 @@ Learn more about:
 - Finding a DNS hosting service <https://get.gov/domains/moving/#find-dns-hosting-services>
 - Adding name servers <https://get.gov/help/domain-management/#manage-dns-name-servers>.
 
+
 ADD DOMAIN MANAGERS, SECURITY EMAIL
 Currently, you’re the only person who can manage this domain. Please keep your contact information updated. 
 
@@ -29,6 +30,7 @@ Learn more about:
 - Adding domain managers <https://beta.get.gov/help/domain-management/#add-a-domain-manager-to-your-.gov-domain>
 - Adding a security email <https://beta.get.gov/help/domain-management/#add-or-update-the-security-email-for-your-.gov-domain>
 - Domain security best practices <https://beta.get.gov/domains/security/> 
+
 
 THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
