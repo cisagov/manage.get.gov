@@ -1236,7 +1236,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEqual(application.other_contacts.count(), 1)
         self.assertEqual(application.other_contacts.first().first_name, "Testy2")
 
-    # @skip("Can't figure out how to make this work")
     def test_delete_other_contact_sets_visible_empty_form_as_required_after_failed_submit(self):
         """When you:
             1. add an empty contact,
