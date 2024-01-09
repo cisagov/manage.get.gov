@@ -57,7 +57,7 @@ class DomainHelper:
         return domain
 
     @classmethod
-    def validate_and_handle_errors(cls, domain, error_return_type, blank_ok=False, display_success=False):
+    def validate_and_handle_errors(cls, domain, error_return_type, blank_ok=False):
         """
         Validates the provided domain and handles any validation errors.
 
@@ -65,40 +65,36 @@ class DomainHelper:
         it catches the exception and returns an appropriate error response. The type of the error response
         (JSON response or form validation error) is determined by the `error_return_type` parameter.
 
-        If validation is successful and `display_success` is True, it returns a success response.
-        Otherwise, it returns the validated domain.
 
         Args:
             domain (str): The domain to validate.
             error_return_type (ValidationErrorReturnType): The type of error response to return if validation fails.
             blank_ok (bool, optional): Whether to return an exception if the input is blank. Defaults to False.
-            display_success (bool, optional): Whether to return a success response if validation is successful. Defaults to False.
-
         Returns:
-            The error response if validation fails,
-            the success response if validation is successful and `display_success` is True,
-            or the validated domain otherwise.
+            A tuple of the validated domain name, and the response
         """  # noqa
-
+        error_map = {
+            errors.BlankValueError: "required",
+            errors.ExtraDotsError: "extra_dots",
+            errors.DomainUnavailableError: "unavailable",
+            errors.RegistrySystemError: "error",
+            errors.InvalidDomainError: "invalid",
+        }
+        validated = None
+        response = None
         try:
             validated = cls.validate(domain, blank_ok)
-        except errors.BlankValueError:
-            return DomainHelper._return_form_error_or_json_response(error_return_type, code="required")
-        except errors.ExtraDotsError:
-            return DomainHelper._return_form_error_or_json_response(error_return_type, code="extra_dots")
-        except errors.DomainUnavailableError:
-            return DomainHelper._return_form_error_or_json_response(error_return_type, code="unavailable")
-        except errors.RegistrySystemError:
-            return DomainHelper._return_form_error_or_json_response(error_return_type, code="error")
-        except errors.InvalidDomainError:
-            return DomainHelper._return_form_error_or_json_response(error_return_type, code="invalid")
+        # Get a list of each possible exception, and the code to return
+        except tuple(error_map.keys()) as error:
+            # For each exception, determine which code should be returned
+            response = DomainHelper._return_form_error_or_json_response(
+                error_return_type, code=error_map.get(type(error))
+            )
         else:
-            if display_success:
-                return DomainHelper._return_form_error_or_json_response(
-                    error_return_type, code="success", available=True
-                )
-            else:
-                return validated
+            response = DomainHelper._return_form_error_or_json_response(
+                error_return_type, code="success", available=True
+            )
+        return (validated, response)
 
     @staticmethod
     def _return_form_error_or_json_response(return_type: ValidationErrorReturnType, code, available=False):

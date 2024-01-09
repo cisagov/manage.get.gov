@@ -91,10 +91,9 @@ def available(request, domain=""):
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
 
-    json_response = Domain.validate_and_handle_errors(
+    _, json_response = Domain.validate_and_handle_errors(
         domain=domain, 
-        error_return_type=ValidationErrorReturnType.JSON_RESPONSE, 
-        display_success=True,
+        error_return_type=ValidationErrorReturnType.JSON_RESPONSE,
     )
     return json_response
 
