@@ -12,8 +12,10 @@ STATUS: Withdrawn
 YOU CAN EDIT YOUR WITHDRAWN REQUEST
 You can edit and resubmit this request by logging in to the registrar <https://manage.get.gov/>.
 
+
 SOMETHING WRONG?
 If you didn’t ask for this domain request to be withdrawn or think you received this message in error, reply to this email. 
+
 
 THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
