@@ -3,7 +3,7 @@ Hi.
 
 {{ requester_email }} has added you as a manager on {{ domain.name }}.
 
-You can manage your approved domain on the .gov registrar. <https://manage.get.gov>
+You can manage this domain on the .gov registrar. <https://manage.get.gov>
 
 
 YOU NEED A LOGIN.GOV ACCOUNT
@@ -19,11 +19,12 @@ As a .gov domain manager you can add or update information about your domain.
 You’ll also serve as a contact for your .gov domain. Please keep your contact
 information updated. 
 
-Learn more about domain management <https://beta.get.gov/help/domain-management>. 
+Learn more about domain management <https://get.gov/help/domain-management>. 
 
 SOMETHING WRONG?
 If you’re not affiliated with {{ domain.name }} or think you received this
 message in error, reply to this email.
+
 
 THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for
