@@ -91,9 +91,10 @@ class DomainHelper:
                 error_return_type, code=error_map.get(type(error))
             )
         else:
-            response = DomainHelper._return_form_error_or_json_response(
-                error_return_type, code="success", available=True
-            )
+            if error_return_type != ValidationErrorReturnType.FORM_VALIDATION_ERROR:
+                response = DomainHelper._return_form_error_or_json_response(
+                    error_return_type, code="success", available=True
+                )
         return (validated, response)
 
     @staticmethod
