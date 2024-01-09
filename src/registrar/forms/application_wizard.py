@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 
 from registrar.models import Contact, DomainApplication, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
-from registrar.utility.enums import ValidationErrorReturnType
+from registrar.utility.enums import ValidationReturnType
 
 logger = logging.getLogger(__name__)
 
@@ -384,7 +384,9 @@ class AlternativeDomainForm(RegistrarForm):
         """Validation code for domain names."""
         requested = self.cleaned_data.get("alternative_domain", None)
         validated, _ = DraftDomain.validate_and_handle_errors(
-            requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR, blank_ok=True
+            domain=requested, 
+            return_type=ValidationReturnType.FORM_VALIDATION_ERROR, 
+            blank_ok=True,
         )
         return validated
 
@@ -462,7 +464,8 @@ class DotGovDomainForm(RegistrarForm):
         """Validation code for domain names."""
         requested = self.cleaned_data.get("requested_domain", None)
         validated, _ = DraftDomain.validate_and_handle_errors(
-            requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR
+            domain=requested, 
+            return_type=ValidationReturnType.FORM_VALIDATION_ERROR,
         )
         return validated
 

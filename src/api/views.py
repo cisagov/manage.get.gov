@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
-from registrar.utility.enums import ValidationErrorReturnType
+from registrar.utility.enums import ValidationReturnType
 from registrar.utility.errors import GenericError, GenericErrorCodes
 
 import requests
@@ -93,7 +93,7 @@ def available(request, domain=""):
 
     _, json_response = Domain.validate_and_handle_errors(
         domain=domain,
-        error_return_type=ValidationErrorReturnType.JSON_RESPONSE,
+        return_type=ValidationReturnType.JSON_RESPONSE,
     )
     return json_response
 

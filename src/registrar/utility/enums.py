@@ -3,7 +3,7 @@
 from enum import Enum
 
 
-class ValidationErrorReturnType(Enum):
+class ValidationReturnType(Enum):
     """Determines the return value of the validate_and_handle_errors class"""
 
     JSON_RESPONSE = "JSON_RESPONSE"
