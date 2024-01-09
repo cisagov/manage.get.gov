@@ -400,7 +400,8 @@ class HostIPInline(admin.StackedInline):
 
 class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
-    search_fields = ["name","domain__name"]
+
+    search_fields = ["name", "domain__name"]
     search_help_text = "Search by domain or hostname."
     inlines = [HostIPInline]
 
