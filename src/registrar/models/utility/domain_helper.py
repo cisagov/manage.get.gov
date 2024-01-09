@@ -1,9 +1,16 @@
+from enum import Enum
 import re
 
-from api.views import check_domain_available
+from django import forms
+from django.http import JsonResponse
+
+from api.views import DOMAIN_API_MESSAGES, check_domain_available
 from registrar.utility import errors
 from epplibwrapper.errors import RegistryError
 
+class ValidationErrorReturnType(Enum):
+    JSON_RESPONSE = "JSON_RESPONSE"
+    FORM_VALIDATION_ERROR = "FORM_VALIDATION_ERROR"
 
 class DomainHelper:
     """Utility functions and constants for domain names."""
@@ -28,22 +35,95 @@ class DomainHelper:
         if domain is None:
             raise errors.BlankValueError()
         if not isinstance(domain, str):
-            raise ValueError("Domain name must be a string")
-        domain = domain.lower().strip()
-        if domain == "" and not blank_ok:
-            raise errors.BlankValueError()
-        if domain.endswith(".gov"):
-            domain = domain[:-4]
-        if "." in domain:
-            raise errors.ExtraDotsError()
-        if not DomainHelper.string_could_be_domain(domain + ".gov"):
-            raise ValueError()
+            raise errors.InvalidDomainError("Domain name must be a string")
+
+        domain = DomainHelper._parse_domain_string(domain, blank_ok)
+
         try:
             if not check_domain_available(domain):
                 raise errors.DomainUnavailableError()
         except RegistryError as err:
             raise errors.RegistrySystemError() from err
         return domain
+
+    @staticmethod
+    def _parse_domain_string(domain: str, blank_ok) -> str:
+        """Parses '.gov' out of the domain_name string, and does some validation on it"""
+        domain = domain.lower().strip()
+
+        if domain == "" and not blank_ok:
+            raise errors.BlankValueError()
+
+        if domain.endswith(".gov"):
+            domain = domain[:-4]
+
+        if "." in domain:
+            raise errors.ExtraDotsError()
+
+        if not DomainHelper.string_could_be_domain(domain + ".gov"):
+            raise errors.InvalidDomainError()
+
+    @classmethod
+    def validate_and_handle_errors(cls, domain: str, error_return_type: str, display_success: bool = False):
+        """Runs validate() and catches possible exceptions."""
+        try:
+            validated = cls.validate(domain)
+        except errors.BlankValueError:
+            return DomainHelper._return_form_error_or_json_response(
+                error_return_type, code="required"
+            )
+        except errors.ExtraDotsError:
+            return DomainHelper._return_form_error_or_json_response(
+                error_return_type, code="extra_dots"
+            )
+        except errors.DomainUnavailableError:
+            return DomainHelper._return_form_error_or_json_response(
+                error_return_type, code="unavailable"
+            )
+        except errors.RegistrySystemError:
+            return DomainHelper._return_form_error_or_json_response(
+                error_return_type, code="error"
+            )
+        except errors.InvalidDomainError:
+            return DomainHelper._return_form_error_or_json_response(
+                error_return_type, code="invalid"
+            )
+        except Exception:
+            return DomainHelper._return_form_error_or_json_response(
+                error_return_type, code="error"
+            )
+        else:
+            if display_success:
+                return DomainHelper._return_form_error_or_json_response(
+                    error_return_type, code="success", available=True
+                )
+            else:
+                return validated
+    
+    @staticmethod
+    def _return_form_error_or_json_response(return_type, code, available=False):
+        print(f"What is the code? {code}")
+        if return_type == "JSON_RESPONSE":
+            print("in the return context")
+            return JsonResponse(
+                    {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
+            )
+        
+        if return_type == "FORM_VALIDATION_ERROR":
+            raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
+
+        # Why is this not working??
+        """
+        match return_type:
+            case ValidationErrorReturnType.FORM_VALIDATION_ERROR:
+                raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
+            case ValidationErrorReturnType.JSON_RESPONSE:
+                return JsonResponse(
+                    {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
+                )
+            case _:
+                raise ValueError("Invalid return type specified")
+        """
 
     @classmethod
     def sld(cls, domain: str):

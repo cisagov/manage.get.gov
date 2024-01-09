@@ -384,17 +384,8 @@ CurrentSitesFormSet = forms.formset_factory(
 class AlternativeDomainForm(RegistrarForm):
     def clean_alternative_domain(self):
         """Validation code for domain names."""
-        try:
-            requested = self.cleaned_data.get("alternative_domain", None)
-            validated = DraftDomain.validate(requested, blank_ok=True)
-        except errors.ExtraDotsError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
-        except errors.DomainUnavailableError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
-        except errors.RegistrySystemError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
-        except ValueError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
+        requested = self.cleaned_data.get("alternative_domain", None)
+        validated = DraftDomain.validate_and_handle_errors(requested, "FORM_VALIDATION_ERROR")
         return validated
 
     alternative_domain = forms.CharField(
@@ -469,19 +460,8 @@ class DotGovDomainForm(RegistrarForm):
 
     def clean_requested_domain(self):
         """Validation code for domain names."""
-        try:
-            requested = self.cleaned_data.get("requested_domain", None)
-            validated = DraftDomain.validate(requested)
-        except errors.BlankValueError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["required"], code="required")
-        except errors.ExtraDotsError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
-        except errors.DomainUnavailableError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
-        except errors.RegistrySystemError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
-        except ValueError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
+        requested = self.cleaned_data.get("requested_domain", None)
+        validated = DraftDomain.validate_and_handle_errors(requested, "FORM_VALIDATION_ERROR")
         return validated
 
     requested_domain = forms.CharField(label="What .gov domain do you want?")
