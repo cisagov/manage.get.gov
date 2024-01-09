@@ -1086,8 +1086,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         
         This formset uses the DJANGO DELETE widget. We'll test that by setting 2 contacts on an application,
         loading the form and marking one contact up for deletion."""
-         # Populate the database with a domain application that
-        # has 1 "other contact" assigned to it
+        # Populate the database with a domain application that
+        # has 2 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
             first_name="Testy",
@@ -1164,9 +1164,81 @@ class DomainApplicationTests(TestWithUser, WebTest):
         application = DomainApplication.objects.get()
         self.assertEqual(application.other_contacts.count(), 1)
         self.assertEqual(application.other_contacts.first().first_name, "Testy3")
+        
+    def test_delete_other_contact_does_not_allow_zero_contacts(self):
+        """Delete Other Contact does not allow submission with zero contacts."""
+        # Populate the database with a domain application that
+        # has 1 "other contact" assigned to it
+        # We'll do it from scratch so we can reuse the other contact
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(201) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(201) 555 5557",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(other)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+        
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+
+        # Mark the first dude for deletion
+        other_contacts_form.set("other_contacts-0-DELETE", "on")
+
+        # Submit the form
+        other_contacts_form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        
+        # Verify that the contact was not deleted
+        application = DomainApplication.objects.get()
+        self.assertEqual(application.other_contacts.count(), 1)
+        self.assertEqual(application.other_contacts.first().first_name, "Testy2")
 
     def test_delete_other_contact_sets_visible_empty_form_as_required_after_failed_submit(self):
-        """When you
+        """When you:
             1. add an empty contact,
             2. delete existing contacts,
             3. then submit, 
@@ -1227,26 +1299,47 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         
+        
+        # other_contacts_form["other_contacts-has_other_contacts"] = "True"
+        # other_contacts_form.set("other_contacts-0-first_name", "")
+        # other_contacts_page = other_contacts_page.forms[0].submit()
+        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        
+        # Print the content to inspect the HTML
+        # print(other_contacts_page.content.decode('utf-8'))
+        
+        # other_contacts_form = other_contacts_page.forms[0]
+
+        # Access the "Add another contact" button and click it
+        # other_contacts_page = other_contacts_page.click('#add-form', index=0)
+        
         # Minimal check to ensure the form is loaded
         self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
         
-        # # Create an instance of the formset
-        # formset = OtherContactsFormSet()
-        
-        # # Check that there is initially one form in the formset
-        # self.assertEqual(len(formset.forms), 1)
-        
-        # # Simulate adding a form by increasing the 'extra' parameter
-        # formset.extra += 2
-        # formset = OtherContactsFormSet()
+        # Get the formset from the response context
+        formset = other_contacts_page.context['forms'][1]  # Replace with the actual context variable name
 
-        # # Check that there are now two forms in the formset
-        # self.assertEqual(len(formset.forms), 2)
+        # Check the initial number of forms in the formset
+        initial_form_count = formset.total_form_count()
         
-       
+        print(f'initial_form_count {initial_form_count}')
 
-        # # # Mark the first dude for deletion
-        # # other_contacts_form.set("other_contacts-0-DELETE", "on")
+        # Add a new form to the formset data
+        formset_data = formset.management_form.initial
+        formset_data['TOTAL_FORMS'] = initial_form_count + 1  # Increase the total form count
+        
+        print(f"initial_form_count {formset_data['TOTAL_FORMS']}")
+        
+        formset.extra = 1
+        
+        other_contacts_form_0 = formset[0]
+        other_contacts_form_1 = formset[1]
+        
+        print(other_contacts_page.content.decode('utf-8'))
+        
+        other_contacts_form_1.set("other_contacts-1-first_name", "Rachid")
+        
+        # self.assertEqual(other_contacts_form["other_contacts-1-first_name"].value, "")
 
         # # # Submit the form
         # # other_contacts_form.submit()

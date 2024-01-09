@@ -672,7 +672,7 @@ class OtherContactsForm(RegistrarForm):
         deletion by formset to be considered valid even though certain required fields have 
         not passed field validation
         """
-        if self.form_data_marked_for_deletion or self.cleaned_data["DELETE"]:
+        if self.form_data_marked_for_deletion or self.cleaned_data.get("DELETE"):
             # clear any errors raised by the form fields
             # (before this clean() method is run, each field
             # performs its own clean, which could result in
