@@ -7,7 +7,7 @@ DOMAIN REQUESTED: {{ application.requested_domain.name }}
 REQUEST RECEIVED ON: {{ application.submission_date|date }}
 STATUS: Submitted
 
-
+----------------------------------------------------------------
 NEXT STEPS
 We’ll review your request. This usually takes 20 business days. During this review we’ll verify that:
 - Your organization is eligible for a .gov domain
@@ -21,12 +21,8 @@ To make changes to your domain request, you have to withdraw it first. Withdrawi
 
 Learn more about withdrawing your request <https://get.gov/help/domain-requests/#withdraw-your-domain-request>.
 
-
-
 THANK YOU
-
-.Gov helps the public identify official, trusted information. Thank you for
-requesting a .gov domain.
+.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
 
 ----------------------------------------------------------------
 
