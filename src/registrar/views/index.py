@@ -1,17 +1,28 @@
 from django.shortcuts import render
 
 from registrar.models import DomainApplication, Domain, UserDomainRole
+from registrar.models.draft_domain import DraftDomain
 
 
 def index(request):
     """This page is available to anyone without logging in."""
     context = {}
     if request.user.is_authenticated:
-        applications = DomainApplication.objects.filter(creator=request.user)
         # Let's exclude the approved applications since our
         # domain_applications context will be used to populate
         # the active applications table
-        context["domain_applications"] = applications.exclude(status="approved")
+        applications = DomainApplication.objects.filter(creator=request.user).exclude(status="approved")
+        
+        sorted_applications = applications.filter("-requested_domain__name")
+        # Adds display logic for empty domain requests
+        counter = 1
+        for application in applications:
+            if not application.requested_domain or not application.requested_domain.name:
+                application.requested_domain = DraftDomain(name=f"New domain request {counter}")
+                counter += 1
+        
+        # Pass the final context to the application
+        context["domain_applications"] = applications
 
         user_domain_roles = UserDomainRole.objects.filter(user=request.user)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)

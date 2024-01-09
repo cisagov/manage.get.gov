@@ -125,13 +125,7 @@
         {% for application in domain_applications %}
         <tr>
           <th th scope="row" role="rowheader" data-label="Domain name">
-            {% if application.requested_domain and application.requested_domain.name %}
-              {{ application.requested_domain.name }}
-            {% elif forloop.counter != 1 %}
-              New domain request {{ forloop.counter }}
-            {% else %}
-              New domain request
-            {% endif %}
+              {{ application.requested_domain.name|default:"New domain request" }}
           </th>
           <td data-sort-value="{{ application.submission_date|date:"U" }}" data-label="Date submitted">
             {% if application.submission_date %}
@@ -147,21 +141,13 @@
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
-              {% if application.requested_domain and application.requested_domain.name %}
-              Edit <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
-              {% else %}
-              Edit <span class="usa-sr-only">New domain request {{ forloop.counter }}</span>
-              {% endif %}
+              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }}</span>
             {% else %}
               <a href="{% url 'application-status' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
-              {% if application.requested_domain and application.requested_domain.name %}
-              Manage <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
-              {% else %}
-              Manage <span class="usa-sr-only">New domain request {{ forloop.counter }}</span>
-              {% endif %}
+              Manage <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }}</span>
             {% endif %}
             </a>
           </td>
@@ -178,11 +164,7 @@
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
                 </svg>
-                {% if application.requested_domain and application.requested_domain.name %}
-                Delete <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
-                {% else %}
-                Delete <span class="usa-sr-only">New domain request {{ forloop.counter }}</span>
-                {% endif %}
+                Delete <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }}</span>
               </a>
 
               <div
