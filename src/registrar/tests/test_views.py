@@ -5,6 +5,8 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+
+from registrar.forms.application_wizard import OtherContactsFormSet
 from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -1079,7 +1081,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Assert that it is returned, ie the contacts form is required
         self.assertContains(response, "Enter the first name / given name of this contact.")
 
-    def test_application_delete_other_contact(self):
+    def test_delete_other_contact(self):
         """Other contacts can be deleted after being saved to database.
         
         This formset uses the DJANGO DELETE widget. We'll test that by setting 2 contacts on an application,
@@ -1092,28 +1094,28 @@ class DomainApplicationTests(TestWithUser, WebTest):
             last_name="Tester",
             title="Chief Tester",
             email="testy@town.com",
-            phone="(555) 555 5555",
+            phone="(201) 555 5555",
         )
         you, _ = Contact.objects.get_or_create(
             first_name="Testy you",
             last_name="Tester you",
             title="Admin Tester",
             email="testy-admin@town.com",
-            phone="(555) 555 5556",
+            phone="(201) 555 5556",
         )
         other, _ = Contact.objects.get_or_create(
             first_name="Testy2",
             last_name="Tester2",
             title="Another Tester",
             email="testy2@town.com",
-            phone="(555) 555 5557",
+            phone="(201) 555 5557",
         )
         other2, _ = Contact.objects.get_or_create(
             first_name="Testy3",
             last_name="Tester3",
             title="Another Tester",
             email="testy3@town.com",
-            phone="(555) 555 5557",
+            phone="(201) 555 5557",
         )
         application, _ = DomainApplication.objects.get_or_create(
             organization_type="federal",
@@ -1147,33 +1149,114 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
         
-          
-
-        # Minimal check to ensure the form is loaded with data (if this part of
-        # the application doesn't work, we should be equipped with other unit
-        # tests to flag it)
+        # Minimal check to ensure the form is loaded with both other contacts
         self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
         self.assertEqual(other_contacts_form["other_contacts-1-first_name"].value, "Testy3")
 
-        # clear the form
-        other_contacts_form["other_contacts-0-DELETE"].value = "on"
-             
+        # Mark the first dude for deletion
+        other_contacts_form.set("other_contacts-0-DELETE", "on")
 
         # Submit the form
         other_contacts_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        
+        # Verify that the first dude was deleted
+        application = DomainApplication.objects.get()
+        self.assertEqual(application.other_contacts.count(), 1)
+        self.assertEqual(application.other_contacts.first().first_name, "Testy3")
 
-        print(other_contacts_page.content.decode('utf-8')) 
+    def test_delete_other_contact_sets_visible_empty_form_as_required_after_failed_submit(self):
+        """When you
+            1. add an empty contact,
+            2. delete existing contacts,
+            3. then submit, 
+        The forms on page reload shows all the required fields and their errors."""
         
-        # Verify that the contact we saved earlier has been removed from the database
-        application = DomainApplication.objects.get()  # There are no contacts anymore
-        self.assertEqual(
-            application.other_contacts.count(),
-            1,
+        # Populate the database with a domain application that
+        # has 1 "other contact" assigned to it
+        # We'll do it from scratch so we can reuse the other contact
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
         )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(201) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(201) 555 5557",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(other)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
         
-        Contact.objects.all().delete()
-        DomainApplication.objects.all().delete()
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+        
+        # # Create an instance of the formset
+        # formset = OtherContactsFormSet()
+        
+        # # Check that there is initially one form in the formset
+        # self.assertEqual(len(formset.forms), 1)
+        
+        # # Simulate adding a form by increasing the 'extra' parameter
+        # formset.extra += 2
+        # formset = OtherContactsFormSet()
+
+        # # Check that there are now two forms in the formset
+        # self.assertEqual(len(formset.forms), 2)
+        
+       
+
+        # # # Mark the first dude for deletion
+        # # other_contacts_form.set("other_contacts-0-DELETE", "on")
+
+        # # # Submit the form
+        # # other_contacts_form.submit()
+        # # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        
+        # # # Verify that the first dude was deleted
+        # # application = DomainApplication.objects.get()
+        # # # self.assertEqual(application.other_contacts.count(), 1)
+        # # # self.assertEqual(application.other_contacts.first().first_name, "Testy3")
+        
 
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
