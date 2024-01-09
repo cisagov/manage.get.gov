@@ -37,18 +37,6 @@ class DomainHelper:
         if not isinstance(domain, str):
             raise errors.InvalidDomainError("Domain name must be a string")
 
-        domain = DomainHelper._parse_domain_string(domain, blank_ok)
-
-        try:
-            if not check_domain_available(domain):
-                raise errors.DomainUnavailableError()
-        except RegistryError as err:
-            raise errors.RegistrySystemError() from err
-        return domain
-
-    @staticmethod
-    def _parse_domain_string(domain: str, blank_ok) -> str:
-        """Parses '.gov' out of the domain_name string, and does some validation on it"""
         domain = domain.lower().strip()
 
         if domain == "" and not blank_ok:
@@ -62,6 +50,13 @@ class DomainHelper:
 
         if not DomainHelper.string_could_be_domain(domain + ".gov"):
             raise errors.InvalidDomainError()
+
+        try:
+            if not check_domain_available(domain):
+                raise errors.DomainUnavailableError()
+        except RegistryError as err:
+            raise errors.RegistrySystemError() from err
+        return domain
 
     @classmethod
     def validate_and_handle_errors(cls, domain: str, error_return_type: str, display_success: bool = False):
@@ -88,10 +83,6 @@ class DomainHelper:
             return DomainHelper._return_form_error_or_json_response(
                 error_return_type, code="invalid"
             )
-        except Exception:
-            return DomainHelper._return_form_error_or_json_response(
-                error_return_type, code="error"
-            )
         else:
             if display_success:
                 return DomainHelper._return_form_error_or_json_response(
@@ -102,11 +93,9 @@ class DomainHelper:
     
     @staticmethod
     def _return_form_error_or_json_response(return_type, code, available=False):
-        print(f"What is the code? {code}")
         if return_type == "JSON_RESPONSE":
-            print("in the return context")
             return JsonResponse(
-                    {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
+                {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
             )
         
         if return_type == "FORM_VALIDATION_ERROR":
