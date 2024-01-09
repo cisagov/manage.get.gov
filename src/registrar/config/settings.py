@@ -660,7 +660,6 @@ ALLOWED_HOSTS = [
     "getgov-rb.app.cloud.gov",
     "getgov-ko.app.cloud.gov",
     "getgov-ab.app.cloud.gov",
-    "getgov-bl.app.cloud.gov",
     "getgov-rjm.app.cloud.gov",
     "getgov-dk.app.cloud.gov",
     "manage.get.gov",
