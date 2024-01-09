@@ -1236,7 +1236,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEqual(application.other_contacts.count(), 1)
         self.assertEqual(application.other_contacts.first().first_name, "Testy2")
 
-    @skip("Can't figure out how to make this work")
+    # @skip("Can't figure out how to make this work")
     def test_delete_other_contact_sets_visible_empty_form_as_required_after_failed_submit(self):
         """When you:
             1. add an empty contact,
@@ -1299,54 +1299,20 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
 
-        # other_contacts_form["other_contacts-has_other_contacts"] = "True"
-        # other_contacts_form.set("other_contacts-0-first_name", "")
-        # other_contacts_page = other_contacts_page.forms[0].submit()
-        # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Print the content to inspect the HTML
-        # print(other_contacts_page.content.decode('utf-8'))
-
-        # other_contacts_form = other_contacts_page.forms[0]
-
-        # Access the "Add another contact" button and click it
-        # other_contacts_page = other_contacts_page.click('#add-form', index=0)
-
         # Minimal check to ensure the form is loaded
         self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
 
-        # Get the formset from the response context
-        formset = other_contacts_page.context["forms"][1]  # Replace with the actual context variable name
+        # Set total forms to 2 indicating an additional formset was added.
+        # Submit no data though for the second formset.
+        # Set the first formset to be deleted.
+        other_contacts_form["other_contacts-TOTAL_FORMS"] = "2"
+        other_contacts_form.set("other_contacts-0-DELETE", "on")
 
-        # Check the initial number of forms in the formset
-        initial_form_count = formset.total_form_count()
+        response = other_contacts_form.submit()
 
-        print(f"initial_form_count {initial_form_count}")
-
-        # Add a new form to the formset data
-        formset_data = formset.management_form.initial
-        formset_data["TOTAL_FORMS"] = initial_form_count + 1  # Increase the total form count
-
-        print(f"initial_form_count {formset_data['TOTAL_FORMS']}")
-
-        formset.extra = 1
-
-        other_contacts_form_1 = formset[1]
-
-        print(other_contacts_page.content.decode("utf-8"))
-
-        other_contacts_form_1.set("other_contacts-1-first_name", "Rachid")
-
-        # self.assertEqual(other_contacts_form["other_contacts-1-first_name"].value, "")
-
-        # # # Submit the form
-        # # other_contacts_form.submit()
-        # # self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # # # Verify that the first dude was deleted
-        # # application = DomainApplication.objects.get()
-        # # # self.assertEqual(application.other_contacts.count(), 1)
-        # # # self.assertEqual(application.other_contacts.first().first_name, "Testy3")
+        # Assert that the response presents errors to the user, including to
+        # Enter the first name ...
+        self.assertContains(response, "Enter the first name / given name of this contact.")
 
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
