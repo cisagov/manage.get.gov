@@ -957,7 +957,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
     def test_submitting_no_other_contacts_rationale_removes_reference_other_contacts_when_joined(self):
         """When a user submits the Other Contacts form with no other contacts selected, the application's
         other contacts references get removed for other contacts that exist and are joined to other objects"""
-        # Populate the databse with a domain application that
+        # Populate the database with a domain application that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
@@ -1079,11 +1079,14 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Assert that it is returned, ie the contacts form is required
         self.assertContains(response, "Enter the first name / given name of this contact.")
 
-    @skip("Repurpose when working on ticket 903")
     def test_application_delete_other_contact(self):
-        """Other contacts can be deleted after being saved to database."""
-        # Populate the databse with a domain application that
+        """Other contacts can be deleted after being saved to database.
+        
+        This formset uses the DJANGO DELETE widget. We'll test that by setting 2 contacts on an application,
+        loading the form and marking one contact up for deletion."""
+         # Populate the database with a domain application that
         # has 1 "other contact" assigned to it
+        # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
@@ -1105,6 +1108,13 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(555) 555 5557",
         )
+        other2, _ = Contact.objects.get_or_create(
+            first_name="Testy3",
+            last_name="Tester3",
+            title="Another Tester",
+            email="testy3@town.com",
+            phone="(555) 555 5557",
+        )
         application, _ = DomainApplication.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
@@ -1121,6 +1131,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             status="started",
         )
         application.other_contacts.add(other)
+        application.other_contacts.add(other2)
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
@@ -1135,36 +1146,34 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
+        
+          
 
         # Minimal check to ensure the form is loaded with data (if this part of
         # the application doesn't work, we should be equipped with other unit
         # tests to flag it)
         self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+        self.assertEqual(other_contacts_form["other_contacts-1-first_name"].value, "Testy3")
 
         # clear the form
-        other_contacts_form["other_contacts-0-first_name"] = ""
-        other_contacts_form["other_contacts-0-middle_name"] = ""
-        other_contacts_form["other_contacts-0-last_name"] = ""
-        other_contacts_form["other_contacts-0-title"] = ""
-        other_contacts_form["other_contacts-0-email"] = ""
-        other_contacts_form["other_contacts-0-phone"] = ""
+        other_contacts_form["other_contacts-0-DELETE"].value = "on"
+             
 
-        # Submit the now empty form
-        result = other_contacts_form.submit()
+        # Submit the form
+        other_contacts_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
+        print(other_contacts_page.content.decode('utf-8')) 
+        
         # Verify that the contact we saved earlier has been removed from the database
         application = DomainApplication.objects.get()  # There are no contacts anymore
         self.assertEqual(
             application.other_contacts.count(),
-            0,
+            1,
         )
-
-        # Verify that on submit, user is advanced to "no contacts" page
-        no_contacts_page = result.follow()
-        expected_url_slug = str(Step.NO_OTHER_CONTACTS)
-        actual_url_slug = no_contacts_page.request.path.split("/")[-2]
-        self.assertEqual(expected_url_slug, actual_url_slug)
+        
+        Contact.objects.all().delete()
+        DomainApplication.objects.all().delete()
 
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
