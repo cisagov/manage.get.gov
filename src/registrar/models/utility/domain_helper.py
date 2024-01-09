@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from api.views import DOMAIN_API_MESSAGES, check_domain_available
 from registrar.utility import errors
 from epplibwrapper.errors import RegistryError
+from registrar.utility.enums import ValidationErrorReturnType
 
 
 class DomainHelper:
@@ -56,7 +57,7 @@ class DomainHelper:
         return domain
 
     @classmethod
-    def validate_and_handle_errors(cls, domain: str, error_return_type: str, display_success: bool = False):
+    def validate_and_handle_errors(cls, domain, error_return_type, display_success = False):
         """Runs validate() and catches possible exceptions."""
         try:
             validated = cls.validate(domain)
@@ -89,20 +90,11 @@ class DomainHelper:
                 return validated
     
     @staticmethod
-    def _return_form_error_or_json_response(return_type, code, available=False):
-        if return_type == "JSON_RESPONSE":
-            return JsonResponse(
-                {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
-            )
-        
-        if return_type == "FORM_VALIDATION_ERROR":
-            raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
-
-        # Why is this not working??
+    def _return_form_error_or_json_response(return_type: ValidationErrorReturnType, code, available=False):
         match return_type:
-            case ValidationErrorReturnType.FORM_VALIDATION_ERROR.value:
+            case ValidationErrorReturnType.FORM_VALIDATION_ERROR:
                 raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
-            case ValidationErrorReturnType.JSON_RESPONSE.value:
+            case ValidationErrorReturnType.JSON_RESPONSE:
                 return JsonResponse(
                     {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
                 )
