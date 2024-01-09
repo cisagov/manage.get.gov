@@ -19,7 +19,7 @@ def index(request):
             if not application.requested_domain or not application.requested_domain.name:
                 application.requested_domain = DraftDomain(name=f"New domain request {counter}")
                 counter += 1
-        
+
         # Pass the final context to the application
         context["domain_applications"] = applications
 
