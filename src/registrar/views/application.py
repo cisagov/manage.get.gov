@@ -486,7 +486,7 @@ class YourContact(ApplicationWizard):
 class OtherContacts(ApplicationWizard):
     template_name = "application_other_contacts.html"
     forms = [forms.OtherContactsYesNoForm, forms.OtherContactsFormSet, forms.NoOtherContactsForm]
-    
+
     def is_valid(self, forms: list) -> bool:
         """Overrides default behavior defined in ApplicationWizard.
         Depending on value in other_contacts_yes_no_form, marks forms in
@@ -500,9 +500,9 @@ class OtherContacts(ApplicationWizard):
         # set all the required other_contact fields as necessary since new forms
         # were added through javascript
         for form in forms[1].forms:
-            for _, field in form.fields.items():
+            for field_item, field in form.fields.items():
                 if field.required:
-                    field.widget.attrs['required'] = 'required'
+                    field.widget.attrs["required"] = "required"
 
         all_forms_valid = True
         # test first for yes_no_form validity
