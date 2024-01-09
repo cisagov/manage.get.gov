@@ -147,14 +147,21 @@
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
-              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }} </span>
-
+              {% if application.requested_domain and application.requested_domain.name %}
+              Edit <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
+              {% else %}
+              Edit <span class="usa-sr-only">New domain request {{ forloop.counter }}</span>
+              {% endif %}
             {% else %}
               <a href="{% url 'application-status' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
-              Manage <span class="usa-sr-only">{{application.requested_domain.name}} </span>
+              {% if application.requested_domain and application.requested_domain.name %}
+              Manage <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
+              {% else %}
+              Manage <span class="usa-sr-only">New domain request {{ forloop.counter }}</span>
+              {% endif %}
             {% endif %}
             </a>
           </td>
@@ -164,14 +171,18 @@
               <a
                 id="button-toggle-delete-domain-alert-{{ forloop.counter }}"
                 href="#toggle-delete-domain-alert-{{ forloop.counter }}"
-                class="usa-button--unstyled"
+                class="usa-button--unstyled remove-underline"
                 aria-controls="toggle-delete-domain-alert-{{ forloop.counter }}"
                 data-open-modal
               >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
                 </svg>
-                Delete
+                {% if application.requested_domain and application.requested_domain.name %}
+                Delete <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
+                {% else %}
+                Delete <span class="usa-sr-only">New domain request {{ forloop.counter }}</span>
+                {% endif %}
               </a>
 
               <div
