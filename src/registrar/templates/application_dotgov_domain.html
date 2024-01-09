@@ -73,9 +73,11 @@
       {# attr_validate / validate="domain" invokes code in get-gov.js #}
       {# attr_auto_validate likewise triggers behavior in get-gov.js #}
       {% with append_gov=True attr_validate="domain" attr_auto_validate=True %}
-        {% for form in forms.1 %}
-          {% input_with_errors form.alternative_domain %}
-        {% endfor %}
+        {% with add_class="blank-ok" %}
+          {% for form in forms.1 %}
+            {% input_with_errors form.alternative_domain %}
+          {% endfor %}
+        {% endwith %}
       {% endwith %}
     {% endwith %}
 
