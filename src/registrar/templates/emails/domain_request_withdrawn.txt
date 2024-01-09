@@ -4,8 +4,10 @@ Hi, {{ application.submitter.first_name }}.
 Your .gov domain request has been withdrawn and will not be reviewed by our team.
 
 DOMAIN REQUESTED: {{ application.requested_domain.name }}
+REQUEST RECEIVED ON: {{ application.submission_date|date }}
 STATUS: Withdrawn
 
+----------------------------------------------------------------
 
 YOU CAN EDIT YOUR WITHDRAWN REQUEST
 You can edit and resubmit this request by logging in to the registrar <https://manage.get.gov/>.
