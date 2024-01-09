@@ -12,8 +12,7 @@ def index(request):
         # domain_applications context will be used to populate
         # the active applications table
         applications = DomainApplication.objects.filter(creator=request.user).exclude(status="approved")
-        
-        sorted_applications = applications.filter("-requested_domain__name")
+
         # Adds display logic for empty domain requests
         counter = 1
         for application in applications:
