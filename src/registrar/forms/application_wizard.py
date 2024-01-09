@@ -8,11 +8,8 @@ from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 
-from api.views import DOMAIN_API_MESSAGES
-
 from registrar.models import Contact, DomainApplication, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
-from registrar.utility import errors
 from registrar.utility.enums import ValidationErrorReturnType
 
 logger = logging.getLogger(__name__)
@@ -386,7 +383,9 @@ class AlternativeDomainForm(RegistrarForm):
     def clean_alternative_domain(self):
         """Validation code for domain names."""
         requested = self.cleaned_data.get("alternative_domain", None)
-        validated = DraftDomain.validate_and_handle_errors(requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR)
+        validated = DraftDomain.validate_and_handle_errors(
+            requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR, prevent_blank=False
+        )
         return validated
 
     alternative_domain = forms.CharField(

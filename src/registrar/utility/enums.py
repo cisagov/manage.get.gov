@@ -5,6 +5,7 @@ from enum import Enum
 
 class ValidationErrorReturnType(Enum):
     """Determines the return value of the validate_and_handle_errors class"""
+
     JSON_RESPONSE = "JSON_RESPONSE"
     FORM_VALIDATION_ERROR = "FORM_VALIDATION_ERROR"
 

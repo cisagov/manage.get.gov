@@ -2,6 +2,7 @@ import logging
 import sys
 from typing import List
 from registrar.utility.enums import LogCode
+
 logger = logging.getLogger(__name__)
 
 

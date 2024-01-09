@@ -16,8 +16,10 @@ class DomainUnavailableError(ValueError):
 class RegistrySystemError(ValueError):
     pass
 
+
 class InvalidDomainError(ValueError):
     pass
+
 
 class ActionNotAllowed(Exception):
     """User accessed an action that is not

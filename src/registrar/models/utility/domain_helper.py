@@ -57,30 +57,44 @@ class DomainHelper:
         return domain
 
     @classmethod
-    def validate_and_handle_errors(cls, domain, error_return_type, display_success = False):
-        """Runs validate() and catches possible exceptions."""
+    def validate_and_handle_errors(cls, domain, error_return_type, prevent_blank=True, display_success=False):
+        """
+        Validates the provided domain and handles any validation errors.
+
+        This method attempts to validate the domain using the `validate` method. If validation fails,
+        it catches the exception and returns an appropriate error response. The type of the error response
+        (JSON response or form validation error) is determined by the `error_return_type` parameter.
+
+        If validation is successful and `display_success` is True, it returns a success response.
+        Otherwise, it returns the validated domain.
+
+        Args:
+            domain (str): The domain to validate.
+            error_return_type (ValidationErrorReturnType): The type of error response to return if validation fails.
+            prevent_blank (bool, optional): Whether to return an exception if the input is blank. Defaults to True.
+            display_success (bool, optional): Whether to return a success response if validation is successful. Defaults to False.
+
+        Returns:
+            The error response if validation fails,
+            the success response if validation is successful and `display_success` is True,
+            or the validated domain otherwise.
+        """  # noqa
+
         try:
             validated = cls.validate(domain)
         except errors.BlankValueError:
-            return DomainHelper._return_form_error_or_json_response(
-                error_return_type, code="required"
-            )
+            if not prevent_blank:
+                return DomainHelper._return_form_error_or_json_response(error_return_type, code="required")
+            else:
+                return validated
         except errors.ExtraDotsError:
-            return DomainHelper._return_form_error_or_json_response(
-                error_return_type, code="extra_dots"
-            )
+            return DomainHelper._return_form_error_or_json_response(error_return_type, code="extra_dots")
         except errors.DomainUnavailableError:
-            return DomainHelper._return_form_error_or_json_response(
-                error_return_type, code="unavailable"
-            )
+            return DomainHelper._return_form_error_or_json_response(error_return_type, code="unavailable")
         except errors.RegistrySystemError:
-            return DomainHelper._return_form_error_or_json_response(
-                error_return_type, code="error"
-            )
+            return DomainHelper._return_form_error_or_json_response(error_return_type, code="error")
         except errors.InvalidDomainError:
-            return DomainHelper._return_form_error_or_json_response(
-                error_return_type, code="invalid"
-            )
+            return DomainHelper._return_form_error_or_json_response(error_return_type, code="invalid")
         else:
             if display_success:
                 return DomainHelper._return_form_error_or_json_response(
@@ -88,16 +102,32 @@ class DomainHelper:
                 )
             else:
                 return validated
-    
+
     @staticmethod
     def _return_form_error_or_json_response(return_type: ValidationErrorReturnType, code, available=False):
+        """
+        Returns an error response based on the `return_type`.
+
+        If `return_type` is `FORM_VALIDATION_ERROR`, raises a form validation error.
+        If `return_type` is `JSON_RESPONSE`, returns a JSON response with 'available', 'code', and 'message' fields.
+        If `return_type` is neither, raises a ValueError.
+
+        Args:
+            return_type (ValidationErrorReturnType): The type of error response.
+            code (str): The error code for the error message.
+            available (bool, optional): Availability, only used for JSON responses. Defaults to False.
+
+        Returns:
+            A JSON response or a form validation error.
+
+        Raises:
+            ValueError: If `return_type` is neither `FORM_VALIDATION_ERROR` nor `JSON_RESPONSE`.
+        """  # noqa
         match return_type:
             case ValidationErrorReturnType.FORM_VALIDATION_ERROR:
                 raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
             case ValidationErrorReturnType.JSON_RESPONSE:
-                return JsonResponse(
-                    {"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]}
-                )
+                return JsonResponse({"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]})
             case _:
                 raise ValueError("Invalid return type specified")
 
