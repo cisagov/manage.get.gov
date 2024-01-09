@@ -18,6 +18,8 @@ class RegistrySystemError(ValueError):
 
 
 class InvalidDomainError(ValueError):
+    """Error class for situations where an invalid domain is supplied"""
+
     pass
 
 

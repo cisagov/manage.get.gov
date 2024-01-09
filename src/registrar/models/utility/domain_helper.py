@@ -58,20 +58,21 @@ class DomainHelper:
     @classmethod
     def validate_and_handle_errors(cls, domain, error_return_type, blank_ok=False):
         """
-        Validates the provided domain and handles any validation errors.
+        Validates a domain and returns an appropriate response based on the validation result.
 
-        This method attempts to validate the domain using the `validate` method. If validation fails,
-        it catches the exception and returns an appropriate error response. The type of the error response
-        (JSON response or form validation error) is determined by the `error_return_type` parameter.
-
+        This method uses the `validate` method to validate the domain. If validation fails, it catches the exception,
+        maps it to a corresponding error code, and returns a response based on the `error_return_type` parameter.
 
         Args:
             domain (str): The domain to validate.
-            error_return_type (ValidationErrorReturnType): The type of error response to return if validation fails.
-            blank_ok (bool, optional): Whether to return an exception if the input is blank. Defaults to False.
+            error_return_type (ValidationErrorReturnType): Determines the type of response (JSON or form validation error).
+            blank_ok (bool, optional): If True, blank input does not raise an exception. Defaults to False.
+
         Returns:
-            A tuple of the validated domain name, and the response
+            tuple: The validated domain (or None if validation failed), and the response (success or error).
         """  # noqa
+
+        # Map each exception to a corresponding error code
         error_map = {
             errors.BlankValueError: "required",
             errors.ExtraDotsError: "extra_dots",
@@ -79,21 +80,31 @@ class DomainHelper:
             errors.RegistrySystemError: "error",
             errors.InvalidDomainError: "invalid",
         }
+
         validated = None
         response = None
+
         try:
+            # Attempt to validate the domain
             validated = cls.validate(domain, blank_ok)
+
         # Get a list of each possible exception, and the code to return
         except tuple(error_map.keys()) as error:
-            # For each exception, determine which code should be returned
+            # If an error is caught, get its type
+            error_type = type(error)
+
+            # Generate the response based on the error code and return type
             response = DomainHelper._return_form_error_or_json_response(
-                error_return_type, code=error_map.get(type(error))
+                error_return_type, code=error_map.get(error_type)
             )
         else:
+            # For form validation, we do not need to display the success message
             if error_return_type != ValidationErrorReturnType.FORM_VALIDATION_ERROR:
                 response = DomainHelper._return_form_error_or_json_response(
                     error_return_type, code="success", available=True
                 )
+
+        # Return the validated domain and the response (either error or success)
         return (validated, response)
 
     @staticmethod
