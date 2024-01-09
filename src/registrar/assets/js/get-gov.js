@@ -345,30 +345,6 @@ function markForm(e, formLabel){
 
     // Set display to 'none'
     formToRemove.style.display = 'none';
-
-    //
-    // This next block is a hack to fix a page jump when a fielset is set to display none at the start of the formset but still takes
-    // a bit of space in the DOM, causing the content to jump down a bit
-    // 
-    // Get the first hidden fieldset
-    const hiddenFieldset = document.querySelector('.repeatable-form[style="display: none;"]');
-    let targetFieldset = null;
-    // If that first hidden fieldset does not have any sibling out of all the previous siblings that's visible, get the next visible fieldset
-    if (hiddenFieldset && !hiddenFieldset.previousElementSibling.matches('.repeatable-form:not([style="display: none;"])')) {
-      let currentSibling = hiddenFieldset.nextElementSibling;
-      // Iterate through siblings until a visible fieldset is found
-      while (currentSibling) {
-        if (currentSibling.matches(':not([style="display: none;"])')) {
-          targetFieldset = currentSibling;
-          break;
-        }
-        currentSibling = currentSibling.nextElementSibling;
-      }
-    }
-    if (targetFieldset) {
-      // Account for the space the hidden fieldsets at the top of the formset are occupying in the DOM
-      targetFieldset.querySelector('h2').style.marginTop = '1rem';
-    }
   }
   
   // Update h2s on the visible forms only. We won't worry about the forms' identifiers

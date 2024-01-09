@@ -17,6 +17,7 @@ from registrar.utility import errors
 
 logger = logging.getLogger(__name__)
 
+
 class RegistrarForm(forms.Form):
     """
     A common set of methods and configuration.
@@ -94,14 +95,14 @@ class RegistrarFormSet(forms.BaseFormSet):
         Hint: Subclass should call `self._to_database(...)`.
         """
         raise NotImplementedError
-    
+
     def test_if_more_than_one_join(self, db_obj, rel, related_name):
         """Helper for finding whether an object is joined more than once."""
         # threshold is the number of related objects that are acceptable
         # when determining if related objects exist. threshold is 0 for most
         # relationships. if the relationship is related_name, we know that
         # there is already exactly 1 acceptable relationship (the one we are
-        # attempting to delete), so the threshold is 1  
+        # attempting to delete), so the threshold is 1
         threshold = 1 if rel == related_name else 0
 
         # Raise a KeyError if rel is not a defined field on the db_obj model
@@ -305,7 +306,7 @@ class OrganizationContactForm(RegistrarForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
+                message="Enter a zip code in the form of 12345 or 12345-6789.",
             )
         ],
     )
@@ -396,7 +397,7 @@ class CurrentSitesForm(RegistrarForm):
         required=False,
         label="Public website",
         error_messages={
-            "invalid": ("Enter your organization’s current website in the required format, like www.city.com.")
+            "invalid": ("Enter your organization's current website in the required format, like example.com.")
         },
     )
 
@@ -590,7 +591,7 @@ class YourContactForm(RegistrarForm):
     )
     phone = PhoneNumberField(
         label="Phone",
-        error_messages={"required": "Enter your phone number."},
+        error_messages={"invalid": "Enter a valid 10-digit phone number.", "required": "Enter your phone number."},
     )
 
 
@@ -640,12 +641,15 @@ class OtherContactsForm(RegistrarForm):
         label="Email",
         error_messages={
             "required": ("Enter an email address in the required format, like name@example.com."),
-            "invalid": ("Enter an email address in the required format, like name@example.com.")
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
         },
     )
     phone = PhoneNumberField(
         label="Phone",
-        error_messages={"required": "Enter a phone number for this contact."},
+        error_messages={
+            "invalid": "Enter a valid 10-digit phone number.",
+            "required": "Enter a phone number for this contact.",
+        },
     )
 
     def __init__(self, *args, **kwargs):
@@ -659,7 +663,7 @@ class OtherContactsForm(RegistrarForm):
         """
         self.form_data_marked_for_deletion = False
         super().__init__(*args, **kwargs)
-        self.empty_permitted=False
+        self.empty_permitted = False
 
     def mark_form_for_deletion(self):
         self.form_data_marked_for_deletion = True
@@ -668,11 +672,11 @@ class OtherContactsForm(RegistrarForm):
         """
         This method overrides the default behavior for forms.
         This cleans the form after field validation has already taken place.
-        In this override, allow for a form which is deleted by user or marked for 
-        deletion by formset to be considered valid even though certain required fields have 
+        In this override, allow for a form which is deleted by user or marked for
+        deletion by formset to be considered valid even though certain required fields have
         not passed field validation
         """
-        if self.form_data_marked_for_deletion or self.cleaned_data["DELETE"]:
+        if self.form_data_marked_for_deletion or self.cleaned_data.get("DELETE"):
             # clear any errors raised by the form fields
             # (before this clean() method is run, each field
             # performs its own clean, which could result in
@@ -694,9 +698,9 @@ class OtherContactsForm(RegistrarForm):
 class BaseOtherContactsFormSet(RegistrarFormSet):
     """
     FormSet for Other Contacts
-    
+
     There are two conditions by which a form in the formset can be marked for deletion.
-    One is if the user clicks 'DELETE' button, and this is submitted in the form. The 
+    One is if the user clicks 'DELETE' button, and this is submitted in the form. The
     other is if the YesNo form, which is submitted with this formset, is set to No; in
     this case, all forms in formset are marked for deletion. Both of these conditions
     must co-exist.
@@ -705,6 +709,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
     tested and handled; this is configured with REVERSE_JOINS, which is an array of
     strings representing the relationships between contact model and other models.
     """
+
     JOIN = "other_contacts"
     REVERSE_JOINS = [
         "user",
@@ -718,7 +723,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
 
     def get_deletion_widget(self):
         return forms.HiddenInput(attrs={"class": "deletion"})
-    
+
     def __init__(self, *args, **kwargs):
         """
         Override __init__ for RegistrarFormSet.
@@ -737,14 +742,14 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         Implements should_delete method from BaseFormSet.
         """
         return self.formset_data_marked_for_deletion or cleaned.get("DELETE", False)
-    
+
     def pre_create(self, db_obj, cleaned):
         """Code to run before an item in the formset is created in the database."""
         # remove DELETE from cleaned
         if "DELETE" in cleaned:
-            cleaned.pop('DELETE')
+            cleaned.pop("DELETE")
         return cleaned
-    
+
     def to_database(self, obj: DomainApplication):
         self._to_database(obj, self.JOIN, self.REVERSE_JOINS, self.should_delete, self.pre_update, self.pre_create)
 

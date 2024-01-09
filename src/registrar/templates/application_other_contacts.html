@@ -34,31 +34,26 @@
         {{ forms.1.management_form }}
         {# forms.1 is a formset and this iterates over its forms #}
         {% for form in forms.1.forms %}
-            <fieldset class="usa-fieldset repeatable-form">
+            <fieldset class="usa-fieldset repeatable-form padding-y-1">
             
-            <div class="grid-row grid-gap-2 flex-end">
+              <legend class="float-left-tablet">
+                  <h2 class="margin-top-1">Organization contact {{ forloop.counter }}</h2>
+              </legend>
 
-                <div class="tablet:grid-col-8">
-                    <legend>
-                        <h2>Organization contact {{ forloop.counter }}</h2>
-                    </legend>
-                </div>    
+              <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record margin-bottom-2">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+                  </svg><span class="margin-left-05">Delete</span>
+              </button>
 
-                <div class="tablet:grid-col-4">
-                    <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record margin-bottom-2">
-                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                        <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-                        </svg><span class="margin-left-05">Delete</span>
-                    </button>
-                </div>
-
-            </div>
 
             {% if forms.1.can_delete %}
               {{ form.DELETE }}
             {% endif %}
 
-            {% input_with_errors form.first_name %}
+            <div class="padding-top-1 clear-both">
+              {% input_with_errors form.first_name %}
+            </div>
 
             {% input_with_errors form.middle_name %}
 
@@ -71,11 +66,11 @@
             affecting the margin of this block. The wrapper div is a 
             temporary workaround. {% endcomment %}
             <div class="margin-top-3">
-                {% input_with_errors form.email %}
+              {% input_with_errors form.email %}
             </div>
 
             {% with add_class="usa-input--medium" %}
-                {% input_with_errors form.phone %}
+              {% input_with_errors form.phone %}
             {% endwith %}
 
             </fieldset>
@@ -89,12 +84,11 @@
     </div>
 
     <div id="no-other-employees">
-        {% include "includes/required_fields.html" %}
         <fieldset class="usa-fieldset margin-top-2">
           <legend>
             <h2>No other employees from your organization?</h2>
           </legend>
-        {% with attr_maxlength=1000 %}
+        {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.2.no_other_contacts_rationale %}
         {% endwith %}
     </div>
