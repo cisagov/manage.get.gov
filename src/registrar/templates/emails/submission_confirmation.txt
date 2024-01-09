@@ -8,6 +8,7 @@ REQUEST RECEIVED ON: {{ application.submission_date|date }}
 STATUS: Submitted
 
 ----------------------------------------------------------------
+
 NEXT STEPS
 We’ll review your request. This usually takes 20 business days. During this review we’ll verify that:
 - Your organization is eligible for a .gov domain
