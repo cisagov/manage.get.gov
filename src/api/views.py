@@ -92,7 +92,7 @@ def available(request, domain=""):
     domain = request.GET.get("domain", "")
 
     _, json_response = Domain.validate_and_handle_errors(
-        domain=domain, 
+        domain=domain,
         error_return_type=ValidationErrorReturnType.JSON_RESPONSE,
     )
     return json_response

@@ -461,7 +461,9 @@ class DotGovDomainForm(RegistrarForm):
     def clean_requested_domain(self):
         """Validation code for domain names."""
         requested = self.cleaned_data.get("requested_domain", None)
-        validated, _ = DraftDomain.validate_and_handle_errors(requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR)
+        validated, _ = DraftDomain.validate_and_handle_errors(
+            requested, ValidationErrorReturnType.FORM_VALIDATION_ERROR
+        )
         return validated
 
     requested_domain = forms.CharField(label="What .gov domain do you want?")

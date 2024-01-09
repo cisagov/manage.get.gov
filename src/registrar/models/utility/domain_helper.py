@@ -1,4 +1,3 @@
-from enum import Enum
 import re
 
 from django import forms
