@@ -31,3 +31,10 @@
   padding-left: 0;
   border-left: none;
 }
+
+legend.float-left-tablet + button.float-right-tablet {
+  margin-top: .5rem;
+  @include at-media('tablet') {
+    margin-top: 1rem;
+  }
+}
