@@ -306,7 +306,7 @@ class OrganizationContactForm(RegistrarForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
+                message="Enter a zip code in the form of 12345 or 12345-6789.",
             )
         ],
     )
@@ -397,7 +397,7 @@ class CurrentSitesForm(RegistrarForm):
         required=False,
         label="Public website",
         error_messages={
-            "invalid": ("Enter your organization’s current website in the required format, like www.city.com.")
+            "invalid": ("Enter your organization's current website in the required format, like example.com.")
         },
     )
 
@@ -591,7 +591,7 @@ class YourContactForm(RegistrarForm):
     )
     phone = PhoneNumberField(
         label="Phone",
-        error_messages={"required": "Enter your phone number."},
+        error_messages={"invalid": "Enter a valid 10-digit phone number.", "required": "Enter your phone number."},
     )
 
 
@@ -643,7 +643,10 @@ class OtherContactsForm(RegistrarForm):
     )
     phone = PhoneNumberField(
         label="Phone",
-        error_messages={"required": "Enter a phone number for this contact."},
+        error_messages={
+            "invalid": "Enter a valid 10-digit phone number.",
+            "required": "Enter a phone number for this contact.",
+        },
     )
 
     def __init__(self, *args, **kwargs):
