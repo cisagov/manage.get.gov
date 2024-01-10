@@ -10,7 +10,7 @@ STATUS: Withdrawn
 ----------------------------------------------------------------
 
 YOU CAN EDIT YOUR WITHDRAWN REQUEST
-You can edit and resubmit this request by logging in to the registrar <https://manage.get.gov/>.
+You can edit and resubmit this request by signing in to the registrar <https://manage.get.gov/>.
 
 
 SOMETHING WRONG?
