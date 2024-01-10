@@ -171,7 +171,6 @@ class RegistrarFormSet(forms.BaseFormSet):
                     else:
                         # If there are no other relationships, delete the object
                         db_obj.delete()
-                    continue
                 else:
                     pre_update(db_obj, cleaned)
                     db_obj.save()
