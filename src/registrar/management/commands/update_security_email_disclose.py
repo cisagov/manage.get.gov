@@ -21,6 +21,8 @@ class Command(BaseCommand):
         self.domains_with_errors: List[str] = []
         # domains that are successfully disclosed
         self.disclosed_domain_contacts: List[str] = []
+        # domains that skip disclose due to having contact registrar@dotgov.gov
+        self.skipped_domain_contacts: List[str] = []
 
     def handle(self, **options):
         """
@@ -48,14 +50,17 @@ class Command(BaseCommand):
                     domain._update_epp_contact(contact=domain.security_contact)
                     self.disclosed_domain_contacts.append(copy.deepcopy(domain.security_contact))
                 else:
-                    logger.info("Skipping disclose for %s security contact.", 
+                    logger.info("Skipping disclose for %s security contact %s.", 
                     domain.domain_info, domain.security_contact.email)
+                    self.skipped_domain_contacts.append(copy.deepcopy(domain.security_contact))
             except Exception as err:
                 # error condition if domain not in database
                 self.domains_with_errors.append(copy.deepcopy(domain.domain_info))
                 logger.error(f"error retrieving domain {domain.domain_info}: {err}")
 
-        # Inform user how many contacts were disclosed
+        # Inform user how many contacts were disclosed and skipped
         logger.info("Updated %d contacts to disclosed.", len(self.disclosed_domain_contacts))
+        logger.info("Skipped disclosing %d contacts with security email registrar@dotgov.gov.", 
+        len(self.skipped_domain_contacts))
         
         
