@@ -86,13 +86,14 @@ class Command(BaseCommand):
         # Get the domain names from TransitionDomain
         td_agencies = transition_domains.values_list("domain_name", "federal_agency").distinct()
 
+        human_readable_domain_names = list(domain_names)
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
             info_to_inspect=f"""
             ==Proposed Changes==
-            Number of DomainInformation objects to change: {len(domain_info_to_fix)}
-            The following DomainInformation objects will be modified: {domain_info_to_fix}
+            Number of DomainInformation objects to change: {len(human_readable_domain_names)}
+            The following DomainInformation objects will be modified: {human_readable_domain_names}
             """,
             prompt_title="Do you wish to patch federal_agency data?",
         )
