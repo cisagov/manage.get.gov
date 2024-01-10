@@ -68,7 +68,7 @@ When possible all developers and designers should have their own sandboxes as th
 
 Once this is made, the new owner of the sandbox has a few steps they should follow. This is already in [onboarding documents](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.6dw0iz1u56ox), but is worth re-iterating here:
 
-1. Run fixtures if desired the [onboarding guide](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.6dw0iz1u56ox) for how to do this and helpful hints
+1. Run fixtures if desired. Refer to the [onboarding guide](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.6dw0iz1u56ox) for how to do this and helpful hints
 2. add environment variables for registrar-registry communication (EPP), see [the application secrets readme](./runbooks/rotate_application_secrets.md)
 
 
