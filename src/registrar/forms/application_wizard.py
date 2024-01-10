@@ -2,6 +2,7 @@ from __future__ import annotations  # allows forward references in annotations
 from itertools import zip_longest
 import logging
 from typing import Callable
+from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
@@ -384,8 +385,8 @@ class AlternativeDomainForm(RegistrarForm):
         """Validation code for domain names."""
         requested = self.cleaned_data.get("alternative_domain", None)
         validated, _ = DraftDomain.validate_and_handle_errors(
-            domain=requested, 
-            return_type=ValidationReturnType.FORM_VALIDATION_ERROR, 
+            domain=requested,
+            return_type=ValidationReturnType.FORM_VALIDATION_ERROR,
             blank_ok=True,
         )
         return validated
@@ -464,12 +465,17 @@ class DotGovDomainForm(RegistrarForm):
         """Validation code for domain names."""
         requested = self.cleaned_data.get("requested_domain", None)
         validated, _ = DraftDomain.validate_and_handle_errors(
-            domain=requested, 
+            domain=requested,
             return_type=ValidationReturnType.FORM_VALIDATION_ERROR,
         )
         return validated
 
-    requested_domain = forms.CharField(label="What .gov domain do you want?")
+    requested_domain = forms.CharField(
+        label="What .gov domain do you want?",
+        error_messages={
+            "required": DOMAIN_API_MESSAGES["required"],
+        },
+    )
 
 
 class PurposeForm(RegistrarForm):

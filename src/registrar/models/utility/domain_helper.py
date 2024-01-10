@@ -94,15 +94,11 @@ class DomainHelper:
             error_type = type(error)
 
             # Generate the response based on the error code and return type
-            response = DomainHelper._return_form_error_or_json_response(
-                return_type, code=error_map.get(error_type)
-            )
+            response = DomainHelper._return_form_error_or_json_response(return_type, code=error_map.get(error_type))
         else:
             # For form validation, we do not need to display the success message
             if return_type != ValidationReturnType.FORM_VALIDATION_ERROR:
-                response = DomainHelper._return_form_error_or_json_response(
-                    return_type, code="success", available=True
-                )
+                response = DomainHelper._return_form_error_or_json_response(return_type, code="success", available=True)
 
         # Return the validated domain and the response (either error or success)
         return (validated, response)

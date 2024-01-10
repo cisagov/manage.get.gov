@@ -2,7 +2,6 @@
 
 import json
 from django.test import TestCase, RequestFactory
-from django.urls import reverse
 from api.views import available
 
 from registrar.forms.application_wizard import (
@@ -92,7 +91,12 @@ class TestFormValidation(MockEppLib):
                 "Enter a domain using only letters, numbers, " "or hyphens (though we don't recommend using hyphens).",
             ),
             # required
-            ("", "Enter the .gov domain you want. Don’t include “www” or “.gov.”"),
+            (
+                "",
+                "Enter the .gov domain you want. Don’t include “www” or “.gov.”"
+                " For example, if you want www.city.gov, you would enter “city”"
+                " (without the quotes).",
+            ),
             # unavailable
             (
                 "whitehouse.gov",
@@ -143,8 +147,6 @@ class TestFormValidation(MockEppLib):
                 "underscores_forever",
                 "Enter a domain using only letters, numbers, " "or hyphens (though we don't recommend using hyphens).",
             ),
-            # required
-            ("", "Enter the .gov domain you want. Don’t include “www” or “.gov.”"),
             # unavailable
             (
                 "whitehouse.gov",
