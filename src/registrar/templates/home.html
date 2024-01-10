@@ -9,7 +9,7 @@
 {% if user.is_authenticated %}
 {# the entire logged in page goes here #}
 
-<div class="tablet:grid-offset-1 desktop:grid-offset-1">
+<div class="tablet:grid-col-11 desktop:grid-col-10 tablet:grid-offset-1">
   <h1>Manage your domains</h2>
 
   <p class="margin-top-4">
@@ -31,7 +31,7 @@
     {% endif %}
   </p>
 
-  <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
+  <section class="section--outlined">
     <h2>Domains</h2>
     {% if domains %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
@@ -44,13 +44,14 @@
           <th 
             scope="col" 
             role="columnheader" 
-            {% if has_deletable_applications %} class="action-col-custom-width" {% else %} class="width-15" {% endif %}
           >
             <span class="usa-sr-only">Action</span>
           </th>
+          {% comment %} 
+          #1510
           {% if has_deletable_applications %}
           <th></th>
-          {% endif %}
+          {% endif %} {% endcomment %}
         </tr>
       </thead>
       <tbody>
@@ -105,7 +106,7 @@
     {% endif %}
   </section>
 
-  <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
+  <section class="section--outlined">
     <h2>Domain requests</h2>
     {% if domain_applications %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
@@ -137,7 +138,7 @@
           <td data-label="Status">{{ application.get_status_display }}</td>
           <td>
             {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
-              <a href="{% url 'edit-application' application.pk %}">
+              <a href="{% url 'edit-application' application.pk %}" role="button">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
@@ -152,12 +153,13 @@
             </a>
           </td>
           {% if has_deletable_applications %}
-          <td class="tablet-margin-top-2">
+          <td>
             {% if application.status == "started" or application.status == "withdrawn"  %}
               <a
+                role="button"
                 id="button-toggle-delete-domain-alert-{{ forloop.counter }}"
                 href="#toggle-delete-domain-alert-{{ forloop.counter }}"
-                class="usa-button--unstyled remove-text-no-underline"
+                class="usa-button--unstyled text-no-underline"
                 aria-controls="toggle-delete-domain-alert-{{ forloop.counter }}"
                 data-open-modal
               >
@@ -168,7 +170,7 @@
               </a>
 
               <div
-                class="usa-modal wider-modal"
+                class="usa-modal"
                 id="toggle-delete-domain-alert-{{ forloop.counter }}"
                 aria-labelledby="Are you sure you want to continue?"
                 aria-describedby="User will be removed"
