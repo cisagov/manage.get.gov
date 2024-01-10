@@ -7,6 +7,7 @@ from registrar.models.domain import Domain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from django.contrib.auth import get_user_model
+from registrar.tests.common import MockEppLib
 from registrar.utility.csv_export import (
     write_header,
     write_body,
@@ -222,7 +223,7 @@ class CsvReportsTest(TestCase):
         self.assertEqual(expected_file_content, response.content)
 
 
-class ExportDataTest(TestCase):
+class ExportDataTest(MockEppLib):
     def setUp(self):
         super().setUp()
         username = "test_user"
@@ -334,6 +335,80 @@ class ExportDataTest(TestCase):
         DomainInformation.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
+
+    def test_export_domains_to_writer_security_emails(self):
+        """Test that export_domains_to_writer returns the
+        expected security email"""
+
+        # Add security email information
+        self.domain_1.name = "defaultsecurity.gov"
+        self.domain_1.save()
+
+        # Invoke setter
+        self.domain_1.security_contact
+
+        # Invoke setter
+        self.domain_2.security_contact
+
+        # Invoke setter
+        self.domain_3.security_contact
+
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        writer = csv.writer(csv_file)
+
+        # Define columns, sort fields, and filter condition
+        columns = [
+            "Domain name",
+            "Domain type",
+            "Agency",
+            "Organization name",
+            "City",
+            "State",
+            "AO",
+            "AO email",
+            "Security contact email",
+            "Status",
+            "Expiration date",
+        ]
+        sort_fields = ["domain__name"]
+        filter_condition = {
+            "domain__state__in": [
+                Domain.State.READY,
+                Domain.State.DNS_NEEDED,
+                Domain.State.ON_HOLD,
+            ],
+        }
+
+        self.maxDiff = None
+        # Call the export functions
+        write_header(writer, columns)
+        write_body(writer, columns, sort_fields, filter_condition)
+
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+
+        # Read the content into a variable
+        csv_content = csv_file.read()
+
+        # We expect READY domains,
+        # sorted alphabetially by domain name
+        expected_content = (
+            "Domain name,Domain type,Agency,Organization name,City,State,AO,"
+            "AO email,Security contact email,Status,Expiration date\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,Ready\n"
+            "adomain2.gov,Interstate,(blank),Dns needed\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,123@mail.gov,On hold,2023-05-25\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,dotgov@cisa.dhs.gov,Ready"
+        )
+
+        print(csv_content)
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+
+        self.assertEqual(csv_content, expected_content)
 
     def test_write_body(self):
         """Test that write_body returns the

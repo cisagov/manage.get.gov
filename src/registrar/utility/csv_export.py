@@ -26,6 +26,7 @@ def get_domain_infos(filter_condition, sort_fields):
 
 def write_row(writer, columns, domain_info):
     security_contacts = domain_info.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
+
     # For linter
     ao = " "
     if domain_info.authorizing_official:
@@ -61,6 +62,7 @@ def write_row(writer, columns, domain_info):
         "First ready": domain_info.domain.first_ready,
         "Deleted": domain_info.domain.deleted,
     }
+
     writer.writerow([FIELDS.get(column, "") for column in columns])
 
 
