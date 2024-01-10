@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi {{ application.submitter.first_name }}.
+Hi, {{ application.submitter.first_name }}.
 
 Congratulations! Your .gov domain request has been approved.
 
