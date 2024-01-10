@@ -138,7 +138,7 @@ class Command(BaseCommand):
         was_success = len(self.di_failed_to_update) == 0
         return was_success
 
-    def process_skipped_records(self, file_path, seperator, debug):
+    def process_skipped_records(self, file_path, separator, debug):
         """If we encounter any DomainInformation records that do not have data in the associated
         TransitionDomain record, then check the associated current-full.csv file for this
         information."""
