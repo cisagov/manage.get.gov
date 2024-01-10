@@ -47,7 +47,7 @@ class Command(BaseCommand):
                 logger.error(err)
                 logger.error(f"{TerminalColors.FAIL}" f"Failed to update {domain}" f"{TerminalColors.ENDC}")
 
-        # Do a bulk update on all fields
+        # Do a bulk update on the first_ready field
         ScriptDataHelper.bulk_update_fields(Domain, self.to_update, ["first_ready"])
 
         # Log what happened
