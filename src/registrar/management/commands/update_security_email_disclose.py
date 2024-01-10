@@ -29,29 +29,31 @@ class Command(BaseCommand):
         logger.info("Updating security emails to public")
         
         # Initializes domains that need to be disclosed
-        domains = Domain.objects.filter()
+        statuses=["ready", "dns needed"]
+        domains = Domain.objects.filter(
+            state__in=statuses
+        )
         
         # Call security_contact on all domains to trigger saving contact information
         for domain in domains:
             contact = domain.security_contact
 
-        domains_with_contact = Domain.objects.filter(
-            security_contact_registry_id__isnull=False
-        )
-        logger.info("Found %d domains with security contact.", len(domains_with_contact))
+        logger.info("Found %d domains with status Ready or DNS Needed.", len(domains))
 
         # Update EPP contact for domains with a security contact
-        for domain in domains_with_contact:
+        for domain in domains:
             try:
-                logger.info("Domain %s security contact: %s", domain, domain.security_contact)
-                domain._update_epp_contact(contact=domain.security_contact)
-                self.disclosed_domain_contacts.append(copy.deepcopy(domain.security_contact))
+                logger.info("Domain %s security contact: %s", domain.domain_info, domain.security_contact.email)
+                if domain.security_contact.email != "registrar@dotgov.gov":
+                    domain._update_epp_contact(contact=domain.security_contact)
+                    self.disclosed_domain_contacts.append(copy.deepcopy(domain.security_contact))
+                else:
+                    logger.info("Skipping disclose for %s security contact.", 
+                    domain.domain_info, domain.security_contact.email)
             except Exception as err:
                 # error condition if domain not in database
                 self.domains_with_errors.append(copy.deepcopy(domain.domain_info))
                 logger.error(f"error retrieving domain {domain.domain_info}: {err}")
-
-        # Update transition domains to disclose
 
         # Inform user how many contacts were disclosed
         logger.info("Updated %d contacts to disclosed.", len(self.disclosed_domain_contacts))
