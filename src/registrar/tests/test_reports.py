@@ -7,7 +7,6 @@ from registrar.models.domain import Domain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from django.contrib.auth import get_user_model
-from registrar.tests.common import MockEppLib
 from registrar.utility.csv_export import (
     write_header,
     write_body,
