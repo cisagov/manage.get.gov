@@ -31,7 +31,7 @@
   }
 
   // Fix margins in mobile view
-  @media screen {
+  @include at-media('tablet') {
     td.tablet-margin-top-2 {
         margin-top: 16px;
     }
