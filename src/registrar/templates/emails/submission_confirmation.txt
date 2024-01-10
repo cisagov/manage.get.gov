@@ -17,10 +17,12 @@ We’ll review your request. This usually takes 20 business days. During this re
 
 We’ll email you if we have questions and when we complete our review. You can check the status of your request at any time on the registrar homepage. <https://manage.get.gov>
 
+
 NEED TO MAKE CHANGES?
 To make changes to your domain request, you have to withdraw it first. Withdrawing your request may extend the time it takes for the .gov team to complete their review. 
 
 Learn more about withdrawing your request <https://get.gov/help/domain-requests/#withdraw-your-domain-request>.
+
 
 THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
