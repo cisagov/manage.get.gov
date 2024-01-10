@@ -51,7 +51,7 @@ class Command(BaseCommand):
         if len(self.di_skipped) > 0 and was_success:
             # Flush out the list of DomainInformations to update
             self.di_to_update.clear()
-            self.process_skipped_records(current_full_filepath, seperator, debug)
+            self.process_skipped_records(current_full_filepath, separator, debug)
 
             # Clear the old skipped list, and log the run summary
             self.di_skipped.clear()
