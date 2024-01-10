@@ -86,7 +86,7 @@ class TestPatchAgencyInfo(TestCase):
     def test_patch_agency_info_skip_updates_data(self):
         """
         Tests that the `patch_federal_agency_info` command logs a warning but
-        updates the DomainInformation object, because an record exists in the
+        updates the DomainInformation object, because a record exists in the
         provided current-full.csv file.
         """
         # Set federal_agency to None to simulate a skip

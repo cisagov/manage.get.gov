@@ -223,7 +223,7 @@ class CsvReportsTest(TestCase):
         self.assertEqual(expected_file_content, response.content)
 
 
-class ExportDataTest(MockEppLib):
+class ExportDataTest(TestCase):
     def setUp(self):
         super().setUp()
         username = "test_user"
