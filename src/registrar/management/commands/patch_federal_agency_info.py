@@ -152,7 +152,7 @@ class Command(BaseCommand):
 
             ==Proposed Changes==
             Number of DomainInformation objects to change: {len(self.di_skipped)}
-            The following DomainInformation objects will be modified: {self.di_skipped}
+            The following DomainInformation objects will be modified if agency data exists in file: {self.di_skipped}
             """,
             prompt_title="Do you wish to patch skipped records?",
         )
