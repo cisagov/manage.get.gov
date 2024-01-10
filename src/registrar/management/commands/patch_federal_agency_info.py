@@ -36,7 +36,7 @@ class Command(BaseCommand):
     def handle(self, current_full_filepath, **kwargs):
         """Loops through each valid DomainInformation object and updates its agency value"""
         debug = kwargs.get("debug")
-        seperator = kwargs.get("sep")
+        separator = kwargs.get("sep")
 
         # Check if the provided file path is valid
         if not os.path.isfile(current_full_filepath):
