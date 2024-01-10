@@ -61,7 +61,7 @@ class Command(BaseCommand):
             # which may indicate some sort of data corruption.
             logger.error(
                 f"{TerminalColors.FAIL}"
-                "Could not automatically patch skipped records. "
+                "Could not automatically patch skipped records. The initial update failed."
                 "An error was encountered when running this script, please inspect the following "
                 f"records for accuracy and completeness: {self.di_failed_to_update}"
                 f"{TerminalColors.ENDC}"
@@ -158,7 +158,7 @@ class Command(BaseCommand):
         )
         logger.info("Updating...")
 
-        file_data = self.read_current_full(file_path, seperator)
+        file_data = self.read_current_full(file_path, separator)
         for di in self.di_skipped:
             domain_name = di.domain.name
             row = file_data.get(domain_name)
@@ -182,10 +182,10 @@ class Command(BaseCommand):
         # Bulk update the federal agency field in DomainInformation objects
         DomainInformation.objects.bulk_update(self.di_to_update, ["federal_agency"])
 
-    def read_current_full(self, file_path, seperator):
+    def read_current_full(self, file_path, separator):
         """Reads the current-full.csv file and stores it in a dictionary"""
         with open(file_path, "r") as requested_file:
-            old_reader = csv.DictReader(requested_file, delimiter=seperator)
+            old_reader = csv.DictReader(requested_file, delimiter=separator)
             # Some variants of current-full.csv have key casing differences for fields
             # such as "Domain name" or "Domain Name". This corrects that.
             reader = self.lowercase_fieldnames(old_reader)

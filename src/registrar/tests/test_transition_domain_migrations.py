@@ -48,6 +48,10 @@ class TestPatchAgencyInfo(TestCase):
         of a `DomainInformation` object when the corresponding
         `TransitionDomain` object has a valid `federal_agency`.
         """
+
+        # Ensure that the federal_agency is None
+        self.assertEqual(self.domain_info.federal_agency, None)
+
         self.call_patch_federal_agency_info()
 
         # Reload the domain_info object from the database
