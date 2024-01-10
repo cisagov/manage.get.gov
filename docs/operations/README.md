@@ -45,7 +45,7 @@ Your sandbox space should've been setup as part of the onboarding process. If th
 
 ## Stable and Staging Release Rules
 
-Releases will be made for staging and stable twice a  week, ideally Tuesday and Thursday, but can be adjusted if needed. Code on `main` will be released to `staging`, and then on the following Tuesday/Thursday this `staging` release will become the new `stable` release. This means every release day, a release will be made to `stable` containing the last `staging` code. On this same day a new `staging` release will be made that contains the most up-to-date code on main. Thus, `staging` can be a few days behind the main branch, and `stable` will be a few days behind the code on `staging`.
+Releases will be made for staging and stable twice a week, ideally Tuesday and Thursday, but can be adjusted if needed. Code on `main` will be released to `staging`, and then on the following Tuesday/Thursday this `staging` release will become the new `stable` release. This means every release day, a release will be made to `stable` containing the last `staging` code. On this same day a new `staging` release will be made that contains the most up-to-date code on main. Thus, `staging` can be a few days behind the main branch, and `stable` will be a few days behind the code on `staging`.
 
 If a bug fix or feature needs to be made to stable out of the normal cycle, this can only be done at the product owner's request.
 
