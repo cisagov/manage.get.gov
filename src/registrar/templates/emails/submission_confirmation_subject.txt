@@ -1,1 +1,1 @@
-Thank you for applying for a .gov domain
+Update on your .gov request: {{ application.requested_domain.name }}
