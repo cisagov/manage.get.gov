@@ -17,6 +17,10 @@ class DraftDomain(TimeStampedModel, DomainHelper):
     name = models.CharField(
         max_length=253,
         blank=False,
-        default=None,  # prevent saving without a value
         help_text="Fully qualified domain name",
+    )
+
+    is_incomplete = models.BooleanField(
+        default=False,
+        help_text="Determines if this Draft is complete or not"
     )

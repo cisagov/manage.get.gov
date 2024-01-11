@@ -1,5 +1,7 @@
 import logging
+import re
 
+from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
@@ -10,6 +12,7 @@ from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
+from registrar.models.draft_domain import DraftDomain
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
@@ -139,14 +142,97 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                 return self._application
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
-
+        
+        # TODO - revert back to using draft_name
+        draft_domain = self._create_default_draft_domain()
         self._application = DomainApplication.objects.create(
-            creator=self.request.user,  # type: ignore
+            creator=self.request.user,
+            requested_domain=draft_domain,
         )
 
         self.storage["application_id"] = self._application.id
         return self._application
 
+    def _create_default_draft_domain(self):
+        "Set a default draft name for if the user exits without completing"
+        default_draft_text = "New domain request"
+
+        # Does the user have any incomplete drafts?
+        existing_applications = DomainApplication.objects.filter(
+            Q(requested_domain=None) | Q(requested_domain__is_incomplete=True),
+            creator=self.request.user,
+        )
+
+        name_field = "requested_domain__name"
+
+        incomplete_drafts = existing_applications.exclude(requested_domain=None).filter(
+            requested_domain__name__icontains=default_draft_text
+        ).order_by(name_field)
+
+        incomplete_draft_names = incomplete_drafts.values_list(name_field, flat=True)
+
+        proposed_draft_number = incomplete_drafts.count() + 1
+        draft_name = f"New domain request {proposed_draft_number}"
+        for application in existing_applications:
+            if application.requested_domain is not None and application.requested_domain.name is not None:
+                name = application.requested_domain.name
+
+                # If we already have a list of draft numbers, base the 
+                # subsequent number off of the last numbered field.
+                # This is to avoid a scenario in which drafts 1, 2, 3 and exist 
+                # and 2 is deleted - meaning we would get two duplicate "3"s if we added another
+                if name in incomplete_draft_names:
+                    # Get the last numbered draft
+                    last_draft = incomplete_draft_names.last()
+                    last_draft_number = self._parse_first_number_from_string(last_draft)
+
+                    smallest_number = self._find_smallest_missing_number(incomplete_draft_names)
+                    smallest_name = f"New domain request {smallest_number}"
+                    if smallest_name not in incomplete_draft_names:
+                        draft_name = smallest_name
+                    elif proposed_draft_number == last_draft_number:
+                        # If the draft number we are trying to create matches the last draft number,
+                        # simply add one to that number
+                        draft_name = f"New domain request {last_draft_number + 1}"
+
+        # Handle edge case if the user has an obscene number of domain drafts
+        if len(draft_name) > 253:
+            draft_name = default_draft_text
+
+        draft_domain = DraftDomain(
+            name=draft_name,
+            is_incomplete=True,
+        )
+        draft_domain.save()
+
+        return draft_domain
+
+    def _find_smallest_missing_number(self, incomplete_drafts):
+        draft_numbers = []
+        for draft in incomplete_drafts:
+            # Parse the number out of the text
+            number = self._parse_first_number_from_string(draft)
+            if number is not None:
+                draft_numbers.append(number)
+
+        draft_numbers = sorted(draft_numbers)
+        smallest_missing = 1
+        for number in draft_numbers:
+            if number == smallest_missing:
+                smallest_missing += 1
+            elif number > smallest_missing:
+                break
+        return smallest_missing
+
+    def _parse_first_number_from_string(self, string_to_parse: str) -> int | None:
+        """Given a `string_to_parse`, try to find any number in it and return that.
+        Returns None if no match is found"""
+
+        # Parse the number out of the text
+        match = re.search("\d+", string_to_parse)
+
+        number = int(match.group()) if match else None
+        return number
     @property
     def storage(self):
         # marking session as modified on every access
