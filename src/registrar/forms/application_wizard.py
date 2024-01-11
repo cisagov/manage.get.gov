@@ -789,9 +789,7 @@ class NoOtherContactsForm(RegistrarForm):
     no_other_contacts_rationale = forms.CharField(
         required=True,
         # label has to end in a space to get the label_suffix to show
-        label=(
-            "No other employees rationale"
-        ),
+        label=("No other employees rationale"),
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(
