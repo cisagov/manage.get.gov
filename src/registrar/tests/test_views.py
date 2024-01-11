@@ -95,18 +95,6 @@ class LoggedInTests(TestWithUser):
         # clean up
         application.delete()
 
-    def test_home_lists_domains(self):
-        response = self.client.get("/")
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.assertNotContains(response, "igorville.gov")
-        role, _ = UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
-        response = self.client.get("/")
-        # count = 2 because it is also in screenreader content
-        self.assertContains(response, "igorville.gov", count=2)
-        self.assertContains(response, "Expired")
-        # clean up
-        role.delete()
-
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
         self.assertContains(
@@ -1522,12 +1510,12 @@ class TestDomainDetail(TestDomainOverview):
         # from constructors. Let's reset.
         Domain.objects.all().delete()
         UserDomainRole.objects.all().delete()
-
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        home_page = self.app.get("/")
+        self.assertNotContains(home_page, "igorville.gov")
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
-
         home_page = self.app.get("/")
         self.assertContains(home_page, "igorville.gov")
         igorville = Domain.objects.get(name="igorville.gov")
