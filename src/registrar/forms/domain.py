@@ -59,7 +59,7 @@ class DomainNameserverForm(forms.Form):
         # add custom error messages
         self.fields["server"].error_messages.update(
             {
-                "required": "A minimum of 2 name servers are required.",
+                "required": "At least two name servers are required.",
             }
         )
 
