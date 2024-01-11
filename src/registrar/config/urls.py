@@ -39,7 +39,6 @@ for step, view in [
     (Step.PURPOSE, views.Purpose),
     (Step.YOUR_CONTACT, views.YourContact),
     (Step.OTHER_CONTACTS, views.OtherContacts),
-    (Step.NO_OTHER_CONTACTS, views.NoOtherContacts),
     (Step.ANYTHING_ELSE, views.AnythingElse),
     (Step.REQUIREMENTS, views.Requirements),
     (Step.REVIEW, views.Review),

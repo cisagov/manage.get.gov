@@ -10,7 +10,7 @@ class TestNameserverError(TestCase):
     def test_with_no_ip(self):
         """Test NameserverError when no ip address is passed"""
         nameserver = "nameserver val"
-        expected = "Using your domain for a name server requires an IP address"
+        expected = "Using your domain for a name server requires an IP address."
 
         nsException = NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
         self.assertEqual(nsException.message, expected)
@@ -20,7 +20,7 @@ class TestNameserverError(TestCase):
         """Test NameserverError when no ip address
         and no nameserver is passed"""
         nameserver = "nameserver val"
-        expected = "Too many hosts provided, you may not have more than 13 nameservers."
+        expected = "You can't have more than 13 nameservers."
 
         nsException = NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS, nameserver=nameserver)
         self.assertEqual(nsException.message, expected)

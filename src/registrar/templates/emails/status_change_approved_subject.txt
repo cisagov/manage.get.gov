@@ -1,1 +1,1 @@
-Your .gov domain request is approved
+Update on your .gov request: {{ application.requested_domain.name }}

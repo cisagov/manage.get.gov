@@ -483,3 +483,57 @@ function prepareDeleteButtons(formLabel) {
     }, 50);
   }
 })();
+
+function toggleTwoDomElements(ele1, ele2, index) {
+  let element1 = document.getElementById(ele1);
+  let element2 = document.getElementById(ele2);
+  if (element1 && element2) {
+      // Toggle display based on the index
+      element1.style.display = index === 1 ? 'block' : 'none';
+      element2.style.display = index === 2 ? 'block' : 'none';
+  } else {
+      console.error('One or both elements not found.');
+  }
+}
+
+/**
+ * An IIFE that listens to the other contacts radio form on DAs and toggles the contacts/no other contacts forms 
+ *
+ */
+(function otherContactsFormListener() {
+  // Get the radio buttons
+  let radioButtons = document.querySelectorAll('input[name="other_contacts-has_other_contacts"]');
+
+  function handleRadioButtonChange() {
+    // Check the value of the selected radio button
+    // Attempt to find the radio button element that is checked
+    let radioButtonChecked = document.querySelector('input[name="other_contacts-has_other_contacts"]:checked');
+
+    // Check if the element exists before accessing its value
+    let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
+
+    switch (selectedValue) {
+      case 'True':
+        toggleTwoDomElements('other-employees', 'no-other-employees', 1);
+        break;
+
+      case 'False':
+        toggleTwoDomElements('other-employees', 'no-other-employees', 2);
+        break;
+
+      default:
+        toggleTwoDomElements('other-employees', 'no-other-employees', 0);
+    }
+  }
+
+  if (radioButtons.length) {
+    // Add event listener to each radio button
+    radioButtons.forEach(function (radioButton) {
+      radioButton.addEventListener('change', handleRadioButtonChange);
+    });
+
+    // initialize
+    handleRadioButtonChange();
+  }
+})();
+

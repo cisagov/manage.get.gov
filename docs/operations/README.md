@@ -35,17 +35,55 @@ Binding the database in `manifest-<ENVIRONMENT>.json` automatically inserts the 
 
 # Deploy
 
-We have three types of environments: developer "sandboxes", `staging` and `stable`. Developers can deploy locally to their sandbox whenever they want. However, only our CD service can deploy to `staging` and `stable`, and it does so when we make tagged releases of `main`. For `staging`, this is done to ensure there is a non-production level test envirornment that can be used for user testing or for testing code before it is pushed to `stable`. `Staging` can be especially helpful when testing database changes or migrations that could have adververse affects in `stable`. On the other hand, `stable` is used to ensure that we have a "golden" environment to point to. We can refer to `stable` as our production environment and `staging` as our pre-production (pre-prod) environment. As such, code on main should always be tagged for `staging` before it is tagged for `stable`.
+We have four types of environments: developer "sandboxes", `development`, `staging` and `stable`. Developers can deploy locally to their sandbox whenever they want. However, only our CD service can deploy to `development`, `staging` and `stable`.
 
-You should make sure all of the USWDS assets are compiled and collected before deploying to your sandbox. To deploy locally to `sandbox`:
+For staging and stable our CD service completes this deploy when we make tagged releases from specifc branch. For `staging`, this is done to ensure there is a non-production level test environment that can be used for user testing or for testing code before it is pushed to `stable`. `Staging` can be especially helpful when testing database changes or migrations that could have adververse affects in `stable`. When deploying to staging, the branch used is often just `main`. On the other hand, `stable` is used to ensure that we have a "golden" environment to point to. We can refer to `stable` as our production environment and `staging` as our pre-production (pre-prod) environment. As such, code on main should always be tagged for `staging` before it is tagged for `stable`. Thus the branch used in `stable` releases is usually the tagged branch used for the last staging commit.
+
+The `development` environment, is one that auto deploys on any push to main via our CD service. This is to ensure we have an environment that is identical to what we have on the `main` branch. This should not be confused with the "sandboxes" given to developers and designers for ticket development.
+
+When deploying to your personal sandbox, you should make sure all of the USWDS assets are compiled and collected before deploying to your sandbox. To deploy locally to `sandbox`:
 
 For ease of use, you can run the `deploy.sh <sandbox name>` script in the `/src` directory to build the assets and deploy to your sandbox. Similarly, you could run `build.sh <sandbox name>` script to just compile and collect the assets without deploying.
 
-Your sandbox space should've been setup as part of the onboarding process. If this was not the case, please have an admin follow the instructions [here](../../.github/ISSUE_TEMPLATE/developer-onboarding.md#setting-up-developer-sandbox).
+Your sandbox space should've been setup as part of the onboarding process. If this was not the case, please have an admin follow the instructions below.
+
+## Creating a sandbox or new environment
+
+When possible all developers and designers should have their own sandboxes as this provides them a space to test out changes in an isolated environment. All sandboxes are still accessible on the web, just like `staging`, `stable`, and `development`.
+
+1. Make sure you have admin access to the cloud.gov organization, have admin access on github, and make sure you are targeting your own workspace in cloudfoundry
+2. Make sure you are on `main` and your local code is up to date with the repo
+3. Open the terminal to the root project directory 
+4. run [creating a developer sandbox shell script](../../ops/scripts/create_dev_sandbox.sh) by typing the path to the script followed by the name of the sandbox you wish to create. Use initials for the sandbox name. If John Doe is the name of a developer you wish to make a sandbox for you would then do:
+
+```
+./ops/scripts/create_dev_sandbox.sh jd
+```
+
+5. Follow the prompts that appear in the terminal, if on `main`, make sure to click yes to switching to a new branch. Clicking anything besides `Y` or `y` will count as a no.
+6. When the database is being set up it can take 5 mins or longer, don't close the window.
+7. The last prompt asks if you want to make a PR, this will generate a PR for you but you may need to double check against similiar PRs to make sure everything was changed correctly. To do this go to github Pull Requests and search for closed PRs with the word infrastructure.
+
+## Once the sandbox or new environment is made
+
+Once this is made, the new owner of the sandbox has a few steps they should follow. This is already in [onboarding documents](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.6dw0iz1u56ox), but is worth re-iterating here:
+
+1. Run fixtures if desired. Refer to the [onboarding guide](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.6dw0iz1u56ox) for how to do this and helpful hints
+2. add environment variables for registrar-registry communication (EPP), see [the application secrets readme](./runbooks/rotate_application_secrets.md)
+
+
+## Creating a new environment
+If we ever need a new environment to replace `development`, `staging` or `stable` we need to follow similiar steps but not identical ones to the instructions for making a sandbox.
+
+1. Just like making a sandbox make sure you have admin access to the cloud.gov organization, have admin access on github, and make sure you are targeting your own workspace in cloudfoundry.  Make sure you are on `main` and your local code is up to date with the repo
+2. Open the terminal to the root project directory.
+3. Instead of running [the script for creating a sandbox](../../ops/scripts/create_dev_sandbox.sh), you will manually copy over which commands you want directly into the terminal. Don't run the prompts in terminal, as you will be figuring out what you need to do based on your needs. All the prompts, denoted with `echo`, tell you what the following commands are doing. When uncertain look at the cloudfoundry documentation for any of the `cf` commands.
+4. In most cases, the setup will be almost identical to making a sandbox. The main difference will be deployment and determining if you want workflows like reset, deploy, and migrate to work for it. You will manually update these yaml files if you want the workflows included.
+5. Often it is the manifest file that needs to change as well, either with different environment variables, number of instances, or so on. Copy whichever manifest is closest to what you wish to do and tailor it to your specific needs. See cloudfoundry's and docker's documentation if you need assistance.
 
 ## Stable and Staging Release Rules
 
-Releases will be made for staging and stable every week starting on the first day of the sprint (Wednesday), with the second release of the sprint occuring halfway through the sprint. With the exception of first time going into production, these releases will NOT have the same code. The release to stable will be the same commit that was tagged for staging one week prior, making stable one week behind staging. Further, this means staging can be up to a week behind the main branch of code.
+Releases will be made for staging and stable twice a week, ideally Tuesday and Thursday, but can be adjusted if needed. Code on `main` will be released to `staging`, and then on the following Tuesday/Thursday this `staging` release will become the new `stable` release. This means every release day, a release will be made to `stable` containing the last `staging` code. On this same day a new `staging` release will be made that contains the most up-to-date code on main. Thus, `staging` can be a few days behind the main branch, and `stable` will be a few days behind the code on `staging`.
 
 If a bug fix or feature needs to be made to stable out of the normal cycle, this can only be done at the product owner's request.
 
