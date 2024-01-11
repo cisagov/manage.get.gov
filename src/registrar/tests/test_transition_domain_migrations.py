@@ -99,7 +99,7 @@ class TestPopulateFirstReady(TestCase):
 
     def test_populate_first_ready_state_dns_needed(self):
         """
-        Tests that the populate_first_ready works as expected for the state 'dns_needed'
+        Tests that the populate_first_ready doesn't make changes when a domain's state  is 'dns_needed'
         """
         # Set the created at date
         self.dns_needed_domain.created_at = self.ready_at_date
