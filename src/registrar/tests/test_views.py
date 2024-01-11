@@ -74,6 +74,7 @@ class TestWithUser(MockEppLib):
         # delete any applications too
         super().tearDown()
         DomainApplication.objects.all().delete()
+        DomainInformation.objects.all().delete()
         self.user.delete()
 
 
@@ -216,8 +217,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
         in the modal header on the submit page.
         """
         num_pages_tested = 0
-        # elections, type_of_work, tribal_government, no_other_contacts
-        SKIPPED_PAGES = 4
+        # elections, type_of_work, tribal_government
+        SKIPPED_PAGES = 3
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         intro_page = self.app.get(reverse("application:"))
@@ -422,7 +423,12 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         other_contacts_page = your_contact_result.follow()
+
+        # This page has 3 forms in 1.
+        # Let's set the yes/no radios to enable the other contacts fieldsets
         other_contacts_form = other_contacts_page.forms[0]
+
+        other_contacts_form["other_contacts-has_other_contacts"] = "True"
 
         other_contacts_form["other_contacts-0-first_name"] = "Testy2"
         other_contacts_form["other_contacts-0-last_name"] = "Tester2"
@@ -561,8 +567,8 @@ class DomainApplicationTests(TestWithUser, WebTest):
     @skip("WIP")
     def test_application_form_started_allsteps(self):
         num_pages_tested = 0
-        # elections, type_of_work, tribal_government, no_other_contacts
-        SKIPPED_PAGES = 4
+        # elections, type_of_work, tribal_government
+        SKIPPED_PAGES = 3
         DASHBOARD_PAGE = 1
         num_pages = len(self.TITLES) - SKIPPED_PAGES + DASHBOARD_PAGE
 
@@ -809,24 +815,271 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
 
-    def test_application_no_other_contacts(self):
-        """Applicants with no other contacts have to give a reason."""
-        contacts_page = self.app.get(reverse("application:other_contacts"))
+    def test_yes_no_form_inits_blank_for_new_application(self):
+        """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
+        new applications"""
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        other_contacts_form = other_contacts_page.forms[0]
+        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
+
+    def test_yes_no_form_inits_yes_for_application_with_other_contacts(self):
+        """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
+        application has other contacts"""
+        # Application has other contacts by default
+        application = completed_application(user=self.user)
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+
+    def test_yes_no_form_inits_no_for_application_with_no_other_contacts_rationale(self):
+        """On the Other Contacts page, the yes/no form gets initialized with NO selected if the
+        application has no other contacts"""
+        # Application has other contacts by default
+        application = completed_application(user=self.user, has_other_contacts=False)
+        application.no_other_contacts_rationale = "Hello!"
+        application.save()
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+
+    def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
+        """When a user submits the Other Contacts form with other contacts selected, the application's
+        no other contacts rationale gets deleted"""
+        # Application has other contacts by default
+        application = completed_application(user=self.user, has_other_contacts=False)
+        application.no_other_contacts_rationale = "Hello!"
+        application.save()
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+
+        other_contacts_form["other_contacts-has_other_contacts"] = "True"
+
+        other_contacts_form["other_contacts-0-first_name"] = "Testy"
+        other_contacts_form["other_contacts-0-middle_name"] = ""
+        other_contacts_form["other_contacts-0-last_name"] = "McTesterson"
+        other_contacts_form["other_contacts-0-title"] = "Lord"
+        other_contacts_form["other_contacts-0-email"] = "testy@abc.org"
+        other_contacts_form["other_contacts-0-phone"] = "(201) 555-0123"
+
+        # Submit the now empty form
+        other_contacts_form.submit()
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = contacts_page.forms[0].submit()
-        # follow first redirect
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        no_contacts_page = result.follow()
-        expected_url_slug = str(Step.NO_OTHER_CONTACTS)
-        actual_url_slug = no_contacts_page.request.path.split("/")[-2]
-        self.assertEqual(expected_url_slug, actual_url_slug)
 
+        # Verify that the no_other_contacts_rationale we saved earlier has been removed from the database
+        application = DomainApplication.objects.get()
+        self.assertEqual(
+            application.other_contacts.count(),
+            1,
+        )
+
+        self.assertEquals(
+            application.no_other_contacts_rationale,
+            None,
+        )
+
+    def test_submitting_no_other_contacts_rationale_deletes_other_contacts(self):
+        """When a user submits the Other Contacts form with no other contacts selected, the application's
+        other contacts get deleted for other contacts that exist and are not joined to other objects
+        """
+        # Application has other contacts by default
+        application = completed_application(user=self.user)
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+
+        other_contacts_form["other_contacts-has_other_contacts"] = "False"
+
+        other_contacts_form["other_contacts-no_other_contacts_rationale"] = "Hello again!"
+
+        # Submit the now empty form
+        other_contacts_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the no_other_contacts_rationale we saved earlier has been removed from the database
+        application = DomainApplication.objects.get()
+        self.assertEqual(
+            application.other_contacts.count(),
+            0,
+        )
+
+        self.assertEquals(
+            application.no_other_contacts_rationale,
+            "Hello again!",
+        )
+
+    def test_submitting_no_other_contacts_rationale_removes_reference_other_contacts_when_joined(self):
+        """When a user submits the Other Contacts form with no other contacts selected, the application's
+        other contacts references get removed for other contacts that exist and are joined to other objects"""
+        # Populate the databse with a domain application that
+        # has 1 "other contact" assigned to it
+        # We'll do it from scratch so we can reuse the other contact
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(555) 555 5555",
+        )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(555) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(555) 555 5557",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(other)
+
+        # Now let's join the other contact to another object
+        domain_info = DomainInformation.objects.create(creator=self.user)
+        domain_info.other_contacts.set([other])
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+
+        other_contacts_form["other_contacts-has_other_contacts"] = "False"
+
+        other_contacts_form["other_contacts-no_other_contacts_rationale"] = "Hello again!"
+
+        # Submit the now empty form
+        other_contacts_form.submit()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the no_other_contacts_rationale we saved earlier is no longer associated with the application
+        application = DomainApplication.objects.get()
+        self.assertEqual(
+            application.other_contacts.count(),
+            0,
+        )
+
+        # Verify that the 'other' contact object still exists
+        domain_info = DomainInformation.objects.get()
+        self.assertEqual(
+            domain_info.other_contacts.count(),
+            1,
+        )
+        self.assertEqual(
+            domain_info.other_contacts.all()[0].first_name,
+            "Testy2",
+        )
+
+        self.assertEquals(
+            application.no_other_contacts_rationale,
+            "Hello again!",
+        )
+
+    def test_if_yes_no_form_is_no_then_no_other_contacts_required(self):
+        """Applicants with no other contacts have to give a reason."""
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        other_contacts_form = other_contacts_page.forms[0]
+        other_contacts_form["other_contacts-has_other_contacts"] = "False"
+        response = other_contacts_page.forms[0].submit()
+
+        # The textarea for no other contacts returns this error message
+        # Assert that it is returned, ie the no other contacts form is required
+        self.assertContains(response, "Rationale for no other employees is required.")
+
+        # The first name field for other contacts returns this error message
+        # Assert that it is not returned, ie the contacts form is not required
+        self.assertNotContains(response, "Enter the first name / given name of this contact.")
+
+    def test_if_yes_no_form_is_yes_then_other_contacts_required(self):
+        """Applicants with other contacts do not have to give a reason."""
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        other_contacts_form = other_contacts_page.forms[0]
+        other_contacts_form["other_contacts-has_other_contacts"] = "True"
+        response = other_contacts_page.forms[0].submit()
+
+        # The textarea for no other contacts returns this error message
+        # Assert that it is not returned, ie the no other contacts form is not required
+        self.assertNotContains(response, "Rationale for no other employees is required.")
+
+        # The first name field for other contacts returns this error message
+        # Assert that it is returned, ie the contacts form is required
+        self.assertContains(response, "Enter the first name / given name of this contact.")
+
+    @skip("Repurpose when working on ticket 903")
     def test_application_delete_other_contact(self):
         """Other contacts can be deleted after being saved to database."""
         # Populate the databse with a domain application that
