@@ -1,3 +1,4 @@
+import copy
 import datetime
 
 from io import StringIO
@@ -65,7 +66,7 @@ class TestPopulateFirstReady(TestCase):
         self.ready_domain.created_at = self.ready_at_date
         self.ready_domain.save()
 
-        desired_domain = self.ready_domain
+        desired_domain = copy.deepcopy(self.ready_domain)
 
         desired_domain.first_ready = self.ready_at_date
 
@@ -75,7 +76,8 @@ class TestPopulateFirstReady(TestCase):
         self.assertEqual(desired_domain, self.ready_domain)
 
         # Explicitly test the first_ready date
-        self.assertEqual(self.ready_domain.first_ready, self.ready_at_date)
+        first_ready = Domain.objects.filter(name="fakeready.gov").get().first_ready
+        self.assertEqual(first_ready, self.ready_at_date)
 
     def test_populate_first_ready_state_deleted(self):
         """
@@ -85,7 +87,7 @@ class TestPopulateFirstReady(TestCase):
         self.deleted_domain.created_at = self.ready_at_date
         self.deleted_domain.save()
 
-        desired_domain = self.deleted_domain
+        desired_domain = copy.deepcopy(self.deleted_domain)
 
         desired_domain.first_ready = self.ready_at_date
 
@@ -95,7 +97,8 @@ class TestPopulateFirstReady(TestCase):
         self.assertEqual(desired_domain, self.deleted_domain)
 
         # Explicitly test the first_ready date
-        self.assertEqual(self.deleted_domain.first_ready, self.ready_at_date)
+        first_ready = Domain.objects.filter(name="fakedeleted.gov").get().first_ready
+        self.assertEqual(first_ready, self.ready_at_date)
 
     def test_populate_first_ready_state_dns_needed(self):
         """
@@ -105,7 +108,7 @@ class TestPopulateFirstReady(TestCase):
         self.dns_needed_domain.created_at = self.ready_at_date
         self.dns_needed_domain.save()
 
-        desired_domain = self.dns_needed_domain
+        desired_domain = copy.deepcopy(self.dns_needed_domain)
 
         desired_domain.first_ready = None
 
@@ -116,41 +119,41 @@ class TestPopulateFirstReady(TestCase):
         # The object should largely be unaltered (does not test first_ready)
         self.assertEqual(desired_domain, current_domain)
 
+        first_ready = Domain.objects.filter(name="fakedns.gov").get().first_ready
+
         # Explicitly test the first_ready date
-        self.assertNotEqual(current_domain.first_ready, self.ready_at_date)
-        self.assertEqual(current_domain.first_ready, None)
+        self.assertNotEqual(first_ready, self.ready_at_date)
+        self.assertEqual(first_ready, None)
 
     def test_populate_first_ready_state_on_hold(self):
         """
         Tests that the populate_first_ready works as expected for the state 'on_hold'
         """
-        desired_domain = self.dns_needed_domain
+        self.hold_domain.created_at = self.ready_at_date
+        self.hold_domain.save()
 
-        # Set the created at date
-        desired_domain.created_at = self.ready_at_date
-        desired_domain.save()
-
+        desired_domain = copy.deepcopy(self.hold_domain)
         desired_domain.first_ready = self.ready_at_date
 
         # Run the expiration date script
         self.run_populate_first_ready()
 
-        current_domain = self.dns_needed_domain
+        current_domain = self.hold_domain
         self.assertEqual(desired_domain, current_domain)
 
         # Explicitly test the first_ready date
-        self.assertEqual(current_domain.first_ready, self.ready_at_date)
+        first_ready = Domain.objects.filter(name="fakehold.gov").get().first_ready
+        self.assertEqual(first_ready, self.ready_at_date)
 
     def test_populate_first_ready_state_unknown(self):
         """
         Tests that the populate_first_ready works as expected for the state 'unknown'
         """
-        desired_domain = self.unknown_domain
-
         # Set the created at date
-        desired_domain.created_at = self.ready_at_date
-        desired_domain.save()
+        self.unknown_domain.created_at = self.ready_at_date
+        self.unknown_domain.save()
 
+        desired_domain = copy.deepcopy(self.unknown_domain)
         desired_domain.first_ready = None
 
         # Run the expiration date script
@@ -162,8 +165,9 @@ class TestPopulateFirstReady(TestCase):
         self.assertEqual(desired_domain, current_domain)
 
         # Explicitly test the first_ready date
-        self.assertNotEqual(current_domain.first_ready, self.ready_at_date)
-        self.assertEqual(current_domain.first_ready, None)
+        first_ready = Domain.objects.filter(name="fakeunknown.gov").get().first_ready
+        self.assertNotEqual(first_ready, self.ready_at_date)
+        self.assertEqual(first_ready, None)
 
 
 class TestExtendExpirationDates(MockEppLib):
