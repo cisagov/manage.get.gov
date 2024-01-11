@@ -132,7 +132,7 @@ class TestPopulateFirstReady(TestCase):
 
         desired_domain.first_ready = self.ready_at_date
 
-        # Run the expiration date script
+        # Run the update first ready_at script
         self.run_populate_first_ready()
 
         current_domain = self.dns_needed_domain
