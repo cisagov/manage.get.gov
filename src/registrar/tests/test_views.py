@@ -54,9 +54,9 @@ class TestViews(TestCase):
 
     def test_application_form_not_logged_in(self):
         """Application form not accessible without a logged-in user."""
-        response = self.client.get("/register/")
+        response = self.client.get("/request/")
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/login?next=/register/", response.headers["Location"])
+        self.assertIn("/login?next=/request/", response.headers["Location"])
 
 
 class TestWithUser(MockEppLib):
@@ -107,7 +107,7 @@ class LoggedInTests(TestWithUser):
         role.delete()
 
     def test_application_form_view(self):
-        response = self.client.get("/register/", follow=True)
+        response = self.client.get("/request/", follow=True)
         self.assertContains(
             response,
             "You’re about to start your .gov domain request.",
@@ -121,7 +121,7 @@ class LoggedInTests(TestWithUser):
         self.user.save()
 
         with less_console_noise():
-            response = self.client.get("/register/", follow=True)
+            response = self.client.get("/request/", follow=True)
             print(response.status_code)
             self.assertEqual(response.status_code, 403)
 
@@ -155,7 +155,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEqual(detail_page.status_code, 302)
         # You can access the 'Location' header to get the redirect URL
         redirect_url = detail_page.url
-        self.assertEqual(redirect_url, "/register/organization_type/")
+        self.assertEqual(redirect_url, "/request/organization_type/")
 
     def test_application_form_empty_submit(self):
         """Tests empty submit on the first page after the acknowledgement page"""
@@ -249,7 +249,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the application
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/register/organization_federal/")
+        self.assertEqual(type_result["Location"], "/request/organization_federal/")
         num_pages_tested += 1
 
         # ---- FEDERAL BRANCH PAGE  ----
@@ -269,7 +269,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the application
         self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], "/register/organization_contact/")
+        self.assertEqual(federal_result["Location"], "/request/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
@@ -302,7 +302,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the application
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], "/register/authorizing_official/")
+        self.assertEqual(org_contact_result["Location"], "/request/authorizing_official/")
         num_pages_tested += 1
 
         # ---- AUTHORIZING OFFICIAL PAGE  ----
@@ -327,7 +327,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the application
         self.assertEqual(ao_result.status_code, 302)
-        self.assertEqual(ao_result["Location"], "/register/current_sites/")
+        self.assertEqual(ao_result["Location"], "/request/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
