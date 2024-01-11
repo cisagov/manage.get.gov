@@ -26,12 +26,23 @@ def get_domain_infos(filter_condition, sort_fields):
 
 def write_row(writer, columns, domain_info):
     security_contacts = domain_info.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
+
     # For linter
     ao = " "
     if domain_info.authorizing_official:
         first_name = domain_info.authorizing_official.first_name or ""
         last_name = domain_info.authorizing_official.last_name or ""
         ao = first_name + " " + last_name
+
+    security_email = " "
+    if security_contacts:
+        security_email = security_contacts[0].email
+
+    invalid_emails = {"registrar@dotgov.gov"}
+    # These are default emails that should not be displayed in the csv report
+    if security_email is not None and security_email.lower() in invalid_emails:
+        security_email = "(blank)"
+
     # create a dictionary of fields which can be included in output
     FIELDS = {
         "Domain name": domain_info.domain.name,
@@ -44,13 +55,14 @@ def write_row(writer, columns, domain_info):
         "State": domain_info.state_territory,
         "AO": ao,
         "AO email": domain_info.authorizing_official.email if domain_info.authorizing_official else " ",
-        "Security contact email": security_contacts[0].email if security_contacts else " ",
+        "Security contact email": security_email,
         "Status": domain_info.domain.get_state_display(),
         "Expiration date": domain_info.domain.expiration_date,
         "Created at": domain_info.domain.created_at,
         "First ready": domain_info.domain.first_ready,
         "Deleted": domain_info.domain.deleted,
     }
+
     writer.writerow([FIELDS.get(column, "") for column in columns])
 
 
