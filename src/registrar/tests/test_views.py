@@ -35,6 +35,8 @@ from registrar.models import (
     User,
 )
 from registrar.views.application import ApplicationWizard, Step
+from datetime import date, datetime, timedelta
+from django.utils import timezone
 
 from .common import less_console_noise
 
@@ -93,18 +95,6 @@ class LoggedInTests(TestWithUser):
         self.assertContains(response, "igorville.gov", count=2)
         # clean up
         application.delete()
-
-    def test_home_lists_domains(self):
-        response = self.client.get("/")
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.assertNotContains(response, "igorville.gov")
-        role, _ = UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
-        response = self.client.get("/")
-        # count = 2 because it is also in screenreader content
-        self.assertContains(response, "igorville.gov", count=2)
-        self.assertContains(response, "Expired")
-        # clean up
-        role.delete()
 
     def test_application_form_view(self):
         response = self.client.get("/register/", follow=True)
@@ -1605,8 +1595,20 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_with_ip, _ = Domain.objects.get_or_create(name="nameserverwithip.gov")
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
-        self.domain_on_hold, _ = Domain.objects.get_or_create(name="on-hold.gov", state=Domain.State.ON_HOLD)
-        self.domain_deleted, _ = Domain.objects.get_or_create(name="deleted.gov", state=Domain.State.DELETED)
+        self.domain_on_hold, _ = Domain.objects.get_or_create(
+            name="on-hold.gov",
+            state=Domain.State.ON_HOLD,
+            expiration_date=timezone.make_aware(
+                datetime.combine(date.today() + timedelta(days=1), datetime.min.time())
+            ),
+        )
+        self.domain_deleted, _ = Domain.objects.get_or_create(
+            name="deleted.gov",
+            state=Domain.State.DELETED,
+            expiration_date=timezone.make_aware(
+                datetime.combine(date.today() + timedelta(days=1), datetime.min.time())
+            ),
+        )
 
         self.domain_dsdata, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
         self.domain_multdsdata, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
@@ -1753,6 +1755,49 @@ class TestDomainDetail(TestDomainOverview):
         detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
+
+    def test_unknown_domain_does_not_show_as_expired_on_homepage(self):
+        """An UNKNOWN domain does not show as expired on the homepage.
+        It shows as 'DNS needed'"""
+        # At the time of this test's writing, there are 6 UNKNOWN domains inherited
+        # from constructors. Let's reset.
+        Domain.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        home_page = self.app.get("/")
+        self.assertNotContains(home_page, "igorville.gov")
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "igorville.gov")
+        igorville = Domain.objects.get(name="igorville.gov")
+        self.assertEquals(igorville.state, Domain.State.UNKNOWN)
+        self.assertNotContains(home_page, "Expired")
+        self.assertContains(home_page, "DNS needed")
+
+    def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
+        """An UNKNOWN domain does not show as expired on the detail page.
+        It shows as 'DNS needed'"""
+        # At the time of this test's writing, there are 6 UNKNOWN domains inherited
+        # from constructors. Let's reset.
+        Domain.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        home_page = self.app.get("/")
+        self.assertContains(home_page, "igorville.gov")
+        igorville = Domain.objects.get(name="igorville.gov")
+        self.assertEquals(igorville.state, Domain.State.UNKNOWN)
+        detail_page = home_page.click("Manage", index=0)
+        self.assertNotContains(detail_page, "Expired")
+
+        self.assertContains(detail_page, "DNS needed")
 
     def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
