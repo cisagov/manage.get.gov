@@ -88,6 +88,9 @@
           <legend>
             <h2>No other employees from your organization?</h2>
           </legend>
+          <p>You don't need to provide names of other employees now, but it may
+            slow down our assessment of your eligibility. Describe why there are
+            no other employees who can help verify your request.</p>
         {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.2.no_other_contacts_rationale %}
         {% endwith %}
