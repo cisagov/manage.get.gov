@@ -5,6 +5,7 @@ This file tests the various ways in which the registrar interacts with the regis
 """
 from django.test import TestCase
 from django.db.utils import IntegrityError
+from django.core.management import call_command
 from unittest.mock import MagicMock, patch, call
 import datetime
 from registrar.models import Domain, Host, HostIP
@@ -548,6 +549,19 @@ class TestRegistrantContacts(MockEppLib):
         self.domain_contact._invalidate_cache()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
+    
+    def run_disclose_security_emails(self):
+        """
+        This method executes the disclose_security_emails command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the disclose_security_emails command.
+        """
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("extend_expiration_dates")
 
     def test_no_security_email(self):
         """
@@ -963,6 +977,22 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
         # Confirm that we are getting the desired email
         self.assertEqual(domain.security_contact.email, expectedSecContact.email)
+    
+    def test_disclose_security_emails(self):
+        """
+        Tests that command disclose_security_emails runs successfully with
+        appropriate logs.
+        """
+        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        expectedSecContact = PublicContact.get_default_security()
+        expectedSecContact.domain = domain
+        expectedSecContact.email = "123@mail.gov"
+        domain.security_contact = expectedSecContact
+        self.run_disclose_security_emails()
+
+        # running disclose_security_emails makes EPP calls
+        expectedUpdateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
+        self.mockedSendFunction.assert_any_call(expectedUpdateCommand, cleaned=True)
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
