@@ -62,7 +62,9 @@ To diagnose this issue, you will have to manually delete tables using the psql s
 
 1. `cf login -a api.fr.cloud.gov --sso`
 2. Run `cf connect-to-service -no-client getgov-{environment_name} getgov-{environment_name}-database` to open a SSH tunnel
-3. Run `psql -h localhost -p {port} -U {username} -d {broker_name}`
+cf connect-to-service -no-client getgov-rh getgov-rh-database
+3. Run `psql -h localhost -p 61862 -U {username} -d {broker_name}`
+psql -h localhost -p 61862 -U uqgk27icq6ekufyk -d cgawsbrokerprod3uw54ysa5mcg9kb
 4. Open a new terminal window and run `cf ssh getgov{environment_name}`
 5. Within that window, run `tmp/lifecycle/shell`
 6. Within that window, run `./manage.py migrate` and observe which tables are duplicates
@@ -102,7 +104,7 @@ Example: there are extra columns created on a table by an old migration long sin
 Example: You are able to log in and access the /admin page, but when you arrive at the registrar you keep getting 500 errors and your log-ins any API calls you make via the UI does not show up in the log stream. And you feel like you’re starting to lose your marbles.
 
 In the CLI, run the command `cf routes`
-If you notice that your route of `getgov-<app>.app.cloud.gov` is pointing two apps, then that is probably the major issue of the 500 error. (ie mine was pointing at `getgov-<app>.app.cloud.gov` AND `cisa-dotgov`
+If you notice that your route of `getgov-<app>.app.cloud.gov` is pointing two apps, then that is probably the major issue of the 500 error. (ie mine was pointing at `getgov-<app>.app.cloud.gov` AND `cisa-dotgov`)
 In the CLI, run the command `cf apps` to check that it has an app running called `cisa-dotgov`. If so, there’s the error!
 Essentially this shows that your requests were being handled by two completely separate applications and that’s why some requests aren’t being located. 
 To resolve this issue, remove the app named `cisa-dotgov` from this space.
@@ -117,7 +119,7 @@ https://cisa-corp.slack.com/archives/C05BGB4L5NF/p1697810600723069
 
 ### Scenario 8: Can’t log into sandbox, permissions do not exist
 
-- Fake migrate the migration that’s before the last data creation migration
-- Run the last data creation migration (AND ONLY THAT ONE)
-- Fake migrate the last migration in the migration list
-- Rerun fixtures
+1. `./manage.py migrate --fake model_name_here file_name_BEFORE_the_most_recent_CREATE_migration` (fake migrate the migration that’s before the last data creation migration -- look for number_create, and then copy the file BEFORE it) 
+2. `./manage.py migrate model_name_here file_name_WITH_create` (run the last data creation migration AND ONLY THAT ONE)
+3. `./manage.py migrate --fake model_name_here most_recent_file_name` (fake migrate the last migration in the migration list)
+4. `./manage.py load` (rerun fixtures)
