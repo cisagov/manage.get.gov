@@ -102,7 +102,7 @@ class TestPopulateFirstReady(TestCase):
 
     def test_populate_first_ready_state_dns_needed(self):
         """
-        Tests that the populate_first_ready works as expected for the state 'dns_needed'
+        Tests that the populate_first_ready doesn't make changes when a domain's state  is 'dns_needed'
         """
         # Set the created at date
         self.dns_needed_domain.created_at = self.ready_at_date
@@ -135,7 +135,7 @@ class TestPopulateFirstReady(TestCase):
         desired_domain = copy.deepcopy(self.hold_domain)
         desired_domain.first_ready = self.ready_at_date
 
-        # Run the expiration date script
+        # Run the update first ready_at script
         self.run_populate_first_ready()
 
         current_domain = self.hold_domain
