@@ -402,7 +402,6 @@ class ExportDataTest(MockEppLib):
             "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,dotgov@cisa.dhs.gov,Ready"
         )
 
-        print(csv_content)
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
