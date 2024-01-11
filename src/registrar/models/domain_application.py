@@ -653,13 +653,11 @@ class DomainApplication(TimeStampedModel):
     def in_review(self):
         """Investigate an application that has been submitted.
 
-        As a side effect, an email notification is sent."""
-
-        self._send_status_update_email(
-            "application in review",
-            "emails/status_change_in_review.txt",
-            "emails/status_change_in_review_subject.txt",
-        )
+        This action is logged."""
+        literal = DomainApplication.ApplicationStatus.IN_REVIEW
+        # Check if the tuple exists, then grab its value
+        in_review = literal if literal is not None else "In Review"
+        logger.info(f"A status change occurred. {self} was changed to '{in_review}'")
 
     @transition(
         field="status",
@@ -674,13 +672,11 @@ class DomainApplication(TimeStampedModel):
     def action_needed(self):
         """Send back an application that is under investigation or rejected.
 
-        As a side effect, an email notification is sent."""
-
-        self._send_status_update_email(
-            "action needed",
-            "emails/status_change_action_needed.txt",
-            "emails/status_change_action_needed_subject.txt",
-        )
+        This action is logged."""
+        literal = DomainApplication.ApplicationStatus.ACTION_NEEDED
+        # Check if the tuple is setup correctly, then grab its value
+        action_needed = literal if literal is not None else "Action Needed"
+        logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
 
     @transition(
         field="status",

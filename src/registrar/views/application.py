@@ -150,6 +150,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def storage(self):
         # marking session as modified on every access
         # so that updates to nested keys are always saved
+        # push to sandbox will remove
         self.request.session.modified = True
         return self.request.session.setdefault(self.prefix, {})
 
