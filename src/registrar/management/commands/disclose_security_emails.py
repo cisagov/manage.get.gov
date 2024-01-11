@@ -1,4 +1,8 @@
-""""Script description"""
+""""
+Converts all ready and DNS needed domains with a non-default public contact
+to disclose their public contact. Created for Issue#1535 to resolve
+ disclose issue of domains with missing security emails.
+"""
 
 import logging
 import copy
@@ -9,8 +13,7 @@ from registrar.models import Domain
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    # TODO: write script description here
-    help = "Description"
+    help = "Disclose all nondefault domain security emails."
 
     def __init__(self):
         """Sets global variables for code tidyness"""
@@ -26,7 +29,8 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         """
-        Description for what update_security_email_disclose does
+        Converts all ready and DNS needed domains with a non-default public contact
+        to disclose their public contact.
         """
         logger.info("Updating security emails to public")
         
