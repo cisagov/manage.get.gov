@@ -549,7 +549,7 @@ class TestRegistrantContacts(MockEppLib):
         self.domain_contact._invalidate_cache()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
-    
+
     def run_disclose_security_emails(self):
         """
         This method executes the disclose_security_emails command.
@@ -977,7 +977,7 @@ class TestRegistrantContacts(MockEppLib):
         self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
         # Confirm that we are getting the desired email
         self.assertEqual(domain.security_contact.email, expectedSecContact.email)
-    
+
     def test_disclose_security_emails(self):
         """
         Tests that command disclose_security_emails runs successfully with
