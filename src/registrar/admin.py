@@ -401,6 +401,8 @@ class HostIPInline(admin.StackedInline):
 class MyHostAdmin(AuditedAdmin):
     """Custom host admin class to use our inlines."""
 
+    search_fields = ["name", "domain__name"]
+    search_help_text = "Search by domain or hostname."
     inlines = [HostIPInline]
 
 
@@ -1252,7 +1254,7 @@ admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 # Host and HostIP removed from django admin because changes in admin
 # do not propagate to registry and logic not applied
-# admin.site.register(models.Host, MyHostAdmin)
+admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)

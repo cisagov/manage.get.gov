@@ -41,11 +41,11 @@ This happens when you swap branches on your sandbox that contain diverging leave
 - `cf login -a api.fr.cloud.gov --sso`
 - `cf ssh getgov-<app>`
 - `/tmp/lifecycle/shell`
-- `cf run-task getgov-<app> --wait --command 'python manage.py migrate registrar 39_previous_miration --fake' --name migrate`
-- `cf run-task getgov-<app> --wait --command 'python manage.py migrate registrar 41_example_migration'  --name migrate`
-- `cf run-task getgov-<app> --wait --command 'python manage.py migrate registrar 45_last_migration --fake'  --name migrate`
-
-Then, navigate to and delete the offending migration. In this case, it is 0041_example_migration.
+- Find the conflicting migrations:  `./manage.py showmigrations`
+- Delete one of them: `rm registrar/migrations/0041_example.py`
+- `/manage.py showmigrations`
+- `/manage.py makemigrations`
+- `/manage.py migrate`
 
 ### Scenario 3: Migrations ran incorrectly, and migrate no longer works (sandbox)
 

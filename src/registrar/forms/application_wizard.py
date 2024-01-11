@@ -96,7 +96,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         """
         raise NotImplementedError
 
-    def test_if_more_than_one_join(self, db_obj, rel, related_name):
+    def has_more_than_one_join(self, db_obj, rel, related_name):
         """Helper for finding whether an object is joined more than once."""
         # threshold is the number of related objects that are acceptable
         # when determining if related objects exist. threshold is 0 for most
@@ -165,13 +165,12 @@ class RegistrarFormSet(forms.BaseFormSet):
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
-                    if any(self.test_if_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
+                    if any(self.has_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
                     else:
                         # If there are no other relationships, delete the object
                         db_obj.delete()
-                    continue
                 else:
                     pre_update(db_obj, cleaned)
                     db_obj.save()
