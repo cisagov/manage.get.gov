@@ -71,7 +71,7 @@
             {% endif %}
           </td>
           <td>
-            <a href="{% url "domain" pk=domain.pk %}">
+            <a href="{% url "domain" pk=domain.pk %}" role="button">
               <svg
                 class="usa-icon"
                 aria-hidden="true"
@@ -141,7 +141,7 @@
               </svg>
               Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }}</span>
             {% else %}
-              <a href="{% url 'application-status' application.pk %}">
+              <a href="{% url 'application-status' application.pk %}" role="button">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
