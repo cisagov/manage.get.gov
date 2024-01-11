@@ -62,7 +62,7 @@ To diagnose this issue, you will have to manually delete tables using the psql s
 
 1. `cf login -a api.fr.cloud.gov --sso`
 2. Run `cf connect-to-service -no-client getgov-{environment_name} getgov-{environment_name}-database` to open a SSH tunnel
-3. Run `psql -h localhost -p 61862 -U {username} -d {broker_name}`
+3. Run `psql -h localhost -p {port} -U {username} -d {broker_name}`
 4. Open a new terminal window and run `cf ssh getgov-{environment_name}`
 5. Within that window, run `tmp/lifecycle/shell`
 6. Within that window, run `./manage.py migrate` and observe which tables are duplicates
