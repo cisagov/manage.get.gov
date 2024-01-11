@@ -981,7 +981,7 @@ class TestRegistrantContacts(MockEppLib):
     def test_disclose_security_emails(self):
         """
         Tests that command disclose_security_emails runs successfully with
-        appropriate logs.
+        appropriate EPP calll to UpdateContact.
         """
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         expectedSecContact = PublicContact.get_default_security()
