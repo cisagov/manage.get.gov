@@ -185,7 +185,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                 if name in incomplete_draft_names:
                     # Get the last numbered draft
                     last_draft = incomplete_drafts.last()
-                    last_draft_number = last_draft.draft_number
+                    last_draft_number = last_draft.requested_domain.draft_number
 
                     smallest_number = self._find_smallest_missing_number(incomplete_drafts)
                     smallest_name = f"New domain request {smallest_number}"
