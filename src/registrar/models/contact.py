@@ -54,6 +54,34 @@ class Contact(TimeStampedModel):
         db_index=True,
     )
 
+    def has_more_than_one_join(self, rel, related_name):
+        """Helper for finding whether an object is joined more than once."""
+        # threshold is the number of related objects that are acceptable
+        # when determining if related objects exist. threshold is 0 for most
+        # relationships. if the relationship is related_name, we know that
+        # there is already exactly 1 acceptable relationship (the one we are
+        # attempting to delete), so the threshold is 1
+        threshold = 1 if rel == related_name else 0
+
+        # Raise a KeyError if rel is not a defined field on the db_obj model
+        # This will help catch any errors in reverse_join config on forms
+        if rel not in [field.name for field in self._meta.get_fields()]:
+            raise KeyError(f"{rel} is not a defined field on the {self._meta.model_name} model.")
+
+        # if attr rel in db_obj is not None, then test if reference object(s) exist
+        if getattr(self, rel) is not None:
+            field = self._meta.get_field(rel)
+            if isinstance(field, models.OneToOneField):
+                # if the rel field is a OneToOne field, then we have already
+                # determined that the object exists (is not None)
+                return True
+            elif isinstance(field, models.ForeignObjectRel):
+                # if the rel field is a ManyToOne or ManyToMany, then we need
+                # to determine if the count of related objects is greater than
+                # the threshold
+                return getattr(self, rel).count() > threshold
+        return False
+    
     def get_formatted_name(self):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]

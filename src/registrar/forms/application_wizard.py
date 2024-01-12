@@ -7,7 +7,7 @@ from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
-from django.db.models.fields.related import ForeignObjectRel, OneToOneField
+from django.db.models.fields.related import ForeignObjectRel
 
 from api.views import DOMAIN_API_MESSAGES
 
@@ -33,34 +33,6 @@ class RegistrarForm(forms.Form):
         # save a reference to an application object
         self.application = kwargs.pop("application", None)
         super(RegistrarForm, self).__init__(*args, **kwargs)
-
-    def has_more_than_one_join(self, db_obj, rel, related_name):
-        """Helper for finding whether an object is joined more than once."""
-        # threshold is the number of related objects that are acceptable
-        # when determining if related objects exist. threshold is 0 for most
-        # relationships. if the relationship is related_name, we know that
-        # there is already exactly 1 acceptable relationship (the one we are
-        # attempting to delete), so the threshold is 1
-        threshold = 1 if rel == related_name else 0
-
-        # Raise a KeyError if rel is not a defined field on the db_obj model
-        # This will help catch any errors in reverse_join config on forms
-        if rel not in [field.name for field in db_obj._meta.get_fields()]:
-            raise KeyError(f"{rel} is not a defined field on the {db_obj._meta.model_name} model.")
-
-        # if attr rel in db_obj is not None, then test if reference object(s) exist
-        if getattr(db_obj, rel) is not None:
-            field = db_obj._meta.get_field(rel)
-            if isinstance(field, OneToOneField):
-                # if the rel field is a OneToOne field, then we have already
-                # determined that the object exists (is not None)
-                return True
-            elif isinstance(field, ForeignObjectRel):
-                # if the rel field is a ManyToOne or ManyToMany, then we need
-                # to determine if the count of related objects is greater than
-                # the threshold
-                return getattr(db_obj, rel).count() > threshold
-        return False
     
     def to_database(self, obj: DomainApplication | Contact):
         """
@@ -124,34 +96,6 @@ class RegistrarFormSet(forms.BaseFormSet):
         """
         raise NotImplementedError
 
-    def has_more_than_one_join(self, db_obj, rel, related_name):
-        """Helper for finding whether an object is joined more than once."""
-        # threshold is the number of related objects that are acceptable
-        # when determining if related objects exist. threshold is 0 for most
-        # relationships. if the relationship is related_name, we know that
-        # there is already exactly 1 acceptable relationship (the one we are
-        # attempting to delete), so the threshold is 1
-        threshold = 1 if rel == related_name else 0
-
-        # Raise a KeyError if rel is not a defined field on the db_obj model
-        # This will help catch any errors in reverse_join config on forms
-        if rel not in [field.name for field in db_obj._meta.get_fields()]:
-            raise KeyError(f"{rel} is not a defined field on the {db_obj._meta.model_name} model.")
-
-        # if attr rel in db_obj is not None, then test if reference object(s) exist
-        if getattr(db_obj, rel) is not None:
-            field = db_obj._meta.get_field(rel)
-            if isinstance(field, OneToOneField):
-                # if the rel field is a OneToOne field, then we have already
-                # determined that the object exists (is not None)
-                return True
-            elif isinstance(field, ForeignObjectRel):
-                # if the rel field is a ManyToOne or ManyToMany, then we need
-                # to determine if the count of related objects is greater than
-                # the threshold
-                return getattr(db_obj, rel).count() > threshold
-        return False
-
     def _to_database(
         self,
         obj: DomainApplication,
@@ -193,14 +137,14 @@ class RegistrarFormSet(forms.BaseFormSet):
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
-                    if any(self.has_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
+                    if hasattr(db_obj, "has_more_than_one_join") and any(db_obj.has_more_than_one_join(rel, related_name) for rel in reverse_joins):
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
                     else:
                         # If there are no other relationships, delete the object
                         db_obj.delete()
                 else:
-                    if any(self.has_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
+                    if hasattr(db_obj, "has_more_than_one_join") and any(db_obj.has_more_than_one_join(rel, related_name) for rel in reverse_joins):
                         # create a new db_obj and disconnect existing one
                         getattr(db_obj, related_name).remove(self.application)
                         kwargs = pre_create(db_obj, cleaned)
@@ -400,7 +344,7 @@ class AuthorizingOfficialForm(RegistrarForm):
         if not self.is_valid():
             return
         contact = getattr(obj, "authorizing_official", None)
-        if contact is not None and not any(self.has_more_than_one_join(contact, rel, "authorizing_official") for rel in self.REVERSE_JOINS):
+        if contact is not None and not any(contact.has_more_than_one_join(rel, "authorizing_official") for rel in self.REVERSE_JOINS):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
@@ -612,7 +556,7 @@ class YourContactForm(RegistrarForm):
         if not self.is_valid():
             return
         contact = getattr(obj, "submitter", None)
-        if contact is not None and not any(self.has_more_than_one_join(contact, rel, "submitted_applications") for rel in self.REVERSE_JOINS):
+        if contact is not None and not any(contact.has_more_than_one_join(rel, "submitted_applications") for rel in self.REVERSE_JOINS):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
