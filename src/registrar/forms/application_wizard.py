@@ -556,7 +556,7 @@ class YourContactForm(RegistrarForm):
         if not self.is_valid():
             return
         contact = getattr(obj, "submitter", None)
-        if contact is not None and not any(contact.has_more_than_one_join(rel, "submitted_applications") for rel in self.REVERSE_JOINS):
+        if contact is not None and not contact.has_more_than_one_join(self.REVERSE_JOINS, "submitted_applications"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
