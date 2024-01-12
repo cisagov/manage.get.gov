@@ -137,14 +137,14 @@ class RegistrarFormSet(forms.BaseFormSet):
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
-                    if hasattr(db_obj, "has_more_than_one_join") and any(db_obj.has_more_than_one_join(rel, related_name) for rel in reverse_joins):
+                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(reverse_joins, related_name):
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
                     else:
                         # If there are no other relationships, delete the object
                         db_obj.delete()
                 else:
-                    if hasattr(db_obj, "has_more_than_one_join") and any(db_obj.has_more_than_one_join(rel, related_name) for rel in reverse_joins):
+                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(reverse_joins, related_name):
                         # create a new db_obj and disconnect existing one
                         getattr(db_obj, related_name).remove(self.application)
                         kwargs = pre_create(db_obj, cleaned)
@@ -344,7 +344,7 @@ class AuthorizingOfficialForm(RegistrarForm):
         if not self.is_valid():
             return
         contact = getattr(obj, "authorizing_official", None)
-        if contact is not None and not any(contact.has_more_than_one_join(rel, "authorizing_official") for rel in self.REVERSE_JOINS):
+        if contact is not None and not contact.has_more_than_one_join(self.REVERSE_JOINS, "authorizing_official"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
