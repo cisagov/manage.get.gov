@@ -12,11 +12,6 @@ def index(request):
         # domain_applications context will be used to populate
         # the active applications table
         applications = DomainApplication.objects.filter(creator=request.user).exclude(status="approved")
-        
-        # Adds display logic for empty domain requests
-        for application in applications:
-            if not application.requested_domain.name:
-                application.requested_domain.name = application.requested_domain.draft_name
 
         # Pass the final context to the application
         context["domain_applications"] = applications
