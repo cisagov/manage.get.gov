@@ -552,10 +552,10 @@ class DotgovDomain(ApplicationWizard):
     
     def post(self, request, *args, **kwargs):
         """Override for the post method to mark the DraftDomain as complete"""
-        response = super().post(request, *args, **kwargs)
         # Set the DraftDomain to "complete"
+        print(f"what is the request at this time? {request}")
         self.application.requested_domain.is_incomplete = False
-        self.application.save()
+        response = super().post(request, *args, **kwargs)
         return response
 
 
