@@ -22,6 +22,116 @@ from .common import MockEppLib, MockSESClient, less_console_noise
 import boto3_mocking  # type: ignore
 
 
+class TestPatchAgencyInfo(TestCase):
+    def setUp(self):
+        self.user, _ = User.objects.get_or_create(username="testuser")
+        self.domain, _ = Domain.objects.get_or_create(name="testdomain.gov")
+        self.domain_info, _ = DomainInformation.objects.get_or_create(domain=self.domain, creator=self.user)
+        self.transition_domain, _ = TransitionDomain.objects.get_or_create(
+            domain_name="testdomain.gov", federal_agency="test agency"
+        )
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        User.objects.all().delete()
+        TransitionDomain.objects.all().delete()
+
+    @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit", return_value=True)
+    def call_patch_federal_agency_info(self, mock_prompt):
+        """Calls the patch_federal_agency_info command and mimics a keypress"""
+        call_command("patch_federal_agency_info", "registrar/tests/data/fake_current_full.csv", debug=True)
+
+    def test_patch_agency_info(self):
+        """
+        Tests that the `patch_federal_agency_info` command successfully
+        updates the `federal_agency` field
+        of a `DomainInformation` object when the corresponding
+        `TransitionDomain` object has a valid `federal_agency`.
+        """
+
+        # Ensure that the federal_agency is None
+        self.assertEqual(self.domain_info.federal_agency, None)
+
+        self.call_patch_federal_agency_info()
+
+        # Reload the domain_info object from the database
+        self.domain_info.refresh_from_db()
+
+        # Check that the federal_agency field was updated
+        self.assertEqual(self.domain_info.federal_agency, "test agency")
+
+    def test_patch_agency_info_skip(self):
+        """
+        Tests that the `patch_federal_agency_info` command logs a warning and
+        does not update the `federal_agency` field
+        of a `DomainInformation` object when the corresponding
+        `TransitionDomain` object does not exist.
+        """
+        # Set federal_agency to None to simulate a skip
+        self.transition_domain.federal_agency = None
+        self.transition_domain.save()
+
+        with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="WARNING") as context:
+            self.call_patch_federal_agency_info()
+
+        # Check that the correct log message was output
+        self.assertIn("SOME AGENCY DATA WAS NONE", context.output[0])
+
+        # Reload the domain_info object from the database
+        self.domain_info.refresh_from_db()
+
+        # Check that the federal_agency field was not updated
+        self.assertIsNone(self.domain_info.federal_agency)
+
+    def test_patch_agency_info_skip_updates_data(self):
+        """
+        Tests that the `patch_federal_agency_info` command logs a warning but
+        updates the DomainInformation object, because a record exists in the
+        provided current-full.csv file.
+        """
+        # Set federal_agency to None to simulate a skip
+        self.transition_domain.federal_agency = None
+        self.transition_domain.save()
+
+        # Change the domain name to something parsable in the .csv
+        self.domain.name = "cdomain1.gov"
+        self.domain.save()
+
+        with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="WARNING") as context:
+            self.call_patch_federal_agency_info()
+
+        # Check that the correct log message was output
+        self.assertIn("SOME AGENCY DATA WAS NONE", context.output[0])
+
+        # Reload the domain_info object from the database
+        self.domain_info.refresh_from_db()
+
+        # Check that the federal_agency field was not updated
+        self.assertEqual(self.domain_info.federal_agency, "World War I Centennial Commission")
+
+    def test_patch_agency_info_skips_valid_domains(self):
+        """
+        Tests that the `patch_federal_agency_info` command logs INFO and
+        does not update the `federal_agency` field
+        of a `DomainInformation` object
+        """
+        self.domain_info.federal_agency = "unchanged"
+        self.domain_info.save()
+
+        with self.assertLogs("registrar.management.commands.patch_federal_agency_info", level="INFO") as context:
+            self.call_patch_federal_agency_info()
+
+        # Check that the correct log message was output
+        self.assertIn("FINISHED", context.output[1])
+
+        # Reload the domain_info object from the database
+        self.domain_info.refresh_from_db()
+
+        # Check that the federal_agency field was not updated
+        self.assertEqual(self.domain_info.federal_agency, "unchanged")
+
+
 class TestExtendExpirationDates(MockEppLib):
     def setUp(self):
         """Defines the file name of migration_json and the folder its contained in"""
