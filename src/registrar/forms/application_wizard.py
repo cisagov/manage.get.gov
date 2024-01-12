@@ -33,7 +33,7 @@ class RegistrarForm(forms.Form):
         # save a reference to an application object
         self.application = kwargs.pop("application", None)
         super(RegistrarForm, self).__init__(*args, **kwargs)
-    
+
     def to_database(self, obj: DomainApplication | Contact):
         """
         Adds this form's cleaned data to `obj` and saves `obj`.
@@ -329,7 +329,7 @@ class AboutYourOrganizationForm(RegistrarForm):
 
 class AuthorizingOfficialForm(RegistrarForm):
     JOIN = "authorizing_official"
-    
+
     def to_database(self, obj):
         if not self.is_valid():
             return

@@ -26,6 +26,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
+
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
 
@@ -212,6 +213,7 @@ class ContactForm(forms.ModelForm):
 
 class AuthorizingOfficialContactForm(ContactForm):
     """Form for updating authorizing official contacts."""
+
     JOIN = "authorizing_official"
 
     def __init__(self, *args, **kwargs):

@@ -68,7 +68,7 @@ class Contact(TimeStampedModel):
             "contact_applications_information",
         ]
         return any(self._has_more_than_one_join_per_relation(rel, expected_relation) for rel in all_relations)
-    
+
     def _has_more_than_one_join_per_relation(self, relation, expected_relation):
         """Helper for finding whether an object is joined more than once."""
         # threshold is the number of related objects that are acceptable
@@ -96,7 +96,7 @@ class Contact(TimeStampedModel):
                 # the threshold
                 return getattr(self, relation).count() > threshold
         return False
-    
+
     def get_formatted_name(self):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.middle_name, self.last_name] if n]
