@@ -211,8 +211,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def _find_smallest_missing_number(self, incomplete_drafts):
         draft_numbers = []
         for draft in incomplete_drafts:
-            # Parse the number out of the text
-            number = draft.draft_number
+            number = draft.requested_domain.draft_number
             if number is not None:
                 draft_numbers.append(number)
 
