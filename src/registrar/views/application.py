@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import List
 
 from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseRedirect
@@ -172,7 +173,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         incomplete_draft_names = incomplete_drafts.values_list(name_field, flat=True)
 
         proposed_draft_number = incomplete_drafts.count() + 1
-        draft_name = f"New domain request {proposed_draft_number}"
+        draft_number = 1
         for application in existing_applications:
             if application.requested_domain is not None and application.requested_domain.name is not None:
                 name = application.requested_domain.name
@@ -183,26 +184,26 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                 # and 2 is deleted - meaning we would get two duplicate "3"s if we added another
                 if name in incomplete_draft_names:
                     # Get the last numbered draft
-                    last_draft = incomplete_draft_names.last()
-                    last_draft_number = self._parse_first_number_from_string(last_draft)
+                    last_draft = incomplete_drafts.last()
+                    last_draft_number = last_draft.draft_number
 
-                    smallest_number = self._find_smallest_missing_number(incomplete_draft_names)
+                    smallest_number = self._find_smallest_missing_number(incomplete_drafts)
                     smallest_name = f"New domain request {smallest_number}"
                     if smallest_name not in incomplete_draft_names:
-                        draft_name = smallest_name
+                        draft_number = smallest_number
                     elif proposed_draft_number == last_draft_number:
                         # If the draft number we are trying to create matches the last draft number,
                         # simply add one to that number
-                        draft_name = f"New domain request {last_draft_number + 1}"
-
-        # Handle edge case if the user has an obscene number of domain drafts
-        if len(draft_name) > 253:
-            draft_name = default_draft_text
+                        draft_number = last_draft_number + 1
 
         draft_domain = DraftDomain(
-            name=draft_name,
+            # Save a blank string rather then None due to DB requirements
+            name="",
+            draft_number=draft_number,
             is_incomplete=True,
         )
+        # Generate a default name based off of a draft_number
+        draft_domain.name = draft_domain.get_default_request_name()
         draft_domain.save()
 
         return draft_domain
@@ -211,7 +212,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         draft_numbers = []
         for draft in incomplete_drafts:
             # Parse the number out of the text
-            number = self._parse_first_number_from_string(draft)
+            number = draft.draft_number
             if number is not None:
                 draft_numbers.append(number)
 
@@ -224,15 +225,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                 break
         return smallest_missing
 
-    def _parse_first_number_from_string(self, string_to_parse: str) -> int | None:
-        """Given a `string_to_parse`, try to find any number in it and return that.
-        Returns None if no match is found"""
-
-        # Parse the number out of the text
-        match = re.search("\d+", string_to_parse)
-
-        number = int(match.group()) if match else None
-        return number
     @property
     def storage(self):
         # marking session as modified on every access
