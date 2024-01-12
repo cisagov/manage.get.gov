@@ -473,7 +473,7 @@ class DotgovDomain(ApplicationWizard):
         response = super().post(request, *args, **kwargs)
         # Set the DraftDomain to "complete"
         self.application.requested_domain.is_incomplete = False
-        self.application.requested_domain.save()
+        self.application.save()
         return response
 
 class Purpose(ApplicationWizard):
