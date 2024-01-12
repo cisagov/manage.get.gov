@@ -6,6 +6,7 @@ inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
 """
 
 import logging
+from typing import List
 
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
@@ -630,6 +631,20 @@ class DomainUsersView(DomainBaseView):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
 
+        # Add conditionals to the context (such as "can_delete_users")
+        context = self._add_booleans_to_context(context)
+
+        # Add modal buttons to the context (such as for delete)
+        context = self._add_modal_buttons_to_context(context)
+
+        # Get the email of the current user
+        context["current_user_email"] = self.request.user.email
+
+        return context
+
+    def _add_booleans_to_context(self, context):
+
+        # Determine if the current user can delete managers
         domain_pk = None
         can_delete_users = False
         if self.kwargs is not None and "pk" in self.kwargs:
@@ -639,16 +654,44 @@ class DomainUsersView(DomainBaseView):
             can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
         context["can_delete_users"] = can_delete_users
 
-        # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="disable_dnssec">Confirm</button>'
-        )
+        return context
 
+    def _add_modal_buttons_to_context(self, context):
+        """Adds modal buttons (and their HTML) to the context"""
+        # Create HTML for the modal button
+        modal_button = self._create_modal_button_html(
+            button_name="delete_domain_manager", 
+            button_text_content="Yes, remove domain manager",
+            classes=["usa-button", "usa-button--secondary"]
+        )
         context["modal_button"] = modal_button
 
+        # Create HTML for the modal button when deleting yourself
+        modal_button_self= self._create_modal_button_html(
+            button_name="delete_domain_manager_self",
+            button_text_content="Yes, remove myself",
+            classes=["usa-button", "usa-button--secondary"]
+        )
+        context["modal_button_self"] = modal_button_self
+
         return context
+
+    def _create_modal_button_html(self, button_name: str, button_text_content: str, classes: List[str] | str):
+        """Template for modal submit buttons"""
+
+        if isinstance(classes, list):
+            class_list = " ".join(classes)
+        elif isinstance(classes, str):
+            class_list = classes
+
+        html_class = f'class="{class_list}"' if class_list else None
+
+        modal_button = (
+            '<button type="submit" '
+            f"{html_class} "
+            f'name="{button_name}">{button_text_content}</button>'
+        )
+        return modal_button
 
 
 class DomainAddUserView(DomainFormBaseView):
@@ -779,12 +822,30 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
-    def get_success_message(self, cleaned_data):
-        return f"Successfully removed manager for {self.object.user.email}."
+    def get_success_message(self, delete_self = False):
+        if delete_self:
+            message = f"You are no longer managing the domain {self.object.domain}."
+        else:
+            message = f"Removed {self.object.user.email} as a manager for this domain."
+        return message
 
     def form_valid(self, form):
         """Delete the specified user on this domain."""
         super().form_valid(form)
-        messages.success(self.request, f"Successfully removed manager for {self.object.user.email}.")
+
+        # Is the user deleting themselves? If so, display a different message
+        delete_self = self.request.user.email == self.object.user.email
+
+        # Add a success message
+        messages.success(self.request, self.get_success_message(delete_self))
 
         return redirect(self.get_success_url())
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        # If the user is deleting themselves, redirect to home
+        if self.request.user.email == self.object.user.email:
+            return redirect(reverse("home"))
+        
+        return response
