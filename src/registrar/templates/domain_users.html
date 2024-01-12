@@ -59,12 +59,12 @@
               class="usa-modal"
               id="toggle-user-alert-{{ forloop.counter }}"
               aria-labelledby="Are you sure you want to continue?"
-              aria-describedby="User will be removed"
+              aria-describedby="{{ permission.user.email }} will be removed"
               data-force-action
             >
               <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
-                {% with heading="Are you sure you want to remove <"|add:permission.user.email|add:">?" %}
-                  {% include 'includes/modal.html' with modal_heading=heading  modal_description="<"|add:permission.user.email|add:"> will no longer be able to manage the domain "|add:domain.name|add:"." modal_button=modal_button|safe %}
+                {% with email=permission.user.email|force_escape domain_name=domain.name|force_escape %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove &lt;"|add:email|add:"&gt;?"|safe modal_description="<strong>&lt;"|add:email|add:"&gt;</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
                 {% endwith %}
               </form>
             </div>
