@@ -76,7 +76,7 @@ class TestEmails(TestCase):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("Current websites:", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"5555\n\nCurrent websites for")
+        self.assertRegex(body, r"5555\n\nCurrent websites")
         self.assertRegex(body, r"city.com\n\n.gov domain:")
 
     @boto3_mocking.patching
