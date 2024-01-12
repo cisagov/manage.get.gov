@@ -213,15 +213,6 @@ class ContactForm(forms.ModelForm):
 class AuthorizingOfficialContactForm(ContactForm):
     """Form for updating authorizing official contacts."""
     JOIN = "authorizing_official"
-    REVERSE_JOINS = [
-        "user",
-        "authorizing_official",
-        "submitted_applications",
-        "contact_applications",
-        "information_authorizing_official",
-        "submitted_applications_information",
-        "contact_applications_information",
-    ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -258,7 +249,7 @@ class AuthorizingOfficialContactForm(ContactForm):
         # get db object
         db_ao = Contact.objects.get(id=self.instance.id)
         logger.info(f"db_ao.information_authorizing_official {db_ao.information_authorizing_official}")
-        if self.domainInfo and db_ao.has_more_than_one_join(self.REVERSE_JOINS, "information_authorizing_official"):
+        if self.domainInfo and db_ao.has_more_than_one_join("information_authorizing_official"):
             logger.info(f"domain info => {self.domainInfo}")
             logger.info(f"authorizing official id => {self.domainInfo.authorizing_official.id}")
             contact = Contact()

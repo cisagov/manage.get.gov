@@ -100,7 +100,6 @@ class RegistrarFormSet(forms.BaseFormSet):
         self,
         obj: DomainApplication,
         join: str,
-        reverse_joins: list,
         should_delete: Callable,
         pre_update: Callable,
         pre_create: Callable,
@@ -137,14 +136,14 @@ class RegistrarFormSet(forms.BaseFormSet):
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
-                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(reverse_joins, related_name):
+                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(related_name):
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
                     else:
                         # If there are no other relationships, delete the object
                         db_obj.delete()
                 else:
-                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(reverse_joins, related_name):
+                    if hasattr(db_obj, "has_more_than_one_join") and db_obj.has_more_than_one_join(related_name):
                         # create a new db_obj and disconnect existing one
                         getattr(db_obj, related_name).remove(self.application)
                         kwargs = pre_create(db_obj, cleaned)
@@ -330,21 +329,12 @@ class AboutYourOrganizationForm(RegistrarForm):
 
 class AuthorizingOfficialForm(RegistrarForm):
     JOIN = "authorizing_official"
-    REVERSE_JOINS = [
-        "user",
-        "authorizing_official",
-        "submitted_applications",
-        "contact_applications",
-        "information_authorizing_official",
-        "submitted_applications_information",
-        "contact_applications_information",
-    ]
     
     def to_database(self, obj):
         if not self.is_valid():
             return
         contact = getattr(obj, "authorizing_official", None)
-        if contact is not None and not contact.has_more_than_one_join(self.REVERSE_JOINS, "authorizing_official"):
+        if contact is not None and not contact.has_more_than_one_join("authorizing_official"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
@@ -403,7 +393,7 @@ class BaseCurrentSitesFormSet(RegistrarFormSet):
     def to_database(self, obj: DomainApplication):
         # If we want to test against multiple joins for a website object, replace the empty array
         # and change the JOIN in the models to allow for reverse references
-        self._to_database(obj, self.JOIN, [], self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def from_database(cls, obj):
@@ -462,7 +452,7 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
     def to_database(self, obj: DomainApplication):
         # If we want to test against multiple joins for a website object, replace the empty array and
         # change the JOIN in the models to allow for reverse references
-        self._to_database(obj, self.JOIN, [], self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def on_fetch(cls, query):
@@ -542,21 +532,12 @@ class PurposeForm(RegistrarForm):
 
 class YourContactForm(RegistrarForm):
     JOIN = "submitter"
-    REVERSE_JOINS = [
-        "user",
-        "authorizing_official",
-        "submitted_applications",
-        "contact_applications",
-        "information_authorizing_official",
-        "submitted_applications_information",
-        "contact_applications_information",
-    ]
 
     def to_database(self, obj):
         if not self.is_valid():
             return
         contact = getattr(obj, "submitter", None)
-        if contact is not None and not contact.has_more_than_one_join(self.REVERSE_JOINS, "submitted_applications"):
+        if contact is not None and not contact.has_more_than_one_join("submitted_applications"):
             # if contact exists in the database and is not joined to other entities
             super().to_database(contact)
         else:
@@ -711,20 +692,10 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
     must co-exist.
     Also, other_contacts have db relationships to multiple db objects. When attempting
     to delete an other_contact from an application, those db relationships must be
-    tested and handled; this is configured with REVERSE_JOINS, which is an array of
-    strings representing the relationships between contact model and other models.
+    tested and handled.
     """
 
     JOIN = "other_contacts"
-    REVERSE_JOINS = [
-        "user",
-        "authorizing_official",
-        "submitted_applications",
-        "contact_applications",
-        "information_authorizing_official",
-        "submitted_applications_information",
-        "contact_applications_information",
-    ]
 
     def get_deletion_widget(self):
         return forms.HiddenInput(attrs={"class": "deletion"})
@@ -756,7 +727,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
         return cleaned
 
     def to_database(self, obj: DomainApplication):
-        self._to_database(obj, self.JOIN, self.REVERSE_JOINS, self.should_delete, self.pre_update, self.pre_create)
+        self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod
     def from_database(cls, obj):

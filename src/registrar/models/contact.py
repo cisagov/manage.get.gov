@@ -54,10 +54,19 @@ class Contact(TimeStampedModel):
         db_index=True,
     )
 
-    def has_more_than_one_join(self, all_relations, expected_relation):
+    def has_more_than_one_join(self, expected_relation):
         """Helper for finding whether an object is joined more than once.
-        all_relations is the list of all_relations to be checked for existing joins.
         expected_relation is the one relation with one expected join"""
+        # all_relations is the list of all_relations (from contact) to be checked for existing joins
+        all_relations = [
+            "user",
+            "authorizing_official",
+            "submitted_applications",
+            "contact_applications",
+            "information_authorizing_official",
+            "submitted_applications_information",
+            "contact_applications_information",
+        ]
         return any(self._has_more_than_one_join_per_relation(rel, expected_relation) for rel in all_relations)
     
     def _has_more_than_one_join_per_relation(self, relation, expected_relation):
@@ -70,7 +79,7 @@ class Contact(TimeStampedModel):
         threshold = 1 if relation == expected_relation else 0
 
         # Raise a KeyError if rel is not a defined field on the db_obj model
-        # This will help catch any errors in reverse_join config on forms
+        # This will help catch any errors in relation passed.
         if relation not in [field.name for field in self._meta.get_fields()]:
             raise KeyError(f"{relation} is not a defined field on the {self._meta.model_name} model.")
 
