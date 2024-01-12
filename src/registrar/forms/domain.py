@@ -1,8 +1,12 @@
 """Forms for domain management."""
 
+import logging
+
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.forms import formset_factory
+
+from django.db.models.fields.related import ForeignObjectRel, OneToOneField
 
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.utility.errors import (
@@ -22,6 +26,7 @@ from .common import (
 
 import re
 
+logger = logging.getLogger(__name__)
 
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
@@ -209,6 +214,16 @@ class ContactForm(forms.ModelForm):
 
 class AuthorizingOfficialContactForm(ContactForm):
     """Form for updating authorizing official contacts."""
+    JOIN = "authorizing_official"
+    REVERSE_JOINS = [
+        "user",
+        "authorizing_official",
+        "submitted_applications",
+        "contact_applications",
+        "information_authorizing_official",
+        "submitted_applications_information",
+        "contact_applications_information",
+    ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -230,6 +245,60 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
+        self.domainInfo = None
+
+    def setDomainInfo(self, domainInfo):
+        self.domainInfo = domainInfo
+
+    def save(self, commit=True):
+        logger.info(f"in save: {self.instance}")
+        logger.info(f"{self.instance.__class__.__name__}")
+        logger.info(f"{self.instance.id}")
+        logger.info(f"self.fields => {self.fields}")
+        logger.info(f"domain info: {self.instance.information_authorizing_official}")
+
+        # get db object
+        db_ao = Contact.objects.get(id=self.instance.id)
+        logger.info(f"db_ao.information_authorizing_official {db_ao.information_authorizing_official}")
+        if self.domainInfo and any(self.has_more_than_one_join(db_ao, rel, "information_authorizing_official") for rel in self.REVERSE_JOINS):
+            logger.info(f"domain info => {self.domainInfo}")
+            logger.info(f"authorizing official id => {self.domainInfo.authorizing_official.id}")
+            contact = Contact()
+            for name, value in self.cleaned_data.items():
+                setattr(contact, name, value)
+            contact.save()
+            self.domainInfo.authorizing_official = contact
+            self.domainInfo.save()
+        else:
+            super().save()
+
+    def has_more_than_one_join(self, db_obj, rel, related_name):
+        """Helper for finding whether an object is joined more than once."""
+        # threshold is the number of related objects that are acceptable
+        # when determining if related objects exist. threshold is 0 for most
+        # relationships. if the relationship is related_name, we know that
+        # there is already exactly 1 acceptable relationship (the one we are
+        # attempting to delete), so the threshold is 1
+        threshold = 1 if rel == related_name else 0
+
+        # Raise a KeyError if rel is not a defined field on the db_obj model
+        # This will help catch any errors in reverse_join config on forms
+        if rel not in [field.name for field in db_obj._meta.get_fields()]:
+            raise KeyError(f"{rel} is not a defined field on the {db_obj._meta.model_name} model.")
+
+        # if attr rel in db_obj is not None, then test if reference object(s) exist
+        if getattr(db_obj, rel) is not None:
+            field = db_obj._meta.get_field(rel)
+            if isinstance(field, OneToOneField):
+                # if the rel field is a OneToOne field, then we have already
+                # determined that the object exists (is not None)
+                return True
+            elif isinstance(field, ForeignObjectRel):
+                # if the rel field is a ManyToOne or ManyToMany, then we need
+                # to determine if the count of related objects is greater than
+                # the threshold
+                return getattr(db_obj, rel).count() > threshold
+        return False
 
 
 class DomainSecurityEmailForm(forms.Form):
