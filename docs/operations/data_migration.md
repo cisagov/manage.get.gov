@@ -526,6 +526,34 @@ Example: `cf ssh getgov-za`
 | 4 | **disableIdempotentCheck** | Boolean that determines if we should check for idempotence or not. Compares the proposed extension date to the value in TransitionDomains. Defaults to False. |
 
 
+## Populate First Ready
+This section outlines how to run the populate_first_ready script
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py populate_first_ready --debug```
+
+### Running locally
+```docker-compose exec app ./manage.py populate_first_ready --debug```
+
+##### Optional parameters
+|   | Parameter                  | Description                                                                 |
+|:-:|:-------------------------- |:----------------------------------------------------------------------------|
+| 1 | **debug**                  | Increases logging detail. Defaults to False.                                |
+
+
 ## Patch Federal Agency Info
 This section outlines how to use `patch_federal_agency_info.py`
 
