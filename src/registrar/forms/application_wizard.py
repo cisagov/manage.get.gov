@@ -200,8 +200,14 @@ class RegistrarFormSet(forms.BaseFormSet):
                         # If there are no other relationships, delete the object
                         db_obj.delete()
                 else:
-                    pre_update(db_obj, cleaned)
-                    db_obj.save()
+                    if any(self.has_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
+                        # create a new db_obj and disconnect existing one
+                        getattr(db_obj, related_name).remove(self.application)
+                        kwargs = pre_create(db_obj, cleaned)
+                        getattr(obj, join).create(**kwargs)
+                    else:
+                        pre_update(db_obj, cleaned)
+                        db_obj.save()
 
             # no matching database object, create it
             # make sure not to create a database object if cleaned has 'delete' attribute
