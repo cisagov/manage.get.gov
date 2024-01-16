@@ -1,6 +1,4 @@
 import logging
-import re
-from typing import List
 
 from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseRedirect
@@ -143,7 +141,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                 return self._application
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
-        
+
         # TODO - revert back to using draft_name
         draft_domain = self._create_default_draft_domain()
         self._application = DomainApplication.objects.create(
@@ -166,9 +164,11 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
         name_field = "requested_domain__name"
 
-        incomplete_drafts = existing_applications.exclude(requested_domain=None).filter(
-            requested_domain__name__icontains=default_draft_text
-        ).order_by(name_field)
+        incomplete_drafts = (
+            existing_applications.exclude(requested_domain=None)
+            .filter(requested_domain__name__icontains=default_draft_text)
+            .order_by(name_field)
+        )
 
         incomplete_draft_names = incomplete_drafts.values_list(name_field, flat=True)
 
@@ -178,9 +178,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             if application.requested_domain is not None and application.requested_domain.name is not None:
                 name = application.requested_domain.name
 
-                # If we already have a list of draft numbers, base the 
+                # If we already have a list of draft numbers, base the
                 # subsequent number off of the last numbered field.
-                # This is to avoid a scenario in which drafts 1, 2, 3 and exist 
+                # This is to avoid a scenario in which drafts 1, 2, 3 and exist
                 # and 2 is deleted - meaning we would get two duplicate "3"s if we added another
                 if name in incomplete_draft_names:
                     # Get the last numbered draft
@@ -403,7 +403,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # Build the submit button that we'll pass to the modal.
         modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
         # Concatenate the modal header that we'll pass to the modal.
-        if self.application.requested_domain:
+        if self.application.requested_domain and not self.application.requested_domain.is_incomplete:
             modal_heading = "You are about to submit a domain request for " + str(self.application.requested_domain)
         else:
             modal_heading = "You are about to submit an incomplete request"
@@ -549,7 +549,7 @@ class DotgovDomain(ApplicationWizard):
         context["organization_type"] = self.application.organization_type
         context["federal_type"] = self.application.federal_type
         return context
-    
+
     def post(self, request, *args, **kwargs):
         """Override for the post method to mark the DraftDomain as complete"""
         # Set the DraftDomain to "complete"

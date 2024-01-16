@@ -26,12 +26,8 @@ class DraftDomain(TimeStampedModel, DomainHelper):
         help_text="The draft number in the event a user doesn't save at this stage",
     )
 
-    is_incomplete = models.BooleanField(
-        default=False,
-        help_text="Determines if this Draft is complete or not"
-    )
+    is_incomplete = models.BooleanField(default=False, help_text="Determines if this Draft is complete or not")
 
     def get_default_request_name(self):
         """Returns the draft name that would be used for applications if no name exists"""
         return f"New domain request {self.draft_number}"
-    
