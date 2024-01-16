@@ -26,18 +26,21 @@ a.usa-button {
   text-decoration: none;
 }
 
-a.usa-button.disabled-link {
+a.usa-button.disabled-link,
+a.usa-button--unstyled.disabled-link {
   background-color: #ccc !important;
   color: #454545 !important
 }
 
-a.usa-button.disabled-link:hover {
+a.usa-button.disabled-link:hover,
+a.usa-button--unstyled.disabled-link {
   background-color: #ccc !important;
   cursor: not-allowed !important;
   color: #454545 !important
 }
 
-a.usa-button.disabled-link:focus {
+a.usa-button.disabled-link:focus,
+a.usa-button--unstyled.disabled-link {
   background-color: #ccc !important;
   cursor: not-allowed !important;
   outline: none !important;

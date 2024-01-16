@@ -16,10 +16,8 @@
     <li>There is no limit to the number of domain managers you can add.</li>
     <li>After adding a domain manager, an email invitation will be sent to that user with
       instructions on how to set up an account.</li>
-    <li>To remove a domain manager, <a href="{% public_site_url 'contact/' %}"
-      target="_blank" rel="noopener noreferrer" class="usa-link">contact us</a> for
-      assistance.</li>
     <li>All domain managers must keep their contact information updated and be responsive if contacted by the .gov team.</li>
+    <li>Domains must have at least one domain manager. You can’t remove yourself as a domain manager if you’re the only one assigned to this domain. Add another domain manager before you remove yourself from this domain.</li>
   </ul>
 
   {% if domain.permissions %}
@@ -31,9 +29,7 @@
       <tr>
         <th data-sortable scope="col" role="columnheader">Email</th>
         <th data-sortable scope="col" role="columnheader">Role</th>
-        {% if can_delete_users %}
-          <th scope="col" role="columnheader"><span class="sr-only">Action</span></th>
-        {% endif %}
+        <th scope="col" role="columnheader"><span class="sr-only">Action</span></th>
       </tr>
     </thead>
     <tbody>
@@ -43,49 +39,66 @@
           {{ permission.user.email }}
         </th>
         <td data-label="Role">{{ permission.role|title }}</td>
+        <td class="shift-action-button">
         {% if can_delete_users %}
-          <td class="shift-action-button">
-            <a
-              id="button-toggle-user-alert-{{ forloop.counter }}"
-              href="#toggle-user-alert-{{ forloop.counter }}"
-              class="usa-button--unstyled text-no-underline"
-              aria-controls="toggle-user-alert-{{ forloop.counter }}"
-              data-open-modal
+          <a
+            id="button-toggle-user-alert-{{ forloop.counter }}"
+            href="#toggle-user-alert-{{ forloop.counter }}"
+            class="usa-button--unstyled text-no-underline"
+            aria-controls="toggle-user-alert-{{ forloop.counter }}"
+            data-open-modal
+          >
+            Remove
+          </a>
+          {# Display a custom message if the user is trying to delete themselves #}
+          {% if permission.user.email == current_user_email %}
+            <div
+            class="usa-modal usa-modal--lg"
+            id="toggle-user-alert-{{ forloop.counter }}"
+            aria-labelledby="Are you sure you want to continue?"
+            aria-describedby="You will be removed from this domain"
+            data-force-action
             >
-              Remove
-            </a>
-            {# Display a custom message if the user is trying to delete themselves #}
-            {% if permission.user.email == current_user_email %}
-              <div
+              <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
+                {% with domain_name=domain.name|force_escape %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove yourself as a domain manager for "|add:domain_name|add:"?"|safe modal_description="You will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button_self|safe %}
+                {% endwith %}
+              </form>
+            </div>
+          {% else %}
+            <div
               class="usa-modal usa-modal--lg"
               id="toggle-user-alert-{{ forloop.counter }}"
               aria-labelledby="Are you sure you want to continue?"
-              aria-describedby="You will be removed from this domain"
+              aria-describedby="{{ permission.user.email }} will be removed"
               data-force-action
-              >
-                <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
-                  {% with domain_name=domain.name|force_escape %}
-                    {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove yourself as a domain manager for "|add:domain_name|add:"?"|safe modal_description="You will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button_self|safe %}
-                  {% endwith %}
-                </form>
-              </div>
-            {% else %}
-              <div
-                class="usa-modal usa-modal--lg"
-                id="toggle-user-alert-{{ forloop.counter }}"
-                aria-labelledby="Are you sure you want to continue?"
-                aria-describedby="{{ permission.user.email }} will be removed"
-                data-force-action
-              >
-                <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
-                  {% with email=permission.user.email|force_escape domain_name=domain.name|force_escape %}
-                    {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove &lt;"|add:email|add:"&gt;?"|safe modal_description="<strong>&lt;"|add:email|add:"&gt;</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
-                  {% endwith %}
-                </form>
-              </div>
-            {% endif %}
-          </td>
+            >
+              <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
+                {% with email=permission.user.email|default:permission.user|force_escape domain_name=domain.name|force_escape %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove &lt;"|add:email|add:"&gt;?"|safe modal_description="<strong>&lt;"|add:email|add:"&gt;</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
+                {% endwith %}
+              </form>
+            </div>
+          {% endif %}
+        {% else %}
+          <a
+          class="usa-button--unstyled disabled-link usa-tooltip text-no-underline "
+          data-position="top"
+          title="Domains must have at least one domain manager"
+          aria-disabled="true"
+          data-tooltip="true"
+          >
+          Remove
+          </a>
         {% endif %}
+        </td>
+        {% comment %}
+        usa-tooltip disabled-link"
+        data-position="right"
+        title="Coming in 2024"
+        aria-disabled="true"
+        data-tooltip="true"
+        {% endcomment %}
       </tr>
       {% endfor %}
     </tbody>
