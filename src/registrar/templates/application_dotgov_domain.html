@@ -2,23 +2,21 @@
 {% load static field_helpers url_helpers %}
 
 {% block form_instructions %}
-  <p>Before requesting a .gov domain, <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">please make sure it
-  meets our naming requirements</a>. Your domain name must:
+  <p>Before requesting a .gov domain, please make sure it meets <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">our naming requirements</a>. Your domain name must:
     <ul class="usa-list">
       <li>Be available </li>
-      <li>Be unique </li>
       <li>Relate to your organization’s name, location, and/or services </li>
       <li>Be clear to the general public. Your domain name must not be easily confused
       with other organizations.</li>
     </ul>
   </p>
 
+  <p>Names that uniquely apply to your organization are likely to be approved over names that could also apply to other organizations. In most instances, this requires including your state’s two-letter abbreviation.</p> 
+
+  <p>Requests for your organization’s initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
+
   <p>Note that <strong>only federal agencies can request generic terms</strong> like
   vote.gov.</p>
-
-  <p>We’ll try to give you the domain you want. We first need to make sure your request
-  meets our requirements. We’ll work with you to find the best domain for your
-  organization.</p>
 
   <h2 class="margin-top-3">Domain examples for your type of organization</h2>
   <div class="domain_example">
@@ -87,6 +85,4 @@
 
   </fieldset>
 
-  <p id="domain_instructions2">If you’re not sure this is the domain you want, that’s
-  okay. You can change it later.</p>
 {% endblock %}
