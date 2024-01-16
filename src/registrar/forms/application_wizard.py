@@ -612,6 +612,9 @@ class OtherContactsYesNoForm(RegistrarForm):
             choices=((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)")),
             initial=initial_value,
             widget=forms.RadioSelect,
+            error_messages={
+                'required': 'This question is required.',
+            }
         )
 
 
