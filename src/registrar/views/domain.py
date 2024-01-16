@@ -222,6 +222,9 @@ class DomainAuthorizingOfficialView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the authorizing official."""
+        # Set the domain information in the form so that it can be accessible
+        # to associate a new Contact as authorizing official, if new Contact is needed
+        # in the save() method
         form.setDomainInfo(self.object.domain_info)
         form.save()
 

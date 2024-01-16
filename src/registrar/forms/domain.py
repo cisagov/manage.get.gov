@@ -1,7 +1,5 @@
 """Forms for domain management."""
 
-import logging
-
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.forms import formset_factory
@@ -23,8 +21,6 @@ from .common import (
 )
 
 import re
-
-logger = logging.getLogger(__name__)
 
 
 class DomainAddUserForm(forms.Form):
@@ -239,21 +235,21 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.domainInfo = None
 
     def setDomainInfo(self, domainInfo):
+        """Set the domain information for the form.
+        The form instance is associated with the contact itself. In order to access the associated
+        domain information object, this needs to be set in the form by the view."""
         self.domainInfo = domainInfo
 
     def save(self, commit=True):
-        logger.info(f"in save: {self.instance}")
-        logger.info(f"{self.instance.__class__.__name__}")
-        logger.info(f"{self.instance.id}")
-        logger.info(f"self.fields => {self.fields}")
-        logger.info(f"domain info: {self.instance.information_authorizing_official}")
+        """Override the save() method of the BaseModelForm."""
 
-        # get db object
+        # Get the Contact object from the db for the Authorizing Official
         db_ao = Contact.objects.get(id=self.instance.id)
-        logger.info(f"db_ao.information_authorizing_official {db_ao.information_authorizing_official}")
         if self.domainInfo and db_ao.has_more_than_one_join("information_authorizing_official"):
-            logger.info(f"domain info => {self.domainInfo}")
-            logger.info(f"authorizing official id => {self.domainInfo.authorizing_official.id}")
+            # Handle the case where the domain information object is available and the AO Contact
+            # has more than one joined object.
+            # In this case, create a new Contact, and update the new Contact with form data.
+            # Then associate with domain information object as the authorizing_official
             contact = Contact()
             for name, value in self.cleaned_data.items():
                 setattr(contact, name, value)
