@@ -23,6 +23,7 @@ SAMPLE_KWARGS = {
     "content_type_id": "2",
     "object_id": "3",
     "domain": "whitehouse.gov",
+    "user_pk": "1",
 }
 
 # Our test suite will ignore some namespaces.

@@ -825,13 +825,19 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
 
     def get_success_message(self, delete_self = False):
         """Returns confirmation content for the deletion event """
+
+        # Grab the text representation of the user we want to delete
         email_or_name = self.object.user.email
-        if email_or_name is None:
+        if email_or_name is None or email_or_name.strip() == "":
             email_or_name = self.object.user
+
+        # If the user is deleting themselves, return a special message.
+        # If not, return something more generic.
         if delete_self:
             message = f"You are no longer managing the domain {self.object.domain}."
         else:
             message = f"Removed {email_or_name} as a manager for this domain."
+
         return message
 
     def form_valid(self, form):
@@ -839,7 +845,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         super().form_valid(form)
 
         # Is the user deleting themselves? If so, display a different message
-        delete_self = self.request.user.email == self.object.user.email
+        delete_self = self.request.user == self.object.user
 
         # Add a success message
         messages.success(self.request, self.get_success_message(delete_self))
@@ -851,7 +857,8 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         response = super().post(request, *args, **kwargs)
 
         # If the user is deleting themselves, redirect to home
-        if self.request.user == self.object.user:
+        delete_self = self.request.user == self.object.user
+        if delete_self:
             return redirect(reverse("home"))
         
         return response
