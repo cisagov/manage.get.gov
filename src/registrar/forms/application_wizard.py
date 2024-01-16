@@ -96,7 +96,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         """
         raise NotImplementedError
 
-    def test_if_more_than_one_join(self, db_obj, rel, related_name):
+    def has_more_than_one_join(self, db_obj, rel, related_name):
         """Helper for finding whether an object is joined more than once."""
         # threshold is the number of related objects that are acceptable
         # when determining if related objects exist. threshold is 0 for most
@@ -165,13 +165,12 @@ class RegistrarFormSet(forms.BaseFormSet):
             # matching database object exists, update it
             if db_obj is not None and cleaned:
                 if should_delete(cleaned):
-                    if any(self.test_if_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
+                    if any(self.has_more_than_one_join(db_obj, rel, related_name) for rel in reverse_joins):
                         # Remove the specific relationship without deleting the object
                         getattr(db_obj, related_name).remove(self.application)
                     else:
                         # If there are no other relationships, delete the object
                         db_obj.delete()
-                    continue
                 else:
                     pre_update(db_obj, cleaned)
                     db_obj.save()
@@ -214,7 +213,7 @@ class TribalGovernmentForm(RegistrarForm):
     )
 
     tribe_name = forms.CharField(
-        label="What is the name of the tribe you represent?",
+        label="Name of tribe",
         error_messages={"required": "Enter the tribe you represent."},
     )
 
@@ -610,9 +609,12 @@ class OtherContactsYesNoForm(RegistrarForm):
 
         self.fields["has_other_contacts"] = forms.TypedChoiceField(
             coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
-            choices=((True, "Yes, I can name other employees."), (False, "No (We’ll ask you to explain why).")),
+            choices=((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)")),
             initial=initial_value,
             widget=forms.RadioSelect,
+            error_messages={
+                "required": "This question is required.",
+            },
         )
 
 
@@ -790,11 +792,7 @@ class NoOtherContactsForm(RegistrarForm):
     no_other_contacts_rationale = forms.CharField(
         required=True,
         # label has to end in a space to get the label_suffix to show
-        label=(
-            "You don’t need to provide names of other employees now, but it may "
-            "slow down our assessment of your eligibility. Describe why there are "
-            "no other employees who can help verify your request."
-        ),
+        label=("No other employees rationale"),
         widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(

@@ -365,14 +365,12 @@ function markForm(e, formLabel){
  */
 function prepareNewDeleteButton(btn, formLabel) {
   let formIdentifier = "form"
-  let isNameserversForm = document.title.includes("DNS name servers |");
-  let isOtherContactsForm = document.title.includes("Other employees from your organization");
+  let isNameserversForm = document.querySelector(".nameservers-form");
+  let isOtherContactsForm = document.querySelector(".other-contacts-form");
   let addButton = document.querySelector("#add-form");
+
   if (isOtherContactsForm) {
     formIdentifier = "other_contacts";
-  }
-  
-  if (isOtherContactsForm) {
     // We will mark the forms for deletion
     btn.addEventListener('click', function(e) {
       markForm(e, formLabel);
@@ -393,8 +391,8 @@ function prepareNewDeleteButton(btn, formLabel) {
 function prepareDeleteButtons(formLabel) {
   let formIdentifier = "form"
   let deleteButtons = document.querySelectorAll(".delete-record");
-  let isNameserversForm = document.title.includes("DNS name servers |");
-  let isOtherContactsForm = document.title.includes("Other employees from your organization");
+  let isNameserversForm = document.querySelector(".nameservers-form");
+  let isOtherContactsForm = document.querySelector(".other-contacts-form");
   let addButton = document.querySelector("#add-form");
   if (isOtherContactsForm) {
     formIdentifier = "other_contacts";
@@ -450,15 +448,16 @@ function hideDeletedForms() {
   let addButton = document.querySelector("#add-form");
   let cloneIndex = 0;
   let formLabel = '';
-  let isNameserversForm = document.title.includes("DNS name servers |");
-  let isOtherContactsForm = document.title.includes("Other employees from your organization");
+  let isNameserversForm = document.querySelector(".nameservers-form");
+  let isOtherContactsForm = document.querySelector(".other-contacts-form");
+  let isDsDataForm = document.querySelector(".ds-data-form");
   // The Nameservers formset features 2 required and 11 optionals
   if (isNameserversForm) {
     cloneIndex = 2;
     formLabel = "Name server";
   // DNSSEC: DS Data
-  } else if (document.title.includes("DS Data |")) {
-    formLabel = "DS Data record";
+  } else if (isDsDataForm) {
+    formLabel = "DS data record";
   // The Other Contacts form
   } else if (isOtherContactsForm) {
     formLabel = "Organization contact";

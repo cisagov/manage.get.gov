@@ -21,28 +21,6 @@
 - Notes: Subject line of the "Domain Request Withdrawn" email
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/domain_request_withdrawn_subject.txt)
 
-## Status Change Action Needed
-- Starting Location: Django Admin
-- Workflow: Analyst Admin
-- Workflow Step: Click "Domain applications" -> Click an application with a status of "in review" or "rejected" -> Click status dropdown -> (select "action needed") -> click "Save"
-- Notes: Note that this will send an email to the submitter (email listed on Your Contact Information). To test this with your own email, you need to create an application, set the status to either "in review" or "rejected" (and click save), then set the status to "action needed". This will send you an email.
-- [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_action_needed.txt)
-
-### Status Change Action Needed Subject
-- Notes: Subject line of the "Status Change Action Needed" email
-- [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_action_needed_subject.txt)
-
-## Status Change in Review
-- Starting Location: Django Admin
-- Workflow: Analyst Admin
-- Workflow Step: Click "Domain applications" -> Click an application with a status of "submitted" -> Click status dropdown -> (select "In review") -> click "Save"
-- Notes: Note that this will send an email to the submitter (email listed on Your Contact Information). To test this with your own email, you need to create an application, then set the status to "In review". This will send you an email.
-- [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_approved.txt)
-
-### Status Change in Review Subject
-- Notes: This is the subject line of the "Status Change In Review" email
-- [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_in_review_subject.txt)
-
 ## Status Change Approved
 - Starting Location: Django Admin
 - Workflow: Analyst Admin
