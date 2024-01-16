@@ -613,8 +613,8 @@ class OtherContactsYesNoForm(RegistrarForm):
             initial=initial_value,
             widget=forms.RadioSelect,
             error_messages={
-                'required': 'This question is required.',
-            }
+                "required": "This question is required.",
+            },
         )
 
 
