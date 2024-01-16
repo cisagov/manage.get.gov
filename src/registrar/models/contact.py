@@ -89,7 +89,8 @@ class Contact(TimeStampedModel):
             if isinstance(field, models.OneToOneField):
                 # if the rel field is a OneToOne field, then we have already
                 # determined that the object exists (is not None)
-                return True
+                # so return True unless the relation being tested is the expected_relation
+                return True if relation != expected_relation else False
             elif isinstance(field, models.ForeignObjectRel):
                 # if the rel field is a ManyToOne or ManyToMany, then we need
                 # to determine if the count of related objects is greater than
