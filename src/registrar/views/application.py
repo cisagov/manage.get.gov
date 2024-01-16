@@ -12,6 +12,7 @@ from django.contrib import messages
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
 from registrar.models.draft_domain import DraftDomain
+from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
@@ -142,12 +143,17 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
 
-        # TODO - revert back to using draft_name
         draft_domain = self._create_default_draft_domain()
-        self._application = DomainApplication.objects.create(
-            creator=self.request.user,
-            requested_domain=draft_domain,
-        )
+
+        # Check added for linting purposes
+        if self.request.user and isinstance(self.request.user, User):
+            self._application = DomainApplication.objects.create(
+                creator=self.request.user,
+                requested_domain=draft_domain,
+            )
+        else:
+            # TODO - Need some sort of front end display for this
+            raise ValueError("Invalid type for user")
 
         self.storage["application_id"] = self._application.id
         return self._application
