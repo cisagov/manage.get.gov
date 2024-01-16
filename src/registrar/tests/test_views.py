@@ -3087,7 +3087,7 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         # ao_pk is the initial pk of the authorizing official. set it before update
         # to be able to verify after update that the same contact object is in place
         ao_pk = self.domain_information.authorizing_official.id
-        result = ao_form.submit()
+        ao_form.submit()
 
         # refresh domain information
         self.domain_information.refresh_from_db()
@@ -3128,6 +3128,7 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         other_contact = self.domain_information.other_contacts.all()[0]
         self.assertEqual("Testy", other_contact.first_name)
         self.assertEqual(ao_pk, other_contact.id)
+
 
 class TestDomainOrganization(TestDomainOverview):
     def test_domain_org_name_address(self):
