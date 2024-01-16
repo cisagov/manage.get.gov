@@ -1,1 +1,1 @@
-Your .gov domain request has been withdrawn
+Update on your .gov request: {{ application.requested_domain.name }}

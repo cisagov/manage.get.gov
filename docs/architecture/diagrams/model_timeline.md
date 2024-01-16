@@ -2,7 +2,7 @@
 
 This diagram connects the data models along with various workflow stages.
 
-1. The applicant starts the process at `/register` interacting with the
+1. The applicant starts the process at `/request` interacting with the
    `DomainApplication` object.
 
 2. The analyst approves the application using the `DomainApplication`'s
@@ -139,7 +139,7 @@ DomainInvitation -- Domain
 DomainInvitation .[#green].> UserDomainRole : User.on_each_login()
 
 actor applicant #Red
-applicant -d-> DomainApplication : **/register**
+applicant -d-> DomainApplication : **/request**
 
 actor analyst #Blue
 analyst -[#blue]-> DomainApplication : **approve()**

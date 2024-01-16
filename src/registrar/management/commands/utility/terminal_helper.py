@@ -1,6 +1,7 @@
 from enum import Enum
 import logging
 import sys
+from django.core.paginator import Paginator
 from typing import List
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,94 @@ class TerminalColors:
     BackgroundLightYellow = "\033[103m"
 
 
+class ScriptDataHelper:
+    """Helper method with utilities to speed up development of scripts that do DB operations"""
+
+    @staticmethod
+    def bulk_update_fields(model_class, update_list, fields_to_update, batch_size=1000):
+        """
+        This function performs a bulk update operation on a specified Django model class in batches.
+        It uses Django's Paginator to handle large datasets in a memory-efficient manner.
+
+        Parameters:
+        model_class: The Django model class that you want to perform the bulk update on.
+                    This should be the actual class, not a string of the class name.
+
+        update_list: A list of model instances that you want to update. Each instance in the list
+                    should already have the updated values set on the instance.
+
+        batch_size:  The maximum number of model instances to update in a single database query.
+                    Defaults to 1000. If you're dealing with models that have a large number of fields,
+                    or large field values, you may need to decrease this value to prevent out-of-memory errors.
+
+        fields_to_update: Specifies which fields to update.
+
+        Usage:
+            bulk_update_fields(Domain, page.object_list, ["first_ready"])
+        """
+        # Create a Paginator object. Bulk_update on the full dataset
+        # is too memory intensive for our current app config, so we can chunk this data instead.
+        paginator = Paginator(update_list, batch_size)
+        for page_num in paginator.page_range:
+            page = paginator.page(page_num)
+            model_class.objects.bulk_update(page.object_list, fields_to_update)
+
+
 class TerminalHelper:
+    @staticmethod
+    def log_script_run_summary(to_update, failed_to_update, skipped, debug: bool):
+        """Prints success, failed, and skipped counts, as well as
+        all affected objects."""
+        update_success_count = len(to_update)
+        update_failed_count = len(failed_to_update)
+        update_skipped_count = len(skipped)
+
+        # Prepare debug messages
+        debug_messages = {
+            "success": (f"{TerminalColors.OKCYAN}Updated: {to_update}{TerminalColors.ENDC}\n"),
+            "skipped": (f"{TerminalColors.YELLOW}Skipped: {skipped}{TerminalColors.ENDC}\n"),
+            "failed": (f"{TerminalColors.FAIL}Failed: {failed_to_update}{TerminalColors.ENDC}\n"),
+        }
+
+        # Print out a list of everything that was changed, if we have any changes to log.
+        # Otherwise, don't print anything.
+        TerminalHelper.print_conditional(
+            debug,
+            f"{debug_messages.get('success') if update_success_count > 0 else ''}"
+            f"{debug_messages.get('skipped') if update_skipped_count > 0 else ''}"
+            f"{debug_messages.get('failed') if update_failed_count > 0 else ''}",
+        )
+
+        if update_failed_count == 0 and update_skipped_count == 0:
+            logger.info(
+                f"""{TerminalColors.OKGREEN}
+                ============= FINISHED ===============
+                Updated {update_success_count} entries
+                {TerminalColors.ENDC}
+                """
+            )
+        elif update_failed_count == 0:
+            logger.warning(
+                f"""{TerminalColors.YELLOW}
+                ============= FINISHED ===============
+                Updated {update_success_count} entries
+                ----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----
+                Skipped updating {update_skipped_count} entries
+                {TerminalColors.ENDC}
+                """
+            )
+        else:
+            logger.error(
+                f"""{TerminalColors.FAIL}
+                ============= FINISHED ===============
+                Updated {update_success_count} entries
+                ----- UPDATE FAILED -----
+                Failed to update {update_failed_count} entries,
+                Skipped updating {update_skipped_count} entries
+                {TerminalColors.ENDC}
+                """
+            )
+
     @staticmethod
     def query_yes_no(question: str, default="yes"):
         """Ask a yes/no question via raw_input() and return their answer.

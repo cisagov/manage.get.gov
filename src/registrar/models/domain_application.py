@@ -653,13 +653,11 @@ class DomainApplication(TimeStampedModel):
     def in_review(self):
         """Investigate an application that has been submitted.
 
-        As a side effect, an email notification is sent."""
-
-        self._send_status_update_email(
-            "application in review",
-            "emails/status_change_in_review.txt",
-            "emails/status_change_in_review_subject.txt",
-        )
+        This action is logged."""
+        literal = DomainApplication.ApplicationStatus.IN_REVIEW
+        # Check if the tuple exists, then grab its value
+        in_review = literal if literal is not None else "In Review"
+        logger.info(f"A status change occurred. {self} was changed to '{in_review}'")
 
     @transition(
         field="status",
@@ -674,13 +672,11 @@ class DomainApplication(TimeStampedModel):
     def action_needed(self):
         """Send back an application that is under investigation or rejected.
 
-        As a side effect, an email notification is sent."""
-
-        self._send_status_update_email(
-            "action needed",
-            "emails/status_change_action_needed.txt",
-            "emails/status_change_action_needed_subject.txt",
-        )
+        This action is logged."""
+        literal = DomainApplication.ApplicationStatus.ACTION_NEEDED
+        # Check if the tuple is setup correctly, then grab its value
+        action_needed = literal if literal is not None else "Action Needed"
+        logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
 
     @transition(
         field="status",
@@ -840,9 +836,13 @@ class DomainApplication(TimeStampedModel):
             DomainApplication.OrganizationChoices.INTERSTATE,
         ]
 
-    def show_no_other_contacts_rationale(self) -> bool:
-        """Show this step if the other contacts are blank."""
-        return not self.other_contacts.exists()
+    def has_rationale(self) -> bool:
+        """Does this application have no_other_contacts_rationale?"""
+        return bool(self.no_other_contacts_rationale)
+
+    def has_other_contacts(self) -> bool:
+        """Does this application have other contacts listed?"""
+        return self.other_contacts.exists()
 
     def is_federal(self) -> Union[bool, None]:
         """Is this application for a federal agency?
