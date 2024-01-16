@@ -498,6 +498,13 @@ class OtherContacts(ApplicationWizard):
         other_contacts_forms = forms[1]
         no_other_contacts_form = forms[2]
 
+        # set all the required other_contact fields as necessary since new forms
+        # were added through javascript
+        for form in forms[1].forms:
+            for field_item, field in form.fields.items():
+                if field.required:
+                    field.widget.attrs["required"] = "required"
+
         all_forms_valid = True
         # test first for yes_no_form validity
         if other_contacts_yes_no_form.is_valid():
