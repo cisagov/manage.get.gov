@@ -143,92 +143,12 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
 
-        draft_domain = self._create_default_draft_domain()
-
-        # Check added for linting purposes
-        if self.request.user and isinstance(self.request.user, User):
-            self._application = DomainApplication.objects.create(
-                creator=self.request.user,
-                requested_domain=draft_domain,
-            )
-        else:
-            # TODO - Need some sort of front end display for this
-            raise ValueError("Invalid type for user")
+        self._application = DomainApplication.objects.create(
+            creator=self.request.user
+        )
 
         self.storage["application_id"] = self._application.id
         return self._application
-
-    def _create_default_draft_domain(self):
-        "Set a default draft name for if the user exits without completing"
-        default_draft_text = "New domain request"
-
-        # Does the user have any incomplete drafts?
-        existing_applications = DomainApplication.objects.filter(
-            Q(requested_domain=None) | Q(requested_domain__is_incomplete=True),
-            creator=self.request.user,
-        )
-
-        name_field = "requested_domain__name"
-
-        incomplete_drafts = (
-            existing_applications.exclude(requested_domain=None)
-            .filter(requested_domain__name__icontains=default_draft_text)
-            .order_by(name_field)
-        )
-
-        incomplete_draft_names = incomplete_drafts.values_list(name_field, flat=True)
-
-        proposed_draft_number = incomplete_drafts.count() + 1
-        draft_number = 1
-        for application in existing_applications:
-            if application.requested_domain is not None and application.requested_domain.name is not None:
-                name = application.requested_domain.name
-
-                # If we already have a list of draft numbers, base the
-                # subsequent number off of the last numbered field.
-                # This is to avoid a scenario in which drafts 1, 2, 3 and exist
-                # and 2 is deleted - meaning we would get two duplicate "3"s if we added another
-                if name in incomplete_draft_names:
-                    # Get the last numbered draft
-                    last_draft = incomplete_drafts.last()
-                    last_draft_number = last_draft.requested_domain.draft_number
-
-                    smallest_number = self._find_smallest_missing_number(incomplete_drafts)
-                    smallest_name = f"New domain request {smallest_number}"
-                    if smallest_name not in incomplete_draft_names:
-                        draft_number = smallest_number
-                    elif proposed_draft_number == last_draft_number:
-                        # If the draft number we are trying to create matches the last draft number,
-                        # simply add one to that number
-                        draft_number = last_draft_number + 1
-
-        draft_domain = DraftDomain(
-            # Save a blank string rather then None due to DB requirements
-            name="",
-            draft_number=draft_number,
-            is_incomplete=True,
-        )
-        # Generate a default name based off of a draft_number
-        draft_domain.name = draft_domain.get_default_request_name()
-        draft_domain.save()
-
-        return draft_domain
-
-    def _find_smallest_missing_number(self, incomplete_drafts):
-        draft_numbers = []
-        for draft in incomplete_drafts:
-            number = draft.requested_domain.draft_number
-            if number is not None:
-                draft_numbers.append(number)
-
-        draft_numbers = sorted(draft_numbers)
-        smallest_missing = 1
-        for number in draft_numbers:
-            if number == smallest_missing:
-                smallest_missing += 1
-            elif number > smallest_missing:
-                break
-        return smallest_missing
 
     @property
     def storage(self):
@@ -409,7 +329,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # Build the submit button that we'll pass to the modal.
         modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
         # Concatenate the modal header that we'll pass to the modal.
-        if self.application.requested_domain and not self.application.requested_domain.is_incomplete:
+        if self.application.requested_domain:
             modal_heading = "You are about to submit a domain request for " + str(self.application.requested_domain)
         else:
             modal_heading = "You are about to submit an incomplete request"
@@ -555,14 +475,6 @@ class DotgovDomain(ApplicationWizard):
         context["organization_type"] = self.application.organization_type
         context["federal_type"] = self.application.federal_type
         return context
-
-    def post(self, request, *args, **kwargs):
-        """Override for the post method to mark the DraftDomain as complete"""
-        # Set the DraftDomain to "complete"
-        print(f"what is the request at this time? {request}")
-        self.application.requested_domain.is_incomplete = False
-        response = super().post(request, *args, **kwargs)
-        return response
 
 
 class Purpose(ApplicationWizard):

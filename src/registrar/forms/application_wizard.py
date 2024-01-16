@@ -511,9 +511,7 @@ class DotGovDomainForm(RegistrarForm):
         values = {}
         requested_domain = getattr(obj, "requested_domain", None)
         if requested_domain is not None:
-            is_incomplete = requested_domain.is_incomplete
-            # Only display a preexisting name if the application was completed
-            domain_name = requested_domain.name if not is_incomplete else ""
+            domain_name = requested_domain.name
             values["requested_domain"] = Domain.sld(domain_name)
         return values
 

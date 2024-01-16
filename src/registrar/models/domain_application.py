@@ -632,10 +632,6 @@ class DomainApplication(TimeStampedModel):
         # Update submission_date to today
         self.submission_date = timezone.now().date()
 
-        # Mark the draft domain as complete
-        if self.requested_domain.is_incomplete:
-            self.requested_domain.is_incomplete = False
-
         self.save()
 
         self._send_status_update_email(
