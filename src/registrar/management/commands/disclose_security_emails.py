@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 # error condition if domain not in database
                 self.domains_with_errors.append(copy.deepcopy(domain.domain_info))
                 logger.error(
-                    f"error retrieving domain {domain.domaidomain_infon_name} contact {domain.security_contact}: {err}"
+                    f"error retrieving domain {domain.domain_info} contact {domain.security_contact}: {err}"
                 )
 
         # Inform user how many contacts were disclosed, skipped, and errored
