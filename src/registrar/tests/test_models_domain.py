@@ -983,16 +983,31 @@ class TestRegistrantContacts(MockEppLib):
         Tests that command disclose_security_emails runs successfully with
         appropriate EPP calll to UpdateContact.
         """
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        domain, _ = Domain.objects.get_or_create(name="testdisclose.gov", state=Domain.State.READY)
         expectedSecContact = PublicContact.get_default_security()
         expectedSecContact.domain = domain
         expectedSecContact.email = "123@mail.gov"
+        # set domain security email to 123@mail.gov instead of default email
         domain.security_contact = expectedSecContact
         self.run_disclose_security_emails()
 
-        # running disclose_security_emails makes EPP calls
-        expectedUpdateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
-        self.mockedSendFunction.assert_any_call(expectedUpdateCommand, cleaned=True)
+        # running disclose_security_emails sends EPP call UpdateContact with disclose
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateContact(
+                        id=domain.security_contact.registry_id,
+                        postal_info=domain._make_epp_contact_postal_info(contact=domain.security_contact),
+                        email=domain.security_contact.email,
+                        voice=domain.security_contact.voice,
+                        fax=domain.security_contact.fax,
+                        auth_info=common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+                        disclose=domain._disclose_fields(contact=domain.security_contact),
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):

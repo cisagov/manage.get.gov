@@ -52,19 +52,19 @@ class Command(BaseCommand):
         # Update EPP contact for domains with a security contact
         for domain in domains:
             try:
-                logger.info(f"Domain {domain.domain_info} security contact: {domain.security_contact.email}")
+                logger.info(f"Domain {domain.name} security contact: {domain.security_contact.email}")
                 if domain.security_contact.email != "registrar@dotgov.gov":
                     domain._update_epp_contact(contact=domain.security_contact)
                     self.disclosed_domain_contacts_count += 1
                 else:
                     logger.info(
-                        f"Skipping disclose for {domain.domain_info} security contact {domain.security_contact.email}."
+                        f"Skipping disclose for {domain.name} security contact {domain.security_contact.email}."
                     )
                     self.skipped_domain_contacts_count += 1
             except Exception as err:
                 # error condition if domain not in database
-                self.domains_with_errors.append(copy.deepcopy(domain.domain_info))
-                logger.error(f"error retrieving domain {domain.domain_info} contact {domain.security_contact}: {err}")
+                self.domains_with_errors.append(copy.deepcopy(domain.name))
+                logger.error(f"error retrieving domain {domain.name} contact {domain.security_contact}: {err}")
 
         # Inform user how many contacts were disclosed, skipped, and errored
         logger.info(f"Updated {self.disclosed_domain_contacts_count} contacts to disclosed.")
