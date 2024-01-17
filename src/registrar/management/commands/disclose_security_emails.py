@@ -69,8 +69,8 @@ class Command(BaseCommand):
         # Inform user how many contacts were disclosed, skipped, and errored
         logger.info(f"Updated {self.disclosed_domain_contacts_count} contacts to disclosed.")
         logger.info(
-            f"Skipped disclosing {self.skipped_domain_contacts_count} contacts with security
-            email registrar@dotgov.gov."
+            f"Skipped disclosing {self.skipped_domain_contacts_count} contacts with security email "
+            f"registrar@dotgov.gov."
         )
         logger.info(
             f"Error disclosing the following {len(self.domains_with_errors)} contacts: {self.domains_with_errors}"
