@@ -152,4 +152,3 @@ class UserDomainRolePermissionDeleteView(UserDomainRolePermissionView, DeleteVie
     model = UserDomainRole
     # variable name in template context for the model object
     context_object_name = "userdomainrole"
-

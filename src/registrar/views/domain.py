@@ -34,7 +34,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
-from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView, UserDomainRolePermissionView
+from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
     ContactForm,
@@ -643,7 +643,6 @@ class DomainUsersView(DomainBaseView):
         return context
 
     def _add_booleans_to_context(self, context):
-
         # Determine if the current user can delete managers
         domain_pk = None
         can_delete_users = False
@@ -660,17 +659,17 @@ class DomainUsersView(DomainBaseView):
         """Adds modal buttons (and their HTML) to the context"""
         # Create HTML for the modal button
         modal_button = self._create_modal_button_html(
-            button_name="delete_domain_manager", 
+            button_name="delete_domain_manager",
             button_text_content="Yes, remove domain manager",
-            classes=["usa-button", "usa-button--secondary"]
+            classes=["usa-button", "usa-button--secondary"],
         )
         context["modal_button"] = modal_button
 
         # Create HTML for the modal button when deleting yourself
-        modal_button_self= self._create_modal_button_html(
+        modal_button_self = self._create_modal_button_html(
             button_name="delete_domain_manager_self",
             button_text_content="Yes, remove myself",
-            classes=["usa-button", "usa-button--secondary"]
+            classes=["usa-button", "usa-button--secondary"],
         )
         context["modal_button_self"] = modal_button_self
 
@@ -686,11 +685,7 @@ class DomainUsersView(DomainBaseView):
 
         html_class = f'class="{class_list}"' if class_list else None
 
-        modal_button = (
-            '<button type="submit" '
-            f"{html_class} "
-            f'name="{button_name}">{button_text_content}</button>'
-        )
+        modal_button = '<button type="submit" ' f"{html_class} " f'name="{button_name}">{button_text_content}</button>'
         return modal_button
 
 
@@ -809,8 +804,8 @@ class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMe
 
 
 class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
-    """Inside of a domain's user management, a form for deleting users.
-    """
+    """Inside of a domain's user management, a form for deleting users."""
+
     object: UserDomainRole  # workaround for type mismatch in DeleteView
 
     def get_object(self, queryset=None):
@@ -823,8 +818,8 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         """Refreshes the page after a delete is successful"""
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
-    def get_success_message(self, delete_self = False):
-        """Returns confirmation content for the deletion event """
+    def get_success_message(self, delete_self=False):
+        """Returns confirmation content for the deletion event"""
 
         # Grab the text representation of the user we want to delete
         email_or_name = self.object.user.email
@@ -860,5 +855,5 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         delete_self = self.request.user == self.object.user
         if delete_self:
             return redirect(reverse("home"))
-        
+
         return response

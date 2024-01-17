@@ -307,7 +307,7 @@ class UserDomainRolePermission(PermissionsLoginMixin):
         # Check if the UserDomainRole object exists, then check
         # if the user requesting the delete has permissions to do so
         has_delete_permission = UserDomainRole.objects.filter(
-            user=user_pk, 
+            user=user_pk,
             domain=domain_pk,
             domain__permissions__user=self.request.user,
         ).exists()
@@ -316,9 +316,7 @@ class UserDomainRolePermission(PermissionsLoginMixin):
 
         # Check if more than one manager exists on the domain.
         # If only one exists, prevent this from happening
-        has_multiple_managers = len(UserDomainRole.objects.filter(
-            domain=domain_pk
-        )) > 1
+        has_multiple_managers = len(UserDomainRole.objects.filter(domain=domain_pk)) > 1
         if not has_multiple_managers:
             return False
 
