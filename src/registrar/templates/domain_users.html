@@ -29,7 +29,7 @@
       <tr>
         <th data-sortable scope="col" role="columnheader">Email</th>
         <th data-sortable scope="col" role="columnheader">Role</th>
-        <th scope="col" role="columnheader"><span class="sr-only">Action</span></th>
+        <th class="grid-col-2" scope="col" role="columnheader"><span class="sr-only">Action</span></th>
       </tr>
     </thead>
     <tbody>
@@ -39,7 +39,7 @@
           {{ permission.user.email }}
         </th>
         <td data-label="Role">{{ permission.role|title }}</td>
-        <td class="shift-action-button">
+        <td>
         {% if can_delete_users %}
           <a
             id="button-toggle-user-alert-{{ forloop.counter }}"
@@ -137,7 +137,7 @@
           </th>
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
           <td data-label="Status">{{ invitation.status|title }}</td>
-          <td><form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
+          <td class="grid-col-2"><form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
             {% csrf_token %}<input type="submit" class="usa-button--unstyled" value="Cancel">
             </form>
           </td>
