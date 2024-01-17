@@ -2,14 +2,10 @@
 {% load field_helpers url_helpers %}
 
 {% block form_instructions %}
-  <p>.Gov domain names are for use on the internet. Don’t register a .gov to simply reserve a 
-domain name or for mainly internal use.</p>
-
-  <p>Describe the reason for your domain request. Explain how you plan to use this domain. 
-Who is your intended audience? Will you use it for a website and/or email? Are you moving 
-your website from another top-level domain (like .com or .org)? 
-Read about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/requirements/' %}">activities that are prohibited on .gov domains.</a></p>
-
+  <p>.Gov domains are intended for public use. Domains will not be given to organizations that only want to reserve a domain name (defensive registration) or that only intend to use the domain internally (as for an intranet).</p> 
+<p>Read about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/requirements/' %}">activities that are prohibited on .gov domains.</a></p>
+<h2>What is the purpose of your requested domain?</h2>
+<p>Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else?</p>
 {% endblock %}
 
 {% block form_required_fields_help_text %}
