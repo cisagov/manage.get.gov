@@ -1,7 +1,6 @@
 from django.shortcuts import render
 
 from registrar.models import DomainApplication, Domain, UserDomainRole
-from registrar.models.draft_domain import DraftDomain
 
 
 def index(request):
