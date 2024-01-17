@@ -227,10 +227,69 @@ function handleValidationClick(e) {
   for(const button of activatesValidation) {
     button.addEventListener('click', handleValidationClick);
   }
+
+  
+  // Add event listener to the "Check availability" button
+  const checkAvailabilityButton = document.getElementById('check-availability-button');
+  if (checkAvailabilityButton) {
+    const targetId = checkAvailabilityButton.getAttribute('validate-for');
+    const checkAvailabilityInput = document.getElementById(targetId);
+    checkAvailabilityButton.addEventListener('click',
+      function() { 
+        removeFormErrors(checkAvailabilityInput)
+      }
+    );
+  }
+
+  // Add event listener to the alternate domains input
+  const alternateDomainsInputs = document.querySelectorAll('[auto-validate]');
+  if (alternateDomainsInputs) {
+    for (const domainInput of alternateDomainsInputs){
+      // Only apply this logic to alternate domains input
+      if (domainInput.classList.contains('alternate-domain-input')){
+          domainInput.addEventListener('input', function() {
+              removeFormErrors(domainInput);
+            }
+          );
+      }
+    }
+    }
 })();
 
 /**
- * Delete method for formsets that diff in the view and delete in the model (Nameservers, DS Data)
+ * Removes form errors surrounding a form input
+ */
+function removeFormErrors(input){
+  console.log("in the function...")
+  // Remove error message
+  let errorMessage = document.getElementById(`${input.id}__error-message`);
+  if (errorMessage) {
+    errorMessage.remove();
+    console.log("Error message removed")
+  }else{
+    return
+  }
+
+  // Remove error classes
+  if (input.classList.contains('usa-input--error')) {
+    input.classList.remove('usa-input--error');
+  }
+
+  let label = document.querySelector(`label[for="${input.id}"]`);
+  if (label) {
+    label.classList.remove('usa-label--error');
+
+    // Remove error classes from parent div
+    let parentDiv = label.parentElement;
+    if (parentDiv) {
+      parentDiv.classList.remove('usa-form-group--error');
+    }
+  }
+}
+
+/**
+ * Prepare the namerservers and DS data forms delete buttons
+ * We will call this on the forms init, and also every time we add a form
  * 
  */
 function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
