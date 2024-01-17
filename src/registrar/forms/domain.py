@@ -250,11 +250,8 @@ class AuthorizingOfficialContactForm(ContactForm):
             # has more than one joined object.
             # In this case, create a new Contact, and update the new Contact with form data.
             # Then associate with domain information object as the authorizing_official
-            contact = Contact()
-            for name, value in self.cleaned_data.items():
-                setattr(contact, name, value)
-            contact.save()
-            self.domainInfo.authorizing_official = contact
+            data = dict(self.cleaned_data.items())
+            self.domainInfo.authorizing_official = Contact.objects.create(**data)
             self.domainInfo.save()
         else:
             super().save()

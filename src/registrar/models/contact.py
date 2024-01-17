@@ -56,7 +56,7 @@ class Contact(TimeStampedModel):
 
     def _get_all_relations(self):
         return [f.name for f in self._meta.get_fields() if f.is_relation]
-    
+
     def has_more_than_one_join(self, expected_relation):
         """Helper for finding whether an object is joined more than once.
         expected_relation is the one relation with one expected join"""
