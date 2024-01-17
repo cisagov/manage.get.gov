@@ -10,6 +10,7 @@ from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
+from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
@@ -129,11 +130,19 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if self._application:
             return self._application
 
+        # For linter. The else block should never be hit, but if it does,
+        # there may be a UI consideration. That will need to be handled in another ticket.
+        creator = None
+        if self.request.user is not None and isinstance(self.request.user, User):
+            creator = self.request.user
+        else:
+            raise ValueError("Invalid value for User")
+
         if self.has_pk():
             id = self.storage["application_id"]
             try:
                 self._application = DomainApplication.objects.get(
-                    creator=self.request.user,  # type: ignore
+                    creator=creator,
                     pk=id,
                 )
                 return self._application
