@@ -38,6 +38,9 @@ class DomainHelper:
 
         if domain == "" and not blank_ok:
             raise errors.BlankValueError()
+        elif domain == "":
+            # If blank ok is true, just return the domain
+            return domain 
 
         if domain.endswith(".gov"):
             domain = domain[:-4]
