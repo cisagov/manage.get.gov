@@ -243,9 +243,7 @@ function handleValidationClick(e) {
   if (checkAvailabilityButton) {
     const targetId = checkAvailabilityButton.getAttribute('validate-for');
     const checkAvailabilityInput = document.getElementById(targetId);
-    checkAvailabilityButton.addEventListener('click', function() {
-      removeFormErrors(checkAvailabilityInput);
-    });
+    checkAvailabilityButton.addEventListener('click', removeFormErrors(checkAvailabilityInput));
   }
 
   // Add event listener to the alternate domains input
@@ -254,10 +252,8 @@ function handleValidationClick(e) {
     for (const domainInput of alternateDomainsInputs){
       // Only apply this logic to alternate domains input
       if (domainInput.classList.contains('alternate-domain-input')){
-          domainInput.addEventListener('input', function() {
-            removeFormErrors(domainInput);
-          });
-        }
+          domainInput.addEventListener('input', removeFormErrors(domainInput));
+      }
     }
     }
 })();
@@ -267,7 +263,7 @@ function handleValidationClick(e) {
  */
 function removeFormErrors(input){
   // Remove error message
-  const errorMessage = document.getElementById(`${input.id}__error-message`);
+  let errorMessage = document.getElementById(`${input.id}__error-message`);
   if (errorMessage) {
     errorMessage.remove();
   }
@@ -277,18 +273,16 @@ function removeFormErrors(input){
     input.classList.remove('usa-input--error');
   }
 
-  const label = document.querySelector(`label[for="${input.id}"]`);
+  let label = document.querySelector(`label[for="${input.id}"]`);
   if (label) {
     label.classList.remove('usa-label--error');
 
     // Remove error classes from parent div
-    const parentDiv = label.parentElement;
+    let parentDiv = label.parentElement;
     if (parentDiv) {
       parentDiv.classList.remove('usa-form-group--error');
     }
   }
-
-
 }
 
 /**
