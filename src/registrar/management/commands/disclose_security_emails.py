@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
         # Initializes domains that need to be disclosed
 
-        statuses = ["ready", "dns needed"]
+        statuses = [Domain.State.READY, Domain.State.DNS_NEEDED]
         domains = Domain.objects.filter(state__in=statuses)
 
         logger.info("Found %d domains with status Ready or DNS Needed.", len(domains))
