@@ -182,10 +182,10 @@
               >
                 <form method="POST" action="{% url "application-delete" pk=application.id %}">
                   {% if application.requested_domain is None %}
-                      {% with prefix="Are you sure you want to delete New domain request " %}
+                      {% with prefix="Are you sure you want to delete New domain request (" %}
                           {% if application.created_at %}
                               {% with formatted_date=application.created_at|date:"DATETIME_FORMAT" %}
-                                  {% with modal_heading=prefix|add:formatted_date %}
+                                  {% with modal_heading=prefix|add:formatted_date|add:")?" %}
                                       {% include 'includes/modal.html' with modal_heading=modal_heading modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
                                   {% endwith %}
                               {% endwith %}
