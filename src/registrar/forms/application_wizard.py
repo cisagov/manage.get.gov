@@ -190,7 +190,7 @@ class TribalGovernmentForm(RegistrarForm):
     )
 
     tribe_name = forms.CharField(
-        label="What is the name of the tribe you represent?",
+        label="Name of tribe",
         error_messages={"required": "Enter the tribe you represent."},
     )
 
@@ -596,9 +596,12 @@ class OtherContactsYesNoForm(RegistrarForm):
 
         self.fields["has_other_contacts"] = forms.TypedChoiceField(
             coerce=lambda x: x.lower() == "true" if x is not None else None,  # coerce strings to bool, excepting None
-            choices=((True, "Yes, I can name other employees."), (False, "No (We’ll ask you to explain why).")),
+            choices=((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)")),
             initial=initial_value,
             widget=forms.RadioSelect,
+            error_messages={
+                "required": "This question is required.",
+            },
         )
 
 

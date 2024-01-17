@@ -24,7 +24,7 @@
 
   {% include "includes/required_fields.html" %}
 
-  <form class="usa-form usa-form--extra-large" method="post" novalidate id="form-container">
+  <form class="usa-form usa-form--extra-large nameservers-form" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
 

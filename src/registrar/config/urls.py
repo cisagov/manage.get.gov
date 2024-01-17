@@ -76,7 +76,7 @@ urlpatterns = [
     ),
     path("health/", views.health),
     path("openid/", include("djangooidc.urls")),
-    path("register/", include((application_urls, APPLICATION_NAMESPACE))),
+    path("request/", include((application_urls, APPLICATION_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
     path("api/v1/get-report/current-full", get_current_full, name="get-current-full"),

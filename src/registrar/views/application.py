@@ -73,7 +73,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     URL_NAMESPACE = "application"
     # name for accessing /application/<id>/edit
     EDIT_URL_NAME = "edit-application"
-    NEW_URL_NAME = "/register/"
+    NEW_URL_NAME = "/request/"
     # We need to pass our human-readable step titles as context to the templates.
     TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
@@ -150,6 +150,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def storage(self):
         # marking session as modified on every access
         # so that updates to nested keys are always saved
+        # push to sandbox will remove
         self.request.session.modified = True
         return self.request.session.setdefault(self.prefix, {})
 
