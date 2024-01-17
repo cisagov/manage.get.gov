@@ -95,7 +95,7 @@ class LoggedInTests(TestWithUser):
         application = DomainApplication.objects.create(creator=self.user, requested_domain=site)
         response = self.client.get("/")
 
-        # count = 4 because pf screenreader content
+        # count = 5 because of screenreader content
         self.assertContains(response, "igorville.gov", count=4)
 
         # clean up

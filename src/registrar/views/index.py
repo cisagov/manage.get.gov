@@ -48,7 +48,6 @@ def _get_applications(request):
     # Create a placeholder DraftDomain for each incomplete draft
     valid_statuses = [DomainApplication.ApplicationStatus.STARTED, DomainApplication.ApplicationStatus.WITHDRAWN]
     deletable_applications = applications.filter(status__in=valid_statuses)
-    
 
     return (applications, deletable_applications)
 
