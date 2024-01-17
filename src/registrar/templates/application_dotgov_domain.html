@@ -53,6 +53,7 @@
       {% endwith %}
     {% endwith %}
     <button
+      id="check-availability-button"
       type="button"
       class="usa-button"
       validate-for="{{ forms.0.requested_domain.auto_id }}"
@@ -73,7 +74,7 @@
       {# attr_validate / validate="domain" invokes code in get-gov.js #}
       {# attr_auto_validate likewise triggers behavior in get-gov.js #}
       {% with append_gov=True attr_validate="domain" attr_auto_validate=True %}
-        {% with add_class="blank-ok" %}
+        {% with add_class="blank-ok alternate-domain-input" %}
           {% for form in forms.1 %}
             {% input_with_errors form.alternative_domain %}
           {% endfor %}
