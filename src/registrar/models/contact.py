@@ -54,19 +54,14 @@ class Contact(TimeStampedModel):
         db_index=True,
     )
 
+    def _get_all_relations(self):
+        return [f.name for f in self._meta.get_fields() if f.is_relation]
+    
     def has_more_than_one_join(self, expected_relation):
         """Helper for finding whether an object is joined more than once.
         expected_relation is the one relation with one expected join"""
         # all_relations is the list of all_relations (from contact) to be checked for existing joins
-        all_relations = [
-            "user",
-            "authorizing_official",
-            "submitted_applications",
-            "contact_applications",
-            "information_authorizing_official",
-            "submitted_applications_information",
-            "contact_applications_information",
-        ]
+        all_relations = self._get_all_relations()
         return any(self._has_more_than_one_join_per_relation(rel, expected_relation) for rel in all_relations)
 
     def _has_more_than_one_join_per_relation(self, relation, expected_relation):
@@ -90,7 +85,8 @@ class Contact(TimeStampedModel):
                 # if the rel field is a OneToOne field, then we have already
                 # determined that the object exists (is not None)
                 # so return True unless the relation being tested is the expected_relation
-                return True if relation != expected_relation else False
+                is_not_expected_relation = relation != expected_relation
+                return is_not_expected_relation
             elif isinstance(field, models.ForeignObjectRel):
                 # if the rel field is a ManyToOne or ManyToMany, then we need
                 # to determine if the count of related objects is greater than
