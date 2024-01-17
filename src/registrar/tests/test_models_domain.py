@@ -561,7 +561,7 @@ class TestRegistrantContacts(MockEppLib):
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
             return_value=True,
         ):
-            call_command("extend_expiration_dates")
+            call_command("disclose_security_emails")
 
     def test_no_security_email(self):
         """

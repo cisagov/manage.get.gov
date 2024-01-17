@@ -68,9 +68,10 @@ class Command(BaseCommand):
                 self.domains_with_errors.append(copy.deepcopy(domain.domain_info))
                 logger.error(f"error retrieving domain {domain.domain_info}: {err}")
 
-        # Inform user how many contacts were disclosed and skipped
+        # Inform user how many contacts were disclosed, skipped, and errored
         logger.info("Updated %d contacts to disclosed.", len(self.disclosed_domain_contacts))
         logger.info(
             "Skipped disclosing %d contacts with security email registrar@dotgov.gov.",
-            len(self.skipped_domain_contacts),
+            len(self.skipped_domain_contacts)
         )
+        logger.info("Error disclosing %d contacts.", len(self.domains_with_errors))

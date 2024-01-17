@@ -1401,8 +1401,8 @@ class Domain(TimeStampedModel, DomainHelper):
         DF = epp.DiscloseField
         fields = {DF.EMAIL}
         disclose = is_security and contact.email != PublicContact.get_default_security().email
-        # Delete after testing
-        logger.info("Updated domain contact to disclose: %s", disclose)
+        # Delete after testing on other devices
+        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
         # Will only disclose DF.EMAIL if its not the default
         return epp.Disclose(
             flag=disclose,
