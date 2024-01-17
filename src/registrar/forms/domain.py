@@ -234,7 +234,7 @@ class AuthorizingOfficialContactForm(ContactForm):
         }
         self.domainInfo = None
 
-    def setDomainInfo(self, domainInfo):
+    def set_domain_info(self, domainInfo):
         """Set the domain information for the form.
         The form instance is associated with the contact itself. In order to access the associated
         domain information object, this needs to be set in the form by the view."""

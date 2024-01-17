@@ -55,6 +55,7 @@ class Contact(TimeStampedModel):
     )
 
     def _get_all_relations(self):
+        """Returns an array of all fields which are relations"""
         return [f.name for f in self._meta.get_fields() if f.is_relation]
 
     def has_more_than_one_join(self, expected_relation):
