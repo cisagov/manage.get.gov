@@ -50,8 +50,8 @@ class GenericError(Exception):
 
     _error_mapping = {
         GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
-            "We’re experiencing a system connection error. Please wait a few minutes "
-            "and try again. If you continue to receive this error after a few tries, "
+            "We’re experiencing a system error. Please wait a few minutes "
+            "and try again. If you continue to get this error, "
             "contact help@get.gov."
         ),
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
@@ -103,13 +103,15 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: ("Using your domain for a name server requires an IP address"),
+        NameserverErrorCodes.MISSING_IP: ("Using your domain for a name server requires an IP address."),
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: ("Name server address does not match domain name"),
         NameserverErrorCodes.INVALID_IP: ("{}: Enter an IP address in the required format."),
-        NameserverErrorCodes.TOO_MANY_HOSTS: ("Too many hosts provided, you may not have more than 13 nameservers."),
-        NameserverErrorCodes.MISSING_HOST: ("Name server must be provided to enter IP address."),
+        NameserverErrorCodes.TOO_MANY_HOSTS: ("You can't have more than 13 nameservers."),
+        NameserverErrorCodes.MISSING_HOST: ("You must provide a name server to enter an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
-        NameserverErrorCodes.DUPLICATE_HOST: ("Remove duplicate entry"),
+        NameserverErrorCodes.DUPLICATE_HOST: (
+            "You already entered this name server address. Name server addresses must be unique."
+        ),
         NameserverErrorCodes.BAD_DATA: (
             "There’s something wrong with the name server information you provided. "
             "If you need help email us at help@get.gov."
@@ -162,8 +164,8 @@ class DsDataError(Exception):
         ),
         DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
-        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters [0-9,a-f]."),
-        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Key tag must be less than 65535"),
+        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters (0-9, a-f)."),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Key tag must be less than 65535."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
@@ -193,7 +195,7 @@ class SecurityEmailError(Exception):
     """
 
     _error_mapping = {
-        SecurityEmailErrorCodes.BAD_DATA: ("Enter an email address in the required format, like name@example.com.")
+        SecurityEmailErrorCodes.BAD_DATA: ("Enter an email address in the required format, " "like name@example.com."),
     }
 
     def __init__(self, *args, code=None, **kwargs):

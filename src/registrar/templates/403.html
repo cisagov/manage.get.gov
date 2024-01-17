@@ -9,10 +9,10 @@
   <div class="grid-row grow-gap"> 
     <div class="tablet:grid-col-6 usa-prose margin-bottom-3">
       <h1>
-        {% translate "You do not have the right permissions to view this page." %}
+        {% translate "You're not authorized to view this page." %}
       </h1>
       <h2>
-        {% translate "Status 403" %}
+        {% translate "403 error" %}
       </h2>
 
 
@@ -23,7 +23,7 @@
       {% endif %}
       <p>
         You must be an authorized user and need to be signed in to view this page. 
-        <a href="{% url 'login' %}"> Try logging in again</a>.
+        <a href="{% url 'login' %}"> Try signing in again</a>.
       </p>
       <p>
         If you'd like help with this error <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact' %}">contact us</a>.

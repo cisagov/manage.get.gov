@@ -4,6 +4,10 @@
 .sr-only {
   @include sr-only;
 }
+
+.clear-both {
+  clear: both;
+}
  
 * {
   -webkit-font-smoothing: antialiased;

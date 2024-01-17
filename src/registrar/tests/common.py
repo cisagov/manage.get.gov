@@ -743,6 +743,25 @@ class MockEppLib(TestCase):
         ],
     )
 
+    mockVerisignDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
+        "defaultVeri", "registrar@dotgov.gov", datetime.datetime(2023, 5, 25, 19, 45, 35), "lastPw"
+    )
+    InfoDomainWithVerisignSecurityContact = fakedEppObject(
+        "fakepw",
+        cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
+        contacts=[
+            common.DomainContact(
+                contact="defaultVeri",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            )
+        ],
+        hosts=["fake.host.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+    )
+
     InfoDomainWithDefaultTechnicalContact = fakedEppObject(
         "fakepw",
         cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35),
@@ -1058,6 +1077,7 @@ class MockEppLib(TestCase):
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversDomain.gov": (self.infoDomainThreeHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
+            "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
             "justnameserver.com": (self.justNameserver, None),
         }
@@ -1087,6 +1107,8 @@ class MockEppLib(TestCase):
                 mocked_result = self.mockDefaultSecurityContact
             case "defaultTech":
                 mocked_result = self.mockDefaultTechnicalContact
+            case "defaultVeri":
+                mocked_result = self.mockVerisignDataInfoContact
             case _:
                 # Default contact return
                 mocked_result = self.mockDataInfoContact
