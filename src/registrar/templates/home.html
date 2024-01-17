@@ -124,7 +124,7 @@
         {% for application in domain_applications %}
         <tr>
           <th th scope="row" role="rowheader" data-label="Domain name">
-              {% if application.requested_domain is None or not application.requested_domain.is_complete %}
+              {% if application.requested_domain is None %}
                 New domain request
                 <br>
                 <span class="text-base">({{ application.created_at }})</span>
@@ -181,7 +181,26 @@
                 data-force-action
               >
                 <form method="POST" action="{% url "application-delete" pk=application.id %}">
-                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete "|add:application.requested_domain.name|add:"?"  modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                  {% if application.requested_domain is None %}
+                      {% with prefix="Are you sure you want to delete New domain request " %}
+                          {% if application.created_at %}
+                              {% with formatted_date=application.created_at|date:"DATETIME_FORMAT" %}
+                                  {% with modal_heading=prefix|add:formatted_date %}
+                                      {% include 'includes/modal.html' with modal_heading=modal_heading modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                                  {% endwith %}
+                              {% endwith %}
+                          {% else %}
+                              {# Handle the case when application.created_at is not available or empty #}
+                              {% with modal_heading=prefix %}
+                                  {% include 'includes/modal.html' with modal_heading=modal_heading modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                              {% endwith %}
+                          {% endif %}
+                      {% endwith %}
+                  {% else %}
+                      {% with modal_heading="Are you sure you want to delete "|add:application.requested_domain.name|add:"?" %}
+                          {% include 'includes/modal.html' with modal_heading=modal_heading modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                      {% endwith %}
+                  {% endif %}
                 </form>
               </div>
             {% endif %}

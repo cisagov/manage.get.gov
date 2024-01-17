@@ -48,13 +48,7 @@ def _get_applications(request):
     # Create a placeholder DraftDomain for each incomplete draft
     valid_statuses = [DomainApplication.ApplicationStatus.STARTED, DomainApplication.ApplicationStatus.WITHDRAWN]
     deletable_applications = applications.filter(status__in=valid_statuses)
-    for application in applications:
-        if application in deletable_applications and application.requested_domain is None:
-            created_at = application.created_at.strftime("%b. %d, %Y, %I:%M %p UTC")
-            _name = f"New domain request ({created_at})"
-            default_draft_domain = DraftDomain(name=_name, is_complete=False)
-
-            application.requested_domain = default_draft_domain
+    
 
     return (applications, deletable_applications)
 
