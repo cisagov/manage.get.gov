@@ -1,4 +1,3 @@
-from django.utils import timezone
 from django.shortcuts import render
 
 from registrar.models import DomainApplication, Domain, UserDomainRole
@@ -9,9 +8,9 @@ def index(request):
     """This page is available to anyone without logging in."""
     context = {}
     if request.user.is_authenticated:
-        
         # Get all domain applications the user has access to
-        applications, deletable_applications  = _get_applications(request)
+        applications, deletable_applications = _get_applications(request)
+
         context["domain_applications"] = applications
 
         # Get all domains the user has access to
@@ -34,8 +33,9 @@ def index(request):
 
     return render(request, "home.html", context)
 
+
 def _get_applications(request):
-    """Given the current request, 
+    """Given the current request,
     get all DomainApplications that are associated with the UserDomainRole object.
 
     Returns a tuple of all applications, and those that are deletable by the user.
@@ -47,22 +47,20 @@ def _get_applications(request):
 
     # Create a placeholder DraftDomain for each incomplete draft
     valid_statuses = [DomainApplication.ApplicationStatus.STARTED, DomainApplication.ApplicationStatus.WITHDRAWN]
-    deletable_applications = applications.filter(status__in=valid_statuses, requested_domain=None)
+    deletable_applications = applications.filter(status__in=valid_statuses)
     for application in applications:
-        if application in deletable_applications:
+        if application in deletable_applications and application.requested_domain is None:
             created_at = application.created_at.strftime("%b. %d, %Y, %I:%M %p UTC")
             _name = f"New domain request ({created_at})"
-            default_draft_domain = DraftDomain(
-                name=_name,
-                is_complete=False
-            )
+            default_draft_domain = DraftDomain(name=_name, is_complete=False)
 
             application.requested_domain = default_draft_domain
 
     return (applications, deletable_applications)
 
+
 def _get_domains(request):
-    """Given the current request, 
+    """Given the current request,
     get all domains that are associated with the UserDomainRole object"""
     user_domain_roles = UserDomainRole.objects.filter(user=request.user)
     domain_ids = user_domain_roles.values_list("domain_id", flat=True)

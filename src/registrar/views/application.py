@@ -1,6 +1,5 @@
 import logging
 
-from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
@@ -11,8 +10,6 @@ from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
-from registrar.models.draft_domain import DraftDomain
-from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
@@ -143,9 +140,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
 
-        self._application = DomainApplication.objects.create(
-            creator=self.request.user
-        )
+        self._application = DomainApplication.objects.create(creator=self.request.user)
 
         self.storage["application_id"] = self._application.id
         return self._application
