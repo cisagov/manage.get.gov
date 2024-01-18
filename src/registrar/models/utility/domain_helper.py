@@ -31,9 +31,9 @@ class DomainHelper:
         """Attempt to determine if a domain name could be requested."""
 
         # Split into pieces for the linter
-        cls._throw_err_if_domain_is_string(domain)
+        cls._throw_err_if_domain_is_not_valid_string(domain)
 
-        domain = domain.lower().strip()
+        domain = domain.lower().strip()  # type: ignore
 
         if domain == "" and not blank_ok:
             raise errors.BlankValueError()
@@ -58,7 +58,7 @@ class DomainHelper:
         return domain
 
     @staticmethod
-    def _throw_err_if_domain_is_string(domain):
+    def _throw_err_if_domain_is_not_valid_string(domain):
         """Throws an error if a domain string is not a string"""
 
         if domain is None:
