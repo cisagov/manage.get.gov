@@ -126,6 +126,14 @@ class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteVie
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
 
+class DomainApplicationPermissionDeleteView(DomainApplicationPermission, DeleteView, abc.ABC):
+
+    """Abstract view for deleting a DomainApplication."""
+
+    model = DomainApplication
+    object: DomainApplication
+
+
 class UserDomainRolePermissionView(UserDomainRolePermission, DetailView, abc.ABC):
 
     """Abstract base view for UserDomainRole that enforces permissions.

@@ -138,6 +138,11 @@ urlpatterns = [
         name="invitation-delete",
     ),
     path(
+        "application/<int:pk>/delete",
+        views.DomainApplicationDeleteView.as_view(http_method_names=["post"]),
+        name="application-delete",
+    ),
+    path(
         "domain/<int:pk>/users/<int:user_pk>/delete",
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",

@@ -13,6 +13,7 @@ from registrar.models import DomainApplication
 from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
+from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
 
 from .utility import (
     DomainApplicationPermissionView,
@@ -148,9 +149,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
 
-        self._application = DomainApplication.objects.create(
-            creator=self.request.user,  # type: ignore
-        )
+        self._application = DomainApplication.objects.create(creator=self.request.user)
 
         self.storage["application_id"] = self._application.id
         return self._application
@@ -159,7 +158,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def storage(self):
         # marking session as modified on every access
         # so that updates to nested keys are always saved
-        # push to sandbox will remove
         self.request.session.modified = True
         return self.request.session.setdefault(self.prefix, {})
 
@@ -628,3 +626,26 @@ class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
         application.withdraw()
         application.save()
         return HttpResponseRedirect(reverse("home"))
+
+
+class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
+    """Delete view for home that allows the end user to delete DomainApplications"""
+
+    object: DomainApplication  # workaround for type mismatch in DeleteView
+
+    def has_permission(self):
+        """Custom override for has_permission to exclude all statuses, except WITHDRAWN and STARTED"""
+        has_perm = super().has_permission()
+        if not has_perm:
+            return False
+
+        status = self.get_object().status
+        valid_statuses = [DomainApplication.ApplicationStatus.WITHDRAWN, DomainApplication.ApplicationStatus.STARTED]
+        if status not in valid_statuses:
+            return False
+
+        return True
+
+    def get_success_url(self):
+        """After a delete is successful, redirect to home"""
+        return reverse("home")
