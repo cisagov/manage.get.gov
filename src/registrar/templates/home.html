@@ -136,7 +136,7 @@
           </td>
           <td data-label="Status">{{ application.get_status_display }}</td>
           <td>
-            {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
+            {% if application.status == application.ApplicationStatus.STARTED or application.status == application.ApplicationStatus.ACTION_NEEDED  or application.status == application.ApplicationStatus.WITHDRAWN %}
               <a href="{% url 'edit-application' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
