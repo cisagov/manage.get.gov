@@ -186,7 +186,7 @@
                           {% if application.created_at %}
                               {% with formatted_date=application.created_at|date:"DATETIME_FORMAT" %}
                                   {% with modal_content=prefix|add:formatted_date|add:")" %}
-                                      {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete" heading_value="New domain request?"" modal_description="This will remove "|add:modal_content|add:" from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                                      {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete" heading_value="New domain request?" modal_description="This will remove "|add:modal_content|add:" from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
                                   {% endwith %}
                               {% endwith %}
                           {% else %}
