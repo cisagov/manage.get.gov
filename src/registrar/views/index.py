@@ -42,7 +42,9 @@ def _get_applications(request):
     # Let's exclude the approved applications since our
     # domain_applications context will be used to populate
     # the active applications table
-    applications = DomainApplication.objects.filter(creator=request.user).exclude(status="approved")
+    applications = DomainApplication.objects.filter(creator=request.user).exclude(
+        status=DomainApplication.ApplicationStatus.APPROVED
+    )
 
     # Create a placeholder DraftDomain for each incomplete draft
     valid_statuses = [DomainApplication.ApplicationStatus.STARTED, DomainApplication.ApplicationStatus.WITHDRAWN]
