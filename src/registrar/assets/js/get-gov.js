@@ -236,7 +236,7 @@ function handleValidationClick(e) {
     const checkAvailabilityInput = document.getElementById(targetId);
     checkAvailabilityButton.addEventListener('click',
       function() { 
-        removeFormErrors(checkAvailabilityInput)
+        removeFormErrors(checkAvailabilityInput, true);
       }
     );
   }
@@ -248,7 +248,7 @@ function handleValidationClick(e) {
       // Only apply this logic to alternate domains input
       if (domainInput.classList.contains('alternate-domain-input')){
           domainInput.addEventListener('input', function() {
-              removeFormErrors(domainInput);
+              removeFormErrors(domainInput, true);
             }
           );
       }
@@ -259,7 +259,7 @@ function handleValidationClick(e) {
 /**
  * Removes form errors surrounding a form input
  */
-function removeFormErrors(input){
+function removeFormErrors(input, removeStaleAlerts=false){
   // Remove error message
   let errorMessage = document.getElementById(`${input.id}__error-message`);
   if (errorMessage) {
@@ -282,6 +282,16 @@ function removeFormErrors(input){
     let parentDiv = label.parentElement;
     if (parentDiv) {
       parentDiv.classList.remove('usa-form-group--error');
+    }
+  }
+
+  if (removeStaleAlerts){
+    let staleAlerts = document.getElementsByClassName("usa-alert--error")
+    for (let alert of staleAlerts){
+      // Don't remove the error associated with the input
+      if (alert.id !== `${input.id}--toast`) {
+        alert.remove()
+      }
     }
   }
 }
