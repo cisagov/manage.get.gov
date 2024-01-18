@@ -30,14 +30,10 @@ class DomainHelper:
     def validate(cls, domain: str | None, blank_ok=False) -> str:
         """Attempt to determine if a domain name could be requested."""
 
-        if domain is None:
-            raise errors.BlankValueError()
-
-        if not isinstance(domain, str):
-            raise errors.InvalidDomainError()
-
         # Split into pieces for the linter
-        domain = cls._validate_domain_string(domain, blank_ok)
+        cleaned_domain = cls._validate_domain_string(domain, blank_ok)
+        if cleaned_domain is not None:
+            domain = cleaned_domain
 
         try:
             if not check_domain_available(domain):
@@ -49,6 +45,12 @@ class DomainHelper:
     @staticmethod
     def _validate_domain_string(domain, blank_ok):
         """Normalize the domain string, and check its content"""
+        if domain is None:
+            raise errors.BlankValueError()
+
+        if not isinstance(domain, str):
+            raise errors.InvalidDomainError()
+
         domain = domain.lower().strip()
 
         if domain == "" and not blank_ok:
