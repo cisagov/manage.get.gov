@@ -26,13 +26,13 @@ class Command(BaseCommand):
             "purpose": "Linting",
             "args": ["flake8", ".", "--count", "--show-source", "--statistics"],
         },
-        "mypy": {
-            "purpose": "Type checking",
-            "args": ["mypy", "."],
-        },
         "black": {
             "purpose": "Formatting",
             "args": ["black", "--check", "."],
+        },
+        "mypy": {
+            "purpose": "Type checking",
+            "args": ["mypy", "."],
         },
         "bandit": {
             "purpose": "Security scanning",
