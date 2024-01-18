@@ -286,7 +286,7 @@ function removeFormErrors(input, removeStaleAlerts=false){
   }
 
   if (removeStaleAlerts){
-    let staleAlerts = Array.from(document.getElementsByClassName("usa-alert--error"))
+    let staleAlerts = document.querySelectorAll(".usa-alert--error")
     for (let alert of staleAlerts){
       // Don't remove the error associated with the input
       if (alert.id !== `${input.id}--toast`) {
