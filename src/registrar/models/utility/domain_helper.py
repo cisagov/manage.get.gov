@@ -30,8 +30,26 @@ class DomainHelper:
     def validate(cls, domain: str | None, blank_ok=False) -> str:
         """Attempt to determine if a domain name could be requested."""
 
+        if domain is None:
+            raise errors.BlankValueError()
+
+        if not isinstance(domain, str):
+            raise errors.InvalidDomainError()
+
         # Split into pieces for the linter
-        domain = cls._check_domain_string(domain)
+        domain = cls._validate_domain_string(domain, blank_ok)
+
+        try:
+            if not check_domain_available(domain):
+                raise errors.DomainUnavailableError()
+        except RegistryError as err:
+            raise errors.RegistrySystemError() from err
+        return domain
+
+    @staticmethod
+    def _validate_domain_string(domain, blank_ok):
+        """Normalize the domain string, and check its content"""
+        domain = domain.lower().strip()
 
         if domain == "" and not blank_ok:
             raise errors.BlankValueError()
@@ -48,25 +66,7 @@ class DomainHelper:
         if not DomainHelper.string_could_be_domain(domain + ".gov"):
             raise errors.InvalidDomainError()
 
-        try:
-            if not check_domain_available(domain):
-                raise errors.DomainUnavailableError()
-        except RegistryError as err:
-            raise errors.RegistrySystemError() from err
         return domain
-
-    @staticmethod
-    def _check_domain_string(domain):
-        """Checks the given domain string, and returns the domain if valid.
-        Otherwise, throws an error if a domain string is not a string"""
-
-        if domain is None:
-            raise errors.BlankValueError()
-
-        if not isinstance(domain, str):
-            raise errors.InvalidDomainError()
-
-        return domain.lower().strip()
 
     @classmethod
     def validate_and_handle_errors(cls, domain, return_type, blank_ok=False):
