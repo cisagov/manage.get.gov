@@ -260,7 +260,6 @@ function handleValidationClick(e) {
  * Removes form errors surrounding a form input
  */
 function removeFormErrors(input){
-  console.log("in the function...")
   // Remove error message
   let errorMessage = document.getElementById(`${input.id}__error-message`);
   if (errorMessage) {
