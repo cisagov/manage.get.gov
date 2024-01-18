@@ -1456,31 +1456,20 @@ class TestDomainManagers(TestDomainOverview):
             email="pasta@igorville.com",
         )
 
-        role_1 = UserDomainRole.objects.create(
-            user=dummy_user_1, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-        )
-        role_2 = UserDomainRole.objects.create(
-            user=dummy_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-        )
+        role_1 = UserDomainRole.objects.create(user=dummy_user_1, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        role_2 = UserDomainRole.objects.create(user=dummy_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
 
         # Make sure we're on the right page
         self.assertContains(response, "Domain managers")
-        
+
         # Make sure the desired user exists
         self.assertContains(response, "cheese@igorville.com")
 
         # Delete dummy_user_1
         response = self.client.post(
-            reverse(
-                "domain-user-delete", 
-                kwargs={
-                    "pk": self.domain.id,
-                    "user_pk": dummy_user_1.id
-                }
-            ),
-            follow=True
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": dummy_user_1.id}), follow=True
         )
 
         # Grab the displayed messages
@@ -1497,7 +1486,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertFalse(deleted_user_exists)
 
         # Ensure that the current user wasn't deleted
-        current_user_exists = UserDomainRole.objects.filter(id=self.user.id).exists()
+        current_user_exists = UserDomainRole.objects.filter(user=self.user.id).exists()
         self.assertTrue(current_user_exists)
 
         # Ensure that the other userdomainrole was not deleted

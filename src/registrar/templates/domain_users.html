@@ -29,7 +29,7 @@
       <tr>
         <th data-sortable scope="col" role="columnheader">Email</th>
         <th data-sortable scope="col" role="columnheader">Role</th>
-        <th class="grid-col-2" scope="col" role="columnheader"><span class="sr-only">Action</span></th>
+        <th class="grid-col-1" scope="col" role="columnheader"><span class="sr-only">Action</span></th>
       </tr>
     </thead>
     <tbody>
@@ -137,8 +137,8 @@
           </th>
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
           <td data-label="Status">{{ invitation.status|title }}</td>
-          <td class="grid-col-2"><form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
-            {% csrf_token %}<input type="submit" class="usa-button--unstyled" value="Cancel">
+          <td><form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
+            {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline" value="Cancel">
             </form>
           </td>
         </tr>
