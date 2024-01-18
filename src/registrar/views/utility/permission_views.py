@@ -158,5 +158,8 @@ class UserDomainRolePermissionDeleteView(UserDomainRolePermissionView, DeleteVie
 
     # DetailView property for what model this is viewing
     model = UserDomainRole
+    # workaround for type mismatch in DeleteView
+    object: UserDomainRole
+
     # variable name in template context for the model object
     context_object_name = "userdomainrole"
