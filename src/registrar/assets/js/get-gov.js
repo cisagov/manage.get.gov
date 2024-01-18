@@ -264,7 +264,6 @@ function removeFormErrors(input){
   let errorMessage = document.getElementById(`${input.id}__error-message`);
   if (errorMessage) {
     errorMessage.remove();
-    console.log("Error message removed")
   }else{
     return
   }
@@ -274,6 +273,7 @@ function removeFormErrors(input){
     input.classList.remove('usa-input--error');
   }
 
+  // Get the form label
   let label = document.querySelector(`label[for="${input.id}"]`);
   if (label) {
     label.classList.remove('usa-label--error');
