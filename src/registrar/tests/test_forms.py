@@ -101,7 +101,7 @@ class TestFormValidation(MockEppLib):
             (
                 "whitehouse.gov",
                 "That domain isn’t available. <a class='usa-link' "
-                "href='https://beta.get.gov/domains/choosing' target='_blank'>Read more about "
+                "href='https://get.gov/domains/choosing' target='_blank'>Read more about "
                 "choosing your .gov domain</a>.",
             ),
         ]
@@ -151,7 +151,7 @@ class TestFormValidation(MockEppLib):
             (
                 "whitehouse.gov",
                 "That domain isn’t available. <a class='usa-link' "
-                "href='https://beta.get.gov/domains/choosing' target='_blank'>Read more about "
+                "href='https://get.gov/domains/choosing' target='_blank'>Read more about "
                 "choosing your .gov domain</a>.",
             ),
         ]
