@@ -27,13 +27,11 @@ class DomainHelper:
         return bool(cls.DOMAIN_REGEX.match(domain))
 
     @classmethod
-    def validate(cls, domain: str | None, blank_ok=False) -> str:
+    def validate(cls, domain: str, blank_ok=False) -> str:
         """Attempt to determine if a domain name could be requested."""
 
         # Split into pieces for the linter
-        cleaned_domain = cls._validate_domain_string(domain, blank_ok)
-        if cleaned_domain is not None:
-            domain = cleaned_domain
+        domain = cls._validate_domain_string(domain, blank_ok)
 
         try:
             if not check_domain_available(domain):

@@ -22,6 +22,10 @@ class Command(BaseCommand):
     # and, in all cases, make sure to use a list (not a string) for flags/args
     # as this will quote the output.
     linters = {
+        "mypy": {
+            "purpose": "Type checking",
+            "args": ["mypy", "."],
+        },
         "flake8": {
             "purpose": "Linting",
             "args": ["flake8", ".", "--count", "--show-source", "--statistics"],
@@ -29,10 +33,6 @@ class Command(BaseCommand):
         "black": {
             "purpose": "Formatting",
             "args": ["black", "--check", "."],
-        },
-        "mypy": {
-            "purpose": "Type checking",
-            "args": ["mypy", "."],
         },
         "bandit": {
             "purpose": "Security scanning",
