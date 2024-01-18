@@ -22,3 +22,9 @@ h2 {
   margin: units(4) 0 units(1);
   color: color('primary-darker');
 }
+
+// Normalize typography in forms
+.usa-form,
+.usa-form fieldset {
+  font-size: 1rem;
+}

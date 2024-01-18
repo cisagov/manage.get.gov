@@ -20,7 +20,7 @@ class Host(TimeStampedModel):
         null=False,
         blank=False,
         default=None,  # prevent saving without a value
-        unique=True,
+        unique=False,
         help_text="Fully qualified domain name",
     )
 
@@ -30,3 +30,6 @@ class Host(TimeStampedModel):
         related_name="host",  # access this Host via the Domain as `domain.host`
         help_text="Domain to which this host belongs",
     )
+
+    def __str__(self):
+        return f"{self.domain.name} {self.name}"

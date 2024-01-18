@@ -1,35 +1,31 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi {{ application.submitter.first_name }}.
+Hi, {{ application.submitter.first_name }}.
 
 We received your .gov domain request.
 
 DOMAIN REQUESTED: {{ application.requested_domain.name }}
-REQUEST RECEIVED ON: {{ application.updated_at|date }}
-REQUEST #: {{ application.id }}
-STATUS: Received
+REQUEST RECEIVED ON: {{ application.submission_date|date }}
+STATUS: Submitted
+
+----------------------------------------------------------------
+
+NEXT STEPS
+We’ll review your request. This usually takes 20 business days. During this review we’ll verify that:
+- Your organization is eligible for a .gov domain
+- You work at the organization and/or can make requests on its behalf 
+- Your requested domain meets our naming requirements 
+
+We’ll email you if we have questions and when we complete our review. You can check the status of your request at any time on the registrar homepage. <https://manage.get.gov>
 
 
 NEED TO MAKE CHANGES?
+To make changes to your domain request, you have to withdraw it first. Withdrawing your request may extend the time it takes for the .gov team to complete their review. 
 
-If you need to change your request you have to first withdraw it. Once you
-withdraw the request you can edit it and submit it again. Changing your request
-might add to the wait time. Learn more about withdrawing your request.
-
-
-NEXT STEPS
-
-- We’ll review your request. This usually takes 20 business days.
-
-- You can check the status of your request at any time.
-  <https://manage.get.gov/application/{{ application.id }}>
-
-- We’ll email you with questions or when we complete our review.
+Learn more about withdrawing your request <https://get.gov/help/domain-requests/#withdraw-your-domain-request>.
 
 
 THANK YOU
-
-.Gov helps the public identify official, trusted information. Thank you for
-requesting a .gov domain.
+.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
 
 ----------------------------------------------------------------
 
@@ -38,5 +34,5 @@ requesting a .gov domain.
 
 The .gov team
 Contact us: <https://get.gov/contact/>
-Visit <https://get.gov>
+Learn about .gov <https://get.gov>
 {% endautoescape %}

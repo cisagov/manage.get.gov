@@ -1,8 +1,11 @@
 """Test form validation requirements."""
 
+import json
 from django.test import TestCase, RequestFactory
+from api.views import available
 
 from registrar.forms.application_wizard import (
+    AlternativeDomainForm,
     CurrentSitesForm,
     DotGovDomainForm,
     AuthorizingOfficialForm,
@@ -23,6 +26,7 @@ from django.contrib.auth import get_user_model
 class TestFormValidation(MockEppLib):
     def setUp(self):
         super().setUp()
+        self.API_BASE_PATH = "/api/v1/available/?domain="
         self.user = get_user_model().objects.create(username="username")
         self.factory = RequestFactory()
 
@@ -30,7 +34,7 @@ class TestFormValidation(MockEppLib):
         form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(
             form.errors["zipcode"],
-            ["Enter a zip code in the required format, like 12345 or 12345-6789."],
+            ["Enter a zip code in the form of 12345 or 12345-6789."],
         )
 
     def test_org_contact_zip_valid(self):
@@ -42,7 +46,7 @@ class TestFormValidation(MockEppLib):
         form = CurrentSitesForm(data={"website": "nah"})
         self.assertEqual(
             form.errors["website"],
-            ["Enter your organization's current website in the required format, like www.city.com."],
+            ["Enter your organization's current website in the required format, like example.com."],
         )
 
     def test_website_valid(self):
@@ -73,6 +77,113 @@ class TestFormValidation(MockEppLib):
             form.errors["requested_domain"],
             ["Enter the .gov domain you want without any periods."],
         )
+
+    def test_requested_domain_errors_consistent(self):
+        """Tests if the errors on submit and with the check availability buttons are consistent
+        for requested_domains
+        """
+        test_cases = [
+            # extra_dots
+            ("top-level-agency.com", "Enter the .gov domain you want without any periods."),
+            # invalid
+            (
+                "underscores_forever",
+                "Enter a domain using only letters, numbers, " "or hyphens (though we don't recommend using hyphens).",
+            ),
+            # required
+            (
+                "",
+                "Enter the .gov domain you want. Don’t include “www” or “.gov.”"
+                " For example, if you want www.city.gov, you would enter “city”"
+                " (without the quotes).",
+            ),
+            # unavailable
+            (
+                "whitehouse.gov",
+                "That domain isn’t available. <a class='usa-link' "
+                "href='https://beta.get.gov/domains/choosing' target='_blank'>Read more about "
+                "choosing your .gov domain</a>.",
+            ),
+        ]
+
+        for domain, expected_error in test_cases:
+            with self.subTest(domain=domain, error=expected_error):
+                form = DotGovDomainForm(data={"requested_domain": domain})
+
+                form_error = list(form.errors["requested_domain"])
+
+                # Ensure the form returns what we expect
+                self.assertEqual(
+                    form_error,
+                    [expected_error],
+                )
+
+                request = self.factory.get(self.API_BASE_PATH + domain)
+                request.user = self.user
+                response = available(request, domain=domain)
+
+                # Ensure that we're getting the right kind of response
+                self.assertContains(response, "available")
+
+                response_object = json.loads(response.content)
+
+                json_error = response_object["message"]
+                # Test if the message is what we expect
+                self.assertEqual(json_error, expected_error)
+
+                # While its implied,
+                # for good measure, test if the two objects are equal anyway
+                self.assertEqual([json_error], form_error)
+
+    def test_alternate_domain_errors_consistent(self):
+        """Tests if the errors on submit and with the check availability buttons are consistent
+        for alternative_domains
+        """
+        test_cases = [
+            # extra_dots
+            ("top-level-agency.com", "Enter the .gov domain you want without any periods."),
+            # invalid
+            (
+                "underscores_forever",
+                "Enter a domain using only letters, numbers, " "or hyphens (though we don't recommend using hyphens).",
+            ),
+            # unavailable
+            (
+                "whitehouse.gov",
+                "That domain isn’t available. <a class='usa-link' "
+                "href='https://beta.get.gov/domains/choosing' target='_blank'>Read more about "
+                "choosing your .gov domain</a>.",
+            ),
+        ]
+
+        for domain, expected_error in test_cases:
+            with self.subTest(domain=domain, error=expected_error):
+                form = AlternativeDomainForm(data={"alternative_domain": domain})
+
+                form_error = list(form.errors["alternative_domain"])
+
+                # Ensure the form returns what we expect
+                self.assertEqual(
+                    form_error,
+                    [expected_error],
+                )
+
+                request = self.factory.get(self.API_BASE_PATH + domain)
+                request.user = self.user
+                response = available(request, domain=domain)
+
+                # Ensure that we're getting the right kind of response
+                self.assertContains(response, "available")
+
+                response_object = json.loads(response.content)
+
+                json_error = response_object["message"]
+                # Test if the message is what we expect
+                self.assertEqual(json_error, expected_error)
+
+                # While its implied,
+                # for good measure, test if the two objects are equal anyway
+                self.assertEqual([json_error], form_error)
 
     def test_requested_domain_two_dots_invalid(self):
         """don't accept domains that are subdomains"""
@@ -207,7 +318,7 @@ class TestFormValidation(MockEppLib):
     def test_your_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = YourContactForm(data={"phone": "boss@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
+        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
 
     def test_other_contact_email_invalid(self):
         """must be a valid email address."""
@@ -220,7 +331,7 @@ class TestFormValidation(MockEppLib):
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = OtherContactsForm(data={"phone": "super@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid phone number "))
+        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
 
     def test_requirements_form_blank(self):
         """Requirements box unchecked is an error."""
