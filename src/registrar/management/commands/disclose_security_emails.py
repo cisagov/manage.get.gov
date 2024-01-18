@@ -19,8 +19,6 @@ class Command(BaseCommand):
     def __init__(self):
         """Sets global variables for code tidyness"""
         super().__init__()
-        # domains and transition domains that must be disclosed to true
-        self.contacts_saved_count = 0
         # domains with errors, which are not successfully updated to disclose
         self.domains_with_errors: list[str] = []
         # domains that are successfully disclosed
@@ -42,16 +40,10 @@ class Command(BaseCommand):
 
         logger.info(f"Found {len(domains)} domains with status Ready or DNS Needed.")
 
-        # Call security_contact on all domains to trigger saving contact information
-        for domain in domains:
-            contact = domain.security_contact  # noqa on these items as we only want to call security_contact
-            self.contacts_saved_count += 1
-
-        logger.info(f"Found {self.contacts_saved_count} security contacts.")
-
         # Update EPP contact for domains with a security contact
         for domain in domains:
             try:
+                contact = domain.security_contact  # noqa on these items as we only want to call security_contact
                 logger.info(f"Domain {domain.name} security contact: {domain.security_contact.email}")
                 if domain.security_contact.email != "registrar@dotgov.gov":
                     domain._update_epp_contact(contact=domain.security_contact)
