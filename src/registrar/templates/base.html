@@ -5,6 +5,14 @@
 <html class="no-js" lang="{{ LANGUAGE_CODE }}">
 
 <head>
+  {% if IS_PRODUCTION %}
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PZ5QSP6QPL"></script>
+  <script type="text/javascript" nonce="{{request.csp_nonce}}">
+    window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-PZ5QSP6QPL');
+  </script>
+  {% endif %}
+
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <title>
@@ -61,19 +69,6 @@
 <body id="{% block body_id %}default{% endblock %}" class="{% block body_class %}section_front{% endblock %}">
   <script src="{% static 'js/uswds.min.js' %}" defer></script>
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
-
-  {% if IS_DEMO_SITE %}
-  <section aria-label="Alert" >
-      <div class="usa-alert usa-alert--info">
-      <div class="usa-alert__body">
-        <h4 class="usa-alert__heading">New domain requests are paused</h4>
-        <p class="usa-alert__text measure-none">
-        This is the new registrar for managing .gov domains. Note that we’re not accepting requests for new .gov domains until January 2024. Follow .gov updates at <a href="https://get.gov/updates/" class="usa-link">get.gov/updates/</a>.
-        </p>
-      </div>
-    </div>
-       </section>
-  {% endif %}
 
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
