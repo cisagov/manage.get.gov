@@ -29,17 +29,31 @@
 
     </fieldset>
 
-    <div id="other-employees">
+    <div id="other-employees" class="other-contacts-form">
         {% include "includes/required_fields.html" %}
         {{ forms.1.management_form }}
         {# forms.1 is a formset and this iterates over its forms #}
         {% for form in forms.1.forms %}
-            <fieldset class="usa-fieldset">
-            <legend>
-                <h2>Organization contact {{ forloop.counter }} (optional)</h2>
-            </legend>
+            <fieldset class="usa-fieldset repeatable-form padding-y-1">
+            
+              <legend class="float-left-tablet">
+                  <h2 class="margin-top-1">Organization contact {{ forloop.counter }}</h2>
+              </legend>
 
-            {% input_with_errors form.first_name %}
+              <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record margin-bottom-2">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+                  </svg><span class="margin-left-05">Delete</span>
+              </button>
+
+
+            {% if forms.1.can_delete %}
+              {{ form.DELETE }}
+            {% endif %}
+
+            <div class="clear-both">
+              {% input_with_errors form.first_name %}
+            </div>
 
             {% input_with_errors form.middle_name %}
 
@@ -52,17 +66,17 @@
             affecting the margin of this block. The wrapper div is a 
             temporary workaround. {% endcomment %}
             <div class="margin-top-3">
-                {% input_with_errors form.email %}
+              {% input_with_errors form.email %}
             </div>
 
             {% with add_class="usa-input--medium" %}
-                {% input_with_errors form.phone %}
+              {% input_with_errors form.phone %}
             {% endwith %}
 
             </fieldset>
         {% endfor %}
 
-        <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
+        <button type="button" class="usa-button usa-button--unstyled" id="add-form">
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
             </svg><span class="margin-left-05">Add another contact</span>
@@ -70,10 +84,13 @@
     </div>
 
     <div id="no-other-employees">
-        <fieldset class="usa-fieldset margin-top-2">
+        <fieldset class="usa-fieldset margin-top-4">
           <legend>
-            <h2>No other employees from your organization?</h2>
+            <h2 class="margin-bottom-0">No other employees from your organization?</h2>
           </legend>
+          <p>You don't need to provide names of other employees now, but it may
+            slow down our assessment of your eligibility. Describe why there are
+            no other employees who can help verify your request.</p>
         {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.2.no_other_contacts_rationale %}
         {% endwith %}

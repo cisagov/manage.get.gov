@@ -11,6 +11,7 @@ import os
 import sys
 from typing import Dict, List
 from django.core.paginator import Paginator
+from registrar.utility.enums import LogCode
 from registrar.models.transition_domain import TransitionDomain
 from registrar.management.commands.utility.load_organization_error import (
     LoadOrganizationError,
@@ -28,7 +29,8 @@ from .epp_data_containers import (
 )
 
 from .transition_domain_arguments import TransitionDomainArguments
-from .terminal_helper import TerminalColors, TerminalHelper, LogCode
+from .terminal_helper import TerminalColors, TerminalHelper
+
 
 logger = logging.getLogger(__name__)
 

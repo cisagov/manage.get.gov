@@ -210,6 +210,8 @@ class ContactForm(forms.ModelForm):
 class AuthorizingOfficialContactForm(ContactForm):
     """Form for updating authorizing official contacts."""
 
+    JOIN = "authorizing_official"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -230,6 +232,29 @@ class AuthorizingOfficialContactForm(ContactForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
+        self.domainInfo = None
+
+    def set_domain_info(self, domainInfo):
+        """Set the domain information for the form.
+        The form instance is associated with the contact itself. In order to access the associated
+        domain information object, this needs to be set in the form by the view."""
+        self.domainInfo = domainInfo
+
+    def save(self, commit=True):
+        """Override the save() method of the BaseModelForm."""
+
+        # Get the Contact object from the db for the Authorizing Official
+        db_ao = Contact.objects.get(id=self.instance.id)
+        if self.domainInfo and db_ao.has_more_than_one_join("information_authorizing_official"):
+            # Handle the case where the domain information object is available and the AO Contact
+            # has more than one joined object.
+            # In this case, create a new Contact, and update the new Contact with form data.
+            # Then associate with domain information object as the authorizing_official
+            data = dict(self.cleaned_data.items())
+            self.domainInfo.authorizing_official = Contact.objects.create(**data)
+            self.domainInfo.save()
+        else:
+            super().save()
 
 
 class DomainSecurityEmailForm(forms.Form):

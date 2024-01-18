@@ -17,6 +17,12 @@ class RegistrySystemError(ValueError):
     pass
 
 
+class InvalidDomainError(ValueError):
+    """Error class for situations where an invalid domain is supplied"""
+
+    pass
+
+
 class ActionNotAllowed(Exception):
     """User accessed an action that is not
     allowed by the current state"""

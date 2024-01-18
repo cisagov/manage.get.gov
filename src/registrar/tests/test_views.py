@@ -5,6 +5,7 @@ from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+
 from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -1032,7 +1033,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
     def test_submitting_no_other_contacts_rationale_removes_reference_other_contacts_when_joined(self):
         """When a user submits the Other Contacts form with no other contacts selected, the application's
         other contacts references get removed for other contacts that exist and are joined to other objects"""
-        # Populate the databse with a domain application that
+        # Populate the database with a domain application that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
@@ -1154,31 +1155,115 @@ class DomainApplicationTests(TestWithUser, WebTest):
         # Assert that it is returned, ie the contacts form is required
         self.assertContains(response, "Enter the first name / given name of this contact.")
 
-    @skip("Repurpose when working on ticket 903")
-    def test_application_delete_other_contact(self):
-        """Other contacts can be deleted after being saved to database."""
-        # Populate the databse with a domain application that
-        # has 1 "other contact" assigned to it
+    def test_delete_other_contact(self):
+        """Other contacts can be deleted after being saved to database.
+
+        This formset uses the DJANGO DELETE widget. We'll test that by setting 2 contacts on an application,
+        loading the form and marking one contact up for deletion."""
+        # Populate the database with a domain application that
+        # has 2 "other contact" assigned to it
+        # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
             first_name="Testy",
             last_name="Tester",
             title="Chief Tester",
             email="testy@town.com",
-            phone="(555) 555 5555",
+            phone="(201) 555 5555",
         )
         you, _ = Contact.objects.get_or_create(
             first_name="Testy you",
             last_name="Tester you",
             title="Admin Tester",
             email="testy-admin@town.com",
-            phone="(555) 555 5556",
+            phone="(201) 555 5556",
         )
         other, _ = Contact.objects.get_or_create(
             first_name="Testy2",
             last_name="Tester2",
             title="Another Tester",
             email="testy2@town.com",
-            phone="(555) 555 5557",
+            phone="(201) 555 5557",
+        )
+        other2, _ = Contact.objects.get_or_create(
+            first_name="Testy3",
+            last_name="Tester3",
+            title="Another Tester",
+            email="testy3@town.com",
+            phone="(201) 555 5557",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(other)
+        application.other_contacts.add(other2)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+
+        # Minimal check to ensure the form is loaded with both other contacts
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+        self.assertEqual(other_contacts_form["other_contacts-1-first_name"].value, "Testy3")
+
+        # Mark the first dude for deletion
+        other_contacts_form.set("other_contacts-0-DELETE", "on")
+
+        # Submit the form
+        other_contacts_form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the first dude was deleted
+        application = DomainApplication.objects.get()
+        self.assertEqual(application.other_contacts.count(), 1)
+        self.assertEqual(application.other_contacts.first().first_name, "Testy3")
+
+    def test_delete_other_contact_does_not_allow_zero_contacts(self):
+        """Delete Other Contact does not allow submission with zero contacts."""
+        # Populate the database with a domain application that
+        # has 1 "other contact" assigned to it
+        # We'll do it from scratch so we can reuse the other contact
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(201) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(201) 555 5557",
         )
         application, _ = DomainApplication.objects.get_or_create(
             organization_type="federal",
@@ -1211,35 +1296,531 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         other_contacts_form = other_contacts_page.forms[0]
 
-        # Minimal check to ensure the form is loaded with data (if this part of
-        # the application doesn't work, we should be equipped with other unit
-        # tests to flag it)
+        # Minimal check to ensure the form is loaded
         self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
 
-        # clear the form
-        other_contacts_form["other_contacts-0-first_name"] = ""
-        other_contacts_form["other_contacts-0-middle_name"] = ""
-        other_contacts_form["other_contacts-0-last_name"] = ""
-        other_contacts_form["other_contacts-0-title"] = ""
-        other_contacts_form["other_contacts-0-email"] = ""
-        other_contacts_form["other_contacts-0-phone"] = ""
+        # Mark the first dude for deletion
+        other_contacts_form.set("other_contacts-0-DELETE", "on")
 
-        # Submit the now empty form
-        result = other_contacts_form.submit()
+        # Submit the form
+        other_contacts_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Verify that the contact we saved earlier has been removed from the database
-        application = DomainApplication.objects.get()  # There are no contacts anymore
-        self.assertEqual(
-            application.other_contacts.count(),
-            0,
+        # Verify that the contact was not deleted
+        application = DomainApplication.objects.get()
+        self.assertEqual(application.other_contacts.count(), 1)
+        self.assertEqual(application.other_contacts.first().first_name, "Testy2")
+
+    def test_delete_other_contact_sets_visible_empty_form_as_required_after_failed_submit(self):
+        """When you:
+            1. add an empty contact,
+            2. delete existing contacts,
+            3. then submit,
+        The forms on page reload shows all the required fields and their errors."""
+
+        # Populate the database with a domain application that
+        # has 1 "other contact" assigned to it
+        # We'll do it from scratch so we can reuse the other contact
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(201) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(201) 555 5557",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(other)
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+
+        # Set total forms to 2 indicating an additional formset was added.
+        # Submit no data though for the second formset.
+        # Set the first formset to be deleted.
+        other_contacts_form["other_contacts-TOTAL_FORMS"] = "2"
+        other_contacts_form.set("other_contacts-0-DELETE", "on")
+
+        response = other_contacts_form.submit()
+
+        # Assert that the response presents errors to the user, including to
+        # Enter the first name ...
+        self.assertContains(response, "Enter the first name / given name of this contact.")
+
+    def test_edit_other_contact_in_place(self):
+        """When you:
+            1. edit an existing contact which is not joined to another model,
+            2. then submit,
+        The application is linked to the existing contact, and the existing contact updated."""
+
+        # Populate the database with a domain application that
+        # has 1 "other contact" assigned to it
+        # We'll do it from scratch
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(201) 555 5556",
+        )
+        other, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Another Tester",
+            email="testy2@town.com",
+            phone="(201) 555 5557",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(other)
+
+        # other_contact_pk is the initial pk of the other contact. set it before update
+        # to be able to verify after update that the same contact object is in place
+        other_contact_pk = other.id
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy2")
+
+        # update the first name of the contact
+        other_contacts_form["other_contacts-0-first_name"] = "Testy3"
+
+        # Submit the updated form
+        other_contacts_form.submit()
+
+        application.refresh_from_db()
+
+        # assert that the Other Contact is updated "in place"
+        other_contact = application.other_contacts.all()[0]
+        self.assertEquals(other_contact_pk, other_contact.id)
+        self.assertEquals("Testy3", other_contact.first_name)
+
+    def test_edit_other_contact_creates_new(self):
+        """When you:
+            1. edit an existing contact which IS joined to another model,
+            2. then submit,
+        The application is linked to a new contact, and the new contact is updated."""
+
+        # Populate the database with a domain application that
+        # has 1 "other contact" assigned to it, the other contact is also
+        # the authorizing official initially
+        # We'll do it from scratch
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy you",
+            last_name="Tester you",
+            title="Admin Tester",
+            email="testy-admin@town.com",
+            phone="(201) 555 5556",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(ao)
+
+        # other_contact_pk is the initial pk of the other contact. set it before update
+        # to be able to verify after update that the ao contact is still in place
+        # and not updated, and that the new contact has a new id
+        other_contact_pk = ao.id
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_page = self.app.get(reverse("application:other_contacts"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        other_contacts_form = other_contacts_page.forms[0]
+
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(other_contacts_form["other_contacts-0-first_name"].value, "Testy")
+
+        # update the first name of the contact
+        other_contacts_form["other_contacts-0-first_name"] = "Testy2"
+
+        # Submit the updated form
+        other_contacts_form.submit()
+
+        application.refresh_from_db()
+
+        # assert that other contact info is updated, and that a new Contact
+        # is created for the other contact
+        other_contact = application.other_contacts.all()[0]
+        self.assertNotEquals(other_contact_pk, other_contact.id)
+        self.assertEquals("Testy2", other_contact.first_name)
+        # assert that the authorizing official is not updated
+        authorizing_official = application.authorizing_official
+        self.assertEquals("Testy", authorizing_official.first_name)
+
+    def test_edit_authorizing_official_in_place(self):
+        """When you:
+            1. edit an authorizing official which is not joined to another model,
+            2. then submit,
+        The application is linked to the existing ao, and the ao updated."""
+
+        # Populate the database with a domain application that
+        # has an authorizing_official (ao)
+        # We'll do it from scratch
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            creator=self.user,
+            status="started",
         )
 
-        # Verify that on submit, user is advanced to "no contacts" page
-        no_contacts_page = result.follow()
-        expected_url_slug = str(Step.NO_OTHER_CONTACTS)
-        actual_url_slug = no_contacts_page.request.path.split("/")[-2]
-        self.assertEqual(expected_url_slug, actual_url_slug)
+        # ao_pk is the initial pk of the Authorizing Official. set it before update
+        # to be able to verify after update that the same Contact object is in place
+        ao_pk = ao.id
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        ao_page = self.app.get(reverse("application:authorizing_official"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        ao_form = ao_page.forms[0]
+
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(ao_form["authorizing_official-first_name"].value, "Testy")
+
+        # update the first name of the contact
+        ao_form["authorizing_official-first_name"] = "Testy2"
+
+        # Submit the updated form
+        ao_form.submit()
+
+        application.refresh_from_db()
+
+        # assert AO is updated "in place"
+        updated_ao = application.authorizing_official
+        self.assertEquals(ao_pk, updated_ao.id)
+        self.assertEquals("Testy2", updated_ao.first_name)
+
+    def test_edit_authorizing_official_creates_new(self):
+        """When you:
+            1. edit an existing authorizing official which IS joined to another model,
+            2. then submit,
+        The application is linked to a new Contact, and the new Contact is updated."""
+
+        # Populate the database with a domain application that
+        # has authorizing official assigned to it, the authorizing offical is also
+        # an other contact initially
+        # We'll do it from scratch
+        ao, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            authorizing_official=ao,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(ao)
+
+        # ao_pk is the initial pk of the authorizing official. set it before update
+        # to be able to verify after update that the other contact is still in place
+        # and not updated, and that the new ao has a new id
+        ao_pk = ao.id
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        ao_page = self.app.get(reverse("application:authorizing_official"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        ao_form = ao_page.forms[0]
+
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(ao_form["authorizing_official-first_name"].value, "Testy")
+
+        # update the first name of the contact
+        ao_form["authorizing_official-first_name"] = "Testy2"
+
+        # Submit the updated form
+        ao_form.submit()
+
+        application.refresh_from_db()
+
+        # assert that the other contact is not updated
+        other_contacts = application.other_contacts.all()
+        other_contact = other_contacts[0]
+        self.assertEquals(ao_pk, other_contact.id)
+        self.assertEquals("Testy", other_contact.first_name)
+        # assert that the authorizing official is updated
+        authorizing_official = application.authorizing_official
+        self.assertEquals("Testy2", authorizing_official.first_name)
+
+    def test_edit_submitter_in_place(self):
+        """When you:
+            1. edit a submitter (your contact) which is not joined to another model,
+            2. then submit,
+        The application is linked to the existing submitter, and the submitter updated."""
+
+        # Populate the database with a domain application that
+        # has a submitter
+        # We'll do it from scratch
+        you, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            submitter=you,
+            creator=self.user,
+            status="started",
+        )
+
+        # submitter_pk is the initial pk of the submitter. set it before update
+        # to be able to verify after update that the same contact object is in place
+        submitter_pk = you.id
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        your_contact_page = self.app.get(reverse("application:your_contact"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        your_contact_form = your_contact_page.forms[0]
+
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
+
+        # update the first name of the contact
+        your_contact_form["your_contact-first_name"] = "Testy2"
+
+        # Submit the updated form
+        your_contact_form.submit()
+
+        application.refresh_from_db()
+
+        updated_submitter = application.submitter
+        self.assertEquals(submitter_pk, updated_submitter.id)
+        self.assertEquals("Testy2", updated_submitter.first_name)
+
+    def test_edit_submitter_creates_new(self):
+        """When you:
+            1. edit an existing your contact which IS joined to another model,
+            2. then submit,
+        The application is linked to a new Contact, and the new Contact is updated."""
+
+        # Populate the database with a domain application that
+        # has submitter assigned to it, the submitter is also
+        # an other contact initially
+        # We'll do it from scratch
+        submitter, _ = Contact.objects.get_or_create(
+            first_name="Testy",
+            last_name="Tester",
+            title="Chief Tester",
+            email="testy@town.com",
+            phone="(201) 555 5555",
+        )
+        application, _ = DomainApplication.objects.get_or_create(
+            organization_type="federal",
+            federal_type="executive",
+            purpose="Purpose of the site",
+            anything_else="No",
+            is_policy_acknowledged=True,
+            organization_name="Testorg",
+            address_line1="address 1",
+            state_territory="NY",
+            zipcode="10002",
+            submitter=submitter,
+            creator=self.user,
+            status="started",
+        )
+        application.other_contacts.add(submitter)
+
+        # submitter_pk is the initial pk of the your contact. set it before update
+        # to be able to verify after update that the other contact is still in place
+        # and not updated, and that the new submitter has a new id
+        submitter_pk = submitter.id
+
+        # prime the form by visiting /edit
+        self.app.get(reverse("edit-application", kwargs={"id": application.pk}))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        your_contact_page = self.app.get(reverse("application:your_contact"))
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        your_contact_form = your_contact_page.forms[0]
+
+        # Minimal check to ensure the form is loaded
+        self.assertEqual(your_contact_form["your_contact-first_name"].value, "Testy")
+
+        # update the first name of the contact
+        your_contact_form["your_contact-first_name"] = "Testy2"
+
+        # Submit the updated form
+        your_contact_form.submit()
+
+        application.refresh_from_db()
+
+        # assert that the other contact is not updated
+        other_contacts = application.other_contacts.all()
+        other_contact = other_contacts[0]
+        self.assertEquals(submitter_pk, other_contact.id)
+        self.assertEquals("Testy", other_contact.first_name)
+        # assert that the submitter is updated
+        submitter = application.submitter
+        self.assertEquals("Testy2", submitter.first_name)
 
     def test_application_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
@@ -2620,6 +3201,65 @@ class TestDomainAuthorizingOfficial(TestDomainOverview):
         self.domain_information.save()
         page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
         self.assertContains(page, "Testy")
+
+    def test_domain_edit_authorizing_official_in_place(self):
+        """When editing an authorizing official for domain information and AO is not
+        joined to any other objects"""
+        self.domain_information.authorizing_official = Contact(
+            first_name="Testy", last_name="Tester", title="CIO", email="nobody@igorville.gov"
+        )
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_form = ao_page.forms[0]
+        self.assertEqual(ao_form["first_name"].value, "Testy")
+        ao_form["first_name"] = "Testy2"
+        # ao_pk is the initial pk of the authorizing official. set it before update
+        # to be able to verify after update that the same contact object is in place
+        ao_pk = self.domain_information.authorizing_official.id
+        ao_form.submit()
+
+        # refresh domain information
+        self.domain_information.refresh_from_db()
+        self.assertEqual("Testy2", self.domain_information.authorizing_official.first_name)
+        self.assertEqual(ao_pk, self.domain_information.authorizing_official.id)
+
+    def test_domain_edit_authorizing_official_creates_new(self):
+        """When editing an authorizing official for domain information and AO IS
+        joined to another object"""
+        # set AO and Other Contact to the same Contact object
+        self.domain_information.authorizing_official = Contact(
+            first_name="Testy", last_name="Tester", title="CIO", email="nobody@igorville.gov"
+        )
+        self.domain_information.authorizing_official.save()
+        self.domain_information.save()
+        self.domain_information.other_contacts.add(self.domain_information.authorizing_official)
+        self.domain_information.save()
+        # load the Authorizing Official in the web form
+        ao_page = self.app.get(reverse("domain-authorizing-official", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        ao_form = ao_page.forms[0]
+        # verify the first name is "Testy" and then change it to "Testy2"
+        self.assertEqual(ao_form["first_name"].value, "Testy")
+        ao_form["first_name"] = "Testy2"
+        # ao_pk is the initial pk of the authorizing official. set it before update
+        # to be able to verify after update that the same contact object is in place
+        ao_pk = self.domain_information.authorizing_official.id
+        ao_form.submit()
+
+        # refresh domain information
+        self.domain_information.refresh_from_db()
+        # assert that AO information is updated, and that the AO is a new Contact
+        self.assertEqual("Testy2", self.domain_information.authorizing_official.first_name)
+        self.assertNotEqual(ao_pk, self.domain_information.authorizing_official.id)
+        # assert that the Other Contact information is not updated and that the Other Contact
+        # is the original Contact object
+        other_contact = self.domain_information.other_contacts.all()[0]
+        self.assertEqual("Testy", other_contact.first_name)
+        self.assertEqual(ao_pk, other_contact.id)
 
 
 class TestDomainOrganization(TestDomainOverview):

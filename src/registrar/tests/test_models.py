@@ -691,8 +691,12 @@ class TestContact(TestCase):
         self.user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
+        self.contact_as_ao, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
+        self.application = DomainApplication.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
+
     def tearDown(self):
         super().tearDown()
+        DomainApplication.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
 
@@ -766,3 +770,12 @@ class TestContact(TestCase):
         # Updating the contact's email does not propagate
         self.assertEqual(self.invalid_contact.email, "joey.baloney@diaperville.com")
         self.assertEqual(self.invalid_user.email, "intern@igorville.gov")
+
+    def test_has_more_than_one_join(self):
+        """Test the Contact model method, has_more_than_one_join"""
+        # test for a contact which has one user defined
+        self.assertFalse(self.contact.has_more_than_one_join("user"))
+        self.assertTrue(self.contact.has_more_than_one_join("authorizing_official"))
+        # test for a contact which is assigned as an authorizing official on an application
+        self.assertFalse(self.contact_as_ao.has_more_than_one_join("authorizing_official"))
+        self.assertTrue(self.contact_as_ao.has_more_than_one_join("submitted_applications"))
