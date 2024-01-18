@@ -134,10 +134,19 @@ function _checkDomainAvailability(el) {
   const callback = (response) => {
     toggleInputValidity(el, (response && response.available), msg=response.message);
     announce(el.id, response.message);
+
+    // Determines if we ignore the field if it is just blank
+    ignore_blank = el.classList.contains("blank-ok")
     if (el.validity.valid) {
       el.classList.add('usa-input--success');
       // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
       inlineToast(el.parentElement, el.id, SUCCESS, response.message);
+    } else if (ignore_blank && response.code == "required"){
+      // Visually remove the error
+      error = "usa-input--error"
+      if (el.classList.contains(error)){
+        el.classList.remove(error)
+      }
     } else {
       inlineToast(el.parentElement, el.id, ERROR, response.message);
     }

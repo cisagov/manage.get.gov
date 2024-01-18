@@ -1,10 +1,11 @@
 """Internal API views"""
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 
 from registrar.templatetags.url_helpers import public_site_url
+from registrar.utility.enums import ValidationReturnType
 from registrar.utility.errors import GenericError, GenericErrorCodes
 
 import requests
@@ -71,6 +72,7 @@ def check_domain_available(domain):
     a match. If check fails, throws a RegistryError.
     """
     Domain = apps.get_model("registrar.Domain")
+
     if domain.endswith(".gov"):
         return Domain.available(domain)
     else:
@@ -86,22 +88,14 @@ def available(request, domain=""):
     Response is a JSON dictionary with the key "available" and value true or
     false.
     """
+    Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
-    DraftDomain = apps.get_model("registrar.DraftDomain")
-    # validate that the given domain could be a domain name and fail early if
-    # not.
-    if not (DraftDomain.string_could_be_domain(domain) or DraftDomain.string_could_be_domain(domain + ".gov")):
-        return JsonResponse({"available": False, "code": "invalid", "message": DOMAIN_API_MESSAGES["invalid"]})
-    # a domain is available if it is NOT in the list of current domains
-    try:
-        if check_domain_available(domain):
-            return JsonResponse({"available": True, "code": "success", "message": DOMAIN_API_MESSAGES["success"]})
-        else:
-            return JsonResponse(
-                {"available": False, "code": "unavailable", "message": DOMAIN_API_MESSAGES["unavailable"]}
-            )
-    except Exception:
-        return JsonResponse({"available": False, "code": "error", "message": DOMAIN_API_MESSAGES["error"]})
+
+    _, json_response = Domain.validate_and_handle_errors(
+        domain=domain,
+        return_type=ValidationReturnType.JSON_RESPONSE,
+    )
+    return json_response
 
 
 @require_http_methods(["GET"])

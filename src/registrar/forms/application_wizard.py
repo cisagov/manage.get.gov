@@ -2,6 +2,7 @@ from __future__ import annotations  # allows forward references in annotations
 from itertools import zip_longest
 import logging
 from typing import Callable
+from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 
 from django import forms
@@ -9,11 +10,9 @@ from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 from django.db.models.fields.related import ForeignObjectRel
 
-from api.views import DOMAIN_API_MESSAGES
-
 from registrar.models import Contact, DomainApplication, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
-from registrar.utility import errors
+from registrar.utility.enums import ValidationReturnType
 
 logger = logging.getLogger(__name__)
 
@@ -411,17 +410,12 @@ CurrentSitesFormSet = forms.formset_factory(
 class AlternativeDomainForm(RegistrarForm):
     def clean_alternative_domain(self):
         """Validation code for domain names."""
-        try:
-            requested = self.cleaned_data.get("alternative_domain", None)
-            validated = DraftDomain.validate(requested, blank_ok=True)
-        except errors.ExtraDotsError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
-        except errors.DomainUnavailableError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
-        except errors.RegistrySystemError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
-        except ValueError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
+        requested = self.cleaned_data.get("alternative_domain", None)
+        validated, _ = DraftDomain.validate_and_handle_errors(
+            domain=requested,
+            return_type=ValidationReturnType.FORM_VALIDATION_ERROR,
+            blank_ok=True,
+        )
         return validated
 
     alternative_domain = forms.CharField(
@@ -498,22 +492,19 @@ class DotGovDomainForm(RegistrarForm):
 
     def clean_requested_domain(self):
         """Validation code for domain names."""
-        try:
-            requested = self.cleaned_data.get("requested_domain", None)
-            validated = DraftDomain.validate(requested)
-        except errors.BlankValueError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["required"], code="required")
-        except errors.ExtraDotsError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["extra_dots"], code="extra_dots")
-        except errors.DomainUnavailableError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["unavailable"], code="unavailable")
-        except errors.RegistrySystemError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["error"], code="error")
-        except ValueError:
-            raise forms.ValidationError(DOMAIN_API_MESSAGES["invalid"], code="invalid")
+        requested = self.cleaned_data.get("requested_domain", None)
+        validated, _ = DraftDomain.validate_and_handle_errors(
+            domain=requested,
+            return_type=ValidationReturnType.FORM_VALIDATION_ERROR,
+        )
         return validated
 
-    requested_domain = forms.CharField(label="What .gov domain do you want?")
+    requested_domain = forms.CharField(
+        label="What .gov domain do you want?",
+        error_messages={
+            "required": DOMAIN_API_MESSAGES["required"],
+        },
+    )
 
 
 class PurposeForm(RegistrarForm):

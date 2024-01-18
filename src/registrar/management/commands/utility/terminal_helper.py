@@ -1,28 +1,10 @@
-from enum import Enum
 import logging
 import sys
 from django.core.paginator import Paginator
 from typing import List
+from registrar.utility.enums import LogCode
 
 logger = logging.getLogger(__name__)
-
-
-class LogCode(Enum):
-    """Stores the desired log severity
-
-    Overview of error codes:
-    - 1 ERROR
-    - 2 WARNING
-    - 3 INFO
-    - 4 DEBUG
-    - 5 DEFAULT
-    """
-
-    ERROR = 1
-    WARNING = 2
-    INFO = 3
-    DEBUG = 4
-    DEFAULT = 5
 
 
 class TerminalColors:
