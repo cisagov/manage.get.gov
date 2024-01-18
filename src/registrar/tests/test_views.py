@@ -96,7 +96,7 @@ class LoggedInTests(TestWithUser):
         response = self.client.get("/")
 
         # count = 5 because of screenreader content
-        self.assertContains(response, "igorville.gov", count=4)
+        self.assertContains(response, "igorville.gov", count=5)
 
         # clean up
         application.delete()
