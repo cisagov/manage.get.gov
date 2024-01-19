@@ -20,6 +20,7 @@ from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
+from django.utils.safestring import mark_safe
 
 logger = logging.getLogger(__name__)
 
@@ -415,7 +416,6 @@ class ContactAdmin(ListHeaderAdmin):
         "contact",
         "email",
     ]
-    change_form_template = "django/admin/contact_change_form.html"
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -456,8 +456,7 @@ class ContactAdmin(ListHeaderAdmin):
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """Extend the change_view for Contact objects in django admin.
         Customize to display related objects to the Contact. These will be passed
-        through the extra_context to the template for display to the user."""
-        extra_context = extra_context or {}
+        through the messages construct to the template for display to the user."""
 
         # Fetch the Contact instance
         contact = models.Contact.objects.get(pk=object_id)
@@ -471,12 +470,14 @@ class ContactAdmin(ListHeaderAdmin):
                 # Check if the related field is not None
                 related_manager = getattr(contact, related_field.name)
                 if related_manager is not None:
-                    # Check if it's a ManyToManyField or a reverse ForeignKey/OneToOneField
-                    # Do this by checking for a method on the related_manager
+                    # Check if it's a ManyToManyField/reverse ForeignKey or a OneToOneField
+                    # Do this by checking for get_queryset method on the related_manager
                     if hasattr(related_manager, 'get_queryset'):
+                        # Handles ManyToManyRel and ManyToOneRel
                         queryset = related_manager.get_queryset()
                     else:
-                        queryset = related_manager.all()
+                        # Handles OneToOne rels, ie. User
+                        queryset = [related_manager]
 
                     for obj in queryset:
                         # for each object, build the edit url in this view and add as tuple
@@ -487,9 +488,13 @@ class ContactAdmin(ListHeaderAdmin):
                         change_url = reverse('admin:%s_%s_change' % (app_label, model_name), args=[obj_id])
                         related_objects.append((change_url, obj))
 
-        # set the related_objects array in extra_context
-        extra_context['related_objects'] = related_objects
-
+        if related_objects:
+            message = f"<h2>Related Objects:</h2><ul>"
+            for url, obj in related_objects:
+                message += f"<li>{obj.__class__.__name__}: <a href='{url}'>{obj}</a></li>"
+            message += "</ul>"
+            message_html = mark_safe(message)
+            messages.warning(request, message_html,)
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
