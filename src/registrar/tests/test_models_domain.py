@@ -5,7 +5,6 @@ This file tests the various ways in which the registrar interacts with the regis
 """
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from django.core.management import call_command
 from unittest.mock import MagicMock, patch, call
 import datetime
 from registrar.models import Domain, Host, HostIP
