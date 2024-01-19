@@ -137,19 +137,29 @@
           </td>
           <td data-label="Status">{{ application.get_status_display }}</td>
           <td>
-            {% if application.status == application.ApplicationStatus.STARTED or application.status == application.ApplicationStatus.ACTION_NEEDED  or application.status == application.ApplicationStatus.WITHDRAWN %}
-              <a href="{% url 'edit-application' application.pk %}">
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
-              </svg>
-              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:" UTC)" }}</span>
-            {% else %}
-              <a href="{% url 'application-status' application.pk %}">
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
-              </svg>
-              Manage <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:" UTC)" }}</span>
-            {% endif %}
+            {% with prefix="New domain request ("%}
+              {% with date=application.created_at|date:"DATETIME_FORMAT"%}
+                {% with name_default=prefix|add:date|add:" UTC)"%}
+                  {% if application.status == application.ApplicationStatus.STARTED or application.status == application.ApplicationStatus.ACTION_NEEDED  or application.status == application.ApplicationStatus.WITHDRAWN %}
+                    <a href="{% url 'edit-application' application.pk %}">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
+                    </svg>
+                    {% if application.requested_domain is not None%}
+                    Edit <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
+                    {% else %}
+                    Edit <span class="usa-sr-only">{{ name_default }}</span>
+                    {% endif %}
+                  {% else %}
+                    <a href="{% url 'application-status' application.pk %}">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
+                    </svg>
+                    Manage <span class="usa-sr-only">{{ application.requested_domain.name|default:name_default }}</span>
+                  {% endif %}
+                {% endwith %}
+              {% endwith %}
+            {% endwith %}
             </a>
           </td>
           {% if has_deletable_applications %}
