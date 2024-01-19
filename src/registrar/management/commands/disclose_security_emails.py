@@ -17,7 +17,7 @@ class Command(BaseCommand):
     help = "Disclose all nondefault domain security emails."
 
     def __init__(self):
-        """Sets global variables for code tidyness"""
+        """Sets global variables for code tidiness"""
         super().__init__()
         # domains with errors, which are not successfully updated to disclose
         self.domains_with_errors: list[str] = []
