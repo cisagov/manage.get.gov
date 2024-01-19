@@ -58,7 +58,7 @@
             {% elif domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %}
                 DNS needed
             {% else %}
-                {{ domain.state|title }}
+                {{ domain.state|capfirst }}
             {% endif %}
           </td>
           <td>
