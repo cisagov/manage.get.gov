@@ -1240,7 +1240,7 @@ class DraftDomainAdmin(ListHeaderAdmin):
 
 
 class VeryImportantPersonAdmin(ListHeaderAdmin):
-    list_display = ("email", "custom_user_label", "notes", "created_at")
+    list_display = ("email", "user", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
     list_filter = [
@@ -1250,10 +1250,11 @@ class VeryImportantPersonAdmin(ListHeaderAdmin):
         "user",
     ]
 
-    def custom_user_label(self, obj):
-        return obj.user
+    def truncated_notes(self, obj):
+        # Truncate the 'notes' field to 200 characters
+        return str(obj.notes)[:50]
 
-    custom_user_label.short_description = "Requestor"  # type: ignore
+    truncated_notes.short_description = "Notes (Truncated)"  # type: ignore
 
     def save_model(self, request, obj, form, change):
         # Set the user field to the current admin user
