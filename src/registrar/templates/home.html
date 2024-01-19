@@ -147,7 +147,7 @@
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
               </svg>
-              Manage <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:")" }}</span>
+              Manage <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:" UTC)" }}</span>
             {% endif %}
             </a>
           </td>
@@ -165,7 +165,7 @@
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
                 </svg>
-                Delete <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:")" }}</span>
+                Delete <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:" UTC)" }}</span>
               </a>
 
               <div
@@ -180,7 +180,7 @@
                       {% with prefix="New domain request (" %}
                           {% if application.created_at %}
                               {% with formatted_date=application.created_at|date:"DATETIME_FORMAT" %}
-                                  {% with modal_content=prefix|add:formatted_date|add:")" %}
+                                  {% with modal_content=prefix|add:formatted_date|add:" UTC)" %}
                                       {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete" heading_value="New domain request?" modal_description="This will remove "|add:modal_content|add:" from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
                                   {% endwith %}
                               {% endwith %}
