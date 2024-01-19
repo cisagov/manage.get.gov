@@ -117,7 +117,7 @@ class TestEmails(TestCase):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("city1.gov", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"city.gov\ncity1.gov\n\nPurpose of your domain:")
+        self.assertRegex(body, r"city.gov\n\nAlternative domains:\ncity1.gov\n\nPurpose of your domain:")
 
     @boto3_mocking.patching
     def test_submission_confirmation_no_alternative_govdomain_spacing(self):

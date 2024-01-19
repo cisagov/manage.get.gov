@@ -21,8 +21,8 @@ Current website for your organization: {% for site in application.current_websit
 {% spaceless %}{{ site.website }}{% endspaceless %}
 {% endfor %}{% endif %}
 .gov domain:
-{{ application.requested_domain.name }}{% if application.alternative_domains.all %}
-
+{{ application.requested_domain.name }}
+{% if application.alternative_domains.all %}
 Alternative domains:
 {% for site in application.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
 {% endfor %}{% endif %}
