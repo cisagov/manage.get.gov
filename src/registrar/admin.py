@@ -1239,6 +1239,28 @@ class DraftDomainAdmin(ListHeaderAdmin):
     search_help_text = "Search by draft domain name."
 
 
+class VeryImportantPersonAdmin(ListHeaderAdmin):
+    list_display = ("email", "custom_user_label", "notes", "created_at")
+    search_fields = ["email"]
+    search_help_text = "Search by email."
+    list_filter = [
+        "user",
+    ]
+    readonly_fields = [
+        "user",
+    ]
+
+    def custom_user_label(self, obj):
+        return obj.user
+
+    custom_user_label.short_description = "Requestor"  # type: ignore
+
+    def save_model(self, request, obj, form, change):
+        # Set the user field to the current admin user
+        obj.user = request.user if request.user.is_authenticated else None
+        super().save_model(request, obj, form, change)
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
@@ -1259,3 +1281,4 @@ admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
+admin.site.register(models.VeryImportantPerson, VeryImportantPersonAdmin)
