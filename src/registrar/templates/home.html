@@ -176,7 +176,17 @@
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
                 </svg>
-                Delete <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:" UTC)" }}</span>
+                {% with prefix="New domain request ("%}
+                  {% with date=application.created_at|date:"DATETIME_FORMAT"%}
+                    {% with name_default=prefix|add:date|add:" UTC)"%}
+                      {% if application.requested_domain is not None %}
+                        Delete <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
+                      {% else %}
+                        Delete <span class="usa-sr-only">{{ name_default }}</span>
+                      {% endif %}
+                    {% endwith %}
+                  {% endwith %}
+                {% endwith %}
               </a>
 
               <div
