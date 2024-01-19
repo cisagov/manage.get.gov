@@ -487,14 +487,13 @@ class ContactAdmin(ListHeaderAdmin):
                         obj_id = obj.id
                         change_url = reverse('admin:%s_%s_change' % (app_label, model_name), args=[obj_id])
                         related_objects.append((change_url, obj))
-
+            
         if related_objects:
-            message = f"<h2>Related Objects:</h2><ul>"
             for url, obj in related_objects:
-                message += f"<li>{obj.__class__.__name__}: <a href='{url}'>{obj}</a></li>"
-            message += "</ul>"
-            message_html = mark_safe(message)
-            messages.warning(request, message_html,)
+                message = f"Joined to {obj.__class__.__name__}: <a href='{url}'>{obj}</a>"
+                message_html = mark_safe(message)
+                messages.warning(request, message_html,)
+        
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
