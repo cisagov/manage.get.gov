@@ -21,6 +21,7 @@ from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
+from django.utils.html import escape
 
 logger = logging.getLogger(__name__)
 
@@ -490,8 +491,11 @@ class ContactAdmin(ListHeaderAdmin):
 
         if related_objects:
             for url, obj in related_objects:
-                message = f"Joined to {obj.__class__.__name__}: <a href='{url}'>{obj}</a>"
-                message_html = mark_safe(message)
+                escaped_obj = escape(obj)
+                message = f"Joined to {obj.__class__.__name__}: <a href='{url}'>{escaped_obj}</a>"
+                # message_html is considered safe html. It is generated from a finite list of strings
+                # which are generated from django objects. And a django object, which is escaped
+                message_html = mark_safe(message)  # nosec
                 messages.warning(
                     request,
                     message_html,
