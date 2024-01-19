@@ -121,8 +121,8 @@
           <th th scope="row" role="rowheader" data-label="Domain name">
               {% if application.requested_domain is None %}
                 New domain request
-                <br>
-                <span class="text-base font-body-xs">({{ application.created_at }})</span>
+                <br aria-hidden="true">
+                <span class="text-base font-body-xs">({{ application.created_at }} UTC)</span>
               {% else %}
                 {{ application.requested_domain.name }}
               {% endif %}
@@ -141,7 +141,7 @@
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
               </svg>
-              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:")" }}</span>
+              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request ("|add:application.created_at|add:" UTC)" }}</span>
             {% else %}
               <a href="{% url 'application-status' application.pk %}">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
