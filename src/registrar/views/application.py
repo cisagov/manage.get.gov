@@ -651,9 +651,6 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
         # Delete the DomainApplication
         response = super().post(request, *args, **kwargs)
 
-        x = Contact.objects.filter(id__in=contacts_to_delete, user=None)
-        print(f"These contacts will be deleted: {x}")
-
         # Delete orphaned contacts - but only for if they are not associated with a user
         Contact.objects.filter(id__in=contacts_to_delete, user=None).delete()
 
@@ -662,8 +659,6 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
         # the edge case where the same user may be an AO, and a submitter, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(application)
-            a = Contact.objects.filter(id__in=duplicates_to_delete, user=None)
-            print(f"These other contacts will be deleted: {a}")
             Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
 
         return response
