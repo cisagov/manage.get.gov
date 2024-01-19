@@ -453,7 +453,7 @@ class ContactAdmin(ListHeaderAdmin):
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields  # Read-only fields for analysts
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
+    def change_view(self, request, object_id, form_url="", extra_context=None):
         """Extend the change_view for Contact objects in django admin.
         Customize to display related objects to the Contact. These will be passed
         through the messages construct to the template for display to the user."""
@@ -472,7 +472,7 @@ class ContactAdmin(ListHeaderAdmin):
                 if related_manager is not None:
                     # Check if it's a ManyToManyField/reverse ForeignKey or a OneToOneField
                     # Do this by checking for get_queryset method on the related_manager
-                    if hasattr(related_manager, 'get_queryset'):
+                    if hasattr(related_manager, "get_queryset"):
                         # Handles ManyToManyRel and ManyToOneRel
                         queryset = related_manager.get_queryset()
                     else:
@@ -485,15 +485,18 @@ class ContactAdmin(ListHeaderAdmin):
                         app_label = obj._meta.app_label
                         model_name = obj._meta.model_name
                         obj_id = obj.id
-                        change_url = reverse('admin:%s_%s_change' % (app_label, model_name), args=[obj_id])
+                        change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
                         related_objects.append((change_url, obj))
-            
+
         if related_objects:
             for url, obj in related_objects:
                 message = f"Joined to {obj.__class__.__name__}: <a href='{url}'>{obj}</a>"
                 message_html = mark_safe(message)
-                messages.warning(request, message_html,)
-        
+                messages.warning(
+                    request,
+                    message_html,
+                )
+
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
