@@ -78,11 +78,16 @@
             <ul class="add-list-reset margin-bottom-105">
               <li>{{ application.requested_domain.name|default:"Incomplete" }}</li>
             </ul>
-            <ul class="add-list-reset">
-              {% for site in application.alternative_domains.all %}
-                <li>{{ site.website }}</li>
-              {% endfor %}
-            </ul>
+            {% if application.alternative_domains.all %}
+              <div class="margin-bottom-105">
+                <p class="text-semibold margin-top-1 margin-bottom-0">Alternative domains</p>
+                <ul class="add-list-reset">
+                  {% for site in application.alternative_domains.all %}
+                    <li>{{ site.website }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
           {% endif %}
           {% if step == Step.PURPOSE %}
             {{ application.purpose|default:"Incomplete" }}
