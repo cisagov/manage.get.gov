@@ -13,7 +13,6 @@ from registrar.models import (
 )
 from registrar.models.public_contact import PublicContact
 
-from django.core.management import call_command
 from unittest.mock import patch, call
 from epplibwrapper import commands, common
 
