@@ -415,6 +415,7 @@ class ContactAdmin(ListHeaderAdmin):
         "contact",
         "email",
     ]
+    change_form_template = "django/admin/contact_change_form.html"
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -451,6 +452,45 @@ class ContactAdmin(ListHeaderAdmin):
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields  # Read-only fields for analysts
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """Extend the change_view for Contact objects in django admin.
+        Customize to display related objects to the Contact. These will be passed
+        through the extra_context to the template for display to the user."""
+        extra_context = extra_context or {}
+
+        # Fetch the Contact instance
+        contact = models.Contact.objects.get(pk=object_id)
+
+        # initialize related_objects array
+        related_objects = []
+        # for all defined fields in the model
+        for related_field in contact._meta.get_fields():
+            # if the field is a relation to another object
+            if related_field.is_relation:
+                # Check if the related field is not None
+                related_manager = getattr(contact, related_field.name)
+                if related_manager is not None:
+                    # Check if it's a ManyToManyField or a reverse ForeignKey/OneToOneField
+                    # Do this by checking for a method on the related_manager
+                    if hasattr(related_manager, 'get_queryset'):
+                        queryset = related_manager.get_queryset()
+                    else:
+                        queryset = related_manager.all()
+
+                    for obj in queryset:
+                        # for each object, build the edit url in this view and add as tuple
+                        # to the related_objects array
+                        app_label = obj._meta.app_label
+                        model_name = obj._meta.model_name
+                        obj_id = obj.id
+                        change_url = reverse('admin:%s_%s_change' % (app_label, model_name), args=[obj_id])
+                        related_objects.append((change_url, obj))
+
+        # set the related_objects array in extra_context
+        extra_context['related_objects'] = related_objects
+
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
 class WebsiteAdmin(ListHeaderAdmin):

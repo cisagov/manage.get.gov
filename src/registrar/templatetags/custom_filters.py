@@ -7,6 +7,11 @@ register = template.Library()
 logger = logging.getLogger(__name__)
 
 
+@register.filter
+def class_name(value):
+    return value.__class__.__name__
+
+
 @register.filter(name="extract_value")
 def extract_value(html_input):
     match = re.search(r'value="([^"]*)"', html_input)
