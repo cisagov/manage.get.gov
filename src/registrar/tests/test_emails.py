@@ -104,7 +104,8 @@ class TestEmails(TestCase):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertNotIn("Other employees from your organization:", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"5556\n\nAnything else")
+        self.assertRegex(body, r"5556\n\nNo other employees")
+        self.assertRegex(body, r"None\n\nAnything else")
 
     @boto3_mocking.patching
     def test_submission_confirmation_alternative_govdomain_spacing(self):
