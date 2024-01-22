@@ -610,7 +610,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         ),
         ("Anything else?", {"fields": ["anything_else"]}),
         (
-            "Requirements for operating .gov domains",
+            "Requirements for operating a .gov domain",
             {"fields": ["is_policy_acknowledged"]},
         ),
     ]
@@ -779,7 +779,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         ),
         ("Anything else?", {"fields": ["anything_else"]}),
         (
-            "Requirements for operating .gov domains",
+            "Requirements for operating a .gov domain",
             {"fields": ["is_policy_acknowledged"]},
         ),
     ]
