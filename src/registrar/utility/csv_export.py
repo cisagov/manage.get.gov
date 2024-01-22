@@ -100,7 +100,6 @@ def write_body(
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
     # Reduce the memory overhead when performing the write operation
-    a1_start_time = time.time()
     paginator = Paginator(all_domain_infos, 1000)
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
