@@ -2653,7 +2653,7 @@ class TestDomainManagers(TestDomainOverview):
 
         # Ensure the error we recieve is in line with what we expect
         message = messages[0]
-        self.assertEqual(message.message, "You are no longer managing the domain igorville.gov")
+        self.assertEqual(message.message, "You are no longer managing the domain igorville.gov.")
         self.assertEqual(message.tags, "success")
 
         # Ensure that the current user was deleted
