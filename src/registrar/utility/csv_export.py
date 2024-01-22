@@ -7,7 +7,6 @@ from django.db.models import Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.paginator import Paginator
-import time
 from django.db.models import F, Value, CharField
 from django.db.models.functions import Concat, Coalesce
 
@@ -24,18 +23,20 @@ def write_header(writer, columns):
 
 
 def get_domain_infos(filter_condition, sort_fields):
-    domain_infos = DomainInformation.objects.select_related(
-        'domain', 'authorizing_official'
-    ).filter(**filter_condition).order_by(*sort_fields)
+    domain_infos = (
+        DomainInformation.objects.select_related("domain", "authorizing_official")
+        .filter(**filter_condition)
+        .order_by(*sort_fields)
+    )
 
     # Do a mass concat of the first and last name fields for authorizing_official.
     # The old operation was computationally heavy for some reason, so if we precompute
     # this here, it is vastly more efficient.
     domain_infos_cleaned = domain_infos.annotate(
         ao=Concat(
-            Coalesce(F('authorizing_official__first_name'), Value('')),
-            Value(' '),
-            Coalesce(F('authorizing_official__last_name'), Value('')),
+            Coalesce(F("authorizing_official__first_name"), Value("")),
+            Value(" "),
+            Coalesce(F("authorizing_official__last_name"), Value("")),
             output_field=CharField(),
         )
     )
@@ -47,14 +48,10 @@ def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
 
     domain = domain_info.domain
 
-    start_time = time.time()
     security_email = domain.security_contact_registry_id
     if security_email is None:
         cached_sec_email = domain.get_security_email(skip_epp_call)
         security_email = cached_sec_email if cached_sec_email is not None else " "
-
-    end_time = time.time()
-    print(f"parse security email operation took {end_time - start_time} seconds")
 
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
     # These are default emails that should not be displayed in the csv report
@@ -83,11 +80,10 @@ def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
         "First ready": domain.first_ready,
         "Deleted": domain.deleted,
     }
-    start_time = time.time()
+
     row = [FIELDS.get(column, "") for column in columns]
-    end_time = time.time()
-    print(f"parse some cols operation took {end_time - start_time} seconds")
     return row
+
 
 def write_body(
     writer,
@@ -109,17 +105,12 @@ def write_body(
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
         rows = []
-        start_time = time.time()
         for domain_info in page.object_list:
             row = parse_row(columns, domain_info)
             rows.append(row)
-        
-        end_time = time.time()
-        print(f"new parse Operation took {end_time - start_time} seconds")
+
         writer.writerows(rows)
 
-    a1_end_time = time.time()
-    print(f"parse all stuff operation took {a1_end_time - a1_start_time} seconds")
 
 def export_data_type_to_csv(csv_file):
     """All domains report with extra columns"""
@@ -185,7 +176,7 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_header(writer, columns)    
+    write_header(writer, columns)
     write_body(writer, columns, sort_fields, filter_condition)
 
 
