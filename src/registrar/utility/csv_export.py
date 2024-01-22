@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
-from registrar.models.public_contact import PublicContact
 from django.db.models import Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -24,29 +23,32 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos
 
 
-def write_row(writer, columns, domain_info: DomainInformation):
+def write_row(writer, columns, domain_info: DomainInformation, skip_epp_call=True):
     # For linter
     ao = " "
     if domain_info.authorizing_official:
         first_name = domain_info.authorizing_official.first_name or ""
         last_name = domain_info.authorizing_official.last_name or ""
-        ao = first_name + " " + last_name
+        ao = f"{first_name} {last_name}"
 
-    security_email = domain_info.domain.get_security_email(skip_epp_call=True)
+    security_email = domain_info.domain.get_security_email(skip_epp_call)
     if security_email is None:
         security_email = " "
 
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
     # These are default emails that should not be displayed in the csv report
-    if security_email is not None and security_email.lower() in invalid_emails:
+    if security_email.lower() in invalid_emails:
         security_email = "(blank)"
+
+    if domain_info.federal_type:
+        domain_type = f"{domain_info.get_organization_type_display()} - {domain_info.get_federal_type_display()}"
+    else:
+        domain_type = domain_info.get_organization_type_display()
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
         "Domain name": domain_info.domain.name,
-        "Domain type": domain_info.get_organization_type_display() + " - " + domain_info.get_federal_type_display()
-        if domain_info.federal_type
-        else domain_info.get_organization_type_display(),
+        "Domain type": domain_type,
         "Agency": domain_info.federal_agency,
         "Organization name": domain_info.organization_name,
         "City": domain_info.city,
@@ -61,7 +63,8 @@ def write_row(writer, columns, domain_info: DomainInformation):
         "Deleted": domain_info.domain.deleted,
     }
 
-    writer.writerow([FIELDS.get(column, "") for column in columns])
+    row = [FIELDS.get(column, "") for column in columns]
+    writer.writerow(row)
 
 
 def write_body(
