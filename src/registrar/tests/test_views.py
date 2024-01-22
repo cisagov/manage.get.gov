@@ -89,6 +89,10 @@ class LoggedInTests(TestWithUser):
         super().setUp()
         self.client.force_login(self.user)
 
+    def tearDown(self):
+        super().tearDown()
+        Contact.objects.all().delete()
+
     def test_home_lists_domain_applications(self):
         response = self.client.get("/")
         self.assertNotContains(response, "igorville.gov")
@@ -96,8 +100,8 @@ class LoggedInTests(TestWithUser):
         application = DomainApplication.objects.create(creator=self.user, requested_domain=site)
         response = self.client.get("/")
 
-        # count = 5 because of screenreader content
-        self.assertContains(response, "igorville.gov", count=5)
+        # count = 7 because of screenreader content
+        self.assertContains(response, "igorville.gov", count=7)
 
         # clean up
         application.delete()
@@ -181,6 +185,132 @@ class LoggedInTests(TestWithUser):
 
                     # clean up
                     application.delete()
+
+    def test_home_deletes_domain_application_and_orphans(self):
+        """Tests if delete for DomainApplication deletes orphaned Contact objects"""
+
+        # Create the site and contacts to delete (orphaned)
+        contact = Contact.objects.create(
+            first_name="Henry",
+            last_name="Mcfakerson",
+        )
+        contact_shared = Contact.objects.create(
+            first_name="Relative",
+            last_name="Aether",
+        )
+
+        # Create two non-orphaned contacts
+        contact_2 = Contact.objects.create(
+            first_name="Saturn",
+            last_name="Mars",
+        )
+
+        # Attach a user object to a contact (should not be deleted)
+        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+
+        site = DraftDomain.objects.create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainApplication.ApplicationStatus.WITHDRAWN,
+            authorizing_official=contact,
+            submitter=contact_user,
+        )
+        application.other_contacts.set([contact_2])
+
+        # Create a second application to attach contacts to
+        site_2 = DraftDomain.objects.create(name="teaville.gov")
+        application_2 = DomainApplication.objects.create(
+            creator=self.user,
+            requested_domain=site_2,
+            status=DomainApplication.ApplicationStatus.STARTED,
+            authorizing_official=contact_2,
+            submitter=contact_shared,
+        )
+        application_2.other_contacts.set([contact_shared])
+
+        # Ensure that igorville.gov exists on the page
+        home_page = self.client.get("/")
+        self.assertContains(home_page, "igorville.gov")
+
+        # Trigger the delete logic
+        response = self.client.post(reverse("application-delete", kwargs={"pk": application.pk}), follow=True)
+
+        self.assertNotContains(response, "igorville.gov")
+
+        # Check if the orphaned contact was deleted
+        orphan = Contact.objects.filter(id=contact.id)
+        self.assertFalse(orphan.exists())
+
+        # All non-orphan contacts should still exist and are unaltered
+        try:
+            current_user = Contact.objects.filter(id=contact_user.id).get()
+        except Contact.DoesNotExist:
+            self.fail("contact_user (a non-orphaned contact) was deleted")
+
+        self.assertEqual(current_user, contact_user)
+        try:
+            edge_case = Contact.objects.filter(id=contact_2.id).get()
+        except Contact.DoesNotExist:
+            self.fail("contact_2 (a non-orphaned contact) was deleted")
+
+        self.assertEqual(edge_case, contact_2)
+
+    def test_home_deletes_domain_application_and_shared_orphans(self):
+        """Test the edge case for an object that will become orphaned after a delete
+        (but is not an orphan at the time of deletion)"""
+
+        # Create the site and contacts to delete (orphaned)
+        contact = Contact.objects.create(
+            first_name="Henry",
+            last_name="Mcfakerson",
+        )
+        contact_shared = Contact.objects.create(
+            first_name="Relative",
+            last_name="Aether",
+        )
+
+        # Create two non-orphaned contacts
+        contact_2 = Contact.objects.create(
+            first_name="Saturn",
+            last_name="Mars",
+        )
+
+        # Attach a user object to a contact (should not be deleted)
+        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+
+        site = DraftDomain.objects.create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainApplication.ApplicationStatus.WITHDRAWN,
+            authorizing_official=contact,
+            submitter=contact_user,
+        )
+        application.other_contacts.set([contact_2])
+
+        # Create a second application to attach contacts to
+        site_2 = DraftDomain.objects.create(name="teaville.gov")
+        application_2 = DomainApplication.objects.create(
+            creator=self.user,
+            requested_domain=site_2,
+            status=DomainApplication.ApplicationStatus.STARTED,
+            authorizing_official=contact_2,
+            submitter=contact_shared,
+        )
+        application_2.other_contacts.set([contact_shared])
+
+        home_page = self.client.get("/")
+        self.assertContains(home_page, "teaville.gov")
+
+        # Trigger the delete logic
+        response = self.client.post(reverse("application-delete", kwargs={"pk": application_2.pk}), follow=True)
+
+        self.assertNotContains(response, "teaville.gov")
+
+        # Check if the orphaned contact was deleted
+        orphan = Contact.objects.filter(id=contact_shared.id)
+        self.assertFalse(orphan.exists())
 
     def test_application_form_view(self):
         response = self.client.get("/request/", follow=True)

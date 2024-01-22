@@ -5,7 +5,8 @@
         <h2 class="usa-modal__heading" id="modal-1-heading">
             {{ modal_heading }}
             {% if heading_value is not None %}
-            <br>
+            {# Add a breakpoint #}
+            <div aria-hidden="true"></div>
             {{ heading_value }}
             {% endif %}
         </h2>

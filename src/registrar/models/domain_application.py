@@ -631,7 +631,6 @@ class DomainApplication(TimeStampedModel):
 
         # Update submission_date to today
         self.submission_date = timezone.now().date()
-
         self.save()
 
         self._send_status_update_email(
