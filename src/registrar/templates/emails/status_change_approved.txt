@@ -33,7 +33,7 @@ Learn more about:
 
 
 WE’LL PRELOAD THIS DOMAIN
-Each month, we add new .gov domains to the HSTS preload list. This requires browsers to use a secure HTTPS connection to any website at this domain and ensures the content you publish is exactly what your visitors get. It also means you’ll need to support HTTPS anywhere the domain is used for websites – on the internet or internally. We’ll add your domain to the preload list soon.
+We add new .gov domains to the HSTS preload list each month. This requires browsers to use a secure HTTPS connection to any website at this domain and ensures the content you publish is exactly what your visitors get. It also means you’ll need to support HTTPS anywhere the domain is used for websites – on the internet or internally. We’ll add your domain to the preload list soon.
 
 Learn more about:
 - What preloading is <https://get.gov/domains/security/#preload-your-domain>
