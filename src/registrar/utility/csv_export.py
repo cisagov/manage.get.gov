@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
-from django.db.models import Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.paginator import Paginator

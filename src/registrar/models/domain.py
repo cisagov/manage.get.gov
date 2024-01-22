@@ -1121,7 +1121,9 @@ class Domain(TimeStampedModel, DomainHelper):
             )
             raise error
 
-    def generic_contact_getter(self, contact_type_choice: PublicContact.ContactTypeChoices, skip_epp_call=False) -> PublicContact | None:
+    def generic_contact_getter(
+        self, contact_type_choice: PublicContact.ContactTypeChoices, skip_epp_call=False
+    ) -> PublicContact | None:
         """Retrieves the desired PublicContact from the registry.
         This abstracts the caching and EPP retrieval for
         all contact items and thus may result in EPP calls being sent.
