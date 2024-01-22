@@ -2543,6 +2543,7 @@ class TestDomainManagers(TestDomainOverview):
         super().tearDown()
         self.user.is_staff = False
         self.user.save()
+        User.objects.all().delete()
 
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
@@ -2609,13 +2610,62 @@ class TestDomainManagers(TestDomainOverview):
         self.assertTrue(role_2_exists)
 
         # Check that the view no longer displays the deleted user
-        # TODO - why is this not working?
+        # why is this not working? Its not in the response when printed?
         # self.assertNotContains(response, "cheese@igorville.com")
 
-    @skip("TODO")
     def test_domain_delete_self_redirects_home(self):
         """Tests if deleting yourself redirects to home"""
-        raise
+        # Add additional users
+        dummy_user_1 = User.objects.create(
+            username="macncheese",
+            email="cheese@igorville.com",
+        )
+        dummy_user_2 = User.objects.create(
+            username="pastapizza",
+            email="pasta@igorville.com",
+        )
+
+        role_1 = UserDomainRole.objects.create(user=dummy_user_1, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        role_2 = UserDomainRole.objects.create(user=dummy_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+
+        response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
+
+        # Make sure we're on the right page
+        self.assertContains(response, "Domain managers")
+
+        # Make sure the desired user exists
+        self.assertContains(response, "info@example.com")
+
+        # Make sure more than one UserDomainRole exists on this object
+        self.assertContains(response, "cheese@igorville.com")
+
+        # Delete the current user
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True
+        )
+
+        # Check if we've been redirected to the home page
+        self.assertContains(response, "Manage your domains")
+
+        # Grab the displayed messages
+        messages = list(response.context["messages"])
+        self.assertEqual(len(messages), 1)
+
+        # Ensure the error we recieve is in line with what we expect
+        message = messages[0]
+        self.assertEqual(message.message, "You are no longer managing the domain igorville.gov")
+        self.assertEqual(message.tags, "success")
+
+        # Ensure that the current user was deleted
+        current_user_exists = UserDomainRole.objects.filter(user=self.user.id).exists()
+        self.assertFalse(current_user_exists)
+
+        # Ensure that the other userdomainroles are not deleted
+        role_1_exists = UserDomainRole.objects.filter(id=role_1.id).exists()
+        self.assertTrue(role_1_exists)
+
+        role_2_exists = UserDomainRole.objects.filter(id=role_2.id).exists()
+        self.assertTrue(role_2_exists)
 
     @boto3_mocking.patching
     def test_domain_user_add_form(self):
