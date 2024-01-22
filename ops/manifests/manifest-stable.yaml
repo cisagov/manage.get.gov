@@ -22,7 +22,7 @@ applications:
     # Tell Django how much stuff to log
     DJANGO_LOG_LEVEL: INFO
     # default public site location
-    GETGOV_PUBLIC_SITE_URL: https://beta.get.gov
+    GETGOV_PUBLIC_SITE_URL: https://get.gov
     # Which OIDC provider to use
     OIDC_ACTIVE_PROVIDER: login.gov production
     # Flag to disable/enable features in prod environments

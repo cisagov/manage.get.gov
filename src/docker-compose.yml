@@ -32,7 +32,7 @@ services:
       # Is this a production environment
       - IS_PRODUCTION
       # Public site URL link
-      - GETGOV_PUBLIC_SITE_URL=https://beta.get.gov
+      - GETGOV_PUBLIC_SITE_URL=https://get.gov
       # Set a username for accessing the registry
       - REGISTRY_CL_ID=nothing
       # Set a password for accessing the registry

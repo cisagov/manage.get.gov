@@ -83,7 +83,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
         Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
-        Step.CURRENT_SITES: _("Current website for your organization"),
+        Step.CURRENT_SITES: _("Current websites"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
