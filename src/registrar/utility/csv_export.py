@@ -6,6 +6,11 @@ from registrar.models.domain_information import DomainInformation
 from django.db.models import Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.core.paginator import Paginator
+import time
+from django.db.models import F, Value, CharField
+from django.db.models.functions import Concat, Coalesce
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,20 +25,35 @@ def write_header(writer, columns):
 
 def get_domain_infos(filter_condition, sort_fields):
     domain_infos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
-    return domain_infos
+
+    # Do a mass concat of the first and last name fields for authorizing_official.
+    # The old operation was computationally heavy for some reason, so if we precompute
+    # this here, it is vastly more efficient.
+    domain_infos_cleaned = domain_infos.annotate(
+        ao=Concat(
+            Coalesce(F('authorizing_official__first_name'), Value('')),
+            Value(' '),
+            Coalesce(F('authorizing_official__last_name'), Value('')),
+            output_field=CharField(),
+        )
+    )
+    return domain_infos_cleaned
 
 
-def write_row(writer, columns, domain_info: DomainInformation, skip_epp_call=True):
-    # For linter
-    ao = " "
-    if domain_info.authorizing_official:
-        first_name = domain_info.authorizing_official.first_name or ""
-        last_name = domain_info.authorizing_official.last_name or ""
-        ao = f"{first_name} {last_name}"
+def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
+    """Given a set of columns, generate a new row from cleaned column data"""
 
-    security_email = domain_info.domain.get_security_email(skip_epp_call)
+    domain = domain_info.domain
+
+    start_time = time.time()
+    # TODO - speed up
+    security_email = domain.security_contact_registry_id
     if security_email is None:
-        security_email = " "
+        cached_sec_email = domain.get_security_email(skip_epp_call)
+        security_email = cached_sec_email if cached_sec_email is not None else " "
+
+    end_time = time.time()
+    print(f"parse security email operation took {end_time - start_time} seconds")
 
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
     # These are default emails that should not be displayed in the csv report
@@ -47,25 +67,24 @@ def write_row(writer, columns, domain_info: DomainInformation, skip_epp_call=Tru
 
     # create a dictionary of fields which can be included in output
     FIELDS = {
-        "Domain name": domain_info.domain.name,
+        "Domain name": domain.name,
         "Domain type": domain_type,
         "Agency": domain_info.federal_agency,
         "Organization name": domain_info.organization_name,
         "City": domain_info.city,
         "State": domain_info.state_territory,
-        "AO": ao,
+        "AO": domain_info.ao,
         "AO email": domain_info.authorizing_official.email if domain_info.authorizing_official else " ",
         "Security contact email": security_email,
-        "Status": domain_info.domain.get_state_display(),
-        "Expiration date": domain_info.domain.expiration_date,
-        "Created at": domain_info.domain.created_at,
-        "First ready": domain_info.domain.first_ready,
-        "Deleted": domain_info.domain.deleted,
+        "Status": domain.get_state_display(),
+        "Expiration date": domain.expiration_date,
+        "Created at": domain.created_at,
+        "First ready": domain.first_ready,
+        "Deleted": domain.deleted,
     }
 
     row = [FIELDS.get(column, "") for column in columns]
-    writer.writerow(row)
-
+    return row
 
 def write_body(
     writer,
@@ -81,9 +100,19 @@ def write_body(
     # Get the domainInfos
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
-    # Write rows to CSV
-    for domain_info in all_domain_infos:
-        write_row(writer, columns, domain_info)
+    # Reduce the memory overhead when performing the write operation
+    paginator = Paginator(all_domain_infos, 1000)
+    for page_num in paginator.page_range:
+        page = paginator.page(page_num)
+        rows = []
+        start_time = time.time()
+        for domain_info in page.object_list:
+            row = parse_row(columns, domain_info)
+            rows.append(row)
+        
+        end_time = time.time()
+        print(f"new parse Operation took {end_time - start_time} seconds")
+        writer.writerows(rows)
 
 
 def export_data_type_to_csv(csv_file):
@@ -150,7 +179,7 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_header(writer, columns)
+    write_header(writer, columns)    
     write_body(writer, columns, sort_fields, filter_condition)
 
 
