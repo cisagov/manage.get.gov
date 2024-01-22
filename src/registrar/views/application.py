@@ -675,8 +675,8 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
 
         # Check if the desired item still exists in the DB
         if check_db:
-            ao = self._get_contacts_by_id([ao.id]).first()
-            submitter = self._get_contacts_by_id([submitter.id]).first()
+            ao = self._get_contacts_by_id([ao.id]).first() if ao is not None else None
+            submitter = self._get_contacts_by_id([submitter.id]).first() if submitter is not None else None
             other_contacts = self._get_contacts_by_id(other_contact_ids)
 
         # Pair each contact with its related name
@@ -698,7 +698,7 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
         """Given a list of objects, return a list of which items were duplicates"""
         # Gets the occurence count
         object_dict = defaultdict(int)
-        for contact, _ in objects:
+        for contact, _related in objects:
             object_dict[contact] += 1
 
         duplicates = [item for item, count in object_dict.items() if count > 1]
