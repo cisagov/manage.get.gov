@@ -16,22 +16,10 @@
   <h1>Manage your domains</h2>
 
   <p class="margin-top-4">
-    {% if IS_PRODUCTION %}
-    <a href="javascript:void(0)" 
-    class="usa-button usa-tooltip disabled-link"
-    data-position="right"
-    title="Coming in 2024"
-    aria-disabled="true"
-    data-tooltip="true"
-    >
-      Start a new domain request
-    </a>
-    {% else %}
     <a href="{% url 'application:' %}" class="usa-button"
     >
       Start a new domain request
     </a>
-    {% endif %}
   </p>
 
   <section class="section--outlined">
