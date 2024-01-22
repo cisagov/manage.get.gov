@@ -24,9 +24,7 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos
 
 
-def write_row(writer, columns, domain_info):
-    security_contacts = domain_info.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
-
+def write_row(writer, columns, domain_info: DomainInformation):
     # For linter
     ao = " "
     if domain_info.authorizing_official:
@@ -34,9 +32,9 @@ def write_row(writer, columns, domain_info):
         last_name = domain_info.authorizing_official.last_name or ""
         ao = first_name + " " + last_name
 
-    security_email = " "
-    if security_contacts:
-        security_email = security_contacts[0].email
+    security_email = domain_info.domain.get_security_email(skip_epp_call=True)
+    if security_email is None:
+        security_email = " "
 
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
     # These are default emails that should not be displayed in the csv report
@@ -78,9 +76,7 @@ def write_body(
     """
 
     # Get the domainInfos
-    domain_infos = get_domain_infos(filter_condition, sort_fields)
-
-    all_domain_infos = list(domain_infos)
+    all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
     # Write rows to CSV
     for domain_info in all_domain_infos:

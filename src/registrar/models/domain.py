@@ -909,11 +909,22 @@ class Domain(TimeStampedModel, DomainHelper):
         """Time to renew. Not implemented."""
         raise NotImplementedError()
 
-    def get_security_email(self):
-        logger.info("get_security_email-> getting the contact ")
-        secContact = self.security_contact
-        if secContact is not None:
-            return secContact.email
+    def get_security_email(self, skip_epp_call=False):
+        logger.info("get_security_email-> getting the contact")
+
+        # If specified, skip the epp call outright.
+        # Otherwise, proceed as normal.
+        if skip_epp_call:
+            logger.info("get_security_email-> skipping epp call")
+            security = PublicContact.ContactTypeChoices.SECURITY
+            security_contact = self.generic_contact_getter(security, skip_epp_call)
+        else:
+            security_contact = self.security_contact
+
+        # If we get a valid value for security_contact, pull its email
+        # Otherwise, just return nothing
+        if security_contact is not None and isinstance(security_contact, PublicContact):
+            return security_contact.email
         else:
             return None
 
@@ -1110,7 +1121,7 @@ class Domain(TimeStampedModel, DomainHelper):
             )
             raise error
 
-    def generic_contact_getter(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact | None:
+    def generic_contact_getter(self, contact_type_choice: PublicContact.ContactTypeChoices, skip_epp_call=False) -> PublicContact | None:
         """Retrieves the desired PublicContact from the registry.
         This abstracts the caching and EPP retrieval for
         all contact items and thus may result in EPP calls being sent.
@@ -1121,7 +1132,6 @@ class Domain(TimeStampedModel, DomainHelper):
         If you wanted to setup getter logic for Security, you would call:
         cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
         or cache_contact_helper("security").
-
         """
         # registrant_contact(s) are an edge case. They exist on
         # the "registrant" property as opposed to contacts.
@@ -1131,7 +1141,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         try:
             # Grab from cache
-            contacts = self._get_property(desired_property)
+            contacts = self._get_property(desired_property, skip_epp_call)
         except KeyError as error:
             # if contact type is security, attempt to retrieve registry id
             # for the security contact from domain.security_contact_registry_id
@@ -1866,9 +1876,9 @@ class Domain(TimeStampedModel, DomainHelper):
         """Remove cache data when updates are made."""
         self._cache = {}
 
-    def _get_property(self, property):
+    def _get_property(self, property, skip_epp_call=False):
         """Get some piece of info about a domain."""
-        if property not in self._cache:
+        if property not in self._cache and not skip_epp_call:
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
                 fetch_contacts=(property == "contacts"),
