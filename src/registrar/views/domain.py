@@ -570,7 +570,9 @@ class DomainSecurityEmailView(DomainFormBaseView):
         """The initial value for the form."""
         initial = super().get_initial()
         security_contact = self.object.security_contact
-        if security_contact is None or security_contact.email == "dotgov@cisa.dhs.gov":
+
+        invalid_emails = ["dotgov@cisa.dhs.gov", "registrar@dotgov.gov"]
+        if security_contact is None or security_contact.email in invalid_emails:
             initial["security_email"] = None
             return initial
         initial["security_email"] = security_contact.email

@@ -17,7 +17,7 @@ About your organization:
 Authorizing official:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=application.authorizing_official %}{% endspaceless %}
 {% if application.current_websites.exists %}{# if block makes a newline #}
-Current website for your organization: {% for site in application.current_websites.all %}
+Current websites: {% for site in application.current_websites.all %}
 {% spaceless %}{{ site.website }}{% endspaceless %}
 {% endfor %}{% endif %}
 .gov domain:
