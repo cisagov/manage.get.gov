@@ -24,7 +24,9 @@ def write_header(writer, columns):
 
 
 def get_domain_infos(filter_condition, sort_fields):
-    domain_infos = DomainInformation.objects.filter(**filter_condition).order_by(*sort_fields)
+    domain_infos = DomainInformation.objects.select_related(
+        'domain', 'authorizing_official'
+    ).filter(**filter_condition).order_by(*sort_fields)
 
     # Do a mass concat of the first and last name fields for authorizing_official.
     # The old operation was computationally heavy for some reason, so if we precompute
@@ -46,7 +48,6 @@ def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
     domain = domain_info.domain
 
     start_time = time.time()
-    # TODO - speed up
     security_email = domain.security_contact_registry_id
     if security_email is None:
         cached_sec_email = domain.get_security_email(skip_epp_call)
@@ -82,8 +83,10 @@ def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
         "First ready": domain.first_ready,
         "Deleted": domain.deleted,
     }
-
+    start_time = time.time()
     row = [FIELDS.get(column, "") for column in columns]
+    end_time = time.time()
+    print(f"parse some cols operation took {end_time - start_time} seconds")
     return row
 
 def write_body(
@@ -101,6 +104,7 @@ def write_body(
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
     # Reduce the memory overhead when performing the write operation
+    a1_start_time = time.time()
     paginator = Paginator(all_domain_infos, 1000)
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
@@ -114,6 +118,8 @@ def write_body(
         print(f"new parse Operation took {end_time - start_time} seconds")
         writer.writerows(rows)
 
+    a1_end_time = time.time()
+    print(f"parse all stuff operation took {a1_end_time - a1_start_time} seconds")
 
 def export_data_type_to_csv(csv_file):
     """All domains report with extra columns"""
