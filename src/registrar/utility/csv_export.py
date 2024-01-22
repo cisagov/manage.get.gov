@@ -48,10 +48,8 @@ def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
 
     domain = domain_info.domain
 
-    security_email = domain.security_contact_registry_id
-    if security_email is None:
-        cached_sec_email = domain.get_security_email(skip_epp_call)
-        security_email = cached_sec_email if cached_sec_email is not None else " "
+    cached_sec_email = domain.get_security_email(skip_epp_call)
+    security_email = cached_sec_email if cached_sec_email is not None else " "
 
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
     # These are default emails that should not be displayed in the csv report
