@@ -843,6 +843,9 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
     def form_valid(self, form):
         """Delete the specified user on this domain."""
 
+        # Delete the object
+        super().form_valid(form)
+
         # Is the user deleting themselves? If so, display a different message
         delete_self = self.request.user == self.object.user
 

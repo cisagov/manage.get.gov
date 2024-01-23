@@ -150,7 +150,7 @@ class UserDomainRolePermissionView(UserDomainRolePermission, DetailView, abc.ABC
 
 class UserDomainRolePermissionDeleteView(UserDomainRolePermissionView, DeleteView, abc.ABC):
 
-    """Abstract base view for domain application withdraw function
+    """Abstract base view for deleting a UserDomainRole.
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.
