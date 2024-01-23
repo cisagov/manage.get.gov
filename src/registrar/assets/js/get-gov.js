@@ -143,9 +143,9 @@ function checkDomainAvailability(el) {
     // Determines if we ignore the field if it is just blank
     ignore_blank = el.classList.contains("blank-ok")
     if (el.validity.valid) {
-      el.classList.add('usa-input--success');
+      el.classList.add('usa-input--info');
       // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
-      inlineToast(el.parentElement, el.id, SUCCESS, response.message);
+      inlineToast(el.parentElement, el.id, INFORMATIVE, response.message);
     } else if (ignore_blank && response.code == "required"){
       console.log('ignore_blank && response.code == "required"')
       // Visually remove the error
