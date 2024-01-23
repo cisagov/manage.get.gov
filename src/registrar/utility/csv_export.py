@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
-from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import F, Value, CharField
@@ -45,7 +44,11 @@ def get_domain_infos(filter_condition, sort_fields):
 def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
     """Given a set of columns, generate a new row from cleaned column data"""
 
-    domain = domain_info.domain
+    # Domain should never be none when parsing this information
+    if domain_info.domain is None:
+        raise ValueError("Domain is none")
+
+    domain = domain_info.domain  # type: ignore
 
     cached_sec_email = domain.get_security_email(skip_epp_call)
     security_email = cached_sec_email if cached_sec_email is not None else " "
@@ -68,7 +71,7 @@ def parse_row(columns, domain_info: DomainInformation, skip_epp_call=True):
         "Organization name": domain_info.organization_name,
         "City": domain_info.city,
         "State": domain_info.state_territory,
-        "AO": domain_info.ao,
+        "AO": domain_info.ao,  # type: ignore
         "AO email": domain_info.authorizing_official.email if domain_info.authorizing_official else " ",
         "Security contact email": security_email,
         "Status": domain.get_state_display(),
@@ -102,8 +105,14 @@ def write_body(
         page = paginator.page(page_num)
         rows = []
         for domain_info in page.object_list:
-            row = parse_row(columns, domain_info)
-            rows.append(row)
+            try:
+                row = parse_row(columns, domain_info)
+                rows.append(row)
+            except ValueError:
+                # This should not happen. If it does, just skip this row.
+                # It indicates that DomainInformation.domain is None.
+                logger.error("csv_export -> Error when parsing row, domain was None")
+                continue
 
         writer.writerows(rows)
 
