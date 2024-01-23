@@ -48,7 +48,6 @@ function createLiveRegion(id) {
 
 /** Announces changes to assistive technology users. */
 function announce(id, text) {
-  console.log('announce: ' + text)
   let liveRegion = document.getElementById(id + "-live-region");
   if (!liveRegion) liveRegion = createLiveRegion(id);
   liveRegion.innerHTML = text;
@@ -87,7 +86,6 @@ function fetchJSON(endpoint, callback, url="/api/v1/") {
 
 /** Modifies CSS and HTML when an input is valid/invalid. */
 function toggleInputValidity(el, valid, msg=DEFAULT_ERROR) {
-  console.log('toggleInputValidity: ' + valid)
   if (valid) {
     el.setCustomValidity("");
     el.removeAttribute("aria-invalid");
@@ -102,7 +100,6 @@ function toggleInputValidity(el, valid, msg=DEFAULT_ERROR) {
 
 /** Display (or hide) a message beneath an element. */
 function inlineToast(el, id, style, msg) {
-  console.log('inine toast creates alerts')
   if (!el.id && !id) {
     console.error("Elements must have an `id` to show an inline toast.");
     return;
@@ -134,9 +131,7 @@ function inlineToast(el, id, style, msg) {
 }
 
 function checkDomainAvailability(el) {
-  console.log('checkDomainAvailability: ' + el.value)
   const callback = (response) => {
-    console.log('inside callback')
     toggleInputValidity(el, (response && response.available), msg=response.message);
     announce(el.id, response.message);
 
@@ -147,7 +142,6 @@ function checkDomainAvailability(el) {
       // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
       inlineToast(el.parentElement, el.id, INFORMATIVE, response.message);
     } else if (ignore_blank && response.code == "required"){
-      console.log('ignore_blank && response.code == "required"')
       // Visually remove the error
       error = "usa-input--error"
       if (el.classList.contains(error)){
@@ -173,7 +167,6 @@ function clearDomainAvailability(el) {
 
 /** Runs all the validators associated with this element. */
 function runValidators(el) {
-  console.log(el.getAttribute("id"))
   const attribute = el.getAttribute("validate") || "";
   if (!attribute.length) return;
   const validators = attribute.split(" ");
@@ -214,8 +207,6 @@ function handleInputValidation(e) {
 
 /** On button click, handles running any associated validators. */
 function handleValidationClick(e) {
-  console.log('validating dotgov domain')
-
   const attribute = e.target.getAttribute("validate-for") || "";
   if (!attribute.length) return;
 
@@ -226,8 +217,6 @@ function handleValidationClick(e) {
 
 function handleFormsetValidationClick(e) {
   // Check availability for alternative domains
-
-  console.log('validating alternative domains')
   
   const alternativeDomainsAvailability = document.getElementById('check-availability-for-alternative-domains');
   
@@ -264,13 +253,13 @@ function handleFormsetValidationClick(e) {
   for(const input of needsValidation) {
     input.addEventListener('input', handleInputValidation);
   }
-  const dotgovDomainsAvailability = document.getElementById('check-availability-for-dotgov-domain');
   const alternativeDomainsAvailability = document.getElementById('check-availability-for-alternative-domains');
   const activatesValidation = document.querySelectorAll('[validate-for]');
+
   for(const button of activatesValidation) {
-    if (alternativeDomainsAvailability) {
-      alternativeDomainsAvailability.addEventListener('click', handleFormsetValidationClick);
-      dotgovDomainsAvailability.addEventListener('click', handleValidationClick);
+    // Adds multi-field validation for alternative domains
+    if (button === alternativeDomainsAvailability) {
+      button.addEventListener('click', handleFormsetValidationClick);
     } else {
       button.addEventListener('click', handleValidationClick);
     }

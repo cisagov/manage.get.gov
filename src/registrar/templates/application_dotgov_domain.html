@@ -82,15 +82,14 @@
       </svg><span class="margin-left-05">Add another alternative</span>
     </button>
 
-    <br>
-
     <button
       id="check-availability-for-alternative-domains"
       type="button"
       class="usa-button usa-button--outline"
+      validate-for="{{ forms.1.requested_domain.auto_id }}"
     >Check availability</button>
 
-  <p>If you’re not sure this is the domain you want, that’s ok. You can change the domain later. </p>
+  <p class="margin-top-05">If you’re not sure this is the domain you want, that’s ok. You can change the domain later. </p>
 
 </fieldset>
 
