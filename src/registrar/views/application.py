@@ -667,17 +667,17 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
         """
         Collects all orphaned contacts associated with a given DomainApplication object.
 
-        An orphaned contact is defined as a contact that is associated with the application, 
-        but not with any other application. This includes the authorizing official, the submitter, 
+        An orphaned contact is defined as a contact that is associated with the application,
+        but not with any other application. This includes the authorizing official, the submitter,
         and any other contacts linked to the application.
 
         Parameters:
         application (DomainApplication): The DomainApplication object for which to find orphaned contacts.
-        check_db (bool, optional): A flag indicating whether to check the database for the existence of the contacts. 
+        check_db (bool, optional): A flag indicating whether to check the database for the existence of the contacts.
                                 Defaults to False.
 
         Returns:
-        tuple: A tuple containing two lists. The first list contains the IDs of the orphaned contacts. 
+        tuple: A tuple containing two lists. The first list contains the IDs of the orphaned contacts.
             The second list contains any duplicate contacts found. ([Contacts], [Contacts])
         """
         contacts_to_delete = []
