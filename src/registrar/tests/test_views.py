@@ -2690,7 +2690,7 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
-    def test_domain_delete_link(self):
+    def test_domain_user_delete_link(self):
         """Tests if the user delete link works"""
 
         # Add additional users
@@ -2733,14 +2733,14 @@ class TestDomainManagers(TestDomainOverview):
         self.assertFalse(deleted_user_exists)
 
         # Ensure that the current user wasn't deleted
-        current_user_exists = UserDomainRole.objects.filter(user=self.user.id).exists()
+        current_user_exists = UserDomainRole.objects.filter(user=self.user.id, domain=self.domain).exists()
         self.assertTrue(current_user_exists)
 
         # Ensure that the other userdomainrole was not deleted
         role_2_exists = UserDomainRole.objects.filter(id=role_2.id).exists()
         self.assertTrue(role_2_exists)
 
-    def test_domain_delete_self_redirects_home(self):
+    def test_domain_user_delete_self_redirects_home(self):
         """Tests if deleting yourself redirects to home"""
         # Add additional users
         dummy_user_1 = User.objects.create(
@@ -2784,7 +2784,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(message.tags, "success")
 
         # Ensure that the current user was deleted
-        current_user_exists = UserDomainRole.objects.filter(user=self.user.id).exists()
+        current_user_exists = UserDomainRole.objects.filter(user=self.user.id, domain=self.domain).exists()
         self.assertFalse(current_user_exists)
 
         # Ensure that the other userdomainroles are not deleted
