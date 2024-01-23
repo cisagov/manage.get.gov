@@ -490,16 +490,17 @@ class ContactAdmin(ListHeaderAdmin):
                         related_objects.append((change_url, obj))
 
         if related_objects:
+            message = ""
             for url, obj in related_objects:
                 escaped_obj = escape(obj)
-                message = f"Joined to {obj.__class__.__name__}: <a href='{url}'>{escaped_obj}</a>"
+                message += f"Joined to {obj.__class__.__name__}: <a href='{url}'>{escaped_obj}</a><br/>"
                 # message_html is considered safe html. It is generated from a finite list of strings
                 # which are generated from django objects. And a django object, which is escaped
-                message_html = mark_safe(message)  # nosec
-                messages.warning(
-                    request,
-                    message_html,
-                )
+            message_html = mark_safe(message)  # nosec
+            messages.warning(
+                request,
+                message_html,
+            )
 
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
