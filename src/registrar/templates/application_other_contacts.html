@@ -2,11 +2,11 @@
 {% load static field_helpers %}
 
 {% block form_instructions %}
-  <p>To help us assess your eligibility for a .gov domain, please provide contact information for other employees from your organization.
+  <p>To help us determine your organization’s eligibility for a .gov domain, it’s helpful to have  contact information for other employees from your organization.
     <ul class="usa-list">
-      <li>They should be clearly and publicly affiliated with your organization and familiar with your domain request. </li>
-      <li>They don't need to be involved with the technical management of your domain (although they can be). </li>
-      <li>We typically don’t reach out to these employees, but if contact is necessary, our practice is to coordinate first with you, the requestor. </li>
+      <li>They should be clearly and publicly affiliated with your organization and familiar with your domain request.</li>
+      <li>They don’t need to be involved with the technical management of your domain (although they can be).</li>
+      <li><strong>We typically don’t reach out to these employees</strong>, but if contact is necessary, our practice is to coordinate with you first.</li>
     </ul>
   </p>
 
@@ -88,9 +88,7 @@
           <legend>
             <h2 class="margin-bottom-0">No other employees from your organization?</h2>
           </legend>
-          <p>You don't need to provide names of other employees now, but it may
-            slow down our assessment of your eligibility. Describe why there are
-            no other employees who can help verify your request.</p>
+          <p>You don’t need to provide names of other employees now, but it may slow down our assessment of your eligibility. Describe why there are no other employees who can help verify your request.</p>
         {% with attr_maxlength=1000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.2.no_other_contacts_rationale %}
         {% endwith %}

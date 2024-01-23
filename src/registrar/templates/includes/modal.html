@@ -4,6 +4,11 @@
     <div class="usa-modal__main">
         <h2 class="usa-modal__heading" id="modal-1-heading">
             {{ modal_heading }}
+            {% if heading_value is not None %}
+            {# Add a breakpoint #}
+            <div aria-hidden="true"></div>
+            {{ heading_value }}
+            {% endif %}
         </h2>
         <div class="usa-prose">
             <p id="modal-1-description">

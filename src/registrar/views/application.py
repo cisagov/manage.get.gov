@@ -1,5 +1,5 @@
 import logging
-
+from collections import defaultdict
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
@@ -10,8 +10,11 @@ from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
 from registrar.models import DomainApplication
+from registrar.models.contact import Contact
+from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
+from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
 
 from .utility import (
     DomainApplicationPermissionView,
@@ -83,13 +86,13 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
         Step.AUTHORIZING_OFFICIAL: _("Authorizing official"),
-        Step.CURRENT_SITES: _("Current website for your organization"),
+        Step.CURRENT_SITES: _("Current websites"),
         Step.DOTGOV_DOMAIN: _(".gov domain"),
         Step.PURPOSE: _("Purpose of your domain"),
         Step.YOUR_CONTACT: _("Your contact information"),
         Step.OTHER_CONTACTS: _("Other employees from your organization"),
         Step.ANYTHING_ELSE: _("Anything else?"),
-        Step.REQUIREMENTS: _("Requirements for operating .gov domains"),
+        Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
         Step.REVIEW: _("Review and submit your domain request"),
     }
 
@@ -128,20 +131,26 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if self._application:
             return self._application
 
+        # For linter. The else block should never be hit, but if it does,
+        # there may be a UI consideration. That will need to be handled in another ticket.
+        creator = None
+        if self.request.user is not None and isinstance(self.request.user, User):
+            creator = self.request.user
+        else:
+            raise ValueError("Invalid value for User")
+
         if self.has_pk():
             id = self.storage["application_id"]
             try:
                 self._application = DomainApplication.objects.get(
-                    creator=self.request.user,  # type: ignore
+                    creator=creator,
                     pk=id,
                 )
                 return self._application
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
 
-        self._application = DomainApplication.objects.create(
-            creator=self.request.user,  # type: ignore
-        )
+        self._application = DomainApplication.objects.create(creator=self.request.user)
 
         self.storage["application_id"] = self._application.id
         return self._application
@@ -150,7 +159,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def storage(self):
         # marking session as modified on every access
         # so that updates to nested keys are always saved
-        # push to sandbox will remove
         self.request.session.modified = True
         return self.request.session.setdefault(self.prefix, {})
 
@@ -611,3 +619,102 @@ class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
         application.withdraw()
         application.save()
         return HttpResponseRedirect(reverse("home"))
+
+
+class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
+    """Delete view for home that allows the end user to delete DomainApplications"""
+
+    object: DomainApplication  # workaround for type mismatch in DeleteView
+
+    def has_permission(self):
+        """Custom override for has_permission to exclude all statuses, except WITHDRAWN and STARTED"""
+        has_perm = super().has_permission()
+        if not has_perm:
+            return False
+
+        status = self.get_object().status
+        valid_statuses = [DomainApplication.ApplicationStatus.WITHDRAWN, DomainApplication.ApplicationStatus.STARTED]
+        if status not in valid_statuses:
+            return False
+
+        return True
+
+    def get_success_url(self):
+        """After a delete is successful, redirect to home"""
+        return reverse("home")
+
+    def post(self, request, *args, **kwargs):
+        # Grab all orphaned contacts
+        application: DomainApplication = self.get_object()
+        contacts_to_delete, duplicates = self._get_orphaned_contacts(application)
+
+        # Delete the DomainApplication
+        response = super().post(request, *args, **kwargs)
+
+        # Delete orphaned contacts - but only for if they are not associated with a user
+        Contact.objects.filter(id__in=contacts_to_delete, user=None).delete()
+
+        # After a delete occurs, do a second sweep on any returned duplicates.
+        # This determines if any of these three fields share a contact, which is used for
+        # the edge case where the same user may be an AO, and a submitter, for example.
+        if len(duplicates) > 0:
+            duplicates_to_delete, _ = self._get_orphaned_contacts(application, check_db=True)
+            Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
+
+        return response
+
+    def _get_orphaned_contacts(self, application: DomainApplication, check_db=False):
+        """
+        Collects all orphaned contacts associated with a given DomainApplication object.
+
+        An orphaned contact is defined as a contact that is associated with the application,
+        but not with any other application. This includes the authorizing official, the submitter,
+        and any other contacts linked to the application.
+
+        Parameters:
+        application (DomainApplication): The DomainApplication object for which to find orphaned contacts.
+        check_db (bool, optional): A flag indicating whether to check the database for the existence of the contacts.
+                                Defaults to False.
+
+        Returns:
+        tuple: A tuple containing two lists. The first list contains the IDs of the orphaned contacts.
+            The second list contains any duplicate contacts found. ([Contacts], [Contacts])
+        """
+        contacts_to_delete = []
+
+        # Get each contact object on the DomainApplication object
+        ao = application.authorizing_official
+        submitter = application.submitter
+        other_contacts = list(application.other_contacts.all())
+        other_contact_ids = application.other_contacts.all().values_list("id", flat=True)
+
+        # Check if the desired item still exists in the DB
+        if check_db:
+            ao = self._get_contacts_by_id([ao.id]).first() if ao is not None else None
+            submitter = self._get_contacts_by_id([submitter.id]).first() if submitter is not None else None
+            other_contacts = self._get_contacts_by_id(other_contact_ids)
+
+        # Pair each contact with its db related name for use in checking if it has joins
+        checked_contacts = [(ao, "authorizing_official"), (submitter, "submitted_applications")]
+        checked_contacts.extend((contact, "contact_applications") for contact in other_contacts)
+
+        for contact, related_name in checked_contacts:
+            if contact is not None and not contact.has_more_than_one_join(related_name):
+                contacts_to_delete.append(contact.id)
+
+        return (contacts_to_delete, self._get_duplicates(checked_contacts))
+
+    def _get_contacts_by_id(self, contact_ids):
+        """Given a list of ids, grab contacts if it exists"""
+        contacts = Contact.objects.filter(id__in=contact_ids)
+        return contacts
+
+    def _get_duplicates(self, objects):
+        """Given a list of objects, return a list of which items were duplicates"""
+        # Gets the occurence count
+        object_dict = defaultdict(int)
+        for contact, _related in objects:
+            object_dict[contact] += 1
+
+        duplicates = [item for item, count in object_dict.items() if count > 1]
+        return duplicates
