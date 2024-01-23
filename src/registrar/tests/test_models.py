@@ -268,14 +268,12 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.action_needed()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                try:
+                    application.action_needed()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_action_needed_transition_not_allowed(self):
         """
@@ -288,12 +286,10 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        with self.assertRaises(exception_type):
-                            application.action_needed()
+        for application, exception_type in test_cases:
+            with self.subTest(application=application, exception_type=exception_type):
+                with self.assertRaises(exception_type):
+                    application.action_needed()
 
     def test_approved_transition_allowed(self):
         """
@@ -500,6 +496,28 @@ class TestDomainApplication(TestCase):
                     with self.assertRaises(TransitionNotAllowed):
                         self.approved_application.reject_with_prejudice()
 
+    def test_has_rationale_returns_true(self):
+        """has_rationale() returns true when an application has no_other_contacts_rationale"""
+        self.started_application.no_other_contacts_rationale = "You talkin' to me?"
+        self.started_application.save()
+        self.assertEquals(self.started_application.has_rationale(), True)
+
+    def test_has_rationale_returns_false(self):
+        """has_rationale() returns false when an application has no no_other_contacts_rationale"""
+        self.assertEquals(self.started_application.has_rationale(), False)
+
+    def test_has_other_contacts_returns_true(self):
+        """has_other_contacts() returns true when an application has other_contacts"""
+        # completed_application has other contacts by default
+        self.assertEquals(self.started_application.has_other_contacts(), True)
+
+    def test_has_other_contacts_returns_false(self):
+        """has_other_contacts() returns false when an application has no other_contacts"""
+        application = completed_application(
+            status=DomainApplication.ApplicationStatus.STARTED, name="no-others.gov", has_other_contacts=False
+        )
+        self.assertEquals(application.has_other_contacts(), False)
+
 
 class TestPermissions(TestCase):
     """Test the User-Domain-Role connection."""
@@ -673,8 +691,12 @@ class TestContact(TestCase):
         self.user, _ = User.objects.get_or_create(email=self.email, first_name="Jeff", last_name="Lebowski")
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
+        self.contact_as_ao, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
+        self.application = DomainApplication.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
+
     def tearDown(self):
         super().tearDown()
+        DomainApplication.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
 
@@ -748,3 +770,12 @@ class TestContact(TestCase):
         # Updating the contact's email does not propagate
         self.assertEqual(self.invalid_contact.email, "joey.baloney@diaperville.com")
         self.assertEqual(self.invalid_user.email, "intern@igorville.gov")
+
+    def test_has_more_than_one_join(self):
+        """Test the Contact model method, has_more_than_one_join"""
+        # test for a contact which has one user defined
+        self.assertFalse(self.contact.has_more_than_one_join("user"))
+        self.assertTrue(self.contact.has_more_than_one_join("authorizing_official"))
+        # test for a contact which is assigned as an authorizing official on an application
+        self.assertFalse(self.contact_as_ao.has_more_than_one_join("authorizing_official"))
+        self.assertTrue(self.contact_as_ao.has_more_than_one_join("submitted_applications"))

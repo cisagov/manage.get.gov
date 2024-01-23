@@ -524,3 +524,65 @@ Example: `cf ssh getgov-za`
 | 2 | **debug**                  | Increases logging detail. Defaults to False.                                |
 | 3 | **limitParse**             | Determines how many domains to parse. Defaults to all.                      |
 | 4 | **disableIdempotentCheck** | Boolean that determines if we should check for idempotence or not. Compares the proposed extension date to the value in TransitionDomains. Defaults to False. |
+
+
+## Populate First Ready
+This section outlines how to run the populate_first_ready script
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+```./manage.py populate_first_ready --debug```
+
+### Running locally
+```docker-compose exec app ./manage.py populate_first_ready --debug```
+
+##### Optional parameters
+|   | Parameter                  | Description                                                                 |
+|:-:|:-------------------------- |:----------------------------------------------------------------------------|
+| 1 | **debug**                  | Increases logging detail. Defaults to False.                                |
+
+
+## Patch Federal Agency Info
+This section outlines how to use `patch_federal_agency_info.py`
+
+### Running on sandboxes
+
+#### Step 1: Grab the latest `current-full.csv` file from the dotgov-data repo
+Download the csv from [here](https://github.com/cisagov/dotgov-data/blob/main/current-full.csv) and place this file under the `src/migrationdata/` directory.
+
+#### Step 2: Transfer the `current-full.csv` file to your sandbox
+[Click here to go to the section about transferring data to sandboxes](#step-1-transfer-data-to-sandboxes)
+
+#### Step 3: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 4: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 5: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 6: Patch agency info
+```./manage.py patch_federal_agency_info migrationdata/current-full.csv --debug```
+
+### Running locally
+```docker-compose exec app ./manage.py patch_federal_agency_info migrationdata/current-full.csv --debug```
+
+##### Optional parameters
+|   | Parameter                  | Description                                                                 |
+|:-:|:-------------------------- |:----------------------------------------------------------------------------|
+| 1 | **debug**                  | Increases logging detail. Defaults to False.                                |
