@@ -1747,6 +1747,8 @@ class VeryImportantPersonAdminTestCase(TestCase):
         self.factory = RequestFactory()
 
     def test_save_model_sets_user_field(self):
+        self.client.force_login(self.superuser)
+        
         # Create an instance of the admin class
         admin_instance = VeryImportantPersonAdmin(model=VeryImportantPerson, admin_site=None)
 
