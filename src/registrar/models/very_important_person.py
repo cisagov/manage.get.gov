@@ -9,7 +9,7 @@ class VeryImportantPerson(TimeStampedModel):
 
     email = models.EmailField(
         null=False,
-        blank=True,
+        blank=False,
         help_text="Email",
         db_index=True,
     )
@@ -24,7 +24,7 @@ class VeryImportantPerson(TimeStampedModel):
 
     notes = models.TextField(
         null=False,
-        blank=True,
+        blank=False,
         help_text="Notes",
     )
 

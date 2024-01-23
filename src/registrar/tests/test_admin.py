@@ -1748,7 +1748,7 @@ class VeryImportantPersonAdminTestCase(TestCase):
 
     def test_save_model_sets_user_field(self):
         self.client.force_login(self.superuser)
-        
+
         # Create an instance of the admin class
         admin_instance = VeryImportantPersonAdmin(model=VeryImportantPerson, admin_site=None)
 
@@ -1757,7 +1757,7 @@ class VeryImportantPersonAdminTestCase(TestCase):
 
         # Create a request object
         request = self.factory.post("/admin/yourapp/veryimportantperson/add/")
-        request.requestor = self.superuser
+        request.user = self.superuser
 
         # Call the save_model method
         admin_instance.save_model(request, vip_instance, None, None)
