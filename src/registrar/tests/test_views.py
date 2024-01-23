@@ -2740,10 +2740,6 @@ class TestDomainManagers(TestDomainOverview):
         role_2_exists = UserDomainRole.objects.filter(id=role_2.id).exists()
         self.assertTrue(role_2_exists)
 
-        # Check that the view no longer displays the deleted user
-        # why is this not working? Its not in the response when printed?
-        # self.assertNotContains(response, "cheese@igorville.com")
-
     def test_domain_delete_self_redirects_home(self):
         """Tests if deleting yourself redirects to home"""
         # Add additional users

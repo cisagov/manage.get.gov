@@ -481,14 +481,6 @@ class DotgovDomain(ApplicationWizard):
         context["federal_type"] = self.application.federal_type
         return context
 
-    def post(self, request, *args, **kwargs):
-        """Override for the post method to mark the DraftDomain as complete"""
-        response = super().post(request, *args, **kwargs)
-        # Set the DraftDomain to "complete"
-        self.application.requested_domain.is_incomplete = False
-        self.application.save()
-        return response
-
 
 class Purpose(ApplicationWizard):
     template_name = "application_purpose.html"

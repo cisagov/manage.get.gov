@@ -92,13 +92,6 @@
           </a>
         {% endif %}
         </td>
-        {% comment %}
-        usa-tooltip disabled-link"
-        data-position="right"
-        title="Coming in 2024"
-        aria-disabled="true"
-        data-tooltip="true"
-        {% endcomment %}
       </tr>
       {% endfor %}
     </tbody>
@@ -137,8 +130,9 @@
           </th>
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
           <td data-label="Status">{{ invitation.status|title }}</td>
-          <td class="padding-left-2px"><form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
-            {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline" value="Cancel">
+          <td>
+            <form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
+              {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline" value="Cancel">
             </form>
           </td>
         </tr>

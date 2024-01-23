@@ -651,13 +651,14 @@ class DomainUsersView(DomainBaseView):
         # Determine if the current user can delete managers
         domain_pk = None
         can_delete_users = False
+
         if self.kwargs is not None and "pk" in self.kwargs:
             domain_pk = self.kwargs["pk"]
             # Prevent the end user from deleting themselves as a manager if they are the
             # only manager that exists on a domain.
             can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
-        context["can_delete_users"] = can_delete_users
 
+        context["can_delete_users"] = can_delete_users
         return context
 
     def _add_modal_buttons_to_context(self, context):
@@ -689,7 +690,6 @@ class DomainUsersView(DomainBaseView):
             class_list = classes
 
         html_class = f'class="{class_list}"' if class_list else None
-
         modal_button = '<button type="submit" ' f"{html_class} " f'name="{button_name}">{button_text_content}</button>'
         return modal_button
 
@@ -831,7 +831,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         if email_or_name is None or email_or_name.strip() == "":
             email_or_name = self.object.user
 
-        # If the user is deleting themselves, return a special message.
+        # If the user is deleting themselves, return a specific message.
         # If not, return something more generic.
         if delete_self:
             message = f"You are no longer managing the domain {self.object.domain}."
@@ -842,14 +842,12 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
 
     def form_valid(self, form):
         """Delete the specified user on this domain."""
-        super().form_valid(form)
 
         # Is the user deleting themselves? If so, display a different message
         delete_self = self.request.user == self.object.user
 
         # Add a success message
         messages.success(self.request, self.get_success_message(delete_self))
-
         return redirect(self.get_success_url())
 
     def post(self, request, *args, **kwargs):
