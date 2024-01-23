@@ -431,11 +431,13 @@ class DomainApplication(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Street address",
+        verbose_name="Address line 1",
     )
     address_line2 = models.TextField(
         null=True,
         blank=True,
         help_text="Street address line 2 (optional)",
+        verbose_name="Address line 2",
     )
     city = models.TextField(
         null=True,
