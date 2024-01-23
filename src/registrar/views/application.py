@@ -694,7 +694,7 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
             submitter = self._get_contacts_by_id([submitter.id]).first() if submitter is not None else None
             other_contacts = self._get_contacts_by_id(other_contact_ids)
 
-        # Pair each contact with its related name
+        # Pair each contact with its db related name for use in checking if it has joins
         checked_contacts = [(ao, "authorizing_official"), (submitter, "submitted_applications")]
         checked_contacts.extend((contact, "contact_applications") for contact in other_contacts)
 

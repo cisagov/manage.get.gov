@@ -236,6 +236,7 @@ class LoggedInTests(TestWithUser):
         # Trigger the delete logic
         response = self.client.post(reverse("application-delete", kwargs={"pk": application.pk}), follow=True)
 
+        # igorville is now deleted
         self.assertNotContains(response, "igorville.gov")
 
         # Check if the orphaned contact was deleted
