@@ -48,6 +48,7 @@ function createLiveRegion(id) {
 
 /** Announces changes to assistive technology users. */
 function announce(id, text) {
+  console.log('announce: ' + text)
   let liveRegion = document.getElementById(id + "-live-region");
   if (!liveRegion) liveRegion = createLiveRegion(id);
   liveRegion.innerHTML = text;
@@ -86,6 +87,7 @@ function fetchJSON(endpoint, callback, url="/api/v1/") {
 
 /** Modifies CSS and HTML when an input is valid/invalid. */
 function toggleInputValidity(el, valid, msg=DEFAULT_ERROR) {
+  console.log('toggleInputValidity: ' + valid)
   if (valid) {
     el.setCustomValidity("");
     el.removeAttribute("aria-invalid");
@@ -100,6 +102,7 @@ function toggleInputValidity(el, valid, msg=DEFAULT_ERROR) {
 
 /** Display (or hide) a message beneath an element. */
 function inlineToast(el, id, style, msg) {
+  console.log('inine toast creates alerts')
   if (!el.id && !id) {
     console.error("Elements must have an `id` to show an inline toast.");
     return;
@@ -130,8 +133,10 @@ function inlineToast(el, id, style, msg) {
   }
 }
 
-function _checkDomainAvailability(el) {
+function checkDomainAvailability(el) {
+  console.log('checkDomainAvailability: ' + el.value)
   const callback = (response) => {
+    console.log('inside callback')
     toggleInputValidity(el, (response && response.available), msg=response.message);
     announce(el.id, response.message);
 
@@ -142,6 +147,7 @@ function _checkDomainAvailability(el) {
       // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
       inlineToast(el.parentElement, el.id, SUCCESS, response.message);
     } else if (ignore_blank && response.code == "required"){
+      console.log('ignore_blank && response.code == "required"')
       // Visually remove the error
       error = "usa-input--error"
       if (el.classList.contains(error)){
@@ -155,7 +161,7 @@ function _checkDomainAvailability(el) {
 }
 
 /** Call the API to see if the domain is good. */
-const checkDomainAvailability = debounce(_checkDomainAvailability);
+// const checkDomainAvailability = debounce(_checkDomainAvailability);
 
 /** Hides the toast message and clears the aira live region. */
 function clearDomainAvailability(el) {
@@ -167,6 +173,7 @@ function clearDomainAvailability(el) {
 
 /** Runs all the validators associated with this element. */
 function runValidators(el) {
+  console.log(el.getAttribute("id"))
   const attribute = el.getAttribute("validate") || "";
   if (!attribute.length) return;
   const validators = attribute.split(" ");
@@ -207,10 +214,35 @@ function handleInputValidation(e) {
 
 /** On button click, handles running any associated validators. */
 function handleValidationClick(e) {
+  console.log('validating dotgov domain')
+
   const attribute = e.target.getAttribute("validate-for") || "";
   if (!attribute.length) return;
-  const input = document.getElementById(attribute);
+
+  const input = document.getElementById(attribute); // You might need to define 'attribute'
   runValidators(input);
+}
+
+
+function handleFormsetValidationClick(e) {
+  // Check availability for alternative domains
+
+  console.log('validating alternative domains')
+  
+  const alternativeDomainsAvailability = document.getElementById('check-availability-for-alternative-domains');
+  
+  // Collect input IDs from the repeatable forms
+  let inputIds = Array.from(document.querySelectorAll('.repeatable-form input')).map(input => input.id);
+
+  // Run validators for each input
+  inputIds.forEach(inputId => {
+    const input = document.getElementById(inputId);
+    runValidators(input);
+  });
+
+  // Set the validate-for attribute on the button with the collected input IDs
+  // Not needed for functionality but nice for accessibility
+  alternativeDomainsAvailability.setAttribute('validate-for', inputIds.join(', '));
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
@@ -232,9 +264,16 @@ function handleValidationClick(e) {
   for(const input of needsValidation) {
     input.addEventListener('input', handleInputValidation);
   }
+  const dotgovDomainsAvailability = document.getElementById('check-availability-for-dotgov-domain');
+  const alternativeDomainsAvailability = document.getElementById('check-availability-for-alternative-domains');
   const activatesValidation = document.querySelectorAll('[validate-for]');
   for(const button of activatesValidation) {
-    button.addEventListener('click', handleValidationClick);
+    if (alternativeDomainsAvailability) {
+      alternativeDomainsAvailability.addEventListener('click', handleFormsetValidationClick);
+      dotgovDomainsAvailability.addEventListener('click', handleValidationClick);
+    } else {
+      button.addEventListener('click', handleValidationClick);
+    }
   }
 })();
 
@@ -453,6 +492,7 @@ function hideDeletedForms() {
   let isNameserversForm = document.querySelector(".nameservers-form");
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
   let isDsDataForm = document.querySelector(".ds-data-form");
+  let isDotgovDomain = document.querySelector(".dotgov-domain-form");
   // The Nameservers formset features 2 required and 11 optionals
   if (isNameserversForm) {
     cloneIndex = 2;
@@ -465,6 +505,8 @@ function hideDeletedForms() {
     formLabel = "Organization contact";
     container = document.querySelector("#other-employees");
     formIdentifier = "other_contacts"
+  } else if (isDotgovDomain) {
+    formIdentifier = "dotgov_domain"
   }
   let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
 
@@ -539,6 +581,7 @@ function hideDeletedForms() {
       // Reset the values of each input to blank
       inputs.forEach((input) => {
         input.classList.remove("usa-input--error");
+        input.classList.remove("usa-input--success");
         if (input.type === "text" || input.type === "number" || input.type === "password" || input.type === "email" || input.type === "tel") {
           input.value = ""; // Set the value to an empty string
           
@@ -551,22 +594,25 @@ function hideDeletedForms() {
       let selects = newForm.querySelectorAll("select");
       selects.forEach((select) => {
         select.classList.remove("usa-input--error");
+        select.classList.remove("usa-input--success");
         select.selectedIndex = 0; // Set the value to an empty string
       });
 
       let labels = newForm.querySelectorAll("label");
       labels.forEach((label) => {
         label.classList.remove("usa-label--error");
+        label.classList.remove("usa-label--success");
       });
 
       let usaFormGroups = newForm.querySelectorAll(".usa-form-group");
       usaFormGroups.forEach((usaFormGroup) => {
         usaFormGroup.classList.remove("usa-form-group--error");
+        usaFormGroup.classList.remove("usa-form-group--success");
       });
 
-      // Remove any existing error messages
-      let usaErrorMessages = newForm.querySelectorAll(".usa-error-message");
-      usaErrorMessages.forEach((usaErrorMessage) => {
+      // Remove any existing error and success messages
+      let usaMessages = newForm.querySelectorAll(".usa-error-message, .usa-alert");
+      usaMessages.forEach((usaErrorMessage) => {
         let parentDiv = usaErrorMessage.closest('div');
         if (parentDiv) {
           parentDiv.remove(); // Remove the parent div if it exists
@@ -577,7 +623,8 @@ function hideDeletedForms() {
 
       // Attach click event listener on the delete buttons of the new form
       let newDeleteButton = newForm.querySelector(".delete-record");
-      prepareNewDeleteButton(newDeleteButton, formLabel);
+      if (newDeleteButton)
+        prepareNewDeleteButton(newDeleteButton, formLabel);
 
       // Disable the add more button if we have 13 forms
       if (isNameserversForm && formNum == 13) {
