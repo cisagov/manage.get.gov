@@ -658,13 +658,28 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
         # This determines if any of these three fields share a contact, which is used for
         # the edge case where the same user may be an AO, and a submitter, for example.
         if len(duplicates) > 0:
-            duplicates_to_delete, _ = self._get_orphaned_contacts(application)
+            duplicates_to_delete, _ = self._get_orphaned_contacts(application, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete, user=None).delete()
 
         return response
 
-    def _get_orphaned_contacts(self, application: DomainApplication, check_db=True):
-        """Collects all orphaned contacts"""
+    def _get_orphaned_contacts(self, application: DomainApplication, check_db=False):
+        """
+        Collects all orphaned contacts associated with a given DomainApplication object.
+
+        An orphaned contact is defined as a contact that is associated with the application, 
+        but not with any other application. This includes the authorizing official, the submitter, 
+        and any other contacts linked to the application.
+
+        Parameters:
+        application (DomainApplication): The DomainApplication object for which to find orphaned contacts.
+        check_db (bool, optional): A flag indicating whether to check the database for the existence of the contacts. 
+                                Defaults to False.
+
+        Returns:
+        tuple: A tuple containing two lists. The first list contains the IDs of the orphaned contacts. 
+            The second list contains any duplicate contacts found. ([Contacts], [Contacts])
+        """
         contacts_to_delete = []
 
         # Get each contact object on the DomainApplication object
