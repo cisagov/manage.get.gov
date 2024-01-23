@@ -82,12 +82,12 @@ def login_callback(request):
         if user:
             login(request, user)
             logger.info("Successfully logged in user %s" % user)
-            # Double login bug?
+            # Double login bug (1507)?
             return redirect(request.session.get("next", "/"))
         else:
             raise o_e.BannedUser()
     except o_e.NoStateDefined as nsd_err:
-        logger.debug(f"No State Defined: {nsd_err}")
+        logger.warning(f"No State Defined: {nsd_err}")
         return redirect(request.session.get("next", "/"))
     except Exception as err:
         return error_page(request, err)

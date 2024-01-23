@@ -1240,14 +1240,14 @@ class DraftDomainAdmin(ListHeaderAdmin):
 
 
 class VeryImportantPersonAdmin(ListHeaderAdmin):
-    list_display = ("email", "user", "truncated_notes", "created_at")
+    list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
     list_filter = [
-        "user",
+        "requestor",
     ]
     readonly_fields = [
-        "user",
+        "requestor",
     ]
 
     def truncated_notes(self, obj):
@@ -1258,7 +1258,7 @@ class VeryImportantPersonAdmin(ListHeaderAdmin):
 
     def save_model(self, request, obj, form, change):
         # Set the user field to the current admin user
-        obj.user = request.user if request.user.is_authenticated else None
+        obj.requestor = request.requestor if request.requestor.is_authenticated else None
         super().save_model(request, obj, form, change)
 
 

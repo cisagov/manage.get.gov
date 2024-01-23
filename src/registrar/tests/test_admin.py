@@ -1755,10 +1755,10 @@ class VeryImportantPersonAdminTestCase(TestCase):
 
         # Create a request object
         request = self.factory.post("/admin/yourapp/veryimportantperson/add/")
-        request.user = self.superuser
+        request.requestor = self.superuser
 
         # Call the save_model method
         admin_instance.save_model(request, vip_instance, None, None)
 
         # Check that the user field is set to the request.user
-        self.assertEqual(vip_instance.user, self.superuser)
+        self.assertEqual(vip_instance.requestor, self.superuser)

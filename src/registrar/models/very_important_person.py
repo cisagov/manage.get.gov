@@ -8,13 +8,13 @@ class VeryImportantPerson(TimeStampedModel):
     """"""
 
     email = models.EmailField(
-        null=True,
+        null=False,
         blank=True,
         help_text="Email",
         db_index=True,
     )
 
-    user = models.ForeignKey(
+    requestor = models.ForeignKey(
         "registrar.User",
         null=True,
         blank=True,
@@ -23,14 +23,10 @@ class VeryImportantPerson(TimeStampedModel):
     )
 
     notes = models.TextField(
-        null=True,
+        null=False,
         blank=True,
         help_text="Notes",
     )
 
     def __str__(self):
-        try:
-            if self.email:
-                return self.email
-        except Exception:
-            return ""
+        return self.email
