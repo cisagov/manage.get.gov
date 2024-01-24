@@ -16,7 +16,8 @@ Election office:
 {{ application.is_election_board|yesno:"Yes,No,Incomplete" }}
 {% endif %}
 Organization name and mailing address:
-{% spaceless %}{{ application.organization_name }}
+{% spaceless %}{{ application.federal_agency }}
+{{ application.organization_name }}
 {{ application.address_line1 }}{% if  application.address_line2  %}
 {{ application.address_line2 }}{% endif %}
 {{ application.city }}, {{ application.state_territory }}
