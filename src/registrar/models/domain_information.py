@@ -231,8 +231,8 @@ class DomainInformation(TimeStampedModel):
             return existing_domain_info
 
         # Get a list of the existing fields on DomainApplication and DomainInformation
-        domain_app_fields = set(field.name for field in DomainApplication._meta.get_fields())
-        domain_info_fields = set(field.name for field in DomainInformation._meta.get_fields())
+        domain_app_fields = set(field.name for field in DomainApplication._meta.get_fields() if field != "id")
+        domain_info_fields = set(field.name for field in DomainInformation._meta.get_fields() if field != "id")
 
         # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
         info_many_to_many_fields = {field.name for field in DomainInformation._meta.many_to_many}
@@ -251,15 +251,13 @@ class DomainInformation(TimeStampedModel):
             elif hasattr(domain_application, field):
                 da_many_to_many_dict[field] = getattr(domain_application, field).all()
 
+        # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
 
         # Add the domain_application and domain fields
         domain_info.domain_application = domain_application
         if domain:
             domain_info.domain = domain
-
-        # Create the object
-        domain_info.save()
 
         # Save the instance and set the many-to-many fields.
         # Lumped under .atomic to ensure we don't make redundant DB calls.
