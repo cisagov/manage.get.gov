@@ -215,30 +215,9 @@ class DomainInformation(TimeStampedModel):
     def create_from_da(cls, domain_application, domain=None):
         """Takes in a DomainApplication dict and converts it into DomainInformation"""
         da_dict = domain_application.to_dict()
-        # remove the id so one can be assinged on creation
-        da_id = da_dict.pop("id", None)
-        # check if we have a record that corresponds with the domain
-        # application, if so short circuit the create
-        domain_info = cls.objects.filter(domain_application__id=da_id).first()
-        if domain_info:
-            return domain_info
-        # the following information below is not needed in the domain information:
-        unused_one_to_one_fields = [
-            "status",
-            "current_websites",
-            "investigator",
-            "alternative_domains",
-            "requested_domain",
-            "approved_domain",
-            "submission_date",
-            "other_contacts",
-            "notes",
-        ]
-        for field in unused_one_to_one_fields:
-            da_dict.pop(field, None)
-
         other_contacts = da_dict.pop("other_contacts", [])
-        domain_info = cls(**da_dict)
+
+        domain_info = cls._get_domain_info_from_da_dict(da_dict)
         domain_info.domain_application = domain_application
         # Save so the object now have PK
         # (needed to process the manytomany below before, first)
@@ -249,6 +228,35 @@ class DomainInformation(TimeStampedModel):
         if domain:
             domain_info.domain = domain
         domain_info.save()
+        return domain_info
+
+    @classmethod
+    def _get_domain_info_from_da_dict(cls, da_dict):
+        """Given a domain_application dict, generate a DomainInformation object.
+        Copy any existing fields, and purge any fields that don't exist 
+        on the DomainInformation definition."""
+
+        # remove the id so one can be assigned on creation
+        da_id = da_dict.pop("id", None)
+
+        # check if we have a record that corresponds with the domain
+        # application, if so short circuit the create
+        domain_info = cls.objects.filter(domain_application__id=da_id).first()
+        if domain_info:
+            return domain_info
+
+        # Get a list of the existing fields on DomainApplication and DomainInformation
+        domain_app_fields = set(f.name for f in DomainApplication._meta.get_fields())
+        domain_info_fields = set(f.name for f in DomainInformation._meta.get_fields())
+
+        # Get the fields that only exist on DomainApplication, but not DomainInformation
+        unused_one_to_one_fields = domain_app_fields - domain_info_fields
+
+        # Remove unusable fields from the dictionary
+        for field in unused_one_to_one_fields:
+            da_dict.pop(field, None)
+
+        domain_info = cls(**da_dict)
         return domain_info
 
     class Meta:
