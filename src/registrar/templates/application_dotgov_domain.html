@@ -48,7 +48,6 @@
       {% endwith %}
     {% endwith %}
     <button
-      id="check-availability-for-dotgov-domain"
       type="button"
       class="usa-button usa-button--outline"
       validate-for="{{ forms.0.requested_domain.auto_id }}"
@@ -87,6 +86,7 @@
       id="check-avail-for-alt-domains"
       type="button"
       class="usa-button usa-button--outline"
+      validate-for="{{ forms.1.requested_domain.auto_id }}"
       >Check availability</button>
     </div>
     
