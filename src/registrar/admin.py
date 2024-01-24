@@ -1251,7 +1251,7 @@ class VeryImportantPersonAdmin(ListHeaderAdmin):
     ]
 
     def truncated_notes(self, obj):
-        # Truncate the 'notes' field to 200 characters
+        # Truncate the 'notes' field to 50 characters
         return str(obj.notes)[:50]
 
     truncated_notes.short_description = "Notes (Truncated)"  # type: ignore
