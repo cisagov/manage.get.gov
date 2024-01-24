@@ -994,7 +994,7 @@ class DomainAdmin(ListHeaderAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted", "notes"]},
+            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted", "domain_notes"]},
         ),
     )
 
