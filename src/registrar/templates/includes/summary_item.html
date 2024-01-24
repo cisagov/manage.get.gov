@@ -31,9 +31,9 @@
             <ul class="usa-list usa-list--unstyled margin-top-0">
               {% for item in value %}
               <li>
-                <p class="text-semibold margin-top-1 margin-bottom-0">
+                <h3 class="text-base-darker margin-bottom-0">
                   Contact {{forloop.counter}}
-                </p>
+                </h3>
                 {% include "includes/contact.html" with contact=item %}</li>
               {% empty %}
                <li>None</li>
