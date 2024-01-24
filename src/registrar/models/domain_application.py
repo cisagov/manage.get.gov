@@ -556,6 +556,12 @@ class DomainApplication(TimeStampedModel):
         help_text="Date submitted",
     )
 
+    notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Notes about this application",
+    )
+
     def __str__(self):
         try:
             if self.requested_domain and self.requested_domain.name:

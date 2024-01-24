@@ -223,13 +223,20 @@ class DomainInformation(TimeStampedModel):
         if domain_info:
             return domain_info
         # the following information below is not needed in the domain information:
-        da_dict.pop("status", None)
-        da_dict.pop("current_websites", None)
-        da_dict.pop("investigator", None)
-        da_dict.pop("alternative_domains", None)
-        da_dict.pop("requested_domain", None)
-        da_dict.pop("approved_domain", None)
-        da_dict.pop("submission_date", None)
+        unused_one_to_one_fields = [
+            "status",
+            "current_websites",
+            "investigator",
+            "alternative_domains",
+            "requested_domain",
+            "approved_domain",
+            "submission_date",
+            "other_contacts",
+            "notes",
+        ]
+        for field in unused_one_to_one_fields:
+            da_dict.pop(field, None)
+
         other_contacts = da_dict.pop("other_contacts", [])
         domain_info = cls(**da_dict)
         domain_info.domain_application = domain_application
