@@ -737,18 +737,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Detail view
     form = DomainApplicationAdminForm
     fieldsets = [
-        (
-            None,
-            {
-                "fields": [
-                    "status", 
-                    "investigator", 
-                    "creator", 
-                    "approved_domain",
-                    "notes"
-                ]
-            }
-        ),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -1005,16 +994,7 @@ class DomainAdmin(ListHeaderAdmin):
     fieldsets = (
         (
             None,
-            {
-                "fields": [
-                    "name", 
-                    "state", 
-                    "expiration_date", 
-                    "first_ready", 
-                    "deleted", 
-                    "notes"
-                ]
-            },
+            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted", "notes"]},
         ),
     )
 
