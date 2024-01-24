@@ -218,7 +218,7 @@ function handleValidationClick(e) {
 function handleFormsetValidationClick(e) {
   // Check availability for alternative domains
   
-  const alternativeDomainsAvailability = document.getElementById('check-availability-for-alternative-domains');
+  const alternativeDomainsAvailability = document.getElementById('check-avail-for-alt-domains');
   
   // Collect input IDs from the repeatable forms
   let inputIds = Array.from(document.querySelectorAll('.repeatable-form input')).map(input => input.id);
@@ -253,7 +253,7 @@ function handleFormsetValidationClick(e) {
   for(const input of needsValidation) {
     input.addEventListener('input', handleInputValidation);
   }
-  const alternativeDomainsAvailability = document.getElementById('check-availability-for-alternative-domains');
+  const alternativeDomainsAvailability = document.getElementById('check-avail-for-alt-domains');
   const activatesValidation = document.querySelectorAll('[validate-for]');
 
   for(const button of activatesValidation) {
