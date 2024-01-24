@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi.
 
-{{ requester_email }} has added you as a manager on {{ domain.name }}.
+{{ requestor_email }} has added you as a manager on {{ domain.name }}.
 
 You can manage this domain on the .gov registrar <https://manage.get.gov>.
 
