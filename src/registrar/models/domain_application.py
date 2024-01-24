@@ -559,7 +559,7 @@ class DomainApplication(TimeStampedModel):
     notes = models.TextField(
         null=True,
         blank=True,
-        help_text="Notes about this application",
+        help_text="Notes about this request",
     )
 
     def __str__(self):
@@ -711,7 +711,7 @@ class DomainApplication(TimeStampedModel):
 
         # copy the information from domainapplication into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(self, domain=created_domain)
+        DomainInformation.create_from_da(domain_application=self, domain=created_domain)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")

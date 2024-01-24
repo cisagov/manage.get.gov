@@ -203,6 +203,12 @@ class DomainInformation(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
+    notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Notes about the request",
+    )
+
     def __str__(self):
         try:
             if self.domain and self.domain.name:

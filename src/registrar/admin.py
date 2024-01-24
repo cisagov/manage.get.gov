@@ -570,7 +570,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application"]}),
+        (None, {"fields": ["creator", "domain_application", "notes"]}),
         (
             "Type of organization",
             {
