@@ -13,6 +13,7 @@ from .user import User
 from .user_group import UserGroup
 from .website import Website
 from .transition_domain import TransitionDomain
+from .very_important_person import VeryImportantPerson
 
 __all__ = [
     "Contact",
@@ -29,6 +30,7 @@ __all__ = [
     "UserGroup",
     "Website",
     "TransitionDomain",
+    "VeryImportantPerson",
 ]
 
 auditlog.register(Contact)
@@ -45,3 +47,4 @@ auditlog.register(User, m2m_fields=["user_permissions", "groups"])
 auditlog.register(UserGroup, m2m_fields=["permissions"])
 auditlog.register(Website)
 auditlog.register(TransitionDomain)
+auditlog.register(VeryImportantPerson)

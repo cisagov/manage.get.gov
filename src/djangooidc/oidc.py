@@ -183,6 +183,8 @@ class Client(oic.Client):
         if authn_response["state"] != session.get("state", None):
             # this most likely means the user's Django session vanished
             logger.error("Received state not the same as expected for %s" % state)
+            if session.get("state", None) is None:
+                raise o_e.NoStateDefined()
             raise o_e.AuthenticationFailed(locator=state)
 
         if self.behaviour.get("response_type") == "code":
@@ -271,6 +273,11 @@ class Client(oic.Client):
             self.id_token_raw = info["id_token"]
 
         super(Client, self).store_response(resp, info)
+
+    def get_default_acr_value(self):
+        """returns the acr_value from settings
+        this helper function is called from djangooidc views"""
+        return self.behaviour.get("acr_value")
 
     def get_step_up_acr_value(self):
         """returns the step_up_acr_value from settings
