@@ -2803,7 +2803,7 @@ class TestDomainManagers(TestDomainOverview):
         )
 
     @boto3_mocking.patching
-    def test_domain_invitation_email_has_email_as_requester_non_existent(self):
+    def test_domain_invitation_email_has_email_as_requestor_non_existent(self):
         """Inviting a non existent user sends them an email, with email as the name."""
         # make sure there is no user with this email
         email_address = "mayor@igorville.gov"
@@ -2836,13 +2836,13 @@ class TestDomainManagers(TestDomainOverview):
         email_content = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("info@example.com", email_content)
 
-        # Check that the requesters first/last name do not exist
+        # Check that the requestors first/last name do not exist
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
         self.assertNotIn("First Last", email_content)
 
     @boto3_mocking.patching
-    def test_domain_invitation_email_has_email_as_requester(self):
+    def test_domain_invitation_email_has_email_as_requestor(self):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
         email_address = "mayor@igorville.gov"
@@ -2875,13 +2875,13 @@ class TestDomainManagers(TestDomainOverview):
         email_content = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("info@example.com", email_content)
 
-        # Check that the requesters first/last name do not exist
+        # Check that the requestors first/last name do not exist
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
         self.assertNotIn("First Last", email_content)
 
     @boto3_mocking.patching
-    def test_domain_invitation_email_has_email_as_requester_staff(self):
+    def test_domain_invitation_email_has_email_as_requestor_staff(self):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
         email_address = "mayor@igorville.gov"
@@ -2918,7 +2918,7 @@ class TestDomainManagers(TestDomainOverview):
         email_content = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("help@get.gov", email_content)
 
-        # Check that the requesters first/last name do not exist
+        # Check that the requestors first/last name do not exist
         self.assertNotIn("First", email_content)
         self.assertNotIn("Last", email_content)
         self.assertNotIn("First Last", email_content)
