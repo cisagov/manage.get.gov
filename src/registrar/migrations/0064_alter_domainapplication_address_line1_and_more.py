@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0062_alter_host_name"),
+        ("registrar", "0063_veryimportantperson"),
     ]
 
     operations = [
