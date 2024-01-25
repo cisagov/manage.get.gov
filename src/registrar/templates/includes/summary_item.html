@@ -31,7 +31,7 @@
             <ul class="usa-list usa-list--unstyled margin-top-0">
               {% for item in value %}
               <li>
-                <h3 class="text-base-darker margin-bottom-0">
+                <h3 class="text-semibold margin-bottom-0">
                   Contact {{forloop.counter}}
                 </h3>
                 {% include "includes/contact.html" with contact=item %}</li>
@@ -60,7 +60,7 @@
               <p class="margin-top-0">{{ value | first }} </p>
             {% endif %}
         {% else %}
-          <ul class="usa-list margin-top-0">
+          <ul class="usa-list usa-list--unstyled margin-top-0">
             {% for item in value %}
             {% if users %}
               <li>{{ item.user.email }}</li>
