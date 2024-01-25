@@ -206,7 +206,6 @@ function handleInputValidation(e) {
 function handleValidationClick(e) {
   const attribute = e.target.getAttribute("validate-for") || "";
   if (!attribute.length) return;
-
   const input = document.getElementById(attribute);
   runValidators(input);
 }
