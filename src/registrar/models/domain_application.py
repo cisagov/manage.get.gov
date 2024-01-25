@@ -576,14 +576,14 @@ class DomainApplication(TimeStampedModel):
         for entry in log_entries:
             try:
                 changes_dict = json.loads(entry.changes)
-                logger.info(changes_dict)
                 # changes_dict will look like {'status': ['withdrawn', 'submitted']},
                 # henceforth the len(changes_dict.get('status', [])) == 2
                 if len(changes_dict.get("status", [])) == 2 and changes_dict.get("status", [])[1] == status:
-                    logger.info(f"found one instance where it had a status of {status}")
                     return True
             except JSONDecodeError:
-                pass
+                logger.warning(
+                    "JSON decode error while parsing logs for domain requests in has_previously_had_a_status_of"
+                )
 
         return False
 
