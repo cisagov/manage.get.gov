@@ -28,17 +28,22 @@
           {% if value|length == 1 %}
             {% include "includes/contact.html" with contact=value|first %}
           {% else %}
-            <ul class="usa-list usa-list--unstyled margin-top-0">
-              {% for item in value %}
-              <li>
-                <h3 class="text-semibold margin-bottom-0">
-                  Contact {{forloop.counter}}
-                </h3>
-                {% include "includes/contact.html" with contact=item %}</li>
-              {% empty %}
-               <li>None</li>
-              {% endfor %}
-            </ul>
+            {% if value %}
+              <dl class="usa-list usa-list--unstyled margin-top-0">
+                {% for item in value %}
+                  <dt class="font-body-sm text-semibold margin-top-2">
+                    Contact {{forloop.counter}}
+                  </dt>
+                  <dd class="margin-left-0">
+                    {% include "includes/contact.html" with contact=item %}
+                  </dd>
+                {% endfor %}
+                </dl>
+            {% else %}
+              <p>
+                  None
+              </p>
+            {% endif %}
           {% endif %}
         {% else %}
           {% include "includes/contact.html" with contact=value %}
@@ -57,7 +62,7 @@
                 {% endspaceless %})
               {% endif %}
             {% else %}
-              <p class="margin-top-0">{{ value | first }} </p>
+              <p class="margin-top-0 margin-bottom-0">{{ value | first }} </p>
             {% endif %}
         {% else %}
           <ul class="usa-list usa-list--unstyled margin-top-0">
