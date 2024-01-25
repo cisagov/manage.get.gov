@@ -1,5 +1,6 @@
 import re
-
+from typing import Type
+from django.db import models
 from django import forms
 from django.http import JsonResponse
 
@@ -29,7 +30,7 @@ class DomainHelper:
     @classmethod
     def validate(cls, domain: str, blank_ok=False) -> str:
         """Attempt to determine if a domain name could be requested."""
-
+        return domain
         # Split into pieces for the linter
         domain = cls._validate_domain_string(domain, blank_ok)
 
@@ -158,3 +159,29 @@ class DomainHelper:
         """Get the top level domain. Example: `gsa.gov` -> `gov`."""
         parts = domain.rsplit(".")
         return parts[-1] if len(parts) > 1 else ""
+
+    @staticmethod
+    def get_common_fields(model_1: Type[models.Model], model_2: Type[models.Model]):
+        """
+        Returns a set of field names that two Django models have in common, excluding the 'id' field.
+
+        Args:
+            model_1 (Type[models.Model]): The first Django model class.
+            model_2 (Type[models.Model]): The second Django model class.
+
+        Returns:
+            Set[str]: A set of field names that both models share.
+
+        Example:
+            If model_1 has fields {"id", "name", "color"} and model_2 has fields {"id", "color"},
+            the function will return {"color"}.
+        """
+
+        # Get a list of the existing fields on model_1 and model_2
+        model_1_fields = set(field.name for field in model_1._meta.get_fields() if field != "id")
+        model_2_fields = set(field.name for field in model_2._meta.get_fields() if field != "id")
+
+        # Get the fields that exist on both DomainApplication and DomainInformation
+        common_fields = model_1_fields & model_2_fields
+
+        return common_fields

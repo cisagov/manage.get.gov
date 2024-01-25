@@ -1,5 +1,7 @@
 from __future__ import annotations
 from django.db import transaction
+
+from registrar.models.utility.domain_helper import DomainHelper
 from .domain_application import DomainApplication
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -236,15 +238,11 @@ class DomainInformation(TimeStampedModel):
         if existing_domain_info:
             return existing_domain_info
 
-        # Get a list of the existing fields on DomainApplication and DomainInformation
-        domain_app_fields = set(field.name for field in DomainApplication._meta.get_fields() if field != "id")
-        domain_info_fields = set(field.name for field in DomainInformation._meta.get_fields() if field != "id")
+        # Get the fields that exist on both DomainApplication and DomainInformation
+        common_fields = DomainHelper.get_common_fields(DomainApplication, DomainInformation)
 
         # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
-        info_many_to_many_fields = {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
-
-        # Get the fields that exist on both DomainApplication and DomainInformation
-        common_fields = domain_app_fields & domain_info_fields
+        info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
 
         # Create a dictionary with only the common fields, and create a DomainInformation from it
         da_dict = {}
@@ -253,9 +251,10 @@ class DomainInformation(TimeStampedModel):
             # If the field isn't many_to_many, populate the da_dict.
             # If it is, populate da_many_to_many_dict as we need to save this later.
             if hasattr(domain_application, field) and field not in info_many_to_many_fields:
-                da_dict[field] = getattr(domain_application, field)
-            elif hasattr(domain_application, field):
-                da_many_to_many_dict[field] = getattr(domain_application, field).all()
+                if field not in info_many_to_many_fields:
+                    da_dict[field] = getattr(domain_application, field)
+                else:
+                    da_many_to_many_dict[field] = getattr(domain_application, field).all()
 
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
@@ -274,6 +273,11 @@ class DomainInformation(TimeStampedModel):
                 getattr(domain_info, field).set(value)
 
         return domain_info
+
+    @staticmethod
+    def _get_many_to_many_fields():
+        """Returns a set of each field.name that has the many to many relation"""
+        return {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
 
     class Meta:
         verbose_name_plural = "Domain information"
