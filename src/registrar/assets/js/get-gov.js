@@ -154,9 +154,6 @@ function checkDomainAvailability(el) {
   fetchJSON(`available/?domain=${el.value}`, callback);
 }
 
-/** Call the API to see if the domain is good. */
-// const checkDomainAvailability = debounce(_checkDomainAvailability);
-
 /** Hides the toast message and clears the aira live region. */
 function clearDomainAvailability(el) {
   el.classList.remove('usa-input--success');
