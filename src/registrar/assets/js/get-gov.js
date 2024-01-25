@@ -212,23 +212,20 @@ function handleValidationClick(e) {
 }
 
 
-function handleFormsetValidationClick(e) {
-  // Check availability for alternative domains
-  
-  const alternativeDomainsAvailability = document.getElementById('check-avail-for-alt-domains');
-  
+function handleFormsetValidationClick(e, availabilityButton) {
+
   // Collect input IDs from the repeatable forms
-  let inputIds = Array.from(document.querySelectorAll('.repeatable-form input')).map(input => input.id);
+  let inputs = Array.from(document.querySelectorAll('.repeatable-form input'))
 
   // Run validators for each input
-  inputIds.forEach(inputId => {
-    const input = document.getElementById(inputId);
+  inputs.forEach(input => {
     runValidators(input);
   });
 
   // Set the validate-for attribute on the button with the collected input IDs
   // Not needed for functionality but nice for accessibility
-  alternativeDomainsAvailability.setAttribute('validate-for', inputIds.join(', '));
+  inputs = inputs.map(input => input.id).join(', ');
+  availabilityButton.setAttribute('validate-for', inputs);
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
@@ -256,7 +253,9 @@ function handleFormsetValidationClick(e) {
   for(const button of activatesValidation) {
     // Adds multi-field validation for alternative domains
     if (button === alternativeDomainsAvailability) {
-      button.addEventListener('click', handleFormsetValidationClick);
+      button.addEventListener('click', (e) => {
+        handleFormsetValidationClick(e, alternativeDomainsAvailability)
+      });
     } else {
       button.addEventListener('click', handleValidationClick);
     }

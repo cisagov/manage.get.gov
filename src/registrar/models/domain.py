@@ -173,12 +173,13 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @classmethod
     def available(cls, domain: str) -> bool:
-        """Check if a domain is available."""
-        if not cls.string_could_be_domain(domain):
-            raise ValueError("Not a valid domain: %s" % str(domain))
-        domain_name = domain.lower()
-        req = commands.CheckDomain([domain_name])
-        return registry.send(req, cleaned=True).res_data[0].avail
+        return True
+        # """Check if a domain is available."""
+        # if not cls.string_could_be_domain(domain):
+        #     raise ValueError("Not a valid domain: %s" % str(domain))
+        # domain_name = domain.lower()
+        # req = commands.CheckDomain([domain_name])
+        # return registry.send(req, cleaned=True).res_data[0].avail
 
     @classmethod
     def registered(cls, domain: str) -> bool:
