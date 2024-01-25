@@ -14,9 +14,11 @@ from registrar.admin import (
     ContactAdmin,
     DomainInformationAdmin,
     UserDomainRoleAdmin,
+    VeryImportantPersonAdmin,
 )
 from registrar.models import Domain, DomainApplication, DomainInformation, User, DomainInvitation, Contact, Website
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.very_important_person import VeryImportantPerson
 from .common import (
     MockSESClient,
     AuditedAdminMockData,
@@ -1804,3 +1806,28 @@ class ContactAdminTest(TestCase):
         DomainApplication.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+
+class VeryImportantPersonAdminTestCase(TestCase):
+    def setUp(self):
+        self.superuser = create_superuser()
+        self.factory = RequestFactory()
+
+    def test_save_model_sets_user_field(self):
+        self.client.force_login(self.superuser)
+
+        # Create an instance of the admin class
+        admin_instance = VeryImportantPersonAdmin(model=VeryImportantPerson, admin_site=None)
+
+        # Create a VeryImportantPerson instance
+        vip_instance = VeryImportantPerson(email="test@example.com", notes="Test Notes")
+
+        # Create a request object
+        request = self.factory.post("/admin/yourapp/veryimportantperson/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        admin_instance.save_model(request, vip_instance, None, None)
+
+        # Check that the user field is set to the request.user
+        self.assertEqual(vip_instance.requestor, self.superuser)

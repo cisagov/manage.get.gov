@@ -335,7 +335,7 @@ CSP_INCLUDE_NONCE_IN = ["script-src-elem"]
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
 # TODO: remove :8080 to see if we can have all localhost access
-CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://beta.get.gov"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://beta.get.gov", "https://get.gov"]
 CORS_ALLOWED_ORIGIN_REGEXES = [r"https://[\w-]+\.sites\.pages\.cloud\.gov"]
 
 # Content-Length header is set by django.middleware.common.CommonMiddleware
@@ -660,7 +660,6 @@ ALLOWED_HOSTS = [
     "getgov-rb.app.cloud.gov",
     "getgov-ko.app.cloud.gov",
     "getgov-ab.app.cloud.gov",
-    "getgov-bl.app.cloud.gov",
     "getgov-rjm.app.cloud.gov",
     "getgov-dk.app.cloud.gov",
     "manage.get.gov",

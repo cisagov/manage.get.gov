@@ -487,7 +487,8 @@ class DotGovDomainForm(RegistrarForm):
         values = {}
         requested_domain = getattr(obj, "requested_domain", None)
         if requested_domain is not None:
-            values["requested_domain"] = Domain.sld(requested_domain.name)
+            domain_name = requested_domain.name
+            values["requested_domain"] = Domain.sld(domain_name)
         return values
 
     def clean_requested_domain(self):
@@ -837,8 +838,8 @@ class AnythingElseForm(RegistrarForm):
 
 class RequirementsForm(RegistrarForm):
     is_policy_acknowledged = forms.BooleanField(
-        label="I read and agree to the requirements for operating .gov domains.",
+        label="I read and agree to the requirements for operating a .gov domain.",
         error_messages={
-            "required": ("Check the box if you read and agree to the requirements for operating .gov domains.")
+            "required": ("Check the box if you read and agree to the requirements for operating a .gov domain.")
         },
     )

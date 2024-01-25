@@ -665,7 +665,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         ),
         ("Anything else?", {"fields": ["anything_else"]}),
         (
-            "Requirements for operating .gov domains",
+            "Requirements for operating a .gov domain",
             {"fields": ["is_policy_acknowledged"]},
         ),
     ]
@@ -834,7 +834,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         ),
         ("Anything else?", {"fields": ["anything_else"]}),
         (
-            "Requirements for operating .gov domains",
+            "Requirements for operating a .gov domain",
             {"fields": ["is_policy_acknowledged"]},
         ),
     ]
@@ -1294,6 +1294,29 @@ class DraftDomainAdmin(ListHeaderAdmin):
     search_help_text = "Search by draft domain name."
 
 
+class VeryImportantPersonAdmin(ListHeaderAdmin):
+    list_display = ("email", "requestor", "truncated_notes", "created_at")
+    search_fields = ["email"]
+    search_help_text = "Search by email."
+    list_filter = [
+        "requestor",
+    ]
+    readonly_fields = [
+        "requestor",
+    ]
+
+    def truncated_notes(self, obj):
+        # Truncate the 'notes' field to 50 characters
+        return str(obj.notes)[:50]
+
+    truncated_notes.short_description = "Notes (Truncated)"  # type: ignore
+
+    def save_model(self, request, obj, form, change):
+        # Set the user field to the current admin user
+        obj.requestor = request.user if request.user.is_authenticated else None
+        super().save_model(request, obj, form, change)
+
+
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
 admin.site.register(models.User, MyUserAdmin)
@@ -1314,3 +1337,4 @@ admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
+admin.site.register(models.VeryImportantPerson, VeryImportantPersonAdmin)

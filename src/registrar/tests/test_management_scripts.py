@@ -11,9 +11,11 @@ from registrar.models import (
     DomainInformation,
     UserDomainRole,
 )
+from registrar.models.public_contact import PublicContact
 
 from django.core.management import call_command
-from unittest.mock import patch
+from unittest.mock import patch, call
+from epplibwrapper import commands, common
 
 from .common import MockEppLib
 
@@ -441,3 +443,57 @@ class TestExtendExpirationDates(MockEppLib):
 
         # Explicitly test the expiration date - should be the same
         self.assertEqual(desired_domain.expiration_date, datetime.date(2024, 11, 15))
+
+
+class TestDiscloseEmails(MockEppLib):
+    def setUp(self):
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        PublicContact.objects.all().delete()
+        Domain.objects.all().delete()
+
+    def run_disclose_security_emails(self):
+        """
+        This method executes the disclose_security_emails command.
+
+        The 'call_command' function from Django's management framework is then used to
+        execute the disclose_security_emails command.
+        """
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("disclose_security_emails")
+
+    def test_disclose_security_emails(self):
+        """
+        Tests that command disclose_security_emails runs successfully with
+        appropriate EPP calll to UpdateContact.
+        """
+        domain, _ = Domain.objects.get_or_create(name="testdisclose.gov", state=Domain.State.READY)
+        expectedSecContact = PublicContact.get_default_security()
+        expectedSecContact.domain = domain
+        expectedSecContact.email = "123@mail.gov"
+        # set domain security email to 123@mail.gov instead of default email
+        domain.security_contact = expectedSecContact
+        self.run_disclose_security_emails()
+
+        # running disclose_security_emails sends EPP call UpdateContact with disclose
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateContact(
+                        id=domain.security_contact.registry_id,
+                        postal_info=domain._make_epp_contact_postal_info(contact=domain.security_contact),
+                        email=domain.security_contact.email,
+                        voice=domain.security_contact.voice,
+                        fax=domain.security_contact.fax,
+                        auth_info=common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+                        disclose=domain._disclose_fields(contact=domain.security_contact),
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )

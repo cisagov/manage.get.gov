@@ -1396,11 +1396,13 @@ class Domain(TimeStampedModel, DomainHelper):
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
-        if item is security email then make sure email is visable"""
+        if item is security email then make sure email is visible"""
         is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
         fields = {DF.EMAIL}
         disclose = is_security and contact.email != PublicContact.get_default_security().email
+        # Delete after testing on other devices
+        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
         # Will only disclose DF.EMAIL if its not the default
         return epp.Disclose(
             flag=disclose,

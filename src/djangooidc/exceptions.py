@@ -33,6 +33,10 @@ class AuthenticationFailed(OIDCException):
     friendly_message = "This login attempt didn't work."
 
 
+class NoStateDefined(OIDCException):
+    friendly_message = "The session state is None."
+
+
 class InternalError(OIDCException):
     status = status.INTERNAL_SERVER_ERROR
     friendly_message = "The system broke while trying to log you in."

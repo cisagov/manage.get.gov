@@ -47,7 +47,7 @@ class TestEmails(TestCase):
         # check for optional things
         self.assertIn("Other employees from your organization:", body)
         self.assertIn("Testy2 Tester2", body)
-        self.assertIn("Current website for your organization:", body)
+        self.assertIn("Current websites:", body)
         self.assertIn("city.com", body)
         self.assertIn("About your organization:", body)
         self.assertIn("Anything else", body)
@@ -61,7 +61,7 @@ class TestEmails(TestCase):
                 application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertNotIn("Current website for your organization:", body)
+        self.assertNotIn("Current websites:", body)
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"5555\n\n.gov domain:")
 
@@ -74,9 +74,9 @@ class TestEmails(TestCase):
                 application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertIn("Current website for your organization:", body)
+        self.assertIn("Current websites:", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"5555\n\nCurrent website for")
+        self.assertRegex(body, r"5555\n\nCurrent websites:")
         self.assertRegex(body, r"city.com\n\n.gov domain:")
 
     @boto3_mocking.patching
