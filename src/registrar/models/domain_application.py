@@ -1,4 +1,6 @@
 from __future__ import annotations
+from json import JSONDecodeError
+import json
 from typing import Union
 
 import logging
@@ -12,6 +14,7 @@ from registrar.models.domain import Domain
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
+from auditlog.models import LogEntry  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -565,6 +568,25 @@ class DomainApplication(TimeStampedModel):
         except Exception:
             return ""
 
+    def has_previously_had_a_status_of(self, status):
+        """Return True if this request has previously had the status of {passed param}."""
+
+        log_entries = LogEntry.objects.get_for_object(self)
+
+        for entry in log_entries:
+            try:
+                changes_dict = json.loads(entry.changes)
+                logger.info(changes_dict)
+                # changes_dict will look like {'status': ['withdrawn', 'submitted']},
+                # henceforth the len(changes_dict.get('status', [])) == 2
+                if len(changes_dict.get("status", [])) == 2 and changes_dict.get("status", [])[1] == status:
+                    logger.info(f"found one instance where it had a status of {status}")
+                    return True
+            except JSONDecodeError:
+                pass
+
+        return False
+
     def domain_is_not_active(self):
         if self.approved_domain:
             return not self.approved_domain.is_active()
@@ -633,11 +655,13 @@ class DomainApplication(TimeStampedModel):
         self.submission_date = timezone.now().date()
         self.save()
 
-        self._send_status_update_email(
-            "submission confirmation",
-            "emails/submission_confirmation.txt",
-            "emails/submission_confirmation_subject.txt",
-        )
+        # Limit email notifications for this transition to the first time the request transitions to this status
+        if not self.has_previously_had_a_status_of("submitted"):
+            self._send_status_update_email(
+                "submission confirmation",
+                "emails/submission_confirmation.txt",
+                "emails/submission_confirmation_subject.txt",
+            )
 
     @transition(
         field="status",
@@ -713,12 +737,14 @@ class DomainApplication(TimeStampedModel):
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
 
-        self._send_status_update_email(
-            "application approved",
-            "emails/status_change_approved.txt",
-            "emails/status_change_approved_subject.txt",
-            send_email,
-        )
+        # Limit email notifications for this transition to the first time the request transitions to this status
+        if not self.has_previously_had_a_status_of("approved"):
+            self._send_status_update_email(
+                "application approved",
+                "emails/status_change_approved.txt",
+                "emails/status_change_approved_subject.txt",
+                send_email,
+            )
 
     @transition(
         field="status",
@@ -727,11 +753,14 @@ class DomainApplication(TimeStampedModel):
     )
     def withdraw(self):
         """Withdraw an application that has been submitted."""
-        self._send_status_update_email(
-            "withdraw",
-            "emails/domain_request_withdrawn.txt",
-            "emails/domain_request_withdrawn_subject.txt",
-        )
+
+        # Limit email notifications for this transition to the first time the request transitions to this status
+        if not self.has_previously_had_a_status_of("withdrawn"):
+            self._send_status_update_email(
+                "withdraw",
+                "emails/domain_request_withdrawn.txt",
+                "emails/domain_request_withdrawn_subject.txt",
+            )
 
     @transition(
         field="status",
@@ -757,11 +786,13 @@ class DomainApplication(TimeStampedModel):
                 logger.error(err)
                 logger.error("Can't query an approved domain while attempting a DA reject()")
 
-        self._send_status_update_email(
-            "action needed",
-            "emails/status_change_rejected.txt",
-            "emails/status_change_rejected_subject.txt",
-        )
+        # Limit email notifications for this transition to the first time the request transitions to this status
+        if not self.has_previously_had_a_status_of("rejected"):
+            self._send_status_update_email(
+                "action needed",
+                "emails/status_change_rejected.txt",
+                "emails/status_change_rejected_subject.txt",
+            )
 
     @transition(
         field="status",

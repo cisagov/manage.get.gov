@@ -316,6 +316,7 @@ class TestDomainApplicationAdminForm(TestCase):
         )
 
 
+@boto3_mocking.patching
 class TestDomainApplicationAdmin(MockEppLib):
     def setUp(self):
         super().setUp()
@@ -421,83 +422,143 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
-    @boto3_mocking.patching
+    def transition_state_and_send_email(self, application, status):
+        """Helper method for the email test cases."""
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Create a mock request
+                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+
+                # Modify the application's property
+                application.status = status
+
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
+
+    def assert_email_is_accurate(self, expected_string, email_index, email_address):
+        """Helper method for the email test cases.
+        email_index is the index of the email in mock_client."""
+
+        # Access the arguments passed to send_email
+        call_args = self.mock_client.EMAILS_SENT
+        kwargs = call_args[email_index]["kwargs"]
+
+        # Retrieve the email details from the arguments
+        from_email = kwargs.get("FromEmailAddress")
+        to_email = kwargs["Destination"]["ToAddresses"][0]
+        email_content = kwargs["Content"]
+        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
+
+        # Assert or perform other checks on the email details
+        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(to_email, email_address)
+        self.assertIn(expected_string, email_body)
+
     def test_save_model_sends_submitted_email(self):
-        # make sure there is no user with this email
+        """When transitioning to submitted the first time (and the first time only) on a domain request,
+        an email is sent out."""
+
+        # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a sample application
-                application = completed_application()
+        # Create a sample application
+        application = completed_application()
 
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-
-                # Modify the application's property
-                application.status = DomainApplication.ApplicationStatus.SUBMITTED
-
-                # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
-
-        # Access the arguments passed to send_email
-        call_args = self.mock_client.EMAILS_SENT
-        kwargs = call_args[0]["kwargs"]
-
-        # Retrieve the email details from the arguments
-        from_email = kwargs.get("FromEmailAddress")
-        to_email = kwargs["Destination"]["ToAddresses"][0]
-        email_content = kwargs["Content"]
-        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
-
-        # Assert or perform other checks on the email details
-        expected_string = "We received your .gov domain request."
-        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(to_email, EMAIL)
-        self.assertIn(expected_string, email_body)
-
+        # Test Submitted Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-    @boto3_mocking.patching
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
     def test_save_model_sends_approved_email(self):
-        # make sure there is no user with this email
+        """When transitioning to approved the first time (and the first time only) on a domain request,
+        an email is sent out."""
+
+        # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a sample application
-                application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-
-                # Modify the application's property
-                application.status = DomainApplication.ApplicationStatus.APPROVED
-
-                # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
-
-        # Access the arguments passed to send_email
-        call_args = self.mock_client.EMAILS_SENT
-        kwargs = call_args[0]["kwargs"]
-
-        # Retrieve the email details from the arguments
-        from_email = kwargs.get("FromEmailAddress")
-        to_email = kwargs["Destination"]["ToAddresses"][0]
-        email_content = kwargs["Content"]
-        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
-
-        # Assert or perform other checks on the email details
-        expected_string = "Congratulations! Your .gov domain request has been approved."
-        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(to_email, EMAIL)
-        self.assertIn(expected_string, email_body)
-
+        # Test Submitted Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-    @boto3_mocking.patching
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email(self):
+        """When transitioning to rejected the first time (and the first time only) on a domain request,
+        an email is sent out."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Test Submitted Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_withdrawn_email(self):
+        """When transitioning to withdrawn the first time (and the first time only) on a domain request,
+        an email is sent out."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Test Submitted Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
     def test_save_model_sets_approved_domain(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -520,45 +581,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Test that approved domain exists and equals requested domain
         self.assertEqual(application.requested_domain.name, application.approved_domain.name)
 
-    @boto3_mocking.patching
-    def test_save_model_sends_rejected_email(self):
-        # make sure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a sample application
-                application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-
-                # Modify the application's property
-                application.status = DomainApplication.ApplicationStatus.REJECTED
-
-                # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
-
-        # Access the arguments passed to send_email
-        call_args = self.mock_client.EMAILS_SENT
-        kwargs = call_args[0]["kwargs"]
-
-        # Retrieve the email details from the arguments
-        from_email = kwargs.get("FromEmailAddress")
-        to_email = kwargs["Destination"]["ToAddresses"][0]
-        email_content = kwargs["Content"]
-        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
-
-        # Assert or perform other checks on the email details
-        expected_string = "Your .gov domain request has been rejected."
-        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(to_email, EMAIL)
-        self.assertIn(expected_string, email_body)
-
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
-
-    @boto3_mocking.patching
     def test_save_model_sets_restricted_status_on_user(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -707,7 +729,6 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "Cannot edit an application with a restricted creator.",
             )
 
-    @boto3_mocking.patching
     def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)

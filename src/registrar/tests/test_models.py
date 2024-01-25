@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from registrar.models import (
     Contact,
@@ -154,17 +154,34 @@ class TestDomainApplication(TestCase):
                 application.submit()
         self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
 
+    @patch("auditlog.models.LogEntry.objects.get_for_object")
+    def test_has_previously_had_a_status_of_returns_true(self, mock_get_for_object):
+        """Set up mock LogEntry.objects.get_for_object to return a log entry with the desired status"""
+
+        log_entry_with_status = MagicMock(changes='{"status": ["previous_status", "desired_status"]}')
+        mock_get_for_object.return_value = [log_entry_with_status]
+
+        result = self.started_application.has_previously_had_a_status_of("desired_status")
+
+        self.assertTrue(result)
+
+    @patch("auditlog.models.LogEntry.objects.get_for_object")
+    def test_has_previously_had_a_status_of_returns_false(self, mock_get_for_object):
+        """Set up mock LogEntry.objects.get_for_object to return a log entry
+        with a different status than the desired status"""
+
+        log_entry_with_status = MagicMock(changes='{"status": ["previous_status", "different_status"]}')
+        mock_get_for_object.return_value = [log_entry_with_status]
+
+        result = self.started_application.has_previously_had_a_status_of("desired_status")
+
+        self.assertFalse(result)
+
     def test_submit_sends_email(self):
         """Create an application and submit it and see if email was sent."""
-        user, _ = User.objects.get_or_create(username="testy")
-        contact = Contact.objects.create(email="test@test.gov")
-        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=user,
-            requested_domain=domain,
-            submitter=contact,
-        )
-        application.save()
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application()
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -176,7 +193,185 @@ class TestDomainApplication(TestCase):
                 [
                     email
                     for email in MockSESClient.EMAILS_SENT
-                    if "test@test.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
+
+    @patch("auditlog.models.LogEntry.objects.get_for_object")
+    def test_submit_does_not_send_email_if_submitted_previously(self, mock_get_for_object):
+        """Create an application, make it so it was submitted previously, submit it,
+        and see that an email was not sent."""
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application()
+
+        # Mock the logs
+        log_entry_with_status = MagicMock(changes='{"status": ["started", "submitted"]}')
+        mock_get_for_object.return_value = [log_entry_with_status]
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.submit()
+
+        # check to see if an email was sent
+        self.assertEqual(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
+
+    def test_approve_sends_email(self):
+        """Create an application and approve it and see if email was sent."""
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.approve()
+
+        # check to see if an email was sent
+        self.assertGreater(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
+
+    @patch("auditlog.models.LogEntry.objects.get_for_object")
+    def test_approve_does_not_send_email_if_approved_previously(self, mock_get_for_object):
+        """Create an application, make it so it was approved previously, approve it,
+        and see that an email was not sent."""
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Mock the logs
+        log_entry_with_status = MagicMock(changes='{"status": ["submitted", "approved"]}')
+        mock_get_for_object.return_value = [log_entry_with_status]
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.approve()
+
+        # check to see if an email was sent
+        self.assertEqual(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
+
+    def test_withdraw_sends_email(self):
+        """Create an application and withdraw it and see if email was sent."""
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.withdraw()
+
+        # check to see if an email was sent
+        self.assertGreater(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
+
+    @patch("auditlog.models.LogEntry.objects.get_for_object")
+    def test_withdraw_does_not_send_email_if_withdrawn_previously(self, mock_get_for_object):
+        """Create an application, make it so it was withdrawn previously, withdraw it,
+        and see that an email was not sent."""
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Mock the logs
+        log_entry_with_status = MagicMock(changes='{"status": ["submitted", "withdrawn"]}')
+        mock_get_for_object.return_value = [log_entry_with_status]
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.withdraw()
+
+        # check to see if an email was sent
+        self.assertEqual(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
+
+    def test_reject_sends_email(self):
+        """Create an application and reject it and see if email was sent."""
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.reject()
+
+        # check to see if an email was sent
+        self.assertGreater(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                ]
+            ),
+            0,
+        )
+
+    @patch("auditlog.models.LogEntry.objects.get_for_object")
+    def test_reject_does_not_send_email_if_rejected_previously(self, mock_get_for_object):
+        """Create an application, make it so it was rejected previously, reject it,
+        and see that an email was not sent."""
+
+        # submitter's email is mayor@igorville.gov
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+
+        # Mock the logs
+        log_entry_with_status = MagicMock(changes='{"status": ["submitted", "rejected"]}')
+        mock_get_for_object.return_value = [log_entry_with_status]
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                application.reject()
+
+        # check to see if an email was sent
+        self.assertEqual(
+            len(
+                [
+                    email
+                    for email in MockSESClient.EMAILS_SENT
+                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
                 ]
             ),
             0,
