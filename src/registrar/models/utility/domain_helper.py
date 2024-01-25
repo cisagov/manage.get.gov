@@ -30,7 +30,6 @@ class DomainHelper:
     @classmethod
     def validate(cls, domain: str, blank_ok=False) -> str:
         """Attempt to determine if a domain name could be requested."""
-        return domain
         # Split into pieces for the linter
         domain = cls._validate_domain_string(domain, blank_ok)
 
