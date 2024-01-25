@@ -241,7 +241,7 @@ class DomainInformation(TimeStampedModel):
         domain_info_fields = set(field.name for field in DomainInformation._meta.get_fields() if field != "id")
 
         # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
-        info_many_to_many_fields = {field.name for field in DomainInformation._meta.many_to_many}
+        info_many_to_many_fields = {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
 
         # Get the fields that exist on both DomainApplication and DomainInformation
         common_fields = domain_app_fields & domain_info_fields
