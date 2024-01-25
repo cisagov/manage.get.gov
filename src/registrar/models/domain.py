@@ -992,6 +992,12 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text="The last time this domain moved into the READY state",
     )
 
+    domain_notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Notes about this domain",
+    )
+
     def isActive(self):
         return self.state == Domain.State.CREATED
 
