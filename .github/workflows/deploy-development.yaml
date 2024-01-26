@@ -5,25 +5,12 @@ name: Build and deploy development for release
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        type: choice
-        description: Which environment should we use?
-        options:
-          - staging
-          - development
-          - backup
-          - ky
-          - es
-          - nl
-          - rh
-          - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - rjm
-          - dk
+  pull_request:
+    types:
+      - opened
+      - review_requested
+    branches:
+      - 'releases/**'
   push:
     paths-ignore:
       - 'docs/**'
@@ -49,9 +36,6 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Run Django migrations 
-        working-directory: ./src
-        run: docker compose run app python manage.py migrate
       - name: Deploy to cloud.gov sandbox
         uses: 18f/cg-deploy-action@main
         env:
@@ -62,3 +46,11 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: development
           push_arguments: "-f ops/manifests/manifest-development.yaml"
+      - name: Run Django migrations
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets.CF_DEVELOPMENT_USERNAME }}
+          cf_password: ${{ secrets.CF_DEVELOPMENT_PASSWORD }}
+          cf_org: cisa-dotgov
+          cf_space: development
+          cf_command: "run-task getgov-development --command 'python manage.py migrate' --name migrate"
