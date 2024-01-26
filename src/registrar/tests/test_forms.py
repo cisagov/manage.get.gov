@@ -338,7 +338,7 @@ class TestFormValidation(MockEppLib):
         form = RequirementsForm(data={})
         self.assertEqual(
             form.errors["is_policy_acknowledged"],
-            ["Check the box if you read and agree to the requirements for operating .gov domains."],
+            ["Check the box if you read and agree to the requirements for operating a .gov domain."],
         )
 
     def test_requirements_form_unchecked(self):
@@ -346,7 +346,7 @@ class TestFormValidation(MockEppLib):
         form = RequirementsForm(data={"is_policy_acknowledged": False})
         self.assertEqual(
             form.errors["is_policy_acknowledged"],
-            ["Check the box if you read and agree to the requirements for operating .gov domains."],
+            ["Check the box if you read and agree to the requirements for operating a .gov domain."],
         )
 
     def test_tribal_government_unrecognized(self):
