@@ -578,7 +578,8 @@ class DomainApplication(TimeStampedModel):
                 changes_dict = json.loads(entry.changes)
                 # changes_dict will look like {'status': ['withdrawn', 'submitted']},
                 # henceforth the len(changes_dict.get('status', [])) == 2
-                if len(changes_dict.get("status", [])) == 2 and changes_dict.get("status", [])[1] == status:
+                status_change = changes_dict.get("status", [])
+                if len(status_change) == 2 and status_change[1] == status:
                     return True
             except JSONDecodeError:
                 logger.warning(
@@ -656,7 +657,7 @@ class DomainApplication(TimeStampedModel):
         self.save()
 
         # Limit email notifications for this transition to the first time the request transitions to this status
-        if not self.has_previously_had_a_status_of("submitted"):
+        if not self.has_previously_had_a_status_of(DomainApplication.ApplicationStatus.SUBMITTED):
             self._send_status_update_email(
                 "submission confirmation",
                 "emails/submission_confirmation.txt",
@@ -738,7 +739,7 @@ class DomainApplication(TimeStampedModel):
         )
 
         # Limit email notifications for this transition to the first time the request transitions to this status
-        if not self.has_previously_had_a_status_of("approved"):
+        if not self.has_previously_had_a_status_of(DomainApplication.ApplicationStatus.APPROVED):
             self._send_status_update_email(
                 "application approved",
                 "emails/status_change_approved.txt",
@@ -755,7 +756,7 @@ class DomainApplication(TimeStampedModel):
         """Withdraw an application that has been submitted."""
 
         # Limit email notifications for this transition to the first time the request transitions to this status
-        if not self.has_previously_had_a_status_of("withdrawn"):
+        if not self.has_previously_had_a_status_of(DomainApplication.ApplicationStatus.WITHDRAWN):
             self._send_status_update_email(
                 "withdraw",
                 "emails/domain_request_withdrawn.txt",
@@ -787,7 +788,7 @@ class DomainApplication(TimeStampedModel):
                 logger.error("Can't query an approved domain while attempting a DA reject()")
 
         # Limit email notifications for this transition to the first time the request transitions to this status
-        if not self.has_previously_had_a_status_of("rejected"):
+        if not self.has_previously_had_a_status_of(DomainApplication.ApplicationStatus.REJECTED):
             self._send_status_update_email(
                 "action needed",
                 "emails/status_change_rejected.txt",
