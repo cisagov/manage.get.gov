@@ -44,14 +44,12 @@ Purpose of your domain:
 
 Your contact information:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=application.submitter %}{% endspaceless %}
-{% if application.other_contacts.all %}
-Other employees from your organization:
-{% for other in application.other_contacts.all %}
+
+Other employees from your organization:{% for other in application.other_contacts.all %}
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
-{% endfor %}{% else %}
-No other employees from your organization?
+{% empty %}
 {{ application.no_other_contacts_rationale }}
-{% endif %}{% if application.anything_else %}
+{% endfor %}{% if application.anything_else %}
 Anything else?
 {{ application.anything_else }}
 {% endif %}
