@@ -250,7 +250,7 @@ class DomainInformation(TimeStampedModel):
         for field in common_fields:
             # If the field isn't many_to_many, populate the da_dict.
             # If it is, populate da_many_to_many_dict as we need to save this later.
-            if hasattr(domain_application, field) and field not in info_many_to_many_fields:
+            if hasattr(domain_application, field):
                 if field not in info_many_to_many_fields:
                     da_dict[field] = getattr(domain_application, field)
                 else:
