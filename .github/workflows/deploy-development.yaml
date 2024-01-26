@@ -32,6 +32,7 @@ on:
       
     branches:
       - main
+      - nl/1595-auto-run-migrations
 
 jobs:
   deploy-development:
