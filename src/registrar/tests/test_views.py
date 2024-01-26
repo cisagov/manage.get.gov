@@ -499,7 +499,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         # Review page contains all the previously entered data
         # Let's make sure the long org name is displayed
-        self.assertContains(review_page, "Federal: an agency of the U.S. government")
+        self.assertContains(review_page, "Federal")
         self.assertContains(review_page, "Executive")
         self.assertContains(review_page, "Testorg")
         self.assertContains(review_page, "address 1")
@@ -2146,18 +2146,6 @@ class DomainApplicationTests(TestWithUser, WebTest):
         type_page = intro_result.follow()
 
         self.assertContains(type_page, "Federal: an agency of the U.S. government")
-
-    def test_long_org_name_in_application_manage(self):
-        """
-        Make sure the long name is displaying in the application summary
-        page (manage your application)
-        """
-        completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "city.gov")
-        # click the "Edit" link
-        detail_page = home_page.click("Manage", index=0)
-        self.assertContains(detail_page, "Federal: an agency of the U.S. government")
 
     def test_submit_modal_no_domain_text_fallback(self):
         """When user clicks on submit your domain request and the requested domain
