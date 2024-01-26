@@ -52,8 +52,8 @@
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
     <h2 class="text-primary-darker"> Summary of your domain request </h2> 
     {% with heading_level='h3' %}
-    {% with long_org_type=domainapplication.organization_type|get_organization_long_name %}
-      {% include "includes/summary_item.html" with title='Type of organization' value=long_org_type heading_level=heading_level %}
+    {% with org_type=domainapplication.get_organization_type_display %}
+      {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
     {% endwith %}
 
     {% if domainapplication.tribe_name %}
@@ -74,7 +74,9 @@
     {% endif %}
 
     {% if domainapplication.is_election_board %}
-      {% include "includes/summary_item.html" with title='Election office' value=domainapplication.is_election_board heading_level=heading_level %}
+      {% with value=domainapplication.is_election_board|yesno:"Yes,No,Incomplete" %}
+        {% include "includes/summary_item.html" with title='Election office' value=value heading_level=heading_level %}
+      {% endwith %}
     {% endif %}
 
     {% if domainapplication.organization_name %}
