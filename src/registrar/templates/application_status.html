@@ -109,8 +109,12 @@
       {% include "includes/summary_item.html" with title='Your contact information' value=domainapplication.submitter contact='true' heading_level=heading_level %}
     {% endif %}
 
-    {% include "includes/summary_item.html" with title='Other employees from your organization' value=domainapplication.other_contacts.all contact='true' list='true' heading_level=heading_level %}
-
+    {% if domainapplication.other_contacts.all %}
+      {% include "includes/summary_item.html" with title='Other employees from your organization' value=domainapplication.other_contacts.all contact='true' list='true' heading_level=heading_level %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='No other employees from your organization?' value=domainapplication.no_other_contacts_rationale heading_level=heading_level %}
+    {% endif %}
+    
     {% include "includes/summary_item.html" with title='Anything else?' value=domainapplication.anything_else|default:"No" heading_level=heading_level %}
 
   {% endwith %}
