@@ -53,7 +53,7 @@
           {# Display a custom message if the user is trying to delete themselves #}
           {% if permission.user.email == current_user_email %}
             <div
-            class="usa-modal usa-modal--lg"
+            class="usa-modal"
             id="toggle-user-alert-{{ forloop.counter }}"
             aria-labelledby="Are you sure you want to continue?"
             aria-describedby="You will be removed from this domain"
@@ -61,13 +61,13 @@
             >
               <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
                 {% with domain_name=domain.name|force_escape %}
-                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove yourself as a domain manager for "|add:domain_name|add:"?"|safe modal_description="You will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button_self|safe %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove yourself as a domain manager?" modal_description="You will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button_self|safe %}
                 {% endwith %}
               </form>
             </div>
           {% else %}
             <div
-              class="usa-modal usa-modal--lg"
+              class="usa-modal"
               id="toggle-user-alert-{{ forloop.counter }}"
               aria-labelledby="Are you sure you want to continue?"
               aria-describedby="{{ permission.user.email }} will be removed"
@@ -75,7 +75,7 @@
             >
               <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
                 {% with email=permission.user.email|default:permission.user|force_escape domain_name=domain.name|force_escape %}
-                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove &lt;"|add:email|add:"&gt;?"|safe modal_description="<strong>&lt;"|add:email|add:"&gt;</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove " heading_value="&lt;"|add:email|add:"&gt;?" modal_description="<strong>&lt;"|add:email|add:"&gt;</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
                 {% endwith %}
               </form>
             </div>
