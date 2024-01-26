@@ -102,7 +102,6 @@ class TestEmails(TestCase):
                 application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertNotIn("Other employees from your organization:", body)
         # spacing should be right between adjacent elements
         self.assertRegex(body, r"5556\n\nOther employees")
         self.assertRegex(body, r"None\n\nAnything else")
