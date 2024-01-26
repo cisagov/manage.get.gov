@@ -4,8 +4,6 @@
 name: Build and deploy development for release
 
 on:
-  # This workflow_dispatch trigger was added for testing purposes. 
-  # It enables us to manually run this set of jobs in git
   workflow_dispatch:
     inputs:
       environment:
