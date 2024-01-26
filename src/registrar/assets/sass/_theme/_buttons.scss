@@ -47,8 +47,8 @@ a.usa-button.disabled-link:focus {
 a.usa-button--unstyled.disabled-link,
 a.usa-button--unstyled.disabled-link:hover,
 a.usa-button--unstyled.disabled-link:focus {
-  cursor: not-allowed !important;
-  outline: none !important;
+  cursor: not-allowed;
+  outline: none;
 }
 
 a.usa-button:not(.usa-button--unstyled, .usa-button--outline) {
