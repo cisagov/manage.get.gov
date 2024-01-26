@@ -1756,17 +1756,22 @@ class ContactAdminTest(TestCase):
             # Use the test client to simulate the request
             response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
 
-            logger.info(mock_warning)
-
             # Assert that the error message was called with the correct argument
             # Note: The 5th join will be a user.
             mock_warning.assert_called_once_with(
                 response.wsgi_request,
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application1.pk}/change/'>city1.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application2.pk}/change/'>city2.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application3.pk}/change/'>city3.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application4.pk}/change/'>city4.gov</a><br/>"
-                "Joined to User: <a href='/admin/registrar/user/2/change/'>staff@example.com</a><br/>",
+                "<ul class='messagelist_content-list--unstyled'>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
+                "<li>Joined to User: <a href='/admin/registrar/"
+                f"user/{self.staffuser.pk}/change/'>staff@example.com</a></li>"
+                "</ul>",
             )
 
     def test_change_view_for_joined_contact_five_or_more(self):
@@ -1794,12 +1799,19 @@ class ContactAdminTest(TestCase):
             # Note: The 6th join will be a user.
             mock_warning.assert_called_once_with(
                 response.wsgi_request,
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application1.pk}/change/'>city1.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application2.pk}/change/'>city2.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application3.pk}/change/'>city3.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application4.pk}/change/'>city4.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application5.pk}/change/'>city5.gov</a><br/>"
-                "And 1 more...",
+                "<ul class='messagelist_content-list--unstyled'>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application5.pk}/change/'>city5.gov</a></li>"
+                "</ul>"
+                "<p class='font-sans-3xs'>And 1 more...</p>",
             )
 
     def tearDown(self):

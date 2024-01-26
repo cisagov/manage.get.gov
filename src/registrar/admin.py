@@ -490,14 +490,15 @@ class ContactAdmin(ListHeaderAdmin):
                         related_objects.append((change_url, obj))
 
         if related_objects:
-            message = ""
+            message = "<ul class='messagelist_content-list--unstyled'>"
             for i, (url, obj) in enumerate(related_objects):
                 if i < 5:
                     escaped_obj = escape(obj)
-                    message += f"Joined to {obj.__class__.__name__}: <a href='{url}'>{escaped_obj}</a><br/>"
+                    message += f"<li>Joined to {obj.__class__.__name__}: <a href='{url}'>{escaped_obj}</a></li>"
+            message += "</ul>"
             if len(related_objects) > 5:
                 related_objects_over_five = len(related_objects) - 5
-                message += f"And {related_objects_over_five} more..."
+                message += f"<p class='font-sans-3xs'>And {related_objects_over_five} more...</p>"
 
             message_html = mark_safe(message)  # nosec
             messages.warning(
