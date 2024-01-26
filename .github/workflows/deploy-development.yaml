@@ -4,26 +4,6 @@
 name: Build and deploy development for release
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        type: choice
-        description: Which environment should we use?
-        options:
-          - staging
-          - development
-          - backup
-          - ky
-          - es
-          - nl
-          - rh
-          - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - rjm
-          - dk
   push:
     paths-ignore:
       - 'docs/**'
