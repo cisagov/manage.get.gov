@@ -25,7 +25,7 @@
         {% if step == Step.ORGANIZATION_TYPE %}
           {% namespaced_url 'application' step as application_url %}
           {% if application.organization_type is not None %}
-            {% with title=form_titles|get_item:step value=application.organization_type|get_organization_long_name|default:"Incomplete" %}
+            {% with title=form_titles|get_item:step value=application.get_organization_type_display|default:"Incomplete" %}
               {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=True edit_link=application_url %}
             {% endwith %}
           {% else %}
