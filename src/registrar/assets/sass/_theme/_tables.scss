@@ -25,6 +25,22 @@
     color: color('primary-darker');
     padding-bottom: units(2px);
   }
+
+  // Ticket #1510
+  // @include at-media('desktop') {
+  //   th:first-child {
+  //     width: 220px;
+  //   }
+  //   th:nth-child(2) {
+  //     width: 175px;
+  //   }
+  //   th:nth-child(3) {
+  //     width: 130px;
+  //   }
+  //   th:nth-child(5) {
+  //     width: 130px;
+  //   }
+  // }
 }
 
 .dotgov-table {

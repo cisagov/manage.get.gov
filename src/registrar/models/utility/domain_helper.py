@@ -57,6 +57,9 @@ class DomainHelper:
             # If blank ok is true, just return the domain
             return domain
 
+        if domain.startswith("www."):
+            domain = domain[4:]
+
         if domain.endswith(".gov"):
             domain = domain[:-4]
 

@@ -9,7 +9,7 @@
 {% if user.is_authenticated %}
 {# the entire logged in page goes here #}
 
-<div class="tablet:grid-offset-1 desktop:grid-offset-2">
+<div class="tablet:grid-col-11 desktop:grid-col-10 tablet:grid-offset-1">
   <h1>Manage your domains</h2>
 
   <p class="margin-top-4">
@@ -19,7 +19,7 @@
     </a>
   </p>
 
-  <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
+  <section class="section--outlined">
     <h2>Domains</h2>
     {% if domains %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
@@ -29,7 +29,12 @@
           <th data-sortable scope="col" role="columnheader">Domain name</th>
           <th data-sortable scope="col" role="columnheader">Expires</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
-          <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
+          <th 
+            scope="col" 
+            role="columnheader" 
+          >
+            <span class="usa-sr-only">Action</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -82,7 +87,7 @@
     {% endif %}
   </section>
 
-  <section class="section--outlined tablet:grid-col-11 desktop:grid-col-10">
+  <section class="section--outlined">
     <h2>Domain requests</h2>
     {% if domain_applications %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
@@ -93,13 +98,23 @@
           <th data-sortable scope="col" role="columnheader">Date submitted</th>
           <th data-sortable scope="col" role="columnheader">Status</th>
           <th scope="col" role="columnheader"><span class="usa-sr-only">Action</span></th>
+          {% if has_deletable_applications %}
+          <th scope="col" role="columnheader"><span class="usa-sr-only">Delete Action</span></th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for application in domain_applications %}
         <tr>
           <th th scope="row" role="rowheader" data-label="Domain name">
-            {{ application.requested_domain.name|default:"New domain request" }}
+              {% if application.requested_domain is None %}
+                New domain request
+                {# Add a breakpoint #}
+                <div aria-hidden="true"></div>
+                <span class="text-base font-body-xs">({{ application.created_at }} UTC)</span>
+              {% else %}
+                {{ application.requested_domain.name }}
+              {% endif %}
           </th>
           <td data-sort-value="{{ application.submission_date|date:"U" }}" data-label="Date submitted">
             {% if application.submission_date %}
@@ -110,22 +125,88 @@
           </td>
           <td data-label="Status">{{ application.get_status_display }}</td>
           <td>
-             {% if application.status == "started" or application.status == "action needed" or application.status == "withdrawn"  %}
-              <a href="{% url 'edit-application' application.pk %}">
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
-              </svg>
-              Edit <span class="usa-sr-only">{{ application.requested_domain.name|default:"New domain request" }} </span>
-
-              {% else %}
-              <a href="{% url 'application-status' application.pk %}">
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
-              </svg>
-              Manage <span class="usa-sr-only">{{application.requested_domain.name}} </span>
-              {% endif %}
+            {% with prefix="New domain request ("%}
+              {% with date=application.created_at|date:"DATETIME_FORMAT"%}
+                {% with name_default=prefix|add:date|add:" UTC)"%}
+                  {% if application.status == application.ApplicationStatus.STARTED or application.status == application.ApplicationStatus.ACTION_NEEDED  or application.status == application.ApplicationStatus.WITHDRAWN %}
+                    <a href="{% url 'edit-application' application.pk %}">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="{%static 'img/sprite.svg'%}#edit"></use>
+                    </svg>
+                    {% if application.requested_domain is not None%}
+                    Edit <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
+                    {% else %}
+                    Edit <span class="usa-sr-only">{{ name_default }}</span>
+                    {% endif %}
+                  {% else %}
+                    <a href="{% url 'application-status' application.pk %}">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="{%static 'img/sprite.svg'%}#settings"></use>
+                    </svg>
+                    Manage <span class="usa-sr-only">{{ application.requested_domain.name|default:name_default }}</span>
+                  {% endif %}
+                {% endwith %}
+              {% endwith %}
+            {% endwith %}
             </a>
           </td>
+          {% if has_deletable_applications %}
+          <td>
+            {% if application.status == "started" or application.status == "withdrawn"  %}
+              <a
+                role="button"
+                id="button-toggle-delete-domain-alert-{{ forloop.counter }}"
+                href="#toggle-delete-domain-alert-{{ forloop.counter }}"
+                class="usa-button--unstyled text-no-underline"
+                aria-controls="toggle-delete-domain-alert-{{ forloop.counter }}"
+                data-open-modal
+              >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+                </svg>
+                {% with prefix="New domain request ("%}
+                  {% with date=application.created_at|date:"DATETIME_FORMAT"%}
+                    {% with name_default=prefix|add:date|add:" UTC)"%}
+                      {% if application.requested_domain is not None %}
+                        Delete <span class="usa-sr-only">{{ application.requested_domain.name }}</span>
+                      {% else %}
+                        Delete <span class="usa-sr-only">{{ name_default }}</span>
+                      {% endif %}
+                    {% endwith %}
+                  {% endwith %}
+                {% endwith %}
+              </a>
+
+              <div
+                class="usa-modal"
+                id="toggle-delete-domain-alert-{{ forloop.counter }}"
+                aria-labelledby="Are you sure you want to continue?"
+                aria-describedby="Domain will be removed"
+                data-force-action
+              >
+                <form method="POST" action="{% url "application-delete" pk=application.id %}">
+                  {% if application.requested_domain is None %}
+                    {% if application.created_at %}
+                      {% with prefix="(created " %}
+                          {% with formatted_date=application.created_at|date:"DATETIME_FORMAT" %}
+                              {% with modal_content=prefix|add:formatted_date|add:" UTC)" %}
+                                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete this domain request?" modal_description="This will remove the domain request "|add:modal_content|add:" from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                              {% endwith %}
+                          {% endwith %}
+                        {% endwith %}
+                    {% else %}
+                      {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete New domain request?" modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                    {% endif %}
+                  {% else %}
+                      {% with modal_heading_value=application.requested_domain.name|add:"?" %}
+                          {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete" heading_value=modal_heading_value modal_description="This will remove the domain request from the .gov registrar. This action cannot be undone." modal_button=modal_button|safe %}
+                      {% endwith %}
+                  {% endif %}
+                </form>
+              </div>
+            {% endif %}
+          </td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>
