@@ -1762,11 +1762,16 @@ class ContactAdminTest(TestCase):
             # Note: The 5th join will be a user.
             mock_warning.assert_called_once_with(
                 response.wsgi_request,
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application1.pk}/change/'>city1.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application2.pk}/change/'>city2.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application3.pk}/change/'>city3.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application4.pk}/change/'>city4.gov</a><br/>"
-                f"Joined to User: <a href='/admin/registrar/user/{self.staffuser.pk}/change/'>staff@example.com</a><br/>",
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application1.pk}/change/'>"
+                "city1.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application2.pk}/change/'>"
+                "city2.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application3.pk}/change/'>"
+                "city3.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application4.pk}/change/'>"
+                "city4.gov</a><br/>"
+                f"Joined to User: <a href='/admin/registrar/user/{self.staffuser.pk}/change/'>"
+                "staff@example.com</a><br/>",
             )
 
     def test_change_view_for_joined_contact_five_or_more(self):
@@ -1794,11 +1799,16 @@ class ContactAdminTest(TestCase):
             # Note: The 6th join will be a user.
             mock_warning.assert_called_once_with(
                 response.wsgi_request,
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application1.pk}/change/'>city1.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application2.pk}/change/'>city2.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application3.pk}/change/'>city3.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application4.pk}/change/'>city4.gov</a><br/>"
-                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application5.pk}/change/'>city5.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application1.pk}/change/'>"
+                "city1.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application2.pk}/change/'>"
+                "city2.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application3.pk}/change/'>"
+                "city3.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application4.pk}/change/'>"
+                "city4.gov</a><br/>"
+                f"Joined to DomainApplication: <a href='/admin/registrar/domainapplication/{application5.pk}/change/'>"
+                "city5.gov</a><br/>"
                 "And 1 more...",
             )
 
