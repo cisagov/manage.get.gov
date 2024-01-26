@@ -4,6 +4,8 @@
 name: Build and deploy development for release
 
 on:
+  # This workflow_dispatch trigger was added for testing purposes. 
+  # It enables us to manually run this set of jobs in git
   workflow_dispatch:
     inputs:
       environment:
@@ -24,6 +26,14 @@ on:
           - ab
           - rjm
           - dk
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
+      
+    branches:
+      - main
 
 jobs:
   deploy-development:
@@ -42,8 +52,7 @@ jobs:
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Run Django migrations 
         working-directory: ./src
-        run: docker compose run app python manage.py migrate --no-input
-          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"
+        run: docker compose run app python manage.py migrate
       - name: Deploy to cloud.gov sandbox
         uses: 18f/cg-deploy-action@main
         env:
