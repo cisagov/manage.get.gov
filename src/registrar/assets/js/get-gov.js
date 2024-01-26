@@ -245,13 +245,10 @@ function handleValidationClick(e) {
   const alternateDomainsInputs = document.querySelectorAll('[auto-validate]');
   if (alternateDomainsInputs) {
     for (const domainInput of alternateDomainsInputs){
-      // Only apply this logic to alternate domains input
-      if (domainInput.classList.contains('alternate-domain-input')){
-          domainInput.addEventListener('input', function() {
-              removeFormErrors(domainInput, true);
-            }
-          );
-      }
+      domainInput.addEventListener('input', function() {
+          removeFormErrors(domainInput, true);
+        }
+      );
     }
     }
 })();
