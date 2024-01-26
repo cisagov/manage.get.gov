@@ -31,10 +31,10 @@
             {% if value %}
               <dl class="usa-list usa-list--unstyled margin-top-0">
                 {% for item in value %}
-                  <dt class="font-body-sm text-semibold margin-top-2">
+                  <dt>
                     Contact {{forloop.counter}}
                   </dt>
-                  <dd class="margin-left-0">
+                  <dd>
                     {% include "includes/contact.html" with contact=item %}
                   </dd>
                 {% endfor %}

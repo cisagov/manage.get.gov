@@ -112,7 +112,7 @@
           {% endwith %}
 
           {% if application.alternative_domains.all %}
-            <h3 class="margin-bottom-0 margin-top-2 text-base-darkest font-body-sm text-semibold">Alternative domains</h3>
+            <h3 class="register-form-review-header">Alternative domains</h3>
             <ul class="usa-list usa-list--unstyled margin-top-0">
               {% for site in application.alternative_domains.all %}
                 <li>{{ site.website }}</li>
