@@ -22,8 +22,10 @@ Current websites: {% for site in application.current_websites.all %}
 {% endfor %}{% endif %}
 .gov domain:
 {{ application.requested_domain.name }}
+{% if application.alternative_domains.all %}
+Alternative domains:
 {% for site in application.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
-{% endfor %}
+{% endfor %}{% endif %}
 Purpose of your domain:
 {{ application.purpose }}
 
