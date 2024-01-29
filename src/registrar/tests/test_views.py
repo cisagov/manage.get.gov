@@ -2781,7 +2781,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertTrue(role_2_exists)
 
         # Make sure that the current user wasn't deleted for some reason
-        current_user_exists = UserDomainRole.objects.filter(user=self.user.id, domain=self.domain).exists()
+        current_user_exists = UserDomainRole.objects.filter(user=dummy_user_1.id, domain=vip_domain.id).exists()
         self.assertTrue(current_user_exists)
 
     def test_domain_user_delete_denied_if_last_man_standing(self):
@@ -2810,7 +2810,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(response.status_code, 403)
 
         # Make sure that the current user wasn't deleted
-        current_user_exists = UserDomainRole.objects.filter(user=self.user.id, domain=self.domain).exists()
+        current_user_exists = UserDomainRole.objects.filter(user=self.user.id, domain=vip_domain.id).exists()
         self.assertTrue(current_user_exists)
 
     def test_domain_user_delete_self_redirects_home(self):
