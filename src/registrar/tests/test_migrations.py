@@ -43,6 +43,9 @@ class TestGroups(TestCase):
             "change_user",
             "delete_userdomainrole",
             "view_userdomainrole",
+            "add_veryimportantperson",
+            "change_veryimportantperson",
+            "delete_veryimportantperson",
             "change_website",
         ]
 

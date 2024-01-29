@@ -526,6 +526,7 @@ def completed_application(
     has_anything_else=True,
     status=DomainApplication.ApplicationStatus.STARTED,
     user=False,
+    submitter=False,
     name="city.gov",
 ):
     """A completed domain application."""
@@ -541,13 +542,14 @@ def completed_application(
     domain, _ = DraftDomain.objects.get_or_create(name=name)
     alt, _ = Website.objects.get_or_create(website="city1.gov")
     current, _ = Website.objects.get_or_create(website="city.com")
-    you, _ = Contact.objects.get_or_create(
-        first_name="Testy2",
-        last_name="Tester2",
-        title="Admin Tester",
-        email="mayor@igorville.gov",
-        phone="(555) 555 5556",
-    )
+    if not submitter:
+        submitter, _ = Contact.objects.get_or_create(
+            first_name="Testy2",
+            last_name="Tester2",
+            title="Admin Tester",
+            email="mayor@igorville.gov",
+            phone="(555) 555 5556",
+        )
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -567,7 +569,7 @@ def completed_application(
         zipcode="10002",
         authorizing_official=ao,
         requested_domain=domain,
-        submitter=you,
+        submitter=submitter,
         creator=user,
         status=status,
     )

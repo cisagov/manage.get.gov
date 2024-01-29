@@ -258,3 +258,15 @@ h1, h2, h3,
 #select2-id_user-results {
     width: 100%;
 }
+
+// Content list inside of a DjA alert, unstyled
+.messagelist_content-list--unstyled {
+    padding-left: 0;
+    li {
+        font-family: "Source Sans Pro Web", "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+        font-size: 13.92px!important;
+        background: none!important;
+        padding: 0!important;
+        margin: 0!important;
+    }
+}
