@@ -1829,7 +1829,7 @@ class VerifiedByStaffAdminTestCase(TestCase):
         self.client.force_login(self.superuser)
 
         # Create an instance of the admin class
-        admin_instance = VerifiedByStaffAdmin(model=VerifiedB, admin_site=None)
+        admin_instance = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=None)
 
         # Create a VerifiedByStaff instance
         vip_instance = VerifiedByStaff(email="test@example.com", notes="Test Notes")
