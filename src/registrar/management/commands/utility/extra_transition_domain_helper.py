@@ -196,18 +196,18 @@ class LoadExtraTransitionDomain:
                     f"{TerminalColors.ENDC}"
                 )
                 failed_transition_domains.append(domain_name)
-        
+
         updated_fields = [
-            "organization_name", 
-            "organization_type", 
-            "federal_type", 
-            "federal_agency", 
-            "first_name", 
-            "middle_name", 
-            "last_name", 
-            "email", 
-            "phone", 
-            "epp_creation_date", 
+            "organization_name",
+            "organization_type",
+            "federal_type",
+            "federal_agency",
+            "first_name",
+            "middle_name",
+            "last_name",
+            "email",
+            "phone",
+            "epp_creation_date",
             "epp_expiration_date",
         ]
 
