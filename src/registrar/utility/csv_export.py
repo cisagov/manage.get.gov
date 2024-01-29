@@ -60,9 +60,10 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
     else:
         # If the dictionary doesn't contain that data, lets filter for it manually.
         # This is a last resort as this is a more expensive operation.
-        security_contacts = domain_info.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
-        _email = security_contacts[0].email
+        security_contacts = domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
+        _email = security_contacts[0].email if security_contacts else None
         security_email = _email if _email is not None else " "
+        print("in else statement....")
 
     # These are default emails that should not be displayed in the csv report
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
@@ -117,7 +118,7 @@ def write_body(
 
     # Populate a dictionary of domain names and their security contacts
     for contact in public_contacts:
-        domain: Domain = domain_info.domain
+        domain: Domain = contact.domain
         if domain is not None and domain.name not in security_emails_dict:
             security_emails_dict[domain.name] = contact.email
         else:
