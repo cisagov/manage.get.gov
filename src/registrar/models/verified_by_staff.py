@@ -27,8 +27,9 @@ class VerifiedByStaff(TimeStampedModel):
         blank=False,
         help_text="Notes",
     )
-    
+
     class Meta:
-        verbose_name_plural ="Verified by staff"
+        verbose_name_plural = "Verified by staff"
+
     def __str__(self):
         return self.email
