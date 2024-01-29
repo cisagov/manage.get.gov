@@ -14,11 +14,11 @@ from registrar.admin import (
     ContactAdmin,
     DomainInformationAdmin,
     UserDomainRoleAdmin,
-    VerifiedByStaff,
+    VerifiedByStaffAdmin,
 )
 from registrar.models import Domain, DomainApplication, DomainInformation, User, DomainInvitation, Contact, Website
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.verified_by_staff import VerifiedByStaffAdmin
+from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockSESClient,
     AuditedAdminMockData,
