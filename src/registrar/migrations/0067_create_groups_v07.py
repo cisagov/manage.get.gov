@@ -25,7 +25,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0066_rename_veryimportperson_verifiedbystaff_and_more"),
+        ("registrar", "0066_rename_veryimportantperson_verifiedbystaff_and_more"),
     ]
 
     operations = [
