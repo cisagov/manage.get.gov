@@ -159,32 +159,33 @@ class LoggedInTests(TestWithUser):
 
         # Given that we are including a subset of items that can be deleted while excluding the rest,
         # subTest is appropriate here as otherwise we would need many duplicate tests for the same reason.
-        draft_domain = DraftDomain.objects.create(name="igorville.gov")
-        for status in DomainApplication.ApplicationStatus:
-            if status not in [
-                DomainApplication.ApplicationStatus.STARTED,
-                DomainApplication.ApplicationStatus.WITHDRAWN,
-            ]:
-                with self.subTest(status=status):
-                    application = DomainApplication.objects.create(
-                        creator=self.user, requested_domain=draft_domain, status=status
-                    )
+        with less_console_noise():
+            draft_domain = DraftDomain.objects.create(name="igorville.gov")
+            for status in DomainApplication.ApplicationStatus:
+                if status not in [
+                    DomainApplication.ApplicationStatus.STARTED,
+                    DomainApplication.ApplicationStatus.WITHDRAWN,
+                ]:
+                    with self.subTest(status=status):
+                        application = DomainApplication.objects.create(
+                            creator=self.user, requested_domain=draft_domain, status=status
+                        )
 
-                    # Trigger the delete logic
-                    response = self.client.post(
-                        reverse("application-delete", kwargs={"pk": application.pk}), follow=True
-                    )
+                        # Trigger the delete logic
+                        response = self.client.post(
+                            reverse("application-delete", kwargs={"pk": application.pk}), follow=True
+                        )
 
-                    # Check for a 403 error - the end user should not be allowed to do this
-                    self.assertEqual(response.status_code, 403)
+                        # Check for a 403 error - the end user should not be allowed to do this
+                        self.assertEqual(response.status_code, 403)
 
-                    desired_application = DomainApplication.objects.filter(requested_domain=draft_domain)
+                        desired_application = DomainApplication.objects.filter(requested_domain=draft_domain)
 
-                    # Make sure the DomainApplication wasn't deleted
-                    self.assertEqual(desired_application.count(), 1)
+                        # Make sure the DomainApplication wasn't deleted
+                        self.assertEqual(desired_application.count(), 1)
 
-                    # clean up
-                    application.delete()
+                        # clean up
+                        application.delete()
 
     def test_home_deletes_domain_application_and_orphans(self):
         """Tests if delete for DomainApplication deletes orphaned Contact objects"""
@@ -329,7 +330,6 @@ class LoggedInTests(TestWithUser):
 
         with less_console_noise():
             response = self.client.get("/request/", follow=True)
-            print(response.status_code)
             self.assertEqual(response.status_code, 403)
 
 
@@ -2548,112 +2548,118 @@ class TestDomainDetail(TestDomainOverview):
         It shows as 'DNS needed'"""
         # At the time of this test's writing, there are 6 UNKNOWN domains inherited
         # from constructors. Let's reset.
-        Domain.objects.all().delete()
-        UserDomainRole.objects.all().delete()
-        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        home_page = self.app.get("/")
-        self.assertNotContains(home_page, "igorville.gov")
-        self.role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-        )
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "igorville.gov")
-        igorville = Domain.objects.get(name="igorville.gov")
-        self.assertEquals(igorville.state, Domain.State.UNKNOWN)
-        self.assertNotContains(home_page, "Expired")
-        self.assertContains(home_page, "DNS needed")
+        with less_console_noise():
+            Domain.objects.all().delete()
+            UserDomainRole.objects.all().delete()
+            self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            home_page = self.app.get("/")
+            self.assertNotContains(home_page, "igorville.gov")
+            self.role, _ = UserDomainRole.objects.get_or_create(
+                user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+            )
+            home_page = self.app.get("/")
+            self.assertContains(home_page, "igorville.gov")
+            igorville = Domain.objects.get(name="igorville.gov")
+            self.assertEquals(igorville.state, Domain.State.UNKNOWN)
+            self.assertNotContains(home_page, "Expired")
+            self.assertContains(home_page, "DNS needed")
 
     def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
         """An UNKNOWN domain does not show as expired on the detail page.
         It shows as 'DNS needed'"""
         # At the time of this test's writing, there are 6 UNKNOWN domains inherited
         # from constructors. Let's reset.
-        Domain.objects.all().delete()
-        UserDomainRole.objects.all().delete()
+        with less_console_noise():
+            Domain.objects.all().delete()
+            UserDomainRole.objects.all().delete()
 
-        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
-        self.role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
-        )
+            self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+            self.role, _ = UserDomainRole.objects.get_or_create(
+                user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+            )
 
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "igorville.gov")
-        igorville = Domain.objects.get(name="igorville.gov")
-        self.assertEquals(igorville.state, Domain.State.UNKNOWN)
-        detail_page = home_page.click("Manage", index=0)
-        self.assertNotContains(detail_page, "Expired")
+            home_page = self.app.get("/")
+            self.assertContains(home_page, "igorville.gov")
+            igorville = Domain.objects.get(name="igorville.gov")
+            self.assertEquals(igorville.state, Domain.State.UNKNOWN)
+            detail_page = home_page.click("Manage", index=0)
+            self.assertNotContains(detail_page, "Expired")
 
-        self.assertContains(detail_page, "DNS needed")
+            self.assertContains(detail_page, "DNS needed")
 
     def test_domain_detail_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management
         views, but a single url test should be solid enough since all domain
         management pages share the same permissions class"""
-        self.user.status = User.RESTRICTED
-        self.user.save()
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "igorville.gov")
         with less_console_noise():
+            self.user.status = User.RESTRICTED
+            self.user.save()
+            home_page = self.app.get("/")
+            self.assertContains(home_page, "igorville.gov")
             response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
 
     def test_domain_detail_allowed_for_on_hold(self):
         """Test that the domain overview page displays for on hold domain"""
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "on-hold.gov")
+        with less_console_noise():
+            home_page = self.app.get("/")
+            self.assertContains(home_page, "on-hold.gov")
 
-        # View domain overview page
-        detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_on_hold.id}))
-        self.assertNotContains(detail_page, "Edit")
+            # View domain overview page
+            detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_on_hold.id}))
+            self.assertNotContains(detail_page, "Edit")
 
     def test_domain_detail_see_just_nameserver(self):
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "justnameserver.com")
+        with less_console_noise():
+            home_page = self.app.get("/")
+            self.assertContains(home_page, "justnameserver.com")
 
-        # View nameserver on Domain Overview page
-        detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_just_nameserver.id}))
+            # View nameserver on Domain Overview page
+            detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_just_nameserver.id}))
 
-        self.assertContains(detail_page, "justnameserver.com")
-        self.assertContains(detail_page, "ns1.justnameserver.com")
-        self.assertContains(detail_page, "ns2.justnameserver.com")
+            self.assertContains(detail_page, "justnameserver.com")
+            self.assertContains(detail_page, "ns1.justnameserver.com")
+            self.assertContains(detail_page, "ns2.justnameserver.com")
 
     def test_domain_detail_see_nameserver_and_ip(self):
-        home_page = self.app.get("/")
-        self.assertContains(home_page, "nameserverwithip.gov")
+        with less_console_noise():
+            home_page = self.app.get("/")
+            self.assertContains(home_page, "nameserverwithip.gov")
 
-        # View nameserver on Domain Overview page
-        detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
+            # View nameserver on Domain Overview page
+            detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
 
-        self.assertContains(detail_page, "nameserverwithip.gov")
+            self.assertContains(detail_page, "nameserverwithip.gov")
 
-        self.assertContains(detail_page, "ns1.nameserverwithip.gov")
-        self.assertContains(detail_page, "ns2.nameserverwithip.gov")
-        self.assertContains(detail_page, "ns3.nameserverwithip.gov")
-        # Splitting IP addresses bc there is odd whitespace and can't strip text
-        self.assertContains(detail_page, "(1.2.3.4,")
-        self.assertContains(detail_page, "2.3.4.5)")
+            self.assertContains(detail_page, "ns1.nameserverwithip.gov")
+            self.assertContains(detail_page, "ns2.nameserverwithip.gov")
+            self.assertContains(detail_page, "ns3.nameserverwithip.gov")
+            # Splitting IP addresses bc there is odd whitespace and can't strip text
+            self.assertContains(detail_page, "(1.2.3.4,")
+            self.assertContains(detail_page, "2.3.4.5)")
 
     def test_domain_detail_with_no_information_or_application(self):
         """Test that domain management page returns 200 and displays error
         when no domain information or domain application exist"""
-        # have to use staff user for this test
-        staff_user = create_user()
-        # staff_user.save()
-        self.client.force_login(staff_user)
+        with less_console_noise():
+            # have to use staff user for this test
+            staff_user = create_user()
+            # staff_user.save()
+            self.client.force_login(staff_user)
 
-        # need to set the analyst_action and analyst_action_location
-        # in the session to emulate user clicking Manage Domain
-        # in the admin interface
-        session = self.client.session
-        session["analyst_action"] = "foo"
-        session["analyst_action_location"] = self.domain_no_information.id
-        session.save()
+            # need to set the analyst_action and analyst_action_location
+            # in the session to emulate user clicking Manage Domain
+            # in the admin interface
+            session = self.client.session
+            session["analyst_action"] = "foo"
+            session["analyst_action_location"] = self.domain_no_information.id
+            session.save()
 
-        detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_no_information.id}))
+            detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_no_information.id}))
 
-        self.assertContains(detail_page, "noinformation.gov")
-        self.assertContains(detail_page, "Domain missing domain information")
+            self.assertContains(detail_page, "noinformation.gov")
+            self.assertContains(detail_page, "Domain missing domain information")
 
 
 class TestDomainManagers(TestDomainOverview):
@@ -3430,124 +3436,121 @@ class TestDomainContactInformation(TestDomainOverview):
 class TestDomainSecurityEmail(TestDomainOverview):
     def test_domain_security_email_existing_security_contact(self):
         """Can load domain's security email page."""
-        self.mockSendPatch = patch("registrar.models.domain.registry.send")
-        self.mockedSendFunction = self.mockSendPatch.start()
-        self.mockedSendFunction.side_effect = self.mockSend
+        with less_console_noise():
+            self.mockSendPatch = patch("registrar.models.domain.registry.send")
+            self.mockedSendFunction = self.mockSendPatch.start()
+            self.mockedSendFunction.side_effect = self.mockSend
 
-        domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
-        # Add current user to this domain
-        _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
-        page = self.client.get(reverse("domain-security-email", kwargs={"pk": domain_contact.id}))
+            domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+            # Add current user to this domain
+            _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
+            page = self.client.get(reverse("domain-security-email", kwargs={"pk": domain_contact.id}))
 
-        # Loads correctly
-        self.assertContains(page, "Security email")
-        self.assertContains(page, "security@mail.gov")
-        self.mockSendPatch.stop()
+            # Loads correctly
+            self.assertContains(page, "Security email")
+            self.assertContains(page, "security@mail.gov")
+            self.mockSendPatch.stop()
 
     def test_domain_security_email_no_security_contact(self):
         """Loads a domain with no defined security email.
         We should not show the default."""
-        self.mockSendPatch = patch("registrar.models.domain.registry.send")
-        self.mockedSendFunction = self.mockSendPatch.start()
-        self.mockedSendFunction.side_effect = self.mockSend
+        with less_console_noise():
+            self.mockSendPatch = patch("registrar.models.domain.registry.send")
+            self.mockedSendFunction = self.mockSendPatch.start()
+            self.mockedSendFunction.side_effect = self.mockSend
 
-        page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+            page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
 
-        # Loads correctly
-        self.assertContains(page, "Security email")
-        self.assertNotContains(page, "dotgov@cisa.dhs.gov")
-        self.mockSendPatch.stop()
+            # Loads correctly
+            self.assertContains(page, "Security email")
+            self.assertNotContains(page, "dotgov@cisa.dhs.gov")
+            self.mockSendPatch.stop()
 
     def test_domain_security_email(self):
         """Can load domain's security email page."""
-        page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Security email")
+        with less_console_noise():
+            page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+            self.assertContains(page, "Security email")
 
     def test_domain_security_email_form(self):
         """Adding a security email works.
         Uses self.app WebTest because we need to interact with forms.
         """
-        security_email_page = self.app.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        security_email_page.form["security_email"] = "mayor@igorville.gov"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        mock_client = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():  # swallow log warning message
-                result = security_email_page.form.submit()
-        self.assertEqual(result.status_code, 302)
-        self.assertEqual(
-            result["Location"],
-            reverse("domain-security-email", kwargs={"pk": self.domain.id}),
-        )
+        with less_console_noise():
+            security_email_page = self.app.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            security_email_page.form["security_email"] = "mayor@igorville.gov"
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            mock_client = MagicMock()
+            with boto3_mocking.clients.handler_for("sesv2", mock_client):
+                with less_console_noise():  # swallow log warning message
+                    result = security_email_page.form.submit()
+            self.assertEqual(result.status_code, 302)
+            self.assertEqual(
+                result["Location"],
+                reverse("domain-security-email", kwargs={"pk": self.domain.id}),
+            )
 
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_page = result.follow()
-        self.assertContains(success_page, "The security email for this domain has been updated")
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            success_page = result.follow()
+            self.assertContains(success_page, "The security email for this domain has been updated")
 
-    def test_security_email_form_messages(self):
+    def test_domain_security_email_form_messages(self):
         """
         Test against the success and error messages that are defined in the view
         """
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
-
-        form_data_registry_error = {
-            "security_email": "test@failCreate.gov",
-        }
-
-        form_data_contact_error = {
-            "security_email": "test@contactError.gov",
-        }
-
-        form_data_success = {
-            "security_email": "test@something.gov",
-        }
-
-        test_cases = [
-            (
-                "RegistryError",
-                form_data_registry_error,
-                str(GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY)),
-            ),
-            (
-                "ContactError",
-                form_data_contact_error,
-                str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
-            ),
-            (
-                "RegistrySuccess",
-                form_data_success,
-                "The security email for this domain has been updated.",
-            ),
-            # Add more test cases with different scenarios here
-        ]
-
-        for test_name, data, expected_message in test_cases:
-            response = self.client.post(
-                reverse("domain-security-email", kwargs={"pk": self.domain.id}),
-                data=data,
-                follow=True,
-            )
-
-            # Check the response status code, content, or any other relevant assertions
-            self.assertEqual(response.status_code, 200)
-
-            # Check if the expected message tag is set
-            if test_name == "RegistryError" or test_name == "ContactError":
-                message_tag = "error"
-            elif test_name == "RegistrySuccess":
-                message_tag = "success"
-            else:
-                # Handle other cases if needed
-                message_tag = "info"  # Change to the appropriate default
-
-            # Check the message tag
-            messages = list(response.context["messages"])
-            self.assertEqual(len(messages), 1)
-            message = messages[0]
-            self.assertEqual(message.tags, message_tag)
-            self.assertEqual(message.message.strip(), expected_message.strip())
+        with less_console_noise():
+            p = "adminpass"
+            self.client.login(username="superuser", password=p)
+            form_data_registry_error = {
+                "security_email": "test@failCreate.gov",
+            }
+            form_data_contact_error = {
+                "security_email": "test@contactError.gov",
+            }
+            form_data_success = {
+                "security_email": "test@something.gov",
+            }
+            test_cases = [
+                (
+                    "RegistryError",
+                    form_data_registry_error,
+                    str(GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY)),
+                ),
+                (
+                    "ContactError",
+                    form_data_contact_error,
+                    str(SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA)),
+                ),
+                (
+                    "RegistrySuccess",
+                    form_data_success,
+                    "The security email for this domain has been updated.",
+                ),
+                # Add more test cases with different scenarios here
+            ]
+            for test_name, data, expected_message in test_cases:
+                response = self.client.post(
+                    reverse("domain-security-email", kwargs={"pk": self.domain.id}),
+                    data=data,
+                    follow=True,
+                )
+                # Check the response status code, content, or any other relevant assertions
+                self.assertEqual(response.status_code, 200)
+                # Check if the expected message tag is set
+                if test_name == "RegistryError" or test_name == "ContactError":
+                    message_tag = "error"
+                elif test_name == "RegistrySuccess":
+                    message_tag = "success"
+                else:
+                    # Handle other cases if needed
+                    message_tag = "info"  # Change to the appropriate default
+                # Check the message tag
+                messages = list(response.context["messages"])
+                self.assertEqual(len(messages), 1)
+                message = messages[0]
+                self.assertEqual(message.tags, message_tag)
+                self.assertEqual(message.message.strip(), expected_message.strip())
 
     def test_domain_overview_blocked_for_ineligible_user(self):
         """We could easily duplicate this test for all domain management

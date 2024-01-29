@@ -85,6 +85,19 @@ class EPPConnectionPool(ConnectionPool):
             logger.error(message, exc_info=True)
             raise PoolError(code=PoolErrorCodes.KEEP_ALIVE_FAILED) from err
 
+    def _keepalive_periodic(self):
+        delay = float(self.keepalive) / self.size
+        while 1:
+            try:
+                with self.get() as c:
+                    self._keepalive(c)
+            except PoolError as err:
+                logger.error(err.message, exc_info=True)
+            except self.exc_classes:
+                # Nothing to do, the pool will generate a new connection later
+                pass
+            gevent.sleep(delay)
+    
     def _create_socket(self, client, login) -> Socket:
         """Creates and returns a socket instance"""
         socket = Socket(client, login)
