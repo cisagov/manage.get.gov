@@ -259,10 +259,75 @@ function handleFormsetValidationClick(e, availabilityButton) {
       button.addEventListener('click', handleValidationClick);
     }
   }
+
+  
+  // Add event listener to the "Check availability" button
+  const checkAvailabilityButton = document.getElementById('check-availability-button');
+  if (checkAvailabilityButton) {
+    const targetId = checkAvailabilityButton.getAttribute('validate-for');
+    const checkAvailabilityInput = document.getElementById(targetId);
+    checkAvailabilityButton.addEventListener('click',
+      function() { 
+        removeFormErrors(checkAvailabilityInput, true);
+      }
+    );
+  }
+
+  // Add event listener to the alternate domains input
+  const alternateDomainsInputs = document.querySelectorAll('[auto-validate]');
+  if (alternateDomainsInputs) {
+    for (const domainInput of alternateDomainsInputs){
+      domainInput.addEventListener('input', function() {
+          removeFormErrors(domainInput, true);
+        }
+      );
+    }
+    }
 })();
 
 /**
- * Delete method for formsets that diff in the view and delete in the model (Nameservers, DS Data)
+ * Removes form errors surrounding a form input
+ */
+function removeFormErrors(input, removeStaleAlerts=false){
+  // Remove error message
+  let errorMessage = document.getElementById(`${input.id}__error-message`);
+  if (errorMessage) {
+    errorMessage.remove();
+  }else{
+    return
+  }
+
+  // Remove error classes
+  if (input.classList.contains('usa-input--error')) {
+    input.classList.remove('usa-input--error');
+  }
+
+  // Get the form label
+  let label = document.querySelector(`label[for="${input.id}"]`);
+  if (label) {
+    label.classList.remove('usa-label--error');
+
+    // Remove error classes from parent div
+    let parentDiv = label.parentElement;
+    if (parentDiv) {
+      parentDiv.classList.remove('usa-form-group--error');
+    }
+  }
+
+  if (removeStaleAlerts){
+    let staleAlerts = document.querySelectorAll(".usa-alert--error")
+    for (let alert of staleAlerts){
+      // Don't remove the error associated with the input
+      if (alert.id !== `${input.id}--toast`) {
+        alert.remove()
+      }
+    }
+  }
+}
+
+/**
+ * Prepare the namerservers and DS data forms delete buttons
+ * We will call this on the forms init, and also every time we add a form
  * 
  */
 function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
