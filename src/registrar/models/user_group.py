@@ -68,8 +68,8 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
-                "model": "veryimportantperson",
-                "permissions": ["add_veryimportantperson", "change_veryimportantperson", "delete_veryimportantperson"],
+                "model": "verifiedbystaff",
+                "permissions": ["add_verifiedbystaff", "change_verifiedbystaff", "delete_verifiedbystaff"],
             },
         ]
 

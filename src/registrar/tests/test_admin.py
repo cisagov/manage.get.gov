@@ -18,7 +18,7 @@ from registrar.admin import (
 )
 from registrar.models import Domain, DomainApplication, DomainInformation, User, DomainInvitation, Contact, Website
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.very_important_person import VeryImportantPerson
+from registrar.models.verified_by_staff import VeryImportantPerson
 from .common import (
     MockSESClient,
     AuditedAdminMockData,

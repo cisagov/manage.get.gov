@@ -16,7 +16,7 @@ from registrar.models import (
 
 import boto3_mocking
 from registrar.models.transition_domain import TransitionDomain
-from registrar.models.very_important_person import VeryImportantPerson  # type: ignore
+from registrar.models.verified_by_staff import VeryImportantPerson  # type: ignore
 from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
