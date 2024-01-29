@@ -63,7 +63,6 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         security_contacts = domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
         _email = security_contacts[0].email if security_contacts else None
         security_email = _email if _email is not None else " "
-        print("in else statement....")
 
     # These are default emails that should not be displayed in the csv report
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
@@ -112,9 +111,9 @@ def write_body(
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
     # Store all security emails to avoid epp calls or excessive filters
-    sec_contact_ids = list(all_domain_infos.values_list("domain__security_contact_registry_id", flat=True))
+    sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
     security_emails_dict = {}
-    public_contacts = PublicContact.objects.filter(registry_id__in=sec_contact_ids)
+    public_contacts = PublicContact.objects.only('email', 'domain__name').select_related("domain").filter(registry_id__in=sec_contact_ids)
 
     # Populate a dictionary of domain names and their security contacts
     for contact in public_contacts:
