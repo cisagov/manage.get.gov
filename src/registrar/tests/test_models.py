@@ -16,7 +16,7 @@ from registrar.models import (
 
 import boto3_mocking
 from registrar.models.transition_domain import TransitionDomain
-from registrar.models.verified_by_staff import VeryImportantPerson  # type: ignore
+from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
@@ -656,7 +656,7 @@ class TestUser(TestCase):
     def test_identity_verification_with_very_important_person(self):
         """A Very Important Person should return False
         when tested with class method needs_identity_verification"""
-        VeryImportantPerson.objects.get_or_create(email=self.user.email)
+        VerifiedByStaff.objects.get_or_create(email=self.user.email)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
 
     def test_identity_verification_with_invited_user(self):

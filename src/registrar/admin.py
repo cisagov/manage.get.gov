@@ -1295,7 +1295,7 @@ class DraftDomainAdmin(ListHeaderAdmin):
     search_help_text = "Search by draft domain name."
 
 
-class VeryImportantPersonAdmin(ListHeaderAdmin):
+class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
@@ -1338,4 +1338,4 @@ admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
-admin.site.register(models.VerifiedByStaff, VeryImportantPersonAdmin)
+admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)
