@@ -6,7 +6,6 @@ inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
 """
 
 import logging
-from typing import List
 
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
@@ -664,34 +663,22 @@ class DomainUsersView(DomainBaseView):
     def _add_modal_buttons_to_context(self, context):
         """Adds modal buttons (and their HTML) to the context"""
         # Create HTML for the modal button
-        modal_button = self._create_modal_button_html(
-            button_name="delete_domain_manager",
-            button_text_content="Yes, remove domain manager",
-            classes=["usa-button", "usa-button--secondary"],
+        modal_button = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="delete_domain_manager">Yes, remove domain manager</button>'
         )
         context["modal_button"] = modal_button
 
         # Create HTML for the modal button when deleting yourself
-        modal_button_self = self._create_modal_button_html(
-            button_name="delete_domain_manager_self",
-            button_text_content="Yes, remove myself",
-            classes=["usa-button", "usa-button--secondary"],
+        modal_button_self = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="delete_domain_manager_self">Yes, remove myself</button>'
         )
         context["modal_button_self"] = modal_button_self
 
         return context
-
-    def _create_modal_button_html(self, button_name: str, button_text_content: str, classes: List[str] | str):
-        """Template for modal submit buttons"""
-
-        if isinstance(classes, list):
-            class_list = " ".join(classes)
-        elif isinstance(classes, str):
-            class_list = classes
-
-        html_class = f'class="{class_list}"' if class_list else None
-        modal_button = '<button type="submit" ' f"{html_class} " f'name="{button_name}">{button_text_content}</button>'
-        return modal_button
 
 
 class DomainAddUserView(DomainFormBaseView):

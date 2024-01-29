@@ -286,7 +286,7 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         return True
 
 
-class UserDomainRolePermission(PermissionsLoginMixin):
+class UserDeleteDomainRolePermission(PermissionsLoginMixin):
 
     """Permission mixin for UserDomainRole if user
     has access, otherwise 403"""

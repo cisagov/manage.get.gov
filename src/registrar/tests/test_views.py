@@ -2690,8 +2690,8 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
-    def test_domain_user_delete_link(self):
-        """Tests if the user delete link works"""
+    def test_domain_user_delete(self):
+        """Tests if deleting a domain manager works"""
 
         # Add additional users
         dummy_user_1 = User.objects.create(
@@ -2739,6 +2739,79 @@ class TestDomainManagers(TestDomainOverview):
         # Ensure that the other userdomainrole was not deleted
         role_2_exists = UserDomainRole.objects.filter(id=role_2.id).exists()
         self.assertTrue(role_2_exists)
+
+    def test_domain_user_delete_denied_if_no_permission(self):
+        """Deleting a domain manager is denied if the user has no permission to do so"""
+
+        # Create a domain object
+        vip_domain = Domain.objects.create(name="freeman.gov")
+
+        # Add users
+        dummy_user_1 = User.objects.create(
+            username="bagel",
+            email="bagel@igorville.com",
+        )
+        dummy_user_2 = User.objects.create(
+            username="pastapizza",
+            email="pasta@igorville.com",
+        )
+
+        role_1 = UserDomainRole.objects.create(user=dummy_user_1, domain=vip_domain, role=UserDomainRole.Roles.MANAGER)
+        role_2 = UserDomainRole.objects.create(user=dummy_user_2, domain=vip_domain, role=UserDomainRole.Roles.MANAGER)
+
+        response = self.client.get(reverse("domain-users", kwargs={"pk": vip_domain.id}))
+
+        # Make sure that we can't access the domain manager page normally
+        self.assertEqual(response.status_code, 403)
+
+        # Try to delete dummy_user_1
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": vip_domain.id, "user_pk": dummy_user_1.id}), follow=True
+        )
+
+        # Ensure that we are denied access
+        self.assertEqual(response.status_code, 403)
+
+        # Ensure that the user wasn't deleted
+        role_1_exists = UserDomainRole.objects.filter(id=role_1.id).exists()
+        self.assertTrue(role_1_exists)
+
+        # Ensure that the other userdomainrole was not deleted
+        role_2_exists = UserDomainRole.objects.filter(id=role_2.id).exists()
+        self.assertTrue(role_2_exists)
+
+        # Make sure that the current user wasn't deleted for some reason
+        current_user_exists = UserDomainRole.objects.filter(user=self.user.id, domain=self.domain).exists()
+        self.assertTrue(current_user_exists)
+
+    def test_domain_user_delete_denied_if_last_man_standing(self):
+        """Deleting a domain manager is denied if the user is the only manager"""
+
+        # Create a domain object
+        vip_domain = Domain.objects.create(name="olive-oil.gov")
+
+        # Add the requesting user as the only manager on the domain
+        UserDomainRole.objects.create(user=self.user, domain=vip_domain, role=UserDomainRole.Roles.MANAGER)
+
+        response = self.client.get(reverse("domain-users", kwargs={"pk": vip_domain.id}))
+
+        # Make sure that we can still access the domain manager page normally
+        self.assertContains(response, "Domain managers")
+
+        # Make sure that the logged in user exists
+        self.assertContains(response, "info@example.com")
+
+        # Try to delete the current user
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": vip_domain.id, "user_pk": self.user.id}), follow=True
+        )
+
+        # Ensure that we are denied access
+        self.assertEqual(response.status_code, 403)
+
+        # Make sure that the current user wasn't deleted
+        current_user_exists = UserDomainRole.objects.filter(user=self.user.id, domain=self.domain).exists()
+        self.assertTrue(current_user_exists)
 
     def test_domain_user_delete_self_redirects_home(self):
         """Tests if deleting yourself redirects to home"""

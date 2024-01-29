@@ -12,7 +12,7 @@ from .mixins import (
     DomainApplicationPermissionWithdraw,
     DomainInvitationPermission,
     ApplicationWizardPermission,
-    UserDomainRolePermission,
+    UserDeleteDomainRolePermission,
 )
 import logging
 
@@ -134,21 +134,7 @@ class DomainApplicationPermissionDeleteView(DomainApplicationPermission, DeleteV
     object: DomainApplication
 
 
-class UserDomainRolePermissionView(UserDomainRolePermission, DetailView, abc.ABC):
-
-    """Abstract base view for UserDomainRole that enforces permissions.
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # DetailView property for what model this is viewing
-    model = UserDomainRole
-    # variable name in template context for the model object
-    context_object_name = "userdomainrole"
-
-
-class UserDomainRolePermissionDeleteView(UserDomainRolePermissionView, DeleteView, abc.ABC):
+class UserDomainRolePermissionDeleteView(UserDeleteDomainRolePermission, DeleteView, abc.ABC):
 
     """Abstract base view for deleting a UserDomainRole.
 
