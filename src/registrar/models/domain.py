@@ -909,17 +909,11 @@ class Domain(TimeStampedModel, DomainHelper):
         """Time to renew. Not implemented."""
         raise NotImplementedError()
 
-    def get_security_email(self, skip_epp_call=False):
+    def get_security_email(self):
         logger.info("get_security_email-> getting the contact")
 
-        # If specified, skip the epp call outright.
-        # Otherwise, proceed as normal.
-        if skip_epp_call:
-            logger.info("get_security_email-> skipping epp call")
-            security = PublicContact.ContactTypeChoices.SECURITY
-            security_contact = self.generic_contact_getter(security, skip_epp_call)
-        else:
-            security_contact = self.security_contact
+        security = PublicContact.ContactTypeChoices.SECURITY
+        security_contact = self.generic_contact_getter(security)
 
         # If we get a valid value for security_contact, pull its email
         # Otherwise, just return nothing
@@ -1121,9 +1115,7 @@ class Domain(TimeStampedModel, DomainHelper):
             )
             raise error
 
-    def generic_contact_getter(
-        self, contact_type_choice: PublicContact.ContactTypeChoices, skip_epp_call=False
-    ) -> PublicContact | None:
+    def generic_contact_getter(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact | None:
         """Retrieves the desired PublicContact from the registry.
         This abstracts the caching and EPP retrieval for
         all contact items and thus may result in EPP calls being sent.
@@ -1143,7 +1135,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         try:
             # Grab from cache
-            contacts = self._get_property(desired_property, skip_epp_call)
+            contacts = self._get_property(desired_property)
         except KeyError as error:
             # if contact type is security, attempt to retrieve registry id
             # for the security contact from domain.security_contact_registry_id
@@ -1878,9 +1870,9 @@ class Domain(TimeStampedModel, DomainHelper):
         """Remove cache data when updates are made."""
         self._cache = {}
 
-    def _get_property(self, property, skip_epp_call=False):
+    def _get_property(self, property):
         """Get some piece of info about a domain."""
-        if property not in self._cache and not skip_epp_call:
+        if property not in self._cache:
             self._fetch_cache(
                 fetch_hosts=(property == "hosts"),
                 fetch_contacts=(property == "contacts"),

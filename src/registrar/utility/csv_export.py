@@ -8,6 +8,8 @@ from django.core.paginator import Paginator
 from django.db.models import F, Value, CharField
 from django.db.models.functions import Concat, Coalesce
 
+from registrar.models.public_contact import PublicContact
+
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None, skip_epp_call=True):
+def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
@@ -51,13 +53,16 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
     domain = domain_info.domain  # type: ignore
 
     # Grab the security email from a preset dictionary. 
-    # If nothing exists in the dictionary, grab from get_security_email
+    # If nothing exists in the dictionary, grab from .contacts.
     if security_emails_dict is not None and domain.name in security_emails_dict:
         _email = security_emails_dict.get(domain.name)
         security_email = _email if _email is not None else " "
     else:
-        cached_sec_email = domain.get_security_email(skip_epp_call)
-        security_email = cached_sec_email if cached_sec_email is not None else " "
+        # If the dictionary doesn't contain that data, lets filter for it manually.
+        # This is a last resort as this is a more expensive operation.
+        security_contacts = domain_info.domain.contacts.filter(contact_type=PublicContact.ContactTypeChoices.SECURITY)
+        _email = security_contacts[0].email
+        security_email = _email if _email is not None else " "
 
     # These are default emails that should not be displayed in the csv report
     invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
@@ -104,16 +109,19 @@ def write_body(
 
     # Get the domainInfos
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
-    
-    # Populate a dictionary of domain names and their security contacts
+
+    # Store all security emails to avoid epp calls or excessive filters
+    sec_contact_ids = list(all_domain_infos.values_list("domain__security_contact_registry_id", flat=True))
     security_emails_dict = {}
-    for domain_info in all_domain_infos:
-        if domain_info not in security_emails_dict:
-            domain: Domain = domain_info.domain
-            if domain is not None:
-                security_emails_dict[domain.name] = domain.security_contact_registry_id
+    public_contacts = PublicContact.objects.filter(registry_id__in=sec_contact_ids)
+
+    # Populate a dictionary of domain names and their security contacts
+    for contact in public_contacts:
+        domain: Domain = domain_info.domain
+        if domain is not None and domain.name not in security_emails_dict:
+            security_emails_dict[domain.name] = contact.email
         else:
-            logger.warning("csv_export -> Duplicate domain object found")
+            logger.warning("csv_export -> Domain was none for PublicContact")
 
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
