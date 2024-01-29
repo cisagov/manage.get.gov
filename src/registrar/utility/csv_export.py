@@ -52,7 +52,7 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
 
     domain = domain_info.domain  # type: ignore
 
-    # Grab the security email from a preset dictionary. 
+    # Grab the security email from a preset dictionary.
     # If nothing exists in the dictionary, grab from .contacts.
     if security_emails_dict is not None and domain.name in security_emails_dict:
         _email = security_emails_dict.get(domain.name)
@@ -113,7 +113,11 @@ def write_body(
     # Store all security emails to avoid epp calls or excessive filters
     sec_contact_ids = all_domain_infos.values_list("domain__security_contact_registry_id", flat=True)
     security_emails_dict = {}
-    public_contacts = PublicContact.objects.only('email', 'domain__name').select_related("domain").filter(registry_id__in=sec_contact_ids)
+    public_contacts = (
+        PublicContact.objects.only("email", "domain__name")
+        .select_related("domain")
+        .filter(registry_id__in=sec_contact_ids)
+    )
 
     # Populate a dictionary of domain names and their security contacts
     for contact in public_contacts:
