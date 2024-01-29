@@ -43,9 +43,9 @@ class TestGroups(TestCase):
             "change_user",
             "delete_userdomainrole",
             "view_userdomainrole",
-            "add_verfiedbystaff",
-            "change_verfiedbystaff",
-            "delete_verfiedbystaff",
+            "add_verifiedbystaff",
+            "change_verifiedbystaff",
+            "delete_verifiedbystaff",
             "change_website",
         ]
 
