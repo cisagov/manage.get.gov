@@ -207,6 +207,7 @@ function handleValidationClick(e) {
   const attribute = e.target.getAttribute("validate-for") || "";
   if (!attribute.length) return;
   const input = document.getElementById(attribute);
+  removeFormErrors(input, true);
   runValidators(input);
 }
 
@@ -262,16 +263,16 @@ function handleFormsetValidationClick(e, availabilityButton) {
 
   
   // Add event listener to the "Check availability" button
-  const checkAvailabilityButton = document.getElementById('check-availability-button');
-  if (checkAvailabilityButton) {
-    const targetId = checkAvailabilityButton.getAttribute('validate-for');
-    const checkAvailabilityInput = document.getElementById(targetId);
-    checkAvailabilityButton.addEventListener('click',
-      function() { 
-        removeFormErrors(checkAvailabilityInput, true);
-      }
-    );
-  }
+  // const checkAvailabilityButton = document.getElementById('check-availability-button');
+  // if (checkAvailabilityButton) {
+  //   const targetId = checkAvailabilityButton.getAttribute('validate-for');
+  //   const checkAvailabilityInput = document.getElementById(targetId);
+  //   checkAvailabilityButton.addEventListener('click',
+  //     function() { 
+  //       removeFormErrors(checkAvailabilityInput, true);
+  //     }
+  //   );
+  // }
 
   // Add event listener to the alternate domains input
   const alternateDomainsInputs = document.querySelectorAll('[auto-validate]');
