@@ -66,6 +66,11 @@ class UserGroup(Group):
                 "model": "userdomainrole",
                 "permissions": ["view_userdomainrole", "delete_userdomainrole"],
             },
+            {
+                "app_label": "registrar",
+                "model": "veryimportantperson",
+                "permissions": ["add_veryimportantperson", "change_veryimportantperson", "delete_veryimportantperson"],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end
