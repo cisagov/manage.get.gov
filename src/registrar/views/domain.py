@@ -142,11 +142,12 @@ class DomainView(DomainBaseView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        default_email = self.object.get_default_security_contact().email
-        context["hidden_security_emails"] = [default_email, "registrar@dotgov.gov"]
+        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT, DefaultEmail.LEGACY_DEFAULT]
+        
+        context["hidden_security_emails"] = default_emails
 
         security_email = self.object.get_security_email()
-        if security_email is None or security_email == default_email:
+        if security_email is None or security_email in default_emails:
             context["security_email"] = None
             return context
         context["security_email"] = security_email
