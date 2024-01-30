@@ -48,7 +48,7 @@ All other changes require just a single approving review.-->
 - [ ] Added at least 2 developers as PR reviewers (only 1 will need to approve)
 - [ ] Messaged on Slack or in standup to notify the team that a PR is ready for review
 - [ ] Changes to “how we do things” are documented in READMEs and or onboarding guide
-- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the assoicated migrations file has been commited.
+- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the associated migrations file has been commited.
 
 #### Ensured code standards are met (Original Developer)
 
@@ -72,7 +72,7 @@ All other changes require just a single approving review.-->
 - [ ] Reviewed this code and left comments
 - [ ] Checked that all code is adequately covered by tests
 - [ ] Made it clear which comments need to be addressed before this work is merged
-- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the assoicated migrations file has been commited.
+- [ ] If any model was updated to modify/add/delete columns, makemigrations was ran and the associated migrations file has been commited.
 
 #### Ensured code standards are met (Code reviewer)
 
