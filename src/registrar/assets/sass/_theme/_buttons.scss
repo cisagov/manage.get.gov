@@ -132,3 +132,11 @@ a.usa-button--unstyled:visited {
     margin-left: units(2);
   }
 }
+
+// TODO: find another file for this 
+.info-button span.usa-tooltip svg.usa-icon {
+  svg.usa-icon{
+    transform: translateY(2px) !important;
+    background: transparent;
+  }
+}
