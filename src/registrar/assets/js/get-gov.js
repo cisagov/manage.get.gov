@@ -220,12 +220,14 @@ function validateFormsetInputs(e, availabilityButton) {
   // Run validators for each input
   inputs.forEach(input => {
     runValidators(input);
+    removeFormErrors(input, true);
   });
 
   // Set the validate-for attribute on the button with the collected input IDs
   // Not needed for functionality but nice for accessibility
   inputs = inputs.map(input => input.id).join(', ');
   availabilityButton.setAttribute('validate-for', inputs);
+
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
@@ -260,17 +262,6 @@ function validateFormsetInputs(e, availabilityButton) {
       button.addEventListener('click', validateFieldInput);
     }
   }
-
-  // Clear errors on auto-validated inputs when user reselects input
-  const autoValidateInputs = document.querySelectorAll('[auto-validate]');
-  if (autoValidateInputs) {
-    for (const input of autoValidateInputs){
-      input.addEventListener('input', function() {
-          removeFormErrors(input, true);
-        }
-      );
-    }
-    }
 })();
 
 /**
