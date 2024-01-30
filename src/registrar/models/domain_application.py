@@ -572,6 +572,19 @@ class DomainApplication(TimeStampedModel):
             return not self.approved_domain.is_active()
         return True
 
+    def delete_and_clean_up_domain(self, called_from):
+        try:
+            domain_state = self.approved_domain.state
+            # Only reject if it exists on EPP
+            if domain_state != Domain.State.UNKNOWN:
+                self.approved_domain.deletedInEpp()
+                self.approved_domain.save()
+            self.approved_domain.delete()
+            self.approved_domain = None
+        except Exception as err:
+            logger.error(err)
+            logger.error(f"Can't query an approved domain while attempting {called_from}")
+
     def _send_status_update_email(self, new_status, email_template, email_template_subject, send_email=True):
         """Send a status update email to the submitter.
 
@@ -651,11 +664,19 @@ class DomainApplication(TimeStampedModel):
             ApplicationStatus.INELIGIBLE,
         ],
         target=ApplicationStatus.IN_REVIEW,
+        conditions=[domain_is_not_active],
     )
     def in_review(self):
         """Investigate an application that has been submitted.
 
-        This action is logged."""
+        This action is logged.
+
+        As side effects this will delete the domain and domain_information
+        (will cascade) when they exist."""
+
+        if self.status == self.ApplicationStatus.APPROVED:
+            self.delete_and_clean_up_domain("in_review")
+
         literal = DomainApplication.ApplicationStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
         in_review = literal if literal is not None else "In Review"
@@ -670,11 +691,19 @@ class DomainApplication(TimeStampedModel):
             ApplicationStatus.INELIGIBLE,
         ],
         target=ApplicationStatus.ACTION_NEEDED,
+        conditions=[domain_is_not_active],
     )
     def action_needed(self):
         """Send back an application that is under investigation or rejected.
 
-        This action is logged."""
+        This action is logged.
+
+        As side effects this will delete the domain and domain_information
+        (will cascade) when they exist."""
+
+        if self.status == self.ApplicationStatus.APPROVED:
+            self.delete_and_clean_up_domain("reject_with_prejudice")
+
         literal = DomainApplication.ApplicationStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
@@ -746,18 +775,9 @@ class DomainApplication(TimeStampedModel):
 
         As side effects this will delete the domain and domain_information
         (will cascade), and send an email notification."""
+
         if self.status == self.ApplicationStatus.APPROVED:
-            try:
-                domain_state = self.approved_domain.state
-                # Only reject if it exists on EPP
-                if domain_state != Domain.State.UNKNOWN:
-                    self.approved_domain.deletedInEpp()
-                    self.approved_domain.save()
-                self.approved_domain.delete()
-                self.approved_domain = None
-            except Exception as err:
-                logger.error(err)
-                logger.error("Can't query an approved domain while attempting a DA reject()")
+            self.delete_and_clean_up_domain("reject")
 
         self._send_status_update_email(
             "action needed",
@@ -786,17 +806,7 @@ class DomainApplication(TimeStampedModel):
         and domain_information (will cascade) when they exist."""
 
         if self.status == self.ApplicationStatus.APPROVED:
-            try:
-                domain_state = self.approved_domain.state
-                # Only reject if it exists on EPP
-                if domain_state != Domain.State.UNKNOWN:
-                    self.approved_domain.deletedInEpp()
-                    self.approved_domain.save()
-                self.approved_domain.delete()
-                self.approved_domain = None
-            except Exception as err:
-                logger.error(err)
-                logger.error("Can't query an approved domain while attempting a DA reject_with_prejudice()")
+            self.delete_and_clean_up_domain("reject_with_prejudice")
 
         self.creator.restrict_user()
 

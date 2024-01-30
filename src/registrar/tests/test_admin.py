@@ -707,41 +707,13 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "Cannot edit an application with a restricted creator.",
             )
 
-    @boto3_mocking.patching
-    def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
-        # Create an instance of the model
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        application.approved_domain = domain
-        application.save()
+    def trigger_saving_approved_to_another_state(self, domain_is_active, another_state):
+        """Helper method that triggers domain request state changes from approved to another state,
+        with an associated domain that can be either active (READY) or not.
 
-        # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-        request.user = self.superuser
+        Used to test errors when saving a change with an active domain, also used to test side effects
+        when saving a change goes through."""
 
-        # Define a custom implementation for is_active
-        def custom_is_active(self):
-            return True  # Override to return True
-
-        # Use ExitStack to combine patch contexts
-        with ExitStack() as stack:
-            # Patch Domain.is_active and django.contrib.messages.error simultaneously
-            stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
-            stack.enter_context(patch.object(messages, "error"))
-
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
-                    # Simulate saving the model
-                    application.status = DomainApplication.ApplicationStatus.REJECTED
-                    self.admin.save_model(request, application, None, True)
-
-            # Assert that the error message was called with the correct argument
-            messages.error.assert_called_once_with(
-                request,
-                "This action is not permitted. The domain " + "is already active.",
-            )
-
-    def test_side_effects_when_saving_approved_to_rejected(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
@@ -755,101 +727,60 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
-            return False  # Override to return False
+            return domain_is_active  # Override to return True
 
         # Use ExitStack to combine patch contexts
         with ExitStack() as stack:
             # Patch Domain.is_active and django.contrib.messages.error simultaneously
             stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
             stack.enter_context(patch.object(messages, "error"))
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
-                    # Simulate saving the model
-                    application.status = DomainApplication.ApplicationStatus.REJECTED
-                    self.admin.save_model(request, application, None, True)
 
-            # Assert that the error message was never called
-            messages.error.assert_not_called()
+            application.status = another_state
+            self.admin.save_model(request, application, None, True)
 
-        self.assertEqual(application.approved_domain, None)
+            # Assert that the error message was called with the correct argument
+            if domain_is_active:
+                messages.error.assert_called_once_with(
+                    request,
+                    "This action is not permitted. The domain " + "is already active.",
+                )
+            else:
+                # Assert that the error message was never called
+                messages.error.assert_not_called()
 
-        # Assert that Domain got Deleted
-        with self.assertRaises(Domain.DoesNotExist):
-            domain.refresh_from_db()
+                self.assertEqual(application.approved_domain, None)
 
-        # Assert that DomainInformation got Deleted
-        with self.assertRaises(DomainInformation.DoesNotExist):
-            domain_information.refresh_from_db()
+                # Assert that Domain got Deleted
+                with self.assertRaises(Domain.DoesNotExist):
+                    domain.refresh_from_db()
+
+                # Assert that DomainInformation got Deleted
+                with self.assertRaises(DomainInformation.DoesNotExist):
+                    domain_information.refresh_from_db()
+
+    def test_error_when_saving_approved_to_in_review_and_domain_is_active(self):
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.IN_REVIEW)
+
+    def test_error_when_saving_approved_to_action_needed_and_domain_is_active(self):
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.ACTION_NEEDED)
+
+    def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.REJECTED)
 
     def test_error_when_saving_approved_to_ineligible_and_domain_is_active(self):
-        # Create an instance of the model
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        application.approved_domain = domain
-        application.save()
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-        request.user = self.superuser
+    def test_side_effects_when_saving_approved_to_in_review(self):
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.IN_REVIEW)
 
-        # Define a custom implementation for is_active
-        def custom_is_active(self):
-            return True  # Override to return True
+    def test_side_effects_when_saving_approved_to_action_needed(self):
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        # Use ExitStack to combine patch contexts
-        with ExitStack() as stack:
-            # Patch Domain.is_active and django.contrib.messages.error simultaneously
-            stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
-            stack.enter_context(patch.object(messages, "error"))
-
-            # Simulate saving the model
-            application.status = DomainApplication.ApplicationStatus.INELIGIBLE
-            self.admin.save_model(request, application, None, True)
-
-            # Assert that the error message was called with the correct argument
-            messages.error.assert_called_once_with(
-                request,
-                "This action is not permitted. The domain " + "is already active.",
-            )
+    def test_side_effects_when_saving_approved_to_rejected(self):
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.REJECTED)
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
-        # Create an instance of the model
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        domain_information = DomainInformation.objects.create(creator=self.superuser, domain=domain)
-        application.approved_domain = domain
-        application.save()
-
-        # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-        request.user = self.superuser
-
-        # Define a custom implementation for is_active
-        def custom_is_active(self):
-            return False  # Override to return False
-
-        # Use ExitStack to combine patch contexts
-        with ExitStack() as stack:
-            # Patch Domain.is_active and django.contrib.messages.error simultaneously
-            stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
-            stack.enter_context(patch.object(messages, "error"))
-
-            # Simulate saving the model
-            application.status = DomainApplication.ApplicationStatus.INELIGIBLE
-            self.admin.save_model(request, application, None, True)
-
-            # Assert that the error message was never called
-            messages.error.assert_not_called()
-
-        self.assertEqual(application.approved_domain, None)
-
-        # Assert that Domain got Deleted
-        with self.assertRaises(Domain.DoesNotExist):
-            domain.refresh_from_db()
-
-        # Assert that DomainInformation got Deleted
-        with self.assertRaises(DomainInformation.DoesNotExist):
-            domain_information.refresh_from_db()
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.INELIGIBLE)
 
     def test_has_correct_filters(self):
         """

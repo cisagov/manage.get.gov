@@ -457,6 +457,46 @@ class TestDomainApplication(TestCase):
                         with self.assertRaises(exception_type):
                             application.reject_with_prejudice()
 
+    def test_transition_not_allowed_approved_in_review_when_domain_is_active(self):
+        """Create an application with status approved, create a matching domain that
+        is active, and call in_review against transition rules"""
+
+        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
+        self.approved_application.approved_domain = domain
+        self.approved_application.save()
+
+        # Define a custom implementation for is_active
+        def custom_is_active(self):
+            return True  # Override to return True
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        self.approved_application.in_review()
+
+    def test_transition_not_allowed_approved_action_needed_when_domain_is_active(self):
+        """Create an application with status approved, create a matching domain that
+        is active, and call action_needed against transition rules"""
+
+        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
+        self.approved_application.approved_domain = domain
+        self.approved_application.save()
+
+        # Define a custom implementation for is_active
+        def custom_is_active(self):
+            return True  # Override to return True
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        self.approved_application.action_needed()
+
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that
         is active, and call reject against transition rules"""
