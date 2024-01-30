@@ -22,6 +22,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
+from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
     GenericErrorCodes,
@@ -569,7 +570,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         initial = super().get_initial()
         security_contact = self.object.security_contact
 
-        invalid_emails = ["dotgov@cisa.dhs.gov", "registrar@dotgov.gov"]
+        invalid_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT, DefaultEmail.LEGACY_DEFAULT]
         if security_contact is None or security_contact.email in invalid_emails:
             initial["security_email"] = None
             return initial

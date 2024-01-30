@@ -12,6 +12,7 @@ from django.utils import timezone
 from typing import Any
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
+from registrar.utility.enums import DefaultEmail
 
 from registrar.utility.errors import (
     ActionNotAllowed,
@@ -1400,7 +1401,9 @@ class Domain(TimeStampedModel, DomainHelper):
         is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
         fields = {DF.EMAIL}
-        disclose = is_security and contact.email != PublicContact.get_default_security().email
+
+        hidden_security_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT, DefaultEmail.LEGACY_DEFAULT]
+        disclose = is_security and contact.email not in hidden_security_emails
         # Delete after testing on other devices
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
         # Will only disclose DF.EMAIL if its not the default

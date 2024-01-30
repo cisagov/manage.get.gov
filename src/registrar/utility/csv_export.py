@@ -8,6 +8,8 @@ from django.db.models import Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
+from registrar.utility.enums import DefaultEmail
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +40,7 @@ def write_row(writer, columns, domain_info):
     if security_contacts:
         security_email = security_contacts[0].email
 
-    invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
+    invalid_emails = {DefaultEmail.LEGACY_DEFAULT, DefaultEmail.PUBLIC_CONTACT_DEFAULT}
     # These are default emails that should not be displayed in the csv report
     if security_email is not None and security_email.lower() in invalid_emails:
         security_email = "(blank)"
