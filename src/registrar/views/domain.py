@@ -143,7 +143,7 @@ class DomainView(DomainBaseView):
         context = super().get_context_data(**kwargs)
 
         default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
-        
+
         context["hidden_security_emails"] = default_emails
 
         security_email = self.object.get_security_email()
