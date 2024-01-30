@@ -24,6 +24,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class TestProcessedMigrations(TestCase):
     """This test case class is designed to verify the idempotency of migrations
     related to domain transitions in the application."""
@@ -241,8 +242,8 @@ class TestOrganizationMigration(TestCase):
         execute the load_organization_data command with the specified arguments.
         """
         with less_console_noise():
-        # noqa here (E501) because splitting this up makes it
-        # confusing to read.
+            # noqa here (E501) because splitting this up makes it
+            # confusing to read.
             with patch(
                 "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
                 return_value=True,
@@ -308,8 +309,9 @@ class TestOrganizationMigration(TestCase):
         3. Checks that the data has been loaded as expected.
 
         The expected result is a set of TransitionDomain objects with specific attributes.
-        The test fetches the actual TransitionDomain objects from the database and compares them with the expected objects.
-        """  
+        The test fetches the actual TransitionDomain objects from the database and compares them with
+        the expected objects.
+        """
         with less_console_noise():
             # noqa - E501 (harder to read)
             # == First, parse all existing data == #
@@ -392,7 +394,9 @@ class TestOrganizationMigration(TestCase):
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
 
             expected_creator = User.objects.filter(username="System").get()
-            expected_ao = Contact.objects.filter(first_name="Seline", middle_name="testmiddle2", last_name="Tower").get()
+            expected_ao = Contact.objects.filter(
+                first_name="Seline", middle_name="testmiddle2", last_name="Tower"
+            ).get()
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 organization_type="federal",
@@ -445,7 +449,9 @@ class TestOrganizationMigration(TestCase):
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
 
             expected_creator = User.objects.filter(username="System").get()
-            expected_ao = Contact.objects.filter(first_name="Seline", middle_name="testmiddle2", last_name="Tower").get()
+            expected_ao = Contact.objects.filter(
+                first_name="Seline", middle_name="testmiddle2", last_name="Tower"
+            ).get()
             expected_domain_information = DomainInformation(
                 creator=expected_creator,
                 organization_type="federal",

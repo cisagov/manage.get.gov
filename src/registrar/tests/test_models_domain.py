@@ -743,9 +743,11 @@ class TestRegistrantContacts(MockEppLib):
             self.domain_contact.get_security_email()
             # invalidate the cache so the next time get_security_email is called, it has to attempt to populate cache
             self.domain_contact._invalidate_cache()
+
             # mock that registry throws an error on the EPP send
             def side_effect(_request, cleaned):
                 raise RegistryError(code=ErrorCode.COMMAND_FAILED)
+
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
@@ -1236,6 +1238,7 @@ class TestRegistrantNameservers(MockEppLib):
             nameserver12 = "ns1.cats-are-superior12.com"
             nameserver13 = "ns1.cats-are-superior13.com"
             nameserver14 = "ns1.cats-are-superior14.com"
+
             def _get_14_nameservers():
                 self.domain.nameservers = [
                     (nameserver1,),
@@ -1253,6 +1256,7 @@ class TestRegistrantNameservers(MockEppLib):
                     (nameserver13,),
                     (nameserver14,),
                 ]
+
             self.assertRaises(NameserverError, _get_14_nameservers)
             self.assertEqual(self.mockedSendFunction.call_count, 0)
 
@@ -1553,9 +1557,11 @@ class TestRegistrantNameservers(MockEppLib):
             # fetch_cache
             host, _ = Host.objects.get_or_create(domain=domain, name="ns1.fake.gov")
             host_ip, _ = HostIP.objects.get_or_create(host=host, address="1.1.1.1")
+
             # mock that registry throws an error on the InfoHost send
             def side_effect(_request, cleaned):
                 raise RegistryError(code=ErrorCode.COMMAND_FAILED)
+
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
@@ -1729,6 +1735,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     )
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
@@ -1806,6 +1813,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     )
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
@@ -1879,6 +1887,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     )
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
@@ -1947,6 +1956,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     )
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
@@ -2271,6 +2281,7 @@ class TestAnalystClientHold(MockEppLib):
 
         def side_effect(_request, cleaned):
             raise RegistryError(code=ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()

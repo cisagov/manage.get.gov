@@ -25,6 +25,7 @@ from datetime import date, datetime, timedelta
 from django.utils import timezone
 from .common import less_console_noise
 
+
 class CsvReportsTest(TestCase):
     """Tests to determine if we are uploading our reports correctly"""
 
@@ -124,6 +125,7 @@ class CsvReportsTest(TestCase):
 
         def side_effect(Bucket, Key):
             raise ClientError({"Error": {"Code": "NoSuchKey", "Message": "No such key"}}, "get_object")
+
         with less_console_noise():
             mock_client = MagicMock()
             mock_client.get_object.side_effect = side_effect
@@ -145,6 +147,7 @@ class CsvReportsTest(TestCase):
 
         def side_effect(Bucket, Key):
             raise ClientError({"Error": {"Code": "NoSuchKey", "Message": "No such key"}}, "get_object")
+
         with less_console_noise():
             mock_client = MagicMock()
             mock_client.get_object.side_effect = side_effect
@@ -524,8 +527,8 @@ class ExportDataTest(MockEppLib):
             # Create a CSV file in memory
             csv_file = StringIO()
             writer = csv.writer(csv_file)
-            # We use timezone.make_aware to sync to server time a datetime object with the current date (using date.today())
-            # and a specific time (using datetime.min.time()).
+            # We use timezone.make_aware to sync to server time a datetime object with the current date
+            # (using date.today()) and a specific time (using datetime.min.time()).
             end_date = timezone.make_aware(datetime.combine(date.today() + timedelta(days=2), datetime.min.time()))
             start_date = timezone.make_aware(datetime.combine(date.today() - timedelta(days=2), datetime.min.time()))
 

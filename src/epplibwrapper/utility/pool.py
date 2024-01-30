@@ -97,7 +97,7 @@ class EPPConnectionPool(ConnectionPool):
                 # Nothing to do, the pool will generate a new connection later
                 pass
             gevent.sleep(delay)
-    
+
     def _create_socket(self, client, login) -> Socket:
         """Creates and returns a socket instance"""
         socket = Socket(client, login)

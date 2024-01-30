@@ -263,9 +263,7 @@ class TestExtendExpirationDates(MockEppLib):
             epp_expiration_date=date(2023, 11, 15),
         )
         # Create a domain with an invalid expiration date
-        Domain.objects.get_or_create(
-            name="fake.gov", state=Domain.State.READY, expiration_date=date(2022, 5, 25)
-        )
+        Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY, expiration_date=date(2022, 5, 25))
         TransitionDomain.objects.get_or_create(
             username="themoonisactuallycheese@mail.com",
             domain_name="fake.gov",

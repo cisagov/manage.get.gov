@@ -135,7 +135,7 @@ class TestConnectionPool(TestCase):
             stack.enter_context(patch.object(EPPConnectionPool, "kill_all_connections", do_nothing))
             stack.enter_context(patch.object(SocketTransport, "send", self.fake_send))
             stack.enter_context(patch.object(SocketTransport, "receive", fake_receive))
-            with less_console_noise():             
+            with less_console_noise():
                 # Restart the connection pool
                 registry.start_connection_pool()
                 # Pool should be running, and be the right size
@@ -211,7 +211,7 @@ class TestConnectionPool(TestCase):
             stack.enter_context(patch.object(EPPConnectionPool, "kill_all_connections", do_nothing))
             stack.enter_context(patch.object(SocketTransport, "send", self.fake_send))
             stack.enter_context(patch.object(SocketTransport, "receive", fake_receive))
-            with less_console_noise(): 
+            with less_console_noise():
                 # Start the connection pool
                 registry.start_connection_pool()
                 # Kill the connection pool
@@ -243,7 +243,7 @@ class TestConnectionPool(TestCase):
     def test_raises_connection_error(self):
         """A .send is invoked on the pool, but registry connection is lost
         right as we send a command."""
-        
+
         with ExitStack() as stack:
             stack.enter_context(patch.object(EPPConnectionPool, "_create_socket", self.fake_socket))
             stack.enter_context(patch.object(Socket, "connect", self.fake_client))
@@ -260,4 +260,3 @@ class TestConnectionPool(TestCase):
                     expected = "InfoDomain failed to execute due to a connection error."
                     result = registry.send(commands.InfoDomain(name="test.gov"), cleaned=True)
                     self.assertEqual(result, expected)
-              
