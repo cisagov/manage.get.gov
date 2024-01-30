@@ -257,7 +257,7 @@ function validateFormsetInputs(e, availabilityButton) {
         validateFormsetInputs(e, alternativeDomainsAvailability)
       });
     } else {
-      button.addEventListener('click', validateField);
+      button.addEventListener('click', validateFieldInput);
     }
   }
 
