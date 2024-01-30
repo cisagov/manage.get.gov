@@ -75,7 +75,7 @@
             >
               <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
                 {% with email=permission.user.email|default:permission.user|force_escape domain_name=domain.name|force_escape %}
-                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove " heading_value="email|add:"?" modal_description="<strong>"|add:email|add:"</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove " heading_value=email|add:"?" modal_description="<strong>"|add:email|add:"</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
                 {% endwith %}
               </form>
             </div>
