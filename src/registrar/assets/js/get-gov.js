@@ -203,7 +203,7 @@ function handleInputValidation(e) {
 }
 
 /** On button click, handles running any associated validators. */
-function handleValidationClick(e) {
+function validateFieldInput(e) {
   const attribute = e.target.getAttribute("validate-for") || "";
   if (!attribute.length) return;
   const input = document.getElementById(attribute);
@@ -212,7 +212,7 @@ function handleValidationClick(e) {
 }
 
 
-function handleFormsetValidationClick(e, availabilityButton) {
+function validateFormsetInputs(e, availabilityButton) {
 
   // Collect input IDs from the repeatable forms
   let inputs = Array.from(document.querySelectorAll('.repeatable-form input'))
@@ -247,26 +247,26 @@ function handleFormsetValidationClick(e, availabilityButton) {
   for(const input of needsValidation) {
     input.addEventListener('input', handleInputValidation);
   }
-  const alternativeDomainsAvailability = document.getElementById('check-avail-for-alt-domains');
+  const alternativeDomainsAvailability = document.getElementById('validate-alt-domains-availability');
   const activatesValidation = document.querySelectorAll('[validate-for]');
 
   for(const button of activatesValidation) {
     // Adds multi-field validation for alternative domains
     if (button === alternativeDomainsAvailability) {
       button.addEventListener('click', (e) => {
-        handleFormsetValidationClick(e, alternativeDomainsAvailability)
+        validateFormsetInputs(e, alternativeDomainsAvailability)
       });
     } else {
-      button.addEventListener('click', handleValidationClick);
+      button.addEventListener('click', validateField);
     }
   }
 
-  // Add event listener to the alternate domains input
-  const alternateDomainsInputs = document.querySelectorAll('[auto-validate]');
-  if (alternateDomainsInputs) {
-    for (const domainInput of alternateDomainsInputs){
-      domainInput.addEventListener('input', function() {
-          removeFormErrors(domainInput, true);
+  // Clear errors on auto-validated inputs when user reselects input
+  const autoValidateInputs = document.querySelectorAll('[auto-validate]');
+  if (autoValidateInputs) {
+    for (const input of autoValidateInputs){
+      input.addEventListener('input', function() {
+          removeFormErrors(input, true);
         }
       );
     }
