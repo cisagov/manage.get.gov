@@ -53,6 +53,15 @@
             {% else %}
                 {{ domain.state|capfirst }}
             {% endif %}
+            <svg 
+              class="usa-icon usa-tooltip" 
+              data-position="top"
+              title="{{domain.get_state_help_text}}"
+              focusable="true" 
+              role="img"
+            >
+              <use xlink:href="{%static 'img/sprite.svg'%}#info_outline"></use>
+            </svg>
           </td>
           <td>
             <a href="{% url "domain" pk=domain.pk %}">

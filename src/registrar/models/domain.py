@@ -1397,6 +1397,31 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Changing to DNS_NEEDED state")
         logger.info("able to transition to DNS_NEEDED state")
 
+    def get_state_help_text(self) -> str:
+        """Returns a str containing additional information about a given state"""
+        help_text = ""
+        print(f"self state is {self.state}")
+        match self.state:
+            case self.State.DNS_NEEDED | self.State.UNKNOWN:
+                help_text = (
+                    "Before this domain can be used, " 
+                    "you’ll need to add name server addresses."
+                )
+            case self.State.READY:
+                help_text = "This domain has name servers and is ready for use."
+            case self.State.ON_HOLD:
+                help_text = (
+                    "This domain is administratively paused, " 
+                    "so it can’t be edited and won’t resolve in DNS. "
+                    "Contact help@get.gov for details."
+                )
+            case self.State.DELETED:
+                help_text = (
+                    "This domain has been removed and " 
+                    "is no longer registered to your organization."
+                )
+        return help_text
+
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
