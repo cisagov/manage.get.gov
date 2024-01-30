@@ -1406,7 +1406,7 @@ class Domain(TimeStampedModel, DomainHelper):
         DF = epp.DiscloseField
         fields = {DF.EMAIL}
 
-        hidden_security_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT, DefaultEmail.LEGACY_DEFAULT]
+        hidden_security_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
         disclose = is_security and contact.email not in hidden_security_emails
         # Delete after testing on other devices
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)

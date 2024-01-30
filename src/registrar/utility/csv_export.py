@@ -65,7 +65,7 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         security_email = _email if _email is not None else " "
 
     # These are default emails that should not be displayed in the csv report
-    invalid_emails = {DefaultEmail.LEGACY_DEFAULT, DefaultEmail.PUBLIC_CONTACT_DEFAULT}
+    invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
     if security_email.lower() in invalid_emails:
         security_email = "(blank)"
 
