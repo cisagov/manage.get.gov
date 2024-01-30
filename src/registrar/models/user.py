@@ -7,7 +7,7 @@ from registrar.models.user_domain_role import UserDomainRole
 
 from .domain_invitation import DomainInvitation
 from .transition_domain import TransitionDomain
-from .very_important_person import VeryImportantPerson
+from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
@@ -91,7 +91,7 @@ class User(AbstractUser):
             return False
 
         # New users flagged by Staff to bypass ial2
-        if VeryImportantPerson.objects.filter(email=email).exists():
+        if VerifiedByStaff.objects.filter(email=email).exists():
             return False
 
         # A new incoming user who is being invited to be a domain manager (that is,
