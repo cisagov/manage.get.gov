@@ -102,9 +102,9 @@ class TestEmails(TestCase):
                 application.submit()
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
-        self.assertNotIn("Other employees from your organization:", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"5556\n\nAnything else")
+        self.assertRegex(body, r"5556\n\nOther employees")
+        self.assertRegex(body, r"None\n\nAnything else")
 
     @boto3_mocking.patching
     def test_submission_confirmation_alternative_govdomain_spacing(self):
@@ -117,7 +117,7 @@ class TestEmails(TestCase):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("city1.gov", body)
         # spacing should be right between adjacent elements
-        self.assertRegex(body, r"city.gov\ncity1.gov\n\nPurpose of your domain:")
+        self.assertRegex(body, r"city.gov\n\nAlternative domains:\ncity1.gov\n\nPurpose of your domain:")
 
     @boto3_mocking.patching
     def test_submission_confirmation_no_alternative_govdomain_spacing(self):

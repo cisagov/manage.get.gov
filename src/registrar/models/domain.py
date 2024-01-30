@@ -911,10 +911,15 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     def get_security_email(self):
-        logger.info("get_security_email-> getting the contact ")
-        secContact = self.security_contact
-        if secContact is not None:
-            return secContact.email
+        logger.info("get_security_email-> getting the contact")
+
+        security = PublicContact.ContactTypeChoices.SECURITY
+        security_contact = self.generic_contact_getter(security)
+
+        # If we get a valid value for security_contact, pull its email
+        # Otherwise, just return nothing
+        if security_contact is not None and isinstance(security_contact, PublicContact):
+            return security_contact.email
         else:
             return None
 
@@ -1122,7 +1127,6 @@ class Domain(TimeStampedModel, DomainHelper):
         If you wanted to setup getter logic for Security, you would call:
         cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
         or cache_contact_helper("security").
-
         """
         # registrant_contact(s) are an edge case. They exist on
         # the "registrant" property as opposed to contacts.

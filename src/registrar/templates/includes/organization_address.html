@@ -1,4 +1,7 @@
 <address>
+    {% if  organization.federal_agency  %}
+        {{ organization.federal_agency }}<br />
+    {% endif %}
     {% if  organization.organization_name  %}
         {{ organization.organization_name }}
     {% endif %}
