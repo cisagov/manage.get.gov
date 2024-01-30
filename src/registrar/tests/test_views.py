@@ -47,7 +47,9 @@ logger = logging.getLogger(__name__)
 
 class TestViews(TestCase):
     def setUp(self):
+        logger.debug("TestViews setUp")
         self.client = Client()
+        logger.debug("TestViews setUp complete")
 
     def test_health_check_endpoint(self):
         response = self.client.get("/health/")
@@ -67,6 +69,7 @@ class TestViews(TestCase):
 
 class TestWithUser(MockEppLib):
     def setUp(self):
+        logger.debug("TestWithUser setUp")
         super().setUp()
         username = "test_user"
         first_name = "First"
@@ -75,23 +78,30 @@ class TestWithUser(MockEppLib):
         self.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email
         )
+        logger.debug("TestWithUser setUp complete")
 
     def tearDown(self):
+        logger.debug("TestWithUser tearDown")
         # delete any applications too
         super().tearDown()
         DomainApplication.objects.all().delete()
         DomainInformation.objects.all().delete()
         self.user.delete()
+        logger.debug("TestWithUser tearDown complete")
 
 
 class LoggedInTests(TestWithUser):
     def setUp(self):
+        logger.debug("LoggedInTests setUp")
         super().setUp()
         self.client.force_login(self.user)
+        logger.debug("LoggedInTests setUp complete")
 
     def tearDown(self):
+        logger.debug("LoggedInTests tearDown")
         super().tearDown()
         Contact.objects.all().delete()
+        logger.debug("LoggedInTests tearDown complete")
 
     def test_home_lists_domain_applications(self):
         response = self.client.get("/")
@@ -342,9 +352,11 @@ class DomainApplicationTests(TestWithUser, WebTest):
     csrf_checks = False
 
     def setUp(self):
+        logger.debug("DomainApplicationTests setUp")
         super().setUp()
         self.app.set_user(self.user.username)
         self.TITLES = ApplicationWizard.TITLES
+        logger.debug("DomainApplicationTests setUp complete")
 
     def test_application_form_intro_acknowledgement(self):
         """Tests that user is presented with intro acknowledgement page"""
@@ -2375,6 +2387,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
 class TestWithDomainPermissions(TestWithUser):
     def setUp(self):
+        logger.debug("TestWithDomainPermissions setUp")
         super().setUp()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.domain_with_ip, _ = Domain.objects.get_or_create(name="nameserverwithip.gov")
@@ -2444,8 +2457,10 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_deleted, role=UserDomainRole.Roles.MANAGER
         )
+        logger.debug("TestWithDomainPermissions setUp complete")
 
     def tearDown(self):
+        logger.debug("TestWithDomainPermissions tearDown")
         try:
             UserDomainRole.objects.all().delete()
             if hasattr(self.domain, "contacts"):
@@ -2460,6 +2475,7 @@ class TestWithDomainPermissions(TestWithUser):
         except ValueError:  # pass if already deleted
             pass
         super().tearDown()
+        logger.debug("TestWithDomainPermissions tearDown complete")
 
 
 class TestDomainPermissions(TestWithDomainPermissions):
@@ -2527,9 +2543,11 @@ class TestDomainPermissions(TestWithDomainPermissions):
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
     def setUp(self):
+        logger.debug("TestDomainOverview setUp")
         super().setUp()
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
+        logger.debug("TestDomainOverview setUp complete")
 
 
 class TestDomainDetail(TestDomainOverview):
@@ -2664,10 +2682,12 @@ class TestDomainDetail(TestDomainOverview):
 
 class TestDomainManagers(TestDomainOverview):
     def tearDown(self):
+        logger.debug("TestDomainManagers tearDown")
         """Ensure that the user has its original permissions"""
         super().tearDown()
         self.user.is_staff = False
         self.user.save()
+        logger.debug("TestDomainManagers tearDown complete")
 
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
@@ -3768,9 +3788,11 @@ class TestDomainDNSSEC(TestDomainOverview):
 
 class TestApplicationStatus(TestWithUser, WebTest):
     def setUp(self):
+        logger.debug("TestApplicationStatus setUp")
         super().setUp()
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
+        logger.debug("TestApplicationStatus setUp complete")
 
     def test_application_status(self):
         """Checking application status page"""
