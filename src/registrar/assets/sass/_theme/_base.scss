@@ -129,3 +129,8 @@ abbr[title] {
 .flex-end {
   align-items: flex-end;
 }
+
+.usa-tooltip__body {
+  max-width: 320px;
+  white-space: normal;
+}
