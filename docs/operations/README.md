@@ -237,3 +237,7 @@ Bugs on production software need to be documented quickly and triaged to determi
 3. In the case where the engineering lead is is unresponsive or unavailable to assign the ticket immediately, the product team will make sure an engineer volunteers or is assigned to the ticket/PR review ASAP.
 4. Once done, the developer must make a PR and should tag the assigned PR reviewers in our Slack dev channel stating that the PR is now waiting on their review. These reviewers should drop other tasks in order to review this promptly.
 5. See the the section above on [Making bug fixes on stable](#making-bug-fixes-on-stable-during-production) for how to push changes to stable once the PR is approved
+
+# Investigating and monitoring the health of the Registrar
+
+Sometimes, we may want individuals to routinely monitor the Registrar's health, such as after big feature launches. The cadence of such monitoring and what we look for is subject to change and is instead documented in [Checklist for production verification document](https://docs.google.com/document/d/15b_qwEZMiL76BHeRHnznV1HxDQcxNRt--vPSEfixBOI). All project team members should feel free to suggest edits to this document and should refer to it if production-level monitoring is underway.

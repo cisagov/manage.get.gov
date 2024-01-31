@@ -48,16 +48,15 @@
       {% endwith %}
     {% endwith %}
     <button
-      id="check-availability-button"
       type="button"
-      class="usa-button"
+      class="usa-button usa-button--outline"
       validate-for="{{ forms.0.requested_domain.auto_id }}"
     >Check availability</button>
   </fieldset>
 
   {{ forms.1.management_form }}
 
-  <fieldset class="usa-fieldset margin-top-1">
+  <fieldset class="usa-fieldset margin-top-1 dotgov-domain-form" id="form-container">
     <legend>
       <h2>Alternative domains (optional)</h2>
     </legend>
@@ -66,23 +65,34 @@
     you your first choice?</p>
 
     {% with attr_aria_describedby="alt_domain_instructions" %}
-      {# attr_validate / validate="domain" invokes code in get-gov.js #}
-      {# attr_auto_validate likewise triggers behavior in get-gov.js #}
-      {% with append_gov=True attr_validate="domain" attr_auto_validate=True %}
-        {% with add_class="blank-ok alternate-domain-input" %}
-          {% for form in forms.1 %}
+      {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
+      {% with attr_validate="domain" append_gov=True add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
+        {% for form in forms.1 %}
+          <div class="repeatable-form">
             {% input_with_errors form.alternative_domain %}
-          {% endfor %}
-        {% endwith %}
+          </div>
+        {% endfor %}
       {% endwith %}
     {% endwith %}
 
-    <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
+    <button type="button" value="save" class="usa-button usa-button--unstyled" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another alternative</span>
     </button>
 
-  </fieldset>
+    <div class="margin-bottom-3">
+      <button
+      id="validate-alt-domains-availability"
+      type="button"
+      class="usa-button usa-button--outline"
+      validate-for="{{ forms.1.requested_domain.auto_id }}"
+      >Check availability</button>
+    </div>
+    
+
+  <p class="margin-top-05">If you’re not sure this is the domain you want, that’s ok. You can change the domain later. </p>
+
+</fieldset>
 
 {% endblock %}

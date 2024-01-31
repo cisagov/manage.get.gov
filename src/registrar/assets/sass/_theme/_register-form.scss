@@ -6,12 +6,14 @@
   margin-top: units(-1);
 }
 
-  //Tighter spacing when H2 is immediatly after H1
+// Tighter spacing when h2 is immediatly after h1
 .register-form-step .usa-fieldset:first-of-type h2:first-of-type,
 .register-form-step h1 + h2 {
   margin-top: units(1);
 }
 
+// register-form-review-header is used on the summary page and
+// should not be styled like the register form headers
 .register-form-step h3 {
   color: color('primary-dark');
   letter-spacing: $letter-space--xs;
@@ -21,6 +23,16 @@
   + p {
     margin-top: units(0.5);
   }
+}
+
+h3.register-form-review-header {
+  color: color('primary-dark');
+  margin-top: units(2);
+  margin-bottom: 0;
+  font-weight: font-weight('semibold');
+  // The units mixin can only get us close, so it's between 
+  // hardcoding the value and using  in markup
+  font-size: 16.96px;
 }
 
 .register-form-step h4 {
