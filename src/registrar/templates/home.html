@@ -10,6 +10,9 @@
 {# the entire logged in page goes here #}
 
 <div class="tablet:grid-col-11 desktop:grid-col-10 tablet:grid-offset-1">
+  {% block messages %}
+    {% include "includes/form_messages.html" %}
+  {% endblock %}
   <h1>Manage your domains</h2>
 
   <p class="margin-top-4">

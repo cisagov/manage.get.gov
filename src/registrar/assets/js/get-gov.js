@@ -219,8 +219,8 @@ function validateFormsetInputs(e, availabilityButton) {
 
   // Run validators for each input
   inputs.forEach(input => {
-    runValidators(input);
     removeFormErrors(input, true);
+    runValidators(input);
   });
 
   // Set the validate-for attribute on the button with the collected input IDs
