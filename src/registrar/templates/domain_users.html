@@ -82,15 +82,14 @@
             </div>
           {% endif %}
         {% else %}
-          <a
-          class="usa-button--unstyled disabled-link usa-tooltip text-no-underline "
+          <input 
+          type="submit" 
+          class="usa-button--unstyled text-no-underline disabled-link usa-tooltip" 
+          value="Remove"
           data-position="bottom"
           title="Domains must have at least one domain manager"
           aria-disabled="true"
-          data-tooltip="true"
-          >
-          Remove
-          </a>
+          data-tooltip="true">
         {% endif %}
         </td>
       </tr>
