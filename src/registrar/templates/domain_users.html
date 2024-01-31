@@ -84,12 +84,14 @@
         {% else %}
           <input 
           type="submit" 
-          class="usa-button--unstyled text-no-underline disabled-link usa-tooltip" 
+          class="usa-button--unstyled disabled-button usa-tooltip" 
           value="Remove"
           data-position="bottom"
           title="Domains must have at least one domain manager"
+          data-tooltip="true"
           aria-disabled="true"
-          data-tooltip="true">
+          role="button"
+          >
         {% endif %}
         </td>
       </tr>
