@@ -26,6 +26,13 @@
     padding-bottom: units(2px);
   }
 
+  td {
+    .no-click-outline, .no-click-outline:hover, .no-click-outline:focus{
+      cursor: default !important;
+      outline: none !important;
+    }
+  }
+
   // Ticket #1510
   // @include at-media('desktop') {
   //   th:first-child {
