@@ -133,10 +133,9 @@ a.usa-button--unstyled:visited {
   }
 }
 
-// TODO: find another file for this 
-.info-button span.usa-tooltip svg.usa-icon {
-  svg.usa-icon{
-    transform: translateY(2px) !important;
-    background: transparent;
-  }
+// TODO: find another file for this
+.info-tooltip { 
+  transform: translateY(4px) !important;
+  display: inline-block;
+  background: transparent;
 }
