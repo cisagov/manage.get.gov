@@ -135,3 +135,9 @@ abbr[title] {
   max-width: 350px;
   white-space: normal;
 }
+
+// USWDS has weird interactions with SVGs regarding tooltips,
+// and other components. In this event, we need to disable pointer interactions.
+.disable-pointer-events {
+  pointer-events: none;
+}
