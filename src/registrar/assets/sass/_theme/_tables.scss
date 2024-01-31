@@ -28,8 +28,10 @@
 
   td {
     .no-click-outline, .no-click-outline:hover, .no-click-outline:focus{
-      cursor: default !important;
-      outline: none !important;
+      outline: none;
+    }
+    .cursor-help{
+      cursor: help;
     }
   }
 

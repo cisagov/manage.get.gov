@@ -139,6 +139,33 @@ class Domain(TimeStampedModel, DomainHelper):
         # previously existed but has been deleted from the registry
         DELETED = "deleted", "Deleted"
 
+        @classmethod
+        def get_help_text(cls, state) -> str:
+            """Returns a help message for a desired state. If none is found, an empty string is returned"""
+            help_texts = {
+                # For now, unknown has the same message as DNS_NEEDED
+                cls.UNKNOWN:(
+                    "Before this domain can be used, " 
+                    "you’ll need to add name server addresses."
+                ),
+                cls.DNS_NEEDED: (
+                    "Before this domain can be used, " 
+                    "you’ll need to add name server addresses."
+                ),
+                cls.READY: "This domain has name servers and is ready for use.",
+                cls.ON_HOLD: (
+                    "This domain is administratively paused, " 
+                    "so it can’t be edited and won’t resolve in DNS. "
+                    "Contact help@get.gov for details."
+                ),
+                cls.DELETED: (
+                    "This domain has been removed and " 
+                    "is no longer registered to your organization."
+                )
+            }
+
+            return help_texts.get(state, "")
+
     class Cache(property):
         """
         Python descriptor to turn class methods into properties.
@@ -1399,27 +1426,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def get_state_help_text(self) -> str:
         """Returns a str containing additional information about a given state"""
-        help_text = ""
-        print(f"self state is {self.state}")
-        match self.state:
-            case self.State.DNS_NEEDED | self.State.UNKNOWN:
-                help_text = (
-                    "Before this domain can be used, " 
-                    "you’ll need to add name server addresses."
-                )
-            case self.State.READY:
-                help_text = "This domain has name servers and is ready for use."
-            case self.State.ON_HOLD:
-                help_text = (
-                    "This domain is administratively paused, " 
-                    "so it can’t be edited and won’t resolve in DNS. "
-                    "Contact help@get.gov for details."
-                )
-            case self.State.DELETED:
-                help_text = (
-                    "This domain has been removed and " 
-                    "is no longer registered to your organization."
-                )
+        help_text = Domain.State.get_help_text(self.state)
         return help_text
 
     def _disclose_fields(self, contact: PublicContact):
