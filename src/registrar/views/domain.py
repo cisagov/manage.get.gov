@@ -6,7 +6,7 @@ inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
 """
 
 import logging
-import time
+
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
@@ -150,7 +150,6 @@ class DomainView(DomainBaseView):
             context["security_email"] = None
             return context
         context["security_email"] = security_email
-        time.sleep(100)
         return context
 
     def in_editable_state(self, pk):
