@@ -14,11 +14,11 @@ from registrar.admin import (
     ContactAdmin,
     DomainInformationAdmin,
     UserDomainRoleAdmin,
-    VeryImportantPersonAdmin,
+    VerifiedByStaffAdmin,
 )
 from registrar.models import Domain, DomainApplication, DomainInformation, User, DomainInvitation, Contact, Website
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.very_important_person import VeryImportantPerson
+from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockSESClient,
     AuditedAdminMockData,
@@ -1738,11 +1738,90 @@ class ContactAdminTest(TestCase):
 
         self.assertEqual(readonly_fields, expected_fields)
 
+    def test_change_view_for_joined_contact_five_or_less(self):
+        """Create a contact, join it to 4 domain requests. The 5th join will be a user.
+        Assert that the warning on the contact form lists 5 joins."""
+
+        self.client.force_login(self.superuser)
+
+        # Create an instance of the model
+        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+
+        # join it to 4 domain requests. The 5th join will be a user.
+        application1 = completed_application(submitter=contact, name="city1.gov")
+        application2 = completed_application(submitter=contact, name="city2.gov")
+        application3 = completed_application(submitter=contact, name="city3.gov")
+        application4 = completed_application(submitter=contact, name="city4.gov")
+
+        with patch("django.contrib.messages.warning") as mock_warning:
+            # Use the test client to simulate the request
+            response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
+
+            # Assert that the error message was called with the correct argument
+            # Note: The 5th join will be a user.
+            mock_warning.assert_called_once_with(
+                response.wsgi_request,
+                "<ul class='messagelist_content-list--unstyled'>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
+                "<li>Joined to User: <a href='/admin/registrar/"
+                f"user/{self.staffuser.pk}/change/'>staff@example.com</a></li>"
+                "</ul>",
+            )
+
+    def test_change_view_for_joined_contact_five_or_more(self):
+        """Create a contact, join it to 5 domain requests. The 6th join will be a user.
+        Assert that the warning on the contact form lists 5 joins and a '1 more' ellispsis."""
+
+        self.client.force_login(self.superuser)
+
+        # Create an instance of the model
+        # join it to 5 domain requests. The 6th join will be a user.
+        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+        application1 = completed_application(submitter=contact, name="city1.gov")
+        application2 = completed_application(submitter=contact, name="city2.gov")
+        application3 = completed_application(submitter=contact, name="city3.gov")
+        application4 = completed_application(submitter=contact, name="city4.gov")
+        application5 = completed_application(submitter=contact, name="city5.gov")
+
+        with patch("django.contrib.messages.warning") as mock_warning:
+            # Use the test client to simulate the request
+            response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
+
+            logger.info(mock_warning)
+
+            # Assert that the error message was called with the correct argument
+            # Note: The 6th join will be a user.
+            mock_warning.assert_called_once_with(
+                response.wsgi_request,
+                "<ul class='messagelist_content-list--unstyled'>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
+                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                f"domainapplication/{application5.pk}/change/'>city5.gov</a></li>"
+                "</ul>"
+                "<p class='font-sans-3xs'>And 1 more...</p>",
+            )
+
     def tearDown(self):
+        DomainApplication.objects.all().delete()
+        Contact.objects.all().delete()
         User.objects.all().delete()
 
 
-class VeryImportantPersonAdminTestCase(TestCase):
+class VerifiedByStaffAdminTestCase(TestCase):
     def setUp(self):
         self.superuser = create_superuser()
         self.factory = RequestFactory()
@@ -1751,13 +1830,13 @@ class VeryImportantPersonAdminTestCase(TestCase):
         self.client.force_login(self.superuser)
 
         # Create an instance of the admin class
-        admin_instance = VeryImportantPersonAdmin(model=VeryImportantPerson, admin_site=None)
+        admin_instance = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=None)
 
-        # Create a VeryImportantPerson instance
-        vip_instance = VeryImportantPerson(email="test@example.com", notes="Test Notes")
+        # Create a VerifiedByStaff instance
+        vip_instance = VerifiedByStaff(email="test@example.com", notes="Test Notes")
 
         # Create a request object
-        request = self.factory.post("/admin/yourapp/veryimportantperson/add/")
+        request = self.factory.post("/admin/yourapp/VerifiedByStaff/add/")
         request.user = self.superuser
 
         # Call the save_model method
