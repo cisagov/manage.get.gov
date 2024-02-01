@@ -77,6 +77,8 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
     # create a dictionary of fields which can be included in output
     FIELDS = {
         "Domain name": domain.name,
+        "Status": domain.get_state_display(),
+        "Expiration date": domain.expiration_date,
         "Domain type": domain_type,
         "Agency": domain_info.federal_agency,
         "Organization name": domain_info.organization_name,
@@ -85,8 +87,6 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         "AO": domain_info.ao,  # type: ignore
         "AO email": domain_info.authorizing_official.email if domain_info.authorizing_official else " ",
         "Security contact email": security_email,
-        "Status": domain.get_state_display(),
-        "Expiration date": domain.expiration_date,
         "Created at": domain.created_at,
         "First ready": domain.first_ready,
         "Deleted": domain.deleted,
@@ -152,6 +152,8 @@ def export_data_type_to_csv(csv_file):
     # define columns to include in export
     columns = [
         "Domain name",
+        "Status",
+        "Expiration date",
         "Domain type",
         "Agency",
         "Organization name",
@@ -160,8 +162,6 @@ def export_data_type_to_csv(csv_file):
         "AO",
         "AO email",
         "Security contact email",
-        "Status",
-        "Expiration date",
     ]
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
