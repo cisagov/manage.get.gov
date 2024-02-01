@@ -6,8 +6,6 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from django.contrib.sessions.models import Session
-
 from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -2390,21 +2388,21 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         """Test when all fields in the application are empty."""
         unlocked_steps = self.wizard.db_check_for_unlocking_steps()
         expected_dict = {
-            'about_your_organization': False,
-            'anything_else': False,
-            'authorizing_official': False,
-            'current_sites': False,
-            'dotgov_domain': False,
-            'organization_contact': False,
-            'organization_election': False,
-            'organization_federal': False,
-            'organization_type': False,
-            'other_contacts': False,
-            'purpose': False,
-            'requirements': False,
-            'review': False,
-            'tribal_government': False,
-            'your_contact': False
+            "about_your_organization": False,
+            "anything_else": False,
+            "authorizing_official": False,
+            "current_sites": False,
+            "dotgov_domain": False,
+            "organization_contact": False,
+            "organization_election": False,
+            "organization_federal": False,
+            "organization_type": False,
+            "other_contacts": False,
+            "purpose": False,
+            "requirements": False,
+            "review": False,
+            "tribal_government": False,
+            "your_contact": False,
         }
         self.assertEqual(unlocked_steps, expected_dict)
 
@@ -2435,9 +2433,9 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
                 detail_page = response.follow()
 
                 self.wizard.get_context_data()
-            except:
+            except Exception as err:
                 # Handle any potential errors while following the redirect
-                self.fail("Error following the redirect")
+                self.fail(f"Error following the redirect {err}")
 
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
@@ -2501,15 +2499,15 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
                 detail_page = response.follow()
 
                 self.wizard.get_context_data()
-            except:
+            except Exception as err:
                 # Handle any potential errors while following the redirect
-                self.fail("Error following the redirect")
+                self.fail(f"Error following the redirect {err}")
 
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
 
-            # 5 unlocked steps (ao, domain, submitter, other contacts, and current sites which unlocks if domain exists),
-            # one active step, the review step is locked
+            # 5 unlocked steps (ao, domain, submitter, other contacts, and current sites
+            # which unlocks if domain exists), one active step, the review step is locked
             self.assertContains(detail_page, "#check_circle", count=5)
             # Type of organization
             self.assertContains(detail_page, "usa-current", count=1)

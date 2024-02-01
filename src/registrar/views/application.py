@@ -333,10 +333,10 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             DomainApplication.ApplicationStatus.ACTION_NEEDED,
         ]
         return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
-    
+
     def db_check_for_unlocking_steps(self):
         """Helper for get_context_data
-            
+
         Queries the DB for an application and returns a dict for unlocked steps."""
         return {
             "organization_type": bool(self.application.organization_type),
@@ -344,10 +344,13 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             "organization_federal": bool(self.application.federal_type),
             "organization_election": bool(self.application.is_election_board),
             "organization_contact": (
-                bool(self.application.federal_agency) or bool(self.application.organization_name) or
-                bool(self.application.address_line1) or bool(self.application.city) or
-                bool(self.application.state_territory) or bool(self.application.zipcode) or
-                bool(self.application.urbanization)
+                bool(self.application.federal_agency)
+                or bool(self.application.organization_name)
+                or bool(self.application.address_line1)
+                or bool(self.application.city)
+                or bool(self.application.state_territory)
+                or bool(self.application.zipcode)
+                or bool(self.application.urbanization)
             ),
             "about_your_organization": bool(self.application.about_your_organization),
             "authorizing_official": bool(self.application.authorizing_official),
@@ -360,9 +363,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             "other_contacts": (
                 bool(self.application.other_contacts.exists()) or bool(self.application.no_other_contacts_rationale)
             ),
-            "anything_else": (
-                bool(self.application.anything_else) or bool(self.application.is_policy_acknowledged)
-            ),
+            "anything_else": (bool(self.application.anything_else) or bool(self.application.is_policy_acknowledged)),
             "requirements": bool(self.application.is_policy_acknowledged),
             "review": bool(self.application.is_policy_acknowledged),
         }
