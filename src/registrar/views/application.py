@@ -159,7 +159,11 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def storage(self):
         # marking session as modified on every access
         # so that updates to nested keys are always saved
-        self.request.session.modified = True
+        # Also - check that self.request.session has the attr
+        # modified to account for test environments calling
+        # view methods
+        if hasattr(self.request.session, "modified"):
+            self.request.session.modified = True
         return self.request.session.setdefault(self.prefix, {})
 
     @storage.setter
@@ -224,10 +228,8 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             if request.path_info == self.NEW_URL_NAME:
                 return render(request, "application_intro.html")
             else:
-                logger.info('get calling self.steps.first')
                 return self.goto(self.steps.first)
 
-        logger.info('get setting current step')
         self.steps.current = current_url
         context = self.get_context_data()
         context["forms"] = self.get_forms()
@@ -256,7 +258,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
         All arguments (**kwargs) are passed directly to `get_forms`.
         """
-        logger.info('get_all_forms gettig steps in self.steps')
         nested = (self.get_forms(step=step, **kwargs) for step in self.steps)
         flattened = [form for lst in nested for form in lst]
         return flattened
@@ -273,7 +274,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         An empty form will be provided if neither of those are true.
         """
 
-        logger.info('get_forms setting prefix to self.steps.current')
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
@@ -335,64 +335,37 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
     
     def db_check_for_unlocking_steps(self):
-        unlocked_steps = {}
-
-        if self.application.organization_type:
-            unlocked_steps["organization_type"] = True
-
-        if self.application.tribe_name:
-            unlocked_steps["tribal_government"] = True
-
-        if self.application.federal_agency:
-            unlocked_steps["organization_federal"] = True
-
-        if self.application.is_election_board:
-            unlocked_steps["organization_election"] = True
-
-        if (
-            self.application.organization_name
-            or self.application.address_line1
-            or self.application.city
-            or self.application.state_territory
-            or self.application.zipcode
-            or self.application.urbanization
-        ):
-            unlocked_steps["organization_contact"] = True
-
-        if self.application.about_your_organization:
-            unlocked_steps["about_your_organization"] = True
-
-        if self.application.authorizing_official:
-            unlocked_steps["authorizing_official"] = True
-
-        # Since this field is optional, test to see if the next step has been touched
-        if self.application.current_websites.exists() or self.application.requested_domain:
-            unlocked_steps["current_sites"] = True
-
-        if self.application.requested_domain:
-            unlocked_steps["dotgov_domain"] = True
-
-        if self.application.purpose:
-            unlocked_steps["purpose"] = True
-
-        if self.application.submitter:
-            unlocked_steps["your_contact"] = True
-
-        if self.application.other_contacts.exists() or self.application.no_other_contacts_rationale:
-            unlocked_steps["other_contacts"] = True
-
-        # Since this field is optional, test to see if the next step has been touched
-        if self.application.anything_else or self.application.is_policy_acknowledged:
-            unlocked_steps["anything_else"] = True
-
-        if self.application.is_policy_acknowledged:
-            unlocked_steps["requirements"] = True
-
-        if self.application.submission_date:
-            unlocked_steps["review"] = True
-
-        return unlocked_steps
-
+        """Helper for get_context_data
+            
+        Queries the DB for an application and returns a dict for unlocked steps."""
+        return {
+            "organization_type": bool(self.application.organization_type),
+            "tribal_government": bool(self.application.tribe_name),
+            "organization_federal": bool(self.application.federal_type),
+            "organization_election": bool(self.application.is_election_board),
+            "organization_contact": (
+                bool(self.application.federal_agency) or bool(self.application.organization_name) or
+                bool(self.application.address_line1) or bool(self.application.city) or
+                bool(self.application.state_territory) or bool(self.application.zipcode) or
+                bool(self.application.urbanization)
+            ),
+            "about_your_organization": bool(self.application.about_your_organization),
+            "authorizing_official": bool(self.application.authorizing_official),
+            "current_sites": (
+                bool(self.application.current_websites.exists()) or bool(self.application.requested_domain)
+            ),
+            "dotgov_domain": bool(self.application.requested_domain),
+            "purpose": bool(self.application.purpose),
+            "your_contact": bool(self.application.submitter),
+            "other_contacts": (
+                bool(self.application.other_contacts.exists()) or bool(self.application.no_other_contacts_rationale)
+            ),
+            "anything_else": (
+                bool(self.application.anything_else) or bool(self.application.is_policy_acknowledged)
+            ),
+            "requirements": bool(self.application.is_policy_acknowledged),
+            "review": bool(self.application.is_policy_acknowledged),
+        }
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
@@ -404,10 +377,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         else:
             modal_heading = "You are about to submit an incomplete request"
 
-        logger.info(f'get_context_data returning value for cisited equals to: {self.storage.get("step_history", [])}')
-
-        unlocked_steps_list = list(self.db_check_for_unlocking_steps().keys())
-
+        unlocked_steps_list = [key for key, value in self.db_check_for_unlocking_steps().items() if value]
 
         return {
             "form_titles": self.TITLES,
@@ -431,7 +401,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         return step_list
 
     def goto(self, step):
-        logger.info(f'goto sets self.steps.current to passed {step}')
         self.steps.current = step
         return redirect(reverse(f"{self.URL_NAMESPACE}:{step}"))
 
@@ -440,7 +409,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         next = self.steps.next
         if next:
             self.steps.current = next
-            logger.info(f'goto sets self.goto_next_step.current to passed {self.steps.next}')
             return self.goto(next)
         else:
             raise Http404()
@@ -460,7 +428,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if button == "intro_acknowledge":
             if request.path_info == self.NEW_URL_NAME:
                 del self.storage
-            logger.info(f'post calling goto with {self.steps.first}')
             return self.goto(self.steps.first)
 
         # if accessing this class directly, redirect to the first step
@@ -480,7 +447,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         # return them to the page they were already on
         if button == "save":
             messages.success(request, "Your progress has been saved!")
-            logger.info(f'post calling goto with {self.steps.current}')
             return self.goto(self.steps.current)
         # if user opted to save progress and return,
         # return them to the home page

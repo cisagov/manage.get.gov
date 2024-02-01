@@ -1,10 +1,12 @@
 from unittest import skip
-from unittest.mock import MagicMock, ANY, patch
+from unittest.mock import MagicMock, ANY, Mock, patch
 
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+
+from django.contrib.sessions.models import Session
 
 from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
@@ -2371,6 +2373,150 @@ class DomainApplicationTests(TestWithUser, WebTest):
         review_page = self.app.get(reverse("application:review"))
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "You are about to submit an incomplete request")
+
+
+class TestWizardUnlockingSteps(TestWithUser, WebTest):
+    def setUp(self):
+        super().setUp()
+        self.app.set_user(self.user.username)
+        self.wizard = ApplicationWizard()
+        # Mock the request object, its user, and session attributes appropriately
+        self.wizard.request = Mock(user=self.user, session={})
+
+    def tearDown(self):
+        super().tearDown()
+
+    def test_unlocked_steps_empty_application(self):
+        """Test when all fields in the application are empty."""
+        unlocked_steps = self.wizard.db_check_for_unlocking_steps()
+        expected_dict = {
+            'about_your_organization': False,
+            'anything_else': False,
+            'authorizing_official': False,
+            'current_sites': False,
+            'dotgov_domain': False,
+            'organization_contact': False,
+            'organization_election': False,
+            'organization_federal': False,
+            'organization_type': False,
+            'other_contacts': False,
+            'purpose': False,
+            'requirements': False,
+            'review': False,
+            'tribal_government': False,
+            'your_contact': False
+        }
+        self.assertEqual(unlocked_steps, expected_dict)
+
+    def test_unlocked_steps_full_application(self):
+        """Test when all fields in the application are filled."""
+
+        completed_application(status=DomainApplication.ApplicationStatus.STARTED, user=self.user)
+        # Make a request to the home page
+        home_page = self.app.get("/")
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Assert that the response contains "city.gov"
+        self.assertContains(home_page, "city.gov")
+
+        # Click the "Edit" link
+        response = home_page.click("Edit", index=0)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Check if the response is a redirect
+        if response.status_code == 302:
+            # Follow the redirect manually
+            try:
+                detail_page = response.follow()
+
+                self.wizard.get_context_data()
+            except:
+                # Handle any potential errors while following the redirect
+                self.fail("Error following the redirect")
+
+            # Now 'detail_page' contains the response after following the redirect
+            self.assertEqual(detail_page.status_code, 200)
+
+            # 10 unlocked steps, one active step, the review step will have link_usa but not check_circle
+            self.assertContains(detail_page, "#check_circle", count=10)
+            # Type of organization
+            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "link_usa-checked", count=11)
+
+        else:
+            self.fail("Expected a redirect, but got a different response")
+
+    def test_unlocked_steps_partial_application(self):
+        """Test when some fields in the application are filled."""
+
+        # Create the site and contacts to delete (orphaned)
+        contact = Contact.objects.create(
+            first_name="Henry",
+            last_name="Mcfakerson",
+        )
+        # Create two non-orphaned contacts
+        contact_2 = Contact.objects.create(
+            first_name="Saturn",
+            last_name="Mars",
+        )
+
+        # Attach a user object to a contact (should not be deleted)
+        contact_user, _ = Contact.objects.get_or_create(user=self.user)
+
+        site = DraftDomain.objects.create(name="igorville.gov")
+        application = DomainApplication.objects.create(
+            creator=self.user,
+            requested_domain=site,
+            status=DomainApplication.ApplicationStatus.WITHDRAWN,
+            authorizing_official=contact,
+            submitter=contact_user,
+        )
+        application.other_contacts.set([contact_2])
+
+        # Make a request to the home page
+        home_page = self.app.get("/")
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Assert that the response contains "city.gov"
+        self.assertContains(home_page, "igorville.gov")
+
+        # Click the "Edit" link
+        response = home_page.click("Edit", index=0)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Check if the response is a redirect
+        if response.status_code == 302:
+            # Follow the redirect manually
+            try:
+                detail_page = response.follow()
+
+                self.wizard.get_context_data()
+            except:
+                # Handle any potential errors while following the redirect
+                self.fail("Error following the redirect")
+
+            # Now 'detail_page' contains the response after following the redirect
+            self.assertEqual(detail_page.status_code, 200)
+
+            # 5 unlocked steps (ao, domain, submitter, other contacts, and current sites which unlocks if domain exists),
+            # one active step, the review step is locked
+            self.assertContains(detail_page, "#check_circle", count=5)
+            # Type of organization
+            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "link_usa-checked", count=5)
+
+        else:
+            self.fail("Expected a redirect, but got a different response")
 
 
 class TestWithDomainPermissions(TestWithUser):
