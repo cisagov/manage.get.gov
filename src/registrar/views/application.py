@@ -146,6 +146,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                     creator=creator,
                     pk=id,
                 )
+                self.storage["step_history"] = self.db_check_for_unlocking_steps()
                 return self._application
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
@@ -293,7 +294,41 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                 instantiated.append(form(initial=data, **kwargs))
 
         return instantiated
+    
+    def db_check_for_unlocking_steps(self):
+        """Helper for get_context_data
 
+        Queries the DB for an application and returns a dict for unlocked steps."""
+        return {
+            "organization_type": bool(self.application.organization_type),
+            "tribal_government": bool(self.application.tribe_name),
+            "organization_federal": bool(self.application.federal_type),
+            "organization_election": bool(self.application.is_election_board),
+            "organization_contact": (
+                bool(self.application.federal_agency)
+                or bool(self.application.organization_name)
+                or bool(self.application.address_line1)
+                or bool(self.application.city)
+                or bool(self.application.state_territory)
+                or bool(self.application.zipcode)
+                or bool(self.application.urbanization)
+            ),
+            "about_your_organization": bool(self.application.about_your_organization),
+            "authorizing_official": bool(self.application.authorizing_official),
+            "current_sites": (
+                bool(self.application.current_websites.exists()) or bool(self.application.requested_domain)
+            ),
+            "dotgov_domain": bool(self.application.requested_domain),
+            "purpose": bool(self.application.purpose),
+            "your_contact": bool(self.application.submitter),
+            "other_contacts": (
+                bool(self.application.other_contacts.exists()) or bool(self.application.no_other_contacts_rationale)
+            ),
+            "anything_else": (bool(self.application.anything_else) or bool(self.application.is_policy_acknowledged)),
+            "requirements": bool(self.application.is_policy_acknowledged),
+            "review": bool(self.application.is_policy_acknowledged),
+        }
+    
     def pending_requests(self):
         """return an array of pending requests if user has pending requests
         and no approved requests"""
