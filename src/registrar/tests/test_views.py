@@ -153,11 +153,8 @@ class LoggedInTests(TestWithUser):
                 self.assertContains(response, domain_name, count=2)
 
                 # Check that we have the right text content.
-                # We expect two instances because of SR content.
-                self.assertContains(response, expected_message, count=2)
+                self.assertContains(response, expected_message, count=1)
 
-                # Check that its nested in the right html element
-                
                 # Delete the role and domain to ensure we're testing in isolation
                 user_role.delete()
                 test_domain.delete()
