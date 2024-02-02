@@ -380,6 +380,18 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
         unlocked_steps_list = [key for key, value in self.db_check_for_unlocking_steps().items() if value]
 
+        # History captures the ephemeral activation of the current step
+        # We want to add that to our unlocked steps so that users can navigate to another
+        # step than back to the empty form step.
+        step_history_set = set(self.storage.get("step_history", []))
+        unlocked_steps_set = set(unlocked_steps_list)
+
+        # Find the elements in step_history_set that are not in unlocked_steps_set
+        new_elements = step_history_set - unlocked_steps_set
+
+        # Add the new elements to unlocked_steps_list
+        unlocked_steps_list.extend(new_elements)
+
         return {
             "form_titles": self.TITLES,
             "steps": self.steps,
