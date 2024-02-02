@@ -48,9 +48,7 @@
           </th>
           <td data-sort-value="{{ domain.expiration_date|date:"U" }}" data-label="Expires">{{ domain.expiration_date|date }}</td>
           <td data-label="Status">
-            <span class="usa-tooltip no-click-outline cursor-help"
-            aria-ignore="true"
-            focusable="false">
+            <span>
               {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
               {% if domain.is_expired and domain.state != domain.State.UNKNOWN %}
                   Expired

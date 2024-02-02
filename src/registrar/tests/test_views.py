@@ -128,10 +128,6 @@ class LoggedInTests(TestWithUser):
             "This domain has been removed and " 
             "is no longer registered to your organization."
         )
-        expired_text = (
-            "This domain has expired, but it is still online. " 
-            "To renew this domain, contact help@get.gov."
-        )
         # Generate a mapping of domain names, the state, and expected messages for the subtest
         test_cases = [
             ("deleted.gov", Domain.State.DELETED, deleted_text),
@@ -139,16 +135,15 @@ class LoggedInTests(TestWithUser):
             ("unknown.gov", Domain.State.UNKNOWN, dns_needed_text),
             ("onhold.gov", Domain.State.ON_HOLD, on_hold_text),
             ("ready.gov", Domain.State.READY, ready_text),
-            ("expired.gov", Domain.State.READY, expired_text)
         ]
         for domain_name, state, expected_message in test_cases:
             with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
 
                 # Create a domain and a UserRole with the given params
                 test_domain, _ = Domain.objects.get_or_create(name=domain_name, state=state)
-                if domain_name == "expired.gov":
-                    test_domain.expiration_date = date(2011, 10, 10)
-                    test_domain.save()
+                test_domain.expiration_date = date.today()
+                test_domain.save()
+
                 user_role, _ = UserDomainRole.objects.get_or_create(
                     user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
                 )
@@ -166,6 +161,30 @@ class LoggedInTests(TestWithUser):
                 # Delete the role and domain to ensure we're testing in isolation
                 user_role.delete()
                 test_domain.delete()
+
+    def test_state_help_text_expired(self):
+        """Tests if each domain state has help text when expired"""
+        expired_text = (
+            "This domain has expired, but it is still online. " 
+            "To renew this domain, contact help@get.gov."
+        )
+        test_domain, _ = Domain.objects.get_or_create(name="expired.gov", state=Domain.State.READY)
+        test_domain.expiration_date = date(2011, 10, 10)
+        test_domain.save()
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # Grab the home page
+        response = self.client.get("/")
+
+        # Make sure the user can actually see the domain.
+        # We expect two instances because of SR content.
+        self.assertContains(response, "expired.gov", count=2)
+
+        # Check that we have the right text content.
+        self.assertContains(response, expired_text, count=1)
 
     def test_home_deletes_withdrawn_domain_application(self):
         """Tests if the user can delete a DomainApplication in the 'withdrawn' status"""

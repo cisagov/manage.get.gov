@@ -130,10 +130,14 @@ abbr[title] {
   align-items: flex-end;
 }
 
-.usa-tooltip__body {
-  min-width: 320px;
+// Only apply this custom wrapping to desktop
+@media (min-width: 768px) {
+  .usa-tooltip__body {
+    min-width: 320px;
+    max-width: 350px;
+    white-space: normal;
+  }
 }
-
 // USWDS has weird interactions with SVGs regarding tooltips,
 // and other components. In this event, we need to disable pointer interactions.
 .disable-pointer-events {
