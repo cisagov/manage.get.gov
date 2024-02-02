@@ -5,6 +5,7 @@
     <div class="submit-row">
         <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
         <input type="submit" value="Get registry status" name="_get_status">
+        <input type="submit" value="Extend expiration date" name="_extend_expiration_date">
         <div class="spacer"></div>
         {% if original.state == original.State.READY %}
         <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">

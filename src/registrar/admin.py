@@ -1134,7 +1134,7 @@ class DomainAdmin(ListHeaderAdmin):
             "_edit_domain": self.do_edit_domain,
             "_delete_domain": self.do_delete_domain,
             "_get_status": self.do_get_status,
-            "_extend_expiration_date": self.do_extend_expiration_date
+            "_extend_expiration_date": self.do_extend_expiration_date,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -1152,6 +1152,7 @@ class DomainAdmin(ListHeaderAdmin):
             # We do not want to accidentally delete records.
             self.message_user(request, "Object is not of type Domain", messages.ERROR)
             return None
+
         try:
             obj.renew_domain(date_to_extend=date.today())
         except Exception as err:
