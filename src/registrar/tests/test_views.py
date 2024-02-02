@@ -1,44 +1,17 @@
-from unittest import skip
-from unittest.mock import MagicMock, ANY, patch
-
-from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
-from django_webtest import WebTest  # type: ignore
-import boto3_mocking  # type: ignore
+from .common import MockEppLib  # type: ignore
 
-from registrar.utility.errors import (
-    NameserverError,
-    NameserverErrorCodes,
-    SecurityEmailError,
-    SecurityEmailErrorCodes,
-    GenericError,
-    GenericErrorCodes,
-    DsDataError,
-    DsDataErrorCodes,
-)
 
 from registrar.models import (
     DomainApplication,
-    Domain,
     DomainInformation,
     DraftDomain,
-    DomainInvitation,
     Contact,
-    PublicContact,
-    Host,
-    HostIP,
-    Website,
-    UserDomainRole,
     User,
 )
-from registrar.views.application import ApplicationWizard, Step
-from datetime import date, datetime, timedelta
-from django.utils import timezone
-
 from .common import less_console_noise
 import logging
 
@@ -331,5 +304,3 @@ class LoggedInTests(TestWithUser):
             response = self.client.get("/request/", follow=True)
             print(response.status_code)
             self.assertEqual(response.status_code, 403)
-
-

@@ -37,7 +37,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
         self.TITLES = ApplicationWizard.TITLES
-    
+
     def test_application_form_intro_acknowledgement(self):
         """Tests that user is presented with intro acknowledgement page"""
         intro_page = self.app.get(reverse("application:"))
