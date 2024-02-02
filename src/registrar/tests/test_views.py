@@ -128,6 +128,10 @@ class LoggedInTests(TestWithUser):
             "This domain has been removed and " 
             "is no longer registered to your organization."
         )
+        expired_text = (
+            "This domain has expired, but it is still online. " 
+            "To renew this domain, contact help@get.gov."
+        )
         # Generate a mapping of domain names, the state, and expected messages for the subtest
         test_cases = [
             ("deleted.gov", Domain.State.DELETED, deleted_text),
@@ -135,12 +139,16 @@ class LoggedInTests(TestWithUser):
             ("unknown.gov", Domain.State.UNKNOWN, dns_needed_text),
             ("onhold.gov", Domain.State.ON_HOLD, on_hold_text),
             ("ready.gov", Domain.State.READY, ready_text),
+            ("expired.gov", Domain.State.READY, expired_text)
         ]
         for domain_name, state, expected_message in test_cases:
             with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
 
                 # Create a domain and a UserRole with the given params
                 test_domain, _ = Domain.objects.get_or_create(name=domain_name, state=state)
+                if domain_name == "expired.gov":
+                    test_domain.expiration_date = date(2011, 10, 10)
+                    test_domain.save()
                 user_role, _ = UserDomainRole.objects.get_or_create(
                     user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
                 )
