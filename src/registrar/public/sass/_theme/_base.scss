@@ -1,0 +1,141 @@
+@use "uswds-core" as *;
+
+/* Styles for making visible to screen reader / AT users only. */
+.sr-only {
+  @include sr-only;
+}
+
+.clear-both {
+  clear: both;
+}
+ 
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+ 
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+ 
+#wrapper {
+  flex-grow: 1;
+  padding-top: units(3);
+  padding-bottom: units(6) * 2 ; //Workaround because USWDS units jump from 10 to 15
+}
+
+#wrapper.dashboard {
+  background-color: color('primary-lightest');
+  padding-top: units(5);
+}
+ 
+.usa-logo {
+  @include at-media(desktop) {
+    margin-top: units(2);
+  }
+}
+ 
+.usa-logo__text {
+  @include typeset('sans', 'xl', 2);
+  color: color('primary-darker');
+}
+
+.usa-nav__primary {
+  margin-top:units(1);
+}
+
+.section--outlined {
+  background-color: color('white');
+  border: 1px solid color('base-lighter');
+  border-radius: 4px;
+  padding: 0 units(2) units(3);
+  margin-top: units(3);
+
+  h2 {
+    color: color('primary-dark');
+    margin-top: units(2);
+    margin-bottom: units(2);
+  }
+
+  p {
+    margin-bottom: 0;
+  }
+
+  @include at-media(mobile-lg) {
+    margin-top: units(5);
+
+    h2 {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.break-word {
+  word-break: break-word;
+}
+
+.dotgov-status-box {
+  background-color: color('primary-lightest'); 
+  border-color: color('accent-cool-lighter');
+}
+
+.dotgov-status-box--action-need {
+  background-color: color('warning-lighter'); 
+  border-color: color('warning');
+}
+
+footer {
+  border-top: 1px solid color('primary-darker');
+}
+
+.usa-footer__secondary-section {
+  background-color: color('primary-lightest');
+}
+
+.usa-footer__secondary-section a {
+  color: color('primary');
+}
+
+.usa-identifier__logo {
+  height: units(7);
+}
+
+abbr[title] {
+  // workaround for underlining abbr element
+  border-bottom: none;
+  text-decoration: none;
+}
+
+@include at-media(tablet) {
+  .float-right-tablet {
+      float: right;
+  }
+  .float-left-tablet {
+     float: left;
+  }
+}
+
+@include at-media(desktop) {
+  .float-right-desktop {
+     float: right;
+  }
+  .float-left-desktop {
+     float: left;
+  }
+}
+
+.flex-end {
+  align-items: flex-end;
+}
+
+.usa-tooltip__body {
+  min-width: 320px;
+}
+
+// USWDS has weird interactions with SVGs regarding tooltips,
+// and other components. In this event, we need to disable pointer interactions.
+.disable-pointer-events {
+  pointer-events: none;
+}
