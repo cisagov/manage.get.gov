@@ -131,11 +131,21 @@ abbr[title] {
 }
 
 // Only apply this custom wrapping to desktop
-@media (min-width: 768px) {
+@include at-media(desktop) {
   .usa-tooltip__body {
-    min-width: 320px;
+    min-width: 350px;
     max-width: 350px;
     white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (min-width: 768px) {
+  .usa-tooltip__body {
+    min-width: 250px;
+    max-width: 250px;
+    white-space: normal;
+    text-align: center;
   }
 }
 // USWDS has weird interactions with SVGs regarding tooltips,
