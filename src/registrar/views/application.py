@@ -146,7 +146,6 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
                     creator=creator,
                     pk=id,
                 )
-                self.storage["step_history"] = self.db_check_for_unlocking_steps()
                 return self._application
             except DomainApplication.DoesNotExist:
                 logger.debug("Application id %s did not have a DomainApplication" % id)
@@ -212,6 +211,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
             self.storage["application_id"] = kwargs["id"]
+            self.storage["step_history"] = self.db_check_for_unlocking_steps()
 
         # if accessing this class directly, redirect to the first step
         #     in other words, if `ApplicationWizard` is called as view
@@ -299,7 +299,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         """Helper for get_context_data
 
         Queries the DB for an application and returns a dict for unlocked steps."""
-        return {
+        history_dict = {
             "organization_type": bool(self.application.organization_type),
             "tribal_government": bool(self.application.tribe_name),
             "organization_federal": bool(self.application.federal_type),
@@ -328,6 +328,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             "requirements": bool(self.application.is_policy_acknowledged),
             "review": bool(self.application.is_policy_acknowledged),
         }
+        return [key for key, value in history_dict.items() if value]
     
     def pending_requests(self):
         """return an array of pending requests if user has pending requests
