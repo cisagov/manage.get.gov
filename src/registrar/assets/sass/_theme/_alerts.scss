@@ -17,5 +17,8 @@
     .usa-alert__body::before {
       left: 1rem !important;
     }
-  } 
+  }
+  .usa-alert__body.margin-left-1 {
+    margin-left: 0.5rem!important;
+  }
 }
