@@ -14,11 +14,11 @@ from registrar.admin import (
     ContactAdmin,
     DomainInformationAdmin,
     UserDomainRoleAdmin,
-    VeryImportantPersonAdmin,
+    VerifiedByStaffAdmin,
 )
 from registrar.models import Domain, DomainApplication, DomainInformation, User, DomainInvitation, Contact, Website
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.very_important_person import VeryImportantPerson
+from registrar.models.verified_by_staff import VerifiedByStaff
 from .common import (
     MockSESClient,
     AuditedAdminMockData,
@@ -614,6 +614,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "anything_else",
             "is_policy_acknowledged",
             "submission_date",
+            "notes",
             "current_websites",
             "other_contacts",
             "alternative_domains",
@@ -1804,7 +1805,7 @@ class ContactAdminTest(TestCase):
         User.objects.all().delete()
 
 
-class VeryImportantPersonAdminTestCase(TestCase):
+class VerifiedByStaffAdminTestCase(TestCase):
     def setUp(self):
         self.superuser = create_superuser()
         self.factory = RequestFactory()
@@ -1813,13 +1814,13 @@ class VeryImportantPersonAdminTestCase(TestCase):
         self.client.force_login(self.superuser)
 
         # Create an instance of the admin class
-        admin_instance = VeryImportantPersonAdmin(model=VeryImportantPerson, admin_site=None)
+        admin_instance = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=None)
 
-        # Create a VeryImportantPerson instance
-        vip_instance = VeryImportantPerson(email="test@example.com", notes="Test Notes")
+        # Create a VerifiedByStaff instance
+        vip_instance = VerifiedByStaff(email="test@example.com", notes="Test Notes")
 
         # Create a request object
-        request = self.factory.post("/admin/yourapp/veryimportantperson/add/")
+        request = self.factory.post("/admin/yourapp/VerifiedByStaff/add/")
         request.user = self.superuser
 
         # Call the save_model method

@@ -626,7 +626,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application"]}),
+        (None, {"fields": ["creator", "domain_application", "notes"]}),
         (
             "Type of organization",
             {
@@ -793,7 +793,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Detail view
     form = DomainApplicationAdminForm
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -1047,6 +1047,13 @@ class DomainAdmin(ListHeaderAdmin):
         "deleted",
     ]
 
+    fieldsets = (
+        (
+            None,
+            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted"]},
+        ),
+    )
+
     # this ordering effects the ordering of results
     # in autocomplete_fields for domain
     ordering = ["name"]
@@ -1295,7 +1302,7 @@ class DraftDomainAdmin(ListHeaderAdmin):
     search_help_text = "Search by draft domain name."
 
 
-class VeryImportantPersonAdmin(ListHeaderAdmin):
+class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
@@ -1338,4 +1345,4 @@ admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
-admin.site.register(models.VeryImportantPerson, VeryImportantPersonAdmin)
+admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)

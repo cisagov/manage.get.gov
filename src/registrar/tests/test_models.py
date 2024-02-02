@@ -16,7 +16,7 @@ from registrar.models import (
 
 import boto3_mocking
 from registrar.models.transition_domain import TransitionDomain
-from registrar.models.very_important_person import VeryImportantPerson  # type: ignore
+from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 from .common import MockSESClient, less_console_noise, completed_application
 from django_fsm import TransitionNotAllowed
 
@@ -559,9 +559,9 @@ class TestPermissions(TestCase):
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
 
 
-class TestDomainInfo(TestCase):
+class TestDomainInformation(TestCase):
 
-    """Test creation of Domain Information when approved."""
+    """Test the DomainInformation model, when approved or otherwise"""
 
     def setUp(self):
         super().setUp()
@@ -570,12 +570,18 @@ class TestDomainInfo(TestCase):
     def tearDown(self):
         super().tearDown()
         self.mock_client.EMAILS_SENT.clear()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+        DraftDomain.objects.all().delete()
 
     @boto3_mocking.patching
     def test_approval_creates_info(self):
+        self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
+        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -585,7 +591,25 @@ class TestDomainInfo(TestCase):
 
         # should be an information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
-        self.assertTrue(DomainInformation.objects.get(domain=domain))
+        domain_information = DomainInformation.objects.filter(domain=domain)
+        self.assertTrue(domain_information.exists())
+
+        # Test that both objects are what we expect
+        current_domain_information = domain_information.get().__dict__
+        expected_domain_information = DomainInformation(
+            creator=user,
+            domain=domain,
+            notes="test notes",
+            domain_application=application,
+        ).__dict__
+
+        # Test the two records for consistency
+        self.assertEqual(self.clean_dict(current_domain_information), self.clean_dict(expected_domain_information))
+
+    def clean_dict(self, dict_obj):
+        """Cleans dynamic fields in a dictionary"""
+        bad_fields = ["_state", "created_at", "id", "updated_at"]
+        return {k: v for k, v in dict_obj.items() if k not in bad_fields}
 
 
 class TestInvitations(TestCase):
@@ -667,7 +691,7 @@ class TestUser(TestCase):
     def test_identity_verification_with_very_important_person(self):
         """A Very Important Person should return False
         when tested with class method needs_identity_verification"""
-        VeryImportantPerson.objects.get_or_create(email=self.user.email)
+        VerifiedByStaff.objects.get_or_create(email=self.user.email)
         self.assertFalse(User.needs_identity_verification(self.user.email, self.user.username))
 
     def test_identity_verification_with_invited_user(self):
