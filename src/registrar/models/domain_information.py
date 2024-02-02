@@ -1,4 +1,7 @@
 from __future__ import annotations
+from django.db import transaction
+
+from registrar.models.utility.domain_helper import DomainHelper
 from .domain_application import DomainApplication
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -202,6 +205,12 @@ class DomainInformation(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
+    notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Notes about the request",
+    )
+
     def __str__(self):
         try:
             if self.domain and self.domain.name:
@@ -212,37 +221,63 @@ class DomainInformation(TimeStampedModel):
             return ""
 
     @classmethod
-    def create_from_da(cls, domain_application, domain=None):
-        """Takes in a DomainApplication dict and converts it into DomainInformation"""
-        da_dict = domain_application.to_dict()
-        # remove the id so one can be assinged on creation
-        da_id = da_dict.pop("id", None)
+    def create_from_da(cls, domain_application: DomainApplication, domain=None):
+        """Takes in a DomainApplication and converts it into DomainInformation"""
+
+        # Throw an error if we get None - we can't create something from nothing
+        if domain_application is None:
+            raise ValueError("The provided DomainApplication is None")
+
+        # Throw an error if the da doesn't have an id
+        if not hasattr(domain_application, "id"):
+            raise ValueError("The provided DomainApplication has no id")
+
         # check if we have a record that corresponds with the domain
         # application, if so short circuit the create
-        domain_info = cls.objects.filter(domain_application__id=da_id).first()
-        if domain_info:
-            return domain_info
-        # the following information below is not needed in the domain information:
-        da_dict.pop("status", None)
-        da_dict.pop("current_websites", None)
-        da_dict.pop("investigator", None)
-        da_dict.pop("alternative_domains", None)
-        da_dict.pop("requested_domain", None)
-        da_dict.pop("approved_domain", None)
-        da_dict.pop("submission_date", None)
-        other_contacts = da_dict.pop("other_contacts", [])
-        domain_info = cls(**da_dict)
-        domain_info.domain_application = domain_application
-        # Save so the object now have PK
-        # (needed to process the manytomany below before, first)
-        domain_info.save()
+        existing_domain_info = cls.objects.filter(domain_application__id=domain_application.id).first()
+        if existing_domain_info:
+            return existing_domain_info
 
-        # Process the remaining "many to many" stuff
-        domain_info.other_contacts.add(*other_contacts)
+        # Get the fields that exist on both DomainApplication and DomainInformation
+        common_fields = DomainHelper.get_common_fields(DomainApplication, DomainInformation)
+
+        # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
+        info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
+
+        # Create a dictionary with only the common fields, and create a DomainInformation from it
+        da_dict = {}
+        da_many_to_many_dict = {}
+        for field in common_fields:
+            # If the field isn't many_to_many, populate the da_dict.
+            # If it is, populate da_many_to_many_dict as we need to save this later.
+            if hasattr(domain_application, field):
+                if field not in info_many_to_many_fields:
+                    da_dict[field] = getattr(domain_application, field)
+                else:
+                    da_many_to_many_dict[field] = getattr(domain_application, field).all()
+
+        # Create a placeholder DomainInformation object
+        domain_info = DomainInformation(**da_dict)
+
+        # Add the domain_application and domain fields
+        domain_info.domain_application = domain_application
         if domain:
             domain_info.domain = domain
-        domain_info.save()
+
+        # Save the instance and set the many-to-many fields.
+        # Lumped under .atomic to ensure we don't make redundant DB calls.
+        # This bundles them all together, and then saves it in a single call.
+        with transaction.atomic():
+            domain_info.save()
+            for field, value in da_many_to_many_dict.items():
+                getattr(domain_info, field).set(value)
+
         return domain_info
+
+    @staticmethod
+    def _get_many_to_many_fields():
+        """Returns a set of each field.name that has the many to many relation"""
+        return {field.name for field in DomainInformation._meta.many_to_many}  # type: ignore
 
     class Meta:
         verbose_name_plural = "Domain information"
