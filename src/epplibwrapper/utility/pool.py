@@ -86,6 +86,8 @@ class EPPConnectionPool(ConnectionPool):
             raise PoolError(code=PoolErrorCodes.KEEP_ALIVE_FAILED) from err
 
     def _keepalive_periodic(self):
+        """Overriding _keepalive_periodic from geventconnpool so that PoolErrors
+        are properly handled, as opposed to printing to stdout"""
         delay = float(self.keepalive) / self.size
         while 1:
             try:
