@@ -2387,23 +2387,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
     def test_unlocked_steps_empty_application(self):
         """Test when all fields in the application are empty."""
         unlocked_steps = self.wizard.db_check_for_unlocking_steps()
-        expected_dict = {
-            "about_your_organization": False,
-            "anything_else": False,
-            "authorizing_official": False,
-            "current_sites": False,
-            "dotgov_domain": False,
-            "organization_contact": False,
-            "organization_election": False,
-            "organization_federal": False,
-            "organization_type": False,
-            "other_contacts": False,
-            "purpose": False,
-            "requirements": False,
-            "review": False,
-            "tribal_government": False,
-            "your_contact": False,
-        }
+        expected_dict = []
         self.assertEqual(unlocked_steps, expected_dict)
 
     def test_unlocked_steps_full_application(self):

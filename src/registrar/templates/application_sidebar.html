@@ -4,27 +4,26 @@
   <nav aria-label="Form steps,">
     <ul class="usa-sidenav">
     {% for this_step in steps.all %}
+      {% if this_step in visited %}
       <li class="usa-sidenav__item sidenav__step--locked">
-      {% if this_step == steps.current %}
+        <span>
+          {% if not this_step == steps.current %}
+            {% if this_step != "review" %}
+              <svg class="usa-icon text-green" aria-hidden="true" focsuable="false" role="img" width="24" height="24">
+                <title id="checked-step__{{forloop.counter}}">Checked mark</title>
+                <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
+              </svg>
+            {% endif %}
+          {% endif %}
         <a href="{% namespaced_url 'application' this_step %}" 
+           {% if this_step == steps.current %}
            class="usa-current"
-        >
+           {% else %}
+           class="link_usa-checked"
+           {% endif%}>
           {{ form_titles|get_item:this_step }}
         </a>
-      {% elif this_step in visited %}
-        <span>
-          {% if this_step != "review" %}
-            <svg class="usa-icon text-green" aria-hidden="true" focsuable="false" role="img" width="24" height="24">
-              <title id="checked-step__{{forloop.counter}}">Checked mark</title>
-              <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
-            </svg>
-          {% endif %}
-          <a href="{% namespaced_url 'application' this_step %}" 
-            class="link_usa-checked"
-          >
-            {{ form_titles|get_item:this_step }}
-          </a>
-        </span>
+      </span>
       {% else %}
         <li class="usa-sidenav__item sidenav__step--locked">
           <span>

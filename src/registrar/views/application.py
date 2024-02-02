@@ -215,6 +215,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
             self.storage["application_id"] = kwargs["id"]
+            self.storage["step_history"] = self.db_check_for_unlocking_steps()
 
         # if accessing this class directly, redirect to the first step
         #     in other words, if `ApplicationWizard` is called as view
@@ -338,7 +339,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         """Helper for get_context_data
 
         Queries the DB for an application and returns a dict for unlocked steps."""
-        return {
+        history_dict = {
             "organization_type": bool(self.application.organization_type),
             "tribal_government": bool(self.application.tribe_name),
             "organization_federal": bool(self.application.federal_type),
@@ -367,6 +368,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             "requirements": bool(self.application.is_policy_acknowledged),
             "review": bool(self.application.is_policy_acknowledged),
         }
+        return [key for key, value in history_dict.items() if value]
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
@@ -378,25 +380,11 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         else:
             modal_heading = "You are about to submit an incomplete request"
 
-        unlocked_steps_list = [key for key, value in self.db_check_for_unlocking_steps().items() if value]
-
-        # History captures the ephemeral activation of the current step
-        # We want to add that to our unlocked steps so that users can navigate to another
-        # step than back to the empty form step.
-        step_history_set = set(self.storage.get("step_history", []))
-        unlocked_steps_set = set(unlocked_steps_list)
-
-        # Find the elements in step_history_set that are not in unlocked_steps_set
-        new_elements = step_history_set - unlocked_steps_set
-
-        # Add the new elements to unlocked_steps_list
-        unlocked_steps_list.extend(new_elements)
-
         return {
             "form_titles": self.TITLES,
             "steps": self.steps,
             # Add information about which steps should be unlocked
-            "visited": unlocked_steps_list,
+            "visited": self.storage.get("step_history", []),
             "is_federal": self.application.is_federal(),
             "modal_button": modal_button,
             "modal_heading": modal_heading,
