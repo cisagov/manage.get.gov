@@ -6,7 +6,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from .common import AuditedAdminMockData, MockEppLib, MockSESClient, completed_application, create_user, generic_domain_object  # type: ignore
+from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -105,29 +105,20 @@ class LoggedInTests(TestWithUser):
 
         # clean up
         application.delete()
-    
+
     def test_state_help_text(self):
         """Tests if each domain state has help text"""
-        
+
         # Get the expected text content of each state
-        deleted_text = (
-            "Before this domain can be used, " 
-            "you’ll need to add name server addresses."
-        )
-        dns_needed_text = (
-            "Before this domain can be used, " 
-            "you’ll need to add name server addresses."
-        )
+        deleted_text = "Before this domain can be used, " "you’ll need to add name server addresses."
+        dns_needed_text = "Before this domain can be used, " "you’ll need to add name server addresses."
         ready_text = "This domain has name servers and is ready for use."
         on_hold_text = (
-            "This domain is administratively paused, " 
+            "This domain is administratively paused, "
             "so it can’t be edited and won’t resolve in DNS. "
             "Contact help@get.gov for details."
         )
-        deleted_text = (
-            "This domain has been removed and " 
-            "is no longer registered to your organization."
-        )
+        deleted_text = "This domain has been removed and " "is no longer registered to your organization."
         # Generate a mapping of domain names, the state, and expected messages for the subtest
         test_cases = [
             ("deleted.gov", Domain.State.DELETED, deleted_text),
@@ -138,7 +129,6 @@ class LoggedInTests(TestWithUser):
         ]
         for domain_name, state, expected_message in test_cases:
             with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
-
                 # Create a domain and a UserRole with the given params
                 test_domain, _ = Domain.objects.get_or_create(name=domain_name, state=state)
                 test_domain.expiration_date = date.today()
@@ -164,17 +154,12 @@ class LoggedInTests(TestWithUser):
 
     def test_state_help_text_expired(self):
         """Tests if each domain state has help text when expired"""
-        expired_text = (
-            "This domain has expired, but it is still online. " 
-            "To renew this domain, contact help@get.gov."
-        )
+        expired_text = "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
         test_domain, _ = Domain.objects.get_or_create(name="expired.gov", state=Domain.State.READY)
         test_domain.expiration_date = date(2011, 10, 10)
         test_domain.save()
 
-        UserDomainRole.objects.get_or_create(
-            user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
 
         # Grab the home page
         response = self.client.get("/")

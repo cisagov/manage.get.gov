@@ -144,24 +144,15 @@ class Domain(TimeStampedModel, DomainHelper):
             """Returns a help message for a desired state. If none is found, an empty string is returned"""
             help_texts = {
                 # For now, unknown has the same message as DNS_NEEDED
-                cls.UNKNOWN:(
-                    "Before this domain can be used, " 
-                    "you’ll need to add name server addresses."
-                ),
-                cls.DNS_NEEDED: (
-                    "Before this domain can be used, " 
-                    "you’ll need to add name server addresses."
-                ),
+                cls.UNKNOWN: ("Before this domain can be used, " "you’ll need to add name server addresses."),
+                cls.DNS_NEEDED: ("Before this domain can be used, " "you’ll need to add name server addresses."),
                 cls.READY: "This domain has name servers and is ready for use.",
                 cls.ON_HOLD: (
-                    "This domain is administratively paused, " 
+                    "This domain is administratively paused, "
                     "so it can’t be edited and won’t resolve in DNS. "
                     "Contact help@get.gov for details."
                 ),
-                cls.DELETED: (
-                    "This domain has been removed and " 
-                    "is no longer registered to your organization."
-                )
+                cls.DELETED: ("This domain has been removed and " "is no longer registered to your organization."),
             }
 
             return help_texts.get(state, "")
@@ -1433,8 +1424,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = (
-                "This domain has expired, but it is still online. " 
-                "To renew this domain, contact help@get.gov."
+                "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
             )
         return help_text
 
