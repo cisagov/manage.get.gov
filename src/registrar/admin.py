@@ -1,3 +1,4 @@
+from datetime import date
 import logging
 from django import forms
 from django.db.models.functions import Concat
@@ -1133,6 +1134,7 @@ class DomainAdmin(ListHeaderAdmin):
             "_edit_domain": self.do_edit_domain,
             "_delete_domain": self.do_delete_domain,
             "_get_status": self.do_get_status,
+            "_extend_expiration_date": self.do_extend_expiration_date
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -1142,6 +1144,25 @@ class DomainAdmin(ListHeaderAdmin):
 
         # If no matching action button is found, return the super method
         return super().response_change(request, obj)
+
+    def do_extend_expiration_date(self, request, obj):
+        if not isinstance(obj, Domain):
+            # Could be problematic if the type is similar,
+            # but not the same (same field/func names).
+            # We do not want to accidentally delete records.
+            self.message_user(request, "Object is not of type Domain", messages.ERROR)
+            return None
+        try:
+            obj.renew_domain(date_to_extend=date.today())
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
+        else:
+            updated_domain = Domain.objects.filter(id=obj).get()
+            self.message_user(
+                request,
+                f"Successfully extended expiration date to {updated_domain.registry_expiration_date}",
+            )
+        return HttpResponseRedirect(".")
 
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):
