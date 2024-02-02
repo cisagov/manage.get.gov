@@ -6,7 +6,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
+from .common import AuditedAdminMockData, MockEppLib, MockSESClient, completed_application, create_user, generic_domain_object  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -105,6 +105,62 @@ class LoggedInTests(TestWithUser):
 
         # clean up
         application.delete()
+    
+    def test_state_help_text(self):
+        """Tests if each domain state has help text"""
+        
+        # Get the expected text content of each state
+        deleted_text = (
+            "Before this domain can be used, " 
+            "you’ll need to add name server addresses."
+        )
+        dns_needed_text = (
+            "Before this domain can be used, " 
+            "you’ll need to add name server addresses."
+        )
+        ready_text = "This domain has name servers and is ready for use."
+        on_hold_text = (
+            "This domain is administratively paused, " 
+            "so it can’t be edited and won’t resolve in DNS. "
+            "Contact help@get.gov for details."
+        )
+        deleted_text = (
+            "This domain has been removed and " 
+            "is no longer registered to your organization."
+        )
+        # Generate a mapping of domain names, the state, and expected messages for the subtest
+        test_cases = [
+            ("deleted.gov", Domain.State.DELETED, deleted_text),
+            ("dnsneeded.gov", Domain.State.DNS_NEEDED, dns_needed_text),
+            ("unknown.gov", Domain.State.UNKNOWN, dns_needed_text),
+            ("onhold.gov", Domain.State.ON_HOLD, on_hold_text),
+            ("ready.gov", Domain.State.READY, ready_text),
+        ]
+        for domain_name, state, expected_message in test_cases:
+            with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
+
+                # Create a domain and a UserRole with the given params
+                test_domain, _ = Domain.objects.get_or_create(name=domain_name, state=state)
+                user_role, _ = UserDomainRole.objects.get_or_create(
+                    user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
+                )
+
+                # Grab the home page
+                response = self.client.get("/")
+
+                # Make sure the user can actually see the domain.
+                # We expect two instances because of SR content.
+                self.assertContains(response, domain_name, count=2)
+
+                # Check that we have the right text content.
+                # We expect two instances because of SR content.
+                self.assertContains(response, expected_message, count=2)
+
+                # Check that its nested in the right html element
+                
+                # Delete the role and domain to ensure we're testing in isolation
+                user_role.delete()
+                test_domain.delete()
 
     def test_home_deletes_withdrawn_domain_application(self):
         """Tests if the user can delete a DomainApplication in the 'withdrawn' status"""
