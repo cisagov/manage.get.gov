@@ -624,6 +624,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "anything_else",
             "is_policy_acknowledged",
             "submission_date",
+            "notes",
             "current_websites",
             "other_contacts",
             "alternative_domains",

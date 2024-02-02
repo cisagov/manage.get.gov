@@ -626,7 +626,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application"]}),
+        (None, {"fields": ["creator", "domain_application", "notes"]}),
         (
             "Type of organization",
             {
@@ -793,7 +793,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Detail view
     form = DomainApplicationAdminForm
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -1046,6 +1046,13 @@ class DomainAdmin(ListHeaderAdmin):
         "first_ready",
         "deleted",
     ]
+
+    fieldsets = (
+        (
+            None,
+            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted"]},
+        ),
+    )
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for domain
