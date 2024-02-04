@@ -132,32 +132,33 @@ class LoggedInTests(TestWithUser):
 
         # Given that we are including a subset of items that can be deleted while excluding the rest,
         # subTest is appropriate here as otherwise we would need many duplicate tests for the same reason.
-        draft_domain = DraftDomain.objects.create(name="igorville.gov")
-        for status in DomainApplication.ApplicationStatus:
-            if status not in [
-                DomainApplication.ApplicationStatus.STARTED,
-                DomainApplication.ApplicationStatus.WITHDRAWN,
-            ]:
-                with self.subTest(status=status):
-                    application = DomainApplication.objects.create(
-                        creator=self.user, requested_domain=draft_domain, status=status
-                    )
+        with less_console_noise():
+            draft_domain = DraftDomain.objects.create(name="igorville.gov")
+            for status in DomainApplication.ApplicationStatus:
+                if status not in [
+                    DomainApplication.ApplicationStatus.STARTED,
+                    DomainApplication.ApplicationStatus.WITHDRAWN,
+                ]:
+                    with self.subTest(status=status):
+                        application = DomainApplication.objects.create(
+                            creator=self.user, requested_domain=draft_domain, status=status
+                        )
 
-                    # Trigger the delete logic
-                    response = self.client.post(
-                        reverse("application-delete", kwargs={"pk": application.pk}), follow=True
-                    )
+                        # Trigger the delete logic
+                        response = self.client.post(
+                            reverse("application-delete", kwargs={"pk": application.pk}), follow=True
+                        )
 
-                    # Check for a 403 error - the end user should not be allowed to do this
-                    self.assertEqual(response.status_code, 403)
+                        # Check for a 403 error - the end user should not be allowed to do this
+                        self.assertEqual(response.status_code, 403)
 
-                    desired_application = DomainApplication.objects.filter(requested_domain=draft_domain)
+                        desired_application = DomainApplication.objects.filter(requested_domain=draft_domain)
 
-                    # Make sure the DomainApplication wasn't deleted
-                    self.assertEqual(desired_application.count(), 1)
+                        # Make sure the DomainApplication wasn't deleted
+                        self.assertEqual(desired_application.count(), 1)
 
-                    # clean up
-                    application.delete()
+                        # clean up
+                        application.delete()
 
     def test_home_deletes_domain_application_and_orphans(self):
         """Tests if delete for DomainApplication deletes orphaned Contact objects"""
@@ -302,5 +303,4 @@ class LoggedInTests(TestWithUser):
 
         with less_console_noise():
             response = self.client.get("/request/", follow=True)
-            print(response.status_code)
             self.assertEqual(response.status_code, 403)
