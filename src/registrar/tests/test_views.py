@@ -170,6 +170,41 @@ class LoggedInTests(TestWithUser):
 
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
+    
+    def test_state_help_text_no_expiration_date(self):
+        """Tests if each domain state has help text when expiration date is None"""
+
+        # == Test a expiration of None for state ready. This should be expired. == #
+        expired_text = "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
+        test_domain, _ = Domain.objects.get_or_create(name="expired.gov", state=Domain.State.READY)
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Grab the home page
+        response = self.client.get("/")
+
+        # Make sure the user can actually see the domain.
+        # We expect two instances because of SR content.
+        self.assertContains(response, "expired.gov", count=2)
+
+        # Check that we have the right text content.
+        self.assertContains(response, expired_text, count=1)
+
+        # == Test a expiration of None for state unknown. This should not display expired text. == #
+        unknown_text = "Before this domain can be used, " "you’ll need to add name server addresses."
+        test_domain_2, _ = Domain.objects.get_or_create(name="notexpired.gov", state=Domain.State.UNKNOWN)
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain_2, role=UserDomainRole.Roles.MANAGER)
+
+        # Grab the home page
+        response = self.client.get("/")
+
+        # Make sure the user can actually see the domain.
+        # We expect two instances because of SR content.
+        self.assertContains(response, "notexpired.gov", count=2)
+
+        # Check that we have the right text content.
+        self.assertContains(response, unknown_text, count=1)
 
     def test_home_deletes_withdrawn_domain_application(self):
         """Tests if the user can delete a DomainApplication in the 'withdrawn' status"""
