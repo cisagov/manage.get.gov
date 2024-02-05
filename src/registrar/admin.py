@@ -2,7 +2,8 @@ import logging
 import datetime
 
 from django import forms
-from django.db.models.functions import Concat, Avg, F
+from django.db.models import Avg, F
+from django.db.models.functions import Concat
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django_fsm import get_available_FIELD_transitions
