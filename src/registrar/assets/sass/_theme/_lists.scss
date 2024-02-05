@@ -1,0 +1,14 @@
+@use "uswds-core" as *;
+
+dt {
+    color: color('primary-dark');
+    margin-top: units(2);
+    font-weight: font-weight('semibold');
+    // The units mixin can only get us close, so it's between 
+    // hardcoding the value and using  in markup
+    font-size: 16.96px;
+}
+dd {
+    margin-left: 0;
+}
+

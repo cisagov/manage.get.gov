@@ -64,6 +64,12 @@ class TestFormValidation(MockEppLib):
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency"})
         self.assertEqual(len(form.errors), 0)
 
+    def test_requested_domain_starting_www(self):
+        """Test a valid domain name with .www at the beginning."""
+        form = DotGovDomainForm(data={"requested_domain": "www.top-level-agency"})
+        self.assertEqual(len(form.errors), 0)
+        self.assertEqual(form.cleaned_data["requested_domain"], "top-level-agency")
+
     def test_requested_domain_ending_dotgov(self):
         """Just a valid domain name with .gov at the end."""
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency.gov"})

@@ -182,8 +182,6 @@ class LoadExtraTransitionDomain:
                 # STEP 5: Parse creation and expiration data
                 updated_transition_domain = self.parse_creation_expiration_data(domain_name, transition_domain)
 
-                # Check if the instance has changed before saving
-                updated_transition_domain.save()
                 updated_transition_domains.append(updated_transition_domain)
                 logger.info(f"{TerminalColors.OKCYAN}" f"Successfully updated {domain_name}" f"{TerminalColors.ENDC}")
 
@@ -198,6 +196,28 @@ class LoadExtraTransitionDomain:
                     f"{TerminalColors.ENDC}"
                 )
                 failed_transition_domains.append(domain_name)
+
+        updated_fields = [
+            "organization_name",
+            "organization_type",
+            "federal_type",
+            "federal_agency",
+            "first_name",
+            "middle_name",
+            "last_name",
+            "email",
+            "phone",
+            "epp_creation_date",
+            "epp_expiration_date",
+        ]
+
+        batch_size = 1000
+        # Create a Paginator object. Bulk_update on the full dataset
+        # is too memory intensive for our current app config, so we can chunk this data instead.
+        paginator = Paginator(updated_transition_domains, batch_size)
+        for page_num in paginator.page_range:
+            page = paginator.page(page_num)
+            TransitionDomain.objects.bulk_update(page.object_list, updated_fields)
 
         failed_count = len(failed_transition_domains)
         if failed_count == 0:

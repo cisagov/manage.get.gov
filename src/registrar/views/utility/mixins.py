@@ -286,6 +286,43 @@ class DomainApplicationPermission(PermissionsLoginMixin):
         return True
 
 
+class UserDeleteDomainRolePermission(PermissionsLoginMixin):
+
+    """Permission mixin for UserDomainRole if user
+    has access, otherwise 403"""
+
+    def has_permission(self):
+        """Check if this user has access to this domain application.
+
+        The user is in self.request.user and the domain needs to be looked
+        up from the domain's primary key in self.kwargs["pk"]
+        """
+        domain_pk = self.kwargs["pk"]
+        user_pk = self.kwargs["user_pk"]
+
+        # Check if the user is authenticated
+        if not self.request.user.is_authenticated:
+            return False
+
+        # Check if the UserDomainRole object exists, then check
+        # if the user requesting the delete has permissions to do so
+        has_delete_permission = UserDomainRole.objects.filter(
+            user=user_pk,
+            domain=domain_pk,
+            domain__permissions__user=self.request.user,
+        ).exists()
+        if not has_delete_permission:
+            return False
+
+        # Check if more than one manager exists on the domain.
+        # If only one exists, prevent this from happening
+        has_multiple_managers = len(UserDomainRole.objects.filter(domain=domain_pk)) > 1
+        if not has_multiple_managers:
+            return False
+
+        return True
+
+
 class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
 
     """Permission mixin that redirects to withdraw action on domain application

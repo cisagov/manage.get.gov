@@ -7,6 +7,7 @@ from registrar.models.user_domain_role import UserDomainRole
 
 from .domain_invitation import DomainInvitation
 from .transition_domain import TransitionDomain
+from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
@@ -87,6 +88,10 @@ class User(AbstractUser):
         # that we inputted from Verisign (that is, their email address appears
         # in the username field of a TransitionDomain)
         if TransitionDomain.objects.filter(username=email).exists():
+            return False
+
+        # New users flagged by Staff to bypass ial2
+        if VerifiedByStaff.objects.filter(email=email).exists():
             return False
 
         # A new incoming user who is being invited to be a domain manager (that is,
