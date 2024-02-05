@@ -110,7 +110,7 @@ class LoggedInTests(TestWithUser):
         """Tests if each domain state has help text"""
 
         # Get the expected text content of each state
-        deleted_text = "Before this domain can be used, " "you’ll need to add name server addresses."
+        deleted_text = "This domain has been removed and " "is no longer registered to your organization."
         dns_needed_text = "Before this domain can be used, " "you’ll need to add name server addresses."
         ready_text = "This domain has name servers and is ready for use."
         on_hold_text = (
