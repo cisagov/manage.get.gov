@@ -1418,14 +1418,16 @@ class Domain(TimeStampedModel, DomainHelper):
     def get_state_help_text(self) -> str:
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
-        if not self.is_expired() and self.state != self.State.UNKNOWN:
-            help_text = Domain.State.get_help_text(self.state)
-        else:
+
+        if self.is_expired() and self.state != self.State.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = (
                 "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
             )
+        else:
+            help_text = Domain.State.get_help_text(self.state)
+
         return help_text
 
     def _disclose_fields(self, contact: PublicContact):

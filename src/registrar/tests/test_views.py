@@ -170,7 +170,7 @@ class LoggedInTests(TestWithUser):
 
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
-    
+
     def test_state_help_text_no_expiration_date(self):
         """Tests if each domain state has help text when expiration date is None"""
 
