@@ -338,35 +338,37 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def db_check_for_unlocking_steps(self):
         """Helper for get_context_data
 
-        Queries the DB for an application and returns a dict for unlocked steps."""
+        Queries the DB for an application and returns a list of unlocked steps."""
         history_dict = {
-            "organization_type": bool(self.application.organization_type),
-            "tribal_government": bool(self.application.tribe_name),
-            "organization_federal": bool(self.application.federal_type),
-            "organization_election": bool(self.application.is_election_board),
+            "organization_type": self.application.organization_type is not None,
+            "tribal_government": self.application.tribe_name is not None,
+            "organization_federal": self.application.federal_type is not None,
+            "organization_election": self.application.is_election_board is not None,
             "organization_contact": (
-                bool(self.application.federal_agency)
-                or bool(self.application.organization_name)
-                or bool(self.application.address_line1)
-                or bool(self.application.city)
-                or bool(self.application.state_territory)
-                or bool(self.application.zipcode)
-                or bool(self.application.urbanization)
+                self.application.federal_agency is not None
+                or self.application.organization_name is not None
+                or self.application.address_line1 is not None
+                or self.application.city is not None
+                or self.application.state_territory is not None
+                or self.application.zipcode is not None
+                or self.application.urbanization is not None
             ),
-            "about_your_organization": bool(self.application.about_your_organization),
-            "authorizing_official": bool(self.application.authorizing_official),
+            "about_your_organization": self.application.about_your_organization is not None,
+            "authorizing_official": self.application.authorizing_official is not None,
             "current_sites": (
-                bool(self.application.current_websites.exists()) or bool(self.application.requested_domain)
+                self.application.current_websites.exists() or self.application.requested_domain is not None
             ),
-            "dotgov_domain": bool(self.application.requested_domain),
-            "purpose": bool(self.application.purpose),
-            "your_contact": bool(self.application.submitter),
+            "dotgov_domain": self.application.requested_domain is not None,
+            "purpose": self.application.purpose is not None,
+            "your_contact": self.application.submitter is not None,
             "other_contacts": (
-                bool(self.application.other_contacts.exists()) or bool(self.application.no_other_contacts_rationale)
+                self.application.other_contacts.exists() or self.application.no_other_contacts_rationale is not None
             ),
-            "anything_else": (bool(self.application.anything_else) or bool(self.application.is_policy_acknowledged)),
-            "requirements": bool(self.application.is_policy_acknowledged),
-            "review": bool(self.application.is_policy_acknowledged),
+            "anything_else": (
+                self.application.anything_else is not None or self.application.is_policy_acknowledged is not None
+            ),
+            "requirements": self.application.is_policy_acknowledged is not None,
+            "review": self.application.is_policy_acknowledged is not None,
         }
         return [key for key, value in history_dict.items() if value]
 

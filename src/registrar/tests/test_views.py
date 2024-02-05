@@ -2431,7 +2431,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             self.assertContains(detail_page, "link_usa-checked", count=11)
 
         else:
-            self.fail("Expected a redirect, but got a different response")
+            self.fail(f"Expected a redirect, but got a different response: {response}")
 
     def test_unlocked_steps_partial_application(self):
         """Test when some fields in the application are filled."""
@@ -2498,7 +2498,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
             self.assertContains(detail_page, "link_usa-checked", count=5)
 
         else:
-            self.fail("Expected a redirect, but got a different response")
+            self.fail(f"Expected a redirect, but got a different response: {response}")
 
 
 class TestWithDomainPermissions(TestWithUser):
