@@ -58,13 +58,13 @@
                   {{ domain.state|capfirst }}
               {% endif %}
               <svg 
-                class="usa-icon usa-tooltip text-middle margin-bottom-05 text-accent-cool no-click-outline cursor-help" 
+                class="usa-icon usa-tooltip text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
                 role="img" 
                 data-position="top"
                 title="{{domain.get_state_help_text}}"
                 focusable="true"
               >
-                <use class="disable-pointer-events" xlink:href="{%static 'img/sprite.svg'%}#info_outline"></use>
+                <use xlink:href="{%static 'img/sprite.svg'%}#info_outline"></use>
               </svg>
             </span>
           </td>

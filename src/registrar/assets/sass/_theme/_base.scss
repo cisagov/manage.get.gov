@@ -133,23 +133,16 @@ abbr[title] {
 // Only apply this custom wrapping to desktop
 @include at-media(desktop) {
   .usa-tooltip__body {
-    min-width: 350px;
-    max-width: 350px;
+    width: 350px;
     white-space: normal;
     text-align: center;
   }
 }
 
-@media (min-width: 768px) {
+@media (tablet) {
   .usa-tooltip__body {
-    min-width: 250px;
-    max-width: 250px;
+    width: 250px;
     white-space: normal;
     text-align: center;
   }
-}
-// USWDS has weird interactions with SVGs regarding tooltips,
-// and other components. In this event, we need to disable pointer interactions.
-.disable-pointer-events {
-  pointer-events: none;
 }

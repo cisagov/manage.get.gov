@@ -27,11 +27,14 @@
   }
 
   td {
-    .no-click-outline, .no-click-outline:hover, .no-click-outline:focus{
+    .no-click-outline-and-cursor-help{
       outline: none;
-    }
-    .cursor-help{
       cursor: help;
+      use {
+        // USWDS has weird interactions with SVGs regarding tooltips,
+        // and other components. In this event, we need to disable pointer interactions.
+        pointer-events: none;
+      }
     }
   }
 
