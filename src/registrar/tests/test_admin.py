@@ -632,6 +632,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "creator",
             "about_your_organization",
             "requested_domain",
+            "approved_domain",
             "alternative_domains",
             "purpose",
             "submitter",
@@ -1057,7 +1058,7 @@ class DomainInvitationAdminTest(TestCase):
         self.assertContains(response, retrieved_html, count=1)
 
 
-class DomainInformationAdminTest(TestCase):
+class TestDomainInformationAdmin(TestCase):
     def setUp(self):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
@@ -1065,6 +1066,7 @@ class DomainInformationAdminTest(TestCase):
         self.admin = DomainInformationAdmin(model=DomainInformation, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+        self.staffuser = create_user()
         self.mock_data_generator = AuditedAdminMockData()
 
         self.test_helper = GenericTestHelper(
@@ -1107,6 +1109,27 @@ class DomainInformationAdminTest(TestCase):
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+    def test_readonly_fields_for_analyst(self):
+        """Ensures that analysts have their permissions setup correctly"""
+        request = self.factory.get("/")
+        request.user = self.staffuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = [
+            "creator",
+            "type_of_work",
+            "more_organization_information",
+            "domain",
+            "domain_application",
+            "submitter",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "is_policy_acknowledged",
+        ]
+
+        self.assertEqual(readonly_fields, expected_fields)
 
     def test_domain_sortable(self):
         """Tests if DomainInformation sorts by domain correctly"""
