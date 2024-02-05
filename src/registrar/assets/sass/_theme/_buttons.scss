@@ -44,6 +44,22 @@ a.usa-button.disabled-link:focus {
   color: #454545 !important
 }
 
+a.usa-button--unstyled.disabled-link,
+a.usa-button--unstyled.disabled-link:hover,
+a.usa-button--unstyled.disabled-link:focus {
+  cursor: not-allowed !important;
+  outline: none !important;
+  text-decoration: none !important;
+}
+
+.usa-button--unstyled.disabled-button,
+.usa-button--unstyled.disabled-link:hover,
+.usa-button--unstyled.disabled-link:focus {
+  cursor: not-allowed !important;
+  outline: none !important;
+  text-decoration: none !important;
+}
+
 a.usa-button:not(.usa-button--unstyled, .usa-button--outline) {
   color: color('white');
 }
