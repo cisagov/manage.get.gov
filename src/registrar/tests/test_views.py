@@ -176,7 +176,9 @@ class LoggedInTests(TestWithUser):
 
         # == Test a expiration of None for state ready. This should be expired. == #
         expired_text = "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
-        test_domain, _ = Domain.objects.get_or_create(name="expired.gov", state=Domain.State.READY)
+        test_domain, _ = Domain.objects.get_or_create(name="imexpired.gov", state=Domain.State.READY)
+        test_domain.expiration_date = None
+        test_domain.save()
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER)
 
@@ -185,7 +187,10 @@ class LoggedInTests(TestWithUser):
 
         # Make sure the user can actually see the domain.
         # We expect two instances because of SR content.
-        self.assertContains(response, "expired.gov", count=2)
+        self.assertContains(response, "imexpired.gov", count=2)
+
+        # Make sure the expiration date is None
+        self.assertEqual(test_domain.expiration_date, None)
 
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
@@ -193,6 +198,8 @@ class LoggedInTests(TestWithUser):
         # == Test a expiration of None for state unknown. This should not display expired text. == #
         unknown_text = "Before this domain can be used, " "you’ll need to add name server addresses."
         test_domain_2, _ = Domain.objects.get_or_create(name="notexpired.gov", state=Domain.State.UNKNOWN)
+        test_domain_2.expiration_date = None
+        test_domain_2.save()
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=test_domain_2, role=UserDomainRole.Roles.MANAGER)
 
@@ -202,6 +209,9 @@ class LoggedInTests(TestWithUser):
         # Make sure the user can actually see the domain.
         # We expect two instances because of SR content.
         self.assertContains(response, "notexpired.gov", count=2)
+
+        # Make sure the expiration date is None
+        self.assertEqual(test_domain_2.expiration_date, None)
 
         # Check that we have the right text content.
         self.assertContains(response, unknown_text, count=1)
