@@ -1156,7 +1156,21 @@ class DomainAdmin(ListHeaderAdmin):
         try:
             obj.renew_domain(date_to_extend=date.today())
         except Exception as err:
-            self.message_user(request, err, messages.ERROR)
+            if err.code:
+                self.message_user(
+                    request,
+                    f"Error extending this domain: {err}",
+                    messages.ERROR,
+                )
+            elif err.is_connection_error():
+                self.message_user(
+                    request,
+                    "Error connecting to the registry",
+                    messages.ERROR,
+                )
+            else:
+                # all other type error messages, display the error
+                self.message_user(request, err, messages.ERROR)
         else:
             updated_domain = Domain.objects.filter(id=obj).get()
             self.message_user(
