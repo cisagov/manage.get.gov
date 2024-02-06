@@ -92,6 +92,12 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         "Deleted": domain.deleted,
     }
 
+    # user_emails = [user.email for user in domain.permissions]
+
+    # Dynamically add user emails to the FIELDS dictionary
+    # for i, user_email in enumerate(user_emails, start=1):
+    #   FIELDS[f"User{i} email"] = user_email
+
     row = [FIELDS.get(column, "") for column in columns]
     return row
 
@@ -126,6 +132,16 @@ def write_body(
             security_emails_dict[domain.name] = contact.email
         else:
             logger.warning("csv_export -> Domain was none for PublicContact")
+
+    # all_user_nums = 0
+    # for domain_info in all_domain_infos:
+    #     user_num = len(domain_info.domain.permissions)
+    #     all_user_nums.append(user_num)
+
+    #     if user_num > highest_user_nums:
+    #         highest_user_nums = user_num
+
+    # Build the header here passing to it highest_user_nums
 
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
