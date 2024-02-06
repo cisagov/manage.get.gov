@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def write_header(writer, columns):
     """
     Receives params from the parent methods and outputs a CSV with a header row.
-    Works with write_header as longas the same writer object is passed.
+    Works with write_header as long as the same writer object is passed.
     """
     writer.writerow(columns)
 
@@ -91,6 +91,13 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         "First ready": domain.first_ready,
         "Deleted": domain.deleted,
     }
+
+    # Get each domain managers email and add to list
+    dm_emails = [dm.email for dm in domain.permissions]
+
+    # Matching header for domain managers to be dynamic
+    for i, dm_email in enumerate(dm_emails, start=1):
+        FIELDS[f"Domain Manager email {i}":dm_email]
 
     row = [FIELDS.get(column, "") for column in columns]
     return row
