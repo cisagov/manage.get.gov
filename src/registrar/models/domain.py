@@ -255,7 +255,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 # if no expiration date from registry, set it to today
                 logger.warning("current expiration date not set; setting to today")
                 date_to_extend = date.today()
-        print(f"This is the date to extend: {date_to_extend} vs registry {self.registry_expiration_date}")
+        logger.info(f"This is the date to extend: {date_to_extend} vs registry {self.registry_expiration_date}")
         # create RenewDomain request
         request = commands.RenewDomain(name=self.name, cur_exp_date=date_to_extend, period=epp.Period(length, unit))
 
