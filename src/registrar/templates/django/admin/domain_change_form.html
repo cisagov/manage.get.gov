@@ -6,6 +6,19 @@
         <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
         <input type="submit" value="Get registry status" name="_get_status">
         <input type="submit" value="Extend expiration date" name="_extend_expiration_date">
+        <a
+        href="#toggle-extend-expiration-alert"
+        aria-controls="toggle-extend-expiration-alert"
+        data-open-modal
+        >Disable DNSSEC</a>
+        <div
+        class="usa-modal"
+        id="toggle-extend-expiration-alert"
+        aria-labelledby="Are you sure you want to continue?"
+        aria-describedby="Your DNSSEC records will be deleted from the registry."
+        >
+            {% include 'includes/modal.html' with modal_heading="Are you sure you want to disable DNSSEC?" modal_button=modal_button|safe %}
+        </div>
         <div class="spacer"></div>
         {% if original.state == original.State.READY %}
         <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
