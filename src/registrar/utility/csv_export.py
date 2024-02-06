@@ -9,7 +9,7 @@ from django.db.models import F, Value, CharField
 from django.db.models.functions import Concat, Coalesce
 
 from registrar.models.public_contact import PublicContact
-
+from registrar.utility.enums import DefaultEmail
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         security_email = _email if _email is not None else " "
 
     # These are default emails that should not be displayed in the csv report
-    invalid_emails = {"registrar@dotgov.gov", "dotgov@cisa.dhs.gov"}
+    invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
     if security_email.lower() in invalid_emails:
         security_email = "(blank)"
 

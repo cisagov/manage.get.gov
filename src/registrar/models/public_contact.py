@@ -4,6 +4,8 @@ from string import ascii_uppercase, ascii_lowercase, digits
 
 from django.db import models
 
+from registrar.utility.enums import DefaultEmail
+
 from .utility.time_stamped_model import TimeStampedModel
 
 
@@ -87,7 +89,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="20598-0645",
             cc="US",
-            email="dotgov@cisa.dhs.gov",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -104,7 +106,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="22201",
             cc="US",
-            email="dotgov@cisa.dhs.gov",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -121,7 +123,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="22201",
             cc="US",
-            email="dotgov@cisa.dhs.gov",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -138,7 +140,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="22201",
             cc="US",
-            email="dotgov@cisa.dhs.gov",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
