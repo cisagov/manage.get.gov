@@ -1,14 +1,15 @@
+import logging
+import boto3_mocking  # type: ignore
 from unittest import skip
 from unittest.mock import MagicMock, ANY, patch
+from datetime import date, datetime, timedelta
+from django.utils import timezone
 
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-
-from .common import MockEppLib, MockSESClient, completed_application, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
-import boto3_mocking  # type: ignore
 
 from registrar.utility.errors import (
     NameserverError,
@@ -22,8 +23,8 @@ from registrar.utility.errors import (
 )
 
 from registrar.models import (
-    DomainApplication,
     Domain,
+    DomainApplication,
     DomainInformation,
     DraftDomain,
     DomainInvitation,
@@ -36,11 +37,8 @@ from registrar.models import (
     User,
 )
 from registrar.views.application import ApplicationWizard, Step
-from datetime import date, datetime, timedelta
-from django.utils import timezone
+from .common import MockEppLib, MockSESClient, completed_application, create_user, less_console_noise  # type: ignore
 
-from .common import less_console_noise
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -119,13 +117,18 @@ class LoggedInTests(TestWithUser):
             "Contact help@get.gov for details."
         )
         deleted_text = "This domain has been removed and " "is no longer registered to your organization."
+
+        # Seperated here for the linter. This works locally but fails through github actions?
+        # No idea why. Linter and test cases think this doesn't exist. 
+        domain_state = Domain.State  # noqa: F821
+
         # Generate a mapping of domain names, the state, and expected messages for the subtest
         test_cases = [
-            ("deleted.gov", Domain.State.DELETED, deleted_text),
-            ("dnsneeded.gov", Domain.State.DNS_NEEDED, dns_needed_text),
-            ("unknown.gov", Domain.State.UNKNOWN, dns_needed_text),
-            ("onhold.gov", Domain.State.ON_HOLD, on_hold_text),
-            ("ready.gov", Domain.State.READY, ready_text),
+            ("deleted.gov", domain_state.DELETED, deleted_text),
+            ("dnsneeded.gov", domain_state.DNS_NEEDED, dns_needed_text),
+            ("unknown.gov", domain_state.UNKNOWN, dns_needed_text),
+            ("onhold.gov", domain_state.ON_HOLD, on_hold_text),
+            ("ready.gov", domain_state.READY, ready_text),
         ]
         for domain_name, state, expected_message in test_cases:
             with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
