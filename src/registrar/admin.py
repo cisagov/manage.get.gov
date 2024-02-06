@@ -1147,15 +1147,12 @@ class DomainAdmin(ListHeaderAdmin):
 
     def do_extend_expiration_date(self, request, obj):
         if not isinstance(obj, Domain):
-            # Could be problematic if the type is similar,
-            # but not the same (same field/func names).
-            # We do not want to accidentally delete records.
             self.message_user(request, "Object is not of type Domain", messages.ERROR)
             return None
 
         try:
             obj.renew_domain(date_to_extend=date.today())
-        except Exception as err:
+        except RegistryError as err:
             if err.code:
                 self.message_user(
                     request,
@@ -1169,8 +1166,9 @@ class DomainAdmin(ListHeaderAdmin):
                     messages.ERROR,
                 )
             else:
-                # all other type error messages, display the error
                 self.message_user(request, err, messages.ERROR)
+        except Exception as err:
+            self.message_user(request, err, messages.ERROR)
         else:
             updated_domain = Domain.objects.filter(id=obj).get()
             self.message_user(
