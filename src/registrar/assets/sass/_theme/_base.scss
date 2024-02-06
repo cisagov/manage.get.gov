@@ -139,7 +139,7 @@ abbr[title] {
   }
 }
 
-@include at-media(tablet) {
+@media (min-width: 768px) {
   .usa-tooltip__body {
     width: 250px;
     white-space: normal;

@@ -1,5 +1,4 @@
 from django.test import Client, TestCase
-from django.urls import reverse
 from django.contrib.auth import get_user_model
 
 from .common import MockEppLib  # type: ignore
@@ -8,11 +7,7 @@ from .common import MockEppLib  # type: ignore
 from registrar.models import (
     DomainApplication,
     DomainInformation,
-    DraftDomain,
-    Contact,
-    User,
 )
-from .common import less_console_noise
 import logging
 
 logger = logging.getLogger(__name__)

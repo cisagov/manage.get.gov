@@ -26,15 +26,13 @@
     padding-bottom: units(2px);
   }
 
-  td {
-    .no-click-outline-and-cursor-help{
-      outline: none;
-      cursor: help;
-      use {
-        // USWDS has weird interactions with SVGs regarding tooltips,
-        // and other components. In this event, we need to disable pointer interactions.
-        pointer-events: none;
-      }
+  td .no-click-outline-and-cursor-help {
+    outline: none;
+    cursor: help;
+    use {
+      // USWDS has weird interactions with SVGs regarding tooltips,
+      // and other components. In this event, we need to disable pointer interactions.
+      pointer-events: none;
     }
   }
 
