@@ -25,6 +25,8 @@ services:
       - DJANGO_SECRET_KEY=really-long-random-string-BNPecI7+s8jMahQcGHZ3XQ5yUfRrSibdapVLIz0UemdktVPofDKcoy
       # Run Django in debug mode on local
       - DJANGO_DEBUG=True
+      # Set DJANGO_LOG_LEVEL in env
+      - DJANGO_LOG_LEVEL
       # Run Django without production flags
       - IS_PRODUCTION=False
       # Tell Django where it is being hosted

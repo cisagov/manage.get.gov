@@ -34,6 +34,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
+from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
     ContactForm,
@@ -632,6 +633,55 @@ class DomainUsersView(DomainBaseView):
 
     template_name = "domain_users.html"
 
+    def get_context_data(self, **kwargs):
+        """The initial value for the form (which is a formset here)."""
+        context = super().get_context_data(**kwargs)
+
+        # Add conditionals to the context (such as "can_delete_users")
+        context = self._add_booleans_to_context(context)
+
+        # Add modal buttons to the context (such as for delete)
+        context = self._add_modal_buttons_to_context(context)
+
+        # Get the email of the current user
+        context["current_user_email"] = self.request.user.email
+
+        return context
+
+    def _add_booleans_to_context(self, context):
+        # Determine if the current user can delete managers
+        domain_pk = None
+        can_delete_users = False
+
+        if self.kwargs is not None and "pk" in self.kwargs:
+            domain_pk = self.kwargs["pk"]
+            # Prevent the end user from deleting themselves as a manager if they are the
+            # only manager that exists on a domain.
+            can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
+
+        context["can_delete_users"] = can_delete_users
+        return context
+
+    def _add_modal_buttons_to_context(self, context):
+        """Adds modal buttons (and their HTML) to the context"""
+        # Create HTML for the modal button
+        modal_button = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="delete_domain_manager">Yes, remove domain manager</button>'
+        )
+        context["modal_button"] = modal_button
+
+        # Create HTML for the modal button when deleting yourself
+        modal_button_self = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="delete_domain_manager_self">Yes, remove myself</button>'
+        )
+        context["modal_button_self"] = modal_button_self
+
+        return context
+
 
 class DomainAddUserView(DomainFormBaseView):
     """Inside of a domain's user management, a form for adding users.
@@ -745,3 +795,60 @@ class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMe
 
     def get_success_message(self, cleaned_data):
         return f"Successfully canceled invitation for {self.object.email}."
+
+
+class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
+    """Inside of a domain's user management, a form for deleting users."""
+
+    object: UserDomainRole  # workaround for type mismatch in DeleteView
+
+    def get_object(self, queryset=None):
+        """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""
+        domain_id = self.kwargs.get("pk")
+        user_id = self.kwargs.get("user_pk")
+        return UserDomainRole.objects.get(domain=domain_id, user=user_id)
+
+    def get_success_url(self):
+        """Refreshes the page after a delete is successful"""
+        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+
+    def get_success_message(self, delete_self=False):
+        """Returns confirmation content for the deletion event"""
+
+        # Grab the text representation of the user we want to delete
+        email_or_name = self.object.user.email
+        if email_or_name is None or email_or_name.strip() == "":
+            email_or_name = self.object.user
+
+        # If the user is deleting themselves, return a specific message.
+        # If not, return something more generic.
+        if delete_self:
+            message = f"You are no longer managing the domain {self.object.domain}."
+        else:
+            message = f"Removed {email_or_name} as a manager for this domain."
+
+        return message
+
+    def form_valid(self, form):
+        """Delete the specified user on this domain."""
+
+        # Delete the object
+        super().form_valid(form)
+
+        # Is the user deleting themselves? If so, display a different message
+        delete_self = self.request.user == self.object.user
+
+        # Add a success message
+        messages.success(self.request, self.get_success_message(delete_self))
+        return redirect(self.get_success_url())
+
+    def post(self, request, *args, **kwargs):
+        """Custom post implementation to redirect to home in the event that the user deletes themselves"""
+        response = super().post(request, *args, **kwargs)
+
+        # If the user is deleting themselves, redirect to home
+        delete_self = self.request.user == self.object.user
+        if delete_self:
+            return redirect(reverse("home"))
+
+        return response

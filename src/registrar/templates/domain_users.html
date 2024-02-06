@@ -16,10 +16,8 @@
     <li>There is no limit to the number of domain managers you can add.</li>
     <li>After adding a domain manager, an email invitation will be sent to that user with
       instructions on how to set up an account.</li>
-    <li>To remove a domain manager, <a href="{% public_site_url 'contact/' %}"
-      target="_blank" rel="noopener noreferrer" class="usa-link">contact us</a> for
-      assistance.</li>
     <li>All domain managers must keep their contact information updated and be responsive if contacted by the .gov team.</li>
+    <li>Domains must have at least one domain manager. You can’t remove yourself as a domain manager if you’re the only one assigned to this domain. Add another domain manager before you remove yourself from this domain.</li>
   </ul>
 
   {% if domain.permissions %}
@@ -30,7 +28,8 @@
     <thead>
       <tr>
         <th data-sortable scope="col" role="columnheader">Email</th>
-        <th data-sortable scope="col" role="columnheader">Role</th>
+        <th class="grid-col-2" data-sortable scope="col" role="columnheader">Role</th>
+        <th class="grid-col-1" scope="col" role="columnheader"><span class="sr-only">Action</span></th>
       </tr>
     </thead>
     <tbody>
@@ -40,6 +39,61 @@
           {{ permission.user.email }}
         </th>
         <td data-label="Role">{{ permission.role|title }}</td>
+        <td>
+        {% if can_delete_users %}
+          <a
+            id="button-toggle-user-alert-{{ forloop.counter }}"
+            href="#toggle-user-alert-{{ forloop.counter }}"
+            class="usa-button--unstyled text-no-underline"
+            aria-controls="toggle-user-alert-{{ forloop.counter }}"
+            data-open-modal
+            aria-disabled="false"
+          >
+            Remove
+          </a>
+          {# Display a custom message if the user is trying to delete themselves #}
+          {% if permission.user.email == current_user_email %}
+            <div
+            class="usa-modal"
+            id="toggle-user-alert-{{ forloop.counter }}"
+            aria-labelledby="Are you sure you want to continue?"
+            aria-describedby="You will be removed from this domain"
+            data-force-action
+            >
+              <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
+                {% with domain_name=domain.name|force_escape %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove yourself as a domain manager?" modal_description="You will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button_self|safe %}
+                {% endwith %}
+              </form>
+            </div>
+          {% else %}
+            <div
+              class="usa-modal"
+              id="toggle-user-alert-{{ forloop.counter }}"
+              aria-labelledby="Are you sure you want to continue?"
+              aria-describedby="{{ permission.user.email }} will be removed"
+              data-force-action
+            >
+              <form method="POST" action="{% url "domain-user-delete" pk=domain.id user_pk=permission.user.id %}">
+                {% with email=permission.user.email|default:permission.user|force_escape domain_name=domain.name|force_escape %}
+                  {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove " heading_value=email|add:"?" modal_description="<strong>"|add:email|add:"</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button=modal_button|safe %}
+                {% endwith %}
+              </form>
+            </div>
+          {% endif %}
+        {% else %}
+          <input 
+          type="submit" 
+          class="usa-button--unstyled disabled-button usa-tooltip" 
+          value="Remove"
+          data-position="bottom"
+          title="Domains must have at least one domain manager"
+          data-tooltip="true"
+          aria-disabled="true"
+          role="button"
+          >
+        {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -66,8 +120,8 @@
         <tr>
           <th data-sortable scope="col" role="columnheader">Email</th>
           <th data-sortable scope="col" role="columnheader">Date created</th>
-          <th data-sortable scope="col" role="columnheader">Status</th>
-          <th scope="col" role="columnheader"><span class="sr-only">Action</span></th>
+          <th class="grid-col-2" data-sortable scope="col" role="columnheader">Status</th>
+          <th class="grid-col-1" scope="col" role="columnheader"><span class="sr-only">Action</span></th>
         </tr>
       </thead>
       <tbody>
@@ -78,8 +132,9 @@
           </th>
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
           <td data-label="Status">{{ invitation.status|title }}</td>
-          <td><form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
-            {% csrf_token %}<input type="submit" class="usa-button--unstyled" value="Cancel">
+          <td>
+            <form method="POST" action="{% url "invitation-delete" pk=invitation.id %}">
+              {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline" value="Cancel">
             </form>
           </td>
         </tr>

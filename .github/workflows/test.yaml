@@ -36,7 +36,7 @@ jobs:
 
       - name: Unit tests
         working-directory: ./src
-        run: docker compose run app python manage.py test
+        run: docker compose run app python manage.py test --parallel
 
   django-migrations-complete:
     runs-on: ubuntu-latest

@@ -60,127 +60,134 @@ class TestDomainApplication(TestCase):
 
     def assertNotRaises(self, exception_type):
         """Helper method for testing allowed transitions."""
-        return self.assertRaises(Exception, None, exception_type)
+        with less_console_noise():
+            return self.assertRaises(Exception, None, exception_type)
 
     def test_empty_create_fails(self):
         """Can't create a completely empty domain application.
         NOTE: something about theexception this test raises messes up with the
         atomic block in a custom tearDown method for the parent test class."""
-        with self.assertRaisesRegex(IntegrityError, "creator"):
-            DomainApplication.objects.create()
+        with less_console_noise():
+            with self.assertRaisesRegex(IntegrityError, "creator"):
+                DomainApplication.objects.create()
 
     def test_minimal_create(self):
         """Can create with just a creator."""
-        user, _ = User.objects.get_or_create(username="testy")
-        application = DomainApplication.objects.create(creator=user)
-        self.assertEqual(application.status, DomainApplication.ApplicationStatus.STARTED)
+        with less_console_noise():
+            user, _ = User.objects.get_or_create(username="testy")
+            application = DomainApplication.objects.create(creator=user)
+            self.assertEqual(application.status, DomainApplication.ApplicationStatus.STARTED)
 
     def test_full_create(self):
         """Can create with all fields."""
-        user, _ = User.objects.get_or_create(username="testy")
-        contact = Contact.objects.create()
-        com_website, _ = Website.objects.get_or_create(website="igorville.com")
-        gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
-        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=user,
-            investigator=user,
-            organization_type=DomainApplication.OrganizationChoices.FEDERAL,
-            federal_type=DomainApplication.BranchChoices.EXECUTIVE,
-            is_election_board=False,
-            organization_name="Test",
-            address_line1="100 Main St.",
-            address_line2="APT 1A",
-            state_territory="CA",
-            zipcode="12345-6789",
-            authorizing_official=contact,
-            requested_domain=domain,
-            submitter=contact,
-            purpose="Igorville rules!",
-            anything_else="All of Igorville loves the dotgov program.",
-            is_policy_acknowledged=True,
-        )
-        application.current_websites.add(com_website)
-        application.alternative_domains.add(gov_website)
-        application.other_contacts.add(contact)
-        application.save()
+        with less_console_noise():
+            user, _ = User.objects.get_or_create(username="testy")
+            contact = Contact.objects.create()
+            com_website, _ = Website.objects.get_or_create(website="igorville.com")
+            gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
+            domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+            application = DomainApplication.objects.create(
+                creator=user,
+                investigator=user,
+                organization_type=DomainApplication.OrganizationChoices.FEDERAL,
+                federal_type=DomainApplication.BranchChoices.EXECUTIVE,
+                is_election_board=False,
+                organization_name="Test",
+                address_line1="100 Main St.",
+                address_line2="APT 1A",
+                state_territory="CA",
+                zipcode="12345-6789",
+                authorizing_official=contact,
+                requested_domain=domain,
+                submitter=contact,
+                purpose="Igorville rules!",
+                anything_else="All of Igorville loves the dotgov program.",
+                is_policy_acknowledged=True,
+            )
+            application.current_websites.add(com_website)
+            application.alternative_domains.add(gov_website)
+            application.other_contacts.add(contact)
+            application.save()
 
     def test_domain_info(self):
         """Can create domain info with all fields."""
-        user, _ = User.objects.get_or_create(username="testy")
-        contact = Contact.objects.create()
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        information = DomainInformation.objects.create(
-            creator=user,
-            organization_type=DomainInformation.OrganizationChoices.FEDERAL,
-            federal_type=DomainInformation.BranchChoices.EXECUTIVE,
-            is_election_board=False,
-            organization_name="Test",
-            address_line1="100 Main St.",
-            address_line2="APT 1A",
-            state_territory="CA",
-            zipcode="12345-6789",
-            authorizing_official=contact,
-            submitter=contact,
-            purpose="Igorville rules!",
-            anything_else="All of Igorville loves the dotgov program.",
-            is_policy_acknowledged=True,
-            domain=domain,
-        )
-        information.other_contacts.add(contact)
-        information.save()
-        self.assertEqual(information.domain.id, domain.id)
-        self.assertEqual(information.id, domain.domain_info.id)
+        with less_console_noise():
+            user, _ = User.objects.get_or_create(username="testy")
+            contact = Contact.objects.create()
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            information = DomainInformation.objects.create(
+                creator=user,
+                organization_type=DomainInformation.OrganizationChoices.FEDERAL,
+                federal_type=DomainInformation.BranchChoices.EXECUTIVE,
+                is_election_board=False,
+                organization_name="Test",
+                address_line1="100 Main St.",
+                address_line2="APT 1A",
+                state_territory="CA",
+                zipcode="12345-6789",
+                authorizing_official=contact,
+                submitter=contact,
+                purpose="Igorville rules!",
+                anything_else="All of Igorville loves the dotgov program.",
+                is_policy_acknowledged=True,
+                domain=domain,
+            )
+            information.other_contacts.add(contact)
+            information.save()
+            self.assertEqual(information.domain.id, domain.id)
+            self.assertEqual(information.id, domain.domain_info.id)
 
     def test_status_fsm_submit_fail(self):
-        user, _ = User.objects.get_or_create(username="testy")
-        application = DomainApplication.objects.create(creator=user)
+        with less_console_noise():
+            user, _ = User.objects.get_or_create(username="testy")
+            application = DomainApplication.objects.create(creator=user)
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                with self.assertRaises(ValueError):
-                    # can't submit an application with a null domain name
-                    application.submit()
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                with less_console_noise():
+                    with self.assertRaises(ValueError):
+                        # can't submit an application with a null domain name
+                        application.submit()
 
     def test_status_fsm_submit_succeed(self):
-        user, _ = User.objects.get_or_create(username="testy")
-        site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(creator=user, requested_domain=site)
+        with less_console_noise():
+            user, _ = User.objects.get_or_create(username="testy")
+            site = DraftDomain.objects.create(name="igorville.gov")
+            application = DomainApplication.objects.create(creator=user, requested_domain=site)
 
-        # no submitter email so this emits a log warning
+            # no submitter email so this emits a log warning
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                application.submit()
-        self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                with less_console_noise():
+                    application.submit()
+            self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
 
     def test_submit_sends_email(self):
         """Create an application and submit it and see if email was sent."""
-        user, _ = User.objects.get_or_create(username="testy")
-        contact = Contact.objects.create(email="test@test.gov")
-        domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=user,
-            requested_domain=domain,
-            submitter=contact,
-        )
-        application.save()
+        with less_console_noise():
+            user, _ = User.objects.get_or_create(username="testy")
+            contact = Contact.objects.create(email="test@test.gov")
+            domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+            application = DomainApplication.objects.create(
+                creator=user,
+                requested_domain=domain,
+                submitter=contact,
+            )
+            application.save()
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 application.submit()
 
-        # check to see if an email was sent
-        self.assertGreater(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "test@test.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+            # check to see if an email was sent
+            self.assertGreater(
+                len(
+                    [
+                        email
+                        for email in MockSESClient.EMAILS_SENT
+                        if "test@test.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+                    ]
+                ),
+                0,
+            )
 
     def test_submit_transition_allowed(self):
         """
@@ -268,13 +275,13 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
             (self.ineligible_application, TransitionNotAllowed),
         ]
-
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                try:
-                    application.action_needed()
-                except TransitionNotAllowed:
-                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        with less_console_noise():
+            for application, exception_type in test_cases:
+                with self.subTest(application=application, exception_type=exception_type):
+                    try:
+                        application.action_needed()
+                    except TransitionNotAllowed:
+                        self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
     def test_action_needed_transition_not_allowed(self):
         """
@@ -286,11 +293,11 @@ class TestDomainApplication(TestCase):
             (self.action_needed_application, TransitionNotAllowed),
             (self.withdrawn_application, TransitionNotAllowed),
         ]
-
-        for application, exception_type in test_cases:
-            with self.subTest(application=application, exception_type=exception_type):
-                with self.assertRaises(exception_type):
-                    application.action_needed()
+        with less_console_noise():
+            for application, exception_type in test_cases:
+                with self.subTest(application=application, exception_type=exception_type):
+                    with self.assertRaises(exception_type):
+                        application.action_needed()
 
     def test_approved_transition_allowed(self):
         """
@@ -499,25 +506,29 @@ class TestDomainApplication(TestCase):
 
     def test_has_rationale_returns_true(self):
         """has_rationale() returns true when an application has no_other_contacts_rationale"""
-        self.started_application.no_other_contacts_rationale = "You talkin' to me?"
-        self.started_application.save()
-        self.assertEquals(self.started_application.has_rationale(), True)
+        with less_console_noise():
+            self.started_application.no_other_contacts_rationale = "You talkin' to me?"
+            self.started_application.save()
+            self.assertEquals(self.started_application.has_rationale(), True)
 
     def test_has_rationale_returns_false(self):
         """has_rationale() returns false when an application has no no_other_contacts_rationale"""
-        self.assertEquals(self.started_application.has_rationale(), False)
+        with less_console_noise():
+            self.assertEquals(self.started_application.has_rationale(), False)
 
     def test_has_other_contacts_returns_true(self):
         """has_other_contacts() returns true when an application has other_contacts"""
-        # completed_application has other contacts by default
-        self.assertEquals(self.started_application.has_other_contacts(), True)
+        with less_console_noise():
+            # completed_application has other contacts by default
+            self.assertEquals(self.started_application.has_other_contacts(), True)
 
     def test_has_other_contacts_returns_false(self):
         """has_other_contacts() returns false when an application has no other_contacts"""
-        application = completed_application(
-            status=DomainApplication.ApplicationStatus.STARTED, name="no-others.gov", has_other_contacts=False
-        )
-        self.assertEquals(application.has_other_contacts(), False)
+        with less_console_noise():
+            application = completed_application(
+                status=DomainApplication.ApplicationStatus.STARTED, name="no-others.gov", has_other_contacts=False
+            )
+            self.assertEquals(application.has_other_contacts(), False)
 
 
 class TestPermissions(TestCase):
@@ -548,9 +559,9 @@ class TestPermissions(TestCase):
         self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
 
 
-class TestDomainInfo(TestCase):
+class TestDomainInformation(TestCase):
 
-    """Test creation of Domain Information when approved."""
+    """Test the DomainInformation model, when approved or otherwise"""
 
     def setUp(self):
         super().setUp()
@@ -559,12 +570,18 @@ class TestDomainInfo(TestCase):
     def tearDown(self):
         super().tearDown()
         self.mock_client.EMAILS_SENT.clear()
+        Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        DomainApplication.objects.all().delete()
+        User.objects.all().delete()
+        DraftDomain.objects.all().delete()
 
     @boto3_mocking.patching
     def test_approval_creates_info(self):
+        self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
+        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -574,7 +591,25 @@ class TestDomainInfo(TestCase):
 
         # should be an information present for this domain
         domain = Domain.objects.get(name="igorville.gov")
-        self.assertTrue(DomainInformation.objects.get(domain=domain))
+        domain_information = DomainInformation.objects.filter(domain=domain)
+        self.assertTrue(domain_information.exists())
+
+        # Test that both objects are what we expect
+        current_domain_information = domain_information.get().__dict__
+        expected_domain_information = DomainInformation(
+            creator=user,
+            domain=domain,
+            notes="test notes",
+            domain_application=application,
+        ).__dict__
+
+        # Test the two records for consistency
+        self.assertEqual(self.clean_dict(current_domain_information), self.clean_dict(expected_domain_information))
+
+    def clean_dict(self, dict_obj):
+        """Cleans dynamic fields in a dictionary"""
+        bad_fields = ["_state", "created_at", "id", "updated_at"]
+        return {k: v for k, v in dict_obj.items() if k not in bad_fields}
 
 
 class TestInvitations(TestCase):

@@ -59,22 +59,22 @@ class TestDomainAdmin(MockEppLib):
         """
         Make sure the short name is displaying in admin on the list page
         """
-        self.client.force_login(self.superuser)
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
+        with less_console_noise():
+            self.client.force_login(self.superuser)
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+            mock_client = MockSESClient()
+            with boto3_mocking.clients.handler_for("sesv2", mock_client):
                 application.approve()
 
-        response = self.client.get("/admin/registrar/domain/")
+            response = self.client.get("/admin/registrar/domain/")
 
-        # There are 3 template references to Federal (3) plus one reference in the table
-        # for our actual application
-        self.assertContains(response, "Federal", count=4)
-        # This may be a bit more robust
-        self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
-        # Now let's make sure the long description does not exist
-        self.assertNotContains(response, "Federal: an agency of the U.S. government")
+            # There are 3 template references to Federal (3) plus one reference in the table
+            # for our actual application
+            self.assertContains(response, "Federal", count=4)
+            # This may be a bit more robust
+            self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
+            # Now let's make sure the long description does not exist
+            self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
     @skip("Why did this test stop working, and is is a good test")
     def test_place_and_remove_hold(self):
@@ -120,40 +120,37 @@ class TestDomainAdmin(MockEppLib):
             Then a user-friendly success message is returned for displaying on the web
             And `state` is et to `DELETED`
         """
-        domain = create_ready_domain()
-        # Put in client hold
-        domain.place_client_hold()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        # Ensure everything is displaying correctly
-        response = self.client.get(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Remove from registry")
-
-        # Test the info dialog
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
-                extra_tags="",
-                fail_silently=False,
+        with less_console_noise():
+            domain = create_ready_domain()
+            # Put in client hold
+            domain.place_client_hold()
+            p = "userpass"
+            self.client.login(username="staffuser", password=p)
+            # Ensure everything is displaying correctly
+            response = self.client.get(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                follow=True,
             )
-
-        self.assertEqual(domain.state, Domain.State.DELETED)
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, domain.name)
+            self.assertContains(response, "Remove from registry")
+            # Test the info dialog
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
+            )
+            request.user = self.client
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.INFO,
+                    "Domain city.gov has been deleted. Thanks!",
+                    extra_tags="",
+                    fail_silently=False,
+                )
+            self.assertEqual(domain.state, Domain.State.DELETED)
 
     def test_deletion_ready_fsm_failure(self):
         """
@@ -162,38 +159,36 @@ class TestDomainAdmin(MockEppLib):
             Then a user-friendly error message is returned for displaying on the web
             And `state` is not set to `DELETED`
         """
-        domain = create_ready_domain()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        # Ensure everything is displaying correctly
-        response = self.client.get(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Remove from registry")
-
-        # Test the error
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.ERROR,
-                "Error deleting this Domain: "
-                "Can't switch from state 'ready' to 'deleted'"
-                ", must be either 'dns_needed' or 'on_hold'",
-                extra_tags="",
-                fail_silently=False,
+        with less_console_noise():
+            domain = create_ready_domain()
+            p = "userpass"
+            self.client.login(username="staffuser", password=p)
+            # Ensure everything is displaying correctly
+            response = self.client.get(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                follow=True,
             )
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, domain.name)
+            self.assertContains(response, "Remove from registry")
+            # Test the error
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
+            )
+            request.user = self.client
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.ERROR,
+                    "Error deleting this Domain: "
+                    "Can't switch from state 'ready' to 'deleted'"
+                    ", must be either 'dns_needed' or 'on_hold'",
+                    extra_tags="",
+                    fail_silently=False,
+                )
 
         self.assertEqual(domain.state, Domain.State.READY)
 
@@ -205,62 +200,57 @@ class TestDomainAdmin(MockEppLib):
             Then `commands.DeleteDomain` is sent to the registry
             And Domain returns normally without an error dialog
         """
-        domain = create_ready_domain()
-        # Put in client hold
-        domain.place_client_hold()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        # Ensure everything is displaying correctly
-        response = self.client.get(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Remove from registry")
-
-        # Test the info dialog
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        # Delete it once
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
-                extra_tags="",
-                fail_silently=False,
+        with less_console_noise():
+            domain = create_ready_domain()
+            # Put in client hold
+            domain.place_client_hold()
+            p = "userpass"
+            self.client.login(username="staffuser", password=p)
+            # Ensure everything is displaying correctly
+            response = self.client.get(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                follow=True,
             )
-
-        self.assertEqual(domain.state, Domain.State.DELETED)
-
-        # Try to delete it again
-        # Test the info dialog
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.INFO,
-                "This domain is already deleted",
-                extra_tags="",
-                fail_silently=False,
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, domain.name)
+            self.assertContains(response, "Remove from registry")
+            # Test the info dialog
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
             )
+            request.user = self.client
+            # Delete it once
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.INFO,
+                    "Domain city.gov has been deleted. Thanks!",
+                    extra_tags="",
+                    fail_silently=False,
+                )
 
-        self.assertEqual(domain.state, Domain.State.DELETED)
+            self.assertEqual(domain.state, Domain.State.DELETED)
+            # Try to delete it again
+            # Test the info dialog
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
+            )
+            request.user = self.client
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.INFO,
+                    "This domain is already deleted",
+                    extra_tags="",
+                    fail_silently=False,
+                )
+            self.assertEqual(domain.state, Domain.State.DELETED)
 
     @skip("Waiting on epp lib to implement")
     def test_place_and_remove_hold_epp(self):
@@ -624,6 +614,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "anything_else",
             "is_policy_acknowledged",
             "submission_date",
+            "notes",
             "current_websites",
             "other_contacts",
             "alternative_domains",
@@ -641,6 +632,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "creator",
             "about_your_organization",
             "requested_domain",
+            "approved_domain",
             "alternative_domains",
             "purpose",
             "submitter",
@@ -1066,7 +1058,7 @@ class DomainInvitationAdminTest(TestCase):
         self.assertContains(response, retrieved_html, count=1)
 
 
-class DomainInformationAdminTest(TestCase):
+class TestDomainInformationAdmin(TestCase):
     def setUp(self):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
@@ -1074,6 +1066,7 @@ class DomainInformationAdminTest(TestCase):
         self.admin = DomainInformationAdmin(model=DomainInformation, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+        self.staffuser = create_user()
         self.mock_data_generator = AuditedAdminMockData()
 
         self.test_helper = GenericTestHelper(
@@ -1116,6 +1109,27 @@ class DomainInformationAdminTest(TestCase):
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+    def test_readonly_fields_for_analyst(self):
+        """Ensures that analysts have their permissions setup correctly"""
+        request = self.factory.get("/")
+        request.user = self.staffuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = [
+            "creator",
+            "type_of_work",
+            "more_organization_information",
+            "domain",
+            "domain_application",
+            "submitter",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "is_policy_acknowledged",
+        ]
+
+        self.assertEqual(readonly_fields, expected_fields)
 
     def test_domain_sortable(self):
         """Tests if DomainInformation sorts by domain correctly"""
@@ -1281,64 +1295,62 @@ class ListHeaderAdminTest(TestCase):
         self.superuser = create_superuser()
 
     def test_changelist_view(self):
-        # Have to get creative to get past linter
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
-
-        # Mock a user
-        user = mock_user()
-
-        # Make the request using the Client class
-        # which handles CSRF
-        # Follow=True handles the redirect
-        response = self.client.get(
-            "/admin/registrar/domainapplication/",
-            {
-                "status__exact": "started",
-                "investigator__id__exact": user.id,
-                "q": "Hello",
-            },
-            follow=True,
-        )
-
-        # Assert that the filters and search_query are added to the extra_context
-        self.assertIn("filters", response.context)
-        self.assertIn("search_query", response.context)
-        # Assert the content of filters and search_query
-        filters = response.context["filters"]
-        search_query = response.context["search_query"]
-        self.assertEqual(search_query, "Hello")
-        self.assertEqual(
-            filters,
-            [
-                {"parameter_name": "status", "parameter_value": "started"},
+        with less_console_noise():
+            # Have to get creative to get past linter
+            p = "adminpass"
+            self.client.login(username="superuser", password=p)
+            # Mock a user
+            user = mock_user()
+            # Make the request using the Client class
+            # which handles CSRF
+            # Follow=True handles the redirect
+            response = self.client.get(
+                "/admin/registrar/domainapplication/",
                 {
-                    "parameter_name": "investigator",
-                    "parameter_value": user.first_name + " " + user.last_name,
+                    "status__exact": "started",
+                    "investigator__id__exact": user.id,
+                    "q": "Hello",
                 },
-            ],
-        )
+                follow=True,
+            )
+            # Assert that the filters and search_query are added to the extra_context
+            self.assertIn("filters", response.context)
+            self.assertIn("search_query", response.context)
+            # Assert the content of filters and search_query
+            filters = response.context["filters"]
+            search_query = response.context["search_query"]
+            self.assertEqual(search_query, "Hello")
+            self.assertEqual(
+                filters,
+                [
+                    {"parameter_name": "status", "parameter_value": "started"},
+                    {
+                        "parameter_name": "investigator",
+                        "parameter_value": user.first_name + " " + user.last_name,
+                    },
+                ],
+            )
 
     def test_get_filters(self):
-        # Create a mock request object
-        request = self.factory.get("/admin/yourmodel/")
-        # Set the GET parameters for testing
-        request.GET = {
-            "status": "started",
-            "investigator": "Jeff Lebowski",
-            "q": "search_value",
-        }
-        # Call the get_filters method
-        filters = self.admin.get_filters(request)
-
-        # Assert the filters extracted from the request GET
-        self.assertEqual(
-            filters,
-            [
-                {"parameter_name": "status", "parameter_value": "started"},
-                {"parameter_name": "investigator", "parameter_value": "Jeff Lebowski"},
-            ],
-        )
+        with less_console_noise():
+            # Create a mock request object
+            request = self.factory.get("/admin/yourmodel/")
+            # Set the GET parameters for testing
+            request.GET = {
+                "status": "started",
+                "investigator": "Jeff Lebowski",
+                "q": "search_value",
+            }
+            # Call the get_filters method
+            filters = self.admin.get_filters(request)
+            # Assert the filters extracted from the request GET
+            self.assertEqual(
+                filters,
+                [
+                    {"parameter_name": "status", "parameter_value": "started"},
+                    {"parameter_name": "investigator", "parameter_value": "Jeff Lebowski"},
+                ],
+            )
 
     def tearDown(self):
         # delete any applications too
@@ -1777,42 +1789,38 @@ class ContactAdminTest(TestCase):
     def test_change_view_for_joined_contact_five_or_more(self):
         """Create a contact, join it to 5 domain requests. The 6th join will be a user.
         Assert that the warning on the contact form lists 5 joins and a '1 more' ellispsis."""
-
-        self.client.force_login(self.superuser)
-
-        # Create an instance of the model
-        # join it to 5 domain requests. The 6th join will be a user.
-        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
-        application1 = completed_application(submitter=contact, name="city1.gov")
-        application2 = completed_application(submitter=contact, name="city2.gov")
-        application3 = completed_application(submitter=contact, name="city3.gov")
-        application4 = completed_application(submitter=contact, name="city4.gov")
-        application5 = completed_application(submitter=contact, name="city5.gov")
-
-        with patch("django.contrib.messages.warning") as mock_warning:
-            # Use the test client to simulate the request
-            response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
-
-            logger.info(mock_warning)
-
-            # Assert that the error message was called with the correct argument
-            # Note: The 6th join will be a user.
-            mock_warning.assert_called_once_with(
-                response.wsgi_request,
-                "<ul class='messagelist_content-list--unstyled'>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application5.pk}/change/'>city5.gov</a></li>"
-                "</ul>"
-                "<p class='font-sans-3xs'>And 1 more...</p>",
-            )
+        with less_console_noise():
+            self.client.force_login(self.superuser)
+            # Create an instance of the model
+            # join it to 5 domain requests. The 6th join will be a user.
+            contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+            application1 = completed_application(submitter=contact, name="city1.gov")
+            application2 = completed_application(submitter=contact, name="city2.gov")
+            application3 = completed_application(submitter=contact, name="city3.gov")
+            application4 = completed_application(submitter=contact, name="city4.gov")
+            application5 = completed_application(submitter=contact, name="city5.gov")
+            with patch("django.contrib.messages.warning") as mock_warning:
+                # Use the test client to simulate the request
+                response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
+                logger.debug(mock_warning)
+                # Assert that the error message was called with the correct argument
+                # Note: The 6th join will be a user.
+                mock_warning.assert_called_once_with(
+                    response.wsgi_request,
+                    "<ul class='messagelist_content-list--unstyled'>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application5.pk}/change/'>city5.gov</a></li>"
+                    "</ul>"
+                    "<p class='font-sans-3xs'>And 1 more...</p>",
+                )
 
     def tearDown(self):
         DomainApplication.objects.all().delete()
