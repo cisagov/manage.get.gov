@@ -6,6 +6,7 @@ inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
 """
 
 import logging
+
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
