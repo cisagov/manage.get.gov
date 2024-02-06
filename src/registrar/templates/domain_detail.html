@@ -56,7 +56,7 @@
     {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url editable=domain.is_editable %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
-    {% if security_email is not None and security_email != default_security_email%}
+    {% if security_email is not None and security_email not in hidden_security_emails%}
       {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=domain.is_editable %}
     {% else %}
       {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=domain.is_editable %}
