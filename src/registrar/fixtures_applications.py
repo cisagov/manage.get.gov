@@ -1,3 +1,4 @@
+import datetime
 import logging
 import random
 from faker import Faker
@@ -104,7 +105,7 @@ class DomainApplicationFixture:
             # Random choice of agency for selects, used as placeholders for testing.
             else random.choice(DomainApplication.AGENCIES)  # nosec
         )
-
+        da.submission_date = fake.date()
         da.federal_type = (
             app["federal_type"]
             if "federal_type" in app
