@@ -1,4 +1,3 @@
-import datetime
 import logging
 import random
 from faker import Faker
