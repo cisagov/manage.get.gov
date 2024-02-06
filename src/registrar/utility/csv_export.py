@@ -14,11 +14,16 @@ from registrar.models.public_contact import PublicContact
 logger = logging.getLogger(__name__)
 
 
-def write_header(writer, columns):
+def write_header(writer, columns, max_dm_count):
     """
     Receives params from the parent methods and outputs a CSV with a header row.
     Works with write_header as long as the same writer object is passed.
     """
+
+    for i in range(1, max_dm_count + 1):
+        columns.append(f"Domain manager email {i}")
+
+    writer.writerow("hello")
     writer.writerow(columns)
 
 
@@ -134,12 +139,22 @@ def write_body(
         else:
             logger.warning("csv_export -> Domain was none for PublicContact")
 
+    # The maximum amount of domain managers an account has
+    # We get the max so we can set the column header accurately
+    max_dm_count = 0
+    paginator_ran = False
+
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
         rows = []
         for domain_info in page.object_list:
+            # Get count of all the domain managers for an account
+            dm_count = len(domain_info.domain.permissions)
+            if dm_count > max_dm_count:
+                max_dm_count = dm_count
+
             try:
                 row = parse_row(columns, domain_info, security_emails_dict)
                 rows.append(row)
@@ -149,7 +164,12 @@ def write_body(
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
 
+        # We only want this to run once just for the column header
+        if paginator_ran is False:
+            write_header(writer, columns, max_dm_count)
+
         writer.writerows(rows)
+        paginator_ran = True
 
 
 def export_data_type_to_csv(csv_file):
@@ -184,7 +204,7 @@ def export_data_type_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_header(writer, columns)
+    # write_header(writer, columns)
     write_body(writer, columns, sort_fields, filter_condition)
 
 
@@ -216,7 +236,7 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_header(writer, columns)
+    # write_header(writer, columns)
     write_body(writer, columns, sort_fields, filter_condition)
 
 
@@ -249,7 +269,7 @@ def export_data_federal_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_header(writer, columns)
+    # write_header(writer, columns)
     write_body(writer, columns, sort_fields, filter_condition)
 
 
@@ -317,6 +337,6 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
         "domain__deleted__gte": start_date_formatted,
     }
 
-    write_header(writer, columns)
+    # write_header(writer, columns)
     write_body(writer, columns, sort_fields, filter_condition)
     write_body(writer, columns, sort_fields_for_deleted_domains, filter_condition_for_deleted_domains)
