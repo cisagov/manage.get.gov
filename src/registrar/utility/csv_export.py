@@ -189,7 +189,14 @@ def export_data_type_to_csv(csv_file):
         "AO",
         "AO email",
         "Security contact email",
+        "Domain Manager email",
     ]
+
+    # STUCK HERE
+
+    # So the problem is we don't even have access to domains or a count here.
+    # We could pass it in, but it's messy. Maybe helper function? Seems repetitive
+
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
         "organization_type",
