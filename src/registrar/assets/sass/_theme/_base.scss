@@ -139,10 +139,18 @@ abbr[title] {
   }
 }
 
-@media (min-width: 768px) {
+@include at-media(tablet) {
   .usa-tooltip__body {
-    width: 250px;
-    white-space: normal;
-    text-align: center;
+    width: 250px !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+}
+
+@include at-media(mobile) {
+  .usa-tooltip__body {
+    width: 250px !important;
+    white-space: normal !important;
+    text-align: center !important;
   }
 }

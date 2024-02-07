@@ -58,10 +58,10 @@
             {% endif %}
             <svg 
               class="usa-icon usa-tooltip text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-              role="img" 
               data-position="top"
               title="{{domain.get_state_help_text}}"
               focusable="true"
+              aria-label="Status Information"
             >
               <use xlink:href="{%static 'img/sprite.svg'%}#info_outline"></use>
             </svg>
