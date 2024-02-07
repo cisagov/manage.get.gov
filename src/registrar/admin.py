@@ -1136,7 +1136,7 @@ class DomainAdmin(ListHeaderAdmin):
             "_get_status": self.do_get_status,
             "_extend_expiration_date": self.do_extend_expiration_date,
         }
-
+        print(f"this is the response! {request.POST}")
         # Check which action button was pressed and call the corresponding function
         for action, function in ACTION_FUNCTIONS.items():
             if action in request.POST:
@@ -1147,7 +1147,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     def do_extend_expiration_date(self, request, obj):
         if not isinstance(obj, Domain):
-            self.message_user(request, "Object is not of type Domain", messages.ERROR)
+            self.message_user(request, "Object is not of type Domain.", messages.ERROR)
             return None
 
         try:
@@ -1156,24 +1156,32 @@ class DomainAdmin(ListHeaderAdmin):
             if err.code:
                 self.message_user(
                     request,
-                    f"Error extending this domain: {err}",
+                    f"Error extending this domain: {err}.",
                     messages.ERROR,
                 )
             elif err.is_connection_error():
                 self.message_user(
                     request,
-                    "Error connecting to the registry",
+                    "Error connecting to the registry.",
                     messages.ERROR,
                 )
             else:
                 self.message_user(request, err, messages.ERROR)
+        except KeyError:
+            # In normal code flow, a keyerror can only occur when
+            # fresh data can't be pulled from the registry, and thus there is no cache.
+            self.message_user(
+                request,
+                "Error connecting to the registry. No expiration date was found.",
+                messages.ERROR,
+            )
         except Exception as err:
             self.message_user(request, err, messages.ERROR)
         else:
             updated_domain = Domain.objects.filter(id=obj).get()
             self.message_user(
                 request,
-                f"Successfully extended expiration date to {updated_domain.registry_expiration_date}",
+                f"Successfully extended expiration date to {updated_domain.registry_expiration_date}.",
             )
         return HttpResponseRedirect(".")
 
@@ -1327,6 +1335,17 @@ class DomainAdmin(ListHeaderAdmin):
         ):
             return True
         return super().has_change_permission(request, obj)
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        # Create HTML for the modal button
+        modal_button = (
+            '<button type="submit" '
+            'class="usa-button" '
+            'name="_extend_expiration_date">Confirm</button>'
+        )
+        extra_context["modal_button"] = modal_button
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 class DraftDomainAdmin(ListHeaderAdmin):

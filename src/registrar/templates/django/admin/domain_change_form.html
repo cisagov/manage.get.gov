@@ -5,19 +5,57 @@
     <div class="submit-row">
         <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
         <input type="submit" value="Get registry status" name="_get_status">
-        <input type="submit" value="Extend expiration date" name="_extend_expiration_date">
+        {{ modal_button }}
         <a
         href="#toggle-extend-expiration-alert"
         aria-controls="toggle-extend-expiration-alert"
         data-open-modal
-        >Disable DNSSEC</a>
+        >
+            Extend expiration date
+        </a>
         <div
         class="usa-modal"
         id="toggle-extend-expiration-alert"
-        aria-labelledby="Are you sure you want to continue?"
-        aria-describedby="Your DNSSEC records will be deleted from the registry."
+        aria-labelledby="Are you sure you want to extend this expiration date?"
+        aria-describedby="This expiration date will be extended."
         >
-            {% include 'includes/modal.html' with modal_heading="Are you sure you want to disable DNSSEC?" modal_button=modal_button|safe %}
+            <div class="usa-modal__content">
+                <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading" id="modal-1-heading">
+                        Are you sure you want to extend this expiration date?
+                    </h2>
+                    <div class="usa-prose">
+                        <p id="modal-1-description">
+                            This action will extend the expiration date by a year.
+                        </p>
+                    </div>
+            
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                            <li class="usa-button-group__item">
+                                <button
+                                id="extend_expiration_date_button"
+                                type="submit" 
+                                class="usa-button" 
+                                name="_extend_expiration_date"
+                                >
+                                    Confirm
+                                </button>
+                            </li>
+                            <li class="usa-button-group__item">
+                                <button
+                                type="button"
+                                class="usa-button usa-button--unstyled padding-105 text-center"
+                                data-close-modal
+                                >
+                                    Cancel
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {# {% include 'includes/modal.html' with modal_heading="Are you sure you want to extend this expiration date?" modal_button=modal_button|safe %} #}
         </div>
         <div class="spacer"></div>
         {% if original.state == original.State.READY %}

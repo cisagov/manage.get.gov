@@ -270,3 +270,9 @@ h1, h2, h3,
         margin: 0!important;
     }
 }
+
+// Button groups in /admin incorrectly have bullets.
+// Remove that!
+.usa-button-group .usa-button-group__item {
+    list-style-type: none;
+}
