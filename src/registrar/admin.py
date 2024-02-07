@@ -1136,7 +1136,7 @@ class DomainAdmin(ListHeaderAdmin):
             "_get_status": self.do_get_status,
             "_extend_expiration_date": self.do_extend_expiration_date,
         }
-        print(f"this is the response! {request.POST}")
+
         # Check which action button was pressed and call the corresponding function
         for action, function in ACTION_FUNCTIONS.items():
             if action in request.POST:
