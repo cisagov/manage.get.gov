@@ -257,10 +257,11 @@ class Domain(TimeStampedModel, DomainHelper):
             # if no expiration date from registry, set it to today
             logger.warning("current expiration date not set; setting to today")
             exp_date = date.today()
-
+        """
         if extend_year_past_current_date:
             # TODO - handle unit == month
             expected_renewal_year = exp_date.year + length
+
             current_year = date.today().year
             if expected_renewal_year < current_year:
                 # Modify the length such that it will exceed the current year by the length
@@ -271,7 +272,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 # we need to apply double "length" for it shoot past the current date
                 # at the correct interval.
                 length = length * 2
-
+        """
         # create RenewDomain request
         request = commands.RenewDomain(name=self.name, cur_exp_date=exp_date, period=epp.Period(length, unit))
 

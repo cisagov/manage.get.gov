@@ -3,6 +3,7 @@ import logging
 from django import forms
 from django.db.models.functions import Concat
 from django.http import HttpResponse
+from dateutil.relativedelta import relativedelta
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
@@ -23,6 +24,9 @@ from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
+from epplibwrapper import (
+    common as epp,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1151,7 +1155,17 @@ class DomainAdmin(ListHeaderAdmin):
             return None
 
         try:
-            obj.renew_domain(date_to_extend=date.today())
+            exp_date = obj.registry_expiration_date
+        except KeyError:
+            # if no expiration date from registry, set it to today
+            logger.warning("current expiration date not set; setting to today")
+            exp_date = date.today()
+
+        desired_date = exp_date + relativedelta(years=1)
+        month_length = self._month_diff(desired_date, exp_date)
+
+        try:
+            obj.renew_domain(length=month_length, unit=epp.Unit.MONTH)
         except RegistryError as err:
             if err.code:
                 self.message_user(
@@ -1184,6 +1198,24 @@ class DomainAdmin(ListHeaderAdmin):
                 f"Successfully extended expiration date to {updated_domain.registry_expiration_date}.",
             )
         return HttpResponseRedirect(".")
+
+    def _month_diff(self, date_1, date_2):
+        """
+        Calculate the difference in months between two dates using dateutil's relativedelta.
+
+        :param date_1: The first date.
+        :param date_2: The second date.
+        :return: The difference in months as an integer.
+        """
+        # Ensure date_1 is always the earlier date
+        start_date, end_date = sorted([date_1, date_2])
+
+        # Grab the delta between the two
+        rdelta = relativedelta(end_date, start_date)
+
+        # Calculate total months as years * 12 + months
+        total_months = rdelta.years * 12 + rdelta.months
+        return total_months
 
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):
