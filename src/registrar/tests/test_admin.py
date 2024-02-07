@@ -456,8 +456,11 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertIn(expected_string, email_body)
 
     def test_save_model_sends_submitted_email(self):
-        """When transitioning to submitted the first time (and the first time only) on a domain request,
-        an email is sent out."""
+        """When transitioning to submitted from started or withdrawn on a domain request,
+        an email is sent out.
+
+        When transitioning to submitted from dns needed or in review on a domain request,
+        no email is sent out."""
 
         # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -466,7 +469,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a sample application
         application = completed_application()
 
-        # Test Submitted Status
+        # Test Submitted Status from started
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
         self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
@@ -478,13 +481,33 @@ class TestDomainApplicationAdmin(MockEppLib):
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-        # Test Submitted Status Again (No new email should be sent)
+        # Test Submitted Status Again (from withdrawn)
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to ACTION_NEEDED
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.ACTION_NEEDED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sends_approved_email(self):
-        """When transitioning to approved the first time (and the first time only) on a domain request,
-        an email is sent out."""
+        """When transitioning to approved on a domain request,
+        an email is sent out every time."""
 
         # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -505,11 +528,11 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Test Submitted Status Again (No new email should be sent)
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sends_rejected_email(self):
-        """When transitioning to rejected the first time (and the first time only) on a domain request,
-        an email is sent out."""
+        """When transitioning to rejected on a domain request,
+        an email is sent out every time."""
 
         # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -530,11 +553,11 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Test Submitted Status Again (No new email should be sent)
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sends_withdrawn_email(self):
-        """When transitioning to withdrawn the first time (and the first time only) on a domain request,
-        an email is sent out."""
+        """When transitioning to withdrawn on a domain request,
+        an email is sent out every time."""
 
         # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -557,7 +580,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Test Submitted Status Again (No new email should be sent)
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sets_approved_domain(self):
         # make sure there is no user with this email
