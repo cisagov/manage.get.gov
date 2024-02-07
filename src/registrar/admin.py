@@ -1161,7 +1161,7 @@ class DomainAdmin(ListHeaderAdmin):
             logger.warning("current expiration date not set; setting to today")
             exp_date = date.today()
 
-        desired_date = exp_date + relativedelta(years=1)
+        desired_date = date.today() + relativedelta(years=1)
         month_length = self._month_diff(desired_date, exp_date)
 
         try:
