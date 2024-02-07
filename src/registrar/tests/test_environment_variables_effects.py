@@ -22,10 +22,10 @@ class MyTestCase(TestCase):
     def test_production_environment(self):
         """No banner on prod."""
         home_page = self.client.get("/")
-        self.assertNotContains(home_page, "You are not on production.")
+        self.assertNotContains(home_page, "You are on a test site.")
 
     @override_settings(IS_PRODUCTION=False)
     def test_non_production_environment(self):
         """Banner on non-prod."""
         home_page = self.client.get("/")
-        self.assertContains(home_page, "You are not on production.")
+        self.assertContains(home_page, "You are on a test site.")
