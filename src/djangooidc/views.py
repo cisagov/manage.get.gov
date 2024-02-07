@@ -16,6 +16,7 @@ from registrar.models import User
 logger = logging.getLogger(__name__)
 
 try:
+    logger.debug("oidc views initializing provider")
     # Initialize provider using pyOICD
     OP = getattr(settings, "OIDC_ACTIVE_PROVIDER")
     CLIENT = Client(OP)
@@ -55,7 +56,7 @@ def error_page(request, error):
 
 def openid(request):
     """Redirect the user to an authentication provider (OP)."""
-
+    logger.debug("in openid")
     # If the session reset because of a server restart, attempt to login again
     request.session["acr_value"] = CLIENT.get_default_acr_value()
 
@@ -69,6 +70,7 @@ def openid(request):
 
 def login_callback(request):
     """Analyze the token returned by the authentication provider (OP)."""
+    logger.debug("in login_callback")
     try:
         query = parse_qs(request.GET.urlencode())
         userinfo = CLIENT.callback(query, request.session)
