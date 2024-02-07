@@ -8,10 +8,12 @@
       <li class="usa-sidenav__item sidenav__step--locked">
         <span>
           {% if not this_step == steps.current %}
-          <svg class="usa-icon text-green" aria-hidden="true" focsuable="false" role="img" width="24" height="24">
-            <title id="checked-step__{{forloop.counter}}">Checked mark</title>
-            <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
-          </svg>
+            {% if this_step != "review" %}
+              <svg class="usa-icon text-green" aria-hidden="true" focsuable="false" role="img" width="24" height="24">
+                <title id="checked-step__{{forloop.counter}}">Checked mark</title>
+                <use xlink:href="{%static 'img/sprite.svg'%}#check_circle"></use>
+              </svg>
+            {% endif %}
           {% endif %}
         <a href="{% namespaced_url 'application' this_step %}" 
            {% if this_step == steps.current %}

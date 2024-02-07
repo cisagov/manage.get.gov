@@ -20,6 +20,8 @@ from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
+from django.utils.safestring import mark_safe
+from django.utils.html import escape
 
 logger = logging.getLogger(__name__)
 
@@ -452,6 +454,60 @@ class ContactAdmin(ListHeaderAdmin):
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields  # Read-only fields for analysts
 
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Extend the change_view for Contact objects in django admin.
+        Customize to display related objects to the Contact. These will be passed
+        through the messages construct to the template for display to the user."""
+
+        # Fetch the Contact instance
+        contact = models.Contact.objects.get(pk=object_id)
+
+        # initialize related_objects array
+        related_objects = []
+        # for all defined fields in the model
+        for related_field in contact._meta.get_fields():
+            # if the field is a relation to another object
+            if related_field.is_relation:
+                # Check if the related field is not None
+                related_manager = getattr(contact, related_field.name)
+                if related_manager is not None:
+                    # Check if it's a ManyToManyField/reverse ForeignKey or a OneToOneField
+                    # Do this by checking for get_queryset method on the related_manager
+                    if hasattr(related_manager, "get_queryset"):
+                        # Handles ManyToManyRel and ManyToOneRel
+                        queryset = related_manager.get_queryset()
+                    else:
+                        # Handles OneToOne rels, ie. User
+                        queryset = [related_manager]
+
+                    for obj in queryset:
+                        # for each object, build the edit url in this view and add as tuple
+                        # to the related_objects array
+                        app_label = obj._meta.app_label
+                        model_name = obj._meta.model_name
+                        obj_id = obj.id
+                        change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
+                        related_objects.append((change_url, obj))
+
+        if related_objects:
+            message = "<ul class='messagelist_content-list--unstyled'>"
+            for i, (url, obj) in enumerate(related_objects):
+                if i < 5:
+                    escaped_obj = escape(obj)
+                    message += f"<li>Joined to {obj.__class__.__name__}: <a href='{url}'>{escaped_obj}</a></li>"
+            message += "</ul>"
+            if len(related_objects) > 5:
+                related_objects_over_five = len(related_objects) - 5
+                message += f"<p class='font-sans-3xs'>And {related_objects_over_five} more...</p>"
+
+            message_html = mark_safe(message)  # nosec
+            messages.warning(
+                request,
+                message_html,
+            )
+
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
+
 
 class WebsiteAdmin(ListHeaderAdmin):
     """Custom website admin class."""
@@ -570,7 +626,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["creator", "domain_application"]}),
+        (None, {"fields": ["creator", "domain_application", "notes"]}),
         (
             "Type of organization",
             {
@@ -621,6 +677,7 @@ class DomainInformationAdmin(ListHeaderAdmin):
         "type_of_work",
         "more_organization_information",
         "domain",
+        "domain_application",
         "submitter",
         "no_other_contacts_rationale",
         "anything_else",
@@ -737,7 +794,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Detail view
     form = DomainApplicationAdminForm
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator", "approved_domain"]}),
+        (None, {"fields": ["status", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -789,6 +846,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "creator",
         "about_your_organization",
         "requested_domain",
+        "approved_domain",
         "alternative_domains",
         "purpose",
         "submitter",
@@ -826,14 +884,11 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 if (
                     obj
                     and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
-                    and (
-                        obj.status == models.DomainApplication.ApplicationStatus.REJECTED
-                        or obj.status == models.DomainApplication.ApplicationStatus.INELIGIBLE
-                    )
+                    and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
                     and not obj.domain_is_not_active()
                 ):
                     # If an admin tried to set an approved application to
-                    # rejected or ineligible and the related domain is already
+                    # another status and the related domain is already
                     # active, shortcut the action and throw a friendly
                     # error message. This action would still not go through
                     # shortcut or not as the rules are duplicated on the model,
@@ -990,6 +1045,13 @@ class DomainAdmin(ListHeaderAdmin):
         "first_ready",
         "deleted",
     ]
+
+    fieldsets = (
+        (
+            None,
+            {"fields": ["name", "state", "expiration_date", "first_ready", "deleted"]},
+        ),
+    )
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for domain
@@ -1239,7 +1301,7 @@ class DraftDomainAdmin(ListHeaderAdmin):
     search_help_text = "Search by draft domain name."
 
 
-class VeryImportantPersonAdmin(ListHeaderAdmin):
+class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
     search_fields = ["email"]
     search_help_text = "Search by email."
@@ -1282,4 +1344,4 @@ admin.site.register(models.Website, WebsiteAdmin)
 admin.site.register(models.PublicContact, AuditedAdmin)
 admin.site.register(models.DomainApplication, DomainApplicationAdmin)
 admin.site.register(models.TransitionDomain, TransitionDomainAdmin)
-admin.site.register(models.VeryImportantPerson, VeryImportantPersonAdmin)
+admin.site.register(models.VerifiedByStaff, VerifiedByStaffAdmin)

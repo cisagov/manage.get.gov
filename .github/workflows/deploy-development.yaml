@@ -38,3 +38,11 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: development
           push_arguments: "-f ops/manifests/manifest-development.yaml"
+      - name: Run Django migrations
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets.CF_DEVELOPMENT_USERNAME }}
+          cf_password: ${{ secrets.CF_DEVELOPMENT_PASSWORD }}
+          cf_org: cisa-dotgov
+          cf_space: development
+          cf_command: "run-task getgov-development --command 'python manage.py migrate' --name migrate"

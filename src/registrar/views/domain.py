@@ -22,6 +22,7 @@ from registrar.models import (
     UserDomainRole,
 )
 from registrar.models.public_contact import PublicContact
+from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
     GenericErrorCodes,
@@ -33,6 +34,7 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
+from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
     ContactForm,
@@ -141,11 +143,12 @@ class DomainView(DomainBaseView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        default_email = self.object.get_default_security_contact().email
-        context["default_security_email"] = default_email
+        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+
+        context["hidden_security_emails"] = default_emails
 
         security_email = self.object.get_security_email()
-        if security_email is None or security_email == default_email:
+        if security_email is None or security_email in default_emails:
             context["security_email"] = None
             return context
         context["security_email"] = security_email
@@ -569,7 +572,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         initial = super().get_initial()
         security_contact = self.object.security_contact
 
-        invalid_emails = ["dotgov@cisa.dhs.gov", "registrar@dotgov.gov"]
+        invalid_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
         if security_contact is None or security_contact.email in invalid_emails:
             initial["security_email"] = None
             return initial
@@ -630,6 +633,55 @@ class DomainUsersView(DomainBaseView):
 
     template_name = "domain_users.html"
 
+    def get_context_data(self, **kwargs):
+        """The initial value for the form (which is a formset here)."""
+        context = super().get_context_data(**kwargs)
+
+        # Add conditionals to the context (such as "can_delete_users")
+        context = self._add_booleans_to_context(context)
+
+        # Add modal buttons to the context (such as for delete)
+        context = self._add_modal_buttons_to_context(context)
+
+        # Get the email of the current user
+        context["current_user_email"] = self.request.user.email
+
+        return context
+
+    def _add_booleans_to_context(self, context):
+        # Determine if the current user can delete managers
+        domain_pk = None
+        can_delete_users = False
+
+        if self.kwargs is not None and "pk" in self.kwargs:
+            domain_pk = self.kwargs["pk"]
+            # Prevent the end user from deleting themselves as a manager if they are the
+            # only manager that exists on a domain.
+            can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
+
+        context["can_delete_users"] = can_delete_users
+        return context
+
+    def _add_modal_buttons_to_context(self, context):
+        """Adds modal buttons (and their HTML) to the context"""
+        # Create HTML for the modal button
+        modal_button = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="delete_domain_manager">Yes, remove domain manager</button>'
+        )
+        context["modal_button"] = modal_button
+
+        # Create HTML for the modal button when deleting yourself
+        modal_button_self = (
+            '<button type="submit" '
+            'class="usa-button usa-button--secondary" '
+            'name="delete_domain_manager_self">Yes, remove myself</button>'
+        )
+        context["modal_button_self"] = modal_button_self
+
+        return context
+
 
 class DomainAddUserView(DomainFormBaseView):
     """Inside of a domain's user management, a form for adding users.
@@ -648,7 +700,7 @@ class DomainAddUserView(DomainFormBaseView):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
-    def _send_domain_invitation_email(self, email: str, requester: User, add_success=True):
+    def _send_domain_invitation_email(self, email: str, requestor: User, add_success=True):
         """Performs the sending of the domain invitation email,
         does not make a domain information object
         email: string- email to send to
@@ -656,16 +708,16 @@ class DomainAddUserView(DomainFormBaseView):
           adding a success message to the view if the email sending succeeds"""
 
         # Set a default email address to send to for staff
-        requester_email = "help@get.gov"
+        requestor_email = "help@get.gov"
 
-        # Check if the email requester has a valid email address
-        if not requester.is_staff and requester.email is not None and requester.email.strip() != "":
-            requester_email = requester.email
-        elif not requester.is_staff:
+        # Check if the email requestor has a valid email address
+        if not requestor.is_staff and requestor.email is not None and requestor.email.strip() != "":
+            requestor_email = requestor.email
+        elif not requestor.is_staff:
             messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
             logger.error(
                 f"Can't send email to '{email}' on domain '{self.object}'."
-                f"No email exists for the requester '{requester.username}'.",
+                f"No email exists for the requestor '{requestor.username}'.",
                 exc_info=True,
             )
             return None
@@ -678,7 +730,7 @@ class DomainAddUserView(DomainFormBaseView):
                 context={
                     "domain_url": self._domain_abs_url(),
                     "domain": self.object,
-                    "requester_email": requester_email,
+                    "requestor_email": requestor_email,
                 },
             )
         except EmailSendingError:
@@ -693,7 +745,7 @@ class DomainAddUserView(DomainFormBaseView):
             if add_success:
                 messages.success(self.request, f"{email} has been invited to this domain.")
 
-    def _make_invitation(self, email_address: str, requester: User):
+    def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
         invitation, created = DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
         if not created:
@@ -703,22 +755,22 @@ class DomainAddUserView(DomainFormBaseView):
                 f"{email_address} has already been invited to this domain.",
             )
         else:
-            self._send_domain_invitation_email(email=email_address, requester=requester)
+            self._send_domain_invitation_email(email=email_address, requestor=requestor)
         return redirect(self.get_success_url())
 
     def form_valid(self, form):
         """Add the specified user on this domain."""
         requested_email = form.cleaned_data["email"]
-        requester = self.request.user
+        requestor = self.request.user
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
-            return self._make_invitation(requested_email, requester)
+            return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
-            self._send_domain_invitation_email(requested_email, requester, add_success=False)
+            self._send_domain_invitation_email(requested_email, requestor, add_success=False)
 
         try:
             UserDomainRole.objects.create(
@@ -743,3 +795,60 @@ class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMe
 
     def get_success_message(self, cleaned_data):
         return f"Successfully canceled invitation for {self.object.email}."
+
+
+class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
+    """Inside of a domain's user management, a form for deleting users."""
+
+    object: UserDomainRole  # workaround for type mismatch in DeleteView
+
+    def get_object(self, queryset=None):
+        """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""
+        domain_id = self.kwargs.get("pk")
+        user_id = self.kwargs.get("user_pk")
+        return UserDomainRole.objects.get(domain=domain_id, user=user_id)
+
+    def get_success_url(self):
+        """Refreshes the page after a delete is successful"""
+        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+
+    def get_success_message(self, delete_self=False):
+        """Returns confirmation content for the deletion event"""
+
+        # Grab the text representation of the user we want to delete
+        email_or_name = self.object.user.email
+        if email_or_name is None or email_or_name.strip() == "":
+            email_or_name = self.object.user
+
+        # If the user is deleting themselves, return a specific message.
+        # If not, return something more generic.
+        if delete_self:
+            message = f"You are no longer managing the domain {self.object.domain}."
+        else:
+            message = f"Removed {email_or_name} as a manager for this domain."
+
+        return message
+
+    def form_valid(self, form):
+        """Delete the specified user on this domain."""
+
+        # Delete the object
+        super().form_valid(form)
+
+        # Is the user deleting themselves? If so, display a different message
+        delete_self = self.request.user == self.object.user
+
+        # Add a success message
+        messages.success(self.request, self.get_success_message(delete_self))
+        return redirect(self.get_success_url())
+
+    def post(self, request, *args, **kwargs):
+        """Custom post implementation to redirect to home in the event that the user deletes themselves"""
+        response = super().post(request, *args, **kwargs)
+
+        # If the user is deleting themselves, redirect to home
+        delete_self = self.request.user == self.object.user
+        if delete_self:
+            return redirect(reverse("home"))
+
+        return response

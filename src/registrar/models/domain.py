@@ -12,6 +12,7 @@ from django.utils import timezone
 from typing import Any
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
+from registrar.utility.enums import DefaultEmail
 
 from registrar.utility.errors import (
     ActionNotAllowed,
@@ -910,10 +911,15 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     def get_security_email(self):
-        logger.info("get_security_email-> getting the contact ")
-        secContact = self.security_contact
-        if secContact is not None:
-            return secContact.email
+        logger.info("get_security_email-> getting the contact")
+
+        security = PublicContact.ContactTypeChoices.SECURITY
+        security_contact = self.generic_contact_getter(security)
+
+        # If we get a valid value for security_contact, pull its email
+        # Otherwise, just return nothing
+        if security_contact is not None and isinstance(security_contact, PublicContact):
+            return security_contact.email
         else:
             return None
 
@@ -1121,7 +1127,6 @@ class Domain(TimeStampedModel, DomainHelper):
         If you wanted to setup getter logic for Security, you would call:
         cache_contact_helper(PublicContact.ContactTypeChoices.SECURITY),
         or cache_contact_helper("security").
-
         """
         # registrant_contact(s) are an edge case. They exist on
         # the "registrant" property as opposed to contacts.
@@ -1400,7 +1405,9 @@ class Domain(TimeStampedModel, DomainHelper):
         is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
         fields = {DF.EMAIL}
-        disclose = is_security and contact.email != PublicContact.get_default_security().email
+
+        hidden_security_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        disclose = is_security and contact.email not in hidden_security_emails
         # Delete after testing on other devices
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
         # Will only disclose DF.EMAIL if its not the default

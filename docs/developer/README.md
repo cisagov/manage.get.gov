@@ -145,7 +145,7 @@ You can change the logging verbosity, if needed. Do a web search for "django log
 
 ## Mock data
 
-There is a `post_migrate` signal in [signals.py](../../src/registrar/signals.py) that will load the fixtures from [fixtures_user.py](../../src/registrar/fixtures_users.py) and [fixtures_applications.py](../../src/registrar/fixtures_applications.py), giving you some test data to play with while developing.
+[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads the fixtures from [fixtures_user.py](../../src/registrar/fixtures_users.py) and [fixtures_applications.py](../../src/registrar/fixtures_applications.py), giving you some test data to play with while developing.
 
 See the [database-access README](./database-access.md) for information on how to pull data to update these fixtures.
 
