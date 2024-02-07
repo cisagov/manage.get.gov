@@ -1162,9 +1162,11 @@ class DomainAdmin(ListHeaderAdmin):
             exp_date = date.today()
 
         desired_date = date.today() + relativedelta(years=1)
-        month_length = self._month_diff(desired_date, exp_date)
+        logger.info(f"do_extend_expiration_date -> exp {exp_date} des {desired_date}")
+        month_length = self._month_diff(exp_date, desired_date)
 
         try:
+            logger.info(f"do_extend_expiration_date -> month length: {month_length}")
             obj.renew_domain(length=month_length, unit=epp.Unit.MONTH)
         except RegistryError as err:
             if err.code:
@@ -1212,6 +1214,7 @@ class DomainAdmin(ListHeaderAdmin):
 
         # Grab the delta between the two
         rdelta = relativedelta(end_date, start_date)
+        logger.info(f"rdelta is: {rdelta}, years {rdelta.years}, months {rdelta.months}")
 
         # Calculate total months as years * 12 + months
         total_months = rdelta.years * 12 + rdelta.months
