@@ -239,25 +239,41 @@ class Domain(TimeStampedModel, DomainHelper):
         To update the expiration date, use renew_domain method."""
         raise NotImplementedError()
 
-    def renew_domain(self, length: int = 1, date_to_extend = None, unit: epp.Unit = epp.Unit.YEAR):
+    def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR, extend_year_past_current_date = False):
         """
         Renew the domain to a length and unit of time relative to the current
         expiration date.
 
         Default length and unit of time are 1 year.
+
+        extend_past_current_date (bool): Specifies if the "desired" date
+        should exceed the present date + length. For instance, 
         """
-        logger.info(f"This is the date to extend: {date_to_extend}")
+
         # If no date is specified, grab the registry_expiration_date
-        if date_to_extend is None:
-            try:
-                date_to_extend = self.registry_expiration_date
-            except KeyError:
-                # if no expiration date from registry, set it to today
-                logger.warning("current expiration date not set; setting to today")
-                date_to_extend = date.today()
+        try:
+            exp_date = self.registry_expiration_date
+        except KeyError:
+            # if no expiration date from registry, set it to today
+            logger.warning("current expiration date not set; setting to today")
+            exp_date = date.today()
+
+        if extend_year_past_current_date:
+            # TODO - handle unit == month
+            expected_renewal_year = exp_date.year + length
+            current_year = date.today().year
+            if expected_renewal_year < current_year:
+                # Modify the length such that it will exceed the current year by the length
+                length = (current_year - exp_date.year) + length
+                # length = (current_year - expected_renewal_year) + length * 2
+            elif expected_renewal_year == current_year:
+                # In the event that the expected renewal date will equal the current year,
+                # we need to apply double "length" for it shoot past the current date
+                # at the correct interval.
+                length = length * 2
 
         # create RenewDomain request
-        request = commands.RenewDomain(name=self.name, cur_exp_date=date_to_extend, period=epp.Period(length, unit))
+        request = commands.RenewDomain(name=self.name, cur_exp_date=exp_date, period=epp.Period(length, unit))
 
         try:
             # update expiration date in registry, and set the updated
