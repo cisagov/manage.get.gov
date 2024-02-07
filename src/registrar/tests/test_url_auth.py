@@ -153,7 +153,7 @@ class TestURLAuth(TestCase):
             raise AssertionError(
                 f"GET {url} returned HTTP {code}, but should redirect to login or deny access",
             )
-        
+
     def assertURLIsNotProtectedByAuth(self, url):
         """
         Make a GET request to the given URL, and ensure that it returns 200.
