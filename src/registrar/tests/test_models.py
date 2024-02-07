@@ -167,8 +167,8 @@ class TestDomainApplication(TestCase):
         # submitter's email is mayor@igorville.gov
         application = completed_application()
 
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.submit()
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            application.submit()
 
         # check to see if an email was sent
         self.assertGreater(
