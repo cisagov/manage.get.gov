@@ -437,7 +437,7 @@ LOGGING = {
             "formatter": "verbose",
         },
         "django.server": {
-            "level": "INFO",
+            "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "django.server",
         },
@@ -451,19 +451,19 @@ LOGGING = {
         # Django's generic logger
         "django": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         # Django's template processor
         "django.template": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         # Django's runserver
         "django.server": {
             "handlers": ["django.server"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         # Django's runserver requests
@@ -516,6 +516,7 @@ LOGIN_URL = "/openid/login"
 # the initial login requests without erroring.
 LOGIN_REQUIRED_IGNORE_PATHS = [
     r"/openid/(.+)$",
+    r"/health(.*)$",
 ]
 
 # where to go after logging out
