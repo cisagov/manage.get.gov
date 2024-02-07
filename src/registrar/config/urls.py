@@ -74,7 +74,7 @@ urlpatterns = [
         views.ApplicationWithdrawn.as_view(),
         name="application-withdrawn",
     ),
-    path("health/", views.health),
+    path("health", views.health, name="health"),
     path("openid/", include("djangooidc.urls")),
     path("request/", include((application_urls, APPLICATION_NAMESPACE))),
     path("api/v1/available/", available, name="available"),

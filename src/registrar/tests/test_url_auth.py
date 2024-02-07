@@ -114,6 +114,13 @@ class TestURLAuth(TestCase):
         "/api/v1/available/",
         "/api/v1/get-report/current-federal",
         "/api/v1/get-report/current-full",
+        "/health",
+    ]
+
+    # We will test that the following URLs are not protected by auth
+    # and that the url returns a 200 response
+    NO_AUTH_URLS = [
+        "/health",
     ]
 
     def assertURLIsProtectedByAuth(self, url):
@@ -146,6 +153,27 @@ class TestURLAuth(TestCase):
             raise AssertionError(
                 f"GET {url} returned HTTP {code}, but should redirect to login or deny access",
             )
+        
+    def assertURLIsNotProtectedByAuth(self, url):
+        """
+        Make a GET request to the given URL, and ensure that it returns 200.
+        """
+
+        try:
+            with less_console_noise():
+                response = self.client.get(url)
+        except Exception as e:
+            # It'll be helpful to provide information on what URL was being
+            # accessed at the time the exception occurred.  Python 3 will
+            # also include a full traceback of the original exception, so
+            # we don't need to worry about hiding the original cause.
+            raise AssertionError(f'Accessing {url} raised "{e}"', e)
+
+        code = response.status_code
+        if code != 200:
+            raise AssertionError(
+                f"GET {url} returned HTTP {code}, but should return 200 OK",
+            )
 
     def test_login_required_all_urls(self):
         """All URLs redirect to the login view."""
@@ -153,3 +181,6 @@ class TestURLAuth(TestCase):
             if url not in self.IGNORE_URLS:
                 with self.subTest(viewname=viewname):
                     self.assertURLIsProtectedByAuth(url)
+            elif url in self.NO_AUTH_URLS:
+                with self.subTest(viewname=viewname):
+                    self.assertURLIsNotProtectedByAuth(url)

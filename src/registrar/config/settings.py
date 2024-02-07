@@ -437,7 +437,7 @@ LOGGING = {
             "formatter": "verbose",
         },
         "django.server": {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "django.server",
         },
@@ -451,37 +451,37 @@ LOGGING = {
         # Django's generic logger
         "django": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         # Django's template processor
         "django.template": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         # Django's runserver
         "django.server": {
             "handlers": ["django.server"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         # Django's runserver requests
         "django.request": {
             "handlers": ["django.server"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         # OpenID Connect logger
         "oic": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         # Django wrapper for OpenID Connect
         "djangooidc": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         # Our app!
@@ -516,7 +516,6 @@ LOGIN_URL = "/openid/login"
 # the initial login requests without erroring.
 LOGIN_REQUIRED_IGNORE_PATHS = [
     r"/openid/(.+)$",
-    r"/health(.*)$",
 ]
 
 # where to go after logging out

@@ -27,7 +27,6 @@ class Client(oic.Client):
         """Step 1: Configure the OpenID Connect client."""
         logger.debug("Initializing the OpenID Connect client...")
         try:
-            logger.debug("__init__ first try")
             provider = settings.OIDC_PROVIDERS[op]
             verify_ssl = getattr(settings, "OIDC_VERIFY_SSL", True)
         except Exception as err:
@@ -36,7 +35,6 @@ class Client(oic.Client):
             raise o_e.InternalError()
 
         try:
-            logger.debug("__init__ second try")
             # prepare private key for authentication method of private_key_jwt
             key_bundle = keyio.KeyBundle()
             rsa_key = importKey(provider["client_registration"]["sp_private_key"])
@@ -53,7 +51,6 @@ class Client(oic.Client):
             raise o_e.InternalError()
 
         try:
-            logger.debug("__init__ third try")
             # create the oic client instance
             super().__init__(
                 client_id=None,
@@ -73,7 +70,6 @@ class Client(oic.Client):
             raise o_e.InternalError()
 
         try:
-            logger.debug("__init__ fourth try")
             # discover and store the provider (OP) urls, etc
             self.provider_config(provider["srv_discovery_url"])
             self.store_registration_info(RegistrationResponse(**provider["client_registration"]))
@@ -84,7 +80,6 @@ class Client(oic.Client):
                 provider["srv_discovery_url"],
             )
             raise o_e.InternalError()
-        logger.debug("__init__ finished initializing")
 
     def create_authn_request(
         self,
