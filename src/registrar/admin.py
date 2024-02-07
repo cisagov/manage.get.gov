@@ -1163,7 +1163,11 @@ class DomainAdmin(ListHeaderAdmin):
 
         desired_date = date.today() + relativedelta(years=1)
         logger.info(f"do_extend_expiration_date -> exp {exp_date} des {desired_date}")
-        month_length = self._month_diff(exp_date, desired_date)
+
+        # Get the difference in months between the expiration date, and the
+        # desired date (today + 1). Then, add one year to that.
+        one_year = 12
+        month_length = self._month_diff(exp_date, desired_date) + one_year
 
         try:
             logger.info(f"do_extend_expiration_date -> month length: {month_length}")
