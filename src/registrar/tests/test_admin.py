@@ -744,13 +744,6 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "Cannot edit an application with a restricted creator.",
             )
 
-    def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
-        # Create an instance of the model
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        application.approved_domain = domain
-        application.save()
-
     def trigger_saving_approved_to_another_state(self, domain_is_active, another_state):
         """Helper method that triggers domain request state changes from approved to another state,
         with an associated domain that can be either active (READY) or not.
