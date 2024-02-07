@@ -1176,7 +1176,7 @@ class DomainAdmin(ListHeaderAdmin):
             #obj.renew_domain(length=month_length, unit=epp.Unit.MONTH)
             years = int(month_length/12)
             if years >= 1:
-                obj.renew_domain(length=month_length/12)
+                obj.renew_domain(length=years)
             else:
                 self.message_user(
                     request,
