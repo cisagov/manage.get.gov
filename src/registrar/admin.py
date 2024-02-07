@@ -1174,7 +1174,7 @@ class DomainAdmin(ListHeaderAdmin):
             logger.info(f"do_extend_expiration_date -> month length: {month_length}")
             # TODO why cant I specify months
             #obj.renew_domain(length=month_length, unit=epp.Unit.MONTH)
-            years = month_length/12
+            years = int(month_length/12)
             if years >= 1:
                 obj.renew_domain(length=month_length/12)
             else:
