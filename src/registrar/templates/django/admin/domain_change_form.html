@@ -2,79 +2,30 @@
 {% load i18n static %}
 
 {% block field_sets %}
-    <div class="submit-row">
-        <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
-        <input type="submit" value="Get registry status" name="_get_status">
-        {{ modal_button }}
-        {% if original.state != original.State.DELETED %}
-        <a
-        href="#toggle-extend-expiration-alert"
-        aria-controls="toggle-extend-expiration-alert"
-        data-open-modal
-        >
-            Extend expiration date
-        </a>
-        <div
-        class="usa-modal"
-        id="toggle-extend-expiration-alert"
-        aria-labelledby="Are you sure you want to extend this expiration date?"
-        aria-describedby="This expiration date will be extended."
-        >
-            <div class="usa-modal__content">
-                <div class="usa-modal__main">
-                    <h2 class="usa-modal__heading" id="modal-1-heading">
-                        Are you sure you want to extend this expiration date?
-                    </h2>
-                    <div class="usa-prose">
-                        <p id="modal-1-description">
-                            This action will extend the expiration date by a year.
-                        </p>
-                    </div>
-            
-                    <div class="usa-modal__footer">
-                        <ul class="usa-button-group">
-                            <li class="usa-button-group__item">
-                                <button
-                                id="extend_expiration_date_button"
-                                type="submit" 
-                                class="usa-button" 
-                                name="_extend_expiration_date"
-                                >
-                                    Confirm
-                                </button>
-                            </li>
-                            <li class="usa-button-group__item">
-                                <button
-                                type="button"
-                                class="usa-button usa-button--unstyled padding-105 text-center"
-                                data-close-modal
-                                >
-                                    Cancel
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-            {# {% include 'includes/modal.html' with modal_heading="Are you sure you want to extend this expiration date?" modal_button=modal_button|safe %} #}
+    <div class="display-flex flex-row flex-justify submit-row">
+        <div class="flex-align-self-start button-list-mobile">
+            <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
+            {# todo: avoid this #}
+            <span>&nbsp;</span>
+            <input class="margin-left-2" type="submit" value="Get registry status" name="_get_status">
         </div>
-        <div class="spacer"></div>
-        {% if original.state != original.State.DELETED %}
-        <input type="submit" value="Extend expiration date" name="_extend_expiration_date" class="custom-link-button">
+        <div class="desktop:flex-align-self-end">
+            {% if original.state != original.State.DELETED %}
+            <input type="submit" value="Extend expiration date" name="_extend_expiration_date" class="custom-link-button">
+            {% endif %}
+            <span class="margin-left-05 margin-right-05 text-middle"> | </span>
+            {% if original.state == original.State.READY %}
+            <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
+            {% elif original.state == original.State.ON_HOLD %}
+            <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
+            {% endif %}
+            {% if original.state == original.State.READY or original.state == original.State.ON_HOLD %}
+            <span class="margin-left-05 margin-right-05 text-middle"> | </span>
+            {% endif %}
+            {% if original.state != original.State.DELETED %}
+            <input type="submit" value="Remove from registry" name="_delete_domain" class="custom-link-button">
         {% endif %}
-        <span> | </span>
-        {% if original.state == original.State.READY %}
-        <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
-        {% elif original.state == original.State.ON_HOLD %}
-        <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
-        {% endif %}
-        {% if original.state == original.State.READY or original.state == original.State.ON_HOLD %}
-        <span> | </span>
-        {% endif %}
-        {% if original.state != original.State.DELETED %}
-        <input type="submit" value="Remove from registry" name="_delete_domain" class="custom-link-button">
-        {% endif %}
+        </div>
     </div>
     {{ block.super }}
 {% endblock %}
