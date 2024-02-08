@@ -283,6 +283,11 @@ h1, h2, h3,
     }
 }
 
+.usa-button{
+    font-size: 14px;
+    font-weight: normal;
+}
+
 // Button groups in /admin incorrectly have bullets.
 // Remove that!
 .usa-button-group .usa-button-group__item {

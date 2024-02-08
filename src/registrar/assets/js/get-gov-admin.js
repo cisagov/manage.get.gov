@@ -44,27 +44,24 @@ function openInNewTab(el, removeAttribute = false){
           domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
           domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
         }
+        
+        let extendExpirationDateButton = document.getElementById("extend-expiration-button")
+        let confirmationButtons = document.querySelector(".admin-confirmation-buttons")
+        let cancelExpirationButton = document.getElementById("cancel-extend-button")
+        if (extendExpirationDateButton && confirmationButtons && cancelExpirationButton){
 
-        let extendExpirationDateButton = document.getElementById("extend_expiration_date_button")
-        if (extendExpirationDateButton){
+            // Tie logic to the extend button to show confirmation options
             extendExpirationDateButton.addEventListener("click", () => {
-                form = document.getElementById("domain_form")
-                /*
-                For some reason, Django admin has the propensity to ignore nested
-                inputs and delete nested form objects.
-                The workaround is to manually create an element as so, after the DOM
-                has been generated.
+                extendExpirationDateButton.hidden = true
+                console.log("these are the buttons: ")
+                console.log(confirmationButtons)
+                confirmationButtons.hidden = false
+            })
 
-                Its not the most beautiful thing every, but it works.
-                */
-                var input = document.createElement("input");
-                input.type = "hidden";
-                input.name = "_extend_expiration_date";
-                // The value doesn't matter, just needs to be present
-                input.value = "1";
-                // Add the hidden input to the form
-                form.appendChild(input);
-                form.submit();
+            // Tie logic to the cancel button to hide the confirmation options
+            cancelExpirationButton.addEventListener("click", () => {
+                confirmationButtons.hidden = true
+                extendExpirationDateButton.hidden = false
             })
         }
     }

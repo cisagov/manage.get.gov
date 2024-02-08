@@ -11,7 +11,11 @@
         </div>
         <div class="desktop:flex-align-self-end">
             {% if original.state != original.State.DELETED %}
-            <input type="submit" value="Extend expiration date" name="_extend_expiration_date" class="custom-link-button">
+            <span class="admin-confirmation-buttons" hidden>
+                <button type="submit" class="usa-button" name="_extend_expiration_date">Confirm extension</button>
+                <button type="button" id="cancel-extend-button" class="usa-button usa-button--secondary">Cancel</button>
+            </span>
+            <input id="extend-expiration-button" type="button" value="Extend expiration date" class="custom-link-button">
             {% endif %}
             <span class="margin-left-05 margin-right-05 text-middle"> | </span>
             {% if original.state == original.State.READY %}
