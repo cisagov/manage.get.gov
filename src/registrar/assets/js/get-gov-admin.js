@@ -41,20 +41,18 @@ function openInNewTab(el, removeAttribute = false){
         let domainFormElement = document.getElementById("domain_form");
         let domainSubmitButton = document.getElementById("manageDomainSubmitButton");
         if(domainSubmitButton && domainFormElement){
-          domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
-          domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
+            domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
+            domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
         }
         
         let extendExpirationDateButton = document.getElementById("extend-expiration-button")
         let confirmationButtons = document.querySelector(".admin-confirmation-buttons")
-        let cancelExpirationButton = document.getElementById("cancel-extend-button")
+        let cancelExpirationButton = document.querySelector(".cancel-extend-button")
         if (extendExpirationDateButton && confirmationButtons && cancelExpirationButton){
 
             // Tie logic to the extend button to show confirmation options
             extendExpirationDateButton.addEventListener("click", () => {
                 extendExpirationDateButton.hidden = true
-                console.log("these are the buttons: ")
-                console.log(confirmationButtons)
                 confirmationButtons.hidden = false
             })
 

@@ -275,6 +275,6 @@ h1, h2, h3,
     background-color: var(--delete-button-bg);
 }
 
-.admin-confirm-button{
-    text-transform: none;
+input.admin-confirm-button{
+    text-transform: none !important;
 }
