@@ -271,21 +271,14 @@ h1, h2, h3,
     }
 }
 
-@include at-media(desktop){
-    .button-list-mobile {
-        display: block;
-    }
-}
-
-@include at-media(mobile){
-    .button-list-mobile {
-        display: contents;
-    }
-}
-
-.usa-button{
+.usa-button.admin-button{
     font-size: 14px;
     font-weight: normal;
+    background-color: var(--button-bg);
+}
+
+.usa-button--secondary.admin-button{
+    background-color: var(--delete-button-bg);
 }
 
 // Button groups in /admin incorrectly have bullets.
