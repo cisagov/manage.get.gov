@@ -24,9 +24,7 @@ from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
-from epplibwrapper import (
-    common as epp,
-)
+
 
 logger = logging.getLogger(__name__)
 
@@ -1150,10 +1148,17 @@ class DomainAdmin(ListHeaderAdmin):
         return super().response_change(request, obj)
 
     def do_extend_expiration_date(self, request, obj):
+        """Extends a domains expiration date by one year from the current date"""
+
+        # Make sure we're dealing with a Domain
         if not isinstance(obj, Domain):
             self.message_user(request, "Object is not of type Domain.", messages.ERROR)
             return None
 
+        # Get the date we want to update to
+        desired_date = date.today() + relativedelta(years=1)
+
+        # Grab the current expiration date
         try:
             exp_date = obj.registry_expiration_date
         except KeyError:
@@ -1161,46 +1166,29 @@ class DomainAdmin(ListHeaderAdmin):
             logger.warning("current expiration date not set; setting to today")
             exp_date = date.today()
 
-        desired_date = date.today() + relativedelta(years=1)
-        logger.info(f"do_extend_expiration_date -> exp {exp_date} des {desired_date}")
-
-        # Get the difference in months between the expiration date, and the
-        # desired date (today + 1). Then, add one year to that.
-        # TODO - error:  Periods for domain registrations must be specified in years.???
-        # one_year = 12
-        # month_length = self._month_diff(exp_date, desired_date) + one_year
+        # If the expiration date is super old (2020, for example), we need to
+        # "catch up" to the current year, so we add the difference.
+        # If both years match, then lets just proceed as normal.
         years = 1
         if desired_date > exp_date:
-            years = (desired_date.year - exp_date.year) 
+            year_difference = relativedelta(desired_date.year, exp_date.year).years
+            years = year_difference
 
+        # Renew the domain.
         try:
-            # logger.info(f"do_extend_expiration_date -> month length: {month_length}")
-            logger.info(f"do_extend_expiration_date -> years {years}")
-            # TODO why cant I specify months
-            #obj.renew_domain(length=month_length, unit=epp.Unit.MONTH)
-            if years >= 1:
-                obj.renew_domain(length=years)
-            else:
-                self.message_user(
-                    request,
-                    f"Error extending this domain: Can't extend date by 0 years.",
-                    messages.ERROR,
-                )
+            obj.renew_domain(length=years)
+            updated_domain = Domain.objects.filter(id=obj.id).get()
+            self.message_user(
+                request,
+                f"Successfully extended expiration date to {updated_domain.registry_expiration_date}.",
+            )
         except RegistryError as err:
-            if err.code:
-                self.message_user(
-                    request,
-                    f"Error extending this domain: {err}.",
-                    messages.ERROR,
-                )
-            elif err.is_connection_error():
-                self.message_user(
-                    request,
-                    "Error connecting to the registry.",
-                    messages.ERROR,
-                )
+            if err.is_connection_error():
+                error_message = "Error connecting to the registry."
             else:
-                self.message_user(request, err, messages.ERROR)
+                error_message = f"Error extending this domain: {err}."
+
+            self.message_user(request, error_message, messages.ERROR)
         except KeyError:
             # In normal code flow, a keyerror can only occur when
             # fresh data can't be pulled from the registry, and thus there is no cache.
@@ -1210,33 +1198,10 @@ class DomainAdmin(ListHeaderAdmin):
                 messages.ERROR,
             )
         except Exception as err:
-            self.message_user(request, err, messages.ERROR)
-        else:
-            updated_domain = Domain.objects.filter(id=obj.id).get()
-            self.message_user(
-                request,
-                f"Successfully extended expiration date to {updated_domain.registry_expiration_date}.",
-            )
+            logger.error(err, stack_info=True)
+            self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
+
         return HttpResponseRedirect(".")
-
-    def _month_diff(self, date_1, date_2):
-        """
-        Calculate the difference in months between two dates using dateutil's relativedelta.
-
-        :param date_1: The first date.
-        :param date_2: The second date.
-        :return: The difference in months as an integer.
-        """
-        # Ensure date_1 is always the earlier date
-        start_date, end_date = sorted([date_1, date_2])
-
-        # Grab the delta between the two
-        rdelta = relativedelta(end_date, start_date)
-        logger.info(f"rdelta is: {rdelta}, years {rdelta.years}, months {rdelta.months}")
-
-        # Calculate total months as years * 12 + months
-        total_months = rdelta.years * 12 + rdelta.months
-        return total_months
 
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):
@@ -1392,11 +1357,7 @@ class DomainAdmin(ListHeaderAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button" '
-            'name="_extend_expiration_date">Confirm</button>'
-        )
+        modal_button = '<button type="submit" ' 'class="usa-button" ' 'name="_extend_expiration_date">Confirm</button>'
         extra_context["modal_button"] = modal_button
         return super().changelist_view(request, extra_context=extra_context)
 

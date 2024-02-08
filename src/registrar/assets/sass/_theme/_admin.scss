@@ -272,7 +272,7 @@ h1, h2, h3,
 }
 
 .cancel-extend-button{
-    background-color: var(--delete-button-bg);
+    background-color: var(--delete-button-bg) !important;
 }
 
 input.admin-confirm-button{
