@@ -60,6 +60,10 @@
             {# {% include 'includes/modal.html' with modal_heading="Are you sure you want to extend this expiration date?" modal_button=modal_button|safe %} #}
         </div>
         <div class="spacer"></div>
+        {% if original.state != original.State.DELETED %}
+        <input type="submit" value="Extend expiration date" name="_extend_expiration_date" class="custom-link-button">
+        {% endif %}
+        <span> | </span>
         {% if original.state == original.State.READY %}
         <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
         {% elif original.state == original.State.ON_HOLD %}

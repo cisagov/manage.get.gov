@@ -1167,14 +1167,17 @@ class DomainAdmin(ListHeaderAdmin):
         # Get the difference in months between the expiration date, and the
         # desired date (today + 1). Then, add one year to that.
         # TODO - error:  Periods for domain registrations must be specified in years.???
-        one_year = 12
-        month_length = self._month_diff(exp_date, desired_date) + one_year
+        # one_year = 12
+        # month_length = self._month_diff(exp_date, desired_date) + one_year
+        years = 1
+        if desired_date > exp_date:
+            years = (desired_date.year - exp_date.year) 
 
         try:
-            logger.info(f"do_extend_expiration_date -> month length: {month_length}")
+            # logger.info(f"do_extend_expiration_date -> month length: {month_length}")
+            logger.info(f"do_extend_expiration_date -> years {years}")
             # TODO why cant I specify months
             #obj.renew_domain(length=month_length, unit=epp.Unit.MONTH)
-            years = int(month_length/12)
             if years >= 1:
                 obj.renew_domain(length=years)
             else:
@@ -1209,7 +1212,7 @@ class DomainAdmin(ListHeaderAdmin):
         except Exception as err:
             self.message_user(request, err, messages.ERROR)
         else:
-            updated_domain = Domain.objects.filter(id=obj).get()
+            updated_domain = Domain.objects.filter(id=obj.id).get()
             self.message_user(
                 request,
                 f"Successfully extended expiration date to {updated_domain.registry_expiration_date}.",
