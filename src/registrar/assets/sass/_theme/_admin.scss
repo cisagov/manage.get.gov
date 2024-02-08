@@ -271,18 +271,10 @@ h1, h2, h3,
     }
 }
 
-.usa-button.admin-button{
-    font-size: 14px;
-    font-weight: normal;
-    background-color: var(--button-bg);
-}
-
-.usa-button--secondary.admin-button{
+.cancel-extend-button{
     background-color: var(--delete-button-bg);
 }
 
-// Button groups in /admin incorrectly have bullets.
-// Remove that!
-.usa-button-group .usa-button-group__item {
-    list-style-type: none;
+.admin-confirm-button{
+    text-transform: none;
 }

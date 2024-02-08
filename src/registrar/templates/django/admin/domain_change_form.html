@@ -12,12 +12,14 @@
         <div class="desktop:flex-align-self-end">
             {% if original.state != original.State.DELETED %}
             <span class="admin-confirmation-buttons" hidden>
-                <button type="submit" class="usa-button admin-button" name="_extend_expiration_date">Confirm extension</button>
-                <button type="button" id="cancel-extend-button" class="usa-button usa-button--secondary admin-button">Cancel</button>
+                <input class="default admin-confirm-button" type="submit" name="_extend_expiration_date" value="Confirm extension">
+                {# todo: avoid this #}
+                <span>&nbsp;</span>
+                <input id="cancel-extend-button" class="cancel-extend-button" type="button" value="Cancel">
             </span>
             <input id="extend-expiration-button" type="button" value="Extend expiration date" class="custom-link-button">
-            {% endif %}
             <span class="margin-left-05 margin-right-05 text-middle"> | </span>
+            {% endif %}
             {% if original.state == original.State.READY %}
             <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
             {% elif original.state == original.State.ON_HOLD %}
