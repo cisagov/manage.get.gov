@@ -201,7 +201,6 @@ class DomainApplicationFixture:
 
 
 class DomainFixture(DomainApplicationFixture):
-
     """Create one domain and permissions on it for each user."""
 
     @classmethod

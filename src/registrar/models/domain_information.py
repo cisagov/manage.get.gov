@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class DomainInformation(TimeStampedModel):
-
     """A registrant's domain information for that domain, exported from
     DomainApplication. We use these field from DomainApplication with few exceptions
     which are 'removed' via pop at the bottom of this file. Most of design for domain

@@ -135,7 +135,6 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
 
 class DomainView(DomainBaseView):
-
     """Domain detail overview page."""
 
     template_name = "domain_detail.html"
