@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class DomainApplication(TimeStampedModel):
-
     """A registrant's application for a new domain."""
 
     # Constants for choice fields
@@ -97,7 +96,6 @@ class DomainApplication(TimeStampedModel):
         ARMED_FORCES_AP = "AP", "Armed Forces Pacific (AP)"
 
     class OrganizationChoices(models.TextChoices):
-
         """
         Primary organization choices:
         For use in django admin
@@ -114,7 +112,6 @@ class DomainApplication(TimeStampedModel):
         SCHOOL_DISTRICT = "school_district", "School district"
 
     class OrganizationChoicesVerbose(models.TextChoices):
-
         """
         Secondary organization choices
         For use in the application form and on the templates

@@ -739,7 +739,6 @@ class DomainApplicationAdminForm(forms.ModelForm):
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
-
     """Custom domain applications admin class."""
 
     class InvestigatorFilter(admin.SimpleListFilter):

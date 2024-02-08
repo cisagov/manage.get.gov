@@ -146,7 +146,6 @@ class OrderableFieldsMixin:
 
 
 class PermissionsLoginMixin(PermissionRequiredMixin):
-
     """Mixin that redirects to login page if not logged in, otherwise 403."""
 
     def handle_no_permission(self):
@@ -155,7 +154,6 @@ class PermissionsLoginMixin(PermissionRequiredMixin):
 
 
 class DomainPermission(PermissionsLoginMixin):
-
     """Permission mixin that redirects to domain if user has access,
     otherwise 403"""
 
@@ -264,7 +262,6 @@ class DomainPermission(PermissionsLoginMixin):
 
 
 class DomainApplicationPermission(PermissionsLoginMixin):
-
     """Permission mixin that redirects to domain application if user
     has access, otherwise 403"""
 
@@ -287,7 +284,6 @@ class DomainApplicationPermission(PermissionsLoginMixin):
 
 
 class UserDeleteDomainRolePermission(PermissionsLoginMixin):
-
     """Permission mixin for UserDomainRole if user
     has access, otherwise 403"""
 
@@ -324,7 +320,6 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
 
 
 class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
-
     """Permission mixin that redirects to withdraw action on domain application
     if user has access, otherwise 403"""
 
@@ -347,7 +342,6 @@ class DomainApplicationPermissionWithdraw(PermissionsLoginMixin):
 
 
 class ApplicationWizardPermission(PermissionsLoginMixin):
-
     """Permission mixin that redirects to start or edit domain application if
     user has access, otherwise 403"""
 
@@ -365,7 +359,6 @@ class ApplicationWizardPermission(PermissionsLoginMixin):
 
 
 class DomainInvitationPermission(PermissionsLoginMixin):
-
     """Permission mixin that redirects to domain invitation if user has
     access, otherwise 403"
 
