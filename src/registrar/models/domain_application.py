@@ -654,11 +654,15 @@ class DomainApplication(TimeStampedModel):
         self.submission_date = timezone.now().date()
         self.save()
 
-        self._send_status_update_email(
-            "submission confirmation",
-            "emails/submission_confirmation.txt",
-            "emails/submission_confirmation_subject.txt",
-        )
+        # Limit email notifications to transitions from Started and Withdrawn
+        limited_statuses = [self.ApplicationStatus.STARTED, self.ApplicationStatus.WITHDRAWN]
+
+        if self.status in limited_statuses:
+            self._send_status_update_email(
+                "submission confirmation",
+                "emails/submission_confirmation.txt",
+                "emails/submission_confirmation_subject.txt",
+            )
 
     @transition(
         field="status",
@@ -764,6 +768,7 @@ class DomainApplication(TimeStampedModel):
     )
     def withdraw(self):
         """Withdraw an application that has been submitted."""
+
         self._send_status_update_email(
             "withdraw",
             "emails/domain_request_withdrawn.txt",
