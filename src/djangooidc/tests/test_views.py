@@ -5,7 +5,7 @@ from django.test import Client, TestCase, RequestFactory
 from django.urls import reverse
 
 from djangooidc.exceptions import NoStateDefined, InternalError
-from ..views import login_callback, CLIENT
+from ..views import login_callback
 
 from .common import less_console_noise
 
@@ -35,7 +35,7 @@ class ViewsTest(TestCase):
         pass
 
     def test_openid_sets_next(self, mock_client):
-        """ Test that the openid method properly sets next in the session."""
+        """Test that the openid method properly sets next in the session."""
         with less_console_noise():
             # SETUP
             # set up the callback url that will be tested in assertions against
@@ -167,6 +167,54 @@ class ViewsTest(TestCase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, reverse("logout"))
 
+    def test_login_callback_raises_when_client_is_none_and_cant_init(self, mock_client):
+        """Test that errors in login_callback raise 500 error for the user.
+        This test specifically tests for the condition where the CLIENT
+        is None and the client initialization attempt raises an exception."""
+        with less_console_noise():
+            # MOCK
+            # mock that CLIENT is None
+            # mock that Client() raises an exception (by mocking _initialize_client)
+            # Patch CLIENT to None for this specific test
+            with patch("djangooidc.views.CLIENT", None):
+                # Patch _initialize_client() to raise an exception
+                with patch("djangooidc.views._initialize_client") as mock_init:
+                    mock_init.side_effect = InternalError
+                    # TEST
+                    # test the login callback url
+                    response = self.client.get(reverse("openid_login_callback"))
+                    # ASSERTIONS
+                    # assert that the 500 error page is raised
+                    self.assertEqual(response.status_code, 500)
+                    self.assertTemplateUsed(response, "500.html")
+                    self.assertIn("Server error", response.content.decode("utf-8"))
+
+    def test_login_callback_initializes_client_and_succeeds(self, mock_client):
+        """Test that openid re-initializes the client when the client had not
+        been previously initiated."""
+        with less_console_noise():
+            # SETUP
+            session = self.client.session
+            session.save()
+            # MOCK
+            # mock that callback returns user_info; this is the expected behavior
+            mock_client.callback.side_effect = self.user_info
+            # patch that the request does not require step up auth
+            with patch("djangooidc.views._requires_step_up_auth", return_value=False):
+                with patch("djangooidc.views._initialize_client") as mock_init_client:
+                    with patch("djangooidc.views._client_is_none") as mock_client_is_none:
+                        # mock the client to initially be None
+                        mock_client_is_none.return_value = True
+                        # TEST
+                        # test the login callback url
+                        response = self.client.get(reverse("openid_login_callback"))
+                        # ASSERTIONS
+                        # assert that _initialize_client was called
+                        mock_init_client.assert_called_once()
+                        # assert that redirect is to / when no 'next' is set
+                        self.assertEqual(response.status_code, 302)
+                        self.assertEqual(response.url, "/")
+
     def test_login_callback_no_step_up_auth(self, mock_client):
         """Walk through login_callback when _requires_step_up_auth returns False
         and assert that we have a redirect to /"""
@@ -187,7 +235,7 @@ class ViewsTest(TestCase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/")
 
-    def test_requires_step_up_auth(self, mock_client):
+    def test_login_callback_requires_step_up_auth(self, mock_client):
         """Invoke login_callback passing it a request when _requires_step_up_auth returns True
         and assert that session is updated and create_authn_request (mock) is called."""
         with less_console_noise():
@@ -213,7 +261,7 @@ class ViewsTest(TestCase):
             # And create_authn_request was called again
             mock_create_authn_request.assert_called_once()
 
-    def test_does_not_requires_step_up_auth(self, mock_client):
+    def test_login_callback_does_not_requires_step_up_auth(self, mock_client):
         """Invoke login_callback passing it a request when _requires_step_up_auth returns False
         and assert that session is not updated and create_authn_request (mock) is not called.
 

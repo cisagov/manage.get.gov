@@ -27,10 +27,12 @@ def _initialize_client():
     CLIENT = Client(OP)
     logger.debug("Client initialized: %s" % CLIENT)
 
+
 def _client_is_none():
-    """ Return if the CLIENT is currently None."""
+    """Return if the CLIENT is currently None."""
     global CLIENT
     return CLIENT is None
+
 
 # Initialize CLIENT
 try:
