@@ -1156,7 +1156,7 @@ class DomainAdmin(ListHeaderAdmin):
             return None
 
         # Get the date we want to update to
-        desired_date = date.today() + relativedelta(years=1)
+        desired_date = self._get_current_date() + relativedelta(years=1)
 
         # Grab the current expiration date
         try:
@@ -1164,7 +1164,7 @@ class DomainAdmin(ListHeaderAdmin):
         except KeyError:
             # if no expiration date from registry, set it to today
             logger.warning("current expiration date not set; setting to today")
-            exp_date = date.today()
+            exp_date = self._get_current_date()
 
         # If the expiration date is super old (2020, for example), we need to
         # "catch up" to the current year, so we add the difference.
@@ -1178,9 +1178,10 @@ class DomainAdmin(ListHeaderAdmin):
         # Renew the domain.
         try:
             obj.renew_domain(length=years)
+
             self.message_user(
                 request,
-                f"Successfully extended the expiration date.",
+                "Successfully extended the expiration date.",
             )
         except RegistryError as err:
             if err.is_connection_error():
@@ -1202,6 +1203,13 @@ class DomainAdmin(ListHeaderAdmin):
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
 
         return HttpResponseRedirect(".")
+
+    # Workaround for unit tests, as we cannot mock date directly.
+    # it is immutable. Rather than dealing with a convoluted workaround,
+    # lets wrap this in a function.
+    def _get_current_date(self):
+        """Gets the current date"""
+        return date.today()
 
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):

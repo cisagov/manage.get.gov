@@ -920,6 +920,11 @@ class MockEppLib(TestCase):
         ex_date=datetime.date(2023, 5, 25),
     )
 
+    mockButtonRenewedDomainExpDate = fakedEppObject(
+        "fakefuture.gov",
+        ex_date=datetime.date(2025, 5, 25),
+    )
+
     mockDnsNeededRenewedDomainExpDate = fakedEppObject(
         "fakeneeded.gov",
         ex_date=datetime.date(2023, 2, 15),
@@ -1031,6 +1036,7 @@ class MockEppLib(TestCase):
         return None
 
     def mockRenewDomainCommand(self, _request, cleaned):
+        print(f"What is the request at this time? {_request}")
         if getattr(_request, "name", None) == "fake-error.gov":
             raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
         elif getattr(_request, "name", None) == "waterbutpurple.gov":
@@ -1048,11 +1054,20 @@ class MockEppLib(TestCase):
                 res_data=[self.mockMaximumRenewedDomainExpDate],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-        else:
-            return MagicMock(
-                res_data=[self.mockRenewedDomainExpDate],
-                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-            )
+        elif getattr(_request, "name", None) == "fake.gov":
+            period = getattr(_request, "period", None)
+            extension_period = getattr(period, "length", None)
+
+            if extension_period == 2:
+                return MagicMock(
+                    res_data=[self.mockButtonRenewedDomainExpDate],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
+            else:
+                return MagicMock(
+                    res_data=[self.mockRenewedDomainExpDate],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
