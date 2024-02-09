@@ -1177,10 +1177,9 @@ class DomainAdmin(ListHeaderAdmin):
         # Renew the domain.
         try:
             obj.renew_domain(length=years)
-            updated_domain = Domain.objects.filter(id=obj.id).get()
             self.message_user(
                 request,
-                f"Successfully extended expiration date to {updated_domain.registry_expiration_date}.",
+                f"Successfully extended expiration date.",
             )
         except RegistryError as err:
             if err.is_connection_error():

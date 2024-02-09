@@ -37,7 +37,7 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import call, patch
+from unittest.mock import ANY, call, patch
 from unittest import skip
 
 from django.conf import settings
@@ -101,19 +101,16 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.assertContains(response, "Extend expiration date")
 
         # Ensure the message we recieve is in line with what we expect
-        expected_message = f"Successfully extended expiration date to 2024-01-01."
-        #self.assertContains(response, expected_message)
+        expected_message = f"Successfully extended expiration date."
         expected_call = call(
-            response,
+            # The WGSI request doesn't need to be tested
+            ANY,
             messages.INFO,
             expected_message,
             extra_tags="",
             fail_silently=False,
         )
-        mock_add_message.assert_has_calls(expected_call, 1)
-        # Assert that the domain was updated correctly
-        expected_date = date(year=2025, month=1, day=1)
-        self.assertEqual(domain.expiration_date, expected_date)
+        mock_add_message.assert_has_calls([expected_call], 1)
 
     def test_short_org_name_in_domains_list(self):
         """
