@@ -27,6 +27,10 @@ def _initialize_client():
     CLIENT = Client(OP)
     logger.debug("Client initialized: %s" % CLIENT)
 
+def _client_is_none():
+    """ Return if the CLIENT is currently None."""
+    global CLIENT
+    return CLIENT is None
 
 # Initialize CLIENT
 try:
@@ -71,7 +75,7 @@ def openid(request):
     global CLIENT
     try:
         # If the CLIENT is none, attempt to reinitialize before handling the request
-        if CLIENT is None:
+        if _client_is_none():
             _initialize_client()
         request.session["acr_value"] = CLIENT.get_default_acr_value()
         request.session["next"] = request.GET.get("next", "/")
@@ -86,7 +90,7 @@ def login_callback(request):
     global CLIENT
     try:
         # If the CLIENT is none, attempt to reinitialize before handling the request
-        if CLIENT is None:
+        if _client_is_none():
             _initialize_client()
         query = parse_qs(request.GET.urlencode())
         userinfo = CLIENT.callback(query, request.session)
