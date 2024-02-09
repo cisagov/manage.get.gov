@@ -101,7 +101,7 @@ class TestDomainAdmin(MockEppLib, WebTest):
         self.assertContains(response, "Extend expiration date")
 
         # Ensure the message we recieve is in line with what we expect
-        expected_message = f"Successfully extended expiration date."
+        expected_message = f"Successfully extended the expiration date."
         expected_call = call(
             # The WGSI request doesn't need to be tested
             ANY,
