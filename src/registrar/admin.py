@@ -2,19 +2,17 @@ from datetime import date
 import logging
 from django import forms
 from django.db.models.functions import Concat
-from django.http import HttpResponse
-from dateutil.relativedelta import relativedelta
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.http.response import HttpResponseRedirect
 from django.urls import reverse
+from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models.domain import Domain
-from registrar.models.user import User
+from registrar.models import Domain, User
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -1170,15 +1168,14 @@ class DomainAdmin(ListHeaderAdmin):
         # "catch up" to the current year, so we add the difference.
         # If both years match, then lets just proceed as normal.
         calculated_exp_date = exp_date + relativedelta(years=1)
-        years = 1
-        if desired_date > calculated_exp_date:
-            year_difference = desired_date.year - exp_date.year
-            years = year_difference
+
+        year_difference = desired_date.year - exp_date.year
+        # Max probably isn't needed here (no code flow), but it guards against negative and 0.
+        years = max(1, year_difference) if desired_date > calculated_exp_date else 1
 
         # Renew the domain.
         try:
             obj.renew_domain(length=years)
-
             self.message_user(
                 request,
                 "Successfully extended the expiration date.",
@@ -1188,7 +1185,6 @@ class DomainAdmin(ListHeaderAdmin):
                 error_message = "Error connecting to the registry."
             else:
                 error_message = f"Error extending this domain: {err}."
-
             self.message_user(request, error_message, messages.ERROR)
         except KeyError:
             # In normal code flow, a keyerror can only occur when
@@ -1361,13 +1357,6 @@ class DomainAdmin(ListHeaderAdmin):
         ):
             return True
         return super().has_change_permission(request, obj)
-
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        # Create HTML for the modal button
-        modal_button = '<button type="submit" ' 'class="usa-button" ' 'name="_extend_expiration_date">Confirm</button>'
-        extra_context["modal_button"] = modal_button
-        return super().changelist_view(request, extra_context=extra_context)
 
 
 class DraftDomainAdmin(ListHeaderAdmin):

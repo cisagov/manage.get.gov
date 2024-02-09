@@ -44,58 +44,71 @@
 {% endblock %}
 
 {% block submit_buttons_bottom %}
-<div
-            class="usa-modal"
-            id="toggle-extend-expiration-alert"
-            aria-labelledby="Are you sure you want to extend this expiration date?"
-            aria-describedby="This expiration date will be extended."
-            >
-                <div class="usa-modal__content">
-                    <div class="usa-modal__main">
-                        <h2 class="usa-modal__heading" id="modal-1-heading">
-                            Are you sure you want to extend this expiration date?
-                        </h2>
-                        <div class="usa-prose">
-                            <p id="modal-1-description">
-                                This action will extend the expiration date by a year.
-                            </p>
-                        </div>
-                
-                        <div class="usa-modal__footer">
-                            <ul class="usa-button-group">
-                                <li class="usa-button-group__item">
-                                    <button
-                                    id="extend_expiration_date_button"
-                                    type="submit" 
-                                    class="usa-button dja-form-placeholder" 
-                                    name="_extend_expiration_date"
-                                    >
-                                        Confirm
-                                    </button>
-                                </li>
-                                <li class="usa-button-group__item">
-                                    <button
-                                    type="button"
-                                    class="usa-button usa-button--unstyled padding-105 text-center"
-                                    data-close-modal
-                                    >
-                                        Cancel
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <button
-                    type="button"
-                    class="usa-button usa-modal__close"
-                    aria-label="Close this window"
-                    data-close-modal
-                    >
-                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                            <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-                        </svg>
-                    </button>
+    {% comment %}
+    Modals behave very weirdly in django admin.
+    They tend to "strip out" any injected form elements, leaving only the main form.
+    In addition, USWDS handles modals by first destroying the element, then repopulating it toward the end of the page.
+    In effect, this means that the modal is not, and cannot, be surrounded by any form element at compile time.
+
+    The current workaround for this is to use javascript to inject a hidden input, and bind submit of that
+    element to the click of the confirmation button within this modal.
+
+    This is controlled by the class `dja-form-placeholder` on the button.
+
+    In addition, the modal element MUST be placed low in the DOM. The script loads slower on DJA than on other portions
+    of the application, so this means that it will briefly "populate", causing unintended visual effects.
+    {% endcomment %}
+    <div
+    class="usa-modal"
+    id="toggle-extend-expiration-alert"
+    aria-labelledby="Are you sure you want to extend this expiration date?"
+    aria-describedby="This expiration date will be extended."
+    >
+        <div class="usa-modal__content">
+            <div class="usa-modal__main">
+                <h2 class="usa-modal__heading" id="modal-1-heading">
+                    Are you sure you want to extend this expiration date?
+                </h2>
+                <div class="usa-prose">
+                    <p id="modal-1-description">
+                        This action will extend the expiration date by a year.
+                    </p>
+                </div>
+        
+                <div class="usa-modal__footer">
+                    <ul class="usa-button-group">
+                        <li class="usa-button-group__item">
+                            <button
+                            type="submit" 
+                            class="usa-button dja-form-placeholder" 
+                            name="_extend_expiration_date"
+                            >
+                                Confirm
+                            </button>
+                        </li>
+                        <li class="usa-button-group__item">
+                            <button
+                            type="button"
+                            class="usa-button usa-button--unstyled padding-105 text-center"
+                            data-close-modal
+                            >
+                                Cancel
+                            </button>
+                        </li>
+                    </ul>
                 </div>
             </div>
+            <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+            >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+            </button>
+        </div>
+    </div>
 {{ block.super }}
 {% endblock %}
