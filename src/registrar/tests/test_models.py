@@ -161,158 +161,63 @@ class TestDomainApplication(TestCase):
                     application.submit()
             self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
 
+    def check_email_sent(self, application, msg, action, expected_count):
+        """Check if an email was sent after performing an action."""
+
+        with self.subTest(msg=msg, action=action):
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                with less_console_noise():
+                    # Perform the specified action
+                    action_method = getattr(application, action)
+                    action_method()
+
+            # Check if an email was sent
+            sent_emails = [
+                email
+                for email in MockSESClient.EMAILS_SENT
+                if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+            ]
+            self.assertEqual(len(sent_emails), expected_count)
+
     def test_submit_from_started_sends_email(self):
-        """Create an application and submit it and see if email was sent."""
-
-        # submitter's email is mayor@igorville.gov
+        msg = "Create an application and submit it and see if email was sent."
         application = completed_application()
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            application.submit()
-
-        # check to see if an email was sent
-        self.assertGreater(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+        self.check_email_sent(application, msg, "submit", 1)
 
     def test_submit_from_withdrawn_sends_email(self):
-        """Create a withdrawn application and submit it and see if email was sent."""
-
-        # submitter's email is mayor@igorville.gov
+        msg = "Create a withdrawn application and submit it and see if email was sent."
         application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                application.submit()
-
-        # check to see if an email was sent
-        self.assertGreater(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+        self.check_email_sent(application, msg, "submit", 1)
 
     def test_submit_from_action_needed_does_not_send_email(self):
-        """Create a withdrawn application and submit it and see if email was sent."""
-
-        # submitter's email is mayor@igorville.gov
+        msg = "Create an application with ACTION_NEEDED status and submit it, check if email was not sent."
         application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                application.submit()
-
-        # check to see if an email was sent
-        self.assertEqual(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+        self.check_email_sent(application, msg, "submit", 0)
 
     def test_submit_from_in_review_does_not_send_email(self):
-        """Create a withdrawn application and submit it and see if email was sent."""
-
-        # submitter's email is mayor@igorville.gov
+        msg = "Create a withdrawn application and submit it and see if email was sent."
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                application.submit()
-
-        # check to see if an email was sent
-        self.assertEqual(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+        self.check_email_sent(application, msg, "submit", 0)
 
     def test_approve_sends_email(self):
-        """Create an application and approve it and see if email was sent."""
-
-        # submitter's email is mayor@igorville.gov
+        msg = "Create an application and approve it and see if email was sent."
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                application.approve()
-
-        # check to see if an email was sent
-        self.assertGreater(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+        self.check_email_sent(application, msg, "approve", 1)
 
     def test_withdraw_sends_email(self):
-        """Create an application and withdraw it and see if email was sent."""
-
-        # submitter's email is mayor@igorville.gov
+        msg = "Create an application and withdraw it and see if email was sent."
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                application.withdraw()
-
-        # check to see if an email was sent
-        self.assertGreater(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+        self.check_email_sent(application, msg, "withdraw", 1)
 
     def test_reject_sends_email(self):
-        """Create an application and reject it and see if email was sent."""
-
-        # submitter's email is mayor@igorville.gov
+        msg = "Create an application and reject it and see if email was sent."
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        self.check_email_sent(application, msg, "reject", 1)
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                application.reject()
-
-        # check to see if an email was sent
-        self.assertGreater(
-            len(
-                [
-                    email
-                    for email in MockSESClient.EMAILS_SENT
-                    if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                ]
-            ),
-            0,
-        )
+    def test_reject_with_prejudice_does_not_send_email(self):
+        msg = "Create an application and reject it with prejudice and see if email was sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        self.check_email_sent(application, msg, "reject_with_prejudice", 0)
 
     def test_submit_transition_allowed(self):
         """

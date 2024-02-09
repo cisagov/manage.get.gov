@@ -655,7 +655,9 @@ class DomainApplication(TimeStampedModel):
         self.save()
 
         # Limit email notifications to transitions from Started and Withdrawn
-        if self.status == self.ApplicationStatus.STARTED or self.status == self.ApplicationStatus.WITHDRAWN:
+        limited_statuses = [self.ApplicationStatus.STARTED, self.ApplicationStatus.WITHDRAWN]
+
+        if self.status in limited_statuses:
             self._send_status_update_email(
                 "submission confirmation",
                 "emails/submission_confirmation.txt",
