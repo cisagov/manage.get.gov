@@ -1,6 +1,8 @@
+from datetime import date
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
+from django_webtest import WebTest  # type: ignore
 from django.contrib import messages
 from django.urls import reverse
 from registrar.admin import (
@@ -35,7 +37,7 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from unittest.mock import call, patch
 from unittest import skip
 
 from django.conf import settings
@@ -45,7 +47,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestDomainAdmin(MockEppLib):
+class TestDomainAdmin(MockEppLib, WebTest):
+    csrf_checks = False
     def setUp(self):
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
@@ -53,7 +56,64 @@ class TestDomainAdmin(MockEppLib):
         self.superuser = create_superuser()
         self.staffuser = create_user()
         self.factory = RequestFactory()
+        self.app.set_user(self.superuser.username)
+        self.client.force_login(self.superuser)
         super().setUp()
+
+    def test_extend_expiration_date_button(self):
+        """
+        Tests if extend_expiration_date button sends the right epp command
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Make sure that the page is loading as expected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+        
+        # Grab the form to submit
+        form = response.forms["domain_form"]
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            with patch("registrar.models.Domain.renew_domain") as renew_mock:
+                # Submit the form
+                response = form.submit("_extend_expiration_date")
+
+                # Follow the response
+                response = response.follow()
+        
+        # We need to use date.today() here, as it is not trivial
+        # to mock "date.today()". To do so requires libraries like freezegun,
+        # or convoluted workarounds. 
+        extension_length = (date.today().year + 1) - 2023
+
+        # Assert that it is calling the function
+        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+        self.assertEqual(renew_mock.call_count, 1)
+
+        # Assert that everything on the page looks correct
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Ensure the message we recieve is in line with what we expect
+        expected_message = f"Successfully extended expiration date to 2024-01-01."
+        #self.assertContains(response, expected_message)
+        expected_call = call(
+            response,
+            messages.INFO,
+            expected_message,
+            extra_tags="",
+            fail_silently=False,
+        )
+        mock_add_message.assert_has_calls(expected_call, 1)
+        # Assert that the domain was updated correctly
+        expected_date = date(year=2025, month=1, day=1)
+        self.assertEqual(domain.expiration_date, expected_date)
 
     def test_short_org_name_in_domains_list(self):
         """

@@ -1171,7 +1171,7 @@ class DomainAdmin(ListHeaderAdmin):
         # If both years match, then lets just proceed as normal.
         years = 1
         if desired_date > exp_date:
-            year_difference = relativedelta(desired_date.year, exp_date.year).years
+            year_difference = desired_date.year - exp_date.year
             years = year_difference
 
         # Renew the domain.
