@@ -17,7 +17,14 @@
                 <span>&nbsp;</span>
                 <input class="cancel-extend-button" type="button" value="Cancel">
             </span>
-            <input id="extend-expiration-button" type="button" value="Extend expiration date" class="custom-link-button">
+            <a
+            class="text-middle"
+            href="#toggle-extend-expiration-alert"
+            aria-controls="toggle-extend-expiration-alert"
+            data-open-modal
+            >
+                Extend expiration date
+            </a>
             <span class="margin-left-05 margin-right-05 text-middle"> | </span>
             {% endif %}
             {% if original.state == original.State.READY %}
@@ -34,4 +41,61 @@
         </div>
     </div>
     {{ block.super }}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+<div
+            class="usa-modal"
+            id="toggle-extend-expiration-alert"
+            aria-labelledby="Are you sure you want to extend this expiration date?"
+            aria-describedby="This expiration date will be extended."
+            >
+                <div class="usa-modal__content">
+                    <div class="usa-modal__main">
+                        <h2 class="usa-modal__heading" id="modal-1-heading">
+                            Are you sure you want to extend this expiration date?
+                        </h2>
+                        <div class="usa-prose">
+                            <p id="modal-1-description">
+                                This action will extend the expiration date by a year.
+                            </p>
+                        </div>
+                
+                        <div class="usa-modal__footer">
+                            <ul class="usa-button-group">
+                                <li class="usa-button-group__item">
+                                    <button
+                                    id="extend_expiration_date_button"
+                                    type="submit" 
+                                    class="usa-button dja-form-placeholder" 
+                                    name="_extend_expiration_date"
+                                    >
+                                        Confirm
+                                    </button>
+                                </li>
+                                <li class="usa-button-group__item">
+                                    <button
+                                    type="button"
+                                    class="usa-button usa-button--unstyled padding-105 text-center"
+                                    data-close-modal
+                                    >
+                                        Cancel
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <button
+                    type="button"
+                    class="usa-button usa-modal__close"
+                    aria-label="Close this window"
+                    data-close-modal
+                    >
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                            <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+{{ block.super }}
 {% endblock %}
