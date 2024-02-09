@@ -1169,8 +1169,9 @@ class DomainAdmin(ListHeaderAdmin):
         # If the expiration date is super old (2020, for example), we need to
         # "catch up" to the current year, so we add the difference.
         # If both years match, then lets just proceed as normal.
+        calculated_exp_date = exp_date + relativedelta(years=1)
         years = 1
-        if desired_date > exp_date:
+        if desired_date > calculated_exp_date:
             year_difference = desired_date.year - exp_date.year
             years = year_difference
 
