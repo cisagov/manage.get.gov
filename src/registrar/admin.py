@@ -1077,6 +1077,7 @@ class DomainAdmin(ListHeaderAdmin):
     ordering = ["name"]
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        """Custom changeform implementation to pass in context information"""
         if extra_context is None:
             extra_context = {}
 
@@ -1198,7 +1199,7 @@ class DomainAdmin(ListHeaderAdmin):
 
     def _get_calculated_years_for_exp_date(self, obj, extension_period: int = 1):
         """Given the current date, an extension period, and a registry_expiration_date
-        on the domain object, calculate the number of years needed to extend the 
+        on the domain object, calculate the number of years needed to extend the
         current expiration date by the extension period.
         """
         # Get the date we want to update to
