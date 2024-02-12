@@ -1168,6 +1168,7 @@ class DomainAdmin(ListHeaderAdmin):
             return None
 
         years = self._get_calculated_years_for_exp_date(obj)
+
         # Renew the domain.
         try:
             obj.renew_domain(length=years)

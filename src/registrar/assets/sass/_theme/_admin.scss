@@ -285,13 +285,9 @@ input.admin-confirm-button {
     list-style-type: none;
 }
 
-@include at-media(tablet) {
-    .button-list-mobile {
-        display: contents !important;
-    }
-}
-
-@include at-media(mobile) {
+// USWDS media checks are overzealous in this situation,
+// we should manually define this behaviour.
+@media (max-width: 768px) {
     .button-list-mobile {
         display: contents !important;
     }

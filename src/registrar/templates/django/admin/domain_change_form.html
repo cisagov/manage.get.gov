@@ -66,13 +66,15 @@
                 <div class="usa-prose">
                     <p>
                         This will extend the expiration date by one year.
-                        <br>
+                        {# Acts as a <br> #}
+                        <div class="display-inline"></div>
                         This action cannot be undone.
                     </p>
                     <p>
-                        Domain: {{ original.name }}
-                        <br>
-                        New expiration date: {{ extended_expiration_date }}
+                        Domain: <b>{{ original.name }}</b>
+                        {# Acts as a <br> #}
+                        <div class="display-inline"></div>
+                        New expiration date: <b>{{ extended_expiration_date }}</b>
                         {{test}}
                     </p>
                 </div>
