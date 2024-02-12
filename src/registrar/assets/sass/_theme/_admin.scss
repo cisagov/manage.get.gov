@@ -183,6 +183,10 @@ h1, h2, h3,
 .submit-row div.spacer {
     flex-grow: 1;
 }
+.submit-row .mini-spacer{
+    margin-left: 2px;
+    margin-right: 2px;
+}
 .submit-row span {
     margin-top: units(1);
 }
