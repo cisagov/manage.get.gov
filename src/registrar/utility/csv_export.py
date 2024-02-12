@@ -19,11 +19,13 @@ def write_header(writer, columns, max_dm_count, get_domain_managers):
     Receives params from the parent methods and outputs a CSV with a header row.
     Works with write_header as long as the same writer object is passed.
     """
+
+    # If we have domain managers, set column title dynamically here
     if get_domain_managers:
         for i in range(1, max_dm_count + 1):
             columns.append(f"Domain manager email {i}")
 
-    writer.writerow("hello")
+    writer.writerow("hellotesting123")
     writer.writerow(columns)
 
 
@@ -96,7 +98,7 @@ def parse_row(columns, domain_info: DomainInformation, get_domain_managers, secu
         "First ready": domain.first_ready,
         "Deleted": domain.deleted,
     }
-    
+
     if get_domain_managers:
         # Get each domain managers email and add to list
         dm_emails = [dm.email for dm in domain.permissions]
