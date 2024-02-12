@@ -275,17 +275,24 @@ h1, h2, h3,
     }
 }
 
-.cancel-extend-button{
-    background-color: var(--delete-button-bg) !important;
+input.admin-confirm-button {
+    text-transform: none;
 }
-
-input.admin-confirm-button{
-    text-transform: none !important;
-}
-
 
 // Button groups in /admin incorrectly have bullets.
 // Remove that!
-.usa-modal__footer .usa-button-group__item{
+.usa-modal__footer .usa-button-group__item {
     list-style-type: none;
+}
+
+@include at-media(tablet) {
+    .button-list-mobile {
+        display: contents !important;
+    }
+}
+
+@include at-media(mobile) {
+    .button-list-mobile {
+        display: contents !important;
+    }
 }

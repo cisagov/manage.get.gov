@@ -1079,9 +1079,15 @@ class DomainAdmin(ListHeaderAdmin):
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         if extra_context is None:
             extra_context = {}
-        # Pass in what the an extended expiration date would be
-        # for the expiration date modal
-        extra_context["extended_expiration_date"] = date.today() + relativedelta(years=1)
+
+        # Pass in what the an extended expiration date would be for the expiration date modal
+        if object_id is not None:
+            domain = Domain.objects.get(pk=object_id)
+            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
+            extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
+        else:
+            extra_context["extended_expiration_date"] = None
+
         return super().changeform_view(request, object_id, form_url, extra_context)
 
     def export_data_type(self, request):
@@ -1161,26 +1167,7 @@ class DomainAdmin(ListHeaderAdmin):
             self.message_user(request, "Object is not of type Domain.", messages.ERROR)
             return None
 
-        # Get the date we want to update to
-        desired_date = self._get_current_date() + relativedelta(years=1)
-
-        # Grab the current expiration date
-        try:
-            exp_date = obj.registry_expiration_date
-        except KeyError:
-            # if no expiration date from registry, set it to today
-            logger.warning("current expiration date not set; setting to today")
-            exp_date = self._get_current_date()
-
-        # If the expiration date is super old (2020, for example), we need to
-        # "catch up" to the current year, so we add the difference.
-        # If both years match, then lets just proceed as normal.
-        calculated_exp_date = exp_date + relativedelta(years=1)
-
-        year_difference = desired_date.year - exp_date.year
-        # Max probably isn't needed here (no code flow), but it guards against negative and 0.
-        years = max(1, year_difference) if desired_date > calculated_exp_date else 1
-
+        years = self._get_calculated_years_for_exp_date(obj)
         # Renew the domain.
         try:
             obj.renew_domain(length=years)
@@ -1207,6 +1194,37 @@ class DomainAdmin(ListHeaderAdmin):
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
 
         return HttpResponseRedirect(".")
+
+    def _get_calculated_years_for_exp_date(self, obj, extension_period: int = 1):
+        """Given the current date, an extension period, and a registry_expiration_date
+        on the domain object, calculate the number of years needed to extend the 
+        current expiration date by the extension period.
+        """
+        # Get the date we want to update to
+        desired_date = self._get_current_date() + relativedelta(years=extension_period)
+
+        # Grab the current expiration date
+        try:
+            exp_date = obj.registry_expiration_date
+        except KeyError:
+            # if no expiration date from registry, set it to today
+            logger.warning("current expiration date not set; setting to today")
+            exp_date = self._get_current_date()
+
+        # If the expiration date is super old (2020, for example), we need to
+        # "catch up" to the current year, so we add the difference.
+        # If both years match, then lets just proceed as normal.
+        calculated_exp_date = exp_date + relativedelta(years=extension_period)
+
+        year_difference = desired_date.year - exp_date.year
+
+        years = extension_period
+        if desired_date > calculated_exp_date:
+            # Max probably isn't needed here (no code flow), but it guards against negative and 0.
+            # In both of those cases, we just want to extend by the extension_period.
+            years = max(extension_period, year_difference)
+
+        return years
 
     # Workaround for unit tests, as we cannot mock date directly.
     # it is immutable. Rather than dealing with a convoluted workaround,
