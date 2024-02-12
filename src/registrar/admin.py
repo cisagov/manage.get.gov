@@ -884,14 +884,11 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 if (
                     obj
                     and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
-                    and (
-                        obj.status == models.DomainApplication.ApplicationStatus.REJECTED
-                        or obj.status == models.DomainApplication.ApplicationStatus.INELIGIBLE
-                    )
+                    and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
                     and not obj.domain_is_not_active()
                 ):
                     # If an admin tried to set an approved application to
-                    # rejected or ineligible and the related domain is already
+                    # another status and the related domain is already
                     # active, shortcut the action and throw a friendly
                     # error message. This action would still not go through
                     # shortcut or not as the rules are duplicated on the model,
