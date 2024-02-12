@@ -159,7 +159,11 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     def storage(self):
         # marking session as modified on every access
         # so that updates to nested keys are always saved
-        self.request.session.modified = True
+        # Also - check that self.request.session has the attr
+        # modified to account for test environments calling
+        # view methods
+        if hasattr(self.request.session, "modified"):
+            self.request.session.modified = True
         return self.request.session.setdefault(self.prefix, {})
 
     @storage.setter
@@ -211,6 +215,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
             self.storage["application_id"] = kwargs["id"]
+            self.storage["step_history"] = self.db_check_for_unlocking_steps()
 
         # if accessing this class directly, redirect to the first step
         #     in other words, if `ApplicationWizard` is called as view
@@ -269,6 +274,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         and from the database if `use_db` is True (provided that record exists).
         An empty form will be provided if neither of those are true.
         """
+
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
@@ -329,6 +335,43 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         ]
         return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
 
+    def db_check_for_unlocking_steps(self):
+        """Helper for get_context_data
+
+        Queries the DB for an application and returns a list of unlocked steps."""
+        history_dict = {
+            "organization_type": self.application.organization_type is not None,
+            "tribal_government": self.application.tribe_name is not None,
+            "organization_federal": self.application.federal_type is not None,
+            "organization_election": self.application.is_election_board is not None,
+            "organization_contact": (
+                self.application.federal_agency is not None
+                or self.application.organization_name is not None
+                or self.application.address_line1 is not None
+                or self.application.city is not None
+                or self.application.state_territory is not None
+                or self.application.zipcode is not None
+                or self.application.urbanization is not None
+            ),
+            "about_your_organization": self.application.about_your_organization is not None,
+            "authorizing_official": self.application.authorizing_official is not None,
+            "current_sites": (
+                self.application.current_websites.exists() or self.application.requested_domain is not None
+            ),
+            "dotgov_domain": self.application.requested_domain is not None,
+            "purpose": self.application.purpose is not None,
+            "your_contact": self.application.submitter is not None,
+            "other_contacts": (
+                self.application.other_contacts.exists() or self.application.no_other_contacts_rationale is not None
+            ),
+            "anything_else": (
+                self.application.anything_else is not None or self.application.is_policy_acknowledged is not None
+            ),
+            "requirements": self.application.is_policy_acknowledged is not None,
+            "review": self.application.is_policy_acknowledged is not None,
+        }
+        return [key for key, value in history_dict.items() if value]
+
     def get_context_data(self):
         """Define context for access on all wizard pages."""
         # Build the submit button that we'll pass to the modal.
@@ -338,6 +381,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
             modal_heading = "You are about to submit a domain request for " + str(self.application.requested_domain)
         else:
             modal_heading = "You are about to submit an incomplete request"
+
         return {
             "form_titles": self.TITLES,
             "steps": self.steps,

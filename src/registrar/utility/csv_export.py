@@ -96,7 +96,7 @@ def parse_row(columns, domain_info: DomainInformation, get_domain_managers, secu
         "First ready": domain.first_ready,
         "Deleted": domain.deleted,
     }
-
+    
     if get_domain_managers:
         # Get each domain managers email and add to list
         dm_emails = [dm.email for dm in domain.permissions]
