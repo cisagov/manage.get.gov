@@ -791,10 +791,11 @@ class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMe
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
     def get_success_url(self):
+        messages.success(self.request, self.get_success_message())
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
-    def get_success_message(self, cleaned_data):
-        return f"Successfully canceled invitation for {self.object.email}."
+    def get_success_message(self):
+        return f"Canceled invitation to {self.object.email}."
 
 
 class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
