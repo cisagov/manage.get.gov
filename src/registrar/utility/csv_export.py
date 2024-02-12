@@ -14,14 +14,14 @@ from registrar.utility.enums import DefaultEmail
 logger = logging.getLogger(__name__)
 
 
-def write_header(writer, columns, max_dm_count):
+def write_header(writer, columns, max_dm_count, get_domain_managers):
     """
     Receives params from the parent methods and outputs a CSV with a header row.
     Works with write_header as long as the same writer object is passed.
     """
-
-    for i in range(1, max_dm_count + 1):
-        columns.append(f"Domain manager email {i}")
+    if get_domain_managers:
+        for i in range(1, max_dm_count + 1):
+            columns.append(f"Domain manager email {i}")
 
     writer.writerow("hello")
     writer.writerow(columns)
@@ -48,7 +48,7 @@ def get_domain_infos(filter_condition, sort_fields):
     return domain_infos_cleaned
 
 
-def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None):
+def parse_row(columns, domain_info: DomainInformation, get_domain_managers, security_emails_dict=None):
     """Given a set of columns, generate a new row from cleaned column data"""
 
     # Domain should never be none when parsing this information
@@ -97,12 +97,13 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         "Deleted": domain.deleted,
     }
 
-    # Get each domain managers email and add to list
-    dm_emails = [dm.email for dm in domain.permissions]
+    if get_domain_managers:
+        # Get each domain managers email and add to list
+        dm_emails = [dm.email for dm in domain.permissions]
 
-    # Matching header for domain managers to be dynamic
-    for i, dm_email in enumerate(dm_emails, start=1):
-        FIELDS[f"Domain Manager email {i}":dm_email]
+        # Matching header for domain managers to be dynamic
+        for i, dm_email in enumerate(dm_emails, start=1):
+            FIELDS[f"Domain Manager email {i}":dm_email]
 
     row = [FIELDS.get(column, "") for column in columns]
     return row
@@ -113,11 +114,16 @@ def write_body(
     columns,
     sort_fields,
     filter_condition,
+    get_domain_managers=False,
 ):
     """
     Receives params from the parent methods and outputs a CSV with fltered and sorted domains.
     Works with write_header as longas the same writer object is passed.
     """
+
+    # We only want to write the domain manager information for export_thing_here so we have to make it conditional
+
+    # Trying to make the domain managers logic conditional
 
     # Get the domainInfos
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
@@ -151,12 +157,12 @@ def write_body(
         rows = []
         for domain_info in page.object_list:
             # Get count of all the domain managers for an account
-            dm_count = len(domain_info.domain.permissions)
-            if dm_count > max_dm_count:
-                max_dm_count = dm_count
-
+            if get_domain_managers:
+                dm_count = len(domain_info.domain.permissions)
+                if dm_count > max_dm_count:
+                    max_dm_count = dm_count
             try:
-                row = parse_row(columns, domain_info, security_emails_dict)
+                row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
                 rows.append(row)
             except ValueError:
                 # This should not happen. If it does, just skip this row.
@@ -165,8 +171,8 @@ def write_body(
                 continue
 
         # We only want this to run once just for the column header
-        if paginator_ran is False:
-            write_header(writer, columns, max_dm_count)
+        if paginator_ran is False and "Domain name" in columns:
+            write_header(writer, columns, max_dm_count, get_domain_managers)
 
         writer.writerows(rows)
         paginator_ran = True
@@ -189,13 +195,8 @@ def export_data_type_to_csv(csv_file):
         "AO",
         "AO email",
         "Security contact email",
-        "Domain Manager email",
+        # For domain manager we are pass it in as a parameter below in write_body
     ]
-
-    # STUCK HERE
-
-    # So the problem is we don't even have access to domains or a count here.
-    # We could pass it in, but it's messy. Maybe helper function? Seems repetitive
 
     # Coalesce is used to replace federal_type of None with ZZZZZ
     sort_fields = [
@@ -212,7 +213,7 @@ def export_data_type_to_csv(csv_file):
         ],
     }
     # write_header(writer, columns)
-    write_body(writer, columns, sort_fields, filter_condition)
+    write_body(writer, columns, sort_fields, filter_condition, True)
 
 
 def export_data_full_to_csv(csv_file):
@@ -345,5 +346,9 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
     }
 
     # write_header(writer, columns)
+    # Domains that got created
     write_body(writer, columns, sort_fields, filter_condition)
+    # Domains that got deleted
+    # Have a way to skip the header for this one
+
     write_body(writer, columns, sort_fields_for_deleted_domains, filter_condition_for_deleted_domains)
