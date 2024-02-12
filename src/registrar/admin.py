@@ -1076,6 +1076,14 @@ class DomainAdmin(ListHeaderAdmin):
     # Table ordering
     ordering = ["name"]
 
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        # Pass in what the an extended expiration date would be
+        # for the expiration date modal
+        extra_context["extended_expiration_date"] = date.today() + relativedelta(years=1)
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
     def export_data_type(self, request):
         # match the CSV example with all the fields
         response = HttpResponse(content_type="text/csv")

@@ -70,8 +70,17 @@
                     Are you sure you want to extend the expiration date?
                 </h2>
                 <div class="usa-prose">
-                    <p id="modal-1-description">
-                        This action will extend the expiration date by a year.
+                    <p>
+                        This will extend the expiration date by one year.
+                    </p>
+                    <p>
+                        Domain: <b>{{ original.name }}</b>
+                        <br>
+                        New expiration date: <b>{{ extended_expiration_date }}</b>
+                        {{test}}
+                    </p>
+                    <p>
+                        <b>This action cannot be undone.</b>
                     </p>
                 </div>
         
@@ -83,7 +92,7 @@
                             class="usa-button dja-form-placeholder" 
                             name="_extend_expiration_date"
                             >
-                                Confirm
+                                Yes, extend date
                             </button>
                         </li>
                         <li class="usa-button-group__item">
