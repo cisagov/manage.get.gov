@@ -17,6 +17,7 @@
           <span class="text-bold text-primary-darker">
             Status:
           </span>
+          <span class="text-primary-darker">
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
             {% if domain.is_expired and domain.state != domain.State.UNKNOWN %}
               Expired
@@ -25,8 +26,9 @@
             {% else %}
                 {{ domain.state|title }}
             {% endif %}
+          </span>
           {% if domain.get_state_help_text %}
-            <div class="padding-top-1 font-ui-xs">
+            <div class="padding-top-1 text-primary-darker">
               {{ domain.get_state_help_text }}
             </div>
           {% endif %}
