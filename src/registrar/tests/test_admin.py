@@ -48,6 +48,9 @@ logger = logging.getLogger(__name__)
 
 
 class TestDomainAdmin(MockEppLib, WebTest):
+
+    # csrf checks do not work with WebTest.
+    # We disable them here. TODO for another ticket.
     csrf_checks = False
 
     def setUp(self):
