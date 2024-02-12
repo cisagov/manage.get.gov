@@ -787,14 +787,13 @@ class DomainAddUserView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
 
-class DomainInvitationDeleteView(DomainInvitationPermissionDeleteView, SuccessMessageMixin):
+class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermissionDeleteView):
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
     def get_success_url(self):
-        messages.success(self.request, self.get_success_message())
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
-    def get_success_message(self):
+    def get_success_message(self, cleaned_data):
         return f"Canceled invitation to {self.object.email}."
 
 
