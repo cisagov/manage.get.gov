@@ -205,17 +205,21 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
 
         Reference: https://code.djangoproject.com/ticket/31975
         """
-        return MultiFieldSortableChangeList
+        logger.info("timing get_changelist")
+        with Timer() as t:
+            return MultiFieldSortableChangeList
 
     def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        # Get the filtered values
-        filters = self.get_filters(request)
-        # Pass the filtered values to the template context
-        extra_context["filters"] = filters
-        extra_context["search_query"] = request.GET.get("q", "")  # Assuming the search query parameter is 'q'
-        return super().changelist_view(request, extra_context=extra_context)
+        logger.info("timing changelist_view")
+        with Timer() as t:
+            if extra_context is None:
+                extra_context = {}
+            # Get the filtered values
+            filters = self.get_filters(request)
+            # Pass the filtered values to the template context
+            extra_context["filters"] = filters
+            extra_context["search_query"] = request.GET.get("q", "")  # Assuming the search query parameter is 'q'
+            return super().changelist_view(request, extra_context=extra_context)
 
     def get_filters(self, request):
         """Retrieve the current set of parameters being used to filter the table
@@ -224,39 +228,40 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
             parameter_value: string}
         TODO: convert investigator id to investigator username
         """
+        logger.info("timing get_filters")
+        with Timer() as t:
+            filters = []
+            # Retrieve the filter parameters
+            for param in request.GET.keys():
+                # Exclude the default search parameter 'q'
+                if param != "q" and param != "o":
+                    parameter_name = param.replace("__exact", "").replace("_type", "").replace("__id", " id")
 
-        filters = []
-        # Retrieve the filter parameters
-        for param in request.GET.keys():
-            # Exclude the default search parameter 'q'
-            if param != "q" and param != "o":
-                parameter_name = param.replace("__exact", "").replace("_type", "").replace("__id", " id")
+                    if parameter_name == "investigator id":
+                        # Retrieves the corresponding contact from Users
+                        id_value = request.GET.get(param)
+                        try:
+                            contact = models.User.objects.get(id=id_value)
+                            investigator_name = contact.first_name + " " + contact.last_name
 
-                if parameter_name == "investigator id":
-                    # Retrieves the corresponding contact from Users
-                    id_value = request.GET.get(param)
-                    try:
-                        contact = models.User.objects.get(id=id_value)
-                        investigator_name = contact.first_name + " " + contact.last_name
-
+                            filters.append(
+                                {
+                                    "parameter_name": "investigator",
+                                    "parameter_value": investigator_name,
+                                }
+                            )
+                        except models.User.DoesNotExist:
+                            pass
+                    else:
+                        # For other parameter names, append a dictionary with the original
+                        # parameter_name and the corresponding parameter_value
                         filters.append(
                             {
-                                "parameter_name": "investigator",
-                                "parameter_value": investigator_name,
+                                "parameter_name": parameter_name,
+                                "parameter_value": request.GET.get(param),
                             }
                         )
-                    except models.User.DoesNotExist:
-                        pass
-                else:
-                    # For other parameter names, append a dictionary with the original
-                    # parameter_name and the corresponding parameter_value
-                    filters.append(
-                        {
-                            "parameter_name": parameter_name,
-                            "parameter_value": request.GET.get(param),
-                        }
-                    )
-        return filters
+            return filters
 
 
 class UserContactInline(admin.StackedInline):
@@ -803,6 +808,11 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 else:
                     return queryset.filter(investigator__id__exact=self.value())
 
+    def __new__(self, *args, **kwargs):
+        logger.info("timing __new__")
+        with Timer() as t:
+            return super().__new__(self, *args, **kwargs)
+
     # Columns
     list_display = [
         "requested_domain",
@@ -905,7 +915,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         logger.info("timing formfield_for_manytomany")
         with Timer() as t:
-            if db_field.name in ("current_websites", "alternative_domains"):
+            if db_field.name in {"current_websites", "alternative_domains"}:
                 kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
             return super().formfield_for_manytomany(db_field, request, **kwargs)
 
