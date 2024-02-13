@@ -105,19 +105,6 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
     return row
 
 
-# def _check_domain_managers(domain_info, columns):
-#     max_dm_count = 0
-
-#     dm_count = len(domain_info.domain.permissions.all())
-#     if dm_count > max_dm_count:
-#         max_dm_count = dm_count
-#     for i in range(1, max_dm_count + 1):
-#         if f"Domain manager email {i}" not in columns:
-#             columns.append(f"Domain manager email {i}")
-
-#     return columns
-
-
 def _get_security_emails(sec_contact_ids):
     """
     Retrieve security contact emails for the given security contact IDs.
@@ -186,7 +173,6 @@ def write_body(
         rows = []
         for domain_info in page.object_list:
             if get_domain_managers:
-                # _check_domain_managers(domain_info, columns)
                 dm_count = len(domain_info.domain.permissions.all())
                 if dm_count > max_dm_count:
                     max_dm_count = dm_count
