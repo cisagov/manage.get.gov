@@ -1,6 +1,8 @@
 import logging
+import time
 from django import forms
-from django.db.models.functions import Concat
+from django.db.models.functions import Concat, Coalesce
+from django.db.models import Value, CharField
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
@@ -12,6 +14,7 @@ from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.domain import Domain
+from registrar.models.domain_application import DomainApplication
 from registrar.models.user import User
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
@@ -707,6 +710,17 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
+class Timer:
+    def __enter__(self):
+        self.start = time.time()
+        return self  # This allows usage of the instance within the with block
+
+    def __exit__(self, *args):
+        self.end = time.time()
+        self.duration = self.end - self.start
+        logger.info(f"Execution time: {self.duration} seconds")
+
+
 class DomainApplicationAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions"""
 
@@ -753,15 +767,41 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             """Lookup reimplementation, gets users of is_staff.
             Returns a list of tuples consisting of (user.id, user)
             """
-            privileged_users = User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email")
-            return [(user.id, user) for user in privileged_users]
+            logger.info("timing lookups")
+            with Timer() as t:
+
+                # Select all investigators that are staff, then order by name and email
+                privileged_users = (
+                    DomainApplication.objects.select_related("investigator")
+                    .filter(investigator__is_staff=True)
+                    .order_by(
+                        "investigator__first_name", 
+                        "investigator__last_name", 
+                        "investigator__email"
+                    )
+                )
+
+                # Annotate the full name and return a values list that lookups can use
+                privileged_users_annotated = privileged_users.annotate(
+                    full_name=Coalesce(
+                        Concat(
+                            "investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()
+                        ),
+                        "investigator__email",
+                        output_field=CharField()
+                    )
+                ).values_list("investigator__id", "full_name")
+
+                return privileged_users_annotated
 
         def queryset(self, request, queryset):
             """Custom queryset implementation, filters by investigator"""
-            if self.value() is None:
-                return queryset
-            else:
-                return queryset.filter(investigator__id__exact=self.value())
+            logger.info("timing queryset")
+            with Timer() as t:
+                if self.value() is None:
+                    return queryset
+                else:
+                    return queryset.filter(investigator__id__exact=self.value())
 
     # Columns
     list_display = [
@@ -863,77 +903,83 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
     def formfield_for_manytomany(self, db_field, request, **kwargs):
-        if db_field.name in ("current_websites", "alternative_domains"):
-            kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
-        return super().formfield_for_manytomany(db_field, request, **kwargs)
+        logger.info("timing formfield_for_manytomany")
+        with Timer() as t:
+            if db_field.name in ("current_websites", "alternative_domains"):
+                kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
+            return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # Removes invalid investigator options from the investigator dropdown
-        if db_field.name == "investigator":
-            kwargs["queryset"] = User.objects.filter(is_staff=True)
-            return db_field.formfield(**kwargs)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+        logger.info("timing formfield_for_foreignkey")
+        with Timer() as t:
+            # Removes invalid investigator options from the investigator dropdown
+            if db_field.name == "investigator":
+                kwargs["queryset"] = User.objects.filter(is_staff=True)
+                return db_field.formfield(**kwargs)
+            return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        if obj and obj.creator.status != models.User.RESTRICTED:
-            if change:  # Check if the application is being edited
-                # Get the original application from the database
-                original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+        logger.info("timing save_model")
+        with Timer() as t:
+            if obj and obj.creator.status != models.User.RESTRICTED:
+                if change:  # Check if the application is being edited
+                    # Get the original application from the database
+                    original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-                if (
-                    obj
-                    and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
-                    and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
-                    and not obj.domain_is_not_active()
-                ):
-                    # If an admin tried to set an approved application to
-                    # another status and the related domain is already
-                    # active, shortcut the action and throw a friendly
-                    # error message. This action would still not go through
-                    # shortcut or not as the rules are duplicated on the model,
-                    # but the error would be an ugly Django error screen.
+                    if (
+                        obj
+                        and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
+                        and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
+                        and not obj.domain_is_not_active()
+                    ):
+                        # If an admin tried to set an approved application to
+                        # another status and the related domain is already
+                        # active, shortcut the action and throw a friendly
+                        # error message. This action would still not go through
+                        # shortcut or not as the rules are duplicated on the model,
+                        # but the error would be an ugly Django error screen.
 
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
+                        # Clear the success message
+                        messages.set_level(request, messages.ERROR)
 
-                    messages.error(
-                        request,
-                        "This action is not permitted. The domain is already active.",
-                    )
+                        messages.error(
+                            request,
+                            "This action is not permitted. The domain is already active.",
+                        )
 
-                else:
-                    if obj.status != original_obj.status:
-                        status_method_mapping = {
-                            models.DomainApplication.ApplicationStatus.STARTED: None,
-                            models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
-                            models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
-                            models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
-                            models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
-                            models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
-                            models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
-                            models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
-                        }
-                        selected_method = status_method_mapping.get(obj.status)
-                        if selected_method is None:
-                            logger.warning("Unknown status selected in django admin")
-                        else:
-                            # This is an fsm in model which will throw an error if the
-                            # transition condition is violated, so we roll back the
-                            # status to what it was before the admin user changed it and
-                            # let the fsm method set it.
-                            obj.status = original_obj.status
-                            selected_method()
+                    else:
+                        if obj.status != original_obj.status:
+                            status_method_mapping = {
+                                models.DomainApplication.ApplicationStatus.STARTED: None,
+                                models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
+                                models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
+                                models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
+                                models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
+                                models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
+                                models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
+                                models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
+                            }
+                            selected_method = status_method_mapping.get(obj.status)
+                            if selected_method is None:
+                                logger.warning("Unknown status selected in django admin")
+                            else:
+                                # This is an fsm in model which will throw an error if the
+                                # transition condition is violated, so we roll back the
+                                # status to what it was before the admin user changed it and
+                                # let the fsm method set it.
+                                obj.status = original_obj.status
+                                selected_method()
 
-                    super().save_model(request, obj, form, change)
-        else:
-            # Clear the success message
-            messages.set_level(request, messages.ERROR)
+                        super().save_model(request, obj, form, change)
+            else:
+                # Clear the success message
+                messages.set_level(request, messages.ERROR)
 
-            messages.error(
-                request,
-                "This action is not permitted for applications with a restricted creator.",
-            )
+                messages.error(
+                    request,
+                    "This action is not permitted for applications with a restricted creator.",
+                )
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -941,36 +987,41 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         admin user permissions and the application creator's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
+        logger.info("timing get_readonly_fields")
+        with Timer() as t:
+            readonly_fields = list(self.readonly_fields)
 
-        readonly_fields = list(self.readonly_fields)
+            # Check if the creator is restricted
+            if obj and obj.creator.status == models.User.RESTRICTED:
+                # For fields like CharField, IntegerField, etc., the widget used is
+                # straightforward and the readonly_fields list can control their behavior
+                readonly_fields.extend([field.name for field in self.model._meta.fields])
+                # Add the multi-select fields to readonly_fields:
+                # Complex fields like ManyToManyField require special handling
+                readonly_fields.extend(["current_websites", "other_contacts", "alternative_domains"])
 
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
-            # For fields like CharField, IntegerField, etc., the widget used is
-            # straightforward and the readonly_fields list can control their behavior
-            readonly_fields.extend([field.name for field in self.model._meta.fields])
-            # Add the multi-select fields to readonly_fields:
-            # Complex fields like ManyToManyField require special handling
-            readonly_fields.extend(["current_websites", "other_contacts", "alternative_domains"])
-
-        if request.user.has_perm("registrar.full_access_permission"):
+            if request.user.has_perm("registrar.full_access_permission"):
+                return readonly_fields
+            # Return restrictive Read-only fields for analysts and
+            # users who might not belong to groups
+            readonly_fields.extend([field for field in self.analyst_readonly_fields])
             return readonly_fields
-        # Return restrictive Read-only fields for analysts and
-        # users who might not belong to groups
-        readonly_fields.extend([field for field in self.analyst_readonly_fields])
-        return readonly_fields
 
     def display_restricted_warning(self, request, obj):
-        if obj and obj.creator.status == models.User.RESTRICTED:
-            messages.warning(
-                request,
-                "Cannot edit an application with a restricted creator.",
-            )
+        logger.info("timing display_restricted_warning")
+        with Timer() as t:
+            if obj and obj.creator.status == models.User.RESTRICTED:
+                messages.warning(
+                    request,
+                    "Cannot edit an application with a restricted creator.",
+                )
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        obj = self.get_object(request, object_id)
-        self.display_restricted_warning(request, obj)
-        return super().change_view(request, object_id, form_url, extra_context)
+        logger.info("timing change_view")
+        with Timer() as t:
+            obj = self.get_object(request, object_id)
+            self.display_restricted_warning(request, obj)
+            return super().change_view(request, object_id, form_url, extra_context)
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
