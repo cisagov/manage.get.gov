@@ -140,6 +140,24 @@ class Domain(TimeStampedModel, DomainHelper):
         # previously existed but has been deleted from the registry
         DELETED = "deleted", "Deleted"
 
+        @classmethod
+        def get_help_text(cls, state) -> str:
+            """Returns a help message for a desired state. If none is found, an empty string is returned"""
+            help_texts = {
+                # For now, unknown has the same message as DNS_NEEDED
+                cls.UNKNOWN: ("Before this domain can be used, " "you’ll need to add name server addresses."),
+                cls.DNS_NEEDED: ("Before this domain can be used, " "you’ll need to add name server addresses."),
+                cls.READY: "This domain has name servers and is ready for use.",
+                cls.ON_HOLD: (
+                    "This domain is administratively paused, "
+                    "so it can’t be edited and won’t resolve in DNS. "
+                    "Contact help@get.gov for details."
+                ),
+                cls.DELETED: ("This domain has been removed and " "is no longer registered to your organization."),
+            }
+
+            return help_texts.get(state, "")
+
     class Cache(property):
         """
         Python descriptor to turn class methods into properties.
@@ -1397,6 +1415,21 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         logger.info("Changing to DNS_NEEDED state")
         logger.info("able to transition to DNS_NEEDED state")
+
+    def get_state_help_text(self) -> str:
+        """Returns a str containing additional information about a given state.
+        Returns custom content for when the domain itself is expired."""
+
+        if self.is_expired() and self.state != self.State.UNKNOWN:
+            # Given expired is not a physical state, but it is displayed as such,
+            # We need custom logic to determine this message.
+            help_text = (
+                "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
+            )
+        else:
+            help_text = Domain.State.get_help_text(self.state)
+
+        return help_text
 
     def _disclose_fields(self, contact: PublicContact):
         """creates a disclose object that can be added to a contact Create using

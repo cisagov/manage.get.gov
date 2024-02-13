@@ -53,8 +53,8 @@ a.usa-button--unstyled.disabled-link:focus {
 }
 
 .usa-button--unstyled.disabled-button,
-.usa-button--unstyled.disabled-link:hover,
-.usa-button--unstyled.disabled-link:focus {
+.usa-button--unstyled.disabled-button:hover,
+.usa-button--unstyled.disabled-button:focus {
   cursor: not-allowed !important;
   outline: none !important;
   text-decoration: none !important;
