@@ -341,6 +341,7 @@ class ExportDataTest(MockEppLib):
             username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
         )
 
+        # Test for more than 1 domain manager
         _, created = UserDomainRole.objects.get_or_create(
             user=meoward_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
         )
@@ -349,6 +350,7 @@ class ExportDataTest(MockEppLib):
             user=self.user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
         )
 
+        # Test for just 1 domain manager
         _, created = UserDomainRole.objects.get_or_create(
             user=meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
         )
