@@ -55,7 +55,6 @@ def error_page(request, error):
 
 def openid(request):
     """Redirect the user to an authentication provider (OP)."""
-
     # If the session reset because of a server restart, attempt to login again
     request.session["acr_value"] = CLIENT.get_default_acr_value()
 

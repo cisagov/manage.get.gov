@@ -23,7 +23,7 @@ class TestViews(TestCase):
         self.client = Client()
 
     def test_health_check_endpoint(self):
-        response = self.client.get("/health/")
+        response = self.client.get("/health")
         self.assertContains(response, "OK", status_code=200)
 
     def test_home_page(self):
