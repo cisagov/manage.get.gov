@@ -18,7 +18,6 @@ from registrar.models import (
     User,
     Website,
     UserDomainRole,
-    DraftDomain,
 )
 from registrar.views.application import ApplicationWizard, Step
 
