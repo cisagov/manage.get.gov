@@ -97,7 +97,7 @@ def parse_row(columns, domain_info: DomainInformation, security_emails_dict=None
         # Get each domain managers email and add to list
         dm_emails = [dm.user.email for dm in domain.permissions.all()]
 
-        # This is the row fields
+        # Set up the "matching header" + row field data
         for i, dm_email in enumerate(dm_emails, start=1):
             FIELDS[f"Domain manager email {i}"] = dm_email
 
@@ -129,7 +129,7 @@ def _get_security_emails(sec_contact_ids):
 
 def update_columns_with_domain_managers(columns, max_dm_count):
     """
-    Update the columns list to include "Domain manager email" headers
+    Update the columns list to include "Domain manager email {#}" headers
     based on the maximum domain manager count.
     """
     for i in range(1, max_dm_count + 1):
@@ -148,13 +148,10 @@ def write_body(
     """
     Receives params from the parent methods and outputs a CSV with fltered and sorted domains.
     Works with write_header as longas the same writer object is passed.
+    get_domain_managers: Conditional bc we only use domain manager info for export_data_full_to_csv
+    should_write_header: Conditional bc export_data_growth_to_csv calls write_body twice
     """
 
-    # We only want to write the domain manager information for export_thing_here so we have to make it conditional
-
-    # Trying to make the domain managers logic conditional
-
-    # Get the domainInfos
     all_domain_infos = get_domain_infos(filter_condition, sort_fields)
 
     # Store all security emails to avoid epp calls or excessive filters
@@ -163,8 +160,9 @@ def write_body(
     security_emails_dict = _get_security_emails(sec_contact_ids)
 
     # The maximum amount of domain managers an account has
-    max_dm_count = 0
     # We get the max so we can set the column header accurately
+    max_dm_count = 0
+    # Flag bc we don't want to set header every loop
     paginator_ran = False
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
@@ -185,7 +183,6 @@ def write_body(
                 # It indicates that DomainInformation.domain is None.
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
-    # We only want this to run once just for the column header
     if paginator_ran is False and should_write_header:
         write_header(writer, columns)
 
