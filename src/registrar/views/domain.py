@@ -786,7 +786,9 @@ class DomainAddUserView(DomainFormBaseView):
 
         return redirect(self.get_success_url())
 
-
+# The order of the superclasses matters here. BaseDeleteView has a bug where the 
+# "form_valid" function does not call super, so it cannot use SuccessMessageMixin.
+# The workaround is to use SuccessMessageMixin first.
 class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermissionDeleteView):
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
