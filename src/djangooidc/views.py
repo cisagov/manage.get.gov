@@ -78,6 +78,7 @@ def openid(request):
     try:
         # If the CLIENT is none, attempt to reinitialize before handling the request
         if _client_is_none():
+            logger.debug("OIDC client is None, attempting to initialize")
             _initialize_client()
         request.session["acr_value"] = CLIENT.get_default_acr_value()
         request.session["next"] = request.GET.get("next", "/")
@@ -93,6 +94,7 @@ def login_callback(request):
     try:
         # If the CLIENT is none, attempt to reinitialize before handling the request
         if _client_is_none():
+            logger.debug("OIDC client is None, attempting to initialize")
             _initialize_client()
         query = parse_qs(request.GET.urlencode())
         userinfo = CLIENT.callback(query, request.session)
