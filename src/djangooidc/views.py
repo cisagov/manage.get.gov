@@ -15,15 +15,34 @@ from registrar.models import User
 
 logger = logging.getLogger(__name__)
 
-try:
+CLIENT = None
+
+
+def _initialize_client():
+    """Initialize the OIDC client. Exceptions are allowed to raise
+    and will need to be caught."""
+    global CLIENT
     # Initialize provider using pyOICD
     OP = getattr(settings, "OIDC_ACTIVE_PROVIDER")
     CLIENT = Client(OP)
-    logger.debug("client initialized %s" % CLIENT)
+    logger.debug("Client initialized: %s" % CLIENT)
+
+
+def _client_is_none():
+    """Return if the CLIENT is currently None."""
+    global CLIENT
+    return CLIENT is None
+
+
+# Initialize CLIENT
+try:
+    _initialize_client()
 except Exception as err:
-    CLIENT = None  # type: ignore
-    logger.warning(err)
-    logger.warning("Unable to configure OpenID Connect provider. Users cannot log in.")
+    # In the event of an exception, log the error and allow the app load to continue
+    # without the OIDC Client. Subsequent login attempts will attempt to initialize
+    # again if Client is None
+    logger.error(err)
+    logger.error("Unable to configure OpenID Connect provider. Users cannot log in.")
 
 
 def error_page(request, error):
@@ -55,12 +74,15 @@ def error_page(request, error):
 
 def openid(request):
     """Redirect the user to an authentication provider (OP)."""
-    # If the session reset because of a server restart, attempt to login again
-    request.session["acr_value"] = CLIENT.get_default_acr_value()
-
-    request.session["next"] = request.GET.get("next", "/")
-
+    global CLIENT
     try:
+        # If the CLIENT is none, attempt to reinitialize before handling the request
+        if _client_is_none():
+            logger.debug("OIDC client is None, attempting to initialize")
+            _initialize_client()
+        request.session["acr_value"] = CLIENT.get_default_acr_value()
+        request.session["next"] = request.GET.get("next", "/")
+        # Create the authentication request
         return CLIENT.create_authn_request(request.session)
     except Exception as err:
         return error_page(request, err)
@@ -68,12 +90,17 @@ def openid(request):
 
 def login_callback(request):
     """Analyze the token returned by the authentication provider (OP)."""
+    global CLIENT
     try:
+        # If the CLIENT is none, attempt to reinitialize before handling the request
+        if _client_is_none():
+            logger.debug("OIDC client is None, attempting to initialize")
+            _initialize_client()
         query = parse_qs(request.GET.urlencode())
         userinfo = CLIENT.callback(query, request.session)
         # test for need for identity verification and if it is satisfied
         # if not satisfied, redirect user to login with stepped up acr_value
-        if requires_step_up_auth(userinfo):
+        if _requires_step_up_auth(userinfo):
             # add acr_value to request.session
             request.session["acr_value"] = CLIENT.get_step_up_acr_value()
             return CLIENT.create_authn_request(request.session)
@@ -86,13 +113,16 @@ def login_callback(request):
         else:
             raise o_e.BannedUser()
     except o_e.NoStateDefined as nsd_err:
+        # In the event that a user is in the middle of a login when the app is restarted,
+        # their session state will no longer be available, so redirect the user to the
+        # beginning of login process without raising an error to the user.
         logger.warning(f"No State Defined: {nsd_err}")
         return redirect(request.session.get("next", "/"))
     except Exception as err:
         return error_page(request, err)
 
 
-def requires_step_up_auth(userinfo):
+def _requires_step_up_auth(userinfo):
     """if User.needs_identity_verification and step_up_acr_value not in
     ial returned from callback, return True"""
     step_up_acr_value = CLIENT.get_step_up_acr_value()
