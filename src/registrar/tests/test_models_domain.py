@@ -3,6 +3,7 @@ Feature being tested: Registry Integration
 
 This file tests the various ways in which the registrar interacts with the registry.
 """
+
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call

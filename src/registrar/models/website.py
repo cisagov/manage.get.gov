@@ -4,7 +4,6 @@ from .utility.time_stamped_model import TimeStampedModel
 
 
 class Website(TimeStampedModel):
-
     """Keep domain names in their own table so that applications can refer to
     many of them."""
 

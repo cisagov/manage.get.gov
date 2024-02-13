@@ -16,6 +16,7 @@ $ docker-compose exec app python manage.py shell
 ```
 
 """
+
 import environs
 from base64 import b64decode
 from cfenv import AppEnv  # type: ignore
