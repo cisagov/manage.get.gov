@@ -70,6 +70,10 @@
   <script src="{% static 'js/uswds.min.js' %}" defer></script>
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
+  {% if not IS_PRODUCTION %}
+    {% include "includes/non-production-alert.html" %}
+  {% endif %}
+
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">

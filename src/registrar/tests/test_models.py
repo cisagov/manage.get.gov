@@ -161,33 +161,63 @@ class TestDomainApplication(TestCase):
                     application.submit()
             self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
 
-    def test_submit_sends_email(self):
-        """Create an application and submit it and see if email was sent."""
-        with less_console_noise():
-            user, _ = User.objects.get_or_create(username="testy")
-            contact = Contact.objects.create(email="test@test.gov")
-            domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-            application = DomainApplication.objects.create(
-                creator=user,
-                requested_domain=domain,
-                submitter=contact,
-            )
-            application.save()
+    def check_email_sent(self, application, msg, action, expected_count):
+        """Check if an email was sent after performing an action."""
 
+        with self.subTest(msg=msg, action=action):
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                application.submit()
+                with less_console_noise():
+                    # Perform the specified action
+                    action_method = getattr(application, action)
+                    action_method()
 
-            # check to see if an email was sent
-            self.assertGreater(
-                len(
-                    [
-                        email
-                        for email in MockSESClient.EMAILS_SENT
-                        if "test@test.gov" in email["kwargs"]["Destination"]["ToAddresses"]
-                    ]
-                ),
-                0,
-            )
+            # Check if an email was sent
+            sent_emails = [
+                email
+                for email in MockSESClient.EMAILS_SENT
+                if "mayor@igorville.gov" in email["kwargs"]["Destination"]["ToAddresses"]
+            ]
+            self.assertEqual(len(sent_emails), expected_count)
+
+    def test_submit_from_started_sends_email(self):
+        msg = "Create an application and submit it and see if email was sent."
+        application = completed_application()
+        self.check_email_sent(application, msg, "submit", 1)
+
+    def test_submit_from_withdrawn_sends_email(self):
+        msg = "Create a withdrawn application and submit it and see if email was sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.check_email_sent(application, msg, "submit", 1)
+
+    def test_submit_from_action_needed_does_not_send_email(self):
+        msg = "Create an application with ACTION_NEEDED status and submit it, check if email was not sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
+        self.check_email_sent(application, msg, "submit", 0)
+
+    def test_submit_from_in_review_does_not_send_email(self):
+        msg = "Create a withdrawn application and submit it and see if email was sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.check_email_sent(application, msg, "submit", 0)
+
+    def test_approve_sends_email(self):
+        msg = "Create an application and approve it and see if email was sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.check_email_sent(application, msg, "approve", 1)
+
+    def test_withdraw_sends_email(self):
+        msg = "Create an application and withdraw it and see if email was sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.check_email_sent(application, msg, "withdraw", 1)
+
+    def test_reject_sends_email(self):
+        msg = "Create an application and reject it and see if email was sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        self.check_email_sent(application, msg, "reject", 1)
+
+    def test_reject_with_prejudice_does_not_send_email(self):
+        msg = "Create an application and reject it with prejudice and see if email was sent."
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        self.check_email_sent(application, msg, "reject_with_prejudice", 0)
 
     def test_submit_transition_allowed(self):
         """
@@ -463,6 +493,46 @@ class TestDomainApplication(TestCase):
                     with self.subTest(application=application, exception_type=exception_type):
                         with self.assertRaises(exception_type):
                             application.reject_with_prejudice()
+
+    def test_transition_not_allowed_approved_in_review_when_domain_is_active(self):
+        """Create an application with status approved, create a matching domain that
+        is active, and call in_review against transition rules"""
+
+        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
+        self.approved_application.approved_domain = domain
+        self.approved_application.save()
+
+        # Define a custom implementation for is_active
+        def custom_is_active(self):
+            return True  # Override to return True
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        self.approved_application.in_review()
+
+    def test_transition_not_allowed_approved_action_needed_when_domain_is_active(self):
+        """Create an application with status approved, create a matching domain that
+        is active, and call action_needed against transition rules"""
+
+        domain = Domain.objects.create(name=self.approved_application.requested_domain.name)
+        self.approved_application.approved_domain = domain
+        self.approved_application.save()
+
+        # Define a custom implementation for is_active
+        def custom_is_active(self):
+            return True  # Override to return True
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Use patch to temporarily replace is_active with the custom implementation
+                with patch.object(Domain, "is_active", custom_is_active):
+                    # Now, when you call is_active on Domain, it will return True
+                    with self.assertRaises(TransitionNotAllowed):
+                        self.approved_application.action_needed()
 
     def test_transition_not_allowed_approved_rejected_when_domain_is_active(self):
         """Create an application with status approved, create a matching domain that

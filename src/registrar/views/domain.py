@@ -555,7 +555,7 @@ class DomainYourContactInformationView(DomainFormBaseView):
         # Post to DB using values from the form
         form.save()
 
-        messages.success(self.request, "Your contact information has been updated.")
+        messages.success(self.request, "Your contact information for all your domains has been updated.")
 
         # superclass has the redirect
         return super().form_valid(form)
