@@ -14,6 +14,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
+from registrar.forms.domain import SubmitterContactForm
 
 from registrar.models import (
     Domain,
@@ -37,7 +38,6 @@ from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 
 from ..forms import (
-    ContactForm,
     AuthorizingOfficialContactForm,
     DomainOrgNameAddressForm,
     DomainAddUserForm,
@@ -536,13 +536,15 @@ class DomainDsDataView(DomainFormBaseView):
 class DomainYourContactInformationView(DomainFormBaseView):
     """Domain your contact information editing view."""
 
+    model = Domain
     template_name = "domain_your_contact_information.html"
-    form_class = ContactForm
+    context_object_name = "domain"
+    form_class = SubmitterContactForm
 
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.submitter instance to make a bound form."""
         form_kwargs = super().get_form_kwargs(*args, **kwargs)
-        form_kwargs["instance"] = self.request.user.contact
+        form_kwargs["instance"] = self.object.domain_info.submitter
         return form_kwargs
 
     def get_success_url(self):
@@ -551,8 +553,10 @@ class DomainYourContactInformationView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, call setter in model."""
-
-        # Post to DB using values from the form
+        # Set the domain information in the form so that it can be accessible
+        # to associate a new Contact as authorizing official, if new Contact is needed
+        # in the save() method
+        form.set_domain_info(self.object.domain_info)
         form.save()
 
         messages.success(self.request, "Your contact information for all your domains has been updated.")

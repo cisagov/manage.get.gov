@@ -256,6 +256,55 @@ class AuthorizingOfficialContactForm(ContactForm):
         else:
             super().save()
 
+class SubmitterContactForm(ContactForm):
+    """Form for updating submitter contacts."""
+
+    JOIN = "submitter"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Overriding bc phone not required in this form
+        self.fields["phone"] = forms.IntegerField(required=False)
+
+        # Set custom error messages
+        self.fields["first_name"].error_messages = {
+            "required": "Enter the first name / given name of your authorizing official."
+        }
+        self.fields["last_name"].error_messages = {
+            "required": "Enter the last name / family name of your authorizing official."
+        }
+        self.fields["title"].error_messages = {
+            "required": "Enter the title or role your authorizing official has in your \
+            organization (e.g., Chief Information Officer)."
+        }
+        self.fields["email"].error_messages = {
+            "required": "Enter an email address in the required format, like name@example.com."
+        }
+        self.domainInfo = None
+
+    def set_domain_info(self, domainInfo):
+        """Set the domain information for the form.
+        The form instance is associated with the contact itself. In order to access the associated
+        domain information object, this needs to be set in the form by the view."""
+        self.domainInfo = domainInfo
+
+    def save(self, commit=True):
+        """Override the save() method of the BaseModelForm."""
+
+        # Get the Contact object from the db for the Authorizing Official
+        db_ao = Contact.objects.get(id=self.instance.id)
+        if self.domainInfo and db_ao.has_more_than_one_join("information_submitter"):
+            # Handle the case where the domain information object is available and the AO Contact
+            # has more than one joined object.
+            # In this case, create a new Contact, and update the new Contact with form data.
+            # Then associate with domain information object as the submitter
+            data = dict(self.cleaned_data.items())
+            self.domainInfo.submitter = Contact.objects.create(**data)
+            self.domainInfo.save()
+        else:
+            super().save()
+
 
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
