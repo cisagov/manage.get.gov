@@ -339,6 +339,7 @@ class ViewsTest(TestCase):
             with less_console_noise():
                 response = self.client.get(reverse("logout"))
             # ASSERTIONS
+            # Assert redirect code and url are accurate
             expected = (
                 "http://example.com/log_me_out?client_id=TEST"
                 "&post_logout_redirect_uri=http%3A%2F%2Fexample.com%2Fback"
