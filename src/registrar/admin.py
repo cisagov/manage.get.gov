@@ -56,44 +56,46 @@ class MultiFieldSortableChangeList(admin.views.main.ChangeList):
         Mostly identical to the base implementation, except that now it can return
         a list of order_field objects rather than just one.
         """
-        params = self.params
-        ordering = list(self.model_admin.get_ordering(request) or self._get_default_ordering())
+        logger.info("timing get_ordering")
+        with Timer() as t:
+            params = self.params
+            ordering = list(self.model_admin.get_ordering(request) or self._get_default_ordering())
 
-        if ORDER_VAR in params:
-            # Clear ordering and used params
-            ordering = []
+            if ORDER_VAR in params:
+                # Clear ordering and used params
+                ordering = []
 
-            order_params = params[ORDER_VAR].split(".")
-            for p in order_params:
-                try:
-                    none, pfx, idx = p.rpartition("-")
-                    field_name = self.list_display[int(idx)]
+                order_params = params[ORDER_VAR].split(".")
+                for p in order_params:
+                    try:
+                        none, pfx, idx = p.rpartition("-")
+                        field_name = self.list_display[int(idx)]
 
-                    order_fields = self.get_ordering_field(field_name)
+                        order_fields = self.get_ordering_field(field_name)
 
-                    if isinstance(order_fields, list):
-                        for order_field in order_fields:
-                            if order_field:
-                                ordering.append(pfx + order_field)
-                    else:
-                        ordering.append(pfx + order_fields)
+                        if isinstance(order_fields, list):
+                            for order_field in order_fields:
+                                if order_field:
+                                    ordering.append(pfx + order_field)
+                        else:
+                            ordering.append(pfx + order_fields)
 
-                except (IndexError, ValueError):
-                    continue  # Invalid ordering specified, skip it.
+                    except (IndexError, ValueError):
+                        continue  # Invalid ordering specified, skip it.
 
-        # Add the given query's ordering fields, if any.
-        ordering.extend(queryset.query.order_by)
+            # Add the given query's ordering fields, if any.
+            ordering.extend(queryset.query.order_by)
 
-        # Ensure that the primary key is systematically present in the list of
-        # ordering fields so we can guarantee a deterministic order across all
-        # database backends.
-        pk_name = self.lookup_opts.pk.name
-        if not (set(ordering) & set(["pk", "-pk", pk_name, "-" + pk_name])):
-            # The two sets do not intersect, meaning the pk isn't present. So
-            # we add it.
-            ordering.append("-pk")
+            # Ensure that the primary key is systematically present in the list of
+            # ordering fields so we can guarantee a deterministic order across all
+            # database backends.
+            pk_name = self.lookup_opts.pk.name
+            if not (set(ordering) & set(["pk", "-pk", pk_name, "-" + pk_name])):
+                # The two sets do not intersect, meaning the pk isn't present. So
+                # we add it.
+                ordering.append("-pk")
 
-        return ordering
+            return ordering
 
 
 class CustomLogEntryAdmin(LogEntryAdmin):
@@ -913,14 +915,14 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # lists in filter_horizontal are not sorted properly, sort them
     # by website
     def formfield_for_manytomany(self, db_field, request, **kwargs):
-        logger.info("timing formfield_for_manytomany")
+        logger.info(f"timing formfield_for_manytomany -> {db_field.name}")
         with Timer() as t:
             if db_field.name in {"current_websites", "alternative_domains"}:
                 kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
             return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        logger.info("timing formfield_for_foreignkey")
+        logger.info(f"timing formfield_for_foreignkey -> {db_field.name}")
         with Timer() as t:
             # Removes invalid investigator options from the investigator dropdown
             if db_field.name == "investigator":
