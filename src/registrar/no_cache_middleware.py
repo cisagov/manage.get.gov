@@ -6,7 +6,6 @@ better caching responses.
 
 
 class NoCacheMiddleware:
-
     """Middleware to add a single header to every response."""
 
     def __init__(self, get_response):
