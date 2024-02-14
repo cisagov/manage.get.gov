@@ -1,6 +1,6 @@
 # Downtime Incident Management Runbook
 
- Our team has agreed upon steps for handling incidents that cause our site to go offline or become unusable for users. For this document, an incident refers to one in which manage.get.gov is offline or displaying error 400/500 HTTP errors on all pages and is caused by a critical bug in our code, not to be confused with a security incident. This document should not be used for security incident response.
+ Our team has agreed upon steps for handling incidents that cause our site to go offline or become unusable for users. For this document, an incident refers to one in which manage.get.gov is offline or displaying error 400/500 HTTP errors on all pages. However, for this document to apply the cause of the problem must be a critical bug in our code or one of our providers having an outage, not to be confused with a cyber security incident. This document should not be used in response to any type of cyber security incident.
 
 ## Response management rules
 
@@ -24,6 +24,8 @@ The following checklist should be followed after the site is back up and running
 
 - [ ] Turn off the redirect (if used) and verify functionality
 - [ ] Remove the banner on get.gov by commenting it out
-- [ ] Write up what happened and when. If the cause is already known, write that as well.
-- [ ] If the cause is not known yet, developers should investigate the issue as the highest priority task.
-- [ ] As close to the event as possible, such as the next day, perform a team incident retro that is an hour long. The goal of this meeting should be to inform all team members what happened and what is being done now and to collect feedback on what could have been done better
+- [ ] Write up what happened and when; if the cause is already known, write that as well. This is a draft for internal communications and not for any public facing site and can be as simple as using bullet points.
+- [ ] If the cause is not known yet, developers should investigate the issue as the highest priority task
+- [ ] As close to the event as possible, such as the next day, perform a team incident retro that is an hour long. The goal of this meeting should be to inform all team members what happened and what is being done now and to collect feedback on what could have been done better. This is where the draft write up of what happened will be useful.
+- [ ] After the retro and once the bug is fully identified, an engineer should assist in writing an incident report and may be as detailed as possible for future team members to refer to. That document should be places in the [Incidents folder](https://drive.google.com/drive/folders/1LPVICVpI4Xb5KGdrNkSwhX2OAJ6hYTyu)
+- [ ] After creating the document above, the lead engineer make a draft of content that will go in the get.gov Incidents section. This Word document should be shared and reviewed by the product team before a developer adds it to get.gov
