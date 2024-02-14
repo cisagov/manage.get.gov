@@ -125,7 +125,7 @@ class CustomLogEntryAdmin(LogEntryAdmin):
 
 
 class AdminSortFields:
-    _name_sort = Concat("first_name", "last_name", "email")
+    _name_sort = ["first_name", "last_name", "email"]
     # Define a mapping of field names to model querysets and sort expressions
     sort_mapping = {
         # == Contact == #
@@ -159,10 +159,13 @@ class AdminSortFields:
         match db_field.name:
             case "investigator":
                 # We should only return users who are staff
-                return model.objects.filter(is_staff=True).order_by(order_by)
+                return model.objects.filter(is_staff=True).order_by(*order_by)
             case _:
                 # If no case is defined, return the default
-                return model.objects.order_by(order_by)
+                if isinstance(order_by, list) or isinstance(order_by, tuple):
+                    return model.objects.order_by(*order_by)
+                else:
+                    return model.objects.order_by(order_by)
 
 
 class AuditedAdmin(admin.ModelAdmin):
