@@ -8,9 +8,9 @@ In Review
 
 ## Context
 
-We experienced problems with our caching infrastructure early in our November launch.  In response, we turned off caching across the application.  We would like to examine ways to utilize caching again without incurring the same issues.
+We experienced problems with our Cloudfront caching infrastructure early in our November launch.  In response, we turned off caching across the application.  We would like to utilize caching again without incurring the same issues.
 
-The Incident:
+Details:
 Originally, Cloudfront was utilized to provide caching capabilities in our application.  All incoming HTTP requests first go through a Cloudfront endpoint, which has a caching infrastructure enabled by default. Cloudfront then decides whether to pass each request to our running Django app inside cloud.gov or if it will respond to with cached data.  The big problem with this feature is Cloudfront's caching has a default timeout of 24-hours, which we cannot control.  This led to issues on our November launch;  Incidents reported include the following...
  - Users couldn't utilize login.gov properly and had to wait a day before they would be able to login.  This was traced back to the 24-hour cache timeout.
  - Changes made by admins would not be reflected in the app (due to the cached data not updating)
@@ -25,7 +25,7 @@ Although we could leave our architecture as-is, we decided to investigate option
 
 Caching static resources should pose little risk to our application's functionality.  Currently, every static resource from /public/... is hitting our Django application inside of Cloud.gov. We already use a Django plugin called whitenoise that can do hash-based linking to static assets so that they can be cached forever by Cloudfront. (If the content changes, then the hash changes, then it results in a different filename.)
 
-See ticket #1371 for more information. 
+See ticket [#1371](https://github.com/cisagov/manage.get.gov/issues/1371)for more information. 
 
 
 ## Decision
