@@ -133,8 +133,7 @@ def update_columns_with_domain_managers(columns, max_dm_count):
     based on the maximum domain manager count.
     """
     for i in range(1, max_dm_count + 1):
-        if f"Domain manager email {i}" not in columns:
-            columns.append(f"Domain manager email {i}")
+        columns.append(f"Domain manager email {i}")
 
 
 def write_body(
@@ -159,22 +158,19 @@ def write_body(
 
     security_emails_dict = _get_security_emails(sec_contact_ids)
 
-    # The maximum amount of domain managers an account has
-    # We get the max so we can set the column header accurately
-    max_dm_count = 0
-    # Flag bc we don't want to set header every loop
-    paginator_ran = False
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
+
+    if get_domain_managers:
+        # We want to get the max amont of domain managers an
+        # account has to set the column header dynamically
+        max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
+        update_columns_with_domain_managers(columns, max_dm_count)
+
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
         rows = []
         for domain_info in page.object_list:
-            if get_domain_managers:
-                dm_count = len(domain_info.domain.permissions.all())
-                if dm_count > max_dm_count:
-                    max_dm_count = dm_count
-                update_columns_with_domain_managers(columns, max_dm_count)
             try:
                 row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
                 rows.append(row)
@@ -183,11 +179,10 @@ def write_body(
                 # It indicates that DomainInformation.domain is None.
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
-    if paginator_ran is False and should_write_header:
+    if should_write_header:
         write_header(writer, columns)
 
     writer.writerows(rows)
-    paginator_ran = True
 
 
 def export_data_type_to_csv(csv_file):
@@ -222,6 +217,7 @@ def export_data_type_to_csv(csv_file):
             Domain.State.READY,
             Domain.State.DNS_NEEDED,
             Domain.State.ON_HOLD,
+            Domain.State.UNKNOWN,  # REMOVE
         ],
     }
     write_body(writer, columns, sort_fields, filter_condition, True, True)
