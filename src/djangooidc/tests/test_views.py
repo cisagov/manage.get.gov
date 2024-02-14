@@ -327,6 +327,26 @@ class ViewsTest(TestCase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(actual, expected)
 
+    def test_logout_redirect_url_with_no_session_state(self, mock_client):
+        """Test that logout redirects to the configured post_logout_redirect_uris."""
+        with less_console_noise():
+            # MOCK
+            mock_client.callback.side_effect = self.user_info
+            mock_client.registration_response = {"post_logout_redirect_uris": ["http://example.com/back"]}
+            mock_client.provider_info = {"end_session_endpoint": "http://example.com/log_me_out"}
+            mock_client.client_id = "TEST"
+            # TEST
+            with less_console_noise():
+                response = self.client.get(reverse("logout"))
+            # ASSERTIONS
+            expected = (
+                "http://example.com/log_me_out?client_id=TEST"
+                "&post_logout_redirect_uri=http%3A%2F%2Fexample.com%2Fback"
+            )
+            actual = response.url
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(actual, expected)
+
     @patch("djangooidc.views.auth_logout")
     def test_logout_always_logs_out(self, mock_logout, _):
         """Without additional mocking, logout will always fail.
