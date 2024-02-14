@@ -9,9 +9,11 @@ The following set of rules should be followed while an incident is in progress.
 - The person who first notices that the site is down is responsible for using @here and notifying in #dotgov-announce that production is down
   - This applies to any team member, including new team members and non-developers
 - If no engineer has acknowledged the announcement within 10 minutes, whoever discovered the site was down should call each developer via the Slack DM huddle feature. If there is no response, this should escalate to a phone call.
-  - When calling, go down the [phone call list](https://docs.google.com/document/d/1k4r-1MNCfW8EXSXa-tqJQzOvJxQv0ARvHnOjjAH0LII/edit) from top to bottom until someone answers
+  - When calling, go down the [phone call list](https://docs.google.com/document/d/1k4r-1MNCfW8EXSXa-tqJQzOvJxQv0ARvHnOjjAH0LII/edit) from top to bottom until someone answers who is available to help.
+  - If this incident occurs outside of regular working hours, choosing to help is on a volunteer basis, and answering a call doesn't mean an individual is truly available to assist.
 - Once an engineer is online, they should immediately start a huddle in the #dotgov-redalert channel to begin troubleshooting
-- **All** available engineers should join the huddle once they see it.
+- All available engineers should join the huddle once they see it.
+  - If downtime occurs outside of working hours, team members who are off for the day may still be pinged and called but are not required to join if unavailable to do so.
 - Uncomment the banner on get.gov, so it is transparent to users that we know about the issue on manage.get.gov
   - Designers or Developers should be able to make this change; if designers are online and can help with this task, that will allow developers to focus on fixing the bug.
 - If the problem is not solved within three hours, change the rules on Cloudflare's admin site so that navigating to manage.get.gov redirects users to get.gov. This will help them see the banner on get.gov informing them that this is a known problem
