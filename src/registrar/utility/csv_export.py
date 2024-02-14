@@ -219,7 +219,7 @@ def export_data_type_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_body(writer, columns, sort_fields, filter_condition, True, True)
+    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True)
 
 
 def export_data_full_to_csv(csv_file):
@@ -250,7 +250,7 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_body(writer, columns, sort_fields, filter_condition, False, True)
+    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
 
 
 def export_data_federal_to_csv(csv_file):
@@ -282,7 +282,7 @@ def export_data_federal_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_body(writer, columns, sort_fields, filter_condition, False, True)
+    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
 
 
 def get_default_start_date():
@@ -349,5 +349,12 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
         "domain__deleted__gte": start_date_formatted,
     }
 
-    write_body(writer, columns, sort_fields, filter_condition, False, True)
-    write_body(writer, columns, sort_fields_for_deleted_domains, filter_condition_for_deleted_domains, False, False)
+    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_body(
+        writer,
+        columns,
+        sort_fields_for_deleted_domains,
+        filter_condition_for_deleted_domains,
+        get_domain_managers=False,
+        should_write_header=False,
+    )

@@ -403,7 +403,10 @@ class ExportDataTest(MockEppLib):
             }
             self.maxDiff = None
             # Call the export functions
-            write_body(writer, columns, sort_fields, filter_condition)
+            write_body(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            )
+
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -459,7 +462,9 @@ class ExportDataTest(MockEppLib):
                 ],
             }
             # Call the export functions
-            write_body(writer, columns, sort_fields, filter_condition)
+            write_body(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -507,7 +512,9 @@ class ExportDataTest(MockEppLib):
                 ],
             }
             # Call the export functions
-            write_body(writer, columns, sort_fields, filter_condition)
+            write_body(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -589,11 +596,17 @@ class ExportDataTest(MockEppLib):
                 columns,
                 sort_fields,
                 filter_condition,
+                get_domain_managers=False,
+                should_write_header=True,
             )
             write_body(
-                writer, columns, sort_fields_for_deleted_domains, filter_conditions_for_deleted_domains, False, False
+                writer,
+                columns,
+                sort_fields_for_deleted_domains,
+                filter_conditions_for_deleted_domains,
+                get_domain_managers=False,
+                should_write_header=False,
             )
-
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
 
@@ -651,7 +664,10 @@ class ExportDataTest(MockEppLib):
             }
             self.maxDiff = None
             # Call the export functions
-            write_body(writer, columns, sort_fields, filter_condition, True, True)
+            write_body(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True
+            )
+
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
