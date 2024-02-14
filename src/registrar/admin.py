@@ -160,9 +160,6 @@ class AdminSortFields:
             case "investigator":
                 # We should only return users who are staff
                 return model.objects.filter(is_staff=True).order_by(order_by)
-            case "submitter":
-                db_field_model = db_field.model
-                db_field_model.objects.select_related("submitter")
             case _:
                 # If no case is defined, return the default
                 return model.objects.order_by(order_by)
@@ -275,7 +272,7 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
-class MyUserAdmin(BaseUserAdmin):
+class UserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
 
     inlines = [UserContactInline]
@@ -430,6 +427,9 @@ class ContactAdmin(ListHeaderAdmin):
         "contact",
         "email",
     ]
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for user
+    ordering = ["first_name", "last_name", "email"]
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -1342,6 +1342,10 @@ class DraftDomainAdmin(ListHeaderAdmin):
     search_fields = ["name"]
     search_help_text = "Search by draft domain name."
 
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for user
+    ordering = ["name"]
+
 
 class VerifiedByStaffAdmin(ListHeaderAdmin):
     list_display = ("email", "requestor", "truncated_notes", "created_at")
@@ -1368,7 +1372,7 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
-admin.site.register(models.User, MyUserAdmin)
+admin.site.register(models.User, UserAdmin)
 # Unregister the built-in Group model
 admin.site.unregister(Group)
 # Register UserGroup
