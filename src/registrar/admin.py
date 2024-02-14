@@ -13,9 +13,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
+from registrar.models.contact import Contact
 from registrar.models.domain import Domain
 from registrar.models.domain_application import DomainApplication
+from registrar.models.draft_domain import DraftDomain
 from registrar.models.user import User
+from registrar.models.website import Website
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -123,40 +126,38 @@ class CustomLogEntryAdmin(LogEntryAdmin):
 
 
 class AdminSortFields:
-    def get_queryset(db_field):
+    _name_sort = Concat("first_name", "last_name", "email")
+    # Define a mapping of field names to model querysets and sort expressions
+    sort_mapping = {
+        "other_contacts": (Contact, _name_sort),
+        "authorizing_official": (Contact, _name_sort),
+        "submitter": (Contact, _name_sort),
+        "current_websites": (Website, "website"),
+        "alternative_domains": (Website, "website"),
+        "creator": (User, _name_sort),
+        "user": (User, _name_sort),
+        "investigator": (User, _name_sort),
+        "domain": (Domain, "name"),
+        "approved_domain": (Domain, "name"),
+        "requested_domain": (DraftDomain, "name"),
+        "domain_application": (DomainApplication, "requested_domain__name"),
+    }
+
+    @classmethod
+    def get_queryset(cls, db_field):
         """This is a helper function for formfield_for_manytomany and formfield_for_foreignkey"""
-        # customize sorting
-        if db_field.name in (
-            "other_contacts",
-            "authorizing_official",
-            "submitter",
-        ):
-            # Sort contacts by first_name, then last_name, then email
-            return models.Contact.objects.all().order_by(Concat("first_name", "last_name", "email"))
-        elif db_field.name in ("current_websites", "alternative_domains"):
-            # sort web sites
-            return models.Website.objects.all().order_by("website")
-        elif db_field.name in (
-            "creator",
-            "user",
-            "investigator",
-        ):
-            # Sort users by first_name, then last_name, then email
-            return models.User.objects.all().order_by(Concat("first_name", "last_name", "email"))
-        elif db_field.name in (
-            "domain",
-            "approved_domain",
-        ):
-            # Sort domains by name
-            return models.Domain.objects.all().order_by("name")
-        elif db_field.name in ("requested_domain",):
-            # Sort draft domains by name
-            return models.DraftDomain.objects.all().order_by("name")
-        elif db_field.name in ("domain_application",):
-            # Sort domain applications by name
-            return models.DomainApplication.objects.all().order_by("requested_domain__name")
-        else:
+        queryset_info = cls.sort_mapping.get(db_field.name, None)
+        if queryset_info is None:
             return None
+
+        model, order_by = queryset_info
+        match db_field.name:
+            case "investigator":
+                # We should only return users who are staff
+                return model.objects.filter(is_staff=True).order_by(order_by)
+            case _:
+                # If no case is defined, return the default
+                return model.objects.order_by(order_by)
 
 
 class AuditedAdmin(admin.ModelAdmin):
@@ -922,12 +923,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        logger.info(f"timing formfield_for_foreignkey -> {db_field.name}")
         with Timer() as t:
-            # Removes invalid investigator options from the investigator dropdown
-            if db_field.name == "investigator":
-                kwargs["queryset"] = User.objects.filter(is_staff=True)
-                return db_field.formfield(**kwargs)
+            print(f"This is the db_field: {db_field}")
             return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
