@@ -899,7 +899,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "anything_else",
         "is_policy_acknowledged",
     ]
-    autocomplete_fields = ["submitter"]
+    autocomplete_fields = ["approved_domain", "requested_domain", "submitter", "creator", "authorizing_official", "investigator"]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
