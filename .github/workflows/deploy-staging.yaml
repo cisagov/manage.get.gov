@@ -37,3 +37,11 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: staging
           cf_manifest: "ops/manifests/manifest-staging.yaml"
+      - name: Run Django migrations
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
+          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+          cf_org: cisa-dotgov
+          cf_space: staging
+          cf_command: "run-task getgov-staging --command 'python manage.py migrate' --name migrate"
