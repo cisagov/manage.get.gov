@@ -985,7 +985,13 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.client.login(username="staffuser", password=p)
         request = RequestFactory().get("/")
 
-        expected_list = list(User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email"))
+        # These names have metadata embedded in them. :investigator implicitly tests if
+        # these are actually from the attribute "investigator".
+        expected_list = [
+            "AGuy AGuy last_name:investigator",
+            "FinalGuy FinalGuy last_name:investigator",
+            "SomeGuy first_name:investigator SomeGuy last_name:investigator",
+        ]
 
         # Get the actual sorted list of investigators from the lookups method
         actual_list = [item for _, item in self.admin.InvestigatorFilter.lookups(self, request, self.admin)]
