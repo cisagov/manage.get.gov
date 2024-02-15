@@ -6,7 +6,6 @@ from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.admin.options import BaseModelAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
@@ -31,27 +30,30 @@ logger = logging.getLogger(__name__)
 class MyUserAdminForm(forms.ModelForm):
     class Meta:
         model = models.User
-        fields = '__all__'
+        fields = "__all__"
         widgets = {
-            'groups': NoAutocompleteFilteredSelectMultiple('groups', False),
-            'user_permissions': NoAutocompleteFilteredSelectMultiple('user_permissions', False),
+            "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
+            "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
         }
+
 
 class DomainInformationAdminForm(forms.ModelForm):
     class Meta:
         model = models.DomainInformation
-        fields = '__all__'
+        fields = "__all__"
         widgets = {
-            'other_contacts': NoAutocompleteFilteredSelectMultiple('other_contacts', False),
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
+
 
 class DomainInformationInlineForm(forms.ModelForm):
     class Meta:
         model = models.DomainInformation
-        fields = '__all__'
+        fields = "__all__"
         widgets = {
-            'other_contacts': NoAutocompleteFilteredSelectMultiple('other_contacts', False),
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
+
 
 class DomainApplicationAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions"""
@@ -60,9 +62,9 @@ class DomainApplicationAdminForm(forms.ModelForm):
         model = models.DomainApplication
         fields = "__all__"
         widgets = {
-            'current_websites': NoAutocompleteFilteredSelectMultiple('current_websites', False),
-            'alternative_domains': NoAutocompleteFilteredSelectMultiple('alternative_domains', False),
-            'other_contacts': NoAutocompleteFilteredSelectMultiple('other_contacts', False),
+            "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
+            "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
         }
 
     def __init__(self, *args, **kwargs):
