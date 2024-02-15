@@ -136,7 +136,7 @@ def update_columns_with_domain_managers(columns, max_dm_count):
         columns.append(f"Domain manager email {i}")
 
 
-def write_body(
+def write_csv(
     writer,
     columns,
     sort_fields,
@@ -161,7 +161,7 @@ def write_body(
     # Reduce the memory overhead when performing the write operation
     paginator = Paginator(all_domain_infos, 1000)
 
-    if get_domain_managers:
+    if get_domain_managers and len(all_domain_infos) > 0:
         # We want to get the max amont of domain managers an
         # account has to set the column header dynamically
         max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
@@ -179,6 +179,7 @@ def write_body(
                 # It indicates that DomainInformation.domain is None.
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
+
     if should_write_header:
         write_header(writer, columns)
 
@@ -219,7 +220,7 @@ def export_data_type_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True)
+    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True)
 
 
 def export_data_full_to_csv(csv_file):
@@ -250,7 +251,7 @@ def export_data_full_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
 
 
 def export_data_federal_to_csv(csv_file):
@@ -282,7 +283,7 @@ def export_data_federal_to_csv(csv_file):
             Domain.State.ON_HOLD,
         ],
     }
-    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
 
 
 def get_default_start_date():
@@ -349,8 +350,8 @@ def export_data_growth_to_csv(csv_file, start_date, end_date):
         "domain__deleted__gte": start_date_formatted,
     }
 
-    write_body(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
-    write_body(
+    write_csv(writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True)
+    write_csv(
         writer,
         columns,
         sort_fields_for_deleted_domains,
