@@ -13,7 +13,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import (Contact, Domain, DomainApplication, DraftDomain, User, Website)
+from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -272,6 +272,14 @@ class UserContactInline(admin.StackedInline):
 class UserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
 
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.User
+        fields = "__all__"
+
+    _meta = Meta()
+
     inlines = [UserContactInline]
 
     list_display = (
@@ -371,16 +379,16 @@ class UserAdmin(BaseUserAdmin):
 
         # If we aren't given a request to modify, we shouldn't try to
         if request is None or not hasattr(request, "GET"):
-            return queryset, use_distinct 
-        
+            return queryset, use_distinct
+
         # Otherwise, lets modify it!
         request_get = request.GET
 
         # The request defines model name and field name.
         # For instance, model_name could be "DomainApplication"
         # and field_name could be "investigator".
-        model_name = request_get.get('model_name', None)
-        field_name = request_get.get('field_name', None)
+        model_name = request_get.get("model_name", None)
+        field_name = request_get.get("field_name", None)
 
         # Make sure we're only modifying requests from these models.
         models_to_target = {"domainapplication"}
@@ -814,21 +822,15 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             privileged_users = (
                 DomainApplication.objects.select_related("investigator")
                 .filter(investigator__is_staff=True)
-                .order_by(
-                    "investigator__first_name", 
-                    "investigator__last_name", 
-                    "investigator__email"
-                )
+                .order_by("investigator__first_name", "investigator__last_name", "investigator__email")
             )
 
             # Annotate the full name and return a values list that lookups can use
             privileged_users_annotated = privileged_users.annotate(
                 full_name=Coalesce(
-                    Concat(
-                        "investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()
-                    ),
+                    Concat("investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()),
                     "investigator__email",
-                    output_field=CharField()
+                    output_field=CharField(),
                 )
             ).values_list("investigator__id", "full_name")
 
@@ -932,23 +934,18 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "anything_else",
         "is_policy_acknowledged",
     ]
-    autocomplete_fields = ["approved_domain", "requested_domain", "submitter", "creator", "authorizing_official", "investigator"]
+    autocomplete_fields = [
+        "approved_domain",
+        "requested_domain",
+        "submitter",
+        "creator",
+        "authorizing_official",
+        "investigator",
+    ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
     ordering = ["requested_domain__name"]
-
-    # lists in filter_horizontal are not sorted properly, sort them
-    # by website
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        logger.info(f"timing formfield_for_manytomany -> {db_field.name}")
-        with Timer() as t:
-            return super().formfield_for_manytomany(db_field, request, **kwargs)
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        logger.info(f"timing formfield_for_foreignkey -> {db_field.name}")
-        with Timer() as t:
-            return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
