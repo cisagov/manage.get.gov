@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 class MyUserAdminForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
     class Meta:
         model = models.User
         fields = "__all__"
@@ -38,6 +40,8 @@ class MyUserAdminForm(forms.ModelForm):
 
 
 class DomainInformationAdminForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
     class Meta:
         model = models.DomainInformation
         fields = "__all__"
@@ -47,6 +51,8 @@ class DomainInformationAdminForm(forms.ModelForm):
 
 
 class DomainInformationInlineForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
     class Meta:
         model = models.DomainInformation
         fields = "__all__"
@@ -56,7 +62,8 @@ class DomainInformationInlineForm(forms.ModelForm):
 
 
 class DomainApplicationAdminForm(forms.ModelForm):
-    """Custom form to limit transitions to available transitions"""
+    """Custom form to limit transitions to available transitions.
+    This form utilizes the custom widget for its class's ManyToMany UIs."""
 
     class Meta:
         model = models.DomainApplication
