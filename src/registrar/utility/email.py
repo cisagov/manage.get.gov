@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class EmailSendingError(RuntimeError):
-
     """Local error for handling all failures when sending email."""
 
     pass

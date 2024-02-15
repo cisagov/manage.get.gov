@@ -4,11 +4,9 @@ from .utility.time_stamped_model import TimeStampedModel
 
 
 class UserDomainRole(TimeStampedModel):
-
     """This is a linking table that connects a user with a role on a domain."""
 
     class Roles(models.TextChoices):
-
         """The possible roles are listed here.
 
         Implementation of the named roles for allowing particular operations happens

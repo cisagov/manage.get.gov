@@ -1,4 +1,5 @@
 """Loops through each valid DomainInformation object and updates its agency value"""
+
 import argparse
 import csv
 import logging

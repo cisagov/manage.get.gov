@@ -6,7 +6,6 @@ from .utility.time_stamped_model import TimeStampedModel
 
 
 class Contact(TimeStampedModel):
-
     """Contact information follows a similar pattern for each contact."""
 
     user = models.OneToOneField(

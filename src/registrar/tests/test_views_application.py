@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 class DomainApplicationTests(TestWithUser, WebTest):
-
     """Webtests for domain application to test filling and submitting."""
 
     # Doesn't work with CSRF checking
