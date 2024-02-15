@@ -1,6 +1,5 @@
 import logging
 import time
-from django.db import transaction
 from django import forms
 from django.db.models.functions import Concat, Coalesce
 from django.db.models import Value, CharField
@@ -14,12 +13,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models.contact import Contact
-from registrar.models.domain import Domain
-from registrar.models.domain_application import DomainApplication
-from registrar.models.draft_domain import DraftDomain
-from registrar.models.user import User
-from registrar.models.website import Website
+from registrar.models import (Contact, Domain, DomainApplication, DraftDomain, User, Website)
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -365,6 +359,42 @@ class UserAdmin(BaseUserAdmin):
     # this ordering effects the ordering of results
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
+
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Override for get_search_results. This affects any upstream model using autocomplete_fields,
+        such as DomainApplication. This is because autocomplete_fields uses an API call to fetch data,
+        and this fetch comes from this method.
+        """
+        # Custom filtering logic
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        # If we aren't given a request to modify, we shouldn't try to
+        if request is None or not hasattr(request, "GET"):
+            return queryset, use_distinct 
+        
+        # Otherwise, lets modify it!
+        request_get = request.GET
+
+        # The request defines model name and field name.
+        # For instance, model_name could be "DomainApplication"
+        # and field_name could be "investigator".
+        model_name = request_get.get('model_name', None)
+        field_name = request_get.get('field_name', None)
+
+        # Make sure we're only modifying requests from these models.
+        models_to_target = {"domainapplication"}
+        if model_name in models_to_target:
+            # Define rules per field
+            match field_name:
+                case "investigator":
+                    # We should not display investigators who don't have a staff role
+                    queryset = queryset.filter(is_staff=True)
+                case _:
+                    # In the default case, do nothing
+                    pass
+
+        return queryset, use_distinct
 
     # Let's define First group
     # (which should in theory be the ONLY group)
