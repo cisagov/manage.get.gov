@@ -4,7 +4,6 @@ from .utility.time_stamped_model import TimeStampedModel
 
 
 class VerifiedByStaff(TimeStampedModel):
-
     """emails that get added to this table will bypass ial2 on login."""
 
     email = models.EmailField(

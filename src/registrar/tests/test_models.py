@@ -630,7 +630,6 @@ class TestPermissions(TestCase):
 
 
 class TestDomainInformation(TestCase):
-
     """Test the DomainInformation model, when approved or otherwise"""
 
     def setUp(self):
@@ -683,7 +682,6 @@ class TestDomainInformation(TestCase):
 
 
 class TestInvitations(TestCase):
-
     """Test the retrieval of invitations."""
 
     def setUp(self):

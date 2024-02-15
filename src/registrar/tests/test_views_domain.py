@@ -1236,7 +1236,6 @@ class TestDomainSecurityEmail(TestDomainOverview):
 
 
 class TestDomainDNSSEC(TestDomainOverview):
-
     """MockEPPLib is already inherited."""
 
     def test_dnssec_page_refreshes_enable_button(self):

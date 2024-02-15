@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
-
     """Abstract base view for domains that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify
@@ -58,7 +57,6 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
 
 class DomainApplicationPermissionView(DomainApplicationPermission, DetailView, abc.ABC):
-
     """Abstract base view for domain applications that enforces permissions
 
     This abstract view cannot be instantiated. Actual views must specify
@@ -78,7 +76,6 @@ class DomainApplicationPermissionView(DomainApplicationPermission, DetailView, a
 
 
 class DomainApplicationPermissionWithdrawView(DomainApplicationPermissionWithdraw, DetailView, abc.ABC):
-
     """Abstract base view for domain application withdraw function
 
     This abstract view cannot be instantiated. Actual views must specify
@@ -98,7 +95,6 @@ class DomainApplicationPermissionWithdrawView(DomainApplicationPermissionWithdra
 
 
 class ApplicationWizardPermissionView(ApplicationWizardPermission, TemplateView, abc.ABC):
-
     """Abstract base view for the application form that enforces permissions
 
     This abstract view cannot be instantiated. Actual views must specify
@@ -113,7 +109,6 @@ class ApplicationWizardPermissionView(ApplicationWizardPermission, TemplateView,
 
 
 class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteView, abc.ABC):
-
     """Abstract view for deleting a domain invitation.
 
     This one is fairly specialized, but this is the only thing that we do
@@ -127,7 +122,6 @@ class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteVie
 
 
 class DomainApplicationPermissionDeleteView(DomainApplicationPermission, DeleteView, abc.ABC):
-
     """Abstract view for deleting a DomainApplication."""
 
     model = DomainApplication
@@ -135,7 +129,6 @@ class DomainApplicationPermissionDeleteView(DomainApplicationPermission, DeleteV
 
 
 class UserDomainRolePermissionDeleteView(UserDeleteDomainRolePermission, DeleteView, abc.ABC):
-
     """Abstract base view for deleting a UserDomainRole.
 
     This abstract view cannot be instantiated. Actual views must specify
