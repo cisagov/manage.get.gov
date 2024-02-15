@@ -1,5 +1,5 @@
 import logging
-import time
+
 from django import forms
 from django.db.models.functions import Concat, Coalesce
 from django.db.models import Value, CharField
@@ -120,7 +120,11 @@ class CustomLogEntryAdmin(LogEntryAdmin):
 
 class AdminSortFields:
     _name_sort = ["first_name", "last_name", "email"]
-    # Define a mapping of field names to model querysets and sort expressions
+
+    # Define a mapping of field names to model querysets and sort expressions.
+    # A dictionary is used for specificity, but the downside is some degree of repetition.
+    # To eliminate this, this list can be generated dynamically but the readability of that
+    # is impacted.
     sort_mapping = {
         # == Contact == #
         "other_contacts": (Contact, _name_sort),
@@ -149,10 +153,12 @@ class AdminSortFields:
         if queryset_info is None:
             return None
 
+        # Grab the model we want to order, and grab how we want to order it
         model, order_by = queryset_info
         match db_field.name:
             case "investigator":
-                # We should only return users who are staff
+                # We should only return users who are staff.
+                # Currently a fallback. Consider removing this if it is not needed.
                 return model.objects.filter(is_staff=True).order_by(*order_by)
             case _:
                 # If no case is defined, return the default
@@ -178,9 +184,14 @@ class AuditedAdmin(admin.ModelAdmin):
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
+
+        # Define a queryset. Note that in the super of this,
+        # a new queryset will only be generated if one does not exist.
+        # Thus, the order in which we define queryset matters.
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
+
         formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
         # customize the help text for all formfields for manytomany
         formfield.help_text = (
@@ -192,9 +203,14 @@ class AuditedAdmin(admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """customize the behavior of formfields with foreign key relationships.  this will customize
         the behavior of selects.  customized behavior includes sorting of objects in list"""
+
+        # Define a queryset. Note that in the super of this,
+        # a new queryset will only be generated if one does not exist.
+        # Thus, the order in which we define queryset matters.
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
+
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -759,17 +775,6 @@ class DomainInformationAdmin(ListHeaderAdmin):
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields  # Read-only fields for analysts
-
-
-class Timer:
-    def __enter__(self):
-        self.start = time.time()
-        return self  # This allows usage of the instance within the with block
-
-    def __exit__(self, *args):
-        self.end = time.time()
-        self.duration = self.end - self.start
-        logger.info(f"Execution time: {self.duration} seconds")
 
 
 class DomainApplicationAdminForm(forms.ModelForm):
