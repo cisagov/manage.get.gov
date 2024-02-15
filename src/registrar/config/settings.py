@@ -323,6 +323,7 @@ CSP_DEFAULT_SRC = allowed_sources
 # Most things fall back to default-src, but the following do not and should be
 # explicitly set
 CSP_FRAME_ANCESTORS = allowed_sources
+allowed_sources = ("'self'", "'secure.login.gov'")
 CSP_FORM_ACTION = allowed_sources
 
 # Google analytics requires that we relax our otherwise
