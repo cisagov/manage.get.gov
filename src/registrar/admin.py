@@ -767,10 +767,10 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "requested_domain",
         "status",
         "organization_type",
-        "federal_agency",
         "federal_type",
+        "federal_agency",
         "organization_name",
-        "is_election_board",
+        "custom_election_board",
         "city",
         "state_territory",
         "created_at",
@@ -783,6 +783,12 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         ("submitter", ["first_name", "last_name"]),
         ("investigator", ["first_name", "last_name"]),
     ]
+
+    def custom_election_board(self, obj):
+        return obj.is_election_board
+
+    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
 
     # Filters
     list_filter = ("status", "organization_type", InvestigatorFilter)
@@ -1044,8 +1050,8 @@ class DomainAdmin(ListHeaderAdmin):
     list_display = [
         "name",
         "organization_type",
-        "federal_agency",
         "federal_type",
+        "federal_agency",
         "organization_name",
         "is_election_board",
         "city",
@@ -1089,9 +1095,10 @@ class DomainAdmin(ListHeaderAdmin):
     organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
 
     def is_election_board(self, obj):
-        return obj.domain_info.is_election_board if obj.domain_info else None
+        return obj.domain_info.is_election_board if obj.domain_info else False
 
     is_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
+    is_election_board.short_description = "Election office"  # type: ignore
 
     def city(self, obj):
         return obj.domain_info.city if obj.domain_info else None
