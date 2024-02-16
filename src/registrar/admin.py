@@ -767,6 +767,12 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "requested_domain",
         "status",
         "organization_type",
+        "federal_agency",
+        "federal_type",
+        "organization_name",
+        "is_election_board",
+        "city",
+        "state_territory",
         "created_at",
         "submitter",
         "investigator",
@@ -1038,6 +1044,12 @@ class DomainAdmin(ListHeaderAdmin):
     list_display = [
         "name",
         "organization_type",
+        "federal_agency",
+        "federal_type",
+        "organization_name",
+        "is_election_board",
+        "city",
+        "state_territory",
         "state",
         "expiration_date",
         "created_at",
@@ -1061,6 +1073,24 @@ class DomainAdmin(ListHeaderAdmin):
 
     organization_type.admin_order_field = "domain_info__organization_type"  # type: ignore
 
+    def federal_agency(self, obj):
+        return obj.domain_info.federal_agency if obj.domain_info else None
+
+    def federal_type(self, obj):
+        return obj.domain_info.federal_type if obj.domain_info else None
+    
+    def organization_name(self, obj):
+        return obj.domain_info.organization_name if obj.domain_info else None
+
+    def is_election_board(self, obj):
+        return obj.domain_info.is_election_board if obj.domain_info else None
+
+    def city(self, obj):
+        return obj.domain_info.city if obj.domain_info else None
+    
+    def state_territory(self, obj):
+        return obj.domain_info.state_territory if obj.domain_info else None
+    
     # Filters
     list_filter = ["domain_info__organization_type", "state"]
 
