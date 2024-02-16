@@ -1075,21 +1075,27 @@ class DomainAdmin(ListHeaderAdmin):
 
     def federal_agency(self, obj):
         return obj.domain_info.federal_agency if obj.domain_info else None
+    federal_agency.admin_order_field = "domain_info__federal_agency"
 
     def federal_type(self, obj):
         return obj.domain_info.federal_type if obj.domain_info else None
+    federal_type.admin_order_field = "domain_info__federal_type"
     
     def organization_name(self, obj):
         return obj.domain_info.organization_name if obj.domain_info else None
+    organization_name.admin_order_field = "domain_info__organization_name"
 
     def is_election_board(self, obj):
         return obj.domain_info.is_election_board if obj.domain_info else None
+    is_election_board.admin_order_field = "domain_info__is_election_board"
 
     def city(self, obj):
         return obj.domain_info.city if obj.domain_info else None
+    city.admin_order_field = "domain_info__city"
     
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
+    state_territory.admin_order_field = "domain_info__state_territory"
     
     # Filters
     list_filter = ["domain_info__organization_type", "state"]
