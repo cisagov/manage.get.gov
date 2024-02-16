@@ -1075,28 +1075,34 @@ class DomainAdmin(ListHeaderAdmin):
 
     def federal_agency(self, obj):
         return obj.domain_info.federal_agency if obj.domain_info else None
-    federal_agency.admin_order_field = "domain_info__federal_agency"
+
+    federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
 
     def federal_type(self, obj):
         return obj.domain_info.federal_type if obj.domain_info else None
-    federal_type.admin_order_field = "domain_info__federal_type"
-    
+
+    federal_type.admin_order_field = "domain_info__federal_type"  # type: ignore
+
     def organization_name(self, obj):
         return obj.domain_info.organization_name if obj.domain_info else None
-    organization_name.admin_order_field = "domain_info__organization_name"
+
+    organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
 
     def is_election_board(self, obj):
         return obj.domain_info.is_election_board if obj.domain_info else None
-    is_election_board.admin_order_field = "domain_info__is_election_board"
+
+    is_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
 
     def city(self, obj):
         return obj.domain_info.city if obj.domain_info else None
-    city.admin_order_field = "domain_info__city"
-    
+
+    city.admin_order_field = "domain_info__city"  # type: ignore
+
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
-    state_territory.admin_order_field = "domain_info__state_territory"
-    
+
+    state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
+
     # Filters
     list_filter = ["domain_info__organization_type", "state"]
 
