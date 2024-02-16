@@ -793,7 +793,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Detail view
     form = DomainApplicationAdminForm
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator", "approved_domain", "notes"]}),
+        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -900,6 +900,24 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                         request,
                         "This action is not permitted. The domain is already active.",
                     )
+
+                elif (
+                    obj
+                    and obj.status == models.DomainApplication.ApplicationStatus.REJECTED
+                    and not obj.rejection_reason
+                ):
+                    # This condition should never be triggered.
+                    # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
+                    # because we clean up the rejection reason in the transition in the model.
+
+                    # Clear the success message
+                    messages.set_level(request, messages.ERROR)
+
+                    messages.error(
+                        request,
+                        "A rejection reason is required.",
+                    )
+                
 
                 else:
                     if obj.status != original_obj.status:

@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                         "Research could not corroborate legitimacy of contacts or organization",
                     ),
                     ("organization_eligibility", "Organization isn't eligible for a .gov"),
-                    ("naming_requirements", "naming requirements not met"),
+                    ("naming_requirements", "Naming requirements not met"),
                 ],
                 null=True,
             ),

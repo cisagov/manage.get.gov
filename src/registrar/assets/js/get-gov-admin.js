@@ -312,3 +312,27 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     }
 
 })();
+
+/** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
+ * status select amd to show/hide the rejection reason
+*/
+(function (){
+
+    // Get the rejection reason form row
+    let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+
+    if (rejectionReasonFormGroup) {
+        // Get the status select
+        let statusSelect = document.getElementById('id_status')
+
+        // If status is rejected, hide the rejection reason on load
+        if (statusSelect.value != 'rejected')
+            rejectionReasonFormGroup.style.display = 'none';
+
+        // Listen to status changes and toggle rejection reason
+        statusSelect.addEventListener('change', function() {
+            rejectionReasonFormGroup.style.display = statusSelect.value !== 'rejected' ? 'none' : 'block';
+        });
+    }
+
+})();
