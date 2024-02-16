@@ -412,7 +412,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
-    def transition_state_and_send_email(self, application, status):
+    def transition_state_and_send_email(self, application, status, rejection_reason=None):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -420,11 +420,14 @@ class TestDomainApplicationAdmin(MockEppLib):
                 # Create a mock request
                 request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-                # Modify the application's property
+                # Modify the application's properties
                 application.status = status
+                application.rejection_reason = rejection_reason
 
                 # Use the model admin's save_model method
                 self.admin.save_model(request, application, form=None, change=True)
+
+        logger.info(f'application.rejection_reason {application.rejection_reason}')
 
     def assert_email_is_accurate(self, expected_string, email_index, email_address):
         """Helper method for the email test cases.
@@ -512,7 +515,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test Withdrawn Status
-        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED, DomainApplication.RejectionReasons.DOMAIN_PURPOSE)
         self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -520,9 +523,9 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-    def test_save_model_sends_rejected_email(self):
-        """When transitioning to rejected on a domain request,
-        an email is sent out every time."""
+    def test_save_model_sends_rejected_email_domain_purpose(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is domain purpose."""
 
         # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -531,19 +534,137 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Create a sample application
         application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-        # Test Submitted Status
-        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
-        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 0, EMAIL)
+        # Reject for reason DOMAIN_PURPOSE and test email
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED,  DomainApplication.RejectionReasons.DOMAIN_PURPOSE)
+        self.assert_email_is_accurate("Your domain request was rejected because the purpose you provided did not meet our \nrequirements.", 0, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-        # Test Withdrawn Status
+        # Approve
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
         self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-        # Test Submitted Status Again (No new email should be sent)
-        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+    def test_save_model_sends_rejected_email_requestor(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is requestor."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Reject for reason REQUESTOR and test email including dynamic organization name
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED,  DomainApplication.RejectionReasons.REQUESTOR)
+        self.assert_email_is_accurate("Your domain request was rejected because we don’t believe you’re eligible to request a .gov domain on behalf of Testorg", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Approve
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_requestor(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is second domain."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED,  DomainApplication.RejectionReasons.SECOND_DOMAIN_REASONING)
+        self.assert_email_is_accurate("Your domain request was rejected because Testorg has a .gov domain.", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Approve
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_contacts_or_org_legitimacy(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is contacts or org legitimacy."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED,  DomainApplication.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY)
+        self.assert_email_is_accurate("Your domain request was rejected because we could not verify the organizational \ncontacts you provided. If you have questions or comments, reply to this email.", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Approve
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+        
+    def test_save_model_sends_rejected_email_org_eligibility(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is org eligibility."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED,  DomainApplication.RejectionReasons.ORGANIZATION_ELIGIBILITY)
+        self.assert_email_is_accurate("Your domain request was rejected because we determined that Testorg is not \neligible for a .gov domain.", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Approve
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_naming(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is naming."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED,  DomainApplication.RejectionReasons.NAMING_REQUIREMENTS)
+        self.assert_email_is_accurate("Your domain request was rejected because it does not meet our naming requirements.", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Approve
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_clear_rejected_reason(self):
+        """When transitioning from rejected on a domain request,
+        the rejected_reason is cleared."""
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
+        application.rejected_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+        application.save()
+
+        # Approve
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            application.approve()
+
+        application.refresh_from_db()
+        self.assertEqual(application.rejected_reason, None)
+
 
     def test_save_model_sends_withdrawn_email(self):
         """When transitioning to withdrawn on a domain request,
@@ -633,6 +754,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "created_at",
             "updated_at",
             "status",
+            "rejection_reason",
             "creator",
             "investigator",
             "organization_type",
@@ -744,7 +866,7 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "Cannot edit an application with a restricted creator.",
             )
 
-    def trigger_saving_approved_to_another_state(self, domain_is_active, another_state):
+    def trigger_saving_approved_to_another_state(self, domain_is_active, another_state, rejection_reason=None):
         """Helper method that triggers domain request state changes from approved to another state,
         with an associated domain that can be either active (READY) or not.
 
@@ -773,6 +895,8 @@ class TestDomainApplicationAdmin(MockEppLib):
             stack.enter_context(patch.object(messages, "error"))
 
             application.status = another_state
+            application.rejection_reason = rejection_reason
+
             self.admin.save_model(request, application, None, True)
 
             # Assert that the error message was called with the correct argument
@@ -814,7 +938,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
     def test_side_effects_when_saving_approved_to_rejected(self):
-        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.REJECTED)
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.REJECTED, DomainApplication.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY)
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
         self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.INELIGIBLE)

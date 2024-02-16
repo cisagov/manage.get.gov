@@ -19,7 +19,7 @@ Learn more about:
 - What you can and can’t do with .gov domains <https://get.gov/domains/requirements/>
 
 If you have questions or comments, reply to this email.
-{% elif application.status == 'requestor' %}
+{% elif application.rejection_reason == 'requestor' %}
 Your domain request was rejected because we don’t believe you’re eligible to request a 
 .gov domain on behalf of {{ application.organization_name }}. You must be a government employee, or be 
 working on behalf of a government organization, to request a .gov domain.
@@ -28,7 +28,7 @@ working on behalf of a government organization, to request a .gov domain.
 DEMONSTRATE ELIGIBILITY
 If you can provide more information that demonstrates your eligibility, or you want to 
 discuss further, reply to this email.
-{% elif application.status == 'second_domain_reasoning' %}
+{% elif application.rejection_reason == 'second_domain_reasoning' %}
 Your domain request was rejected because {{ application.organization_name }} has a .gov domain. Our 
 practice is to approve one domain per online service per government organization. We 
 evaluate additional requests on a case-by-case basis. You did not provide sufficient 
@@ -38,10 +38,10 @@ Read more about our practice of approving one domain per online service
 <https://get.gov/domains/before/#one-domain-per-service>. 
 
 If you have questions or comments, reply to this email.
-{% elif application.status == 'contacts_or_organization_legitimacy' %}
+{% elif application.rejection_reason == 'contacts_or_organization_legitimacy' %}
 Your domain request was rejected because we could not verify the organizational 
 contacts you provided. If you have questions or comments, reply to this email.
-{% elif application.status == 'organization_eligibility' %}
+{% elif application.rejection_reason == 'organization_eligibility' %}
 Your domain request was rejected because we determined that {{ application.organization_name }} is not 
 eligible for a .gov domain. .Gov domains are only available to official U.S.-based 
 government organizations. 
@@ -53,7 +53,7 @@ This can include links to (or copies of) your authorizing legislation, your foun
 charter or bylaws, or other similar documentation. Without this, we can’t approve a 
 .gov domain for your organization. Learn more about eligibility for .gov domains 
 <https://get.gov/domains/eligibility/>. 
-{% elif application.status == 'naming_requirements' %}
+{% elif application.rejection_reason == 'naming_requirements' %}
 Your domain request was rejected because it does not meet our naming requirements. 
 Domains should uniquely identify a government organization and be clear to the 
 general public. Learn more about naming requirements for your type of organization 
