@@ -758,6 +758,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     # Table ordering
     ordering = ["domain__name"]
 
@@ -1128,6 +1136,13 @@ class DomainAdmin(ListHeaderAdmin):
             {"fields": ["name", "state", "expiration_date", "first_ready", "deleted"]},
         ),
     )
+
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "submitter",
+    ]
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for domain
