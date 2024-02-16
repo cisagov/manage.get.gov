@@ -1138,10 +1138,10 @@ class DomainAdmin(ListHeaderAdmin):
     )
 
     autocomplete_fields = [
-        "creator",
+        "domain_information__creator",
         "domain_application",
         "authorizing_official",
-        "submitter",
+        "domain_information__submitter",
     ]
 
     # this ordering effects the ordering of results
