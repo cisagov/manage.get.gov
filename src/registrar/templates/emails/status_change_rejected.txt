@@ -9,17 +9,61 @@ STATUS: Rejected
 
 ----------------------------------------------------------------
 
-YOU CAN SUBMIT A NEW REQUEST
-If your organization is eligible for a .gov domain and you meet our other requirements, you can submit a new request. 
+REJECTION REASON{% if application.rejection_reason == 'domain_purpose' %}
+Your domain request was rejected because the purpose you provided did not meet our 
+requirements. You didn’t provide enough information about how you intend to use the 
+domain. 
 
 Learn more about:
 - Eligibility for a .gov domain <https://get.gov/domains/eligibility>
-- Choosing a .gov domain name <https://get.gov/domains/choosing>
+- What you can and can’t do with .gov domains <https://get.gov/domains/requirements/>
+
+If you have questions or comments, reply to this email.
+{% elif application.status == 'requestor' %}
+Your domain request was rejected because we don’t believe you’re eligible to request a 
+.gov domain on behalf of {{ application.organization_name }}. You must be a government employee, or be 
+working on behalf of a government organization, to request a .gov domain.
 
 
-NEED ASSISTANCE?
-If you have questions about this domain request or need help choosing a new domain name, reply to this email.
+DEMONSTRATE ELIGIBILITY
+If you can provide more information that demonstrates your eligibility, or you want to 
+discuss further, reply to this email.
+{% elif application.status == 'second_domain_reasoning' %}
+Your domain request was rejected because {{ application.organization_name }} has a .gov domain. Our 
+practice is to approve one domain per online service per government organization. We 
+evaluate additional requests on a case-by-case basis. You did not provide sufficient 
+justification for an additional domain. 
 
+Read more about our practice of approving one domain per online service 
+<https://get.gov/domains/before/#one-domain-per-service>. 
+
+If you have questions or comments, reply to this email.
+{% elif application.status == 'contacts_or_organization_legitimacy' %}
+Your domain request was rejected because we could not verify the organizational 
+contacts you provided. If you have questions or comments, reply to this email.
+{% elif application.status == 'organization_eligibility' %}
+Your domain request was rejected because we determined that {{ application.organization_name }} is not 
+eligible for a .gov domain. .Gov domains are only available to official U.S.-based 
+government organizations. 
+
+
+DEMONSTRATE ELIGIBILITY
+If you can provide documentation that demonstrates your eligibility, reply to this email. 
+This can include links to (or copies of) your authorizing legislation, your founding 
+charter or bylaws, or other similar documentation. Without this, we can’t approve a 
+.gov domain for your organization. Learn more about eligibility for .gov domains 
+<https://get.gov/domains/eligibility/>. 
+{% elif application.status == 'naming_requirements' %}
+Your domain request was rejected because it does not meet our naming requirements. 
+Domains should uniquely identify a government organization and be clear to the 
+general public. Learn more about naming requirements for your type of organization 
+<https://get.gov/domains/choosing/>. 
+
+
+YOU CAN SUBMIT A NEW REQUEST
+We encourage you to request a domain that meets our requirements. If you have 
+questions or want to discuss potential domain names, reply to this email.
+{% endif %}
 
 THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
