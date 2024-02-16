@@ -427,8 +427,6 @@ class TestDomainApplicationAdmin(MockEppLib):
                 # Use the model admin's save_model method
                 self.admin.save_model(request, application, form=None, change=True)
 
-        logger.info(f'application.rejection_reason {application.rejection_reason}')
-
     def assert_email_is_accurate(self, expected_string, email_index, email_address):
         """Helper method for the email test cases.
         email_index is the index of the email in mock_client."""
@@ -648,6 +646,58 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
         self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_transition_to_rejected_without_rejection_reason_does_trigger_error(self):
+        """
+            When transitioning to rejected without a rejection reason, admin throws a user friendly message.
+
+            The transition fails.
+        """
+
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        
+        # Create a request object with a superuser
+        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request.user = self.superuser
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(messages, "error"))
+            application.status = DomainApplication.ApplicationStatus.REJECTED
+
+            self.admin.save_model(request, application, None, True)
+
+            messages.error.assert_called_once_with(
+                request,
+                "A rejection reason is required.",
+            )
+
+        application.refresh_from_db()
+        self.assertEqual(application.status, DomainApplication.ApplicationStatus.APPROVED)
+
+    def test_transition_to_rejected_with_rejection_reason_does_not_trigger_error(self):
+        """
+            When transitioning to rejected with a rejection reason, admin does not throw an error alert.
+
+            The transition is successful.
+        """
+
+        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        
+        # Create a request object with a superuser
+        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+        request.user = self.superuser
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(messages, "error"))
+            application.status = DomainApplication.ApplicationStatus.REJECTED
+            application.rejection_reason = DomainApplication.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
+
+            self.admin.save_model(request, application, None, True)
+
+            messages.error.assert_not_called()
+
+        application.refresh_from_db()
+        self.assertEqual(application.status, DomainApplication.ApplicationStatus.REJECTED)
 
     def test_save_model_clear_rejected_reason(self):
         """When transitioning from rejected on a domain request,
