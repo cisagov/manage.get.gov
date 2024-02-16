@@ -917,7 +917,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                         request,
                         "A rejection reason is required.",
                     )
-                
 
                 else:
                     if obj.status != original_obj.status:
