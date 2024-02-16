@@ -1088,6 +1088,14 @@ class DomainInformationInline(admin.StackedInline):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
