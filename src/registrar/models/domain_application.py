@@ -350,12 +350,27 @@ class DomainApplication(TimeStampedModel):
     ]
     AGENCY_CHOICES = [(v, v) for v in AGENCIES]
 
+    class RejectionReasons(models.TextChoices):
+        DOMAIN_PURPOSE = "domain_purpose", "Domain purpose requirements not met"
+        REQUESTOR = "requestor", "Requestor isn't authorized to make the request"
+        SECOND_DOMAIN_REASONING = "second_domain_reasoning", "Organization already has a domain and does not provide sufficient reasoning for a second domain"
+        CONTACTS_OR_ORGANIZATION_LEGITIMACY = "contacts_or_organization_legitimacy", "Research could not corroborate legitimacy of contacts or organization"
+        ORGANIZATION_ELIGIBILITY = "organization_eligibility", "Organization isn't eligible for a .gov"
+        NAMING_REQUIREMENTS = "naming_requirements", "naming requirements not met"
+
     # #### Internal fields about the application #####
     status = FSMField(
         choices=ApplicationStatus.choices,  # possible states as an array of constants
         default=ApplicationStatus.STARTED,  # sensible default
         protected=False,  # can change state directly, particularly in Django admin
     )
+
+    rejection_reason = models.TextField(
+        choices=RejectionReasons.choices,
+        null=True,
+        blank=True,
+    )
+
     # This is the application user who created this application. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
@@ -363,6 +378,7 @@ class DomainApplication(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="applications_created",
     )
+
     investigator = models.ForeignKey(
         "registrar.User",
         null=True,
