@@ -1085,7 +1085,12 @@ class DomainAdmin(ListHeaderAdmin):
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
             years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-            extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
+            curr_exp_date = domain.registry_expiration_date
+            if curr_exp_date < date.today():
+                extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
+            else:
+                new_date = domain.registry_expiration_date + relativedelta(years=years_to_extend_by)
+                extra_context["extended_expiration_date"] = new_date
         else:
             extra_context["extended_expiration_date"] = None
 
