@@ -96,7 +96,7 @@ class TestDomainCache(MockEppLib):
 
             self.mockedSendFunction.assert_has_calls(expectedCalls)
 
-    def test_cache_nested_elements(self):
+    def test_cache_nested_elements_not_subdomain(self):
         """Cache works correctly with the nested objects cache and hosts"""
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="igorville.gov")
@@ -113,7 +113,7 @@ class TestDomainCache(MockEppLib):
             }
             expectedHostsDict = {
                 "name": self.mockDataInfoDomain.hosts[0],
-                "addrs": [item.addr for item in self.mockDataInfoHosts.addrs],
+                "addrs": [],  # hould return empty bc fake.host.com is not a subdomain of igorville.gov
                 "cr_date": self.mockDataInfoHosts.cr_date,
             }
 
@@ -126,6 +126,59 @@ class TestDomainCache(MockEppLib):
 
             # check contacts
             self.assertEqual(domain._cache["_contacts"], self.mockDataInfoDomain.contacts)
+            # The contact list should not contain what is sent by the registry by default,
+            # as _fetch_cache will transform the type to PublicContact
+            self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
+            self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+
+            # get and check hosts is set correctly
+            domain._get_property("hosts")
+            self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+            self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+            # invalidate cache
+            domain._cache = {}
+
+            # get host
+            domain._get_property("hosts")
+            # Should return empty bc fake.host.com is not a subdomain of igorville.gov
+            self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+
+            # get contacts
+            domain._get_property("contacts")
+            self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+            self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+
+    def test_cache_nested_elements_is_subdomain(self):
+        """Cache works correctly with the nested objects cache and hosts"""
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="meoward.gov")
+
+            # The contact list will initially contain objects of type 'DomainContact'
+            # this is then transformed into PublicContact, and cache should NOT
+            # hold onto the DomainContact object
+            expectedUnfurledContactsList = [
+                common.DomainContact(contact="123", type="security"),
+            ]
+            expectedContactsDict = {
+                PublicContact.ContactTypeChoices.ADMINISTRATIVE: None,
+                PublicContact.ContactTypeChoices.SECURITY: "123",
+                PublicContact.ContactTypeChoices.TECHNICAL: None,
+            }
+            expectedHostsDict = {
+                "name": self.mockDataInfoDomainSubdomain.hosts[0],
+                "addrs": [item.addr for item in self.mockDataInfoHosts.addrs],
+                "cr_date": self.mockDataInfoHosts.cr_date,
+            }
+
+            # this can be changed when the getter for contacts is implemented
+            domain._get_property("contacts")
+
+            # check domain info is still correct and not overridden
+            self.assertEqual(domain._cache["auth_info"], self.mockDataInfoDomainSubdomain.auth_info)
+            self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomainSubdomain.cr_date)
+
+            # check contacts
+            self.assertEqual(domain._cache["_contacts"], self.mockDataInfoDomainSubdomain.contacts)
             # The contact list should not contain what is sent by the registry by default,
             # as _fetch_cache will transform the type to PublicContact
             self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)

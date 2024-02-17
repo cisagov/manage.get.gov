@@ -691,6 +691,19 @@ class MockEppLib(TestCase):
         ],
         ex_date=datetime.date(2023, 5, 25),
     )
+
+    mockDataInfoDomainSubdomain = fakedEppObject(
+        "fakePw",
+        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        hosts=["fake.meoward.gov"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+        ex_date=datetime.date(2023, 5, 25),
+    )
+
     mockDataExtensionDomain = fakedEppObject(
         "fakePw",
         cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
@@ -1083,6 +1096,7 @@ class MockEppLib(TestCase):
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
             "justnameserver.com": (self.justNameserver, None),
+            "meoward.gov": (self.mockDataInfoDomainSubdomain, None),
         }
 
         # Retrieve the corresponding values from the dictionary
