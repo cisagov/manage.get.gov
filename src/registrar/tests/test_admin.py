@@ -582,8 +582,8 @@ class TestDomainApplicationAdmin(MockEppLib):
                 application, DomainApplication.ApplicationStatus.REJECTED, DomainApplication.RejectionReasons.REQUESTOR
             )
             self.assert_email_is_accurate(
-                "Your domain request was rejected because we don’t believe you’re eligible to request a .gov domain "
-                "on behalf of Testorg",
+                "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
+                "domain on behalf of Testorg",
                 0,
                 EMAIL,
             )
