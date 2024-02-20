@@ -257,6 +257,8 @@ class DomainInformation(TimeStampedModel):
 
         # This will not happen in normal code flow, but having some redundancy doesn't hurt.
         # da_dict should not have "id" under any circumstances.
+        # If it does have it, then this indicates that common_fields is overzealous in the data
+        # that it is returning. Try looking in DomainHelper.get_common_fields.
         if "id" in da_dict:
             logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
             da_dict.pop("id", None)
