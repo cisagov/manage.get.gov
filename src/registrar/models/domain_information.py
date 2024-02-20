@@ -232,14 +232,21 @@ class DomainInformation(TimeStampedModel):
             raise ValueError("The provided DomainApplication has no id")
 
         # check if we have a record that corresponds with the domain
-        # application, if so short circuit the create
-        existing_domain_info = cls.objects.filter(domain_application__id=domain_application.id).first()
+        # application, if so short circuit the create.
+        # This can only occur if domain is none, as domain_application forbids
+        # overwriting applications if a domain already exists.
+        existing_domain_info = cls.objects.filter(
+            domain_application__id=domain_application.id,
+            domain=None
+        ).first()
+        logger.info(f"this is the domain info {existing_domain_info} vs id {domain_application.id}")
+        logger.info(f"all domains {cls.objects.filter(domain_application__id=domain_application.id)}")
         if existing_domain_info:
             return existing_domain_info
 
         # Get the fields that exist on both DomainApplication and DomainInformation
         common_fields = DomainHelper.get_common_fields(DomainApplication, DomainInformation)
-
+        print(f"these are the common fields: {common_fields}")
         # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
         info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
 
@@ -255,9 +262,10 @@ class DomainInformation(TimeStampedModel):
                 else:
                     da_many_to_many_dict[field] = getattr(domain_application, field).all()
 
+        logger.info(f"the da dict is {da_dict}")
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
-
+        logger.info(f"domain_info is {domain_info}")
         # Add the domain_application and domain fields
         domain_info.domain_application = domain_application
         if domain:
