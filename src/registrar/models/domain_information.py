@@ -233,20 +233,13 @@ class DomainInformation(TimeStampedModel):
 
         # check if we have a record that corresponds with the domain
         # application, if so short circuit the create.
-        # This can only occur if domain is none, as domain_application forbids
-        # overwriting applications if a domain already exists.
-        existing_domain_info = cls.objects.filter(
-            domain_application__id=domain_application.id,
-            domain=None
-        ).first()
-        logger.info(f"this is the domain info {existing_domain_info} vs id {domain_application.id}")
-        logger.info(f"all domains {cls.objects.filter(domain_application__id=domain_application.id)}")
+        existing_domain_info = cls.objects.filter(domain_application__id=domain_application.id).first()
         if existing_domain_info:
             return existing_domain_info
 
         # Get the fields that exist on both DomainApplication and DomainInformation
         common_fields = DomainHelper.get_common_fields(DomainApplication, DomainInformation)
-        print(f"these are the common fields: {common_fields}")
+
         # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
         info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
 
@@ -262,10 +255,15 @@ class DomainInformation(TimeStampedModel):
                 else:
                     da_many_to_many_dict[field] = getattr(domain_application, field).all()
 
-        logger.info(f"the da dict is {da_dict}")
+        # This will not happen in normal code flow, but having some redundancy doesn't hurt.
+        # da_dict should not have "id" under any circumstances.
+        if "id" in da_dict:
+            logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
+            da_dict.pop("id", None)
+
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
-        logger.info(f"domain_info is {domain_info}")
+
         # Add the domain_application and domain fields
         domain_info.domain_application = domain_application
         if domain:
