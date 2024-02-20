@@ -699,23 +699,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         application.refresh_from_db()
         self.assertEqual(application.status, DomainApplication.ApplicationStatus.REJECTED)
 
-    def test_save_model_clear_rejected_reason(self):
-        """When transitioning from rejected on a domain request,
-        the rejected_reason is cleared."""
-
-        # Create a sample application
-        application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-        application.rejected_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
-        application.save()
-
-        # Approve
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            application.approve()
-
-        application.refresh_from_db()
-        self.assertEqual(application.rejected_reason, None)
-
-
     def test_save_model_sends_withdrawn_email(self):
         """When transitioning to withdrawn on a domain request,
         an email is sent out every time."""

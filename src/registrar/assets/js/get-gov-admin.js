@@ -317,22 +317,37 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
  * status select amd to show/hide the rejection reason
 */
 (function (){
-
-    // Get the rejection reason form row
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
 
     if (rejectionReasonFormGroup) {
-        // Get the status select
         let statusSelect = document.getElementById('id_status')
 
-        // If status is rejected, hide the rejection reason on load
+        // Initial handling of rejectionReasonFormGroup display
         if (statusSelect.value != 'rejected')
             rejectionReasonFormGroup.style.display = 'none';
 
-        // Listen to status changes and toggle rejection reason
+        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
         statusSelect.addEventListener('change', function() {
-            rejectionReasonFormGroup.style.display = statusSelect.value !== 'rejected' ? 'none' : 'block';
+            if (statusSelect.value == 'rejected') {
+                rejectionReasonFormGroup.style.display = 'block';
+                sessionStorage.removeItem('hideRejectionReason');
+            } else {
+                rejectionReasonFormGroup.style.display = 'none';
+                sessionStorage.setItem('hideRejectionReason', 'true');
+            }
         });
     }
 
+    // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
+    const observer = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          if (entry.type === "back_forward") {
+            if (sessionStorage.getItem('hideRejectionReason'))
+                document.querySelector('.field-rejection_reason').style.display = 'none';
+            else
+                document.querySelector('.field-rejection_reason').style.display = 'block';
+          }
+        });
+    });
+    observer.observe({ type: "navigation" });
 })();
