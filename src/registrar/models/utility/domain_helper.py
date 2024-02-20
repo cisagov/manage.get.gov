@@ -180,8 +180,8 @@ class DomainHelper:
         """
 
         # Get a list of the existing fields on model_1 and model_2
-        model_1_fields = set(field.name for field in model_1._meta.get_fields() if field != "id")
-        model_2_fields = set(field.name for field in model_2._meta.get_fields() if field != "id")
+        model_1_fields = set(field.name for field in model_1._meta.get_fields() if field.name != "id")
+        model_2_fields = set(field.name for field in model_2._meta.get_fields() if field.name != "id")
 
         # Get the fields that exist on both DomainApplication and DomainInformation
         common_fields = model_1_fields & model_2_fields

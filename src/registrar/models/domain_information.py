@@ -255,6 +255,12 @@ class DomainInformation(TimeStampedModel):
                 else:
                     da_many_to_many_dict[field] = getattr(domain_application, field).all()
 
+        # This will not happen in normal code flow, but having some redundancy doesn't hurt.
+        # da_dict should not have "id" under any circumstances.
+        if "id" in da_dict:
+            logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
+            da_dict.pop("id", None)
+
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
 
