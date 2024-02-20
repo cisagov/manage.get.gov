@@ -1065,7 +1065,12 @@ class TestDomainApplicationAdmin(MockEppLib):
 
             # Grab the current list of table filters
             readonly_fields = self.admin.get_list_filter(request)
-            expected_fields = ("status", "organization_type", DomainApplicationAdmin.InvestigatorFilter)
+            expected_fields = (
+                "status",
+                "organization_type",
+                "rejection_reason",
+                DomainApplicationAdmin.InvestigatorFilter,
+            )
 
             self.assertEqual(readonly_fields, expected_fields)
 

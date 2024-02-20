@@ -779,7 +779,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     # Filters
-    list_filter = ("status", "organization_type", InvestigatorFilter)
+    list_filter = ("status", "organization_type", "rejection_reason", InvestigatorFilter)
 
     # Search
     search_fields = [
