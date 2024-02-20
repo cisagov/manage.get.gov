@@ -353,8 +353,14 @@ class DomainApplication(TimeStampedModel):
     class RejectionReasons(models.TextChoices):
         DOMAIN_PURPOSE = "domain_purpose", "Domain purpose requirements not met"
         REQUESTOR = "requestor", "Requestor isn't authorized to make the request"
-        SECOND_DOMAIN_REASONING = "second_domain_reasoning", "Organization already has a domain and does not provide sufficient reasoning for a second domain"
-        CONTACTS_OR_ORGANIZATION_LEGITIMACY = "contacts_or_organization_legitimacy", "Research could not corroborate legitimacy of contacts or organization"
+        SECOND_DOMAIN_REASONING = (
+            "second_domain_reasoning",
+            "Organization already has a domain and does not provide sufficient reasoning for a second domain",
+        )
+        CONTACTS_OR_ORGANIZATION_LEGITIMACY = (
+            "contacts_or_organization_legitimacy",
+            "Research could not corroborate legitimacy of contacts or organization",
+        )
         ORGANIZATION_ELIGIBILITY = "organization_eligibility", "Organization isn't eligible for a .gov"
         NAMING_REQUIREMENTS = "naming_requirements", "Naming requirements not met"
 
