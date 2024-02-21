@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class DomainInformation(TimeStampedModel):
-
     """A registrant's domain information for that domain, exported from
     DomainApplication. We use these field from DomainApplication with few exceptions
     which are 'removed' via pop at the bottom of this file. Most of design for domain
@@ -255,6 +254,14 @@ class DomainInformation(TimeStampedModel):
                     da_dict[field] = getattr(domain_application, field)
                 else:
                     da_many_to_many_dict[field] = getattr(domain_application, field).all()
+
+        # This will not happen in normal code flow, but having some redundancy doesn't hurt.
+        # da_dict should not have "id" under any circumstances.
+        # If it does have it, then this indicates that common_fields is overzealous in the data
+        # that it is returning. Try looking in DomainHelper.get_common_fields.
+        if "id" in da_dict:
+            logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
+            da_dict.pop("id", None)
 
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)

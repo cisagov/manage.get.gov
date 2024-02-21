@@ -145,8 +145,12 @@ def logout(request, next_page=None):
         user = request.user
         request_args = {
             "client_id": CLIENT.client_id,
-            "state": request.session["state"],
         }
+        # if state is not in request session, still redirect to the identity
+        # provider's logout url, but don't include the state in the url; this
+        # will successfully log out of the identity provider
+        if "state" in request.session:
+            request_args["state"] = request.session["state"]
         if (
             "post_logout_redirect_uris" in CLIENT.registration_response.keys()
             and len(CLIENT.registration_response["post_logout_redirect_uris"]) > 0

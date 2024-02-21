@@ -6,7 +6,6 @@ from .utility.time_stamped_model import TimeStampedModel
 
 
 class Contact(TimeStampedModel):
-
     """Contact information follows a similar pattern for each contact."""
 
     user = models.OneToOneField(
@@ -19,38 +18,32 @@ class Contact(TimeStampedModel):
     first_name = models.TextField(
         null=True,
         blank=True,
-        help_text="First name",
         verbose_name="first name / given name",
         db_index=True,
     )
     middle_name = models.TextField(
         null=True,
         blank=True,
-        help_text="Middle name (optional)",
     )
     last_name = models.TextField(
         null=True,
         blank=True,
-        help_text="Last name",
         verbose_name="last name / family name",
         db_index=True,
     )
     title = models.TextField(
         null=True,
         blank=True,
-        help_text="Title",
         verbose_name="title or role in your organization",
     )
     email = models.EmailField(
         null=True,
         blank=True,
-        help_text="Email",
         db_index=True,
     )
     phone = PhoneNumberField(
         null=True,
         blank=True,
-        help_text="Phone",
         db_index=True,
     )
 

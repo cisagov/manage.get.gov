@@ -784,7 +784,6 @@ class DomainInformationAdmin(ListHeaderAdmin):
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
-
     """Custom domain applications admin class."""
 
     form = DomainApplicationAdminForm
