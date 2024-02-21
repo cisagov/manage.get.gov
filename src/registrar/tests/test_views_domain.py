@@ -822,7 +822,6 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver2 = "ns2.igorville.gov"
         valid_ip = "1.1. 1.1"
         valid_ip_2 = "2.2. 2.2"
-        # initial nameservers page has one server with two ips
         # have to throw an error in order to test that the whitespace has been stripped from ip
         nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -940,7 +939,6 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver2 = "ns2.igorville.gov"
         valid_ip = "127.0.0.1"
         valid_ip_2 = "128.0.0.2"
-        # initial nameservers page has one server with two ips
         nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
