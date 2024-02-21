@@ -1679,8 +1679,6 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             data_response = self._get_or_create_domain()
             cache = self._extract_data_from_response(data_response)
-            # print("!!! cache is")
-            # print(cache)
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
             if fetch_hosts:
