@@ -355,7 +355,7 @@ class MyUserAdmin(BaseUserAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ("username", "password", "status")},
+            {"fields": ("username", "status")},
         ),
         ("Personal Info", {"fields": ("first_name", "last_name", "email")}),
         (
