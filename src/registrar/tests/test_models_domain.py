@@ -1625,7 +1625,65 @@ class TestRegistrantNameservers(MockEppLib):
             self.assertEqual(nameservers[0][1], ["1.1.1.1"])
             patcher.stop()
 
-    def test_nameservers_stored_on_fetch_cache(self):
+    # 1 - is it a subdomain and it has an ip address -- COVERED?
+    # 2 - is it a subdomain and it doesn't have an ip address
+    # 3 - no subdomain, it has an ip address -- COVERED
+    # 4 - no subomdina, doens't have ip address
+
+    def test_nameservers_stored_on_fetch_cache_a_subdomain_with_ip(self):
+        """
+        #1: It is a subdomain, and has an IP address -- referenced by mockDataInfoDomainSubdomainAndIPAddress
+        fake.meow.com is not a subdomain of fake.gov
+        """
+        with less_console_noise():
+            # make the domain
+            domain, _ = Domain.objects.get_or_create(name="meow.gov", state=Domain.State.READY)
+
+            # mock the get_or_create methods for Host and HostIP
+            with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
+                HostIP.objects, "get_or_create"
+            ) as mock_host_ip_get_or_create:
+                mock_host_get_or_create.return_value = (Host(domain=domain), True)
+                mock_host_ip_get_or_create.return_value = (HostIP(), True)
+
+                # force fetch_cache to be called, which will return above documented mocked hosts
+                domain.nameservers
+
+                # This is never called?
+                mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.meow.gov")
+                # Retrieve the mocked_host from the return value of the mock
+                actual_mocked_host, _ = mock_host_get_or_create.return_value
+                mock_host_ip_get_or_create.assert_called_with(address="2.0.0.8", host=actual_mocked_host)
+                self.assertEqual(mock_host_ip_get_or_create.call_count, 1)
+
+    def test_nameservers_stored_on_fetch_cache_a_subdomain_without_ip(self):
+        """
+        #2: It is a subdomain, but doesn't has an IP address
+        """
+        with less_console_noise():
+            # make the domain
+            domain, _ = Domain.objects.get_or_create(name="subdomainwoip.gov", state=Domain.State.READY)
+
+            # mock the get_or_create methods for Host and HostIP
+            # below should do it for mock_host_get_or_create and mock_host_ip_get_or_create right?
+            with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
+                HostIP.objects, "get_or_create"
+            ) as mock_host_ip_get_or_create:
+                mock_host_get_or_create.return_value = (Host(domain=domain), True)
+                mock_host_ip_get_or_create.return_value = (HostIP(), True)
+
+                # force fetch_cache to be called, which will return above documented mocked hosts
+                domain.nameservers
+
+                # This is never called?
+                mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.subdomainwoip.gov")
+                # Retrieve the mocked_host from the return value of the mock
+                actual_mocked_host, _ = mock_host_get_or_create.return_value
+                mock_host_ip_get_or_create.assert_called_with(address="", host=actual_mocked_host)
+
+                self.assertEqual(mock_host_ip_get_or_create.call_count, 1)
+
+    def test_nameservers_stored_on_fetch_cache_not_subdomain_with_ip(self):
         """
         Scenario: Nameservers are stored in db when they are retrieved from fetch_cache.
             Verify the success of this by asserting get_or_create calls to db.
@@ -1633,23 +1691,49 @@ class TestRegistrantNameservers(MockEppLib):
             of 'fake.host.com' from InfoDomain and an array of 2 IPs: 1.2.3.4 and 2.3.4.5
             from InfoHost
         """
+
+        """
+        #3: Not a subdomain, but it has an IP address returned due to how we return our defaults
+        fake.host.com is not a subdomain of fake.gov 
+        """
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-            # mock the get_or_create methods for Host and HostIP
+
             with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
                 HostIP.objects, "get_or_create"
             ) as mock_host_ip_get_or_create:
-                # Set the return value for the mocks
-                mock_host_get_or_create.return_value = (Host(), True)
+                mock_host_get_or_create.return_value = (Host(domain=domain), True)
                 mock_host_ip_get_or_create.return_value = (HostIP(), True)
+
                 # force fetch_cache to be called, which will return above documented mocked hosts
                 domain.nameservers
-                # assert that the mocks are called
+                # # assert that the mocks are called
+
                 mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.host.com")
                 # Retrieve the mocked_host from the return value of the mock
-                actual_mocked_host, _ = mock_host_get_or_create.return_value
-                mock_host_ip_get_or_create.assert_called_with(address="2.3.4.5", host=actual_mocked_host)
-                self.assertEqual(mock_host_ip_get_or_create.call_count, 2)
+                mock_host_ip_get_or_create.assert_not_called()
+                self.assertEqual(mock_host_ip_get_or_create.call_count, 0)
+
+    def test_nameservers_stored_on_fetch_cache_not_subdomain_without_ip(self):
+        """
+        #4: Not a subdomain and doesn't has an IP address (not pointing to default)
+        referenced by self.mockDataInfoDomainNotSubdomainNoIP
+        """
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="fakemeow.gov", state=Domain.State.READY)
+
+            with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
+                HostIP.objects, "get_or_create"
+            ) as mock_host_ip_get_or_create:
+                mock_host_get_or_create.return_value = (Host(domain=domain), True)
+                mock_host_ip_get_or_create.return_value = (HostIP(), True)
+
+                # force fetch_cache to be called, which will return above documented mocked hosts
+                domain.nameservers
+                # # assert that the mocks are called
+                mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.meow.com")
+                mock_host_ip_get_or_create.assert_not_called()
+                self.assertEqual(mock_host_ip_get_or_create.call_count, 0)
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
