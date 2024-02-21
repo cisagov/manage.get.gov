@@ -232,7 +232,7 @@ class DomainInformation(TimeStampedModel):
             raise ValueError("The provided DomainApplication has no id")
 
         # check if we have a record that corresponds with the domain
-        # application, if so short circuit the create.
+        # application, if so short circuit the create
         existing_domain_info = cls.objects.filter(domain_application__id=domain_application.id).first()
         if existing_domain_info:
             return existing_domain_info
@@ -257,6 +257,8 @@ class DomainInformation(TimeStampedModel):
 
         # This will not happen in normal code flow, but having some redundancy doesn't hurt.
         # da_dict should not have "id" under any circumstances.
+        # If it does have it, then this indicates that common_fields is overzealous in the data
+        # that it is returning. Try looking in DomainHelper.get_common_fields.
         if "id" in da_dict:
             logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
             da_dict.pop("id", None)
