@@ -821,6 +821,7 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver1 = "ns1.igorville.gov"
         nameserver2 = "ns2.igorville.gov"
         valid_ip = "1.1. 1.1"
+        valid_ip_2 = "2.2. 2.2"
         # initial nameservers page has one server with two ips
         # have to throw an error in order to test that the whitespace has been stripped from ip
         nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
@@ -828,7 +829,8 @@ class TestDomainNameservers(TestDomainOverview):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without one host and an ip with whitespace
         nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-1-ip"] = valid_ip
+        nameservers_page.form["form-0-ip"] = valid_ip
+        nameservers_page.form["form-1-ip"] = valid_ip_2
         nameservers_page.form["form-1-server"] = nameserver2
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
@@ -937,15 +939,15 @@ class TestDomainNameservers(TestDomainOverview):
         nameserver1 = "ns1.igorville.gov"
         nameserver2 = "ns2.igorville.gov"
         valid_ip = "127.0.0.1"
+        valid_ip_2 = "128.0.0.2"
         # initial nameservers page has one server with two ips
         nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # attempt to submit the form without two hosts, both subdomains,
-        # only one has ips
         nameservers_page.form["form-0-server"] = nameserver1
+        nameservers_page.form["form-0-ip"] = valid_ip
         nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip
+        nameservers_page.form["form-1-ip"] = valid_ip_2
         with less_console_noise():  # swallow log warning message
             result = nameservers_page.form.submit()
         # form submission was a successful post, response should be a 302
