@@ -1073,7 +1073,6 @@ class MockEppLib(TestCase):
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
 
-    # default - mock send
     def mockInfoHostCommmands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
 
