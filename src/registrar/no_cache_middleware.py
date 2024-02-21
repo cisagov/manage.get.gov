@@ -13,5 +13,6 @@ class NoCacheMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
+        print(f"what is the request? {request.__dict__}")
         response["Cache-Control"] = "no-cache"
         return response
