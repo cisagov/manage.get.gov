@@ -509,7 +509,7 @@ class TestDomainAvailable(MockEppLib):
 
             Validate InvalidDomainError is raised
         """
-        with self.assertRaises(errors.InvalidDomainError()):
+        with self.assertRaises(errors.InvalidDomainError):
             Domain.available("invalid-string")
 
     def test_domain_available_with_empty_string(self):
@@ -519,7 +519,7 @@ class TestDomainAvailable(MockEppLib):
 
             Validate InvalidDomainError is raised
         """
-        with self.assertRaises(errors.InvalidDomainError()):
+        with self.assertRaises(errors.InvalidDomainError):
             Domain.available("")
 
     def test_domain_available_unsuccessful(self):
