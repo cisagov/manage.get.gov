@@ -158,10 +158,8 @@ class AdminSortFields:
         match db_field.name:
             case "investigator":
                 # We should only return users who are staff.
-                # Currently a fallback. Consider removing this if it is not needed.
                 return model.objects.filter(is_staff=True).order_by(*order_by)
             case _:
-                # If no case is defined, return the default
                 if isinstance(order_by, list) or isinstance(order_by, tuple):
                     return model.objects.order_by(*order_by)
                 else:
@@ -201,8 +199,8 @@ class AuditedAdmin(admin.ModelAdmin):
         return formfield
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """customize the behavior of formfields with foreign key relationships.  this will customize
-        the behavior of selects.  customized behavior includes sorting of objects in list"""
+        """Customize the behavior of formfields with foreign key relationships. This will customize
+        the behavior of selects. Customized behavior includes sorting of objects in list."""
 
         # Define a queryset. Note that in the super of this,
         # a new queryset will only be generated if one does not exist.
@@ -285,7 +283,7 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
-class UserAdmin(BaseUserAdmin):
+class MyUserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
 
     class Meta:
@@ -1095,8 +1093,8 @@ class DomainInformationInline(admin.StackedInline):
         return formfield
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """customize the behavior of formfields with foreign key relationships.  this will customize
-        the behavior of selects.  customized behavior includes sorting of objects in list"""
+        """Customize the behavior of formfields with foreign key relationships. This will customize
+        the behavior of selects. Customized behavior includes sorting of objects in list."""
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
@@ -1406,7 +1404,7 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
 
 admin.site.unregister(LogEntry)  # Unregister the default registration
 admin.site.register(LogEntry, CustomLogEntryAdmin)
-admin.site.register(models.User, UserAdmin)
+admin.site.register(models.User, MyUserAdmin)
 # Unregister the built-in Group model
 admin.site.unregister(Group)
 # Register UserGroup

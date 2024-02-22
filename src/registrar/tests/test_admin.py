@@ -9,7 +9,7 @@ from registrar.admin import (
     DomainApplicationAdminForm,
     DomainInvitationAdmin,
     ListHeaderAdmin,
-    UserAdmin,
+    MyUserAdmin,
     AuditedAdmin,
     ContactAdmin,
     DomainInformationAdmin,
@@ -949,7 +949,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         user_request = self.factory.post(
             "/admin/autocomplete/?app_label=registrar&model_name=domainapplication&field_name=investigator"
         )
-        user_admin = UserAdmin(User, self.site)
+        user_admin = MyUserAdmin(User, self.site)
         user_queryset = user_admin.get_search_results(user_request, application_queryset, None)[0]
         current_dropdown = list(user_queryset)
 
@@ -1350,10 +1350,10 @@ class ListHeaderAdminTest(TestCase):
         User.objects.all().delete()
 
 
-class UserAdminTest(TestCase):
+class MyUserAdminTest(TestCase):
     def setUp(self):
         admin_site = AdminSite()
-        self.admin = UserAdmin(model=get_user_model(), admin_site=admin_site)
+        self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
 
     def test_list_display_without_username(self):
         request = self.client.request().wsgi_request
@@ -1375,7 +1375,7 @@ class UserAdminTest(TestCase):
         request = self.client.request().wsgi_request
         request.user = create_superuser()
         fieldsets = self.admin.get_fieldsets(request)
-        expected_fieldsets = super(UserAdmin, self.admin).get_fieldsets(request)
+        expected_fieldsets = super(MyUserAdmin, self.admin).get_fieldsets(request)
         self.assertEqual(fieldsets, expected_fieldsets)
 
     def test_get_fieldsets_cisa_analyst(self):
