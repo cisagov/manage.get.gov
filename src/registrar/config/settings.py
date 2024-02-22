@@ -154,10 +154,10 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     # custom middleware to stop caching from CloudFront
     "registrar.no_cache_middleware.NoCacheMiddleware",
-    # serve static assets in production
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
     "django.middleware.security.SecurityMiddleware",
+    # serve static assets in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     # store and retrieve arbitrary data on a per-site-visitor basis
     "django.contrib.sessions.middleware.SessionMiddleware",
     # add a few conveniences for perfectionists, see documentation
@@ -207,6 +207,10 @@ STATIC_ROOT = BASE_DIR / "registrar" / "public"
 STATICFILES_DIRS = [
     BASE_DIR / "registrar" / "assets",
 ]
+
+# if is_production
+# https://manage.get.gov
+STATIC_URL = BASE_DIR / "cdn-cgi"
 
 STORAGES = {
     "staticfiles": {
