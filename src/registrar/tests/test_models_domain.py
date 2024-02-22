@@ -113,7 +113,7 @@ class TestDomainCache(MockEppLib):
             }
             expectedHostsDict = {
                 "name": self.mockDataInfoDomain.hosts[0],
-                "addrs": [],  # hould return empty bc fake.host.com is not a subdomain of igorville.gov
+                "addrs": [],  # should return empty bc fake.host.com is not a subdomain of igorville.gov
                 "cr_date": self.mockDataInfoHosts.cr_date,
             }
 

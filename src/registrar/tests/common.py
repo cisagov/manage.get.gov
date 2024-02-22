@@ -1084,7 +1084,8 @@ class MockEppLib(TestCase):
         }
 
         # Retrieve the corresponding values from the dictionary
-        res_data, extensions = request_mappings.get(request_name, (self.mockDataInfoHosts, None))  # default
+        default_mapping = (self.mockDataInfoHosts, None)
+        res_data, extensions = request_mappings.get(request_name, default_mapping)
 
         return MagicMock(
             res_data=[res_data],

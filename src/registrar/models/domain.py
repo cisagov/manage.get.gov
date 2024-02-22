@@ -1779,8 +1779,8 @@ class Domain(TimeStampedModel, DomainHelper):
             host_in_db, host_created = Host.objects.get_or_create(domain=self, name=cleaned_host["name"])
             # Check if the nameserver is a subdomain of the current domain
             # If it is NOT a subdomain, we remove the IP address
-            if not Domain.isSubdomain(self.name, cleaned_host["name"]):
-                cleaned_host["addrs"] = []  # or None
+            if not Domain.isSubdomain(self.name, host_in_db.name):
+                cleaned_host["addrs"] = []
             # Get cleaned list of ips for update
             cleaned_ips = cleaned_host["addrs"]
             if not host_created:
