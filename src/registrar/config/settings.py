@@ -148,16 +148,16 @@ INSTALLED_APPS = [
 # Adding them here turns them "on"; Django will perform the
 # specified routines on each incoming request and outgoing response.
 MIDDLEWARE = [
+    # provide security enhancements to the request/response cycle
+    "django.middleware.security.SecurityMiddleware",
+    # serve static assets in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     # django-allow-cidr: enable use of CIDR IP ranges in ALLOWED_HOSTS
     "allow_cidr.middleware.AllowCIDRMiddleware",
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
     # custom middleware to stop caching from CloudFront
     "registrar.no_cache_middleware.NoCacheMiddleware",
-    # serve static assets in production
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    # provide security enhancements to the request/response cycle
-    "django.middleware.security.SecurityMiddleware",
     # store and retrieve arbitrary data on a per-site-visitor basis
     "django.contrib.sessions.middleware.SessionMiddleware",
     # add a few conveniences for perfectionists, see documentation
