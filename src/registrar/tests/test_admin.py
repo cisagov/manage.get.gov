@@ -1,4 +1,4 @@
-from django.test import TestCase, RequestFactory, Client
+from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
 from django.contrib import messages
@@ -426,7 +426,7 @@ class TestDomainApplicationAdmin(MockEppLib):
                 # Use the model admin's save_model method
                 self.admin.save_model(request, application, form=None, change=True)
 
-    def assert_email_is_accurate(self, expected_string, email_index, email_address):
+    def assert_email_is_accurate(self, expected_string, email_index, email_address, test_that_no_bcc=False, bcc_email_address=''):
         """Helper method for the email test cases.
         email_index is the index of the email in mock_client."""
 
@@ -445,12 +445,26 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertEqual(to_email, email_address)
         self.assertIn(expected_string, email_body)
 
+        if test_that_no_bcc:
+            _ = ''
+            with self.assertRaises(KeyError):
+                with less_console_noise():
+                    _ = kwargs["Destination"]["BccAddresses"][0]
+            self.assertEqual(_, '')
+
+        if bcc_email_address:
+            bcc_email = kwargs["Destination"]["BccAddresses"][0]
+            self.assertEqual(bcc_email, bcc_email_address)
+
     def test_save_model_sends_submitted_email(self):
         """When transitioning to submitted from started or withdrawn on a domain request,
         an email is sent out.
 
         When transitioning to submitted from dns needed or in review on a domain request,
-        no email is sent out."""
+        no email is sent out.
+        
+        Also test that the default email set in settings is NOT BCCd on non-prod whenever
+        an email does go out."""
 
         # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -461,7 +475,63 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Test Submitted Status from started
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
-        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, True)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL, True
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (from withdrawn)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to ACTION_NEEDED
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.ACTION_NEEDED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_save_model_sends_submitted_email_with_bcc_on_prod(self):
+        """When transitioning to submitted from started or withdrawn on a domain request,
+        an email is sent out.
+
+        When transitioning to submitted from dns needed or in review on a domain request,
+        no email is sent out.
+        
+        Also test that the default email set in settings IS BCCd on prod whenever
+        an email does go out."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        BCC_EMAIL = settings.DEFAULT_FROM_EMAIL
+
+        # Create a sample application
+        application = completed_application()
+
+        # Test Submitted Status from started
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test Withdrawn Status
@@ -473,6 +543,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Test Submitted Status Again (from withdrawn)
         self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL, False, BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
         # Move it to IN_REVIEW

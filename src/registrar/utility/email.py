@@ -15,7 +15,7 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def send_templated_email(template_name: str, subject_template_name: str, to_address: str, context={}):
+def send_templated_email(template_name: str, subject_template_name: str, to_address: str, bcc_address='', context={}):
     """Send an email built from a template to one email address.
 
     template_name and subject_template_name are relative to the same template
@@ -39,11 +39,15 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
         )
     except Exception as exc:
         raise EmailSendingError("Could not access the SES client.") from exc
+    
+    destination = {"ToAddresses": [to_address]}
+    if bcc_address:
+        destination["BccAddresses"] = [bcc_address]
 
     try:
         ses_client.send_email(
             FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
-            Destination={"ToAddresses": [to_address]},
+            Destination=destination,
             Content={
                 "Simple": {
                     "Subject": {"Data": subject},

@@ -4,6 +4,7 @@ from typing import Union
 import logging
 
 from django.apps import apps
+from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
@@ -588,7 +589,7 @@ class DomainApplication(TimeStampedModel):
             logger.error(err)
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
-    def _send_status_update_email(self, new_status, email_template, email_template_subject, send_email=True):
+    def _send_status_update_email(self, new_status, email_template, email_template_subject, send_email=True, bcc_address=''):
         """Send a status update email to the submitter.
 
         The email goes to the email address that the submitter gave as their
@@ -613,6 +614,7 @@ class DomainApplication(TimeStampedModel):
                 email_template_subject,
                 self.submitter.email,
                 context={"application": self},
+                bcc_address=bcc_address,
             )
             logger.info(f"The {new_status} email sent to: {self.submitter.email}")
         except EmailSendingError:
@@ -654,11 +656,17 @@ class DomainApplication(TimeStampedModel):
         # Limit email notifications to transitions from Started and Withdrawn
         limited_statuses = [self.ApplicationStatus.STARTED, self.ApplicationStatus.WITHDRAWN]
 
+        bcc_address = ''
+        if settings.IS_PRODUCTION:
+            bcc_address = settings.DEFAULT_FROM_EMAIL
+
         if self.status in limited_statuses:
             self._send_status_update_email(
                 "submission confirmation",
                 "emails/submission_confirmation.txt",
                 "emails/submission_confirmation_subject.txt",
+                True,
+                bcc_address,
             )
 
     @transition(
