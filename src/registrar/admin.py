@@ -1,7 +1,9 @@
 from datetime import date
 import logging
+
 from django import forms
-from django.db.models.functions import Concat
+from django.db.models.functions import Concat, Coalesce
+from django.db.models import Value, CharField
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
@@ -12,7 +14,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models import Domain, User
+from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -119,40 +121,51 @@ class CustomLogEntryAdmin(LogEntryAdmin):
 
 
 class AdminSortFields:
-    def get_queryset(db_field):
+    _name_sort = ["first_name", "last_name", "email"]
+
+    # Define a mapping of field names to model querysets and sort expressions.
+    # A dictionary is used for specificity, but the downside is some degree of repetition.
+    # To eliminate this, this list can be generated dynamically but the readability of that
+    # is impacted.
+    sort_mapping = {
+        # == Contact == #
+        "other_contacts": (Contact, _name_sort),
+        "authorizing_official": (Contact, _name_sort),
+        "submitter": (Contact, _name_sort),
+        # == User == #
+        "creator": (User, _name_sort),
+        "user": (User, _name_sort),
+        "investigator": (User, _name_sort),
+        # == Website == #
+        "current_websites": (Website, "website"),
+        "alternative_domains": (Website, "website"),
+        # == DraftDomain == #
+        "requested_domain": (DraftDomain, "name"),
+        # == DomainApplication == #
+        "domain_application": (DomainApplication, "requested_domain__name"),
+        # == Domain == #
+        "domain": (Domain, "name"),
+        "approved_domain": (Domain, "name"),
+    }
+
+    @classmethod
+    def get_queryset(cls, db_field):
         """This is a helper function for formfield_for_manytomany and formfield_for_foreignkey"""
-        # customize sorting
-        if db_field.name in (
-            "other_contacts",
-            "authorizing_official",
-            "submitter",
-        ):
-            # Sort contacts by first_name, then last_name, then email
-            return models.Contact.objects.all().order_by(Concat("first_name", "last_name", "email"))
-        elif db_field.name in ("current_websites", "alternative_domains"):
-            # sort web sites
-            return models.Website.objects.all().order_by("website")
-        elif db_field.name in (
-            "creator",
-            "user",
-            "investigator",
-        ):
-            # Sort users by first_name, then last_name, then email
-            return models.User.objects.all().order_by(Concat("first_name", "last_name", "email"))
-        elif db_field.name in (
-            "domain",
-            "approved_domain",
-        ):
-            # Sort domains by name
-            return models.Domain.objects.all().order_by("name")
-        elif db_field.name in ("requested_domain",):
-            # Sort draft domains by name
-            return models.DraftDomain.objects.all().order_by("name")
-        elif db_field.name in ("domain_application",):
-            # Sort domain applications by name
-            return models.DomainApplication.objects.all().order_by("requested_domain__name")
-        else:
+        queryset_info = cls.sort_mapping.get(db_field.name, None)
+        if queryset_info is None:
             return None
+
+        # Grab the model we want to order, and grab how we want to order it
+        model, order_by = queryset_info
+        match db_field.name:
+            case "investigator":
+                # We should only return users who are staff.
+                return model.objects.filter(is_staff=True).order_by(*order_by)
+            case _:
+                if isinstance(order_by, list) or isinstance(order_by, tuple):
+                    return model.objects.order_by(*order_by)
+                else:
+                    return model.objects.order_by(order_by)
 
 
 class AuditedAdmin(admin.ModelAdmin):
@@ -171,9 +184,14 @@ class AuditedAdmin(admin.ModelAdmin):
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
+
+        # Define a queryset. Note that in the super of this,
+        # a new queryset will only be generated if one does not exist.
+        # Thus, the order in which we define queryset matters.
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
+
         formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
         # customize the help text for all formfields for manytomany
         formfield.help_text = (
@@ -183,11 +201,16 @@ class AuditedAdmin(admin.ModelAdmin):
         return formfield
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """customize the behavior of formfields with foreign key relationships.  this will customize
-        the behavior of selects.  customized behavior includes sorting of objects in list"""
+        """Customize the behavior of formfields with foreign key relationships. This will customize
+        the behavior of selects. Customized behavior includes sorting of objects in list."""
+
+        # Define a queryset. Note that in the super of this,
+        # a new queryset will only be generated if one does not exist.
+        # Thus, the order in which we define queryset matters.
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
+
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -222,7 +245,6 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
             parameter_value: string}
         TODO: convert investigator id to investigator username
         """
-
         filters = []
         # Retrieve the filter parameters
         for param in request.GET.keys():
@@ -265,6 +287,14 @@ class UserContactInline(admin.StackedInline):
 
 class MyUserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
+
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.User
+        fields = "__all__"
+
+    _meta = Meta()
 
     inlines = [UserContactInline]
 
@@ -354,6 +384,42 @@ class MyUserAdmin(BaseUserAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Override for get_search_results. This affects any upstream model using autocomplete_fields,
+        such as DomainApplication. This is because autocomplete_fields uses an API call to fetch data,
+        and this fetch comes from this method.
+        """
+        # Custom filtering logic
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        # If we aren't given a request to modify, we shouldn't try to
+        if request is None or not hasattr(request, "GET"):
+            return queryset, use_distinct
+
+        # Otherwise, lets modify it!
+        request_get = request.GET
+
+        # The request defines model name and field name.
+        # For instance, model_name could be "DomainApplication"
+        # and field_name could be "investigator".
+        model_name = request_get.get("model_name", None)
+        field_name = request_get.get("field_name", None)
+
+        # Make sure we're only modifying requests from these models.
+        models_to_target = {"domainapplication"}
+        if model_name in models_to_target:
+            # Define rules per field
+            match field_name:
+                case "investigator":
+                    # We should not display investigators who don't have a staff role
+                    queryset = queryset.filter(is_staff=True)
+                case _:
+                    # In the default case, do nothing
+                    pass
+
+        return queryset, use_distinct
+
     # Let's define First group
     # (which should in theory be the ONLY group)
     def group(self, obj):
@@ -418,6 +484,9 @@ class ContactAdmin(ListHeaderAdmin):
         "contact",
         "email",
     ]
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for user
+    ordering = ["first_name", "last_name", "email"]
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -753,8 +822,23 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             """Lookup reimplementation, gets users of is_staff.
             Returns a list of tuples consisting of (user.id, user)
             """
-            privileged_users = User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email")
-            return [(user.id, user) for user in privileged_users]
+            # Select all investigators that are staff, then order by name and email
+            privileged_users = (
+                DomainApplication.objects.select_related("investigator")
+                .filter(investigator__is_staff=True)
+                .order_by("investigator__first_name", "investigator__last_name", "investigator__email")
+            )
+
+            # Annotate the full name and return a values list that lookups can use
+            privileged_users_annotated = privileged_users.annotate(
+                full_name=Coalesce(
+                    Concat("investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()),
+                    "investigator__email",
+                    output_field=CharField(),
+                )
+            ).values_list("investigator__id", "full_name")
+
+            return privileged_users_annotated
 
         def queryset(self, request, queryset):
             """Custom queryset implementation, filters by investigator"""
@@ -854,25 +938,18 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "anything_else",
         "is_policy_acknowledged",
     ]
-
+    autocomplete_fields = [
+        "approved_domain",
+        "requested_domain",
+        "submitter",
+        "creator",
+        "authorizing_official",
+        "investigator",
+    ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
     ordering = ["requested_domain__name"]
-
-    # lists in filter_horizontal are not sorted properly, sort them
-    # by website
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        if db_field.name in ("current_websites", "alternative_domains"):
-            kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
-        return super().formfield_for_manytomany(db_field, request, **kwargs)
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # Removes invalid investigator options from the investigator dropdown
-        if db_field.name == "investigator":
-            kwargs["queryset"] = User.objects.filter(is_staff=True)
-            return db_field.formfield(**kwargs)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -941,7 +1018,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         admin user permissions and the application creator's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
-
         readonly_fields = list(self.readonly_fields)
 
         # Check if the creator is restricted
@@ -1019,8 +1095,8 @@ class DomainInformationInline(admin.StackedInline):
         return formfield
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """customize the behavior of formfields with foreign key relationships.  this will customize
-        the behavior of selects.  customized behavior includes sorting of objects in list"""
+        """Customize the behavior of formfields with foreign key relationships. This will customize
+        the behavior of selects. Customized behavior includes sorting of objects in list."""
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
@@ -1395,6 +1471,10 @@ class DraftDomainAdmin(ListHeaderAdmin):
 
     search_fields = ["name"]
     search_help_text = "Search by draft domain name."
+
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for user
+    ordering = ["name"]
 
 
 class VerifiedByStaffAdmin(ListHeaderAdmin):

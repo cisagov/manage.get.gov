@@ -1116,8 +1116,17 @@ class TestDomainApplicationAdmin(MockEppLib):
         investigator_field = DomainApplication._meta.get_field("investigator")
 
         # We should only be displaying staff users, in alphabetical order
-        expected_dropdown = list(User.objects.filter(is_staff=True))
-        current_dropdown = list(self.admin.formfield_for_foreignkey(investigator_field, request).queryset)
+        sorted_fields = ["first_name", "last_name", "email"]
+        expected_dropdown = list(User.objects.filter(is_staff=True).order_by(*sorted_fields))
+
+        # Grab the current dropdown. We do an API call to autocomplete to get this info.
+        application_queryset = self.admin.formfield_for_foreignkey(investigator_field, request).queryset
+        user_request = self.factory.post(
+            "/admin/autocomplete/?app_label=registrar&model_name=domainapplication&field_name=investigator"
+        )
+        user_admin = MyUserAdmin(User, self.site)
+        user_queryset = user_admin.get_search_results(user_request, application_queryset, None)[0]
+        current_dropdown = list(user_queryset)
 
         self.assertEqual(expected_dropdown, current_dropdown)
 
@@ -1151,7 +1160,13 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.client.login(username="staffuser", password=p)
         request = RequestFactory().get("/")
 
-        expected_list = list(User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email"))
+        # These names have metadata embedded in them. :investigator implicitly tests if
+        # these are actually from the attribute "investigator".
+        expected_list = [
+            "AGuy AGuy last_name:investigator",
+            "FinalGuy FinalGuy last_name:investigator",
+            "SomeGuy first_name:investigator SomeGuy last_name:investigator",
+        ]
 
         # Get the actual sorted list of investigators from the lookups method
         actual_list = [item for _, item in self.admin.InvestigatorFilter.lookups(self, request, self.admin)]
@@ -1571,11 +1586,46 @@ class AuditedAdminTest(TestCase):
 
         return ordered_list
 
+    def test_alphabetically_sorted_domain_application_investigator(self):
+        """Tests if the investigator field is alphabetically sorted by mimicking
+        the call event flow"""
+        # Creates multiple domain applications - review status does not matter
+        applications = multiple_unalphabetical_domain_objects("application")
+
+        # Create a mock request
+        application_request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
+        )
+
+        # Get the formfield data from the application page
+        application_admin = AuditedAdmin(DomainApplication, self.site)
+        field = DomainApplication.investigator.field
+        application_queryset = application_admin.formfield_for_foreignkey(field, application_request).queryset
+
+        request = self.factory.post(
+            "/admin/autocomplete/?app_label=registrar&model_name=domainapplication&field_name=investigator"
+        )
+
+        sorted_fields = ["first_name", "last_name", "email"]
+        desired_sort_order = list(User.objects.filter(is_staff=True).order_by(*sorted_fields))
+
+        # Grab the data returned from get search results
+        admin = MyUserAdmin(User, self.site)
+        search_queryset = admin.get_search_results(request, application_queryset, None)[0]
+        current_sort_order = list(search_queryset)
+
+        self.assertEqual(
+            desired_sort_order,
+            current_sort_order,
+            "Investigator is not ordered alphabetically",
+        )
+
+    # This test case should be refactored in general, as it is too overly specific and engineered
     def test_alphabetically_sorted_fk_fields_domain_application(self):
         tested_fields = [
             DomainApplication.authorizing_official.field,
             DomainApplication.submitter.field,
-            DomainApplication.investigator.field,
+            # DomainApplication.investigator.field,
             DomainApplication.creator.field,
             DomainApplication.requested_domain.field,
         ]
@@ -1593,39 +1643,40 @@ class AuditedAdminTest(TestCase):
         # but both fields are of a fixed length.
         # For test case purposes, this should be performant.
         for field in tested_fields:
-            isNamefield: bool = field == DomainApplication.requested_domain.field
-            if isNamefield:
-                sorted_fields = ["name"]
-            else:
-                sorted_fields = ["first_name", "last_name"]
-            # We want both of these to be lists, as it is richer test wise.
-
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
-            current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
-
-            # Conforms to the same object structure as desired_order
-            current_sort_order_coerced_type = []
-
-            # This is necessary as .queryset and get_queryset
-            # return lists of different types/structures.
-            # We need to parse this data and coerce them into the same type.
-            for contact in current_sort_order:
-                if not isNamefield:
-                    first = contact.first_name
-                    last = contact.last_name
+            with self.subTest(field=field):
+                isNamefield: bool = field == DomainApplication.requested_domain.field
+                if isNamefield:
+                    sorted_fields = ["name"]
                 else:
-                    first = contact.name
-                    last = None
+                    sorted_fields = ["first_name", "last_name"]
+                # We want both of these to be lists, as it is richer test wise.
 
-                name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
-                if name_tuple is not None:
-                    current_sort_order_coerced_type.append(name_tuple)
+                desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
+                current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
 
-            self.assertEqual(
-                desired_order,
-                current_sort_order_coerced_type,
-                "{} is not ordered alphabetically".format(field.name),
-            )
+                # Conforms to the same object structure as desired_order
+                current_sort_order_coerced_type = []
+
+                # This is necessary as .queryset and get_queryset
+                # return lists of different types/structures.
+                # We need to parse this data and coerce them into the same type.
+                for contact in current_sort_order:
+                    if not isNamefield:
+                        first = contact.first_name
+                        last = contact.last_name
+                    else:
+                        first = contact.name
+                        last = None
+
+                    name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
+                    if name_tuple is not None:
+                        current_sort_order_coerced_type.append(name_tuple)
+
+                self.assertEqual(
+                    desired_order,
+                    current_sort_order_coerced_type,
+                    "{} is not ordered alphabetically".format(field.name),
+                )
 
     def test_alphabetically_sorted_fk_fields_domain_information(self):
         tested_fields = [

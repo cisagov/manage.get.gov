@@ -275,6 +275,16 @@ h1, h2, h3,
     }
 }
 
+// Hides the "clear" button on autocomplete, as we already have one to use
+.select2-selection__clear {
+    display: none;
+}
+
+// Fixes a display issue where the list was entirely white, or had too much whitespace
+.select2-dropdown {
+    display: inline-grid !important;
+}
+
 input.admin-confirm-button {
     text-transform: none;
 }
