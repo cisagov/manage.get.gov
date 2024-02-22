@@ -1435,7 +1435,7 @@ class AuditedAdminTest(TestCase):
         desired_sort_order = list(User.objects.filter(is_staff=True).order_by(*sorted_fields))
 
         # Grab the data returned from get search results
-        admin = UserAdmin(User, self.site)
+        admin = MyUserAdmin(User, self.site)
         search_queryset = admin.get_search_results(request, application_queryset, None)[0]
         current_sort_order = list(search_queryset)
 
