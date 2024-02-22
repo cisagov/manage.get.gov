@@ -23,16 +23,18 @@ from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
+from django.contrib.auth.forms import UserChangeForm, UsernameField
 
 logger = logging.getLogger(__name__)
 
 
-class MyUserAdminForm(forms.ModelForm):
+class MyUserAdminForm(UserChangeForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
 
     class Meta:
         model = models.User
         fields = "__all__"
+        field_classes = {"username": UsernameField}
         widgets = {
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
