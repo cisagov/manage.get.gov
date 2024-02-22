@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class MyUserAdminForm(UserChangeForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs.
-    
+
     It inherits from UserChangeForm which has special handling for the password and username fields."""
 
     class Meta:
