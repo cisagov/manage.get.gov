@@ -25,34 +25,57 @@
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 {% block extrastyle %}{{ block.super }}
-<link rel="stylesheet" type="text/css" href="{% static "css/styles.css" %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}" />
 {% endblock %}
 
-{% block branding %}
-<h1 id="site-name"><a href="{% url 'admin:index' %}">.gov admin</a></h1>
-{% if user.is_anonymous %}
-  {% include "admin/color_theme_toggle.html" %}
-{% endif %}
+{% block header %}
+  {% if not IS_PRODUCTION %}
+    {% with add_body_class="margin-left-1" %}
+      {% include "includes/non-production-alert.html" %}
+    {% endwith %}
+  {% endif %}
+
+  {# Djando update: this div will change to header #}
+  <div id="header">
+    <div id="branding">
+      {% block branding %}
+        <h1 id="site-name"><a href="{% url 'admin:index' %}">.gov admin</a></h1>
+        {% if user.is_anonymous %}
+          {% include "admin/color_theme_toggle.html" %}
+        {% endif %}
+      {% endblock %}
+    </div>
+    {% block usertools %}
+    {% if has_permission %}
+    <div id="user-tools">
+        {% block welcome-msg %}
+            {% translate 'Welcome,' %}
+            <strong>{% firstof user.get_short_name user.get_username %}</strong>.
+        {% endblock %}
+        {% comment %}
+          This was copied from the 'userlinks' template, with a few minor changes.
+          You can find that here:
+          https://github.com/django/django/blob/d25f3892114466d689fd6936f79f3bd9a9acc30e/django/contrib/admin/templates/admin/base.html#L59
+        {% endcomment %}
+        {% block userlinks %}
+          {% if site_url %}
+              <a href="{{ site_url }}">{% translate 'View site' %}</a> /
+          {% endif %}
+          {% if user.is_active and user.is_staff %}
+              {% url 'django-admindocs-docroot' as docsroot %}
+              {% if docsroot %}
+                  <a href="{{ docsroot }}">{% translate 'Documentation' %}</a> /
+              {% endif %}
+          {% endif %}
+          {% if user.has_usable_password %}
+              <a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a> /
+          {% endif %}
+              <a href="{% url 'admin:logout' %}" id="admin-logout-button">{% translate 'Log out' %}</a>
+          {% include "admin/color_theme_toggle.html" %}
+        {% endblock %}
+    </div>
+    {% endif %}
+    {% endblock %}
+    {% block nav-global %}{% endblock %}
+  </div>
 {% endblock %}
-{% comment %}
-  This was copied from the 'userlinks' template, with a few minor changes.
-  You can find that here:
-  https://github.com/django/django/blob/d25f3892114466d689fd6936f79f3bd9a9acc30e/django/contrib/admin/templates/admin/base.html#L59
-{% endcomment %}
-{% block userlinks %}
-  {% if site_url %}
-      <a href="{{ site_url }}">{% translate 'View site' %}</a> /
-  {% endif %}
-  {% if user.is_active and user.is_staff %}
-      {% url 'django-admindocs-docroot' as docsroot %}
-      {% if docsroot %}
-          <a href="{{ docsroot }}">{% translate 'Documentation' %}</a> /
-      {% endif %}
-  {% endif %}
-  {% if user.has_usable_password %}
-      <a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a> /
-  {% endif %}
-      <a href="{% url 'admin:logout' %}" id="admin-logout-button">{% translate 'Log out' %}</a>
-  {% include "admin/color_theme_toggle.html" %}
- {% endblock %}
-{% block nav-global %}{% endblock %}

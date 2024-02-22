@@ -19,7 +19,6 @@ API_BASE_PATH = "/api/v1/available/?domain="
 
 
 class AvailableViewTest(MockEppLib):
-
     """Test that the view function works as expected."""
 
     def setUp(self):
@@ -123,7 +122,6 @@ class AvailableViewTest(MockEppLib):
 
 
 class AvailableAPITest(MockEppLib):
-
     """Test that the API can be called as expected."""
 
     def setUp(self):

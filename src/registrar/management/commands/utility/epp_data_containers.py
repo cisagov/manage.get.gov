@@ -5,6 +5,7 @@ Regarding our dataclasses:
 Not intended to be used as models but rather as an alternative to storing as a dictionary.
 By keeping it as a dataclass instead of a dictionary, we can maintain data consistency.
 """  # noqa
+
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum

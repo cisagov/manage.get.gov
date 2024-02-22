@@ -6,7 +6,7 @@
   <div class="margin-top-4 tablet:grid-col-10">
 
     <div
-        class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2{% if not domain.is_expired %}{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %} dotgov-status-box--action-need{% endif %}{% endif %}"
+        class="usa-summary-box dotgov-status-box padding-bottom-0 margin-top-3 padding-left-2{% if not domain.is_expired %}{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %} dotgov-status-box--action-need{% endif %}{% endif %}"
         role="region"
         aria-labelledby="summary-box-key-information"
     >
@@ -17,6 +17,7 @@
           <span class="text-bold text-primary-darker">
             Status:
           </span>
+          <span class="text-primary-darker">
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
             {% if domain.is_expired and domain.state != domain.State.UNKNOWN %}
               Expired
@@ -25,6 +26,12 @@
             {% else %}
                 {{ domain.state|title }}
             {% endif %}
+          </span>
+          {% if domain.get_state_help_text %}
+            <div class="padding-top-1 text-primary-darker">
+              {{ domain.get_state_help_text }}
+            </div>
+          {% endif %}
         </p>
       </div>
     </div>
@@ -56,7 +63,7 @@
     {% include "includes/summary_item.html" with title='Your contact information' value=request.user.contact contact='true' edit_link=url editable=domain.is_editable %}
 
     {% url 'domain-security-email' pk=domain.id as url %}
-    {% if security_email is not None and security_email != default_security_email%}
+    {% if security_email is not None and security_email not in hidden_security_emails%}
       {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=domain.is_editable %}
     {% else %}
       {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=domain.is_editable %}

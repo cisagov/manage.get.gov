@@ -104,7 +104,7 @@ class DomainApplicationFixture:
             # Random choice of agency for selects, used as placeholders for testing.
             else random.choice(DomainApplication.AGENCIES)  # nosec
         )
-
+        da.submission_date = fake.date()
         da.federal_type = (
             app["federal_type"]
             if "federal_type" in app
@@ -201,7 +201,6 @@ class DomainApplicationFixture:
 
 
 class DomainFixture(DomainApplicationFixture):
-
     """Create one domain and permissions on it for each user."""
 
     @classmethod

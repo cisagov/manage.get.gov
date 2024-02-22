@@ -234,22 +234,22 @@ class TestDomainAdmin(MockEppLib, WebTest):
         """
         Make sure the short name is displaying in admin on the list page
         """
-        self.client.force_login(self.superuser)
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
+        with less_console_noise():
+            self.client.force_login(self.superuser)
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+            mock_client = MockSESClient()
+            with boto3_mocking.clients.handler_for("sesv2", mock_client):
                 application.approve()
 
-        response = self.client.get("/admin/registrar/domain/")
+            response = self.client.get("/admin/registrar/domain/")
 
-        # There are 3 template references to Federal (3) plus one reference in the table
-        # for our actual application
-        self.assertContains(response, "Federal", count=4)
-        # This may be a bit more robust
-        self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
-        # Now let's make sure the long description does not exist
-        self.assertNotContains(response, "Federal: an agency of the U.S. government")
+            # There are 3 template references to Federal (3) plus one reference in the table
+            # for our actual application
+            self.assertContains(response, "Federal", count=4)
+            # This may be a bit more robust
+            self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
+            # Now let's make sure the long description does not exist
+            self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
     @skip("Why did this test stop working, and is is a good test")
     def test_place_and_remove_hold(self):
@@ -295,40 +295,37 @@ class TestDomainAdmin(MockEppLib, WebTest):
             Then a user-friendly success message is returned for displaying on the web
             And `state` is et to `DELETED`
         """
-        domain = create_ready_domain()
-        # Put in client hold
-        domain.place_client_hold()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        # Ensure everything is displaying correctly
-        response = self.client.get(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Remove from registry")
-
-        # Test the info dialog
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
-                extra_tags="",
-                fail_silently=False,
+        with less_console_noise():
+            domain = create_ready_domain()
+            # Put in client hold
+            domain.place_client_hold()
+            p = "userpass"
+            self.client.login(username="staffuser", password=p)
+            # Ensure everything is displaying correctly
+            response = self.client.get(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                follow=True,
             )
-
-        self.assertEqual(domain.state, Domain.State.DELETED)
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, domain.name)
+            self.assertContains(response, "Remove from registry")
+            # Test the info dialog
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
+            )
+            request.user = self.client
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.INFO,
+                    "Domain city.gov has been deleted. Thanks!",
+                    extra_tags="",
+                    fail_silently=False,
+                )
+            self.assertEqual(domain.state, Domain.State.DELETED)
 
     def test_deletion_ready_fsm_failure(self):
         """
@@ -337,38 +334,36 @@ class TestDomainAdmin(MockEppLib, WebTest):
             Then a user-friendly error message is returned for displaying on the web
             And `state` is not set to `DELETED`
         """
-        domain = create_ready_domain()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        # Ensure everything is displaying correctly
-        response = self.client.get(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Remove from registry")
-
-        # Test the error
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.ERROR,
-                "Error deleting this Domain: "
-                "Can't switch from state 'ready' to 'deleted'"
-                ", must be either 'dns_needed' or 'on_hold'",
-                extra_tags="",
-                fail_silently=False,
+        with less_console_noise():
+            domain = create_ready_domain()
+            p = "userpass"
+            self.client.login(username="staffuser", password=p)
+            # Ensure everything is displaying correctly
+            response = self.client.get(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                follow=True,
             )
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, domain.name)
+            self.assertContains(response, "Remove from registry")
+            # Test the error
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
+            )
+            request.user = self.client
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.ERROR,
+                    "Error deleting this Domain: "
+                    "Can't switch from state 'ready' to 'deleted'"
+                    ", must be either 'dns_needed' or 'on_hold'",
+                    extra_tags="",
+                    fail_silently=False,
+                )
 
         self.assertEqual(domain.state, Domain.State.READY)
 
@@ -380,62 +375,57 @@ class TestDomainAdmin(MockEppLib, WebTest):
             Then `commands.DeleteDomain` is sent to the registry
             And Domain returns normally without an error dialog
         """
-        domain = create_ready_domain()
-        # Put in client hold
-        domain.place_client_hold()
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
-
-        # Ensure everything is displaying correctly
-        response = self.client.get(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, domain.name)
-        self.assertContains(response, "Remove from registry")
-
-        # Test the info dialog
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        # Delete it once
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
-                extra_tags="",
-                fail_silently=False,
+        with less_console_noise():
+            domain = create_ready_domain()
+            # Put in client hold
+            domain.place_client_hold()
+            p = "userpass"
+            self.client.login(username="staffuser", password=p)
+            # Ensure everything is displaying correctly
+            response = self.client.get(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                follow=True,
             )
-
-        self.assertEqual(domain.state, Domain.State.DELETED)
-
-        # Try to delete it again
-        # Test the info dialog
-        request = self.factory.post(
-            "/admin/registrar/domain/{}/change/".format(domain.pk),
-            {"_delete_domain": "Remove from registry", "name": domain.name},
-            follow=True,
-        )
-        request.user = self.client
-
-        with patch("django.contrib.messages.add_message") as mock_add_message:
-            self.admin.do_delete_domain(request, domain)
-            mock_add_message.assert_called_once_with(
-                request,
-                messages.INFO,
-                "This domain is already deleted",
-                extra_tags="",
-                fail_silently=False,
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, domain.name)
+            self.assertContains(response, "Remove from registry")
+            # Test the info dialog
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
             )
+            request.user = self.client
+            # Delete it once
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.INFO,
+                    "Domain city.gov has been deleted. Thanks!",
+                    extra_tags="",
+                    fail_silently=False,
+                )
 
-        self.assertEqual(domain.state, Domain.State.DELETED)
+            self.assertEqual(domain.state, Domain.State.DELETED)
+            # Try to delete it again
+            # Test the info dialog
+            request = self.factory.post(
+                "/admin/registrar/domain/{}/change/".format(domain.pk),
+                {"_delete_domain": "Remove from registry", "name": domain.name},
+                follow=True,
+            )
+            request.user = self.client
+            with patch("django.contrib.messages.add_message") as mock_add_message:
+                self.admin.do_delete_domain(request, domain)
+                mock_add_message.assert_called_once_with(
+                    request,
+                    messages.INFO,
+                    "This domain is already deleted",
+                    extra_tags="",
+                    fail_silently=False,
+                )
+            self.assertEqual(domain.state, Domain.State.DELETED)
 
     @skip("Waiting on epp lib to implement")
     def test_place_and_remove_hold_epp(self):
@@ -491,6 +481,7 @@ class TestDomainApplicationAdminForm(TestCase):
         )
 
 
+@boto3_mocking.patching
 class TestDomainApplicationAdmin(MockEppLib):
     def setUp(self):
         super().setUp()
@@ -596,83 +587,166 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
-    @boto3_mocking.patching
+    def transition_state_and_send_email(self, application, status):
+        """Helper method for the email test cases."""
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                # Create a mock request
+                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+
+                # Modify the application's property
+                application.status = status
+
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
+
+    def assert_email_is_accurate(self, expected_string, email_index, email_address):
+        """Helper method for the email test cases.
+        email_index is the index of the email in mock_client."""
+
+        # Access the arguments passed to send_email
+        call_args = self.mock_client.EMAILS_SENT
+        kwargs = call_args[email_index]["kwargs"]
+
+        # Retrieve the email details from the arguments
+        from_email = kwargs.get("FromEmailAddress")
+        to_email = kwargs["Destination"]["ToAddresses"][0]
+        email_content = kwargs["Content"]
+        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
+
+        # Assert or perform other checks on the email details
+        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(to_email, email_address)
+        self.assertIn(expected_string, email_body)
+
     def test_save_model_sends_submitted_email(self):
-        # make sure there is no user with this email
+        """When transitioning to submitted from started or withdrawn on a domain request,
+        an email is sent out.
+
+        When transitioning to submitted from dns needed or in review on a domain request,
+        no email is sent out."""
+
+        # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a sample application
-                application = completed_application()
+        # Create a sample application
+        application = completed_application()
 
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-
-                # Modify the application's property
-                application.status = DomainApplication.ApplicationStatus.SUBMITTED
-
-                # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
-
-        # Access the arguments passed to send_email
-        call_args = self.mock_client.EMAILS_SENT
-        kwargs = call_args[0]["kwargs"]
-
-        # Retrieve the email details from the arguments
-        from_email = kwargs.get("FromEmailAddress")
-        to_email = kwargs["Destination"]["ToAddresses"][0]
-        email_content = kwargs["Content"]
-        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
-
-        # Assert or perform other checks on the email details
-        expected_string = "We received your .gov domain request."
-        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(to_email, EMAIL)
-        self.assertIn(expected_string, email_body)
-
+        # Test Submitted Status from started
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 0, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-    @boto3_mocking.patching
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (from withdrawn)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Test Submitted Status Again from in IN_REVIEW, no new email should be sent
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to IN_REVIEW
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.IN_REVIEW)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Move it to ACTION_NEEDED
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.ACTION_NEEDED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+        # Test Submitted Status Again from in ACTION_NEEDED, no new email should be sent
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
     def test_save_model_sends_approved_email(self):
-        # make sure there is no user with this email
+        """When transitioning to approved on a domain request,
+        an email is sent out every time."""
+
+        # Ensure there is no user with this email
         EMAIL = "mayor@igorville.gov"
         User.objects.filter(email=EMAIL).delete()
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a sample application
-                application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-
-                # Modify the application's property
-                application.status = DomainApplication.ApplicationStatus.APPROVED
-
-                # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
-
-        # Access the arguments passed to send_email
-        call_args = self.mock_client.EMAILS_SENT
-        kwargs = call_args[0]["kwargs"]
-
-        # Retrieve the email details from the arguments
-        from_email = kwargs.get("FromEmailAddress")
-        to_email = kwargs["Destination"]["ToAddresses"][0]
-        email_content = kwargs["Content"]
-        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
-
-        # Assert or perform other checks on the email details
-        expected_string = "Congratulations! Your .gov domain request has been approved."
-        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(to_email, EMAIL)
-        self.assertIn(expected_string, email_body)
-
+        # Test Submitted Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-    @boto3_mocking.patching
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+    def test_save_model_sends_rejected_email(self):
+        """When transitioning to rejected on a domain request,
+        an email is sent out every time."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Test Submitted Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+        self.assert_email_is_accurate("Your .gov domain request has been rejected.", 0, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
+    def test_save_model_sends_withdrawn_email(self):
+        """When transitioning to withdrawn on a domain request,
+        an email is sent out every time."""
+
+        # Ensure there is no user with this email
+        EMAIL = "mayor@igorville.gov"
+        User.objects.filter(email=EMAIL).delete()
+
+        # Create a sample application
+        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+        # Test Submitted Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.assert_email_is_accurate(
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 0, EMAIL
+        )
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+        # Test Withdrawn Status
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.SUBMITTED)
+        self.assert_email_is_accurate("We received your .gov domain request.", 1, EMAIL)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+        # Test Submitted Status Again (No new email should be sent)
+        self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.WITHDRAWN)
+        self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+
     def test_save_model_sets_approved_domain(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -695,45 +769,6 @@ class TestDomainApplicationAdmin(MockEppLib):
         # Test that approved domain exists and equals requested domain
         self.assertEqual(application.requested_domain.name, application.approved_domain.name)
 
-    @boto3_mocking.patching
-    def test_save_model_sends_rejected_email(self):
-        # make sure there is no user with this email
-        EMAIL = "mayor@igorville.gov"
-        User.objects.filter(email=EMAIL).delete()
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                # Create a sample application
-                application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
-
-                # Create a mock request
-                request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-
-                # Modify the application's property
-                application.status = DomainApplication.ApplicationStatus.REJECTED
-
-                # Use the model admin's save_model method
-                self.admin.save_model(request, application, form=None, change=True)
-
-        # Access the arguments passed to send_email
-        call_args = self.mock_client.EMAILS_SENT
-        kwargs = call_args[0]["kwargs"]
-
-        # Retrieve the email details from the arguments
-        from_email = kwargs.get("FromEmailAddress")
-        to_email = kwargs["Destination"]["ToAddresses"][0]
-        email_content = kwargs["Content"]
-        email_body = email_content["Simple"]["Body"]["Text"]["Data"]
-
-        # Assert or perform other checks on the email details
-        expected_string = "Your .gov domain request has been rejected."
-        self.assertEqual(from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(to_email, EMAIL)
-        self.assertIn(expected_string, email_body)
-
-        self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
-
-    @boto3_mocking.patching
     def test_save_model_sets_restricted_status_on_user(self):
         # make sure there is no user with this email
         EMAIL = "mayor@igorville.gov"
@@ -817,6 +852,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             "creator",
             "about_your_organization",
             "requested_domain",
+            "approved_domain",
             "alternative_domains",
             "purpose",
             "submitter",
@@ -883,41 +919,13 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "Cannot edit an application with a restricted creator.",
             )
 
-    @boto3_mocking.patching
-    def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
-        # Create an instance of the model
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        application.approved_domain = domain
-        application.save()
+    def trigger_saving_approved_to_another_state(self, domain_is_active, another_state):
+        """Helper method that triggers domain request state changes from approved to another state,
+        with an associated domain that can be either active (READY) or not.
 
-        # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-        request.user = self.superuser
+        Used to test errors when saving a change with an active domain, also used to test side effects
+        when saving a change goes through."""
 
-        # Define a custom implementation for is_active
-        def custom_is_active(self):
-            return True  # Override to return True
-
-        # Use ExitStack to combine patch contexts
-        with ExitStack() as stack:
-            # Patch Domain.is_active and django.contrib.messages.error simultaneously
-            stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
-            stack.enter_context(patch.object(messages, "error"))
-
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
-                    # Simulate saving the model
-                    application.status = DomainApplication.ApplicationStatus.REJECTED
-                    self.admin.save_model(request, application, None, True)
-
-            # Assert that the error message was called with the correct argument
-            messages.error.assert_called_once_with(
-                request,
-                "This action is not permitted. The domain " + "is already active.",
-            )
-
-    def test_side_effects_when_saving_approved_to_rejected(self):
         # Create an instance of the model
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         domain = Domain.objects.create(name=application.requested_domain.name)
@@ -931,101 +939,60 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         # Define a custom implementation for is_active
         def custom_is_active(self):
-            return False  # Override to return False
+            return domain_is_active  # Override to return True
 
         # Use ExitStack to combine patch contexts
         with ExitStack() as stack:
             # Patch Domain.is_active and django.contrib.messages.error simultaneously
             stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
             stack.enter_context(patch.object(messages, "error"))
-            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
-                    # Simulate saving the model
-                    application.status = DomainApplication.ApplicationStatus.REJECTED
-                    self.admin.save_model(request, application, None, True)
 
-            # Assert that the error message was never called
-            messages.error.assert_not_called()
+            application.status = another_state
+            self.admin.save_model(request, application, None, True)
 
-        self.assertEqual(application.approved_domain, None)
+            # Assert that the error message was called with the correct argument
+            if domain_is_active:
+                messages.error.assert_called_once_with(
+                    request,
+                    "This action is not permitted. The domain " + "is already active.",
+                )
+            else:
+                # Assert that the error message was never called
+                messages.error.assert_not_called()
 
-        # Assert that Domain got Deleted
-        with self.assertRaises(Domain.DoesNotExist):
-            domain.refresh_from_db()
+                self.assertEqual(application.approved_domain, None)
 
-        # Assert that DomainInformation got Deleted
-        with self.assertRaises(DomainInformation.DoesNotExist):
-            domain_information.refresh_from_db()
+                # Assert that Domain got Deleted
+                with self.assertRaises(Domain.DoesNotExist):
+                    domain.refresh_from_db()
+
+                # Assert that DomainInformation got Deleted
+                with self.assertRaises(DomainInformation.DoesNotExist):
+                    domain_information.refresh_from_db()
+
+    def test_error_when_saving_approved_to_in_review_and_domain_is_active(self):
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.IN_REVIEW)
+
+    def test_error_when_saving_approved_to_action_needed_and_domain_is_active(self):
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.ACTION_NEEDED)
+
+    def test_error_when_saving_approved_to_rejected_and_domain_is_active(self):
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.REJECTED)
 
     def test_error_when_saving_approved_to_ineligible_and_domain_is_active(self):
-        # Create an instance of the model
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        application.approved_domain = domain
-        application.save()
+        self.trigger_saving_approved_to_another_state(True, DomainApplication.ApplicationStatus.INELIGIBLE)
 
-        # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-        request.user = self.superuser
+    def test_side_effects_when_saving_approved_to_in_review(self):
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.IN_REVIEW)
 
-        # Define a custom implementation for is_active
-        def custom_is_active(self):
-            return True  # Override to return True
+    def test_side_effects_when_saving_approved_to_action_needed(self):
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
-        # Use ExitStack to combine patch contexts
-        with ExitStack() as stack:
-            # Patch Domain.is_active and django.contrib.messages.error simultaneously
-            stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
-            stack.enter_context(patch.object(messages, "error"))
-
-            # Simulate saving the model
-            application.status = DomainApplication.ApplicationStatus.INELIGIBLE
-            self.admin.save_model(request, application, None, True)
-
-            # Assert that the error message was called with the correct argument
-            messages.error.assert_called_once_with(
-                request,
-                "This action is not permitted. The domain " + "is already active.",
-            )
+    def test_side_effects_when_saving_approved_to_rejected(self):
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.REJECTED)
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
-        # Create an instance of the model
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
-        domain = Domain.objects.create(name=application.requested_domain.name)
-        domain_information = DomainInformation.objects.create(creator=self.superuser, domain=domain)
-        application.approved_domain = domain
-        application.save()
-
-        # Create a request object with a superuser
-        request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
-        request.user = self.superuser
-
-        # Define a custom implementation for is_active
-        def custom_is_active(self):
-            return False  # Override to return False
-
-        # Use ExitStack to combine patch contexts
-        with ExitStack() as stack:
-            # Patch Domain.is_active and django.contrib.messages.error simultaneously
-            stack.enter_context(patch.object(Domain, "is_active", custom_is_active))
-            stack.enter_context(patch.object(messages, "error"))
-
-            # Simulate saving the model
-            application.status = DomainApplication.ApplicationStatus.INELIGIBLE
-            self.admin.save_model(request, application, None, True)
-
-            # Assert that the error message was never called
-            messages.error.assert_not_called()
-
-        self.assertEqual(application.approved_domain, None)
-
-        # Assert that Domain got Deleted
-        with self.assertRaises(Domain.DoesNotExist):
-            domain.refresh_from_db()
-
-        # Assert that DomainInformation got Deleted
-        with self.assertRaises(DomainInformation.DoesNotExist):
-            domain_information.refresh_from_db()
+        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.INELIGIBLE)
 
     def test_has_correct_filters(self):
         """
@@ -1242,7 +1209,7 @@ class DomainInvitationAdminTest(TestCase):
         self.assertContains(response, retrieved_html, count=1)
 
 
-class DomainInformationAdminTest(TestCase):
+class TestDomainInformationAdmin(TestCase):
     def setUp(self):
         """Setup environment for a mock admin user"""
         self.site = AdminSite()
@@ -1250,6 +1217,7 @@ class DomainInformationAdminTest(TestCase):
         self.admin = DomainInformationAdmin(model=DomainInformation, admin_site=self.site)
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+        self.staffuser = create_user()
         self.mock_data_generator = AuditedAdminMockData()
 
         self.test_helper = GenericTestHelper(
@@ -1292,6 +1260,27 @@ class DomainInformationAdminTest(TestCase):
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+    def test_readonly_fields_for_analyst(self):
+        """Ensures that analysts have their permissions setup correctly"""
+        request = self.factory.get("/")
+        request.user = self.staffuser
+
+        readonly_fields = self.admin.get_readonly_fields(request)
+
+        expected_fields = [
+            "creator",
+            "type_of_work",
+            "more_organization_information",
+            "domain",
+            "domain_application",
+            "submitter",
+            "no_other_contacts_rationale",
+            "anything_else",
+            "is_policy_acknowledged",
+        ]
+
+        self.assertEqual(readonly_fields, expected_fields)
 
     def test_domain_sortable(self):
         """Tests if DomainInformation sorts by domain correctly"""
@@ -1457,64 +1446,62 @@ class ListHeaderAdminTest(TestCase):
         self.superuser = create_superuser()
 
     def test_changelist_view(self):
-        # Have to get creative to get past linter
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
-
-        # Mock a user
-        user = mock_user()
-
-        # Make the request using the Client class
-        # which handles CSRF
-        # Follow=True handles the redirect
-        response = self.client.get(
-            "/admin/registrar/domainapplication/",
-            {
-                "status__exact": "started",
-                "investigator__id__exact": user.id,
-                "q": "Hello",
-            },
-            follow=True,
-        )
-
-        # Assert that the filters and search_query are added to the extra_context
-        self.assertIn("filters", response.context)
-        self.assertIn("search_query", response.context)
-        # Assert the content of filters and search_query
-        filters = response.context["filters"]
-        search_query = response.context["search_query"]
-        self.assertEqual(search_query, "Hello")
-        self.assertEqual(
-            filters,
-            [
-                {"parameter_name": "status", "parameter_value": "started"},
+        with less_console_noise():
+            # Have to get creative to get past linter
+            p = "adminpass"
+            self.client.login(username="superuser", password=p)
+            # Mock a user
+            user = mock_user()
+            # Make the request using the Client class
+            # which handles CSRF
+            # Follow=True handles the redirect
+            response = self.client.get(
+                "/admin/registrar/domainapplication/",
                 {
-                    "parameter_name": "investigator",
-                    "parameter_value": user.first_name + " " + user.last_name,
+                    "status__exact": "started",
+                    "investigator__id__exact": user.id,
+                    "q": "Hello",
                 },
-            ],
-        )
+                follow=True,
+            )
+            # Assert that the filters and search_query are added to the extra_context
+            self.assertIn("filters", response.context)
+            self.assertIn("search_query", response.context)
+            # Assert the content of filters and search_query
+            filters = response.context["filters"]
+            search_query = response.context["search_query"]
+            self.assertEqual(search_query, "Hello")
+            self.assertEqual(
+                filters,
+                [
+                    {"parameter_name": "status", "parameter_value": "started"},
+                    {
+                        "parameter_name": "investigator",
+                        "parameter_value": user.first_name + " " + user.last_name,
+                    },
+                ],
+            )
 
     def test_get_filters(self):
-        # Create a mock request object
-        request = self.factory.get("/admin/yourmodel/")
-        # Set the GET parameters for testing
-        request.GET = {
-            "status": "started",
-            "investigator": "Jeff Lebowski",
-            "q": "search_value",
-        }
-        # Call the get_filters method
-        filters = self.admin.get_filters(request)
-
-        # Assert the filters extracted from the request GET
-        self.assertEqual(
-            filters,
-            [
-                {"parameter_name": "status", "parameter_value": "started"},
-                {"parameter_name": "investigator", "parameter_value": "Jeff Lebowski"},
-            ],
-        )
+        with less_console_noise():
+            # Create a mock request object
+            request = self.factory.get("/admin/yourmodel/")
+            # Set the GET parameters for testing
+            request.GET = {
+                "status": "started",
+                "investigator": "Jeff Lebowski",
+                "q": "search_value",
+            }
+            # Call the get_filters method
+            filters = self.admin.get_filters(request)
+            # Assert the filters extracted from the request GET
+            self.assertEqual(
+                filters,
+                [
+                    {"parameter_name": "status", "parameter_value": "started"},
+                    {"parameter_name": "investigator", "parameter_value": "Jeff Lebowski"},
+                ],
+            )
 
     def tearDown(self):
         # delete any applications too
@@ -1953,42 +1940,38 @@ class ContactAdminTest(TestCase):
     def test_change_view_for_joined_contact_five_or_more(self):
         """Create a contact, join it to 5 domain requests. The 6th join will be a user.
         Assert that the warning on the contact form lists 5 joins and a '1 more' ellispsis."""
-
-        self.client.force_login(self.superuser)
-
-        # Create an instance of the model
-        # join it to 5 domain requests. The 6th join will be a user.
-        contact, _ = Contact.objects.get_or_create(user=self.staffuser)
-        application1 = completed_application(submitter=contact, name="city1.gov")
-        application2 = completed_application(submitter=contact, name="city2.gov")
-        application3 = completed_application(submitter=contact, name="city3.gov")
-        application4 = completed_application(submitter=contact, name="city4.gov")
-        application5 = completed_application(submitter=contact, name="city5.gov")
-
-        with patch("django.contrib.messages.warning") as mock_warning:
-            # Use the test client to simulate the request
-            response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
-
-            logger.info(mock_warning)
-
-            # Assert that the error message was called with the correct argument
-            # Note: The 6th join will be a user.
-            mock_warning.assert_called_once_with(
-                response.wsgi_request,
-                "<ul class='messagelist_content-list--unstyled'>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
-                "<li>Joined to DomainApplication: <a href='/admin/registrar/"
-                f"domainapplication/{application5.pk}/change/'>city5.gov</a></li>"
-                "</ul>"
-                "<p class='font-sans-3xs'>And 1 more...</p>",
-            )
+        with less_console_noise():
+            self.client.force_login(self.superuser)
+            # Create an instance of the model
+            # join it to 5 domain requests. The 6th join will be a user.
+            contact, _ = Contact.objects.get_or_create(user=self.staffuser)
+            application1 = completed_application(submitter=contact, name="city1.gov")
+            application2 = completed_application(submitter=contact, name="city2.gov")
+            application3 = completed_application(submitter=contact, name="city3.gov")
+            application4 = completed_application(submitter=contact, name="city4.gov")
+            application5 = completed_application(submitter=contact, name="city5.gov")
+            with patch("django.contrib.messages.warning") as mock_warning:
+                # Use the test client to simulate the request
+                response = self.client.get(reverse("admin:registrar_contact_change", args=[contact.pk]))
+                logger.debug(mock_warning)
+                # Assert that the error message was called with the correct argument
+                # Note: The 6th join will be a user.
+                mock_warning.assert_called_once_with(
+                    response.wsgi_request,
+                    "<ul class='messagelist_content-list--unstyled'>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application1.pk}/change/'>city1.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application2.pk}/change/'>city2.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application3.pk}/change/'>city3.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application4.pk}/change/'>city4.gov</a></li>"
+                    "<li>Joined to DomainApplication: <a href='/admin/registrar/"
+                    f"domainapplication/{application5.pk}/change/'>city5.gov</a></li>"
+                    "</ul>"
+                    "<p class='font-sans-3xs'>And 1 more...</p>",
+                )
 
     def tearDown(self):
         DomainApplication.objects.all().delete()

@@ -3,10 +3,12 @@ Feature being tested: Registry Integration
 
 This file tests the various ways in which the registrar interacts with the registry.
 """
+
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 import datetime
+from django.utils.timezone import make_aware
 from registrar.models import Domain, Host, HostIP
 
 from unittest import skip
@@ -46,158 +48,162 @@ class TestDomainCache(MockEppLib):
 
     def test_cache_sets_resets(self):
         """Cache should be set on getter and reset on setter calls"""
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        # trigger getter
-        _ = domain.creation_date
-        domain._get_property("contacts")
-        # getter should set the domain cache with a InfoDomain object
-        # (see InfoDomainResult)
-        self.assertEquals(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
-        self.assertEquals(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
-        status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-        self.assertEquals(domain._cache["statuses"], status_list)
-        self.assertFalse("avail" in domain._cache.keys())
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            # trigger getter
+            _ = domain.creation_date
+            domain._get_property("contacts")
+            # getter should set the domain cache with a InfoDomain object
+            # (see InfoDomainResult)
+            self.assertEquals(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
+            self.assertEquals(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+            status_list = [status.state for status in self.mockDataInfoDomain.statuses]
+            self.assertEquals(domain._cache["statuses"], status_list)
+            self.assertFalse("avail" in domain._cache.keys())
 
-        # using a setter should clear the cache
-        domain.dnssecdata = []
-        self.assertEquals(domain._cache, {})
+            # using a setter should clear the cache
+            domain.dnssecdata = []
+            self.assertEquals(domain._cache, {})
 
-        # send should have been called only once
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoDomain(name="igorville.gov", auth_info=None),
-                    cleaned=True,
-                ),
-            ],
-            any_order=False,  # Ensure calls are in the specified order
-        )
+            # send should have been called only once
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.InfoDomain(name="igorville.gov", auth_info=None),
+                        cleaned=True,
+                    ),
+                ],
+                any_order=False,  # Ensure calls are in the specified order
+            )
 
     def test_cache_used_when_avail(self):
         """Cache is pulled from if the object has already been accessed"""
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        cr_date = domain.creation_date
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            cr_date = domain.creation_date
 
-        # repeat the getter call
-        cr_date = domain.creation_date
+            # repeat the getter call
+            cr_date = domain.creation_date
 
-        # value should still be set correctly
-        self.assertEqual(cr_date, self.mockDataInfoDomain.cr_date)
-        self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+            # value should still be set correctly
+            self.assertEqual(cr_date, self.mockDataInfoDomain.cr_date)
+            self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
 
-        # send was only called once & not on the second getter call
-        expectedCalls = [
-            call(commands.InfoDomain(name="igorville.gov", auth_info=None), cleaned=True),
-        ]
+            # send was only called once & not on the second getter call
+            expectedCalls = [
+                call(commands.InfoDomain(name="igorville.gov", auth_info=None), cleaned=True),
+            ]
 
-        self.mockedSendFunction.assert_has_calls(expectedCalls)
+            self.mockedSendFunction.assert_has_calls(expectedCalls)
 
     def test_cache_nested_elements(self):
         """Cache works correctly with the nested objects cache and hosts"""
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        # The contact list will initially contain objects of type 'DomainContact'
-        # this is then transformed into PublicContact, and cache should NOT
-        # hold onto the DomainContact object
-        expectedUnfurledContactsList = [
-            common.DomainContact(contact="123", type="security"),
-        ]
-        expectedContactsDict = {
-            PublicContact.ContactTypeChoices.ADMINISTRATIVE: None,
-            PublicContact.ContactTypeChoices.SECURITY: "123",
-            PublicContact.ContactTypeChoices.TECHNICAL: None,
-        }
-        expectedHostsDict = {
-            "name": self.mockDataInfoDomain.hosts[0],
-            "addrs": [item.addr for item in self.mockDataInfoHosts.addrs],
-            "cr_date": self.mockDataInfoHosts.cr_date,
-        }
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            # The contact list will initially contain objects of type 'DomainContact'
+            # this is then transformed into PublicContact, and cache should NOT
+            # hold onto the DomainContact object
+            expectedUnfurledContactsList = [
+                common.DomainContact(contact="123", type="security"),
+            ]
+            expectedContactsDict = {
+                PublicContact.ContactTypeChoices.ADMINISTRATIVE: None,
+                PublicContact.ContactTypeChoices.SECURITY: "123",
+                PublicContact.ContactTypeChoices.TECHNICAL: None,
+            }
+            expectedHostsDict = {
+                "name": self.mockDataInfoDomain.hosts[0],
+                "addrs": [item.addr for item in self.mockDataInfoHosts.addrs],
+                "cr_date": self.mockDataInfoHosts.cr_date,
+            }
 
-        # this can be changed when the getter for contacts is implemented
-        domain._get_property("contacts")
+            # this can be changed when the getter for contacts is implemented
+            domain._get_property("contacts")
 
-        # check domain info is still correct and not overridden
-        self.assertEqual(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
-        self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+            # check domain info is still correct and not overridden
+            self.assertEqual(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
+            self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
 
-        # check contacts
-        self.assertEqual(domain._cache["_contacts"], self.mockDataInfoDomain.contacts)
-        # The contact list should not contain what is sent by the registry by default,
-        # as _fetch_cache will transform the type to PublicContact
-        self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
-        self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+            # check contacts
+            self.assertEqual(domain._cache["_contacts"], self.mockDataInfoDomain.contacts)
+            # The contact list should not contain what is sent by the registry by default,
+            # as _fetch_cache will transform the type to PublicContact
+            self.assertNotEqual(domain._cache["contacts"], expectedUnfurledContactsList)
+            self.assertEqual(domain._cache["contacts"], expectedContactsDict)
 
-        # get and check hosts is set correctly
-        domain._get_property("hosts")
-        self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-        self.assertEqual(domain._cache["contacts"], expectedContactsDict)
-        # invalidate cache
-        domain._cache = {}
+            # get and check hosts is set correctly
+            domain._get_property("hosts")
+            self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+            self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+            # invalidate cache
+            domain._cache = {}
 
-        # get host
-        domain._get_property("hosts")
-        self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+            # get host
+            domain._get_property("hosts")
+            self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
 
-        # get contacts
-        domain._get_property("contacts")
-        self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
-        self.assertEqual(domain._cache["contacts"], expectedContactsDict)
+            # get contacts
+            domain._get_property("contacts")
+            self.assertEqual(domain._cache["hosts"], [expectedHostsDict])
+            self.assertEqual(domain._cache["contacts"], expectedContactsDict)
 
     def test_map_epp_contact_to_public_contact(self):
         # Tests that the mapper is working how we expect
-        domain, _ = Domain.objects.get_or_create(name="registry.gov")
-        security = PublicContact.ContactTypeChoices.SECURITY
-        mapped = domain.map_epp_contact_to_public_contact(
-            self.mockDataInfoContact,
-            self.mockDataInfoContact.id,
-            security,
-        )
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="registry.gov")
+            security = PublicContact.ContactTypeChoices.SECURITY
+            mapped = domain.map_epp_contact_to_public_contact(
+                self.mockDataInfoContact,
+                self.mockDataInfoContact.id,
+                security,
+            )
 
-        expected_contact = PublicContact(
-            domain=domain,
-            contact_type=security,
-            registry_id="123",
-            email="123@mail.gov",
-            voice="+1.8882820870",
-            fax="+1-212-9876543",
-            pw="lastPw",
-            name="Registry Customer Service",
-            org="Cybersecurity and Infrastructure Security Agency",
-            city="Arlington",
-            pc="22201",
-            cc="US",
-            sp="VA",
-            street1="4200 Wilson Blvd.",
-        )
+            expected_contact = PublicContact(
+                domain=domain,
+                contact_type=security,
+                registry_id="123",
+                email="123@mail.gov",
+                voice="+1.8882820870",
+                fax="+1-212-9876543",
+                pw="lastPw",
+                name="Registry Customer Service",
+                org="Cybersecurity and Infrastructure Security Agency",
+                city="Arlington",
+                pc="22201",
+                cc="US",
+                sp="VA",
+                street1="4200 Wilson Blvd.",
+            )
 
-        # Test purposes only, since we're comparing
-        # two duplicate objects. We would expect
-        # these not to have the same state.
-        expected_contact._state = mapped._state
+            # Test purposes only, since we're comparing
+            # two duplicate objects. We would expect
+            # these not to have the same state.
+            expected_contact._state = mapped._state
 
-        # Mapped object is what we expect
-        self.assertEqual(mapped.__dict__, expected_contact.__dict__)
+            # Mapped object is what we expect
+            self.assertEqual(mapped.__dict__, expected_contact.__dict__)
 
-        # The mapped object should correctly translate to a DB
-        # object. If not, something else went wrong.
-        db_object = domain._get_or_create_public_contact(mapped)
-        in_db = PublicContact.objects.filter(
-            registry_id=domain.security_contact.registry_id,
-            contact_type=security,
-        ).get()
-        # DB Object is the same as the mapped object
-        self.assertEqual(db_object, in_db)
+            # The mapped object should correctly translate to a DB
+            # object. If not, something else went wrong.
+            db_object = domain._get_or_create_public_contact(mapped)
+            in_db = PublicContact.objects.filter(
+                registry_id=domain.security_contact.registry_id,
+                contact_type=security,
+            ).get()
+            # DB Object is the same as the mapped object
+            self.assertEqual(db_object, in_db)
 
-        domain.security_contact = in_db
-        # Trigger the getter
-        _ = domain.security_contact
-        # Check to see that changes made
-        # to DB objects persist in cache correctly
-        in_db.email = "123test@mail.gov"
-        in_db.save()
+            domain.security_contact = in_db
+            # Trigger the getter
+            _ = domain.security_contact
+            # Check to see that changes made
+            # to DB objects persist in cache correctly
+            in_db.email = "123test@mail.gov"
+            in_db.save()
 
-        cached_contact = domain._cache["contacts"].get(security)
-        self.assertEqual(cached_contact, in_db.registry_id)
-        self.assertEqual(domain.security_contact.email, "123test@mail.gov")
+            cached_contact = domain._cache["contacts"].get(security)
+            self.assertEqual(cached_contact, in_db.registry_id)
+            self.assertEqual(domain.security_contact.email, "123test@mail.gov")
 
     def test_errors_map_epp_contact_to_public_contact(self):
         """
@@ -206,48 +212,49 @@ class TestDomainCache(MockEppLib):
                 gets invalid data from EPPLib
             Then the function throws the expected ContactErrors
         """
-        domain, _ = Domain.objects.get_or_create(name="registry.gov")
-        fakedEpp = self.fakedEppObject()
-        invalid_length = fakedEpp.dummyInfoContactResultData(
-            "Cymaticsisasubsetofmodalvibrationalphenomena", "lengthInvalid@mail.gov"
-        )
-        valid_object = fakedEpp.dummyInfoContactResultData("valid", "valid@mail.gov")
-
-        desired_error = ContactErrorCodes.CONTACT_ID_INVALID_LENGTH
-        with self.assertRaises(ContactError) as context:
-            domain.map_epp_contact_to_public_contact(
-                invalid_length,
-                invalid_length.id,
-                PublicContact.ContactTypeChoices.SECURITY,
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="registry.gov")
+            fakedEpp = self.fakedEppObject()
+            invalid_length = fakedEpp.dummyInfoContactResultData(
+                "Cymaticsisasubsetofmodalvibrationalphenomena", "lengthInvalid@mail.gov"
             )
-        self.assertEqual(context.exception.code, desired_error)
+            valid_object = fakedEpp.dummyInfoContactResultData("valid", "valid@mail.gov")
 
-        desired_error = ContactErrorCodes.CONTACT_ID_NONE
-        with self.assertRaises(ContactError) as context:
-            domain.map_epp_contact_to_public_contact(
-                valid_object,
-                None,
-                PublicContact.ContactTypeChoices.SECURITY,
-            )
-        self.assertEqual(context.exception.code, desired_error)
+            desired_error = ContactErrorCodes.CONTACT_ID_INVALID_LENGTH
+            with self.assertRaises(ContactError) as context:
+                domain.map_epp_contact_to_public_contact(
+                    invalid_length,
+                    invalid_length.id,
+                    PublicContact.ContactTypeChoices.SECURITY,
+                )
+            self.assertEqual(context.exception.code, desired_error)
 
-        desired_error = ContactErrorCodes.CONTACT_INVALID_TYPE
-        with self.assertRaises(ContactError) as context:
-            domain.map_epp_contact_to_public_contact(
-                "bad_object",
-                valid_object.id,
-                PublicContact.ContactTypeChoices.SECURITY,
-            )
-        self.assertEqual(context.exception.code, desired_error)
+            desired_error = ContactErrorCodes.CONTACT_ID_NONE
+            with self.assertRaises(ContactError) as context:
+                domain.map_epp_contact_to_public_contact(
+                    valid_object,
+                    None,
+                    PublicContact.ContactTypeChoices.SECURITY,
+                )
+            self.assertEqual(context.exception.code, desired_error)
 
-        desired_error = ContactErrorCodes.CONTACT_TYPE_NONE
-        with self.assertRaises(ContactError) as context:
-            domain.map_epp_contact_to_public_contact(
-                valid_object,
-                valid_object.id,
-                None,
-            )
-        self.assertEqual(context.exception.code, desired_error)
+            desired_error = ContactErrorCodes.CONTACT_INVALID_TYPE
+            with self.assertRaises(ContactError) as context:
+                domain.map_epp_contact_to_public_contact(
+                    "bad_object",
+                    valid_object.id,
+                    PublicContact.ContactTypeChoices.SECURITY,
+                )
+            self.assertEqual(context.exception.code, desired_error)
+
+            desired_error = ContactErrorCodes.CONTACT_TYPE_NONE
+            with self.assertRaises(ContactError) as context:
+                domain.map_epp_contact_to_public_contact(
+                    valid_object,
+                    valid_object.id,
+                    None,
+                )
+            self.assertEqual(context.exception.code, desired_error)
 
 
 class TestDomainCreation(MockEppLib):
@@ -346,42 +353,44 @@ class TestDomainStatuses(MockEppLib):
 
     def test_get_status(self):
         """Domain 'statuses' getter returns statuses by calling epp"""
-        domain, _ = Domain.objects.get_or_create(name="chicken-liver.gov")
-        # trigger getter
-        _ = domain.statuses
-        status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-        self.assertEquals(domain._cache["statuses"], status_list)
-        # Called in _fetch_cache
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoDomain(name="chicken-liver.gov", auth_info=None),
-                    cleaned=True,
-                ),
-            ],
-            any_order=False,  # Ensure calls are in the specified order
-        )
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="chicken-liver.gov")
+            # trigger getter
+            _ = domain.statuses
+            status_list = [status.state for status in self.mockDataInfoDomain.statuses]
+            self.assertEquals(domain._cache["statuses"], status_list)
+            # Called in _fetch_cache
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.InfoDomain(name="chicken-liver.gov", auth_info=None),
+                        cleaned=True,
+                    ),
+                ],
+                any_order=False,  # Ensure calls are in the specified order
+            )
 
     def test_get_status_returns_empty_list_when_value_error(self):
         """Domain 'statuses' getter returns an empty list
         when value error"""
-        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov")
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov")
 
-        def side_effect(self):
-            raise KeyError
+            def side_effect(self):
+                raise KeyError
 
-        patcher = patch("registrar.models.domain.Domain._get_property")
-        mocked_get = patcher.start()
-        mocked_get.side_effect = side_effect
+            patcher = patch("registrar.models.domain.Domain._get_property")
+            mocked_get = patcher.start()
+            mocked_get.side_effect = side_effect
 
-        # trigger getter
-        _ = domain.statuses
+            # trigger getter
+            _ = domain.statuses
 
-        with self.assertRaises(KeyError):
-            _ = domain._cache["statuses"]
-        self.assertEquals(_, [])
+            with self.assertRaises(KeyError):
+                _ = domain._cache["statuses"]
+            self.assertEquals(_, [])
 
-        patcher.stop()
+            patcher.stop()
 
     @skip("not implemented yet")
     def test_place_client_hold_sets_status(self):
@@ -398,28 +407,23 @@ class TestDomainStatuses(MockEppLib):
         first_ready is set when a domain is first transitioned to READY. It does not get overwritten
         in case the domain gets out of and back into READY.
         """
-        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
-        self.assertEqual(domain.first_ready, None)
-
-        domain.ready()
-
-        # check that status is READY
-        self.assertTrue(domain.is_active())
-        self.assertNotEqual(domain.first_ready, None)
-
-        # Capture the value of first_ready
-        first_ready = domain.first_ready
-
-        # change domain status
-        domain.dns_needed()
-        self.assertFalse(domain.is_active())
-
-        # change  back to READY
-        domain.ready()
-        self.assertTrue(domain.is_active())
-
-        # assert that the value of first_ready has not changed
-        self.assertEqual(domain.first_ready, first_ready)
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
+            self.assertEqual(domain.first_ready, None)
+            domain.ready()
+            # check that status is READY
+            self.assertTrue(domain.is_active())
+            self.assertNotEqual(domain.first_ready, None)
+            # Capture the value of first_ready
+            first_ready = domain.first_ready
+            # change domain status
+            domain.dns_needed()
+            self.assertFalse(domain.is_active())
+            # change  back to READY
+            domain.ready()
+            self.assertTrue(domain.is_active())
+            # assert that the value of first_ready has not changed
+            self.assertEqual(domain.first_ready, first_ready)
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
@@ -557,37 +561,32 @@ class TestRegistrantContacts(MockEppLib):
             Then the domain has a valid security contact with CISA defaults
             And disclose flags are set to keep the email address hidden
         """
-
-        # making a domain should make it domain
-        expectedSecContact = PublicContact.get_default_security()
-        expectedSecContact.domain = self.domain
-
-        self.domain.dns_needed_from_unknown()
-
-        self.assertEqual(self.mockedSendFunction.call_count, 8)
-        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 4)
-        self.assertEqual(
-            PublicContact.objects.get(
+        with less_console_noise():
+            # making a domain should make it domain
+            expectedSecContact = PublicContact.get_default_security()
+            expectedSecContact.domain = self.domain
+            self.domain.dns_needed_from_unknown()
+            self.assertEqual(self.mockedSendFunction.call_count, 8)
+            self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 4)
+            self.assertEqual(
+                PublicContact.objects.get(
+                    domain=self.domain,
+                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
+                ).email,
+                expectedSecContact.email,
+            )
+            id = PublicContact.objects.get(
                 domain=self.domain,
                 contact_type=PublicContact.ContactTypeChoices.SECURITY,
-            ).email,
-            expectedSecContact.email,
-        )
-
-        id = PublicContact.objects.get(
-            domain=self.domain,
-            contact_type=PublicContact.ContactTypeChoices.SECURITY,
-        ).registry_id
-
-        expectedSecContact.registry_id = id
-        expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=False)
-        expectedUpdateDomain = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
-        )
-
-        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-        self.mockedSendFunction.assert_any_call(expectedUpdateDomain, cleaned=True)
+            ).registry_id
+            expectedSecContact.registry_id = id
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=False)
+            expectedUpdateDomain = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
+            )
+            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+            self.mockedSendFunction.assert_any_call(expectedUpdateDomain, cleaned=True)
 
     def test_user_adds_security_email(self):
         """
@@ -598,35 +597,31 @@ class TestRegistrantContacts(MockEppLib):
             And Domain sends `commands.UpdateDomain` to the registry with the newly
                 created contact of type 'security'
         """
-        # make a security contact that is a PublicContact
-        # make sure a security email already exists
-        self.domain.dns_needed_from_unknown()
-        expectedSecContact = PublicContact.get_default_security()
-        expectedSecContact.domain = self.domain
-        expectedSecContact.email = "newEmail@fake.com"
-        expectedSecContact.registry_id = "456"
-        expectedSecContact.name = "Fakey McFakerson"
-
-        # calls the security contact setter as if you did
-        #  self.domain.security_contact=expectedSecContact
-        expectedSecContact.save()
-
-        # no longer the default email it should be disclosed
-        expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
-
-        expectedUpdateDomain = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
-        )
-
-        # check that send has triggered the create command for the contact
-        receivedSecurityContact = PublicContact.objects.get(
-            domain=self.domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
-        )
-
-        self.assertEqual(receivedSecurityContact, expectedSecContact)
-        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-        self.mockedSendFunction.assert_any_call(expectedUpdateDomain, cleaned=True)
+        with less_console_noise():
+            # make a security contact that is a PublicContact
+            # make sure a security email already exists
+            self.domain.dns_needed_from_unknown()
+            expectedSecContact = PublicContact.get_default_security()
+            expectedSecContact.domain = self.domain
+            expectedSecContact.email = "newEmail@fake.com"
+            expectedSecContact.registry_id = "456"
+            expectedSecContact.name = "Fakey McFakerson"
+            # calls the security contact setter as if you did
+            #  self.domain.security_contact=expectedSecContact
+            expectedSecContact.save()
+            # no longer the default email it should be disclosed
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
+            expectedUpdateDomain = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
+            )
+            # check that send has triggered the create command for the contact
+            receivedSecurityContact = PublicContact.objects.get(
+                domain=self.domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
+            )
+            self.assertEqual(receivedSecurityContact, expectedSecContact)
+            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+            self.mockedSendFunction.assert_any_call(expectedUpdateDomain, cleaned=True)
 
     def test_security_email_is_idempotent(self):
         """
@@ -635,26 +630,23 @@ class TestRegistrantContacts(MockEppLib):
                 to the registry twice with identical data
             Then no errors are raised in Domain
         """
-
-        security_contact = self.domain.get_default_security_contact()
-        security_contact.registry_id = "fail"
-        security_contact.save()
-
-        self.domain.security_contact = security_contact
-
-        expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=False)
-
-        expectedUpdateDomain = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
-        )
-        expected_calls = [
-            call(expectedCreateCommand, cleaned=True),
-            call(expectedCreateCommand, cleaned=True),
-            call(expectedUpdateDomain, cleaned=True),
-        ]
-        self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
-        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
+        with less_console_noise():
+            security_contact = self.domain.get_default_security_contact()
+            security_contact.registry_id = "fail"
+            security_contact.save()
+            self.domain.security_contact = security_contact
+            expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=False)
+            expectedUpdateDomain = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
+            )
+            expected_calls = [
+                call(expectedCreateCommand, cleaned=True),
+                call(expectedCreateCommand, cleaned=True),
+                call(expectedUpdateDomain, cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
+            self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
 
     def test_user_deletes_security_email(self):
         """
@@ -667,51 +659,47 @@ class TestRegistrantContacts(MockEppLib):
             And the domain has a valid security contact with CISA defaults
             And disclose flags are set to keep the email address hidden
         """
-        old_contact = self.domain.get_default_security_contact()
-
-        old_contact.registry_id = "fail"
-        old_contact.email = "user.entered@email.com"
-        old_contact.save()
-        new_contact = self.domain.get_default_security_contact()
-        new_contact.registry_id = "fail"
-        new_contact.email = ""
-        self.domain.security_contact = new_contact
-
-        firstCreateContactCall = self._convertPublicContactToEpp(old_contact, disclose_email=True)
-        updateDomainAddCall = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[common.DomainContact(contact=old_contact.registry_id, type="security")],
-        )
-        self.assertEqual(
-            PublicContact.objects.filter(domain=self.domain).get().email,
-            PublicContact.get_default_security().email,
-        )
-        # this one triggers the fail
-        secondCreateContact = self._convertPublicContactToEpp(new_contact, disclose_email=True)
-        updateDomainRemCall = commands.UpdateDomain(
-            name=self.domain.name,
-            rem=[common.DomainContact(contact=old_contact.registry_id, type="security")],
-        )
-
-        defaultSecID = PublicContact.objects.filter(domain=self.domain).get().registry_id
-        default_security = PublicContact.get_default_security()
-        default_security.registry_id = defaultSecID
-        createDefaultContact = self._convertPublicContactToEpp(default_security, disclose_email=False)
-        updateDomainWDefault = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[common.DomainContact(contact=defaultSecID, type="security")],
-        )
-
-        expected_calls = [
-            call(firstCreateContactCall, cleaned=True),
-            call(updateDomainAddCall, cleaned=True),
-            call(secondCreateContact, cleaned=True),
-            call(updateDomainRemCall, cleaned=True),
-            call(createDefaultContact, cleaned=True),
-            call(updateDomainWDefault, cleaned=True),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
+        with less_console_noise():
+            old_contact = self.domain.get_default_security_contact()
+            old_contact.registry_id = "fail"
+            old_contact.email = "user.entered@email.com"
+            old_contact.save()
+            new_contact = self.domain.get_default_security_contact()
+            new_contact.registry_id = "fail"
+            new_contact.email = ""
+            self.domain.security_contact = new_contact
+            firstCreateContactCall = self._convertPublicContactToEpp(old_contact, disclose_email=True)
+            updateDomainAddCall = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[common.DomainContact(contact=old_contact.registry_id, type="security")],
+            )
+            self.assertEqual(
+                PublicContact.objects.filter(domain=self.domain).get().email,
+                PublicContact.get_default_security().email,
+            )
+            # this one triggers the fail
+            secondCreateContact = self._convertPublicContactToEpp(new_contact, disclose_email=True)
+            updateDomainRemCall = commands.UpdateDomain(
+                name=self.domain.name,
+                rem=[common.DomainContact(contact=old_contact.registry_id, type="security")],
+            )
+            defaultSecID = PublicContact.objects.filter(domain=self.domain).get().registry_id
+            default_security = PublicContact.get_default_security()
+            default_security.registry_id = defaultSecID
+            createDefaultContact = self._convertPublicContactToEpp(default_security, disclose_email=False)
+            updateDomainWDefault = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[common.DomainContact(contact=defaultSecID, type="security")],
+            )
+            expected_calls = [
+                call(firstCreateContactCall, cleaned=True),
+                call(updateDomainAddCall, cleaned=True),
+                call(secondCreateContact, cleaned=True),
+                call(updateDomainRemCall, cleaned=True),
+                call(createDefaultContact, cleaned=True),
+                call(updateDomainWDefault, cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
 
     def test_updates_security_email(self):
         """
@@ -721,29 +709,28 @@ class TestRegistrantContacts(MockEppLib):
                 security contact email
             Then Domain sends `commands.UpdateContact` to the registry
         """
-        security_contact = self.domain.get_default_security_contact()
-        security_contact.email = "originalUserEmail@gmail.com"
-        security_contact.registry_id = "fail"
-        security_contact.save()
-        expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=True)
-
-        expectedUpdateDomain = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
-        )
-        security_contact.email = "changedEmail@email.com"
-        security_contact.save()
-        expectedSecondCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=True)
-        updateContact = self._convertPublicContactToEpp(security_contact, disclose_email=True, createContact=False)
-
-        expected_calls = [
-            call(expectedCreateCommand, cleaned=True),
-            call(expectedUpdateDomain, cleaned=True),
-            call(expectedSecondCreateCommand, cleaned=True),
-            call(updateContact, cleaned=True),
-        ]
-        self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
-        self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
+        with less_console_noise():
+            security_contact = self.domain.get_default_security_contact()
+            security_contact.email = "originalUserEmail@gmail.com"
+            security_contact.registry_id = "fail"
+            security_contact.save()
+            expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=True)
+            expectedUpdateDomain = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
+            )
+            security_contact.email = "changedEmail@email.com"
+            security_contact.save()
+            expectedSecondCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=True)
+            updateContact = self._convertPublicContactToEpp(security_contact, disclose_email=True, createContact=False)
+            expected_calls = [
+                call(expectedCreateCommand, cleaned=True),
+                call(expectedUpdateDomain, cleaned=True),
+                call(expectedSecondCreateCommand, cleaned=True),
+                call(updateContact, cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expected_calls, any_order=True)
+            self.assertEqual(PublicContact.objects.filter(domain=self.domain).count(), 1)
 
     def test_security_email_returns_on_registry_error(self):
         """
@@ -751,28 +738,26 @@ class TestRegistrantContacts(MockEppLib):
             Registry is unavailable and throws exception when attempting to build cache from
             registry. Security email retrieved from database.
         """
-        # Use self.domain_contact which has been initialized with existing contacts, including securityContact
+        with less_console_noise():
+            # Use self.domain_contact which has been initialized with existing contacts, including securityContact
+            # call get_security_email to initially set the security_contact_registry_id in the domain model
+            self.domain_contact.get_security_email()
+            # invalidate the cache so the next time get_security_email is called, it has to attempt to populate cache
+            self.domain_contact._invalidate_cache()
 
-        # call get_security_email to initially set the security_contact_registry_id in the domain model
-        self.domain_contact.get_security_email()
-        # invalidate the cache so the next time get_security_email is called, it has to attempt to populate cache
-        self.domain_contact._invalidate_cache()
+            # mock that registry throws an error on the EPP send
+            def side_effect(_request, cleaned):
+                raise RegistryError(code=ErrorCode.COMMAND_FAILED)
 
-        # mock that registry throws an error on the EPP send
-        def side_effect(_request, cleaned):
-            raise RegistryError(code=ErrorCode.COMMAND_FAILED)
-
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        # when get_security_email is called, the registry error will force the security contact
-        # to be retrieved using the security_contact_registry_id in the domain model
-        security_email = self.domain_contact.get_security_email()
-
-        # assert that the proper security contact was retrieved by testing the email matches expected value
-        self.assertEqual(security_email, "security@mail.gov")
-        patcher.stop()
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
+            # when get_security_email is called, the registry error will force the security contact
+            # to be retrieved using the security_contact_registry_id in the domain model
+            security_email = self.domain_contact.get_security_email()
+            # assert that the proper security contact was retrieved by testing the email matches expected value
+            self.assertEqual(security_email, "security@mail.gov")
+            patcher.stop()
 
     def test_security_email_stored_on_fetch_cache(self):
         """
@@ -781,13 +766,14 @@ class TestRegistrantContacts(MockEppLib):
             The mocked data for the EPP calls for the freeman.gov domain returns a security
             contact with registry id of securityContact when InfoContact is called
         """
-        # Use self.domain_contact which has been initialized with existing contacts, including securityContact
+        with less_console_noise():
+            # Use self.domain_contact which has been initialized with existing contacts, including securityContact
 
-        # force fetch_cache to be called, which will return above documented mocked hosts
-        self.domain_contact.get_security_email()
+            # force fetch_cache to be called, which will return above documented mocked hosts
+            self.domain_contact.get_security_email()
 
-        # assert that the security_contact_registry_id in the db matches "securityContact"
-        self.assertEqual(self.domain_contact.security_contact_registry_id, "securityContact")
+            # assert that the security_contact_registry_id in the db matches "securityContact"
+            self.assertEqual(self.domain_contact.security_contact_registry_id, "securityContact")
 
     def test_not_disclosed_on_other_contacts(self):
         """
@@ -798,113 +784,101 @@ class TestRegistrantContacts(MockEppLib):
             And the field `disclose` is set to false for DF.EMAIL
                 on all fields except security
         """
-        # Generates a domain with four existing contacts
-        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
-
-        # Contact setup
-        expected_admin = domain.get_default_administrative_contact()
-        expected_admin.email = self.mockAdministrativeContact.email
-
-        expected_registrant = domain.get_default_registrant_contact()
-        expected_registrant.email = self.mockRegistrantContact.email
-
-        expected_security = domain.get_default_security_contact()
-        expected_security.email = self.mockSecurityContact.email
-
-        expected_tech = domain.get_default_technical_contact()
-        expected_tech.email = self.mockTechnicalContact.email
-
-        domain.administrative_contact = expected_admin
-        domain.registrant_contact = expected_registrant
-        domain.security_contact = expected_security
-        domain.technical_contact = expected_tech
-
-        contacts = [
-            (expected_admin, domain.administrative_contact),
-            (expected_registrant, domain.registrant_contact),
-            (expected_security, domain.security_contact),
-            (expected_tech, domain.technical_contact),
-        ]
-
-        # Test for each contact
-        for contact in contacts:
-            expected_contact = contact[0]
-            actual_contact = contact[1]
-            is_security = expected_contact.contact_type == "security"
-
-            expectedCreateCommand = self._convertPublicContactToEpp(expected_contact, disclose_email=is_security)
-
-            # Should only be disclosed if the type is security, as the email is valid
-            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-
-            # The emails should match on both items
-            self.assertEqual(expected_contact.email, actual_contact.email)
+        with less_console_noise():
+            # Generates a domain with four existing contacts
+            domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+            # Contact setup
+            expected_admin = domain.get_default_administrative_contact()
+            expected_admin.email = self.mockAdministrativeContact.email
+            expected_registrant = domain.get_default_registrant_contact()
+            expected_registrant.email = self.mockRegistrantContact.email
+            expected_security = domain.get_default_security_contact()
+            expected_security.email = self.mockSecurityContact.email
+            expected_tech = domain.get_default_technical_contact()
+            expected_tech.email = self.mockTechnicalContact.email
+            domain.administrative_contact = expected_admin
+            domain.registrant_contact = expected_registrant
+            domain.security_contact = expected_security
+            domain.technical_contact = expected_tech
+            contacts = [
+                (expected_admin, domain.administrative_contact),
+                (expected_registrant, domain.registrant_contact),
+                (expected_security, domain.security_contact),
+                (expected_tech, domain.technical_contact),
+            ]
+            # Test for each contact
+            for contact in contacts:
+                expected_contact = contact[0]
+                actual_contact = contact[1]
+                is_security = expected_contact.contact_type == "security"
+                expectedCreateCommand = self._convertPublicContactToEpp(expected_contact, disclose_email=is_security)
+                # Should only be disclosed if the type is security, as the email is valid
+                self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+                # The emails should match on both items
+                self.assertEqual(expected_contact.email, actual_contact.email)
 
     def test_convert_public_contact_to_epp(self):
-        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
-        dummy_contact = domain.get_default_security_contact()
-        test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=True).__dict__
-        test_not_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=False).__dict__
-
-        # Separated for linter
-        disclose_email_field = {common.DiscloseField.EMAIL}
-        expected_disclose = {
-            "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-            "disclose": common.Disclose(flag=True, fields=disclose_email_field, types=None),
-            "email": "dotgov@cisa.dhs.gov",
-            "extensions": [],
-            "fax": None,
-            "id": "ThIq2NcRIDN7PauO",
-            "ident": None,
-            "notify_email": None,
-            "postal_info": common.PostalInfo(
-                name="Registry Customer Service",
-                addr=common.ContactAddr(
-                    street=["4200 Wilson Blvd.", None, None],
-                    city="Arlington",
-                    pc="22201",
-                    cc="US",
-                    sp="VA",
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+            dummy_contact = domain.get_default_security_contact()
+            test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=True).__dict__
+            test_not_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=False).__dict__
+            # Separated for linter
+            disclose_email_field = {common.DiscloseField.EMAIL}
+            expected_disclose = {
+                "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+                "disclose": common.Disclose(flag=True, fields=disclose_email_field, types=None),
+                "email": "dotgov@cisa.dhs.gov",
+                "extensions": [],
+                "fax": None,
+                "id": "ThIq2NcRIDN7PauO",
+                "ident": None,
+                "notify_email": None,
+                "postal_info": common.PostalInfo(
+                    name="Registry Customer Service",
+                    addr=common.ContactAddr(
+                        street=["4200 Wilson Blvd.", None, None],
+                        city="Arlington",
+                        pc="22201",
+                        cc="US",
+                        sp="VA",
+                    ),
+                    org="Cybersecurity and Infrastructure Security Agency",
+                    type="loc",
                 ),
-                org="Cybersecurity and Infrastructure Security Agency",
-                type="loc",
-            ),
-            "vat": None,
-            "voice": "+1.8882820870",
-        }
-
-        # Separated for linter
-        expected_not_disclose = {
-            "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-            "disclose": common.Disclose(flag=False, fields=disclose_email_field, types=None),
-            "email": "dotgov@cisa.dhs.gov",
-            "extensions": [],
-            "fax": None,
-            "id": "ThrECENCHI76PGLh",
-            "ident": None,
-            "notify_email": None,
-            "postal_info": common.PostalInfo(
-                name="Registry Customer Service",
-                addr=common.ContactAddr(
-                    street=["4200 Wilson Blvd.", None, None],
-                    city="Arlington",
-                    pc="22201",
-                    cc="US",
-                    sp="VA",
+                "vat": None,
+                "voice": "+1.8882820870",
+            }
+            # Separated for linter
+            expected_not_disclose = {
+                "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+                "disclose": common.Disclose(flag=False, fields=disclose_email_field, types=None),
+                "email": "dotgov@cisa.dhs.gov",
+                "extensions": [],
+                "fax": None,
+                "id": "ThrECENCHI76PGLh",
+                "ident": None,
+                "notify_email": None,
+                "postal_info": common.PostalInfo(
+                    name="Registry Customer Service",
+                    addr=common.ContactAddr(
+                        street=["4200 Wilson Blvd.", None, None],
+                        city="Arlington",
+                        pc="22201",
+                        cc="US",
+                        sp="VA",
+                    ),
+                    org="Cybersecurity and Infrastructure Security Agency",
+                    type="loc",
                 ),
-                org="Cybersecurity and Infrastructure Security Agency",
-                type="loc",
-            ),
-            "vat": None,
-            "voice": "+1.8882820870",
-        }
-
-        # Set the ids equal, since this value changes
-        test_disclose["id"] = expected_disclose["id"]
-        test_not_disclose["id"] = expected_not_disclose["id"]
-
-        self.assertEqual(test_disclose, expected_disclose)
-        self.assertEqual(test_not_disclose, expected_not_disclose)
+                "vat": None,
+                "voice": "+1.8882820870",
+            }
+            # Set the ids equal, since this value changes
+            test_disclose["id"] = expected_disclose["id"]
+            test_not_disclose["id"] = expected_not_disclose["id"]
+            self.assertEqual(test_disclose, expected_disclose)
+            self.assertEqual(test_not_disclose, expected_not_disclose)
 
     def test_not_disclosed_on_default_security_contact(self):
         """
@@ -913,17 +887,16 @@ class TestRegistrantContacts(MockEppLib):
             Then Domain sends `commands.CreateContact` to the registry
             And the field `disclose` is set to false for DF.EMAIL
         """
-        domain, _ = Domain.objects.get_or_create(name="defaultsecurity.gov")
-        expectedSecContact = PublicContact.get_default_security()
-        expectedSecContact.domain = domain
-        expectedSecContact.registry_id = "defaultSec"
-        domain.security_contact = expectedSecContact
-
-        expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=False)
-
-        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-        # Confirm that we are getting a default email
-        self.assertEqual(domain.security_contact.email, expectedSecContact.email)
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="defaultsecurity.gov")
+            expectedSecContact = PublicContact.get_default_security()
+            expectedSecContact.domain = domain
+            expectedSecContact.registry_id = "defaultSec"
+            domain.security_contact = expectedSecContact
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=False)
+            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+            # Confirm that we are getting a default email
+            self.assertEqual(domain.security_contact.email, expectedSecContact.email)
 
     def test_not_disclosed_on_default_technical_contact(self):
         """
@@ -932,17 +905,16 @@ class TestRegistrantContacts(MockEppLib):
             Then Domain sends `commands.CreateContact` to the registry
             And the field `disclose` is set to false for DF.EMAIL
         """
-        domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
-        expectedTechContact = PublicContact.get_default_technical()
-        expectedTechContact.domain = domain
-        expectedTechContact.registry_id = "defaultTech"
-        domain.technical_contact = expectedTechContact
-
-        expectedCreateCommand = self._convertPublicContactToEpp(expectedTechContact, disclose_email=False)
-
-        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-        # Confirm that we are getting a default email
-        self.assertEqual(domain.technical_contact.email, expectedTechContact.email)
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="defaulttechnical.gov")
+            expectedTechContact = PublicContact.get_default_technical()
+            expectedTechContact.domain = domain
+            expectedTechContact.registry_id = "defaultTech"
+            domain.technical_contact = expectedTechContact
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedTechContact, disclose_email=False)
+            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+            # Confirm that we are getting a default email
+            self.assertEqual(domain.technical_contact.email, expectedTechContact.email)
 
     def test_is_disclosed_on_security_contact(self):
         """
@@ -952,17 +924,16 @@ class TestRegistrantContacts(MockEppLib):
             Then Domain sends `commands.CreateContact` to the registry
             And the field `disclose` is set to true for DF.EMAIL
         """
-        domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        expectedSecContact = PublicContact.get_default_security()
-        expectedSecContact.domain = domain
-        expectedSecContact.email = "123@mail.gov"
-        domain.security_contact = expectedSecContact
-
-        expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
-
-        self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-        # Confirm that we are getting the desired email
-        self.assertEqual(domain.security_contact.email, expectedSecContact.email)
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+            expectedSecContact = PublicContact.get_default_security()
+            expectedSecContact.domain = domain
+            expectedSecContact.email = "123@mail.gov"
+            domain.security_contact = expectedSecContact
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
+            self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
+            # Confirm that we are getting the desired email
+            self.assertEqual(domain.security_contact.email, expectedSecContact.email)
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
@@ -974,121 +945,112 @@ class TestRegistrantContacts(MockEppLib):
         raise
 
     def test_contact_getter_security(self):
-        security = PublicContact.ContactTypeChoices.SECURITY
-        # Create prexisting object
-        expected_contact = self.domain.map_epp_contact_to_public_contact(
-            self.mockSecurityContact,
-            contact_id="securityContact",
-            contact_type=security,
-        )
-
-        # Checks if we grabbed the correct PublicContact
-        self.assertEqual(self.domain_contact.security_contact.email, expected_contact.email)
-
-        expected_contact_db = PublicContact.objects.filter(
-            registry_id=self.domain_contact.security_contact.registry_id,
-            contact_type=security,
-        ).get()
-
-        self.assertEqual(self.domain_contact.security_contact, expected_contact_db)
-
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoContact(id="securityContact", auth_info=None),
-                    cleaned=True,
-                ),
-            ]
-        )
-        # Checks if we are receiving the cache we expect
-        cache = self.domain_contact._cache["contacts"]
-        self.assertEqual(cache.get(security), "securityContact")
+        with less_console_noise():
+            security = PublicContact.ContactTypeChoices.SECURITY
+            # Create prexisting object
+            expected_contact = self.domain.map_epp_contact_to_public_contact(
+                self.mockSecurityContact,
+                contact_id="securityContact",
+                contact_type=security,
+            )
+            # Checks if we grabbed the correct PublicContact
+            self.assertEqual(self.domain_contact.security_contact.email, expected_contact.email)
+            expected_contact_db = PublicContact.objects.filter(
+                registry_id=self.domain_contact.security_contact.registry_id,
+                contact_type=security,
+            ).get()
+            self.assertEqual(self.domain_contact.security_contact, expected_contact_db)
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.InfoContact(id="securityContact", auth_info=None),
+                        cleaned=True,
+                    ),
+                ]
+            )
+            # Checks if we are receiving the cache we expect
+            cache = self.domain_contact._cache["contacts"]
+            self.assertEqual(cache.get(security), "securityContact")
 
     def test_contact_getter_technical(self):
-        technical = PublicContact.ContactTypeChoices.TECHNICAL
-        expected_contact = self.domain.map_epp_contact_to_public_contact(
-            self.mockTechnicalContact,
-            contact_id="technicalContact",
-            contact_type=technical,
-        )
-
-        self.assertEqual(self.domain_contact.technical_contact.email, expected_contact.email)
-
-        # Checks if we grab the correct PublicContact
-        expected_contact_db = PublicContact.objects.filter(
-            registry_id=self.domain_contact.technical_contact.registry_id,
-            contact_type=technical,
-        ).get()
-
-        # Checks if we grab the correct PublicContact
-        self.assertEqual(self.domain_contact.technical_contact, expected_contact_db)
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoContact(id="technicalContact", auth_info=None),
-                    cleaned=True,
-                ),
-            ]
-        )
-        # Checks if we are receiving the cache we expect
-        cache = self.domain_contact._cache["contacts"]
-        self.assertEqual(cache.get(technical), "technicalContact")
+        with less_console_noise():
+            technical = PublicContact.ContactTypeChoices.TECHNICAL
+            expected_contact = self.domain.map_epp_contact_to_public_contact(
+                self.mockTechnicalContact,
+                contact_id="technicalContact",
+                contact_type=technical,
+            )
+            self.assertEqual(self.domain_contact.technical_contact.email, expected_contact.email)
+            # Checks if we grab the correct PublicContact
+            expected_contact_db = PublicContact.objects.filter(
+                registry_id=self.domain_contact.technical_contact.registry_id,
+                contact_type=technical,
+            ).get()
+            # Checks if we grab the correct PublicContact
+            self.assertEqual(self.domain_contact.technical_contact, expected_contact_db)
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.InfoContact(id="technicalContact", auth_info=None),
+                        cleaned=True,
+                    ),
+                ]
+            )
+            # Checks if we are receiving the cache we expect
+            cache = self.domain_contact._cache["contacts"]
+            self.assertEqual(cache.get(technical), "technicalContact")
 
     def test_contact_getter_administrative(self):
-        administrative = PublicContact.ContactTypeChoices.ADMINISTRATIVE
-        expected_contact = self.domain.map_epp_contact_to_public_contact(
-            self.mockAdministrativeContact,
-            contact_id="adminContact",
-            contact_type=administrative,
-        )
-
-        self.assertEqual(self.domain_contact.administrative_contact.email, expected_contact.email)
-
-        expected_contact_db = PublicContact.objects.filter(
-            registry_id=self.domain_contact.administrative_contact.registry_id,
-            contact_type=administrative,
-        ).get()
-
-        # Checks if we grab the correct PublicContact
-        self.assertEqual(self.domain_contact.administrative_contact, expected_contact_db)
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoContact(id="adminContact", auth_info=None),
-                    cleaned=True,
-                ),
-            ]
-        )
-        # Checks if we are receiving the cache we expect
-        cache = self.domain_contact._cache["contacts"]
-        self.assertEqual(cache.get(administrative), "adminContact")
+        with less_console_noise():
+            administrative = PublicContact.ContactTypeChoices.ADMINISTRATIVE
+            expected_contact = self.domain.map_epp_contact_to_public_contact(
+                self.mockAdministrativeContact,
+                contact_id="adminContact",
+                contact_type=administrative,
+            )
+            self.assertEqual(self.domain_contact.administrative_contact.email, expected_contact.email)
+            expected_contact_db = PublicContact.objects.filter(
+                registry_id=self.domain_contact.administrative_contact.registry_id,
+                contact_type=administrative,
+            ).get()
+            # Checks if we grab the correct PublicContact
+            self.assertEqual(self.domain_contact.administrative_contact, expected_contact_db)
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.InfoContact(id="adminContact", auth_info=None),
+                        cleaned=True,
+                    ),
+                ]
+            )
+            # Checks if we are receiving the cache we expect
+            cache = self.domain_contact._cache["contacts"]
+            self.assertEqual(cache.get(administrative), "adminContact")
 
     def test_contact_getter_registrant(self):
-        expected_contact = self.domain.map_epp_contact_to_public_contact(
-            self.mockRegistrantContact,
-            contact_id="regContact",
-            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
-        )
-
-        self.assertEqual(self.domain_contact.registrant_contact.email, expected_contact.email)
-
-        expected_contact_db = PublicContact.objects.filter(
-            registry_id=self.domain_contact.registrant_contact.registry_id,
-            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
-        ).get()
-
-        # Checks if we grab the correct PublicContact
-        self.assertEqual(self.domain_contact.registrant_contact, expected_contact_db)
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.InfoContact(id="regContact", auth_info=None),
-                    cleaned=True,
-                ),
-            ]
-        )
-        # Checks if we are receiving the cache we expect.
-        self.assertEqual(self.domain_contact._cache["registrant"], expected_contact_db)
+        with less_console_noise():
+            expected_contact = self.domain.map_epp_contact_to_public_contact(
+                self.mockRegistrantContact,
+                contact_id="regContact",
+                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            )
+            self.assertEqual(self.domain_contact.registrant_contact.email, expected_contact.email)
+            expected_contact_db = PublicContact.objects.filter(
+                registry_id=self.domain_contact.registrant_contact.registry_id,
+                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            ).get()
+            # Checks if we grab the correct PublicContact
+            self.assertEqual(self.domain_contact.registrant_contact, expected_contact_db)
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.InfoContact(id="regContact", auth_info=None),
+                        cleaned=True,
+                    ),
+                ]
+            )
+            # Checks if we are receiving the cache we expect.
+            self.assertEqual(self.domain_contact._cache["registrant"], expected_contact_db)
 
 
 class TestRegistrantNameservers(MockEppLib):
@@ -1112,76 +1074,78 @@ class TestRegistrantNameservers(MockEppLib):
 
     def test_get_nameserver_changes_success_deleted_vals(self):
         """Testing only deleting and no other changes"""
-        self.domain._cache["hosts"] = [
-            {"name": "ns1.example.com", "addrs": None},
-            {"name": "ns2.example.com", "addrs": ["1.2.3.4"]},
-        ]
-        newChanges = [
-            ("ns1.example.com",),
-        ]
-        (
-            deleted_values,
-            updated_values,
-            new_values,
-            oldNameservers,
-        ) = self.domain.getNameserverChanges(newChanges)
+        with less_console_noise():
+            self.domain._cache["hosts"] = [
+                {"name": "ns1.example.com", "addrs": None},
+                {"name": "ns2.example.com", "addrs": ["1.2.3.4"]},
+            ]
+            newChanges = [
+                ("ns1.example.com",),
+            ]
+            (
+                deleted_values,
+                updated_values,
+                new_values,
+                oldNameservers,
+            ) = self.domain.getNameserverChanges(newChanges)
 
-        self.assertEqual(deleted_values, ["ns2.example.com"])
-        self.assertEqual(updated_values, [])
-        self.assertEqual(new_values, {})
-        self.assertEqual(
-            oldNameservers,
-            {"ns1.example.com": None, "ns2.example.com": ["1.2.3.4"]},
-        )
+            self.assertEqual(deleted_values, ["ns2.example.com"])
+            self.assertEqual(updated_values, [])
+            self.assertEqual(new_values, {})
+            self.assertEqual(
+                oldNameservers,
+                {"ns1.example.com": None, "ns2.example.com": ["1.2.3.4"]},
+            )
 
     def test_get_nameserver_changes_success_updated_vals(self):
         """Testing only updating no other changes"""
-        self.domain._cache["hosts"] = [
-            {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3.4"]},
-        ]
-        newChanges = [
-            ("ns3.my-nameserver.gov", ["1.2.4.5"]),
-        ]
-        (
-            deleted_values,
-            updated_values,
-            new_values,
-            oldNameservers,
-        ) = self.domain.getNameserverChanges(newChanges)
-
-        self.assertEqual(deleted_values, [])
-        self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4.5"])])
-        self.assertEqual(new_values, {})
-        self.assertEqual(
-            oldNameservers,
-            {"ns3.my-nameserver.gov": ["1.2.3.4"]},
-        )
+        with less_console_noise():
+            self.domain._cache["hosts"] = [
+                {"name": "ns3.my-nameserver.gov", "addrs": ["1.2.3.4"]},
+            ]
+            newChanges = [
+                ("ns3.my-nameserver.gov", ["1.2.4.5"]),
+            ]
+            (
+                deleted_values,
+                updated_values,
+                new_values,
+                oldNameservers,
+            ) = self.domain.getNameserverChanges(newChanges)
+            self.assertEqual(deleted_values, [])
+            self.assertEqual(updated_values, [("ns3.my-nameserver.gov", ["1.2.4.5"])])
+            self.assertEqual(new_values, {})
+            self.assertEqual(
+                oldNameservers,
+                {"ns3.my-nameserver.gov": ["1.2.3.4"]},
+            )
 
     def test_get_nameserver_changes_success_new_vals(self):
-        # Testing only creating no other changes
-        self.domain._cache["hosts"] = [
-            {"name": "ns1.example.com", "addrs": None},
-        ]
-        newChanges = [
-            ("ns1.example.com",),
-            ("ns4.example.com",),
-        ]
-        (
-            deleted_values,
-            updated_values,
-            new_values,
-            oldNameservers,
-        ) = self.domain.getNameserverChanges(newChanges)
+        with less_console_noise():
+            # Testing only creating no other changes
+            self.domain._cache["hosts"] = [
+                {"name": "ns1.example.com", "addrs": None},
+            ]
+            newChanges = [
+                ("ns1.example.com",),
+                ("ns4.example.com",),
+            ]
+            (
+                deleted_values,
+                updated_values,
+                new_values,
+                oldNameservers,
+            ) = self.domain.getNameserverChanges(newChanges)
 
-        self.assertEqual(deleted_values, [])
-        self.assertEqual(updated_values, [])
-        self.assertEqual(new_values, {"ns4.example.com": None})
-        self.assertEqual(
-            oldNameservers,
-            {
-                "ns1.example.com": None,
-            },
-        )
+            self.assertEqual(deleted_values, [])
+            self.assertEqual(updated_values, [])
+            self.assertEqual(new_values, {"ns4.example.com": None})
+            self.assertEqual(
+                oldNameservers,
+                {
+                    "ns1.example.com": None,
+                },
+            )
 
     def test_user_adds_one_nameserver(self):
         """
@@ -1193,32 +1157,27 @@ class TestRegistrantNameservers(MockEppLib):
             And `domain.is_active` returns False
             And domain.first_ready is null
         """
-
-        # set 1 nameserver
-        nameserver = "ns1.my-nameserver.com"
-        self.domain.nameservers = [(nameserver,)]
-
-        # when we create a host, we should've updated at the same time
-        created_host = commands.CreateHost(nameserver)
-        update_domain_with_created = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[common.HostObjSet([created_host.name])],
-            rem=[],
-        )
-
-        # checking if commands were sent (commands have to be sent in order)
-        expectedCalls = [
-            call(created_host, cleaned=True),
-            call(update_domain_with_created, cleaned=True),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls)
-
-        # check that status is still NOT READY
-        # as you have less than 2 nameservers
-        self.assertFalse(self.domain.is_active())
-
-        self.assertEqual(self.domain.first_ready, None)
+        with less_console_noise():
+            # set 1 nameserver
+            nameserver = "ns1.my-nameserver.com"
+            self.domain.nameservers = [(nameserver,)]
+            # when we create a host, we should've updated at the same time
+            created_host = commands.CreateHost(nameserver)
+            update_domain_with_created = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[common.HostObjSet([created_host.name])],
+                rem=[],
+            )
+            # checking if commands were sent (commands have to be sent in order)
+            expectedCalls = [
+                call(created_host, cleaned=True),
+                call(update_domain_with_created, cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expectedCalls)
+            # check that status is still NOT READY
+            # as you have less than 2 nameservers
+            self.assertFalse(self.domain.is_active())
+            self.assertEqual(self.domain.first_ready, None)
 
     def test_user_adds_two_nameservers(self):
         """
@@ -1230,36 +1189,32 @@ class TestRegistrantNameservers(MockEppLib):
             And `domain.is_active` returns True
             And domain.first_ready is not null
         """
-
-        # set 2 nameservers
-        self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
-
-        # when you create a host, you also have to update at same time
-        created_host1 = commands.CreateHost(self.nameserver1)
-        created_host2 = commands.CreateHost(self.nameserver2)
-
-        update_domain_with_created = commands.UpdateDomain(
-            name=self.domain.name,
-            add=[
-                common.HostObjSet([created_host1.name, created_host2.name]),
-            ],
-            rem=[],
-        )
-
-        infoDomain = commands.InfoDomain(name="my-nameserver.gov", auth_info=None)
-        # checking if commands were sent (commands have to be sent in order)
-        expectedCalls = [
-            call(infoDomain, cleaned=True),
-            call(created_host1, cleaned=True),
-            call(created_host2, cleaned=True),
-            call(update_domain_with_created, cleaned=True),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertEqual(4, self.mockedSendFunction.call_count)
-        # check that status is READY
-        self.assertTrue(self.domain.is_active())
-        self.assertNotEqual(self.domain.first_ready, None)
+        with less_console_noise():
+            # set 2 nameservers
+            self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
+            # when you create a host, you also have to update at same time
+            created_host1 = commands.CreateHost(self.nameserver1)
+            created_host2 = commands.CreateHost(self.nameserver2)
+            update_domain_with_created = commands.UpdateDomain(
+                name=self.domain.name,
+                add=[
+                    common.HostObjSet([created_host1.name, created_host2.name]),
+                ],
+                rem=[],
+            )
+            infoDomain = commands.InfoDomain(name="my-nameserver.gov", auth_info=None)
+            # checking if commands were sent (commands have to be sent in order)
+            expectedCalls = [
+                call(infoDomain, cleaned=True),
+                call(created_host1, cleaned=True),
+                call(created_host2, cleaned=True),
+                call(update_domain_with_created, cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+            self.assertEqual(4, self.mockedSendFunction.call_count)
+            # check that status is READY
+            self.assertTrue(self.domain.is_active())
+            self.assertNotEqual(self.domain.first_ready, None)
 
     def test_user_adds_too_many_nameservers(self):
         """
@@ -1268,43 +1223,43 @@ class TestRegistrantNameservers(MockEppLib):
             When `domain.nameservers` is set to an array of length 14
             Then Domain raises a user-friendly error
         """
+        with less_console_noise():
+            # set 13+ nameservers
+            nameserver1 = "ns1.cats-are-superior1.com"
+            nameserver2 = "ns1.cats-are-superior2.com"
+            nameserver3 = "ns1.cats-are-superior3.com"
+            nameserver4 = "ns1.cats-are-superior4.com"
+            nameserver5 = "ns1.cats-are-superior5.com"
+            nameserver6 = "ns1.cats-are-superior6.com"
+            nameserver7 = "ns1.cats-are-superior7.com"
+            nameserver8 = "ns1.cats-are-superior8.com"
+            nameserver9 = "ns1.cats-are-superior9.com"
+            nameserver10 = "ns1.cats-are-superior10.com"
+            nameserver11 = "ns1.cats-are-superior11.com"
+            nameserver12 = "ns1.cats-are-superior12.com"
+            nameserver13 = "ns1.cats-are-superior13.com"
+            nameserver14 = "ns1.cats-are-superior14.com"
 
-        # set 13+ nameservers
-        nameserver1 = "ns1.cats-are-superior1.com"
-        nameserver2 = "ns1.cats-are-superior2.com"
-        nameserver3 = "ns1.cats-are-superior3.com"
-        nameserver4 = "ns1.cats-are-superior4.com"
-        nameserver5 = "ns1.cats-are-superior5.com"
-        nameserver6 = "ns1.cats-are-superior6.com"
-        nameserver7 = "ns1.cats-are-superior7.com"
-        nameserver8 = "ns1.cats-are-superior8.com"
-        nameserver9 = "ns1.cats-are-superior9.com"
-        nameserver10 = "ns1.cats-are-superior10.com"
-        nameserver11 = "ns1.cats-are-superior11.com"
-        nameserver12 = "ns1.cats-are-superior12.com"
-        nameserver13 = "ns1.cats-are-superior13.com"
-        nameserver14 = "ns1.cats-are-superior14.com"
+            def _get_14_nameservers():
+                self.domain.nameservers = [
+                    (nameserver1,),
+                    (nameserver2,),
+                    (nameserver3,),
+                    (nameserver4,),
+                    (nameserver5,),
+                    (nameserver6,),
+                    (nameserver7,),
+                    (nameserver8,),
+                    (nameserver9),
+                    (nameserver10,),
+                    (nameserver11,),
+                    (nameserver12,),
+                    (nameserver13,),
+                    (nameserver14,),
+                ]
 
-        def _get_14_nameservers():
-            self.domain.nameservers = [
-                (nameserver1,),
-                (nameserver2,),
-                (nameserver3,),
-                (nameserver4,),
-                (nameserver5,),
-                (nameserver6,),
-                (nameserver7,),
-                (nameserver8,),
-                (nameserver9),
-                (nameserver10,),
-                (nameserver11,),
-                (nameserver12,),
-                (nameserver13,),
-                (nameserver14,),
-            ]
-
-        self.assertRaises(NameserverError, _get_14_nameservers)
-        self.assertEqual(self.mockedSendFunction.call_count, 0)
+            self.assertRaises(NameserverError, _get_14_nameservers)
+            self.assertEqual(self.mockedSendFunction.call_count, 0)
 
     def test_user_removes_some_nameservers(self):
         """
@@ -1315,37 +1270,36 @@ class TestRegistrantNameservers(MockEppLib):
                 to the registry
             And `domain.is_active` returns True
         """
-
-        # Mock is set to return 3 nameservers on infodomain
-        self.domainWithThreeNS.nameservers = [(self.nameserver1,), (self.nameserver2,)]
-        expectedCalls = [
-            # calls info domain, and info on all hosts
-            # to get past values
-            # then removes the single host and updates domain
-            call(
-                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
-                cleaned=True,
-            ),
-            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-            call(
-                commands.UpdateDomain(
-                    name=self.domainWithThreeNS.name,
-                    add=[],
-                    rem=[common.HostObjSet(hosts=["ns1.cats-are-superior3.com"])],
-                    nsset=None,
-                    keyset=None,
-                    registrant=None,
-                    auth_info=None,
+        with less_console_noise():
+            # Mock is set to return 3 nameservers on infodomain
+            self.domainWithThreeNS.nameservers = [(self.nameserver1,), (self.nameserver2,)]
+            expectedCalls = [
+                # calls info domain, and info on all hosts
+                # to get past values
+                # then removes the single host and updates domain
+                call(
+                    commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
+                    cleaned=True,
                 ),
-                cleaned=True,
-            ),
-            call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertTrue(self.domainWithThreeNS.is_active())
+                call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+                call(
+                    commands.UpdateDomain(
+                        name=self.domainWithThreeNS.name,
+                        add=[],
+                        rem=[common.HostObjSet(hosts=["ns1.cats-are-superior3.com"])],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+            self.assertTrue(self.domainWithThreeNS.is_active())
 
     def test_user_removes_too_many_nameservers(self):
         """
@@ -1357,41 +1311,40 @@ class TestRegistrantNameservers(MockEppLib):
             And `domain.is_active` returns False
 
         """
-
-        self.domainWithThreeNS.nameservers = [(self.nameserver1,)]
-        expectedCalls = [
-            call(
-                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
-                cleaned=True,
-            ),
-            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-            call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(
-                commands.UpdateDomain(
-                    name=self.domainWithThreeNS.name,
-                    add=[],
-                    rem=[
-                        common.HostObjSet(
-                            hosts=[
-                                "ns1.my-nameserver-2.com",
-                                "ns1.cats-are-superior3.com",
-                            ]
-                        ),
-                    ],
-                    nsset=None,
-                    keyset=None,
-                    registrant=None,
-                    auth_info=None,
+        with less_console_noise():
+            self.domainWithThreeNS.nameservers = [(self.nameserver1,)]
+            expectedCalls = [
+                call(
+                    commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
+                    cleaned=True,
                 ),
-                cleaned=True,
-            ),
-            call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertFalse(self.domainWithThreeNS.is_active())
+                call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+                call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(
+                    commands.UpdateDomain(
+                        name=self.domainWithThreeNS.name,
+                        add=[],
+                        rem=[
+                            common.HostObjSet(
+                                hosts=[
+                                    "ns1.my-nameserver-2.com",
+                                    "ns1.cats-are-superior3.com",
+                                ]
+                            ),
+                        ],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+            self.assertFalse(self.domainWithThreeNS.is_active())
 
     def test_user_replaces_nameservers(self):
         """
@@ -1403,59 +1356,58 @@ class TestRegistrantNameservers(MockEppLib):
             And `commands.UpdateDomain` is sent to add #4 and #5 plus remove #2 and #3
             And `commands.DeleteHost` is sent to delete #2 and #3
         """
-        self.domainWithThreeNS.nameservers = [
-            (self.nameserver1,),
-            ("ns1.cats-are-superior1.com",),
-            ("ns1.cats-are-superior2.com",),
-        ]
-
-        expectedCalls = [
-            call(
-                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
-                cleaned=True,
-            ),
-            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-            call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(
-                commands.CreateHost(name="ns1.cats-are-superior1.com", addrs=[]),
-                cleaned=True,
-            ),
-            call(
-                commands.CreateHost(name="ns1.cats-are-superior2.com", addrs=[]),
-                cleaned=True,
-            ),
-            call(
-                commands.UpdateDomain(
-                    name=self.domainWithThreeNS.name,
-                    add=[
-                        common.HostObjSet(
-                            hosts=[
-                                "ns1.cats-are-superior1.com",
-                                "ns1.cats-are-superior2.com",
-                            ]
-                        ),
-                    ],
-                    rem=[
-                        common.HostObjSet(
-                            hosts=[
-                                "ns1.my-nameserver-2.com",
-                                "ns1.cats-are-superior3.com",
-                            ]
-                        ),
-                    ],
-                    nsset=None,
-                    keyset=None,
-                    registrant=None,
-                    auth_info=None,
+        with less_console_noise():
+            self.domainWithThreeNS.nameservers = [
+                (self.nameserver1,),
+                ("ns1.cats-are-superior1.com",),
+                ("ns1.cats-are-superior2.com",),
+            ]
+            expectedCalls = [
+                call(
+                    commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
+                    cleaned=True,
                 ),
-                cleaned=True,
-            ),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertTrue(self.domainWithThreeNS.is_active())
+                call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+                call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(
+                    commands.CreateHost(name="ns1.cats-are-superior1.com", addrs=[]),
+                    cleaned=True,
+                ),
+                call(
+                    commands.CreateHost(name="ns1.cats-are-superior2.com", addrs=[]),
+                    cleaned=True,
+                ),
+                call(
+                    commands.UpdateDomain(
+                        name=self.domainWithThreeNS.name,
+                        add=[
+                            common.HostObjSet(
+                                hosts=[
+                                    "ns1.cats-are-superior1.com",
+                                    "ns1.cats-are-superior2.com",
+                                ]
+                            ),
+                        ],
+                        rem=[
+                            common.HostObjSet(
+                                hosts=[
+                                    "ns1.my-nameserver-2.com",
+                                    "ns1.cats-are-superior3.com",
+                                ]
+                            ),
+                        ],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+            ]
+            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+            self.assertTrue(self.domainWithThreeNS.is_active())
 
     def test_user_cannot_add_subordinate_without_ip(self):
         """
@@ -1465,11 +1417,10 @@ class TestRegistrantNameservers(MockEppLib):
                 with a subdomain of the domain and no IP addresses
             Then Domain raises a user-friendly error
         """
-
-        dotgovnameserver = "my-nameserver.gov"
-
-        with self.assertRaises(NameserverError):
-            self.domain.nameservers = [(dotgovnameserver,)]
+        with less_console_noise():
+            dotgovnameserver = "my-nameserver.gov"
+            with self.assertRaises(NameserverError):
+                self.domain.nameservers = [(dotgovnameserver,)]
 
     def test_user_updates_ips(self):
         """
@@ -1480,46 +1431,45 @@ class TestRegistrantNameservers(MockEppLib):
                 with a different IP address(es)
             Then `commands.UpdateHost` is sent to the registry
         """
-        domain, _ = Domain.objects.get_or_create(name="nameserverwithip.gov", state=Domain.State.READY)
-        domain.nameservers = [
-            ("ns1.nameserverwithip.gov", ["2.3.4.5", "1.2.3.4"]),
-            (
-                "ns2.nameserverwithip.gov",
-                ["1.2.3.4", "2.3.4.5", "2001:0db8:85a3:0000:0000:8a2e:0370:7334"],
-            ),
-            ("ns3.nameserverwithip.gov", ["2.3.4.5"]),
-        ]
-
-        expectedCalls = [
-            call(
-                commands.InfoDomain(name="nameserverwithip.gov", auth_info=None),
-                cleaned=True,
-            ),
-            call(commands.InfoHost(name="ns1.nameserverwithip.gov"), cleaned=True),
-            call(commands.InfoHost(name="ns2.nameserverwithip.gov"), cleaned=True),
-            call(commands.InfoHost(name="ns3.nameserverwithip.gov"), cleaned=True),
-            call(
-                commands.UpdateHost(
-                    name="ns2.nameserverwithip.gov",
-                    add=[common.Ip(addr="2001:0db8:85a3:0000:0000:8a2e:0370:7334", ip="v6")],
-                    rem=[],
-                    chg=None,
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="nameserverwithip.gov", state=Domain.State.READY)
+            domain.nameservers = [
+                ("ns1.nameserverwithip.gov", ["2.3.4.5", "1.2.3.4"]),
+                (
+                    "ns2.nameserverwithip.gov",
+                    ["1.2.3.4", "2.3.4.5", "2001:0db8:85a3:0000:0000:8a2e:0370:7334"],
                 ),
-                cleaned=True,
-            ),
-            call(
-                commands.UpdateHost(
-                    name="ns3.nameserverwithip.gov",
-                    add=[],
-                    rem=[common.Ip(addr="1.2.3.4", ip=None)],
-                    chg=None,
+                ("ns3.nameserverwithip.gov", ["2.3.4.5"]),
+            ]
+            expectedCalls = [
+                call(
+                    commands.InfoDomain(name="nameserverwithip.gov", auth_info=None),
+                    cleaned=True,
                 ),
-                cleaned=True,
-            ),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertTrue(domain.is_active())
+                call(commands.InfoHost(name="ns1.nameserverwithip.gov"), cleaned=True),
+                call(commands.InfoHost(name="ns2.nameserverwithip.gov"), cleaned=True),
+                call(commands.InfoHost(name="ns3.nameserverwithip.gov"), cleaned=True),
+                call(
+                    commands.UpdateHost(
+                        name="ns2.nameserverwithip.gov",
+                        add=[common.Ip(addr="2001:0db8:85a3:0000:0000:8a2e:0370:7334", ip="v6")],
+                        rem=[],
+                        chg=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(
+                    commands.UpdateHost(
+                        name="ns3.nameserverwithip.gov",
+                        add=[],
+                        rem=[common.Ip(addr="1.2.3.4", ip=None)],
+                        chg=None,
+                    ),
+                    cleaned=True,
+                ),
+            ]
+            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+            self.assertTrue(domain.is_active())
 
     def test_user_cannot_add_non_subordinate_with_ip(self):
         """
@@ -1529,10 +1479,10 @@ class TestRegistrantNameservers(MockEppLib):
                 which is not a subdomain of the domain and has IP addresses
             Then Domain raises a user-friendly error
         """
-        dotgovnameserver = "mynameserverdotgov.gov"
-
-        with self.assertRaises(NameserverError):
-            self.domain.nameservers = [(dotgovnameserver, ["1.2.3"])]
+        with less_console_noise():
+            dotgovnameserver = "mynameserverdotgov.gov"
+            with self.assertRaises(NameserverError):
+                self.domain.nameservers = [(dotgovnameserver, ["1.2.3"])]
 
     def test_nameservers_are_idempotent(self):
         """
@@ -1541,60 +1491,60 @@ class TestRegistrantNameservers(MockEppLib):
                 to the registry twice with identical data
             Then no errors are raised in Domain
         """
-
-        # Checking that it doesn't create or update even if out of order
-        self.domainWithThreeNS.nameservers = [
-            (self.nameserver3,),
-            (self.nameserver1,),
-            (self.nameserver2,),
-        ]
-
-        expectedCalls = [
-            call(
-                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
-                cleaned=True,
-            ),
-            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-        ]
-
-        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertEqual(self.mockedSendFunction.call_count, 4)
+        with less_console_noise():
+            # Checking that it doesn't create or update even if out of order
+            self.domainWithThreeNS.nameservers = [
+                (self.nameserver3,),
+                (self.nameserver1,),
+                (self.nameserver2,),
+            ]
+            expectedCalls = [
+                call(
+                    commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
+                    cleaned=True,
+                ),
+                call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            ]
+            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+            self.assertEqual(self.mockedSendFunction.call_count, 4)
 
     def test_is_subdomain_with_no_ip(self):
-        domain, _ = Domain.objects.get_or_create(name="nameserversubdomain.gov", state=Domain.State.READY)
-
-        with self.assertRaises(NameserverError):
-            domain.nameservers = [
-                ("ns1.nameserversubdomain.gov",),
-                ("ns2.nameserversubdomain.gov",),
-            ]
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="nameserversubdomain.gov", state=Domain.State.READY)
+            with self.assertRaises(NameserverError):
+                domain.nameservers = [
+                    ("ns1.nameserversubdomain.gov",),
+                    ("ns2.nameserversubdomain.gov",),
+                ]
 
     def test_not_subdomain_but_has_ip(self):
-        domain, _ = Domain.objects.get_or_create(name="nameserversubdomain.gov", state=Domain.State.READY)
-
-        with self.assertRaises(NameserverError):
-            domain.nameservers = [
-                ("ns1.cats-da-best.gov", ["1.2.3.4"]),
-                ("ns2.cats-da-best.gov", ["2.3.4.5"]),
-            ]
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="nameserversubdomain.gov", state=Domain.State.READY)
+            with self.assertRaises(NameserverError):
+                domain.nameservers = [
+                    ("ns1.cats-da-best.gov", ["1.2.3.4"]),
+                    ("ns2.cats-da-best.gov", ["2.3.4.5"]),
+                ]
 
     def test_is_subdomain_but_ip_addr_not_valid(self):
-        domain, _ = Domain.objects.get_or_create(name="nameserversubdomain.gov", state=Domain.State.READY)
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="nameserversubdomain.gov", state=Domain.State.READY)
 
-        with self.assertRaises(NameserverError):
-            domain.nameservers = [
-                ("ns1.nameserversubdomain.gov", ["1.2.3"]),
-                ("ns2.nameserversubdomain.gov", ["2.3.4"]),
-            ]
+            with self.assertRaises(NameserverError):
+                domain.nameservers = [
+                    ("ns1.nameserversubdomain.gov", ["1.2.3"]),
+                    ("ns2.nameserversubdomain.gov", ["2.3.4"]),
+                ]
 
     def test_setting_not_allowed(self):
         """Scenario: A domain state is not Ready or DNS needed
         then setting nameservers is not allowed"""
-        domain, _ = Domain.objects.get_or_create(name="onholdDomain.gov", state=Domain.State.ON_HOLD)
-        with self.assertRaises(ActionNotAllowed):
-            domain.nameservers = [self.nameserver1, self.nameserver2]
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="onholdDomain.gov", state=Domain.State.ON_HOLD)
+            with self.assertRaises(ActionNotAllowed):
+                domain.nameservers = [self.nameserver1, self.nameserver2]
 
     def test_nameserver_returns_on_registry_error(self):
         """
@@ -1602,28 +1552,25 @@ class TestRegistrantNameservers(MockEppLib):
             Registry is unavailable and throws exception when attempting to build cache from
             registry. Nameservers retrieved from database.
         """
-        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-        # set the host and host_ips directly in the database; this is normally handled through
-        # fetch_cache
-        host, _ = Host.objects.get_or_create(domain=domain, name="ns1.fake.gov")
-        host_ip, _ = HostIP.objects.get_or_create(host=host, address="1.1.1.1")
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+            # set the host and host_ips directly in the database; this is normally handled through
+            # fetch_cache
+            host, _ = Host.objects.get_or_create(domain=domain, name="ns1.fake.gov")
+            host_ip, _ = HostIP.objects.get_or_create(host=host, address="1.1.1.1")
 
-        # mock that registry throws an error on the InfoHost send
+            # mock that registry throws an error on the InfoHost send
+            def side_effect(_request, cleaned):
+                raise RegistryError(code=ErrorCode.COMMAND_FAILED)
 
-        def side_effect(_request, cleaned):
-            raise RegistryError(code=ErrorCode.COMMAND_FAILED)
-
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        nameservers = domain.nameservers
-
-        self.assertEqual(len(nameservers), 1)
-        self.assertEqual(nameservers[0][0], "ns1.fake.gov")
-        self.assertEqual(nameservers[0][1], ["1.1.1.1"])
-
-        patcher.stop()
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
+            nameservers = domain.nameservers
+            self.assertEqual(len(nameservers), 1)
+            self.assertEqual(nameservers[0][0], "ns1.fake.gov")
+            self.assertEqual(nameservers[0][1], ["1.1.1.1"])
+            patcher.stop()
 
     def test_nameservers_stored_on_fetch_cache(self):
         """
@@ -1633,24 +1580,23 @@ class TestRegistrantNameservers(MockEppLib):
             of 'fake.host.com' from InfoDomain and an array of 2 IPs: 1.2.3.4 and 2.3.4.5
             from InfoHost
         """
-        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-
-        # mock the get_or_create methods for Host and HostIP
-        with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
-            HostIP.objects, "get_or_create"
-        ) as mock_host_ip_get_or_create:
-            # Set the return value for the mocks
-            mock_host_get_or_create.return_value = (Host(), True)
-            mock_host_ip_get_or_create.return_value = (HostIP(), True)
-
-            # force fetch_cache to be called, which will return above documented mocked hosts
-            domain.nameservers
-            # assert that the mocks are called
-            mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.host.com")
-            # Retrieve the mocked_host from the return value of the mock
-            actual_mocked_host, _ = mock_host_get_or_create.return_value
-            mock_host_ip_get_or_create.assert_called_with(address="2.3.4.5", host=actual_mocked_host)
-            self.assertEqual(mock_host_ip_get_or_create.call_count, 2)
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+            # mock the get_or_create methods for Host and HostIP
+            with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
+                HostIP.objects, "get_or_create"
+            ) as mock_host_ip_get_or_create:
+                # Set the return value for the mocks
+                mock_host_get_or_create.return_value = (Host(), True)
+                mock_host_ip_get_or_create.return_value = (HostIP(), True)
+                # force fetch_cache to be called, which will return above documented mocked hosts
+                domain.nameservers
+                # assert that the mocks are called
+                mock_host_get_or_create.assert_called_once_with(domain=domain, name="fake.host.com")
+                # Retrieve the mocked_host from the return value of the mock
+                actual_mocked_host, _ = mock_host_get_or_create.return_value
+                mock_host_ip_get_or_create.assert_called_with(address="2.3.4.5", host=actual_mocked_host)
+                self.assertEqual(mock_host_ip_get_or_create.call_count, 2)
 
     @skip("not implemented yet")
     def test_update_is_unsuccessful(self):
@@ -1791,54 +1737,51 @@ class TestRegistrantDNSSEC(MockEppLib):
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-        domain.dnssecdata = self.dnssecExtensionWithDsData
-
-        # get the DNS SEC extension added to the UpdateDomain command and
-        # verify that it is properly sent
-        # args[0] is the _request sent to registry
-        args, _ = mocked_send.call_args
-        # assert that the extension on the update matches
-        self.assertEquals(
-            args[0].extensions[0],
-            self.createUpdateExtension(self.dnssecExtensionWithDsData),
-        )
-        # test that the dnssecdata getter is functioning properly
-        dnssecdata_get = domain.dnssecdata
-        mocked_send.assert_has_calls(
-            [
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-dsdata.gov",
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
+            domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
+            domain.dnssecdata = self.dnssecExtensionWithDsData
+            # get the DNS SEC extension added to the UpdateDomain command and
+            # verify that it is properly sent
+            # args[0] is the _request sent to registry
+            args, _ = mocked_send.call_args
+            # assert that the extension on the update matches
+            self.assertEquals(
+                args[0].extensions[0],
+                self.createUpdateExtension(self.dnssecExtensionWithDsData),
+            )
+            # test that the dnssecdata getter is functioning properly
+            dnssecdata_get = domain.dnssecdata
+            mocked_send.assert_has_calls(
+                [
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.UpdateDomain(
-                        name="dnssec-dsdata.gov",
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
+                    call(
+                        commands.UpdateDomain(
+                            name="dnssec-dsdata.gov",
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-dsdata.gov",
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-            ]
-        )
-
-        self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
-
-        patcher.stop()
+                ]
+            )
+            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            patcher.stop()
 
     def test_dnssec_is_idempotent(self):
         """
@@ -1872,54 +1815,51 @@ class TestRegistrantDNSSEC(MockEppLib):
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-
-        # set the dnssecdata once
-        domain.dnssecdata = self.dnssecExtensionWithDsData
-        # set the dnssecdata again
-        domain.dnssecdata = self.dnssecExtensionWithDsData
-        # test that the dnssecdata getter is functioning properly
-        dnssecdata_get = domain.dnssecdata
-        mocked_send.assert_has_calls(
-            [
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-dsdata.gov",
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
+            domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
+            # set the dnssecdata once
+            domain.dnssecdata = self.dnssecExtensionWithDsData
+            # set the dnssecdata again
+            domain.dnssecdata = self.dnssecExtensionWithDsData
+            # test that the dnssecdata getter is functioning properly
+            dnssecdata_get = domain.dnssecdata
+            mocked_send.assert_has_calls(
+                [
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.UpdateDomain(
-                        name="dnssec-dsdata.gov",
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
+                    call(
+                        commands.UpdateDomain(
+                            name="dnssec-dsdata.gov",
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-dsdata.gov",
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-dsdata.gov",
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-            ]
-        )
-
-        self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
-
-        patcher.stop()
+                ]
+            )
+            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            patcher.stop()
 
     def test_user_adds_dnssec_data_multiple_dsdata(self):
         """
@@ -1949,48 +1889,45 @@ class TestRegistrantDNSSEC(MockEppLib):
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        domain, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
-
-        domain.dnssecdata = self.dnssecExtensionWithMultDsData
-        # get the DNS SEC extension added to the UpdateDomain command
-        # and verify that it is properly sent
-        # args[0] is the _request sent to registry
-        args, _ = mocked_send.call_args
-        # assert that the extension matches
-        self.assertEquals(
-            args[0].extensions[0],
-            self.createUpdateExtension(self.dnssecExtensionWithMultDsData),
-        )
-        # test that the dnssecdata getter is functioning properly
-        dnssecdata_get = domain.dnssecdata
-        mocked_send.assert_has_calls(
-            [
-                call(
-                    commands.UpdateDomain(
-                        name="dnssec-multdsdata.gov",
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
+            domain, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
+            domain.dnssecdata = self.dnssecExtensionWithMultDsData
+            # get the DNS SEC extension added to the UpdateDomain command
+            # and verify that it is properly sent
+            # args[0] is the _request sent to registry
+            args, _ = mocked_send.call_args
+            # assert that the extension matches
+            self.assertEquals(
+                args[0].extensions[0],
+                self.createUpdateExtension(self.dnssecExtensionWithMultDsData),
+            )
+            # test that the dnssecdata getter is functioning properly
+            dnssecdata_get = domain.dnssecdata
+            mocked_send.assert_has_calls(
+                [
+                    call(
+                        commands.UpdateDomain(
+                            name="dnssec-multdsdata.gov",
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-multdsdata.gov",
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-multdsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-            ]
-        )
-
-        self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
-
-        patcher.stop()
+                ]
+            )
+            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
+            patcher.stop()
 
     def test_user_removes_dnssec_data(self):
         """
@@ -2021,65 +1958,64 @@ class TestRegistrantDNSSEC(MockEppLib):
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-        # dnssecdata_get_initial = domain.dnssecdata  # call to force initial mock
-        # domain._invalidate_cache()
-        domain.dnssecdata = self.dnssecExtensionWithDsData
-        domain.dnssecdata = self.dnssecExtensionRemovingDsData
-        # get the DNS SEC extension added to the UpdateDomain command and
-        # verify that it is properly sent
-        # args[0] is the _request sent to registry
-        args, _ = mocked_send.call_args
-        # assert that the extension on the update matches
-        self.assertEquals(
-            args[0].extensions[0],
-            self.createUpdateExtension(
-                self.dnssecExtensionWithDsData,
-                remove=True,
-            ),
-        )
-        mocked_send.assert_has_calls(
-            [
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-dsdata.gov",
-                    ),
-                    cleaned=True,
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
+            domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
+            # dnssecdata_get_initial = domain.dnssecdata  # call to force initial mock
+            # domain._invalidate_cache()
+            domain.dnssecdata = self.dnssecExtensionWithDsData
+            domain.dnssecdata = self.dnssecExtensionRemovingDsData
+            # get the DNS SEC extension added to the UpdateDomain command and
+            # verify that it is properly sent
+            # args[0] is the _request sent to registry
+            args, _ = mocked_send.call_args
+            # assert that the extension on the update matches
+            self.assertEquals(
+                args[0].extensions[0],
+                self.createUpdateExtension(
+                    self.dnssecExtensionWithDsData,
+                    remove=True,
                 ),
-                call(
-                    commands.UpdateDomain(
-                        name="dnssec-dsdata.gov",
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
+            )
+            mocked_send.assert_has_calls(
+                [
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.InfoDomain(
-                        name="dnssec-dsdata.gov",
+                    call(
+                        commands.UpdateDomain(
+                            name="dnssec-dsdata.gov",
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.UpdateDomain(
-                        name="dnssec-dsdata.gov",
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
+                    call(
+                        commands.InfoDomain(
+                            name="dnssec-dsdata.gov",
+                        ),
+                        cleaned=True,
                     ),
-                    cleaned=True,
-                ),
-            ]
-        )
-
-        patcher.stop()
+                    call(
+                        commands.UpdateDomain(
+                            name="dnssec-dsdata.gov",
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
+                    ),
+                ]
+            )
+            patcher.stop()
 
     def test_update_is_unsuccessful(self):
         """
@@ -2087,12 +2023,11 @@ class TestRegistrantDNSSEC(MockEppLib):
             When an error is returned from epplibwrapper
             Then a user-friendly error message is returned for displaying on the web
         """
-
-        domain, _ = Domain.objects.get_or_create(name="dnssec-invalid.gov")
-
-        with self.assertRaises(RegistryError) as err:
-            domain.dnssecdata = self.dnssecExtensionWithDsData
-            self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="dnssec-invalid.gov")
+            with self.assertRaises(RegistryError) as err:
+                domain.dnssecdata = self.dnssecExtensionWithDsData
+                self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
 
 
 class TestExpirationDate(MockEppLib):
@@ -2117,44 +2052,49 @@ class TestExpirationDate(MockEppLib):
 
     def test_expiration_date_setter_not_implemented(self):
         """assert that the setter for expiration date is not implemented and will raise error"""
-        with self.assertRaises(NotImplementedError):
-            self.domain.registry_expiration_date = datetime.date.today()
+        with less_console_noise():
+            with self.assertRaises(NotImplementedError):
+                self.domain.registry_expiration_date = datetime.date.today()
 
     def test_renew_domain(self):
         """assert that the renew_domain sets new expiration date in cache and saves to registrar"""
-        self.domain.renew_domain()
-        test_date = datetime.date(2023, 5, 25)
-        self.assertEquals(self.domain._cache["ex_date"], test_date)
-        self.assertEquals(self.domain.expiration_date, test_date)
+        with less_console_noise():
+            self.domain.renew_domain()
+            test_date = datetime.date(2023, 5, 25)
+            self.assertEquals(self.domain._cache["ex_date"], test_date)
+            self.assertEquals(self.domain.expiration_date, test_date)
 
     def test_renew_domain_error(self):
         """assert that the renew_domain raises an exception when registry raises error"""
-        with self.assertRaises(RegistryError):
-            self.domain_w_error.renew_domain()
+        with less_console_noise():
+            with self.assertRaises(RegistryError):
+                self.domain_w_error.renew_domain()
 
     def test_is_expired(self):
         """assert that is_expired returns true for expiration_date in past"""
-        # force fetch_cache to be called
-        self.domain.statuses
-        self.assertTrue(self.domain.is_expired)
+        with less_console_noise():
+            # force fetch_cache to be called
+            self.domain.statuses
+            self.assertTrue(self.domain.is_expired)
 
     def test_is_not_expired(self):
         """assert that is_expired returns false for expiration in future"""
-        # to do this, need to mock value returned from timezone.now
-        # set now to 2023-01-01
-        mocked_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
-        # force fetch_cache which sets the expiration date to 2023-05-25
-        self.domain.statuses
-
-        with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
-            self.assertFalse(self.domain.is_expired())
+        with less_console_noise():
+            # to do this, need to mock value returned from timezone.now
+            # set now to 2023-01-01
+            mocked_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
+            # force fetch_cache which sets the expiration date to 2023-05-25
+            self.domain.statuses
+            with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+                self.assertFalse(self.domain.is_expired())
 
     def test_expiration_date_updated_on_info_domain_call(self):
         """assert that expiration date in db is updated on info domain call"""
-        # force fetch_cache to be called
-        self.domain.statuses
-        test_date = datetime.date(2023, 5, 25)
-        self.assertEquals(self.domain.expiration_date, test_date)
+        with less_console_noise():
+            # force fetch_cache to be called
+            self.domain.statuses
+            test_date = datetime.date(2023, 5, 25)
+            self.assertEquals(self.domain.expiration_date, test_date)
 
 
 class TestCreationDate(MockEppLib):
@@ -2169,7 +2109,7 @@ class TestCreationDate(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         # creation_date returned from mockDataInfoDomain with creation date:
         # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
-        self.creation_date = datetime.datetime(2023, 5, 25, 19, 45, 35)
+        self.creation_date = make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35))
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -2212,29 +2152,30 @@ class TestAnalystClientHold(MockEppLib):
             When `domain.place_client_hold()` is called
             Then `CLIENT_HOLD` is added to the domain's statuses
         """
-        self.domain.place_client_hold()
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.UpdateDomain(
-                        name="fake.gov",
-                        add=[
-                            common.Status(
-                                state=Domain.Status.CLIENT_HOLD,
-                                description="",
-                                lang="en",
-                            )
-                        ],
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
-                    ),
-                    cleaned=True,
-                )
-            ]
-        )
-        self.assertEquals(self.domain.state, Domain.State.ON_HOLD)
+        with less_console_noise():
+            self.domain.place_client_hold()
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.UpdateDomain(
+                            name="fake.gov",
+                            add=[
+                                common.Status(
+                                    state=Domain.Status.CLIENT_HOLD,
+                                    description="",
+                                    lang="en",
+                                )
+                            ],
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
+                    )
+                ]
+            )
+            self.assertEquals(self.domain.state, Domain.State.ON_HOLD)
 
     def test_analyst_places_client_hold_idempotent(self):
         """
@@ -2243,29 +2184,30 @@ class TestAnalystClientHold(MockEppLib):
             When `domain.place_client_hold()` is called
             Then Domain returns normally (without error)
         """
-        self.domain_on_hold.place_client_hold()
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.UpdateDomain(
-                        name="fake-on-hold.gov",
-                        add=[
-                            common.Status(
-                                state=Domain.Status.CLIENT_HOLD,
-                                description="",
-                                lang="en",
-                            )
-                        ],
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
-                    ),
-                    cleaned=True,
-                )
-            ]
-        )
-        self.assertEquals(self.domain_on_hold.state, Domain.State.ON_HOLD)
+        with less_console_noise():
+            self.domain_on_hold.place_client_hold()
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.UpdateDomain(
+                            name="fake-on-hold.gov",
+                            add=[
+                                common.Status(
+                                    state=Domain.Status.CLIENT_HOLD,
+                                    description="",
+                                    lang="en",
+                                )
+                            ],
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
+                    )
+                ]
+            )
+            self.assertEquals(self.domain_on_hold.state, Domain.State.ON_HOLD)
 
     def test_analyst_removes_client_hold(self):
         """
@@ -2274,29 +2216,30 @@ class TestAnalystClientHold(MockEppLib):
             When `domain.remove_client_hold()` is called
             Then `CLIENT_HOLD` is no longer in the domain's statuses
         """
-        self.domain_on_hold.revert_client_hold()
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.UpdateDomain(
-                        name="fake-on-hold.gov",
-                        rem=[
-                            common.Status(
-                                state=Domain.Status.CLIENT_HOLD,
-                                description="",
-                                lang="en",
-                            )
-                        ],
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
-                    ),
-                    cleaned=True,
-                )
-            ]
-        )
-        self.assertEquals(self.domain_on_hold.state, Domain.State.READY)
+        with less_console_noise():
+            self.domain_on_hold.revert_client_hold()
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.UpdateDomain(
+                            name="fake-on-hold.gov",
+                            rem=[
+                                common.Status(
+                                    state=Domain.Status.CLIENT_HOLD,
+                                    description="",
+                                    lang="en",
+                                )
+                            ],
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
+                    )
+                ]
+            )
+            self.assertEquals(self.domain_on_hold.state, Domain.State.READY)
 
     def test_analyst_removes_client_hold_idempotent(self):
         """
@@ -2305,29 +2248,30 @@ class TestAnalystClientHold(MockEppLib):
             When `domain.remove_client_hold()` is called
             Then Domain returns normally (without error)
         """
-        self.domain.revert_client_hold()
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.UpdateDomain(
-                        name="fake.gov",
-                        rem=[
-                            common.Status(
-                                state=Domain.Status.CLIENT_HOLD,
-                                description="",
-                                lang="en",
-                            )
-                        ],
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
-                    ),
-                    cleaned=True,
-                )
-            ]
-        )
-        self.assertEquals(self.domain.state, Domain.State.READY)
+        with less_console_noise():
+            self.domain.revert_client_hold()
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.UpdateDomain(
+                            name="fake.gov",
+                            rem=[
+                                common.Status(
+                                    state=Domain.Status.CLIENT_HOLD,
+                                    description="",
+                                    lang="en",
+                                )
+                            ],
+                            nsset=None,
+                            keyset=None,
+                            registrant=None,
+                            auth_info=None,
+                        ),
+                        cleaned=True,
+                    )
+                ]
+            )
+            self.assertEquals(self.domain.state, Domain.State.READY)
 
     def test_update_is_unsuccessful(self):
         """
@@ -2339,18 +2283,17 @@ class TestAnalystClientHold(MockEppLib):
         def side_effect(_request, cleaned):
             raise RegistryError(code=ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        # if RegistryError is raised, admin formats user-friendly
-        # error message if error is_client_error, is_session_error, or
-        # is_server_error; so test for those conditions
-        with self.assertRaises(RegistryError) as err:
-            self.domain.place_client_hold()
-            self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
-
-        patcher.stop()
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
+            # if RegistryError is raised, admin formats user-friendly
+            # error message if error is_client_error, is_session_error, or
+            # is_server_error; so test for those conditions
+            with self.assertRaises(RegistryError) as err:
+                self.domain.place_client_hold()
+                self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
+            patcher.stop()
 
 
 class TestAnalystLock(TestCase):
@@ -2443,31 +2386,28 @@ class TestAnalystDelete(MockEppLib):
 
             The deleted date is set.
         """
-        # Put the domain in client hold
-        self.domain.place_client_hold()
-        # Delete it...
-        self.domain.deletedInEpp()
-        self.domain.save()
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.DeleteDomain(name="fake.gov"),
-                    cleaned=True,
-                )
-            ]
-        )
-
-        # Domain itself should not be deleted
-        self.assertNotEqual(self.domain, None)
-
-        # Domain should have the right state
-        self.assertEqual(self.domain.state, Domain.State.DELETED)
-
-        # Domain should have a deleted
-        self.assertNotEqual(self.domain.deleted, None)
-
-        # Cache should be invalidated
-        self.assertEqual(self.domain._cache, {})
+        with less_console_noise():
+            # Put the domain in client hold
+            self.domain.place_client_hold()
+            # Delete it...
+            self.domain.deletedInEpp()
+            self.domain.save()
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.DeleteDomain(name="fake.gov"),
+                        cleaned=True,
+                    )
+                ]
+            )
+            # Domain itself should not be deleted
+            self.assertNotEqual(self.domain, None)
+            # Domain should have the right state
+            self.assertEqual(self.domain.state, Domain.State.DELETED)
+            # Domain should have a deleted
+            self.assertNotEqual(self.domain.deleted, None)
+            # Cache should be invalidated
+            self.assertEqual(self.domain._cache, {})
 
     def test_deletion_is_unsuccessful(self):
         """
@@ -2476,29 +2416,28 @@ class TestAnalystDelete(MockEppLib):
             Then a client error is returned of code 2305
             And `state` is not set to `DELETED`
         """
-        # Desired domain
-        domain, _ = Domain.objects.get_or_create(name="failDelete.gov", state=Domain.State.ON_HOLD)
-        # Put the domain in client hold
-        domain.place_client_hold()
-
-        # Delete it
-        with self.assertRaises(RegistryError) as err:
-            domain.deletedInEpp()
-            domain.save()
-            self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.DeleteDomain(name="failDelete.gov"),
-                    cleaned=True,
-                )
-            ]
-        )
-
-        # Domain itself should not be deleted
-        self.assertNotEqual(domain, None)
-        # State should not have changed
-        self.assertEqual(domain.state, Domain.State.ON_HOLD)
+        with less_console_noise():
+            # Desired domain
+            domain, _ = Domain.objects.get_or_create(name="failDelete.gov", state=Domain.State.ON_HOLD)
+            # Put the domain in client hold
+            domain.place_client_hold()
+            # Delete it
+            with self.assertRaises(RegistryError) as err:
+                domain.deletedInEpp()
+                domain.save()
+                self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.DeleteDomain(name="failDelete.gov"),
+                        cleaned=True,
+                    )
+                ]
+            )
+            # Domain itself should not be deleted
+            self.assertNotEqual(domain, None)
+            # State should not have changed
+            self.assertEqual(domain.state, Domain.State.ON_HOLD)
 
     def test_deletion_ready_fsm_failure(self):
         """
@@ -2511,15 +2450,15 @@ class TestAnalystDelete(MockEppLib):
 
             The deleted date is still null.
         """
-        self.assertEqual(self.domain.state, Domain.State.READY)
-        with self.assertRaises(TransitionNotAllowed) as err:
-            self.domain.deletedInEpp()
-            self.domain.save()
-            self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
-        # Domain should not be deleted
-        self.assertNotEqual(self.domain, None)
-        # Domain should have the right state
-        self.assertEqual(self.domain.state, Domain.State.READY)
-
-        # deleted should be null
-        self.assertEqual(self.domain.deleted, None)
+        with less_console_noise():
+            self.assertEqual(self.domain.state, Domain.State.READY)
+            with self.assertRaises(TransitionNotAllowed) as err:
+                self.domain.deletedInEpp()
+                self.domain.save()
+                self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
+            # Domain should not be deleted
+            self.assertNotEqual(self.domain, None)
+            # Domain should have the right state
+            self.assertEqual(self.domain.state, Domain.State.READY)
+            # deleted should be null
+            self.assertEqual(self.domain.deleted, None)
