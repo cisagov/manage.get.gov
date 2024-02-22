@@ -6,26 +6,27 @@
 
 The following set of rules should be followed while an incident is in progress.
 
-- The person who first notices that the site is down is responsible for using @here and notifying in #dotgov-announce that production is down
-  - This applies to any team member, including new team members and non-developers
+- The person who first notices that the site is down is responsible for using @here and notifying in #dotgov-announce that production is down.
+  - This applies to any team member, including new team members and non-developers.
 - If no engineer has acknowledged the announcement within 10 minutes, whoever discovered the site was down should call each developer via the Slack DM huddle feature. If there is no response, this should escalate to a phone call.
   - When calling, go down the [phone call list](https://docs.google.com/document/d/1k4r-1MNCfW8EXSXa-tqJQzOvJxQv0ARvHnOjjAH0LII/edit) from top to bottom until someone answers who is available to help.
   - If this incident occurs outside of regular working hours, choosing to help is on a volunteer basis, and answering a call doesn't mean an individual is truly available to assist.
-- Once an engineer is online, they should immediately start a huddle in the #dotgov-redalert channel to begin troubleshooting
+- Once an engineer is online, they should immediately start a huddle in the #dotgov-redalert channel to begin troubleshooting.
 - All available engineers should join the huddle once they see it.
   - If downtime occurs outside of working hours, team members who are off for the day may still be pinged and called but are not required to join if unavailable to do so.
-- Uncomment the banner on get.gov, so it is transparent to users that we know about the issue on manage.get.gov
+- Uncomment the banner on get.gov, so it is transparent to users that we know about the issue on manage.get.gov.
   - Designers or Developers should be able to make this change; if designers are online and can help with this task, that will allow developers to focus on fixing the bug.
-- If the problem is not solved within three hours, change the rules on Cloudflare's admin site so that navigating to manage.get.gov redirects users to get.gov. This will help them see the banner on get.gov informing them that this is a known problem
+- If the problem is not solved within three hours, change the rules on the [Cloudflare's DNS dashboard](https://dash.cloudflare.com/) so that navigating to manage.get.gov redirects users to get.gov. This will help them see the banner on get.gov informing them that this is a known problem.
 
 ## Post Incident
 
 The following checklist should be followed after the site is back up and running.
 
-- [ ] Turn off the redirect (if used) and verify functionality
-- [ ] Remove the banner on get.gov by commenting it out
+- [ ] Message in #dotgov-announce with an @here saying the issue is resolved
+- [ ] Turn off the redirect (if used) and verify functionality.
+- [ ] Remove the banner on get.gov by commenting it out.
 - [ ] Write up what happened and when; if the cause is already known, write that as well. This is a draft for internal communications and not for any public facing site and can be as simple as using bullet points.
-- [ ] If the cause is not known yet, developers should investigate the issue as the highest priority task
+- [ ] If the cause is not known yet, developers should investigate the issue as the highest priority task.
 - [ ] As close to the event as possible, such as the next day, perform a team incident retro that is an hour long. The goal of this meeting should be to inform all team members what happened and what is being done now and to collect feedback on what could have been done better. This is where the draft write up of what happened will be useful.
-- [ ] After the retro and once the bug is fully identified, an engineer should assist in writing an incident report and may be as detailed as possible for future team members to refer to. That document should be places in the [Incidents folder](https://drive.google.com/drive/folders/1LPVICVpI4Xb5KGdrNkSwhX2OAJ6hYTyu)
-- [ ] After creating the document above, the lead engineer make a draft of content that will go in the get.gov Incidents section. This Word document should be shared and reviewed by the product team before a developer adds it to get.gov
+- [ ] After the retro and once the bug is fully identified, an engineer should assist in writing an incident report and may be as detailed as possible for future team members to refer to. That document should be places in the [Incidents folder](https://drive.google.com/drive/folders/1LPVICVpI4Xb5KGdrNkSwhX2OAJ6hYTyu).
+- [ ] After creating the document above, the lead engineer make a draft of content that will go in the get.gov Incidents section. This Word document should be shared and reviewed by the product team before a developer adds it to get.gov.
