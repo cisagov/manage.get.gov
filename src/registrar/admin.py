@@ -1,17 +1,18 @@
+from datetime import date
 import logging
 
 from django import forms
 from django.db.models.functions import Concat, Coalesce
 from django.db.models import Value, CharField
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.http.response import HttpResponseRedirect
 from django.urls import reverse
+from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
 from registrar.utility import csv_export
@@ -23,6 +24,7 @@ from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
+
 
 logger = logging.getLogger(__name__)
 
@@ -1148,6 +1150,26 @@ class DomainAdmin(ListHeaderAdmin):
     # Table ordering
     ordering = ["name"]
 
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        """Custom changeform implementation to pass in context information"""
+        if extra_context is None:
+            extra_context = {}
+
+        # Pass in what the an extended expiration date would be for the expiration date modal
+        if object_id is not None:
+            domain = Domain.objects.get(pk=object_id)
+            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
+            curr_exp_date = domain.registry_expiration_date
+            if curr_exp_date < date.today():
+                extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
+            else:
+                new_date = domain.registry_expiration_date + relativedelta(years=years_to_extend_by)
+                extra_context["extended_expiration_date"] = new_date
+        else:
+            extra_context["extended_expiration_date"] = None
+
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
     def export_data_type(self, request):
         # match the CSV example with all the fields
         response = HttpResponse(content_type="text/csv")
@@ -1206,6 +1228,7 @@ class DomainAdmin(ListHeaderAdmin):
             "_edit_domain": self.do_edit_domain,
             "_delete_domain": self.do_delete_domain,
             "_get_status": self.do_get_status,
+            "_extend_expiration_date": self.do_extend_expiration_date,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -1215,6 +1238,81 @@ class DomainAdmin(ListHeaderAdmin):
 
         # If no matching action button is found, return the super method
         return super().response_change(request, obj)
+
+    def do_extend_expiration_date(self, request, obj):
+        """Extends a domains expiration date by one year from the current date"""
+
+        # Make sure we're dealing with a Domain
+        if not isinstance(obj, Domain):
+            self.message_user(request, "Object is not of type Domain.", messages.ERROR)
+            return None
+
+        years = self._get_calculated_years_for_exp_date(obj)
+
+        # Renew the domain.
+        try:
+            obj.renew_domain(length=years)
+            self.message_user(
+                request,
+                "Successfully extended the expiration date.",
+            )
+        except RegistryError as err:
+            if err.is_connection_error():
+                error_message = "Error connecting to the registry."
+            else:
+                error_message = f"Error extending this domain: {err}."
+            self.message_user(request, error_message, messages.ERROR)
+        except KeyError:
+            # In normal code flow, a keyerror can only occur when
+            # fresh data can't be pulled from the registry, and thus there is no cache.
+            self.message_user(
+                request,
+                "Error connecting to the registry. No expiration date was found.",
+                messages.ERROR,
+            )
+        except Exception as err:
+            logger.error(err, stack_info=True)
+            self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
+
+        return HttpResponseRedirect(".")
+
+    def _get_calculated_years_for_exp_date(self, obj, extension_period: int = 1):
+        """Given the current date, an extension period, and a registry_expiration_date
+        on the domain object, calculate the number of years needed to extend the
+        current expiration date by the extension period.
+        """
+        # Get the date we want to update to
+        desired_date = self._get_current_date() + relativedelta(years=extension_period)
+
+        # Grab the current expiration date
+        try:
+            exp_date = obj.registry_expiration_date
+        except KeyError:
+            # if no expiration date from registry, set it to today
+            logger.warning("current expiration date not set; setting to today")
+            exp_date = self._get_current_date()
+
+        # If the expiration date is super old (2020, for example), we need to
+        # "catch up" to the current year, so we add the difference.
+        # If both years match, then lets just proceed as normal.
+        calculated_exp_date = exp_date + relativedelta(years=extension_period)
+
+        year_difference = desired_date.year - exp_date.year
+
+        years = extension_period
+        if desired_date > calculated_exp_date:
+            # Max probably isn't needed here (no code flow), but it guards against negative and 0.
+            # In both of those cases, we just want to extend by the extension_period.
+            years = max(extension_period, year_difference)
+
+        return years
+
+    # Workaround for unit tests, as we cannot mock date directly.
+    # it is immutable. Rather than dealing with a convoluted workaround,
+    # lets wrap this in a function.
+    def _get_current_date(self):
+        """Gets the current date"""
+        return date.today()
 
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):
