@@ -70,6 +70,51 @@ class GenericError(Exception):
     def get_error_message(self, code=None):
         return self._error_mapping.get(code)
 
+# (Q for reviewers) What should this be called? 
+# Not a fan of this name.
+class FSMErrorCodes(IntEnum):
+    """Used when doing FSM transitions.
+    Overview of generic error codes:
+        - 1 APPROVE_DOMAIN_IN_USE The domain is already in use 
+        - 2 APPROVE_NO_INVESTIGATOR No investigator is assigned when approving
+        - 3 APPROVE_INVESTIGATOR_NOT_STAFF Investigator is a non-staff user
+    """
+    APPROVE_DOMAIN_IN_USE = 1
+    APPROVE_NO_INVESTIGATOR = 2
+    APPROVE_INVESTIGATOR_NOT_STAFF = 3
+
+
+class ApplicationStatusError(Exception):
+    """
+    Used to raise exceptions when doing FSM Transitions.
+    Uses `FSMErrorCodes` as an enum.
+    """
+
+    _error_mapping = {
+        FSMErrorCodes.APPROVE_DOMAIN_IN_USE: (
+            "Cannot approve. Requested domain is already in use."
+        ),
+        FSMErrorCodes.APPROVE_NO_INVESTIGATOR: (
+            "Cannot approve. No investigator was assigned."
+        ),
+        FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF: (
+            "Cannot approve. Investigator is not a staff user."
+        ),
+    }
+
+    def __init__(self, *args, code=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.code = code
+        if self.code in self._error_mapping:
+            self.message = self._error_mapping.get(self.code)
+
+    def __str__(self):
+        return f"{self.message}"
+
+    @classmethod
+    def get_error_message(self, code=None):
+        return self._error_mapping.get(code)
+
 
 class NameserverErrorCodes(IntEnum):
     """Used in the NameserverError class for

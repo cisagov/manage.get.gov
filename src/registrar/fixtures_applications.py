@@ -1,7 +1,7 @@
 import logging
 import random
 from faker import Faker
-
+from django.db import transaction
 from registrar.models import (
     User,
     DomainApplication,
@@ -184,6 +184,14 @@ class DomainApplicationFixture:
             logger.warning(e)
             return
 
+        # Lumped under .atomic to ensure we don't make redundant DB calls.
+        # This bundles them all together, and then saves it in a single call.
+        with transaction.atomic():
+            cls._create_applications(users)
+    
+    @classmethod
+    def _create_applications(cls, users):
+        """Creates DomainApplications given a list of users"""
         for user in users:
             logger.debug("Loading domain applications for %s" % user)
             for app in cls.DA:
@@ -211,8 +219,16 @@ class DomainFixture(DomainApplicationFixture):
             logger.warning(e)
             return
 
+        # Lumped under .atomic to ensure we don't make redundant DB calls.
+        # This bundles them all together, and then saves it in a single call.
+        with transaction.atomic():
+            # approve each user associated with `in review` status domains
+            DomainFixture._approve_applications(users)
+
+    @staticmethod
+    def _approve_applications(users):
+        """Approves all provided applications if they are in the state in_review"""
         for user in users:
-            # approve one of each users in review status domains
             application = DomainApplication.objects.filter(
                 creator=user, status=DomainApplication.ApplicationStatus.IN_REVIEW
             ).last()
@@ -220,5 +236,13 @@ class DomainFixture(DomainApplicationFixture):
 
             # We don't want fixtures sending out real emails to
             # fake email addresses, so we just skip that and log it instead
+
+            # All approvals require an investigator, so if there is none,
+            # assign one.
+            if application.investigator is None:
+                # All "users" in fixtures have admin perms per prior config.
+                # No need to check for that.
+                application.investigator = random.choice(users)
+
             application.approve(send_email=False)
             application.save()

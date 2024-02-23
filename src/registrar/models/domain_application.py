@@ -8,6 +8,7 @@ from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
+from registrar.utility.errors import ApplicationStatusError, FSMErrorCodes
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -736,8 +737,23 @@ class DomainApplication(TimeStampedModel):
 
         # create the domain
         Domain = apps.get_model("registrar.Domain")
+
+        # == Check that the application is valid == #
         if Domain.objects.filter(name=self.requested_domain.name).exists():
-            raise ValueError("Cannot approve. Requested domain is already in use.")
+            raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
+
+        # Check if an investigator is assigned. No approval is possible without one.
+        # TODO - add form level error
+        # TODO - maybe add modal if approver is not investigator as superuser
+        if self.investigator is None:
+            raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
+
+        # Investigators must be staff users. 
+        # This is handled elsewhere, but we should check here as a precaution.
+        if not self.investigator.is_staff:
+            raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
+
+        # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
 
@@ -751,6 +767,7 @@ class DomainApplication(TimeStampedModel):
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
 
+        # == Send out an email == #
         self._send_status_update_email(
             "application approved",
             "emails/status_change_approved.txt",
