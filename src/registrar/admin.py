@@ -836,7 +836,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
         # Check if an investigator is assigned. No approval is possible without one.
         if investigator is not None:
             if not investigator.is_staff:
-                # Investigators must be staff users. 
+                # Investigators must be staff users.
                 # This is handled elsewhere, but we should check here as a precaution.
                 error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
             elif investigator != current_user and not is_superuser:
@@ -847,7 +847,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
                 )
         else:
             error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
-        
+
         # Add the error
         if error_message is not None:
             self.add_error("investigator", error_message)
@@ -1003,14 +1003,14 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         """
         # Call the superclass's get_form method to get the form class
         da_form = super().get_form(request, obj, **kwargs)
-        
+
         # Define a wrapper class for the form that includes the request in its initialization.
         # This is needed such that we can inject request without otherwise altering it.
         class DomainApplicationFormWrapper(da_form):
             def __new__(cls, *args, **form_kwargs):
                 form_kwargs["request"] = request
                 return da_form(*args, **form_kwargs)
-        
+
         return DomainApplicationFormWrapper
 
     # Trigger action when a fieldset is changed
@@ -1030,7 +1030,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             )
 
             return None
-        
+
         if change:
             # Get the original application from the database
             original_obj = models.DomainApplication.objects.get(pk=obj.pk)

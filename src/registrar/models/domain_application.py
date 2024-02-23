@@ -743,7 +743,7 @@ class DomainApplication(TimeStampedModel):
         if self.investigator is None:
             raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
 
-        # Investigators must be staff users. 
+        # Investigators must be staff users.
         # This is handled elsewhere, but we should check here as a precaution.
         if not self.investigator.is_staff:
             raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)

@@ -27,29 +27,30 @@ from django_fsm import TransitionNotAllowed
 @boto3_mocking.patching
 class TestDomainApplication(TestCase):
     def setUp(self):
+        user, _ = User.objects.get_or_create(username="testpancakesyrup", is_staff=True)
         self.started_application = completed_application(
-            status=DomainApplication.ApplicationStatus.STARTED, name="started.gov"
+            status=DomainApplication.ApplicationStatus.STARTED, name="started.gov", investigator=user
         )
         self.submitted_application = completed_application(
-            status=DomainApplication.ApplicationStatus.SUBMITTED, name="submitted.gov"
+            status=DomainApplication.ApplicationStatus.SUBMITTED, name="submitted.gov", investigator=user
         )
         self.in_review_application = completed_application(
-            status=DomainApplication.ApplicationStatus.IN_REVIEW, name="in-review.gov"
+            status=DomainApplication.ApplicationStatus.IN_REVIEW, name="in-review.gov", investigator=user
         )
         self.action_needed_application = completed_application(
-            status=DomainApplication.ApplicationStatus.ACTION_NEEDED, name="action-needed.gov"
+            status=DomainApplication.ApplicationStatus.ACTION_NEEDED, name="action-needed.gov", investigator=user
         )
         self.approved_application = completed_application(
-            status=DomainApplication.ApplicationStatus.APPROVED, name="approved.gov"
+            status=DomainApplication.ApplicationStatus.APPROVED, name="approved.gov", investigator=user
         )
         self.withdrawn_application = completed_application(
-            status=DomainApplication.ApplicationStatus.WITHDRAWN, name="withdrawn.gov"
+            status=DomainApplication.ApplicationStatus.WITHDRAWN, name="withdrawn.gov", investigator=user
         )
         self.rejected_application = completed_application(
-            status=DomainApplication.ApplicationStatus.REJECTED, name="rejected.gov"
+            status=DomainApplication.ApplicationStatus.REJECTED, name="rejected.gov", investigator=user
         )
         self.ineligible_application = completed_application(
-            status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
+            status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov", investigator=user
         )
 
         self.mock_client = MockSESClient()
@@ -161,7 +162,7 @@ class TestDomainApplication(TestCase):
                     application.submit()
             self.assertEqual(application.status, application.ApplicationStatus.SUBMITTED)
 
-    def check_email_sent(self, application, msg, action, expected_count):
+    def check_email_sent(self, application: DomainApplication, msg, action, expected_count):
         """Check if an email was sent after performing an action."""
 
         with self.subTest(msg=msg, action=action):
@@ -169,7 +170,14 @@ class TestDomainApplication(TestCase):
                 with less_console_noise():
                     # Perform the specified action
                     action_method = getattr(application, action)
-                    action_method()
+                    if action == "approve" and not application.investigator:
+                        user, _ = User.objects.get_or_create(username="testwafflesyrup", is_staff=True)
+                        application.investigator = user
+                        application.save()
+                        application.refresh_from_db()
+                        action_method()
+                    else:
+                        action_method()
 
             # Check if an email was sent
             sent_emails = [
@@ -616,7 +624,10 @@ class TestPermissions(TestCase):
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
+        investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=draft_domain, investigator=investigator
+        )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -650,7 +661,10 @@ class TestDomainInformation(TestCase):
         self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
+        investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
+        application = DomainApplication.objects.create(
+            creator=user, requested_domain=draft_domain, notes="test notes", investigator=investigator
+        )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():

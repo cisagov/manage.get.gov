@@ -530,6 +530,7 @@ def completed_application(
     user=False,
     submitter=False,
     name="city.gov",
+    investigator=None,
 ):
     """A completed domain application."""
     if not user:
@@ -574,6 +575,7 @@ def completed_application(
         submitter=submitter,
         creator=user,
         status=status,
+        investigator=investigator,
     )
     if has_about_your_organization:
         domain_application_kwargs["about_your_organization"] = "e-Government"
