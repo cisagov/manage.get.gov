@@ -740,8 +740,6 @@ class DomainApplication(TimeStampedModel):
             raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
 
         # Check if an investigator is assigned. No approval is possible without one.
-        # TODO - add form level error
-        # TODO - maybe add modal if approver is not investigator as superuser
         if self.investigator is None:
             raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
 

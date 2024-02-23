@@ -786,8 +786,8 @@ class DomainApplicationAdminForm(forms.ModelForm):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
-
         application = kwargs.get("instance")
         if application and application.pk:
             current_state = application.status
@@ -813,26 +813,41 @@ class DomainApplicationAdminForm(forms.ModelForm):
         # after clean_fields.  it is used to determine form level errors.
         # is_valid is typically called from view during a post
         cleaned_data = super().clean()
-        investigator = cleaned_data.get("investigator")
         status = cleaned_data.get("status")
-        requested_domain = cleaned_data.get("requested_domain")
+        investigator = cleaned_data.get("investigator")
 
-        # Check if an investigator is assigned. No approval is possible without one.
-        # TODO - add form level error
-        # TODO - maybe add modal if approver is not investigator as superuser
-        if investigator is None:
-            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
-            self.add_error("investigator", error_message)
-        else:
-            # Investigators must be staff users. 
-            # This is handled elsewhere, but we should check here as a precaution.
-            if not investigator.is_staff:
-                error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
-                self.add_error("investigator", error_message)
-        #if status == DomainApplication.ApplicationStatus.APPROVED and investigator != request.user:
-        #raise ValidationError("Only the assigned investigator can approve this application.")
+        if status == DomainApplication.ApplicationStatus.APPROVED:
+            # Checks the "investigators" field for validity.
+            # That field must obey certain conditions when an application is approved.
+            # Will call "add_error" if any issues are found.
+            self._check_investigators_on_approval(investigator)
 
         return cleaned_data
+
+    def _check_investigators_on_approval(self, investigator):
+        """Checks the investigator field when an approval occurs"""
+
+        error_message = None
+        # Check if an investigator is assigned. No approval is possible without one.
+        if investigator is not None:
+
+            if not investigator.is_staff:
+                # Investigators must be staff users. 
+                # This is handled elsewhere, but we should check here as a precaution.
+                error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
+            elif investigator != self.request.user:
+                # If the submitting user is not the investigator, block this action.
+                # This is to enforce accountability. Superusers do not have this restriction.
+                error_message = ApplicationStatusError.get_error_message(
+                    FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_SUBMITTER
+                )
+        else:
+            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
+        
+        # Add the error
+        if error_message is not None:
+            self.add_error("investigator", error_message)
+
 
 class DomainApplicationAdmin(ListHeaderAdmin):
     """Custom domain applications admin class."""
@@ -976,6 +991,23 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["requested_domain__name"]
+
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Workaround to pass the request context to the underlying DomainApplicationAdminForm form object.
+        This is so we can do things like check the current user against a form value at submission.
+        """
+        # Call the superclass's get_form method to get the form class
+        da_form = super().get_form(request, obj, **kwargs)
+        
+        # Define a wrapper class for the form that includes the request in its initialization.
+        # This is needed such that we can inject request without otherwise altering it.
+        class DomainApplicationFormWrapper(da_form):
+            def __new__(cls, *args, **form_kwargs):
+                form_kwargs["request"] = request
+                return da_form(*args, **form_kwargs)
+        
+        return DomainApplicationFormWrapper
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
