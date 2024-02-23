@@ -1,6 +1,8 @@
+from datetime import date
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
+from django_webtest import WebTest  # type: ignore
 from django.contrib import messages
 from django.urls import reverse
 from registrar.admin import (
@@ -9,7 +11,7 @@ from registrar.admin import (
     DomainApplicationAdminForm,
     DomainInvitationAdmin,
     ListHeaderAdmin,
-    UserAdmin,
+    MyUserAdmin,
     AuditedAdmin,
     ContactAdmin,
     DomainInformationAdmin,
@@ -35,7 +37,7 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from unittest.mock import ANY, call, patch
 from unittest import skip
 
 from django.conf import settings
@@ -45,7 +47,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestDomainAdmin(MockEppLib):
+class TestDomainAdmin(MockEppLib, WebTest):
+    # csrf checks do not work with WebTest.
+    # We disable them here. TODO for another ticket.
+    csrf_checks = False
+
     def setUp(self):
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
@@ -53,7 +59,176 @@ class TestDomainAdmin(MockEppLib):
         self.superuser = create_superuser()
         self.staffuser = create_user()
         self.factory = RequestFactory()
+        self.app.set_user(self.superuser.username)
+        self.client.force_login(self.superuser)
         super().setUp()
+
+    @skip("TODO for another ticket. This test case is grabbing old db data.")
+    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
+    def test_extend_expiration_date_button(self, mock_date_today):
+        """
+        Tests if extend_expiration_date button extends correctly
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Make sure the ex date is what we expect it to be
+        domain_ex_date = Domain.objects.get(id=domain.id).expiration_date
+        self.assertEqual(domain_ex_date, date(2023, 5, 25))
+
+        # Make sure that the page is loading as expected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Grab the form to submit
+        form = response.forms["domain_form"]
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            # Submit the form
+            response = form.submit("_extend_expiration_date")
+
+            # Follow the response
+            response = response.follow()
+
+        # refresh_from_db() does not work for objects with protected=True.
+        # https://github.com/viewflow/django-fsm/issues/89
+        new_domain = Domain.objects.get(id=domain.id)
+
+        # Check that the current expiration date is what we expect
+        self.assertEqual(new_domain.expiration_date, date(2025, 5, 25))
+
+        # Assert that everything on the page looks correct
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Ensure the message we recieve is in line with what we expect
+        expected_message = "Successfully extended the expiration date."
+        expected_call = call(
+            # The WGSI request doesn't need to be tested
+            ANY,
+            messages.INFO,
+            expected_message,
+            extra_tags="",
+            fail_silently=False,
+        )
+        mock_add_message.assert_has_calls([expected_call], 1)
+
+    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
+    def test_extend_expiration_date_button_epp(self, mock_date_today):
+        """
+        Tests if extend_expiration_date button sends the right epp command
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Make sure that the page is loading as expected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Grab the form to submit
+        form = response.forms["domain_form"]
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            with patch("registrar.models.Domain.renew_domain") as renew_mock:
+                # Submit the form
+                response = form.submit("_extend_expiration_date")
+
+                # Follow the response
+                response = response.follow()
+
+        # This value is based off of the current year - the expiration date.
+        # We "freeze" time to 2024, so 2024 - 2023 will always result in an
+        # "extension" of 2, as that will be one year of extension from that date.
+        extension_length = 2
+
+        # Assert that it is calling the function with the right extension length.
+        # We only need to test the value that EPP sends, as we can assume the other
+        # test cases cover the "renew" function.
+        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+
+        # We should not make duplicate calls
+        self.assertEqual(renew_mock.call_count, 1)
+
+        # Assert that everything on the page looks correct
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Ensure the message we recieve is in line with what we expect
+        expected_message = "Successfully extended the expiration date."
+        expected_call = call(
+            # The WGSI request doesn't need to be tested
+            ANY,
+            messages.INFO,
+            expected_message,
+            extra_tags="",
+            fail_silently=False,
+        )
+        mock_add_message.assert_has_calls([expected_call], 1)
+
+    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2023, 1, 1))
+    def test_extend_expiration_date_button_date_matches_epp(self, mock_date_today):
+        """
+        Tests if extend_expiration_date button sends the right epp command
+        when the current year matches the expiration date
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Make sure that the page is loading as expected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Grab the form to submit
+        form = response.forms["domain_form"]
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            with patch("registrar.models.Domain.renew_domain") as renew_mock:
+                # Submit the form
+                response = form.submit("_extend_expiration_date")
+
+                # Follow the response
+                response = response.follow()
+
+        extension_length = 1
+
+        # Assert that it is calling the function with the right extension length.
+        # We only need to test the value that EPP sends, as we can assume the other
+        # test cases cover the "renew" function.
+        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+
+        # We should not make duplicate calls
+        self.assertEqual(renew_mock.call_count, 1)
+
+        # Assert that everything on the page looks correct
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Ensure the message we recieve is in line with what we expect
+        expected_message = "Successfully extended the expiration date."
+        expected_call = call(
+            # The WGSI request doesn't need to be tested
+            ANY,
+            messages.INFO,
+            expected_message,
+            extra_tags="",
+            fail_silently=False,
+        )
+        mock_add_message.assert_has_calls([expected_call], 1)
 
     def test_short_org_name_in_domains_list(self):
         """
@@ -949,7 +1124,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         user_request = self.factory.post(
             "/admin/autocomplete/?app_label=registrar&model_name=domainapplication&field_name=investigator"
         )
-        user_admin = UserAdmin(User, self.site)
+        user_admin = MyUserAdmin(User, self.site)
         user_queryset = user_admin.get_search_results(user_request, application_queryset, None)[0]
         current_dropdown = list(user_queryset)
 
@@ -1350,10 +1525,10 @@ class ListHeaderAdminTest(TestCase):
         User.objects.all().delete()
 
 
-class UserAdminTest(TestCase):
+class MyUserAdminTest(TestCase):
     def setUp(self):
         admin_site = AdminSite()
-        self.admin = UserAdmin(model=get_user_model(), admin_site=admin_site)
+        self.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
 
     def test_list_display_without_username(self):
         request = self.client.request().wsgi_request
@@ -1375,7 +1550,7 @@ class UserAdminTest(TestCase):
         request = self.client.request().wsgi_request
         request.user = create_superuser()
         fieldsets = self.admin.get_fieldsets(request)
-        expected_fieldsets = super(UserAdmin, self.admin).get_fieldsets(request)
+        expected_fieldsets = super(MyUserAdmin, self.admin).get_fieldsets(request)
         self.assertEqual(fieldsets, expected_fieldsets)
 
     def test_get_fieldsets_cisa_analyst(self):
@@ -1435,7 +1610,7 @@ class AuditedAdminTest(TestCase):
         desired_sort_order = list(User.objects.filter(is_staff=True).order_by(*sorted_fields))
 
         # Grab the data returned from get search results
-        admin = UserAdmin(User, self.site)
+        admin = MyUserAdmin(User, self.site)
         search_queryset = admin.get_search_results(request, application_queryset, None)[0]
         current_sort_order = list(search_queryset)
 
