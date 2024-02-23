@@ -785,13 +785,13 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     def custom_election_board(self, obj):
-        return obj.is_election_board
+        return obj.is_election_board if obj.is_election_board else False
 
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
     # Filters
-    list_filter = ("status", "organization_type", InvestigatorFilter)
+    list_filter = ("status", "organization_type", "is_election_board", "federal_type", InvestigatorFilter)
 
     # Search
     search_fields = [
@@ -1111,7 +1111,7 @@ class DomainAdmin(ListHeaderAdmin):
     state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
 
     # Filters
-    list_filter = ["domain_info__organization_type", "state"]
+    list_filter = ["domain_info__organization_type", "state", "domain_info__is_election_board", "domain_info__federal_type"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
