@@ -16,7 +16,7 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
 from registrar.utility import csv_export
-from registrar.utility.errors import ApplicationStatusError
+from registrar.utility.errors import ApplicationStatusError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from . import models
@@ -808,6 +808,31 @@ class DomainApplicationAdminForm(forms.ModelForm):
             if not application.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
 
+    def clean(self):
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        investigator = cleaned_data.get("investigator")
+        status = cleaned_data.get("status")
+        requested_domain = cleaned_data.get("requested_domain")
+
+        # Check if an investigator is assigned. No approval is possible without one.
+        # TODO - add form level error
+        # TODO - maybe add modal if approver is not investigator as superuser
+        if investigator is None:
+            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
+            self.add_error("investigator", error_message)
+        else:
+            # Investigators must be staff users. 
+            # This is handled elsewhere, but we should check here as a precaution.
+            if not investigator.is_staff:
+                error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
+                self.add_error("investigator", error_message)
+        #if status == DomainApplication.ApplicationStatus.APPROVED and investigator != request.user:
+        #raise ValidationError("Only the assigned investigator can approve this application.")
+
+        return cleaned_data
 
 class DomainApplicationAdmin(ListHeaderAdmin):
     """Custom domain applications admin class."""

@@ -114,8 +114,8 @@ class ApplicationStatusError(Exception):
         return f"{self.message}"
 
     @classmethod
-    def get_error_message(self, code=None):
-        return self._error_mapping.get(code)
+    def get_error_message(cls, code=None):
+        return cls._error_mapping.get(code)
 
 
 class NameserverErrorCodes(IntEnum):
