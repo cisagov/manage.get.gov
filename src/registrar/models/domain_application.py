@@ -391,13 +391,13 @@ class DomainApplication(TimeStampedModel):
         help_text="Is the tribe recognized by a state",
     )
 
-    tribe_name = models.TextField(
+    tribe_name = models.CharField(
         null=True,
         blank=True,
         help_text="Name of tribe",
     )
 
-    federal_agency = models.TextField(
+    federal_agency = models.CharField(
         choices=AGENCY_CHOICES,
         null=True,
         blank=True,
@@ -418,25 +418,25 @@ class DomainApplication(TimeStampedModel):
         help_text="Is your organization an election office?",
     )
 
-    organization_name = models.TextField(
+    organization_name = models.CharField(
         null=True,
         blank=True,
         help_text="Organization name",
         db_index=True,
     )
-    address_line1 = models.TextField(
+    address_line1 = models.CharField(
         null=True,
         blank=True,
         help_text="Street address",
         verbose_name="Address line 1",
     )
-    address_line2 = models.TextField(
+    address_line2 = models.CharField(
         null=True,
         blank=True,
         help_text="Street address line 2 (optional)",
         verbose_name="Address line 2",
     )
-    city = models.TextField(
+    city = models.CharField(
         null=True,
         blank=True,
         help_text="City",
@@ -455,13 +455,13 @@ class DomainApplication(TimeStampedModel):
         help_text="Zip code",
         db_index=True,
     )
-    urbanization = models.TextField(
+    urbanization = models.CharField(
         null=True,
         blank=True,
         help_text="Urbanization (required for Puerto Rico only)",
     )
 
-    about_your_organization = models.TextField(
+    about_your_organization = models.CharField(
         null=True,
         blank=True,
         help_text="Information about your organization",
