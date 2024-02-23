@@ -7,13 +7,14 @@ from registrar.models.domain import Domain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from django.contrib.auth import get_user_model
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.tests.common import MockEppLib
 from registrar.utility.csv_export import (
-    write_header,
-    write_body,
+    write_csv,
     get_default_start_date,
     get_default_end_date,
 )
+
 from django.core.management import call_command
 from unittest.mock import MagicMock, call, mock_open, patch
 from api.views import get_current_federal, get_current_full
@@ -336,11 +337,30 @@ class ExportDataTest(MockEppLib):
             federal_agency="Armed Forces Retirement Home",
         )
 
+        meoward_user = get_user_model().objects.create(
+            username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
+        )
+
+        # Test for more than 1 domain manager
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+        )
+
+        _, created = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_1, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # Test for just 1 domain manager
+        _, created = UserDomainRole.objects.get_or_create(
+            user=meoward_user, domain=self.domain_2, role=UserDomainRole.Roles.MANAGER
+        )
+
     def tearDown(self):
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         User.objects.all().delete()
+        UserDomainRole.objects.all().delete()
         super().tearDown()
 
     def test_export_domains_to_writer_security_emails(self):
@@ -383,8 +403,10 @@ class ExportDataTest(MockEppLib):
             }
             self.maxDiff = None
             # Call the export functions
-            write_header(writer, columns)
-            write_body(writer, columns, sort_fields, filter_condition)
+            write_csv(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            )
+
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -405,7 +427,7 @@ class ExportDataTest(MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
 
-    def test_write_body(self):
+    def test_write_csv(self):
         """Test that write_body returns the
         existing domain, test that sort by domain name works,
         test that filter works"""
@@ -440,8 +462,9 @@ class ExportDataTest(MockEppLib):
                 ],
             }
             # Call the export functions
-            write_header(writer, columns)
-            write_body(writer, columns, sort_fields, filter_condition)
+            write_csv(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -489,8 +512,9 @@ class ExportDataTest(MockEppLib):
                 ],
             }
             # Call the export functions
-            write_header(writer, columns)
-            write_body(writer, columns, sort_fields, filter_condition)
+            write_csv(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=False, should_write_header=True
+            )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
             # Read the content into a variable
@@ -567,20 +591,22 @@ class ExportDataTest(MockEppLib):
             }
 
             # Call the export functions
-            write_header(writer, columns)
-            write_body(
+            write_csv(
                 writer,
                 columns,
                 sort_fields,
                 filter_condition,
+                get_domain_managers=False,
+                should_write_header=True,
             )
-            write_body(
+            write_csv(
                 writer,
                 columns,
                 sort_fields_for_deleted_domains,
                 filter_conditions_for_deleted_domains,
+                get_domain_managers=False,
+                should_write_header=False,
             )
-
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
 
@@ -604,6 +630,64 @@ class ExportDataTest(MockEppLib):
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
 
+            self.assertEqual(csv_content, expected_content)
+
+    def test_export_domains_to_writer_domain_managers(self):
+        """Test that export_domains_to_writer returns the
+        expected domain managers"""
+        with less_console_noise():
+            # Create a CSV file in memory
+            csv_file = StringIO()
+            writer = csv.writer(csv_file)
+            # Define columns, sort fields, and filter condition
+
+            columns = [
+                "Domain name",
+                "Status",
+                "Expiration date",
+                "Domain type",
+                "Agency",
+                "Organization name",
+                "City",
+                "State",
+                "AO",
+                "AO email",
+                "Security contact email",
+            ]
+            sort_fields = ["domain__name"]
+            filter_condition = {
+                "domain__state__in": [
+                    Domain.State.READY,
+                    Domain.State.DNS_NEEDED,
+                    Domain.State.ON_HOLD,
+                ],
+            }
+            self.maxDiff = None
+            # Call the export functions
+            write_csv(
+                writer, columns, sort_fields, filter_condition, get_domain_managers=True, should_write_header=True
+            )
+
+            # Reset the CSV file's position to the beginning
+            csv_file.seek(0)
+            # Read the content into a variable
+            csv_content = csv_file.read()
+            # We expect READY domains,
+            # sorted alphabetially by domain name
+            expected_content = (
+                "Domain name,Status,Expiration date,Domain type,Agency,"
+                "Organization name,City,State,AO,AO email,"
+                "Security contact email,Domain manager email 1,Domain manager email 2,\n"
+                "adomain10.gov,Ready,,Federal,Armed Forces Retirement Home,,,, , ,\n"
+                "adomain2.gov,Dns needed,,Interstate,,,,, , , ,meoward@rocks.com\n"
+                "cdomain1.gov,Ready,,Federal - Executive,World War I Centennial Commission,,,"
+                ", , , ,meoward@rocks.com,info@example.com\n"
+                "ddomain3.gov,On hold,,Federal,Armed Forces Retirement Home,,,, , , ,,\n"
+            )
+            # Normalize line endings and remove commas,
+            # spaces and leading/trailing whitespace
+            csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+            expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
 
 
