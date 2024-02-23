@@ -827,15 +827,18 @@ class DomainApplicationAdminForm(forms.ModelForm):
     def _check_investigators_on_approval(self, investigator):
         """Checks the investigator field when an approval occurs"""
 
+        # Get information about the current user making the request
+        current_user = self.request.user
+        is_superuser = current_user.has_perm("registrar.full_access_permission")
+
         error_message = None
         # Check if an investigator is assigned. No approval is possible without one.
         if investigator is not None:
-
             if not investigator.is_staff:
                 # Investigators must be staff users. 
                 # This is handled elsewhere, but we should check here as a precaution.
                 error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
-            elif investigator != self.request.user:
+            elif investigator != current_user and not is_superuser:
                 # If the submitting user is not the investigator, block this action.
                 # This is to enforce accountability. Superusers do not have this restriction.
                 error_message = ApplicationStatusError.get_error_message(
