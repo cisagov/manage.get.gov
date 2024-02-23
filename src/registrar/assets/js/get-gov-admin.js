@@ -339,6 +339,10 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     }
 
     // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
+
+    // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
+    // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
+    // accurately for this edge case, we use cache and test for the back/forward navigation.
     const observer = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
           if (entry.type === "back_forward") {

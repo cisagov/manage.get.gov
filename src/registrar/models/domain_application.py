@@ -363,6 +363,7 @@ class DomainApplication(TimeStampedModel):
         )
         ORGANIZATION_ELIGIBILITY = "organization_eligibility", "Organization isn't eligible for a .gov"
         NAMING_REQUIREMENTS = "naming_requirements", "Naming requirements not met"
+        OTHER = "other", "Other"
 
     # #### Internal fields about the application #####
     status = FSMField(

@@ -8,8 +8,9 @@ REQUEST RECEIVED ON: {{ application.submission_date|date }}
 STATUS: Rejected
 
 ----------------------------------------------------------------
-
-REJECTION REASON{% if application.rejection_reason == 'domain_purpose' %}
+{% if application.rejection_reason != 'other' %}
+REJECTION REASON{% endif %}
+{% if application.rejection_reason == 'domain_purpose' %}
 Your domain request was rejected because the purpose you provided did not meet our 
 requirements. You didn’t provide enough information about how you intend to use the 
 domain. 
@@ -63,6 +64,17 @@ general public. Learn more about naming requirements for your type of organizati
 YOU CAN SUBMIT A NEW REQUEST
 We encourage you to request a domain that meets our requirements. If you have 
 questions or want to discuss potential domain names, reply to this email.
+{% elif application.rejection_reason == 'other' %}
+YOU CAN SUBMIT A NEW REQUEST
+If your organization is eligible for a .gov domain and you meet our other requirements, you can submit a new request.
+
+Learn more about:
+- Eligibility for a .gov domain <https://get.gov/domains/eligibility>
+- Choosing a .gov domain name <https://get.gov/domains/choosing>
+
+
+NEED ASSISTANCE?
+If you have questions about this domain request or need help choosing a new domain name, reply to this email.
 {% endif %}
 
 THANK YOU

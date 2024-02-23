@@ -712,6 +712,34 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
+    def test_save_model_sends_rejected_email_other(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is other."""
+
+        with less_console_noise():
+            # Ensure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.OTHER,
+            )
+            self.assert_email_is_accurate(
+                "Choosing a .gov domain name", 0, EMAIL
+            )
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+            # Approve
+            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
     def test_transition_to_rejected_without_rejection_reason_does_trigger_error(self):
         """
         When transitioning to rejected without a rejection reason, admin throws a user friendly message.

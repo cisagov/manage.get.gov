@@ -27,6 +27,7 @@ class Migration(migrations.Migration):
                     ),
                     ("organization_eligibility", "Organization isn't eligible for a .gov"),
                     ("naming_requirements", "Naming requirements not met"),
+                    ("other", "Other"),
                 ],
                 null=True,
             ),
