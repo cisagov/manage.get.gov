@@ -41,6 +41,7 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
         raise EmailSendingError("Could not access the SES client.") from exc
 
     try:
+        #if not attachment: 
         ses_client.send_email(
             FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
             Destination={"ToAddresses": [to_address]},
@@ -51,5 +52,8 @@ def send_templated_email(template_name: str, subject_template_name: str, to_addr
                 },
             },
         )
+        # else: # has attachment
+            # same as above but figure out how to attach a file
+            # via boto3 "boto3 SES file attachment"
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc

@@ -330,11 +330,12 @@ To associate a S3 instance to your sandbox, follow these steps:
 3. Click `Services` on the application nav bar
 4. Add a new service (plus symbol)
 5. Click `Marketplace Service`
-6. On the `Select the service` dropdown, select `s3`
-7. Under the dropdown on `Select Plan`, select `basic-sandbox`
-8. Under `Service Instance` enter `getgov-s3` for the name
+6. For Space, put in your sandbox initials 
+7. On the `Select the service` dropdown, select `s3`
+8. Under the dropdown on `Select Plan`, select `basic-sandbox`
+9. Under `Service Instance` enter `getgov-s3` for the name and leave the other fields empty
 
-See this [resource](https://cloud.gov/docs/services/s3/) for information on associating an S3 instance with your sandbox through the CLI. 
+See this [resource](https://cloud.gov/docs/services/s3/) for information on associating an S3 instance with your sandbox through the CLI. The basic commands should be `cf bind-service getgov-<your-initials> <getgov-s3>` and `cf restage getgov-<your-initials>`.
 
 ### Testing your S3 instance locally
 To test the S3 bucket associated with your sandbox, you will need to add four additional variables to your `.env` file. These are as follows:
