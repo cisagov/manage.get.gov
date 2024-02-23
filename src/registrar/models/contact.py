@@ -1,8 +1,8 @@
 from django.db import models
 
-from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
-
 from .utility.time_stamped_model import TimeStampedModel
+
+from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
 
 class Contact(TimeStampedModel):

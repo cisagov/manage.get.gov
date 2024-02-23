@@ -461,7 +461,7 @@ class DomainApplication(TimeStampedModel):
         help_text="Urbanization (required for Puerto Rico only)",
     )
 
-    about_your_organization = models.CharField(
+    about_your_organization = models.TextField(
         null=True,
         blank=True,
         help_text="Information about your organization",
