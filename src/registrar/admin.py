@@ -816,6 +816,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
 
+        # TODO - need some way of determining if a change has actually occurred and to enforce this only then
         if status == DomainApplication.ApplicationStatus.APPROVED:
             # Checks the "investigators" field for validity.
             # That field must obey certain conditions when an application is approved.
