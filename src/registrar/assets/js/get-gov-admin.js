@@ -23,6 +23,33 @@ function openInNewTab(el, removeAttribute = false){
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Initialization code.
 
+/** An IIFE for pages in DjangoAdmin that use modals.
+ * Dja strips out form elements, and modals generate their content outside
+ * of the current form scope, so we need to "inject" these inputs.
+*/
+(function (){
+    function createPhantomModalFormButtons(){
+        let submitButtons = document.querySelectorAll('.usa-modal button[type="submit"]');
+        form = document.querySelector("form")
+        submitButtons.forEach((button) => {
+
+            let input = document.createElement("input");
+            input.type = "submit";
+            input.name = button.name;
+            input.value = button.value;
+            input.style.display = "none"
+
+            // Add the hidden input to the form
+            form.appendChild(input);
+            button.addEventListener("click", () => {
+                console.log("clicking")
+                input.click();
+            })
+        })
+    }
+
+    createPhantomModalFormButtons();
+})();
 /** An IIFE for pages in DjangoAdmin which may need custom JS implementation.
  * Currently only appends target="_blank" to the domain_form object,
  * but this can be expanded.
@@ -41,8 +68,8 @@ function openInNewTab(el, removeAttribute = false){
         let domainFormElement = document.getElementById("domain_form");
         let domainSubmitButton = document.getElementById("manageDomainSubmitButton");
         if(domainSubmitButton && domainFormElement){
-          domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
-          domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
+            domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
+            domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
         }
     }
 
