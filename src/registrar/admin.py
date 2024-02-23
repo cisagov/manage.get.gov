@@ -953,57 +953,10 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        if obj and obj.creator.status != models.User.RESTRICTED:
-            if change:  # Check if the application is being edited
-                # Get the original application from the database
-                original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
-                if (
-                    obj
-                    and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
-                    and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
-                    and not obj.domain_is_not_active()
-                ):
-                    # If an admin tried to set an approved application to
-                    # another status and the related domain is already
-                    # active, shortcut the action and throw a friendly
-                    # error message. This action would still not go through
-                    # shortcut or not as the rules are duplicated on the model,
-                    # but the error would be an ugly Django error screen.
-
-                    # Clear the success message
-                    messages.set_level(request, messages.ERROR)
-
-                    messages.error(
-                        request,
-                        "This action is not permitted. The domain is already active.",
-                    )
-
-                else:
-                    if obj.status != original_obj.status:
-                        status_method_mapping = {
-                            models.DomainApplication.ApplicationStatus.STARTED: None,
-                            models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
-                            models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
-                            models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
-                            models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
-                            models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
-                            models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
-                            models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
-                        }
-                        selected_method = status_method_mapping.get(obj.status)
-                        if selected_method is None:
-                            logger.warning("Unknown status selected in django admin")
-                        else:
-                            # This is an fsm in model which will throw an error if the
-                            # transition condition is violated, so we roll back the
-                            # status to what it was before the admin user changed it and
-                            # let the fsm method set it.
-                            obj.status = original_obj.status
-                            selected_method()
-
-                    super().save_model(request, obj, form, change)
-        else:
+        # If the user is restricted or we're saving an invalid model,
+        # forbid this action.
+        if not obj or obj.creator.status == models.User.RESTRICTED:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
 
@@ -1011,6 +964,58 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                 request,
                 "This action is not permitted for applications with a restricted creator.",
             )
+
+            return None
+
+        if change:  # Check if the application is being edited
+            # Get the original application from the database
+            original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+
+            if (
+                obj
+                and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
+                and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
+                and not obj.domain_is_not_active()
+            ):
+                # If an admin tried to set an approved application to
+                # another status and the related domain is already
+                # active, shortcut the action and throw a friendly
+                # error message. This action would still not go through
+                # shortcut or not as the rules are duplicated on the model,
+                # but the error would be an ugly Django error screen.
+
+                # Clear the success message
+                messages.set_level(request, messages.ERROR)
+
+                messages.error(
+                    request,
+                    "This action is not permitted. The domain is already active.",
+                )
+
+            else:
+                if obj.status != original_obj.status:
+                    status_method_mapping = {
+                        models.DomainApplication.ApplicationStatus.STARTED: None,
+                        models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
+                        models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
+                        models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
+                        models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
+                        models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
+                        models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
+                        models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
+                    }
+                    selected_method = status_method_mapping.get(obj.status)
+                    if selected_method is None:
+                        logger.warning("Unknown status selected in django admin")
+                    else:
+                        # This is an fsm in model which will throw an error if the
+                        # transition condition is violated, so we roll back the
+                        # status to what it was before the admin user changed it and
+                        # let the fsm method set it.
+                        obj.status = original_obj.status
+                        selected_method()
+
+                super().save_model(request, obj, form, change)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
