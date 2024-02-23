@@ -13,6 +13,7 @@ from typing import Any
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
 from registrar.utility.enums import DefaultEmail
+from registrar.utility import errors
 
 from registrar.utility.errors import (
     ActionNotAllowed,
@@ -192,9 +193,17 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @classmethod
     def available(cls, domain: str) -> bool:
-        """Check if a domain is available."""
+        """Check if a domain is available.
+        This is called by the availablility api and
+        is called in the validate function on the request/domain page
+
+        throws- RegistryError or InvalidDomainError"""
         if not cls.string_could_be_domain(domain):
-            raise ValueError("Not a valid domain: %s" % str(domain))
+            logger.warning("Not a valid domain: %s" % str(domain))
+            # throw invalid domain error so that it can be caught in
+            # validate_and_handle_errors in domain_helper
+            raise errors.InvalidDomainError()
+
         domain_name = domain.lower()
         req = commands.CheckDomain([domain_name])
         return registry.send(req, cleaned=True).res_data[0].avail

@@ -20,7 +20,7 @@ from registrar.models.user import User
 from registrar.utility.errors import ActionNotAllowed, NameserverError
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
-
+from registrar.utility import errors
 
 from django_fsm import TransitionNotAllowed  # type: ignore
 from epplibwrapper import (
@@ -502,15 +502,25 @@ class TestDomainAvailable(MockEppLib):
         self.assertFalse(available)
         patcher.stop()
 
-    def test_domain_available_with_value_error(self):
+    def test_domain_available_with_invalid_error(self):
         """
         Scenario: Testing whether an invalid domain is available
-            Should throw ValueError
+            Should throw InvalidDomainError
 
-            Validate ValueError is raised
+            Validate InvalidDomainError is raised
         """
-        with self.assertRaises(ValueError):
+        with self.assertRaises(errors.InvalidDomainError):
             Domain.available("invalid-string")
+
+    def test_domain_available_with_empty_string(self):
+        """
+        Scenario: Testing whether an empty string domain name is available
+            Should throw InvalidDomainError
+
+            Validate InvalidDomainError is raised
+        """
+        with self.assertRaises(errors.InvalidDomainError):
+            Domain.available("")
 
     def test_domain_available_unsuccessful(self):
         """
