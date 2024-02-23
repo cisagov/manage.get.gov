@@ -1,6 +1,8 @@
+from datetime import date
 from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from contextlib import ExitStack
+from django_webtest import WebTest  # type: ignore
 from django.contrib import messages
 from django.urls import reverse
 from registrar.admin import (
@@ -35,7 +37,7 @@ from .common import (
 )
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from unittest.mock import ANY, call, patch
 from unittest import skip
 
 from django.conf import settings
@@ -45,7 +47,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestDomainAdmin(MockEppLib):
+class TestDomainAdmin(MockEppLib, WebTest):
+    # csrf checks do not work with WebTest.
+    # We disable them here. TODO for another ticket.
+    csrf_checks = False
+
     def setUp(self):
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
@@ -53,7 +59,176 @@ class TestDomainAdmin(MockEppLib):
         self.superuser = create_superuser()
         self.staffuser = create_user()
         self.factory = RequestFactory()
+        self.app.set_user(self.superuser.username)
+        self.client.force_login(self.superuser)
         super().setUp()
+
+    @skip("TODO for another ticket. This test case is grabbing old db data.")
+    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
+    def test_extend_expiration_date_button(self, mock_date_today):
+        """
+        Tests if extend_expiration_date button extends correctly
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Make sure the ex date is what we expect it to be
+        domain_ex_date = Domain.objects.get(id=domain.id).expiration_date
+        self.assertEqual(domain_ex_date, date(2023, 5, 25))
+
+        # Make sure that the page is loading as expected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Grab the form to submit
+        form = response.forms["domain_form"]
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            # Submit the form
+            response = form.submit("_extend_expiration_date")
+
+            # Follow the response
+            response = response.follow()
+
+        # refresh_from_db() does not work for objects with protected=True.
+        # https://github.com/viewflow/django-fsm/issues/89
+        new_domain = Domain.objects.get(id=domain.id)
+
+        # Check that the current expiration date is what we expect
+        self.assertEqual(new_domain.expiration_date, date(2025, 5, 25))
+
+        # Assert that everything on the page looks correct
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Ensure the message we recieve is in line with what we expect
+        expected_message = "Successfully extended the expiration date."
+        expected_call = call(
+            # The WGSI request doesn't need to be tested
+            ANY,
+            messages.INFO,
+            expected_message,
+            extra_tags="",
+            fail_silently=False,
+        )
+        mock_add_message.assert_has_calls([expected_call], 1)
+
+    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2024, 1, 1))
+    def test_extend_expiration_date_button_epp(self, mock_date_today):
+        """
+        Tests if extend_expiration_date button sends the right epp command
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Make sure that the page is loading as expected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Grab the form to submit
+        form = response.forms["domain_form"]
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            with patch("registrar.models.Domain.renew_domain") as renew_mock:
+                # Submit the form
+                response = form.submit("_extend_expiration_date")
+
+                # Follow the response
+                response = response.follow()
+
+        # This value is based off of the current year - the expiration date.
+        # We "freeze" time to 2024, so 2024 - 2023 will always result in an
+        # "extension" of 2, as that will be one year of extension from that date.
+        extension_length = 2
+
+        # Assert that it is calling the function with the right extension length.
+        # We only need to test the value that EPP sends, as we can assume the other
+        # test cases cover the "renew" function.
+        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+
+        # We should not make duplicate calls
+        self.assertEqual(renew_mock.call_count, 1)
+
+        # Assert that everything on the page looks correct
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Ensure the message we recieve is in line with what we expect
+        expected_message = "Successfully extended the expiration date."
+        expected_call = call(
+            # The WGSI request doesn't need to be tested
+            ANY,
+            messages.INFO,
+            expected_message,
+            extra_tags="",
+            fail_silently=False,
+        )
+        mock_add_message.assert_has_calls([expected_call], 1)
+
+    @patch("registrar.admin.DomainAdmin._get_current_date", return_value=date(2023, 1, 1))
+    def test_extend_expiration_date_button_date_matches_epp(self, mock_date_today):
+        """
+        Tests if extend_expiration_date button sends the right epp command
+        when the current year matches the expiration date
+        """
+
+        # Create a ready domain with a preset expiration date
+        domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Make sure that the page is loading as expected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Grab the form to submit
+        form = response.forms["domain_form"]
+
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            with patch("registrar.models.Domain.renew_domain") as renew_mock:
+                # Submit the form
+                response = form.submit("_extend_expiration_date")
+
+                # Follow the response
+                response = response.follow()
+
+        extension_length = 1
+
+        # Assert that it is calling the function with the right extension length.
+        # We only need to test the value that EPP sends, as we can assume the other
+        # test cases cover the "renew" function.
+        renew_mock.assert_has_calls([call(length=extension_length)], any_order=False)
+
+        # We should not make duplicate calls
+        self.assertEqual(renew_mock.call_count, 1)
+
+        # Assert that everything on the page looks correct
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Extend expiration date")
+
+        # Ensure the message we recieve is in line with what we expect
+        expected_message = "Successfully extended the expiration date."
+        expected_call = call(
+            # The WGSI request doesn't need to be tested
+            ANY,
+            messages.INFO,
+            expected_message,
+            extra_tags="",
+            fail_silently=False,
+        )
+        mock_add_message.assert_has_calls([expected_call], 1)
 
     def test_short_org_name_in_domains_list(self):
         """
@@ -426,7 +601,9 @@ class TestDomainApplicationAdmin(MockEppLib):
                 # Use the model admin's save_model method
                 self.admin.save_model(request, application, form=None, change=True)
 
-    def assert_email_is_accurate(self, expected_string, email_index, email_address, test_that_no_bcc=False, bcc_email_address=''):
+    def assert_email_is_accurate(
+        self, expected_string, email_index, email_address, test_that_no_bcc=False, bcc_email_address=""
+    ):
         """Helper method for the email test cases.
         email_index is the index of the email in mock_client."""
 
@@ -446,11 +623,11 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.assertIn(expected_string, email_body)
 
         if test_that_no_bcc:
-            _ = ''
+            _ = ""
             with self.assertRaises(KeyError):
                 with less_console_noise():
                     _ = kwargs["Destination"]["BccAddresses"][0]
-            self.assertEqual(_, '')
+            self.assertEqual(_, "")
 
         if bcc_email_address:
             bcc_email = kwargs["Destination"]["BccAddresses"][0]
@@ -462,7 +639,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         When transitioning to submitted from dns needed or in review on a domain request,
         no email is sent out.
-        
+
         Also test that the default email set in settings is NOT BCCd on non-prod whenever
         an email does go out."""
 
@@ -516,7 +693,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
         When transitioning to submitted from dns needed or in review on a domain request,
         no email is sent out.
-        
+
         Also test that the default email set in settings IS BCCd on prod whenever
         an email does go out."""
 
@@ -1012,8 +1189,17 @@ class TestDomainApplicationAdmin(MockEppLib):
         investigator_field = DomainApplication._meta.get_field("investigator")
 
         # We should only be displaying staff users, in alphabetical order
-        expected_dropdown = list(User.objects.filter(is_staff=True))
-        current_dropdown = list(self.admin.formfield_for_foreignkey(investigator_field, request).queryset)
+        sorted_fields = ["first_name", "last_name", "email"]
+        expected_dropdown = list(User.objects.filter(is_staff=True).order_by(*sorted_fields))
+
+        # Grab the current dropdown. We do an API call to autocomplete to get this info.
+        application_queryset = self.admin.formfield_for_foreignkey(investigator_field, request).queryset
+        user_request = self.factory.post(
+            "/admin/autocomplete/?app_label=registrar&model_name=domainapplication&field_name=investigator"
+        )
+        user_admin = MyUserAdmin(User, self.site)
+        user_queryset = user_admin.get_search_results(user_request, application_queryset, None)[0]
+        current_dropdown = list(user_queryset)
 
         self.assertEqual(expected_dropdown, current_dropdown)
 
@@ -1047,7 +1233,13 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.client.login(username="staffuser", password=p)
         request = RequestFactory().get("/")
 
-        expected_list = list(User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email"))
+        # These names have metadata embedded in them. :investigator implicitly tests if
+        # these are actually from the attribute "investigator".
+        expected_list = [
+            "AGuy AGuy last_name:investigator",
+            "FinalGuy FinalGuy last_name:investigator",
+            "SomeGuy first_name:investigator SomeGuy last_name:investigator",
+        ]
 
         # Get the actual sorted list of investigators from the lookups method
         actual_list = [item for _, item in self.admin.InvestigatorFilter.lookups(self, request, self.admin)]
@@ -1467,11 +1659,46 @@ class AuditedAdminTest(TestCase):
 
         return ordered_list
 
+    def test_alphabetically_sorted_domain_application_investigator(self):
+        """Tests if the investigator field is alphabetically sorted by mimicking
+        the call event flow"""
+        # Creates multiple domain applications - review status does not matter
+        applications = multiple_unalphabetical_domain_objects("application")
+
+        # Create a mock request
+        application_request = self.factory.post(
+            "/admin/registrar/domainapplication/{}/change/".format(applications[0].pk)
+        )
+
+        # Get the formfield data from the application page
+        application_admin = AuditedAdmin(DomainApplication, self.site)
+        field = DomainApplication.investigator.field
+        application_queryset = application_admin.formfield_for_foreignkey(field, application_request).queryset
+
+        request = self.factory.post(
+            "/admin/autocomplete/?app_label=registrar&model_name=domainapplication&field_name=investigator"
+        )
+
+        sorted_fields = ["first_name", "last_name", "email"]
+        desired_sort_order = list(User.objects.filter(is_staff=True).order_by(*sorted_fields))
+
+        # Grab the data returned from get search results
+        admin = MyUserAdmin(User, self.site)
+        search_queryset = admin.get_search_results(request, application_queryset, None)[0]
+        current_sort_order = list(search_queryset)
+
+        self.assertEqual(
+            desired_sort_order,
+            current_sort_order,
+            "Investigator is not ordered alphabetically",
+        )
+
+    # This test case should be refactored in general, as it is too overly specific and engineered
     def test_alphabetically_sorted_fk_fields_domain_application(self):
         tested_fields = [
             DomainApplication.authorizing_official.field,
             DomainApplication.submitter.field,
-            DomainApplication.investigator.field,
+            # DomainApplication.investigator.field,
             DomainApplication.creator.field,
             DomainApplication.requested_domain.field,
         ]
@@ -1489,39 +1716,40 @@ class AuditedAdminTest(TestCase):
         # but both fields are of a fixed length.
         # For test case purposes, this should be performant.
         for field in tested_fields:
-            isNamefield: bool = field == DomainApplication.requested_domain.field
-            if isNamefield:
-                sorted_fields = ["name"]
-            else:
-                sorted_fields = ["first_name", "last_name"]
-            # We want both of these to be lists, as it is richer test wise.
-
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
-            current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
-
-            # Conforms to the same object structure as desired_order
-            current_sort_order_coerced_type = []
-
-            # This is necessary as .queryset and get_queryset
-            # return lists of different types/structures.
-            # We need to parse this data and coerce them into the same type.
-            for contact in current_sort_order:
-                if not isNamefield:
-                    first = contact.first_name
-                    last = contact.last_name
+            with self.subTest(field=field):
+                isNamefield: bool = field == DomainApplication.requested_domain.field
+                if isNamefield:
+                    sorted_fields = ["name"]
                 else:
-                    first = contact.name
-                    last = None
+                    sorted_fields = ["first_name", "last_name"]
+                # We want both of these to be lists, as it is richer test wise.
 
-                name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
-                if name_tuple is not None:
-                    current_sort_order_coerced_type.append(name_tuple)
+                desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
+                current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
 
-            self.assertEqual(
-                desired_order,
-                current_sort_order_coerced_type,
-                "{} is not ordered alphabetically".format(field.name),
-            )
+                # Conforms to the same object structure as desired_order
+                current_sort_order_coerced_type = []
+
+                # This is necessary as .queryset and get_queryset
+                # return lists of different types/structures.
+                # We need to parse this data and coerce them into the same type.
+                for contact in current_sort_order:
+                    if not isNamefield:
+                        first = contact.first_name
+                        last = contact.last_name
+                    else:
+                        first = contact.name
+                        last = None
+
+                    name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
+                    if name_tuple is not None:
+                        current_sort_order_coerced_type.append(name_tuple)
+
+                self.assertEqual(
+                    desired_order,
+                    current_sort_order_coerced_type,
+                    "{} is not ordered alphabetically".format(field.name),
+                )
 
     def test_alphabetically_sorted_fk_fields_domain_information(self):
         tested_fields = [

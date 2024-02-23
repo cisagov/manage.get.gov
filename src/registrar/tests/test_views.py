@@ -51,6 +51,7 @@ class TestWithUser(MockEppLib):
         DomainInformation.objects.all().delete()
         self.user.delete()
 
+
 class TestEnvironmentVariablesEffects(TestCase):
     def setUp(self):
         self.client = Client()

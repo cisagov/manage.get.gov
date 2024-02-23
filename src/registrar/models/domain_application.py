@@ -589,7 +589,9 @@ class DomainApplication(TimeStampedModel):
             logger.error(err)
             logger.error(f"Can't query an approved domain while attempting {called_from}")
 
-    def _send_status_update_email(self, new_status, email_template, email_template_subject, send_email=True, bcc_address=''):
+    def _send_status_update_email(
+        self, new_status, email_template, email_template_subject, send_email=True, bcc_address=""
+    ):
         """Send a status update email to the submitter.
 
         The email goes to the email address that the submitter gave as their
@@ -656,7 +658,7 @@ class DomainApplication(TimeStampedModel):
         # Limit email notifications to transitions from Started and Withdrawn
         limited_statuses = [self.ApplicationStatus.STARTED, self.ApplicationStatus.WITHDRAWN]
 
-        bcc_address = ''
+        bcc_address = ""
         if settings.IS_PRODUCTION:
             bcc_address = settings.DEFAULT_FROM_EMAIL
 
