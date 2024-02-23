@@ -438,7 +438,6 @@ class Domain(TimeStampedModel, DomainHelper):
             raise NameserverError(code=nsErrorCodes.INVALID_HOST, nameserver=nameserver)
         elif cls.isSubdomain(name, nameserver) and (ip is None or ip == []):
             raise NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
-
         elif not cls.isSubdomain(name, nameserver) and (ip is not None and ip != []):
             raise NameserverError(code=nsErrorCodes.GLUE_RECORD_NOT_ALLOWED, nameserver=nameserver, ip=ip)
         elif ip is not None and ip != []:
@@ -1789,6 +1788,10 @@ class Domain(TimeStampedModel, DomainHelper):
         for cleaned_host in cleaned_hosts:
             # Check if the cleaned_host already exists
             host_in_db, host_created = Host.objects.get_or_create(domain=self, name=cleaned_host["name"])
+            # Check if the nameserver is a subdomain of the current domain
+            # If it is NOT a subdomain, we remove the IP address
+            if not Domain.isSubdomain(self.name, cleaned_host["name"]):
+                cleaned_host["addrs"] = []
             # Get cleaned list of ips for update
             cleaned_ips = cleaned_host["addrs"]
             if not host_created:
