@@ -231,6 +231,7 @@ class AuditedAdminMockData:
             first_name="{} first_name:{}".format(item_name, short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
             username="{} username:{}".format(item_name + str(uuid.uuid4())[:8], short_hand),
+            is_staff=True,
         )[0]
         return user
 
@@ -921,6 +922,11 @@ class MockEppLib(TestCase):
         ex_date=datetime.date(2023, 5, 25),
     )
 
+    mockButtonRenewedDomainExpDate = fakedEppObject(
+        "fake.gov",
+        ex_date=datetime.date(2025, 5, 25),
+    )
+
     mockDnsNeededRenewedDomainExpDate = fakedEppObject(
         "fakeneeded.gov",
         ex_date=datetime.date(2023, 2, 15),
@@ -1049,11 +1055,19 @@ class MockEppLib(TestCase):
                 res_data=[self.mockMaximumRenewedDomainExpDate],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-        else:
-            return MagicMock(
-                res_data=[self.mockRenewedDomainExpDate],
-                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-            )
+        elif getattr(_request, "name", None) == "fake.gov":
+            period = getattr(_request, "period", None)
+            extension_period = getattr(period, "length", None)
+            if extension_period == 2:
+                return MagicMock(
+                    res_data=[self.mockButtonRenewedDomainExpDate],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
+            else:
+                return MagicMock(
+                    res_data=[self.mockRenewedDomainExpDate],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
