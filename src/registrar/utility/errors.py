@@ -84,6 +84,8 @@ class FSMErrorCodes(IntEnum):
     APPROVE_INVESTIGATOR_NOT_STAFF = 3
 
 
+# (Q for reviewers) What should this be called? 
+# Not a fan of this name.
 class ApplicationStatusError(Exception):
     """
     Used to raise exceptions when doing FSM Transitions.

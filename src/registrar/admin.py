@@ -16,6 +16,7 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
 from registrar.utility import csv_export
+from registrar.utility.errors import ApplicationStatusError
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from . import models
@@ -953,6 +954,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
+        # TODO - there is an existing bug in these in that they redirect
+        # to the table rather than back, on message display
 
         # If the user is restricted or we're saving an invalid model,
         # forbid this action.
@@ -966,8 +969,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             )
 
             return None
-
-        if change:  # Check if the application is being edited
+        
+        if change:
             # Get the original application from the database
             original_obj = models.DomainApplication.objects.get(pk=obj.pk)
 
@@ -1013,9 +1016,22 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                         # status to what it was before the admin user changed it and
                         # let the fsm method set it.
                         obj.status = original_obj.status
-                        selected_method()
 
-                super().save_model(request, obj, form, change)
+                        # Try to perform the status change.
+                        # Catch ApplicationStatusError's and return the message,
+                        # as these are typically user errors.
+                        try:
+                            selected_method()
+                        except ApplicationStatusError as err:
+                            # Clear the success message, if any
+                            messages.set_level(request, messages.ERROR)
+
+                            messages.error(
+                                request,
+                                err.message,
+                            )
+
+        super().save_model(request, obj, form, change)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.

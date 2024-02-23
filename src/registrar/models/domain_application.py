@@ -638,10 +638,7 @@ class DomainApplication(TimeStampedModel):
         # can raise more informative exceptions
 
         # requested_domain could be None here
-        if not hasattr(self, "requested_domain"):
-            raise ValueError("Requested domain is missing.")
-
-        if self.requested_domain is None:
+        if not hasattr(self, "requested_domain") or self.requested_domain is None:
             raise ValueError("Requested domain is missing.")
 
         DraftDomain = apps.get_model("registrar.DraftDomain")
