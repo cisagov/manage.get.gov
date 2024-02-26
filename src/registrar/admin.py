@@ -1225,9 +1225,9 @@ class DomainAdmin(ListHeaderAdmin):
     organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
 
     def custom_election_board(self, obj):
-        domain_info = getattr(obj, 'domain_info', None)
+        domain_info = getattr(obj, "domain_info", None)
         if domain_info:
-            return "Yes" if domain_info.is_election_board else "No" 
+            return "Yes" if domain_info.is_election_board else "No"
         return "No"
 
     custom_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
