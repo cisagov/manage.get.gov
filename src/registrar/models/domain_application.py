@@ -352,19 +352,19 @@ class DomainApplication(TimeStampedModel):
     AGENCY_CHOICES = [(v, v) for v in AGENCIES]
 
     class RejectionReasons(models.TextChoices):
-        DOMAIN_PURPOSE = "domain_purpose", "Domain purpose requirements not met"
-        REQUESTOR = "requestor", "Requestor isn't authorized to make the request"
+        DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
+        REQUESTOR = "requestor_not_eligible", "Requestor not eligible to make request"
         SECOND_DOMAIN_REASONING = (
-            "second_domain_reasoning",
-            "Organization already has a domain and does not provide sufficient reasoning for a second domain",
+            "org_has_domain",
+            "Org already has a .gov domain",
         )
         CONTACTS_OR_ORGANIZATION_LEGITIMACY = (
-            "contacts_or_organization_legitimacy",
-            "Research could not corroborate legitimacy of contacts or organization",
+            "contacts_not_verified",
+            "Org contacts couldn't be verified",
         )
-        ORGANIZATION_ELIGIBILITY = "organization_eligibility", "Organization isn't eligible for a .gov"
-        NAMING_REQUIREMENTS = "naming_requirements", "Naming requirements not met"
-        OTHER = "other", "Other"
+        ORGANIZATION_ELIGIBILITY = "org_not_eligible", "Org not eligible for a .gov domain"
+        NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
+        OTHER = "other", "Other/Unspecified"
 
     # #### Internal fields about the application #####
     status = FSMField(

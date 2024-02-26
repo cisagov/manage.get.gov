@@ -784,7 +784,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-    def test_save_model_sends_rejected_email_domain_purpose(self):
+    def test_save_model_sends_rejected_email_purpose_not_met(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is domain purpose."""
 
@@ -843,7 +843,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-    def test_save_model_sends_rejected_email_second_domain_reasoning(self):
+    def test_save_model_sends_rejected_email_org_has_domain(self):
         """When transitioning to rejected on a domain request, an email is sent
         explaining why when the reason is second domain."""
 
