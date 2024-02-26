@@ -759,6 +759,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     # Table ordering
     ordering = ["domain__name"]
 
@@ -1161,6 +1169,14 @@ class DomainInformationInline(admin.StackedInline):
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
+
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
