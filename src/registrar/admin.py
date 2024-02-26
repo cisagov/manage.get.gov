@@ -1244,7 +1244,7 @@ class DomainAdmin(ListHeaderAdmin):
     state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
 
     # Filters
-    list_filter = ["domain_info__organization_type", "state", "domain_info__federal_type", ElectionOfficeFilter]
+    list_filter = ["domain_info__organization_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
