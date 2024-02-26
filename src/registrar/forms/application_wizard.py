@@ -284,6 +284,7 @@ class OrganizationContactForm(RegistrarForm):
                 message="Enter a zip code in the form of 12345 or 12345-6789.",
             )
         ],
+        error_messages={"required": ("Enter a zip code in the form of 12345 or 12345-6789.")},
     )
     urbanization = forms.CharField(
         required=False,

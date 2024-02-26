@@ -758,6 +758,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     # Table ordering
     ordering = ["domain__name"]
 
@@ -1097,6 +1105,14 @@ class DomainInformationInline(admin.StackedInline):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
@@ -1176,7 +1192,14 @@ class DomainAdmin(ListHeaderAdmin):
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
             years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-            curr_exp_date = domain.registry_expiration_date
+
+            try:
+                curr_exp_date = domain.registry_expiration_date
+            except KeyError:
+                # No expiration date was found. Return none.
+                extra_context["extended_expiration_date"] = None
+                return super().changeform_view(request, object_id, form_url, extra_context)
+
             if curr_exp_date < date.today():
                 extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
             else:
