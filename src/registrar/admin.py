@@ -24,6 +24,7 @@ from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
+from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
 
