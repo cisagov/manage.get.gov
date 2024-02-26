@@ -601,6 +601,13 @@ def completed_application(
     return application
 
 
+def set_applications_investigators(application_list: list[DomainApplication], investigator_user: User):
+    """Helper method that sets the investigator field of all provided applications"""
+    for application in application_list:
+        application.investigator = investigator_user
+        application.save()
+
+
 def multiple_unalphabetical_domain_objects(
     domain_type=AuditedAdminMockData.APPLICATION,
 ):
