@@ -314,7 +314,6 @@ class TestDomainApplication(TestCase):
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
-
     def test_submit_transition_allowed_twice(self):
         """
         Test that rotating between submit and in_review doesn't throw an error
@@ -603,6 +602,30 @@ class TestDomainApplication(TestCase):
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
+    def test_withdraw_transition_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition when investigator is not staff.
+        For withdraw, this should be valid in all cases.
+        """
+
+        test_cases = [
+            (self.submitted_application, TransitionNotAllowed),
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_applications_investigators(self.all_applications, user)
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.withdraw()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
     def test_withdraw_transition_not_allowed(self):
         """
         Test that calling action_needed against transition rules raises TransitionNotAllowed.
@@ -649,6 +672,23 @@ class TestDomainApplication(TestCase):
 
         # Set all investigators to none
         set_applications_investigators(self.all_applications, None)
+
+        self.assert_fsm_transition_raises_error(test_cases, "reject")
+
+    def test_reject_transition_not_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition when investigator is not staff
+        """
+
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_applications_investigators(self.all_applications, user)
 
         self.assert_fsm_transition_raises_error(test_cases, "reject")
 
@@ -700,6 +740,24 @@ class TestDomainApplication(TestCase):
 
         # Set all investigators to none
         set_applications_investigators(self.all_applications, None)
+
+        self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
+
+    def test_reject_with_prejudice_not_allowed_with_investigator_not_staff(self):
+        """
+        Tests for attempting to transition when investigator is not staff
+        """
+
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to a user with no staff privs
+        user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
+        set_applications_investigators(self.all_applications, user)
 
         self.assert_fsm_transition_raises_error(test_cases, "reject_with_prejudice")
 
