@@ -190,8 +190,8 @@ class UserFixture:
         # Lumped under .atomic to ensure we don't make redundant DB calls.
         # This bundles them all together, and then saves it in a single call.
         # This is slightly different then bulk_create or bulk_update, in that
-        # you still get the same behaviour of .save(), but those incremental 
-        # steps now do not need to close/reopen a db connection, 
+        # you still get the same behaviour of .save(), but those incremental
+        # steps now do not need to close/reopen a db connection,
         # instead they share one.
         with transaction.atomic():
             cls.load_users(cls, cls.ADMINS, "full_access_group")

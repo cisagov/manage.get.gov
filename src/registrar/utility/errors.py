@@ -70,23 +70,25 @@ class GenericError(Exception):
     def get_error_message(self, code=None):
         return self._error_mapping.get(code)
 
-# (Q for reviewers) What should this be called? 
+
+# (Q for reviewers) What should this be called?
 # Not a fan of this name.
 class FSMErrorCodes(IntEnum):
     """Used when doing FSM transitions.
     Overview of generic error codes:
-        - 1 APPROVE_DOMAIN_IN_USE The domain is already in use 
+        - 1 APPROVE_DOMAIN_IN_USE The domain is already in use
         - 2 APPROVE_NO_INVESTIGATOR No investigator is assigned when approving
         - 3 APPROVE_INVESTIGATOR_NOT_STAFF Investigator is a non-staff user
         - 4 APPROVE_INVESTIGATOR_NOT_SUBMITTER The form submitter is not the investigator
     """
+
     APPROVE_DOMAIN_IN_USE = 1
     APPROVE_NO_INVESTIGATOR = 2
     APPROVE_INVESTIGATOR_NOT_STAFF = 3
     APPROVE_INVESTIGATOR_NOT_SUBMITTER = 4
 
 
-# (Q for reviewers) What should this be called? 
+# (Q for reviewers) What should this be called?
 # Not a fan of this name.
 class ApplicationStatusError(Exception):
     """
@@ -95,18 +97,12 @@ class ApplicationStatusError(Exception):
     """
 
     _error_mapping = {
-        FSMErrorCodes.APPROVE_DOMAIN_IN_USE: (
-            "Cannot approve. Requested domain is already in use."
-        ),
-        FSMErrorCodes.APPROVE_NO_INVESTIGATOR: (
-            "Cannot approve. No investigator was assigned."
-        ),
-        FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF: (
-            "Cannot approve. Investigator is not a staff user."
-        ),
+        FSMErrorCodes.APPROVE_DOMAIN_IN_USE: ("Cannot approve. Requested domain is already in use."),
+        FSMErrorCodes.APPROVE_NO_INVESTIGATOR: ("Cannot approve. No investigator was assigned."),
+        FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF: ("Cannot approve. Investigator is not a staff user."),
         FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_SUBMITTER: (
             "Cannot approve. Only the assigned investigator can approve this application."
-        )
+        ),
     }
 
     def __init__(self, *args, code=None, **kwargs):

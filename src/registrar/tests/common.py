@@ -562,11 +562,11 @@ def completed_application(
     )
     if not investigator:
         investigator, _ = User.objects.get_or_create(
-            username="incrediblyfakeinvestigator", 
-            first_name = "Joe",
-            last_name = "Bob"
-            is_staff=True
-            )
+            username="incrediblyfakeinvestigator",
+            first_name="Joe",
+            last_name="Bob",
+            is_staff=True,
+        )
     domain_application_kwargs = dict(
         organization_type="federal",
         federal_type="executive",

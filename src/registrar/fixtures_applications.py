@@ -188,7 +188,7 @@ class DomainApplicationFixture:
         # This bundles them all together, and then saves it in a single call.
         with transaction.atomic():
             cls._create_applications(users)
-    
+
     @classmethod
     def _create_applications(cls, users):
         """Creates DomainApplications given a list of users"""
