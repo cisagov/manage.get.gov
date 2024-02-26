@@ -162,7 +162,11 @@ function initializeWidgetOnToList(toList, toListId) {
             'websites': '/admin/registrar/website/__fk__/change/?_to_field=id',
             'alternative_domains': '/admin/registrar/website/__fk__/change/?_to_field=id',
         },
-        false,
+        // NOTE: If we open view in the same window then use the back button
+        // to go back, the 'chosen' list will fail to initialize correctly in
+        // sandbozes (but will work fine on local). This is related to how the
+        // Django JS runs (SelectBox.js) and is probably due to a race condition.
+        true,
         false
     );
 
