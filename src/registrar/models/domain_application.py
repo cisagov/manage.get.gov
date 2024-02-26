@@ -619,6 +619,14 @@ class DomainApplication(TimeStampedModel):
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
+    def investigator_exists_and_is_staff(self):
+        """Checks if the current investigator is in a valid state for a state transition"""
+        is_valid = True
+        # Check if an investigator is assigned. No approval is possible without one.
+        if self.investigator is None or not self.investigator.is_staff:
+            is_valid = False
+        return is_valid
+
     @transition(
         field="status",
         source=[
@@ -669,7 +677,7 @@ class DomainApplication(TimeStampedModel):
             ApplicationStatus.INELIGIBLE,
         ],
         target=ApplicationStatus.IN_REVIEW,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def in_review(self):
         """Investigate an application that has been submitted.
@@ -696,7 +704,7 @@ class DomainApplication(TimeStampedModel):
             ApplicationStatus.INELIGIBLE,
         ],
         target=ApplicationStatus.ACTION_NEEDED,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def action_needed(self):
         """Send back an application that is under investigation or rejected.
@@ -723,6 +731,7 @@ class DomainApplication(TimeStampedModel):
             ApplicationStatus.REJECTED,
         ],
         target=ApplicationStatus.APPROVED,
+        conditions=[investigator_exists_and_is_staff]
     )
     def approve(self, send_email=True):
         """Approve an application that has been submitted.
@@ -738,15 +747,6 @@ class DomainApplication(TimeStampedModel):
         # == Check that the application is valid == #
         if Domain.objects.filter(name=self.requested_domain.name).exists():
             raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
-
-        # Check if an investigator is assigned. No approval is possible without one.
-        if self.investigator is None:
-            raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
-
-        # Investigators must be staff users.
-        # This is handled elsewhere, but we should check here as a precaution.
-        if not self.investigator.is_staff:
-            raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
 
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
@@ -788,7 +788,7 @@ class DomainApplication(TimeStampedModel):
         field="status",
         source=[ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED, ApplicationStatus.APPROVED],
         target=ApplicationStatus.REJECTED,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def reject(self):
         """Reject an application that has been submitted.
@@ -814,7 +814,7 @@ class DomainApplication(TimeStampedModel):
             ApplicationStatus.REJECTED,
         ],
         target=ApplicationStatus.INELIGIBLE,
-        conditions=[domain_is_not_active],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
     def reject_with_prejudice(self):
         """The applicant is a bad actor, reject with prejudice.
