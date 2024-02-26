@@ -321,21 +321,21 @@ class TestDomainCreation(MockEppLib):
             Then a Domain exists in the database with the same `name`
             But a domain object does not exist in the registry
         """
-        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-        user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
+        with less_console_noise():
+            draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
+            user, _ = User.objects.get_or_create()
+            application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
+            mock_client = MockSESClient()
+            with boto3_mocking.clients.handler_for("sesv2", mock_client):
                 # skip using the submit method
                 application.status = DomainApplication.ApplicationStatus.SUBMITTED
                 # transition to approve state
                 application.approve()
-        # should have information present for this domain
-        domain = Domain.objects.get(name="igorville.gov")
-        self.assertTrue(domain)
-        self.mockedSendFunction.assert_not_called()
+            # should have information present for this domain
+            domain = Domain.objects.get(name="igorville.gov")
+            self.assertTrue(domain)
+            self.mockedSendFunction.assert_not_called()
 
     def test_accessing_domain_properties_creates_domain_in_registry(self):
         """
@@ -346,33 +346,34 @@ class TestDomainCreation(MockEppLib):
             And `domain.state` is set to `UNKNOWN`
             And `domain.is_active()` returns False
         """
-        domain = Domain.objects.create(name="beef-tongue.gov")
-        # trigger getter
-        _ = domain.statuses
+        with less_console_noise():
+            domain = Domain.objects.create(name="beef-tongue.gov")
+            # trigger getter
+            _ = domain.statuses
 
-        # contacts = PublicContact.objects.filter(domain=domain,
-        # type=PublicContact.ContactTypeChoices.REGISTRANT).get()
+            # contacts = PublicContact.objects.filter(domain=domain,
+            # type=PublicContact.ContactTypeChoices.REGISTRANT).get()
 
-        # Called in _fetch_cache
-        self.mockedSendFunction.assert_has_calls(
-            [
-                # TODO: due to complexity of the test, will return to it in
-                # a future ticket
-                # call(
-                #     commands.CreateDomain(name="beef-tongue.gov",
-                #     id=contact.registry_id, auth_info=None),
-                #     cleaned=True,
-                # ),
-                call(
-                    commands.InfoDomain(name="beef-tongue.gov", auth_info=None),
-                    cleaned=True,
-                ),
-            ],
-            any_order=False,  # Ensure calls are in the specified order
-        )
+            # Called in _fetch_cache
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    # TODO: due to complexity of the test, will return to it in
+                    # a future ticket
+                    # call(
+                    #     commands.CreateDomain(name="beef-tongue.gov",
+                    #     id=contact.registry_id, auth_info=None),
+                    #     cleaned=True,
+                    # ),
+                    call(
+                        commands.InfoDomain(name="beef-tongue.gov", auth_info=None),
+                        cleaned=True,
+                    ),
+                ],
+                any_order=False,  # Ensure calls are in the specified order
+            )
 
-        self.assertEqual(domain.state, Domain.State.UNKNOWN)
-        self.assertEqual(domain.is_active(), False)
+            self.assertEqual(domain.state, Domain.State.UNKNOWN)
+            self.assertEqual(domain.is_active(), False)
 
     @skip("assertion broken with mock addition")
     def test_empty_domain_creation(self):
@@ -382,7 +383,8 @@ class TestDomainCreation(MockEppLib):
 
     def test_minimal_creation(self):
         """Can create with just a name."""
-        Domain.objects.create(name="igorville.gov")
+        with less_console_noise():
+            Domain.objects.create(name="igorville.gov")
 
     @skip("assertion broken with mock addition")
     def test_duplicate_creation(self):
@@ -503,24 +505,24 @@ class TestDomainAvailable(MockEppLib):
             return MagicMock(
                 res_data=[responses.check.CheckDomainResultData(name="available.gov", avail=True, reason=None)],
             )
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        available = Domain.available("available.gov")
-        mocked_send.assert_has_calls(
-            [
-                call(
-                    commands.CheckDomain(
-                        ["available.gov"],
-                    ),
-                    cleaned=True,
-                )
-            ]
-        )
-        self.assertTrue(available)
-        patcher.stop()
+            available = Domain.available("available.gov")
+            mocked_send.assert_has_calls(
+                [
+                    call(
+                        commands.CheckDomain(
+                            ["available.gov"],
+                        ),
+                        cleaned=True,
+                    )
+                ]
+            )
+            self.assertTrue(available)
+            patcher.stop()
 
     def test_domain_unavailable(self):
         """
@@ -536,24 +538,24 @@ class TestDomainAvailable(MockEppLib):
             return MagicMock(
                 res_data=[responses.check.CheckDomainResultData(name="unavailable.gov", avail=False, reason="In Use")],
             )
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        available = Domain.available("unavailable.gov")
-        mocked_send.assert_has_calls(
-            [
-                call(
-                    commands.CheckDomain(
-                        ["unavailable.gov"],
-                    ),
-                    cleaned=True,
-                )
-            ]
-        )
-        self.assertFalse(available)
-        patcher.stop()
+            available = Domain.available("unavailable.gov")
+            mocked_send.assert_has_calls(
+                [
+                    call(
+                        commands.CheckDomain(
+                            ["unavailable.gov"],
+                        ),
+                        cleaned=True,
+                    )
+                ]
+            )
+            self.assertFalse(available)
+            patcher.stop()
 
     def test_domain_available_with_invalid_error(self):
         """
@@ -562,8 +564,9 @@ class TestDomainAvailable(MockEppLib):
 
             Validate InvalidDomainError is raised
         """
-        with self.assertRaises(errors.InvalidDomainError):
-            Domain.available("invalid-string")
+        with less_console_noise():
+            with self.assertRaises(errors.InvalidDomainError):
+                Domain.available("invalid-string")
 
     def test_domain_available_with_empty_string(self):
         """
@@ -572,8 +575,9 @@ class TestDomainAvailable(MockEppLib):
 
             Validate InvalidDomainError is raised
         """
-        with self.assertRaises(errors.InvalidDomainError):
-            Domain.available("")
+        with less_console_noise():
+            with self.assertRaises(errors.InvalidDomainError):
+                Domain.available("")
 
     def test_domain_available_unsuccessful(self):
         """
@@ -584,14 +588,14 @@ class TestDomainAvailable(MockEppLib):
 
         def side_effect(_request, cleaned):
             raise RegistryError(code=ErrorCode.COMMAND_SYNTAX_ERROR)
+        with less_console_noise():
+            patcher = patch("registrar.models.domain.registry.send")
+            mocked_send = patcher.start()
+            mocked_send.side_effect = side_effect
 
-        patcher = patch("registrar.models.domain.registry.send")
-        mocked_send = patcher.start()
-        mocked_send.side_effect = side_effect
-
-        with self.assertRaises(RegistryError):
-            Domain.available("raises-error.gov")
-        patcher.stop()
+            with self.assertRaises(RegistryError):
+                Domain.available("raises-error.gov")
+            patcher.stop()
 
 
 class TestRegistrantContacts(MockEppLib):
