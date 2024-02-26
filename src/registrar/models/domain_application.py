@@ -739,15 +739,6 @@ class DomainApplication(TimeStampedModel):
         if Domain.objects.filter(name=self.requested_domain.name).exists():
             raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
 
-        # Check if an investigator is assigned. No approval is possible without one.
-        if self.investigator is None:
-            raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
-
-        # Investigators must be staff users.
-        # This is handled elsewhere, but we should check here as a precaution.
-        if not self.investigator.is_staff:
-            raise ApplicationStatusError(code=FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
-
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
