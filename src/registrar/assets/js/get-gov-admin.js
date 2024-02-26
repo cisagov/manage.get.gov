@@ -49,41 +49,6 @@ function openInNewTab(el, removeAttribute = false){
     }
 
     createPhantomModalFormButtons();
-
-    document.addEventListener("DOMContentLoaded", function() {
-        const statusSelect = document.getElementById('id_status');
-        const investigatorSelect = document.getElementById('id_investigator'); // Adjust the ID based on your actual field name
-    
-        function checkInvestigatorAndShowMessage() {
-            // Assuming the first option is the default "---------" or similar
-            const investigatorSelected = investigatorSelect.selectedIndex > 0;
-    
-            // Remove existing messages to prevent duplicates
-            const existingMessage = document.querySelector('.no-investigator-exists');
-            if (existingMessage) {
-                existingMessage.remove();
-            }
-
-            const flexContainerParent = statusSelect.closest('.flex-container');
-            if (!investigatorSelected && flexContainerParent) {
-                const message = document.createElement("div");
-                message.classList.add("no-investigator-exists");
-                message.classList.add("padding-top-1")
-                message.classList.add("font-1")
-                message.textContent = '* An investigator must be added before other options will display.';
-                
-                // Insert the message before the flex-container parent
-                flexContainerParent.insertAdjacentElement('afterend', message);
-            }
-
-        }
-    
-        // Initial check in case the form is loaded with a selection already
-        checkInvestigatorAndShowMessage();
-    
-        // Add event listener to re-check whenever the investigator selection changes
-        investigatorSelect.addEventListener('change', checkInvestigatorAndShowMessage);
-    });
 })();
 /** An IIFE for pages in DjangoAdmin which may need custom JS implementation.
  * Currently only appends target="_blank" to the domain_form object,
