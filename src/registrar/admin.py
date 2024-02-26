@@ -803,9 +803,14 @@ class DomainApplicationAdminForm(forms.ModelForm):
             # first option in status transitions is current state
             available_transitions = [(current_state, application.get_status_display())]
 
-            transitions = get_available_FIELD_transitions(
-                application, models.DomainApplication._meta.get_field("status")
-            )
+            if application.investigator is not None:
+                transitions = get_available_FIELD_transitions(
+                    application, models.DomainApplication._meta.get_field("status")
+                )
+            else:
+                transitions = self.get_custom_field_transitions(
+                    application, models.DomainApplication._meta.get_field("status")
+                )
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target.label))
@@ -815,6 +820,17 @@ class DomainApplicationAdminForm(forms.ModelForm):
             # readonly and the status field will not have a widget
             if not application.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
+
+    def get_custom_field_transitions(self, instance, field):
+        """Custom implementation of get_available_FIELD_transitions
+        in the FSM. Allows us to still display fields filtered out by a condition."""
+        curr_state = field.get_state(instance)
+        transitions = field.transitions[instance.__class__]
+
+        for name, transition in transitions.items():
+            meta = transition._django_fsm
+            if meta.has_transition(curr_state):
+                yield meta.get_transition(curr_state)
 
     def clean(self):
         # clean is called from clean_forms, which is called from is_valid
