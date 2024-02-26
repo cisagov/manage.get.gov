@@ -1,5 +1,6 @@
 import logging
 from django import forms
+from django.db.models import Q
 from django.db.models.functions import Concat
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -22,6 +23,7 @@ from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
+from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
 
@@ -762,6 +764,24 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             else:
                 return queryset.filter(investigator__id__exact=self.value())
 
+    class ElectionOfficeFilter(admin.SimpleListFilter):
+        """Define a custom filter for is_election_board"""
+
+        title = _("election office")
+        parameter_name = "is_election_board"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            if self.value() == "1":
+                return queryset.filter(is_election_board=True)
+            if self.value() == "0":
+                return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
+
     # Columns
     list_display = [
         "requested_domain",
@@ -785,13 +805,13 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
 
     def custom_election_board(self, obj):
-        return obj.is_election_board if obj.is_election_board else False
+        return "Yes" if obj.is_election_board else "No"
 
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
     # Filters
-    list_filter = ("status", "organization_type", "is_election_board", "federal_type", InvestigatorFilter)
+    list_filter = ("status", "organization_type", "federal_type", ElectionOfficeFilter, InvestigatorFilter)
 
     # Search
     search_fields = [
@@ -1044,6 +1064,25 @@ class DomainInformationInline(admin.StackedInline):
 class DomainAdmin(ListHeaderAdmin):
     """Custom domain admin class to add extra buttons."""
 
+    class ElectionOfficeFilter(admin.SimpleListFilter):
+        """Define a custom filter for is_election_board"""
+
+        title = _("election office")
+        parameter_name = "is_election_board"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            logger.debug(self.value())
+            if self.value() == "1":
+                return queryset.filter(domain_info__is_election_board=True)
+            if self.value() == "0":
+                return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
+
     inlines = [DomainInformationInline]
 
     # Columns
@@ -1053,7 +1092,7 @@ class DomainAdmin(ListHeaderAdmin):
         "federal_type",
         "federal_agency",
         "organization_name",
-        "is_election_board",
+        "custom_election_board",
         "city",
         "state_territory",
         "state",
@@ -1094,11 +1133,11 @@ class DomainAdmin(ListHeaderAdmin):
 
     organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
 
-    def is_election_board(self, obj):
-        return obj.domain_info.is_election_board if obj.domain_info else False
+    def custom_election_board(self, obj):
+        return "Yes" if obj.domain_info.is_election_board else "No"
 
-    is_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
-    is_election_board.short_description = "Election office"  # type: ignore
+    custom_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
 
     def city(self, obj):
         return obj.domain_info.city if obj.domain_info else None
@@ -1111,7 +1150,7 @@ class DomainAdmin(ListHeaderAdmin):
     state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
 
     # Filters
-    list_filter = ["domain_info__organization_type", "state", "domain_info__is_election_board", "domain_info__federal_type"]
+    list_filter = ["domain_info__organization_type", "state", "domain_info__federal_type", ElectionOfficeFilter]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
