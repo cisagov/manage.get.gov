@@ -242,7 +242,7 @@ class DomainFixture(DomainApplicationFixture):
             if application.investigator is None:
                 # All "users" in fixtures have admin perms per prior config.
                 # No need to check for that.
-                application.investigator = random.choice(users)
+                application.investigator = random.choice(users)  # nosec
 
             application.approve(send_email=False)
             application.save()
