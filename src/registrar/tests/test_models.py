@@ -51,7 +51,7 @@ class TestDomainApplication(TestCase):
         self.ineligible_application = completed_application(
             status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
         )
-        
+
         # Store all aplpication statuses in a variable for ease of use
         self.all_applications = [
             self.started_application,
@@ -63,7 +63,7 @@ class TestDomainApplication(TestCase):
             self.rejected_application,
             self.ineligible_application,
         ]
-        
+
         self.mock_client = MockSESClient()
 
     def tearDown(self):
@@ -249,6 +249,19 @@ class TestDomainApplication(TestCase):
                         # Call the method
                         method()
 
+    def assert_fsm_transition_does_not_raise_error(self, test_cases, method_to_run):
+        """Given a list of test cases, ensure that none of them throw transition errors"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+            for application, exception_type in test_cases:
+                with self.subTest(application=application, exception_type=exception_type):
+                    try:
+                        # Retrieve the method by name from the application object and call it
+                        method = getattr(application, method_to_run)
+                        # Call the method
+                        method()
+                    except exception_type:
+                        self.fail(f"{exception_type} was raised, but it was not expected.")
+
     def test_submit_transition_allowed_with_no_investigator(self):
         """
         Tests for attempting to transition without an investigator.
@@ -263,13 +276,7 @@ class TestDomainApplication(TestCase):
         # Set all investigators to none
         set_applications_investigators(self.all_applications, None)
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.submit()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
 
     def test_submit_transition_allowed_with_investigator_not_staff(self):
         """
@@ -286,13 +293,7 @@ class TestDomainApplication(TestCase):
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
         set_applications_investigators(self.all_applications, user)
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.submit()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
 
     def test_submit_transition_allowed(self):
         """
@@ -305,14 +306,7 @@ class TestDomainApplication(TestCase):
             (self.withdrawn_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.submit()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "submit")
 
     def test_submit_transition_allowed_twice(self):
         """
@@ -331,7 +325,7 @@ class TestDomainApplication(TestCase):
                     self.in_review_application.submit()
                 except TransitionNotAllowed:
                     self.fail("TransitionNotAllowed was raised, but it was not expected.")
-        
+
         self.assertEqual(self.in_review_application.status, DomainApplication.ApplicationStatus.SUBMITTED)
 
     def test_submit_transition_not_allowed(self):
@@ -359,14 +353,7 @@ class TestDomainApplication(TestCase):
             (self.ineligible_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.in_review()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "in_review")
 
     def test_in_review_transition_not_allowed_with_no_investigator(self):
         """
@@ -384,7 +371,7 @@ class TestDomainApplication(TestCase):
         set_applications_investigators(self.all_applications, None)
 
         self.assert_fsm_transition_raises_error(test_cases, "in_review")
-    
+
     def test_in_review_transition_not_allowed_with_investigator_not_staff(self):
         """
         Tests for attempting to transition with an investigator that is not staff.
@@ -426,13 +413,8 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
             (self.ineligible_application, TransitionNotAllowed),
         ]
-        with less_console_noise():
-            for application, exception_type in test_cases:
-                with self.subTest(application=application, exception_type=exception_type):
-                    try:
-                        application.action_needed()
-                    except TransitionNotAllowed:
-                        self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "action_needed")
 
     def test_action_needed_transition_not_allowed_with_no_investigator(self):
         """
@@ -493,14 +475,7 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.approve()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "approve")
 
     def test_approved_transition_not_allowed_with_no_investigator(self):
         """
@@ -570,14 +545,7 @@ class TestDomainApplication(TestCase):
             (self.action_needed_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.withdraw()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
     def test_withdraw_transition_allowed_with_no_investigator(self):
         """
@@ -594,13 +562,7 @@ class TestDomainApplication(TestCase):
         # Set all investigators to none
         set_applications_investigators(self.all_applications, None)
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.withdraw()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
     def test_withdraw_transition_allowed_with_investigator_not_staff(self):
         """
@@ -618,13 +580,7 @@ class TestDomainApplication(TestCase):
         user, _ = User.objects.get_or_create(username="pancakesyrup", is_staff=False)
         set_applications_investigators(self.all_applications, user)
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.withdraw()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "withdraw")
 
     def test_withdraw_transition_not_allowed(self):
         """
@@ -650,14 +606,7 @@ class TestDomainApplication(TestCase):
             (self.approved_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.reject()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "reject")
 
     def test_reject_transition_not_allowed_with_no_investigator(self):
         """
@@ -717,14 +666,7 @@ class TestDomainApplication(TestCase):
             (self.rejected_application, TransitionNotAllowed),
         ]
 
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            with less_console_noise():
-                for application, exception_type in test_cases:
-                    with self.subTest(application=application, exception_type=exception_type):
-                        try:
-                            application.reject_with_prejudice()
-                        except TransitionNotAllowed:
-                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        self.assert_fsm_transition_does_not_raise_error(test_cases, "reject_with_prejudice")
 
     def test_reject_with_prejudice_transition_not_allowed_with_no_investigator(self):
         """

@@ -731,7 +731,7 @@ class DomainApplication(TimeStampedModel):
             ApplicationStatus.REJECTED,
         ],
         target=ApplicationStatus.APPROVED,
-        conditions=[investigator_exists_and_is_staff]
+        conditions=[investigator_exists_and_is_staff],
     )
     def approve(self, send_email=True):
         """Approve an application that has been submitted.

@@ -849,7 +849,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
             DomainApplication.ApplicationStatus.IN_REVIEW,
             DomainApplication.ApplicationStatus.ACTION_NEEDED,
             DomainApplication.ApplicationStatus.REJECTED,
-            DomainApplication.ApplicationStatus.INELIGIBLE
+            DomainApplication.ApplicationStatus.INELIGIBLE,
         ]
 
         # If a status change occured, check for validity
@@ -864,7 +864,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
     def _check_for_valid_investigator(self, investigator) -> bool:
         """
         Checks if the investigator field is not none, and is staff.
-        Adds form errors on failure. 
+        Adds form errors on failure.
         """
 
         is_valid = False
@@ -881,7 +881,7 @@ class DomainApplicationAdminForm(forms.ModelForm):
 
         if error_message is not None:
             self.add_error("investigator", error_message)
-        
+
         return is_valid
 
 
