@@ -560,6 +560,13 @@ def completed_application(
         email="testy2@town.com",
         phone="(555) 555 5557",
     )
+    if not investigator:
+        investigator, _ = User.objects.get_or_create(
+            username="incrediblyfakeinvestigator", 
+            first_name = "Joe",
+            last_name = "Bob"
+            is_staff=True
+            )
     domain_application_kwargs = dict(
         organization_type="federal",
         federal_type="executive",
