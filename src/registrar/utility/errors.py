@@ -100,9 +100,7 @@ class ApplicationStatusError(Exception):
         FSMErrorCodes.APPROVE_DOMAIN_IN_USE: ("Cannot approve. Requested domain is already in use."),
         FSMErrorCodes.NO_INVESTIGATOR: ("No investigator was assigned."),
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
-        FSMErrorCodes.INVESTIGATOR_NOT_SUBMITTER: (
-            "Only the assigned investigator can make this change."
-        ),
+        FSMErrorCodes.INVESTIGATOR_NOT_SUBMITTER: ("Only the assigned investigator can make this change."),
     }
 
     def __init__(self, *args, code=None, **kwargs):

@@ -52,7 +52,7 @@ class TestDomainApplication(TestCase):
             status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
         )
 
-        # Store all aplpication statuses in a variable for ease of use
+        # Store all application statuses in a variable for ease of use
         self.all_applications = [
             self.started_application,
             self.submitted_application,
@@ -181,14 +181,7 @@ class TestDomainApplication(TestCase):
                 with less_console_noise():
                     # Perform the specified action
                     action_method = getattr(application, action)
-                    if action == "approve" and not application.investigator:
-                        user, _ = User.objects.get_or_create(username="testwafflesyrup", is_staff=True)
-                        application.investigator = user
-                        application.save()
-                        application.refresh_from_db()
-                        action_method()
-                    else:
-                        action_method()
+                    action_method()
 
             # Check if an email was sent
             sent_emails = [
