@@ -824,41 +824,42 @@ class DomainApplicationAdminForm(forms.ModelForm):
         status = cleaned_data.get("status")
         investigator = cleaned_data.get("investigator")
 
-        # TODO - need some way of determining if a change has actually occurred and to enforce this only then
-        if status == DomainApplication.ApplicationStatus.APPROVED:
-            # Checks the "investigators" field for validity.
-            # That field must obey certain conditions when an application is approved.
-            # Will call "add_error" if any issues are found.
-            self._check_investigators_on_approval(investigator)
+        checked_statuses = [
+            DomainApplication.ApplicationStatus.APPROVED,
+            DomainApplication.ApplicationStatus.IN_REVIEW,
+            DomainApplication.ApplicationStatus.ACTION_NEEDED,
+            DomainApplication.ApplicationStatus.REJECTED,
+            DomainApplication.ApplicationStatus.INELIGIBLE
+        ]
+        # Checks the "investigators" field for validity.
+        # That field must obey certain conditions when an application is approved.
+        # Will call "add_error" if any issues are found.
+        #if status in checked_statuses:
+        #self._check_for_valid_investigator(investigator)
 
         return cleaned_data
 
-    def _check_investigators_on_approval(self, investigator):
-        """Checks the investigator field when an approval occurs"""
+    def _check_for_valid_investigator(self, investigator) -> bool:
+        """
+        Checks if the investigator field is not none, and is staff.
+        Adds form errors on failure. 
+        """
 
-        # Get information about the current user making the request
-        current_user = self.request.user
-        is_superuser = current_user.has_perm("registrar.full_access_permission")
+        is_valid = False
 
-        error_message = None
         # Check if an investigator is assigned. No approval is possible without one.
-        if investigator is not None:
-            if not investigator.is_staff:
-                # Investigators must be staff users.
-                # This is handled elsewhere, but we should check here as a precaution.
-                error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_STAFF)
-            elif investigator != current_user and not is_superuser:
-                # If the submitting user is not the investigator, block this action.
-                # This is to enforce accountability. Superusers do not have this restriction.
-                error_message = ApplicationStatusError.get_error_message(
-                    FSMErrorCodes.APPROVE_INVESTIGATOR_NOT_SUBMITTER
-                )
+        error_message = None
+        if investigator is None:
+            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+        elif not investigator.is_staff:
+            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
         else:
-            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.APPROVE_NO_INVESTIGATOR)
+            is_valid = True
 
-        # Add the error
         if error_message is not None:
             self.add_error("investigator", error_message)
+        
+        return is_valid
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
