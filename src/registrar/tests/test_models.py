@@ -227,6 +227,33 @@ class TestDomainApplication(TestCase):
         application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
         self.check_email_sent(application, msg, "reject_with_prejudice", 0)
 
+    def test_submit_transition_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator.
+        For submit, this should be valid in all cases.
+        """
+
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        self.in_review_application.investigator = None
+        self.action_needed_application.investigator = None
+
+        # Save changes
+        self.in_review_application.save()
+        self.action_needed_application.save()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.submit()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
     def test_submit_transition_allowed(self):
         """
         Test that calling submit from allowable statuses does raises TransitionNotAllowed.
@@ -246,6 +273,27 @@ class TestDomainApplication(TestCase):
                             application.submit()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+
+    def test_submit_transition_allowed_twice(self):
+        """
+        Test that rotating between submit and in_review doesn't throw an error
+        """
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with less_console_noise():
+                try:
+                    # Make a submission
+                    self.in_review_application.submit()
+
+                    # Rerun the old method to get back to the original state
+                    self.in_review_application.in_review()
+
+                    # Make another submission
+                    self.in_review_application.submit()
+                except TransitionNotAllowed:
+                    self.fail("TransitionNotAllowed was raised, but it was not expected.")
+        
+        self.assertEqual(self.in_review_application.status, DomainApplication.ApplicationStatus.SUBMITTED)
 
     def test_submit_transition_not_allowed(self):
         """
@@ -286,6 +334,36 @@ class TestDomainApplication(TestCase):
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
 
+    def test_in_review_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        self.approved_application.investigator = None
+        self.action_needed_application.investigator = None
+        self.rejected_application.investigator = None
+        self.ineligible_application.investigator = None
+
+        # Save changes
+        self.approved_application.save()
+        self.action_needed_application.save()
+        self.rejected_application.save()
+        self.ineligible_application.save()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.in_review()
+
     def test_in_review_transition_not_allowed(self):
         """
         Test that calling in_review against transition rules raises TransitionNotAllowed.
@@ -320,6 +398,37 @@ class TestDomainApplication(TestCase):
                         application.action_needed()
                     except TransitionNotAllowed:
                         self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_action_needed_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.approved_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+            (self.ineligible_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        self.in_review_application.investigator = None
+        self.approved_application.investigator = None
+        self.action_needed_application.investigator = None
+        self.rejected_application.investigator = None
+        self.ineligible_application.investigator = None
+
+        # Save changes
+        self.in_review_application.save()
+        self.action_needed_application.save()
+        self.rejected_application.save()
+        self.ineligible_application.save()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.action_needed()
 
     def test_action_needed_transition_not_allowed(self):
         """
@@ -356,6 +465,33 @@ class TestDomainApplication(TestCase):
                             application.approve()
                         except TransitionNotAllowed:
                             self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_approved_transition_not_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator
+        """
+
+        test_cases = [
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+            (self.rejected_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        self.in_review_application.investigator = None
+        self.action_needed_application.investigator = None
+        self.rejected_application.investigator = None
+
+        # Save changes
+        self.in_review_application.save()
+        self.action_needed_application.save()
+        self.rejected_application.save()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        with self.assertRaises(exception_type):
+                            application.approve()
 
     def test_approved_skips_sending_email(self):
         """
@@ -400,6 +536,36 @@ class TestDomainApplication(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
+                for application, exception_type in test_cases:
+                    with self.subTest(application=application, exception_type=exception_type):
+                        try:
+                            application.withdraw()
+                        except TransitionNotAllowed:
+                            self.fail("TransitionNotAllowed was raised, but it was not expected.")
+
+    def test_withdraw_transition_allowed_with_no_investigator(self):
+        """
+        Tests for attempting to transition without an investigator.
+        For withdraw, this should be valid in all cases.
+        """
+
+        test_cases = [
+            (self.submitted_application, TransitionNotAllowed),
+            (self.in_review_application, TransitionNotAllowed),
+            (self.action_needed_application, TransitionNotAllowed),
+        ]
+
+        # Set all investigators to none
+        self.submitted_application.investigator = None
+        self.in_review_application.investigator = None
+        self.action_needed_application.investigator = None
+
+        # Save changes
+        self.submitted_application.save()
+        self.in_review_application.save()
+        self.action_needed_application.save()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), less_console_noise():
                 for application, exception_type in test_cases:
                     with self.subTest(application=application, exception_type=exception_type):
                         try:
