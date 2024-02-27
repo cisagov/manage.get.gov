@@ -37,3 +37,11 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: stable
           cf_manifest: "ops/manifests/manifest-stable.yaml"
+      - name: Run Django migrations
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets.CF_STABLE_USERNAME }}
+          cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
+          cf_org: cisa-dotgov
+          cf_space: stable
+          cf_command: "run-task getgov-stable --command 'python manage.py migrate' --name migrate"

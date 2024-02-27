@@ -231,6 +231,7 @@ class AuditedAdminMockData:
             first_name="{} first_name:{}".format(item_name, short_hand),
             last_name="{} last_name:{}".format(item_name, short_hand),
             username="{} username:{}".format(item_name + str(uuid.uuid4())[:8], short_hand),
+            is_staff=True,
         )[0]
         return user
 
@@ -691,6 +692,56 @@ class MockEppLib(TestCase):
         ],
         ex_date=datetime.date(2023, 5, 25),
     )
+
+    mockDataInfoDomainSubdomain = fakedEppObject(
+        "fakePw",
+        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        hosts=["fake.meoward.gov"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+        ex_date=datetime.date(2023, 5, 25),
+    )
+
+    mockDataInfoDomainSubdomainAndIPAddress = fakedEppObject(
+        "fakePw",
+        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        hosts=["fake.meow.gov"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+        ex_date=datetime.date(2023, 5, 25),
+        addrs=[common.Ip(addr="2.0.0.8")],
+    )
+
+    mockDataInfoDomainNotSubdomainNoIP = fakedEppObject(
+        "fakePw",
+        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        hosts=["fake.meow.com"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+        ex_date=datetime.date(2023, 5, 25),
+    )
+
+    mockDataInfoDomainSubdomainNoIP = fakedEppObject(
+        "fakePw",
+        cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
+        hosts=["fake.subdomainwoip.gov"],
+        statuses=[
+            common.Status(state="serverTransferProhibited", description="", lang="en"),
+            common.Status(state="inactive", description="", lang="en"),
+        ],
+        ex_date=datetime.date(2023, 5, 25),
+    )
+
     mockDataExtensionDomain = fakedEppObject(
         "fakePw",
         cr_date=make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35)),
@@ -828,6 +879,24 @@ class MockEppLib(TestCase):
         addrs=[common.Ip(addr="1.2.3.4"), common.Ip(addr="2.3.4.5")],
     )
 
+    mockDataInfoHosts1IP = fakedEppObject(
+        "lastPw",
+        cr_date=make_aware(datetime.datetime(2023, 8, 25, 19, 45, 35)),
+        addrs=[common.Ip(addr="2.0.0.8")],
+    )
+
+    mockDataInfoHostsNotSubdomainNoIP = fakedEppObject(
+        "lastPw",
+        cr_date=make_aware(datetime.datetime(2023, 8, 26, 19, 45, 35)),
+        addrs=[],
+    )
+
+    mockDataInfoHostsSubdomainNoIP = fakedEppObject(
+        "lastPw",
+        cr_date=make_aware(datetime.datetime(2023, 8, 27, 19, 45, 35)),
+        addrs=[],
+    )
+
     mockDataHostChange = fakedEppObject("lastPw", cr_date=make_aware(datetime.datetime(2023, 8, 25, 19, 45, 35)))
     addDsData1 = {
         "keyTag": 1234,
@@ -921,6 +990,11 @@ class MockEppLib(TestCase):
         ex_date=datetime.date(2023, 5, 25),
     )
 
+    mockButtonRenewedDomainExpDate = fakedEppObject(
+        "fake.gov",
+        ex_date=datetime.date(2025, 5, 25),
+    )
+
     mockDnsNeededRenewedDomainExpDate = fakedEppObject(
         "fakeneeded.gov",
         ex_date=datetime.date(2023, 2, 15),
@@ -989,6 +1063,8 @@ class MockEppLib(TestCase):
                 return self.mockDeleteDomainCommands(_request, cleaned)
             case commands.RenewDomain:
                 return self.mockRenewDomainCommand(_request, cleaned)
+            case commands.InfoHost:
+                return self.mockInfoHostCommmands(_request, cleaned)
             case _:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
@@ -1002,6 +1078,25 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
+
+    def mockInfoHostCommmands(self, _request, cleaned):
+        request_name = getattr(_request, "name", None)
+
+        # Define a dictionary to map request names to data and extension values
+        request_mappings = {
+            "fake.meow.gov": (self.mockDataInfoHosts1IP, None),  # is subdomain and has ip
+            "fake.meow.com": (self.mockDataInfoHostsNotSubdomainNoIP, None),  # not subdomain w no ip
+            "fake.subdomainwoip.gov": (self.mockDataInfoHostsSubdomainNoIP, None),  # subdomain w no ip
+        }
+
+        # Retrieve the corresponding values from the dictionary
+        default_mapping = (self.mockDataInfoHosts, None)
+        res_data, extensions = request_mappings.get(request_name, default_mapping)
+
+        return MagicMock(
+            res_data=[res_data],
+            extensions=[extensions] if extensions is not None else [],
+        )
 
     def mockUpdateHostCommands(self, _request, cleaned):
         test_ws_ip = common.Ip(addr="1.1. 1.1")
@@ -1049,11 +1144,19 @@ class MockEppLib(TestCase):
                 res_data=[self.mockMaximumRenewedDomainExpDate],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-        else:
-            return MagicMock(
-                res_data=[self.mockRenewedDomainExpDate],
-                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-            )
+        elif getattr(_request, "name", None) == "fake.gov":
+            period = getattr(_request, "period", None)
+            extension_period = getattr(period, "length", None)
+            if extension_period == 2:
+                return MagicMock(
+                    res_data=[self.mockButtonRenewedDomainExpDate],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
+            else:
+                return MagicMock(
+                    res_data=[self.mockRenewedDomainExpDate],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
 
     def mockInfoDomainCommands(self, _request, cleaned):
         request_name = getattr(_request, "name", None)
@@ -1083,6 +1186,10 @@ class MockEppLib(TestCase):
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
             "justnameserver.com": (self.justNameserver, None),
+            "meoward.gov": (self.mockDataInfoDomainSubdomain, None),
+            "meow.gov": (self.mockDataInfoDomainSubdomainAndIPAddress, None),
+            "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),
+            "subdomainwoip.gov": (self.mockDataInfoDomainSubdomainNoIP, None),
         }
 
         # Retrieve the corresponding values from the dictionary

@@ -1,32 +1,110 @@
+from datetime import date
 import logging
 import datetime
 
 from django import forms
-from django.db.models import Avg, F
-from django.db.models.functions import Concat
-from django.http import HttpResponse
+from django.db.models import Avg, F, Value, CharField, Q
+from django.db.models.functions import Concat, Coalesce
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django_fsm import get_available_FIELD_transitions
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.http.response import HttpResponse, HttpResponseRedirect
 from django.urls import path, reverse
+from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models.domain import Domain
-from registrar.models.user import User
+from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
+from registrar.widgets import NoAutocompleteFilteredSelectMultiple
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
+from django.contrib.auth.forms import UserChangeForm, UsernameField
+
+from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
+
+
+class MyUserAdminForm(UserChangeForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs.
+
+    It inherits from UserChangeForm which has special handling for the password and username fields."""
+
+    class Meta:
+        model = models.User
+        fields = "__all__"
+        field_classes = {"username": UsernameField}
+        widgets = {
+            "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
+            "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
+        }
+
+
+class DomainInformationAdminForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.DomainInformation
+        fields = "__all__"
+        widgets = {
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+
+
+class DomainInformationInlineForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.DomainInformation
+        fields = "__all__"
+        widgets = {
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+
+
+class DomainApplicationAdminForm(forms.ModelForm):
+    """Custom form to limit transitions to available transitions.
+    This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.DomainApplication
+        fields = "__all__"
+        widgets = {
+            "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
+            "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        application = kwargs.get("instance")
+        if application and application.pk:
+            current_state = application.status
+
+            # first option in status transitions is current state
+            available_transitions = [(current_state, application.get_status_display())]
+
+            transitions = get_available_FIELD_transitions(
+                application, models.DomainApplication._meta.get_field("status")
+            )
+
+            for transition in transitions:
+                available_transitions.append((transition.target, transition.target.label))
+
+            # only set the available transitions if the user is not restricted
+            # from editing the domain application; otherwise, the form will be
+            # readonly and the status field will not have a widget
+            if not application.creator.is_restricted():
+                self.fields["status"].widget.choices = available_transitions
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -121,40 +199,51 @@ class CustomLogEntryAdmin(LogEntryAdmin):
 
 
 class AdminSortFields:
-    def get_queryset(db_field):
+    _name_sort = ["first_name", "last_name", "email"]
+
+    # Define a mapping of field names to model querysets and sort expressions.
+    # A dictionary is used for specificity, but the downside is some degree of repetition.
+    # To eliminate this, this list can be generated dynamically but the readability of that
+    # is impacted.
+    sort_mapping = {
+        # == Contact == #
+        "other_contacts": (Contact, _name_sort),
+        "authorizing_official": (Contact, _name_sort),
+        "submitter": (Contact, _name_sort),
+        # == User == #
+        "creator": (User, _name_sort),
+        "user": (User, _name_sort),
+        "investigator": (User, _name_sort),
+        # == Website == #
+        "current_websites": (Website, "website"),
+        "alternative_domains": (Website, "website"),
+        # == DraftDomain == #
+        "requested_domain": (DraftDomain, "name"),
+        # == DomainApplication == #
+        "domain_application": (DomainApplication, "requested_domain__name"),
+        # == Domain == #
+        "domain": (Domain, "name"),
+        "approved_domain": (Domain, "name"),
+    }
+
+    @classmethod
+    def get_queryset(cls, db_field):
         """This is a helper function for formfield_for_manytomany and formfield_for_foreignkey"""
-        # customize sorting
-        if db_field.name in (
-            "other_contacts",
-            "authorizing_official",
-            "submitter",
-        ):
-            # Sort contacts by first_name, then last_name, then email
-            return models.Contact.objects.all().order_by(Concat("first_name", "last_name", "email"))
-        elif db_field.name in ("current_websites", "alternative_domains"):
-            # sort web sites
-            return models.Website.objects.all().order_by("website")
-        elif db_field.name in (
-            "creator",
-            "user",
-            "investigator",
-        ):
-            # Sort users by first_name, then last_name, then email
-            return models.User.objects.all().order_by(Concat("first_name", "last_name", "email"))
-        elif db_field.name in (
-            "domain",
-            "approved_domain",
-        ):
-            # Sort domains by name
-            return models.Domain.objects.all().order_by("name")
-        elif db_field.name in ("requested_domain",):
-            # Sort draft domains by name
-            return models.DraftDomain.objects.all().order_by("name")
-        elif db_field.name in ("domain_application",):
-            # Sort domain applications by name
-            return models.DomainApplication.objects.all().order_by("requested_domain__name")
-        else:
+        queryset_info = cls.sort_mapping.get(db_field.name, None)
+        if queryset_info is None:
             return None
+
+        # Grab the model we want to order, and grab how we want to order it
+        model, order_by = queryset_info
+        match db_field.name:
+            case "investigator":
+                # We should only return users who are staff.
+                return model.objects.filter(is_staff=True).order_by(*order_by)
+            case _:
+                if isinstance(order_by, list) or isinstance(order_by, tuple):
+                    return model.objects.order_by(*order_by)
+                else:
+                    return model.objects.order_by(order_by)
 
 
 class AuditedAdmin(admin.ModelAdmin):
@@ -173,9 +262,14 @@ class AuditedAdmin(admin.ModelAdmin):
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
+
+        # Define a queryset. Note that in the super of this,
+        # a new queryset will only be generated if one does not exist.
+        # Thus, the order in which we define queryset matters.
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
+
         formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
         # customize the help text for all formfields for manytomany
         formfield.help_text = (
@@ -185,11 +279,16 @@ class AuditedAdmin(admin.ModelAdmin):
         return formfield
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """customize the behavior of formfields with foreign key relationships.  this will customize
-        the behavior of selects.  customized behavior includes sorting of objects in list"""
+        """Customize the behavior of formfields with foreign key relationships. This will customize
+        the behavior of selects. Customized behavior includes sorting of objects in list."""
+
+        # Define a queryset. Note that in the super of this,
+        # a new queryset will only be generated if one does not exist.
+        # Thus, the order in which we define queryset matters.
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
+
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -224,7 +323,6 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
             parameter_value: string}
         TODO: convert investigator id to investigator username
         """
-
         filters = []
         # Retrieve the filter parameters
         for param in request.GET.keys():
@@ -267,6 +365,16 @@ class UserContactInline(admin.StackedInline):
 
 class MyUserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
+
+    form = MyUserAdminForm
+
+    class Meta:
+        """Contains meta information about this class"""
+
+        model = models.User
+        fields = "__all__"
+
+    _meta = Meta()
 
     inlines = [UserContactInline]
 
@@ -429,6 +537,41 @@ class MyUserAdmin(BaseUserAdmin):
             ),
         )
         return render(request, "admin/analytics.html", context)
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Override for get_search_results. This affects any upstream model using autocomplete_fields,
+        such as DomainApplication. This is because autocomplete_fields uses an API call to fetch data,
+        and this fetch comes from this method.
+        """
+        # Custom filtering logic
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        # If we aren't given a request to modify, we shouldn't try to
+        if request is None or not hasattr(request, "GET"):
+            return queryset, use_distinct
+
+        # Otherwise, lets modify it!
+        request_get = request.GET
+
+        # The request defines model name and field name.
+        # For instance, model_name could be "DomainApplication"
+        # and field_name could be "investigator".
+        model_name = request_get.get("model_name", None)
+        field_name = request_get.get("field_name", None)
+
+        # Make sure we're only modifying requests from these models.
+        models_to_target = {"domainapplication"}
+        if model_name in models_to_target:
+            # Define rules per field
+            match field_name:
+                case "investigator":
+                    # We should not display investigators who don't have a staff role
+                    queryset = queryset.filter(is_staff=True)
+                case _:
+                    # In the default case, do nothing
+                    pass
+
+        return queryset, use_distinct
 
     # Let's define First group
     # (which should in theory be the ONLY group)
@@ -494,6 +637,9 @@ class ContactAdmin(ListHeaderAdmin):
         "contact",
         "email",
     ]
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for user
+    ordering = ["first_name", "last_name", "email"]
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -680,6 +826,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""
 
+    form = DomainInformationAdminForm
+
     # Columns
     list_display = [
         "domain",
@@ -765,6 +913,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     # Table ordering
     ordering = ["domain__name"]
 
@@ -784,39 +940,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
-class DomainApplicationAdminForm(forms.ModelForm):
-    """Custom form to limit transitions to available transitions"""
-
-    class Meta:
-        model = models.DomainApplication
-        fields = "__all__"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
-
-            # first option in status transitions is current state
-            available_transitions = [(current_state, application.get_status_display())]
-
-            transitions = get_available_FIELD_transitions(
-                application, models.DomainApplication._meta.get_field("status")
-            )
-
-            for transition in transitions:
-                available_transitions.append((transition.target, transition.target.label))
-
-            # only set the available transitions if the user is not restricted
-            # from editing the domain application; otherwise, the form will be
-            # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
-                self.fields["status"].widget.choices = available_transitions
-
-
 class DomainApplicationAdmin(ListHeaderAdmin):
     """Custom domain applications admin class."""
+
+    form = DomainApplicationAdminForm
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -829,8 +956,29 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             """Lookup reimplementation, gets users of is_staff.
             Returns a list of tuples consisting of (user.id, user)
             """
-            privileged_users = User.objects.filter(is_staff=True).order_by("first_name", "last_name", "email")
-            return [(user.id, user) for user in privileged_users]
+            # Select all investigators that are staff, then order by name and email
+            privileged_users = (
+                DomainApplication.objects.select_related("investigator")
+                .filter(investigator__is_staff=True)
+                .order_by("investigator__first_name", "investigator__last_name", "investigator__email")
+            )
+
+            # Annotate the full name and return a values list that lookups can use
+            privileged_users_annotated = (
+                privileged_users.annotate(
+                    full_name=Coalesce(
+                        Concat(
+                            "investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()
+                        ),
+                        "investigator__email",
+                        output_field=CharField(),
+                    )
+                )
+                .values_list("investigator__id", "full_name")
+                .distinct()
+            )
+
+            return privileged_users_annotated
 
         def queryset(self, request, queryset):
             """Custom queryset implementation, filters by investigator"""
@@ -839,11 +987,35 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             else:
                 return queryset.filter(investigator__id__exact=self.value())
 
+    class ElectionOfficeFilter(admin.SimpleListFilter):
+        """Define a custom filter for is_election_board"""
+
+        title = _("election office")
+        parameter_name = "is_election_board"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            if self.value() == "1":
+                return queryset.filter(is_election_board=True)
+            if self.value() == "0":
+                return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
+
     # Columns
     list_display = [
         "requested_domain",
         "status",
         "organization_type",
+        "federal_type",
+        "federal_agency",
+        "organization_name",
+        "custom_election_board",
+        "city",
+        "state_territory",
         "created_at",
         "submitter",
         "investigator",
@@ -855,8 +1027,21 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         ("investigator", ["first_name", "last_name"]),
     ]
 
+    def custom_election_board(self, obj):
+        return "Yes" if obj.is_election_board else "No"
+
+    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
+
     # Filters
-    list_filter = ("status", "organization_type", InvestigatorFilter)
+    list_filter = (
+        "status",
+        "organization_type",
+        "federal_type",
+        ElectionOfficeFilter,
+        "rejection_reason",
+        InvestigatorFilter,
+    )
 
     # Search
     search_fields = [
@@ -867,10 +1052,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by domain or submitter."
 
-    # Detail view
-    form = DomainApplicationAdminForm
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator", "approved_domain", "notes"]}),
+        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -930,25 +1113,18 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         "anything_else",
         "is_policy_acknowledged",
     ]
-
+    autocomplete_fields = [
+        "approved_domain",
+        "requested_domain",
+        "submitter",
+        "creator",
+        "authorizing_official",
+        "investigator",
+    ]
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
     ordering = ["requested_domain__name"]
-
-    # lists in filter_horizontal are not sorted properly, sort them
-    # by website
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        if db_field.name in ("current_websites", "alternative_domains"):
-            kwargs["queryset"] = models.Website.objects.all().order_by("website")  # Sort websites
-        return super().formfield_for_manytomany(db_field, request, **kwargs)
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # Removes invalid investigator options from the investigator dropdown
-        if db_field.name == "investigator":
-            kwargs["queryset"] = User.objects.filter(is_staff=True)
-            return db_field.formfield(**kwargs)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -976,6 +1152,23 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     messages.error(
                         request,
                         "This action is not permitted. The domain is already active.",
+                    )
+
+                elif (
+                    obj
+                    and obj.status == models.DomainApplication.ApplicationStatus.REJECTED
+                    and not obj.rejection_reason
+                ):
+                    # This condition should never be triggered.
+                    # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
+                    # because we clean up the rejection reason in the transition in the model.
+
+                    # Clear the success message
+                    messages.set_level(request, messages.ERROR)
+
+                    messages.error(
+                        request,
+                        "A rejection reason is required.",
                     )
 
                 else:
@@ -1017,7 +1210,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         admin user permissions and the application creator's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
-
         readonly_fields = list(self.readonly_fields)
 
         # Check if the creator is restricted
@@ -1072,6 +1264,8 @@ class DomainInformationInline(admin.StackedInline):
     classes conflict, so we'll just pull what we need
     from DomainInformationAdmin"""
 
+    form = DomainInformationInlineForm
+
     model = models.DomainInformation
 
     fieldsets = DomainInformationAdmin.fieldsets
@@ -1079,6 +1273,14 @@ class DomainInformationInline(admin.StackedInline):
     # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
+
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
@@ -1095,8 +1297,8 @@ class DomainInformationInline(admin.StackedInline):
         return formfield
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """customize the behavior of formfields with foreign key relationships.  this will customize
-        the behavior of selects.  customized behavior includes sorting of objects in list"""
+        """Customize the behavior of formfields with foreign key relationships. This will customize
+        the behavior of selects. Customized behavior includes sorting of objects in list."""
         queryset = AdminSortFields.get_queryset(db_field)
         if queryset:
             kwargs["queryset"] = queryset
@@ -1109,12 +1311,37 @@ class DomainInformationInline(admin.StackedInline):
 class DomainAdmin(ListHeaderAdmin):
     """Custom domain admin class to add extra buttons."""
 
+    class ElectionOfficeFilter(admin.SimpleListFilter):
+        """Define a custom filter for is_election_board"""
+
+        title = _("election office")
+        parameter_name = "is_election_board"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            logger.debug(self.value())
+            if self.value() == "1":
+                return queryset.filter(domain_info__is_election_board=True)
+            if self.value() == "0":
+                return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
+
     inlines = [DomainInformationInline]
 
     # Columns
     list_display = [
         "name",
         "organization_type",
+        "federal_type",
+        "federal_agency",
+        "organization_name",
+        "custom_election_board",
+        "city",
+        "state_territory",
         "state",
         "expiration_date",
         "created_at",
@@ -1138,8 +1365,42 @@ class DomainAdmin(ListHeaderAdmin):
 
     organization_type.admin_order_field = "domain_info__organization_type"  # type: ignore
 
+    def federal_agency(self, obj):
+        return obj.domain_info.federal_agency if obj.domain_info else None
+
+    federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
+
+    def federal_type(self, obj):
+        return obj.domain_info.federal_type if obj.domain_info else None
+
+    federal_type.admin_order_field = "domain_info__federal_type"  # type: ignore
+
+    def organization_name(self, obj):
+        return obj.domain_info.organization_name if obj.domain_info else None
+
+    organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
+
+    def custom_election_board(self, obj):
+        domain_info = getattr(obj, "domain_info", None)
+        if domain_info:
+            return "Yes" if domain_info.is_election_board else "No"
+        return "No"
+
+    custom_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
+
+    def city(self, obj):
+        return obj.domain_info.city if obj.domain_info else None
+
+    city.admin_order_field = "domain_info__city"  # type: ignore
+
+    def state_territory(self, obj):
+        return obj.domain_info.state_territory if obj.domain_info else None
+
+    state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
+
     # Filters
-    list_filter = ["domain_info__organization_type", "state"]
+    list_filter = ["domain_info__organization_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
@@ -1149,6 +1410,33 @@ class DomainAdmin(ListHeaderAdmin):
     # Table ordering
     ordering = ["name"]
 
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        """Custom changeform implementation to pass in context information"""
+        if extra_context is None:
+            extra_context = {}
+
+        # Pass in what the an extended expiration date would be for the expiration date modal
+        if object_id is not None:
+            domain = Domain.objects.get(pk=object_id)
+            years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
+
+            try:
+                curr_exp_date = domain.registry_expiration_date
+            except KeyError:
+                # No expiration date was found. Return none.
+                extra_context["extended_expiration_date"] = None
+                return super().changeform_view(request, object_id, form_url, extra_context)
+
+            if curr_exp_date < date.today():
+                extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
+            else:
+                new_date = domain.registry_expiration_date + relativedelta(years=years_to_extend_by)
+                extra_context["extended_expiration_date"] = new_date
+        else:
+            extra_context["extended_expiration_date"] = None
+
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
     def response_change(self, request, obj):
         # Create dictionary of action functions
         ACTION_FUNCTIONS = {
@@ -1157,6 +1445,7 @@ class DomainAdmin(ListHeaderAdmin):
             "_edit_domain": self.do_edit_domain,
             "_delete_domain": self.do_delete_domain,
             "_get_status": self.do_get_status,
+            "_extend_expiration_date": self.do_extend_expiration_date,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -1166,6 +1455,81 @@ class DomainAdmin(ListHeaderAdmin):
 
         # If no matching action button is found, return the super method
         return super().response_change(request, obj)
+
+    def do_extend_expiration_date(self, request, obj):
+        """Extends a domains expiration date by one year from the current date"""
+
+        # Make sure we're dealing with a Domain
+        if not isinstance(obj, Domain):
+            self.message_user(request, "Object is not of type Domain.", messages.ERROR)
+            return None
+
+        years = self._get_calculated_years_for_exp_date(obj)
+
+        # Renew the domain.
+        try:
+            obj.renew_domain(length=years)
+            self.message_user(
+                request,
+                "Successfully extended the expiration date.",
+            )
+        except RegistryError as err:
+            if err.is_connection_error():
+                error_message = "Error connecting to the registry."
+            else:
+                error_message = f"Error extending this domain: {err}."
+            self.message_user(request, error_message, messages.ERROR)
+        except KeyError:
+            # In normal code flow, a keyerror can only occur when
+            # fresh data can't be pulled from the registry, and thus there is no cache.
+            self.message_user(
+                request,
+                "Error connecting to the registry. No expiration date was found.",
+                messages.ERROR,
+            )
+        except Exception as err:
+            logger.error(err, stack_info=True)
+            self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
+
+        return HttpResponseRedirect(".")
+
+    def _get_calculated_years_for_exp_date(self, obj, extension_period: int = 1):
+        """Given the current date, an extension period, and a registry_expiration_date
+        on the domain object, calculate the number of years needed to extend the
+        current expiration date by the extension period.
+        """
+        # Get the date we want to update to
+        desired_date = self._get_current_date() + relativedelta(years=extension_period)
+
+        # Grab the current expiration date
+        try:
+            exp_date = obj.registry_expiration_date
+        except KeyError:
+            # if no expiration date from registry, set it to today
+            logger.warning("current expiration date not set; setting to today")
+            exp_date = self._get_current_date()
+
+        # If the expiration date is super old (2020, for example), we need to
+        # "catch up" to the current year, so we add the difference.
+        # If both years match, then lets just proceed as normal.
+        calculated_exp_date = exp_date + relativedelta(years=extension_period)
+
+        year_difference = desired_date.year - exp_date.year
+
+        years = extension_period
+        if desired_date > calculated_exp_date:
+            # Max probably isn't needed here (no code flow), but it guards against negative and 0.
+            # In both of those cases, we just want to extend by the extension_period.
+            years = max(extension_period, year_difference)
+
+        return years
+
+    # Workaround for unit tests, as we cannot mock date directly.
+    # it is immutable. Rather than dealing with a convoluted workaround,
+    # lets wrap this in a function.
+    def _get_current_date(self):
+        """Gets the current date"""
+        return date.today()
 
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):
@@ -1326,6 +1690,10 @@ class DraftDomainAdmin(ListHeaderAdmin):
 
     search_fields = ["name"]
     search_help_text = "Search by draft domain name."
+
+    # this ordering effects the ordering of results
+    # in autocomplete_fields for user
+    ordering = ["name"]
 
 
 class VerifiedByStaffAdmin(ListHeaderAdmin):

@@ -184,6 +184,10 @@ h1, h2, h3,
 .submit-row div.spacer {
     flex-grow: 1;
 }
+.submit-row .mini-spacer{
+    margin-left: 2px;
+    margin-right: 2px;
+}
 .submit-row span {
     margin-top: units(1);
 }
@@ -269,5 +273,33 @@ h1, h2, h3,
         background: none!important;
         padding: 0!important;
         margin: 0!important;
+    }
+}
+
+// Hides the "clear" button on autocomplete, as we already have one to use
+.select2-selection__clear {
+    display: none;
+}
+
+// Fixes a display issue where the list was entirely white, or had too much whitespace
+.select2-dropdown {
+    display: inline-grid !important;
+}
+
+input.admin-confirm-button {
+    text-transform: none;
+}
+
+// Button groups in /admin incorrectly have bullets.
+// Remove that!
+.usa-modal__footer .usa-button-group__item {
+    list-style-type: none;
+}
+
+// USWDS media checks are overzealous in this situation,
+// we should manually define this behaviour.
+@media (max-width: 768px) {
+    .button-list-mobile {
+        display: contents !important;
     }
 }
