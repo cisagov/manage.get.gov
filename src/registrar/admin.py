@@ -1110,6 +1110,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     request,
                     "This action is not permitted. The domain is already active.",
                 )
+                return None
             elif (
                 obj
                 and obj.status == models.DomainApplication.ApplicationStatus.REJECTED
@@ -1126,7 +1127,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     request,
                     "A rejection reason is required.",
                 )
-            
+                return None
             else:
                 if obj.status != original_obj.status:
                     status_method_mapping = {
@@ -1162,6 +1163,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                                 request,
                                 err.message,
                             )
+                            return None
 
         super().save_model(request, obj, form, change)
 
