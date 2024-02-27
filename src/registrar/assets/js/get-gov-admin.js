@@ -339,3 +339,46 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     }
 
 })();
+
+/** An IIFE for admin in DjangoAdmin to listen to changes on the domain request
+ * status select amd to show/hide the rejection reason
+*/
+(function (){
+    let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
+
+    if (rejectionReasonFormGroup) {
+        let statusSelect = document.getElementById('id_status')
+
+        // Initial handling of rejectionReasonFormGroup display
+        if (statusSelect.value != 'rejected')
+            rejectionReasonFormGroup.style.display = 'none';
+
+        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
+        statusSelect.addEventListener('change', function() {
+            if (statusSelect.value == 'rejected') {
+                rejectionReasonFormGroup.style.display = 'block';
+                sessionStorage.removeItem('hideRejectionReason');
+            } else {
+                rejectionReasonFormGroup.style.display = 'none';
+                sessionStorage.setItem('hideRejectionReason', 'true');
+            }
+        });
+    }
+
+    // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
+
+    // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
+    // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
+    // accurately for this edge case, we use cache and test for the back/forward navigation.
+    const observer = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          if (entry.type === "back_forward") {
+            if (sessionStorage.getItem('hideRejectionReason'))
+                document.querySelector('.field-rejection_reason').style.display = 'none';
+            else
+                document.querySelector('.field-rejection_reason').style.display = 'block';
+          }
+        });
+    });
+    observer.observe({ type: "navigation" });
+})();
