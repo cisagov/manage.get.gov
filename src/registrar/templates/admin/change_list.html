@@ -15,7 +15,15 @@
         {% if filters %}
             filtered by
                 {% for filter_param in filters %}
-                    {{ filter_param.parameter_name }} = {{ filter_param.parameter_value }}
+                    {% if filter_param.parameter_name == 'is_election_board' %}
+                        {%if filter_param.parameter_value == '0' %}
+                            election office = No
+                        {% else %}
+                            election office = Yes
+                        {% endif %}
+                    {% else %}
+                        {{ filter_param.parameter_name }} = {{ filter_param.parameter_value }}
+                    {% endif %}
                     {% if not forloop.last %}, {% endif %}
                 {% endfor %}
         {% endif %}

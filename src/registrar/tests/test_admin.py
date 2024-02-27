@@ -243,9 +243,9 @@ class TestDomainAdmin(MockEppLib, WebTest):
 
             response = self.client.get("/admin/registrar/domain/")
 
-            # There are 3 template references to Federal (3) plus one reference in the table
+            # There are 4 template references to Federal (4) plus four references in the table
             # for our actual application
-            self.assertContains(response, "Federal", count=4)
+            self.assertContains(response, "Federal", count=8)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -532,7 +532,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted(
-                "5",
+                "11",
                 (
                     "submitter__first_name",
                     "submitter__last_name",
@@ -541,7 +541,7 @@ class TestDomainApplicationAdmin(MockEppLib):
 
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted(
-                "-5",
+                "-11",
                 (
                     "-submitter__first_name",
                     "-submitter__last_name",
@@ -586,9 +586,9 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.client.force_login(self.superuser)
             completed_application()
             response = self.client.get("/admin/registrar/domainapplication/")
-            # There are 3 template references to Federal (3) plus one reference in the table
+            # There are 4 template references to Federal (4) plus two references in the table
             # for our actual application
-            self.assertContains(response, "Federal", count=4)
+            self.assertContains(response, "Federal", count=6)
             # This may be a bit more robust
             self.assertContains(response, '<td class="field-organization_type">Federal</td>', count=1)
             # Now let's make sure the long description does not exist
@@ -1070,8 +1070,8 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
     def test_save_model_sets_approved_domain(self):
-        # make sure there is no user with this email
         with less_console_noise():
+            # make sure there is no user with this email
             EMAIL = "mayor@igorville.gov"
             User.objects.filter(email=EMAIL).delete()
 
@@ -1082,12 +1082,11 @@ class TestDomainApplicationAdmin(MockEppLib):
             request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-                with less_console_noise():
-                    # Modify the application's property
-                    application.status = DomainApplication.ApplicationStatus.APPROVED
+                # Modify the application's property
+                application.status = DomainApplication.ApplicationStatus.APPROVED
 
-                    # Use the model admin's save_model method
-                    self.admin.save_model(request, application, form=None, change=True)
+                # Use the model admin's save_model method
+                self.admin.save_model(request, application, form=None, change=True)
 
             # Test that approved domain exists and equals requested domain
             self.assertEqual(application.requested_domain.name, application.approved_domain.name)
@@ -1343,6 +1342,8 @@ class TestDomainApplicationAdmin(MockEppLib):
             expected_fields = (
                 "status",
                 "organization_type",
+                "federal_type",
+                DomainApplicationAdmin.ElectionOfficeFilter,
                 "rejection_reason",
                 DomainApplicationAdmin.InvestigatorFilter,
             )
@@ -1622,8 +1623,8 @@ class TestDomainInformationAdmin(TestCase):
         User.objects.all().delete()
 
     def test_readonly_fields_for_analyst(self):
+        """Ensures that analysts have their permissions setup correctly"""
         with less_console_noise():
-            """Ensures that analysts have their permissions setup correctly"""
             request = self.factory.get("/")
             request.user = self.staffuser
 
@@ -1931,15 +1932,16 @@ class AuditedAdminTest(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
 
     def order_by_desired_field_helper(self, obj_to_sort: AuditedAdmin, request, field_name, *obj_names):
-        formatted_sort_fields = []
-        for obj in obj_names:
-            formatted_sort_fields.append("{}__{}".format(field_name, obj))
+        with less_console_noise():
+            formatted_sort_fields = []
+            for obj in obj_names:
+                formatted_sort_fields.append("{}__{}".format(field_name, obj))
 
-        ordered_list = list(
-            obj_to_sort.get_queryset(request).order_by(*formatted_sort_fields).values_list(*formatted_sort_fields)
-        )
+            ordered_list = list(
+                obj_to_sort.get_queryset(request).order_by(*formatted_sort_fields).values_list(*formatted_sort_fields)
+            )
 
-        return ordered_list
+            return ordered_list
 
     def test_alphabetically_sorted_domain_application_investigator(self):
         """Tests if the investigator field is alphabetically sorted by mimicking
@@ -2007,32 +2009,32 @@ class AuditedAdminTest(TestCase):
                         sorted_fields = ["first_name", "last_name"]
                     # We want both of these to be lists, as it is richer test wise.
 
-                desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
-                current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
+                    desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
+                    current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
 
-                # Conforms to the same object structure as desired_order
-                current_sort_order_coerced_type = []
+                    # Conforms to the same object structure as desired_order
+                    current_sort_order_coerced_type = []
 
-                # This is necessary as .queryset and get_queryset
-                # return lists of different types/structures.
-                # We need to parse this data and coerce them into the same type.
-                for contact in current_sort_order:
-                    if not isNamefield:
-                        first = contact.first_name
-                        last = contact.last_name
-                    else:
-                        first = contact.name
-                        last = None
+                    # This is necessary as .queryset and get_queryset
+                    # return lists of different types/structures.
+                    # We need to parse this data and coerce them into the same type.
+                    for contact in current_sort_order:
+                        if not isNamefield:
+                            first = contact.first_name
+                            last = contact.last_name
+                        else:
+                            first = contact.name
+                            last = None
 
-                    name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
-                    if name_tuple is not None:
-                        current_sort_order_coerced_type.append(name_tuple)
+                        name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
+                        if name_tuple is not None:
+                            current_sort_order_coerced_type.append(name_tuple)
 
-                self.assertEqual(
-                    desired_order,
-                    current_sort_order_coerced_type,
-                    "{} is not ordered alphabetically".format(field.name),
-                )
+                    self.assertEqual(
+                        desired_order,
+                        current_sort_order_coerced_type,
+                        "{} is not ordered alphabetically".format(field.name),
+                    )
 
     def test_alphabetically_sorted_fk_fields_domain_information(self):
         with less_console_noise():
@@ -2319,7 +2321,6 @@ class ContactAdminTest(TestCase):
     def test_change_view_for_joined_contact_five_or_less(self):
         """Create a contact, join it to 4 domain requests. The 5th join will be a user.
         Assert that the warning on the contact form lists 5 joins."""
-
         with less_console_noise():
             self.client.force_login(self.superuser)
 
