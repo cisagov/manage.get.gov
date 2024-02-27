@@ -594,7 +594,7 @@ class TestDomainApplicationAdmin(MockEppLib):
             # Now let's make sure the long description does not exist
             self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
-    def transition_state_and_send_email(self, application, status):
+    def transition_state_and_send_email(self, application, status, rejection_reason=None):
         """Helper method for the email test cases."""
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -602,8 +602,9 @@ class TestDomainApplicationAdmin(MockEppLib):
                 # Create a mock request
                 request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
 
-                # Modify the application's property
+                # Modify the application's properties
                 application.status = status
+                application.rejection_reason = rejection_reason
 
                 # Use the model admin's save_model method
                 self.admin.save_model(request, application, form=None, change=True)
@@ -771,7 +772,11 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
             # Test Withdrawn Status
-            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.DOMAIN_PURPOSE,
+            )
             self.assert_email_is_accurate("Your .gov domain request has been rejected.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -779,9 +784,9 @@ class TestDomainApplicationAdmin(MockEppLib):
             self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
 
-    def test_save_model_sends_rejected_email(self):
-        """When transitioning to rejected on a domain request,
-        an email is sent out every time."""
+    def test_save_model_sends_rejected_email_purpose_not_met(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is domain purpose."""
 
         with less_console_noise():
             # Ensure there is no user with this email
@@ -791,19 +796,250 @@ class TestDomainApplicationAdmin(MockEppLib):
             # Create a sample application
             application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
 
-            # Test Submitted Status
-            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
-            self.assert_email_is_accurate("Your .gov domain request has been rejected.", 0, EMAIL)
+            # Reject for reason DOMAIN_PURPOSE and test email
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.DOMAIN_PURPOSE,
+            )
+            self.assert_email_is_accurate(
+                "Your domain request was rejected because the purpose you provided did not meet our \nrequirements.",
+                0,
+                EMAIL,
+            )
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
-            # Test Withdrawn Status
+            # Approve
             self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
             self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
             self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
-            # Test Submitted Status Again (No new email should be sent)
-            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.REJECTED)
-            self.assertEqual(len(self.mock_client.EMAILS_SENT), 3)
+    def test_save_model_sends_rejected_email_requestor(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is requestor."""
+
+        with less_console_noise():
+            # Ensure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            # Reject for reason REQUESTOR and test email including dynamic organization name
+            self.transition_state_and_send_email(
+                application, DomainApplication.ApplicationStatus.REJECTED, DomainApplication.RejectionReasons.REQUESTOR
+            )
+            self.assert_email_is_accurate(
+                "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
+                "domain on behalf of Testorg",
+                0,
+                EMAIL,
+            )
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+            # Approve
+            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_org_has_domain(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is second domain."""
+
+        with less_console_noise():
+            # Ensure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            # Reject for reason SECOND_DOMAIN_REASONING and test email including dynamic organization name
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.SECOND_DOMAIN_REASONING,
+            )
+            self.assert_email_is_accurate(
+                "Your domain request was rejected because Testorg has a .gov domain.", 0, EMAIL
+            )
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+            # Approve
+            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_contacts_or_org_legitimacy(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is contacts or org legitimacy."""
+
+        with less_console_noise():
+            # Ensure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            # Reject for reason CONTACTS_OR_ORGANIZATION_LEGITIMACY and test email including dynamic organization name
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
+            )
+            self.assert_email_is_accurate(
+                "Your domain request was rejected because we could not verify the organizational \n"
+                "contacts you provided. If you have questions or comments, reply to this email.",
+                0,
+                EMAIL,
+            )
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+            # Approve
+            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_org_eligibility(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is org eligibility."""
+
+        with less_console_noise():
+            # Ensure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            # Reject for reason ORGANIZATION_ELIGIBILITY and test email including dynamic organization name
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.ORGANIZATION_ELIGIBILITY,
+            )
+            self.assert_email_is_accurate(
+                "Your domain request was rejected because we determined that Testorg is not \neligible for "
+                "a .gov domain.",
+                0,
+                EMAIL,
+            )
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+            # Approve
+            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_naming(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is naming."""
+
+        with less_console_noise():
+            # Ensure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.NAMING_REQUIREMENTS,
+            )
+            self.assert_email_is_accurate(
+                "Your domain request was rejected because it does not meet our naming requirements.", 0, EMAIL
+            )
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+            # Approve
+            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_save_model_sends_rejected_email_other(self):
+        """When transitioning to rejected on a domain request, an email is sent
+        explaining why when the reason is other."""
+
+        with less_console_noise():
+            # Ensure there is no user with this email
+            EMAIL = "mayor@igorville.gov"
+            User.objects.filter(email=EMAIL).delete()
+
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+
+            # Reject for reason NAMING_REQUIREMENTS and test email including dynamic organization name
+            self.transition_state_and_send_email(
+                application,
+                DomainApplication.ApplicationStatus.REJECTED,
+                DomainApplication.RejectionReasons.OTHER,
+            )
+            self.assert_email_is_accurate("Choosing a .gov domain name", 0, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
+
+            # Approve
+            self.transition_state_and_send_email(application, DomainApplication.ApplicationStatus.APPROVED)
+            self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, EMAIL)
+            self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
+
+    def test_transition_to_rejected_without_rejection_reason_does_trigger_error(self):
+        """
+        When transitioning to rejected without a rejection reason, admin throws a user friendly message.
+
+        The transition fails.
+        """
+
+        with less_console_noise():
+            application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+
+            # Create a request object with a superuser
+            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request.user = self.superuser
+
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(messages, "error"))
+                application.status = DomainApplication.ApplicationStatus.REJECTED
+
+                self.admin.save_model(request, application, None, True)
+
+                messages.error.assert_called_once_with(
+                    request,
+                    "A rejection reason is required.",
+                )
+
+            application.refresh_from_db()
+            self.assertEqual(application.status, DomainApplication.ApplicationStatus.APPROVED)
+
+    def test_transition_to_rejected_with_rejection_reason_does_not_trigger_error(self):
+        """
+        When transitioning to rejected with a rejection reason, admin does not throw an error alert.
+
+        The transition is successful.
+        """
+
+        with less_console_noise():
+            application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+
+            # Create a request object with a superuser
+            request = self.factory.post("/admin/registrar/domainapplication/{}/change/".format(application.pk))
+            request.user = self.superuser
+
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(messages, "error"))
+                application.status = DomainApplication.ApplicationStatus.REJECTED
+                application.rejection_reason = DomainApplication.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY
+
+                self.admin.save_model(request, application, None, True)
+
+                messages.error.assert_not_called()
+
+            application.refresh_from_db()
+            self.assertEqual(application.status, DomainApplication.ApplicationStatus.REJECTED)
 
     def test_save_model_sends_withdrawn_email(self):
         """When transitioning to withdrawn on a domain request,
@@ -894,6 +1130,7 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "created_at",
                 "updated_at",
                 "status",
+                "rejection_reason",
                 "creator",
                 "investigator",
                 "organization_type",
@@ -1007,7 +1244,88 @@ class TestDomainApplicationAdmin(MockEppLib):
                     "Cannot edit an application with a restricted creator.",
                 )
 
-    def trigger_saving_approved_to_another_state(self, domain_is_active, another_state):
+            self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_fields_for_analyst(self):
+        with less_console_noise():
+            request = self.factory.get("/")  # Use the correct method and path
+            request.user = self.staffuser
+
+            readonly_fields = self.admin.get_readonly_fields(request)
+
+            expected_fields = [
+                "creator",
+                "about_your_organization",
+                "requested_domain",
+                "approved_domain",
+                "alternative_domains",
+                "purpose",
+                "submitter",
+                "no_other_contacts_rationale",
+                "anything_else",
+                "is_policy_acknowledged",
+            ]
+
+            self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_fields_for_superuser(self):
+        with less_console_noise():
+            request = self.factory.get("/")  # Use the correct method and path
+            request.user = self.superuser
+
+            readonly_fields = self.admin.get_readonly_fields(request)
+
+            expected_fields = []
+
+            self.assertEqual(readonly_fields, expected_fields)
+
+    def test_saving_when_restricted_creator(self):
+        with less_console_noise():
+            # Create an instance of the model
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                application.creator.status = User.RESTRICTED
+                application.creator.save()
+
+            # Create a request object with a superuser
+            request = self.factory.get("/")
+            request.user = self.superuser
+
+            with patch("django.contrib.messages.error") as mock_error:
+                # Simulate saving the model
+                self.admin.save_model(request, application, None, False)
+
+                # Assert that the error message was called with the correct argument
+                mock_error.assert_called_once_with(
+                    request,
+                    "This action is not permitted for applications with a restricted creator.",
+                )
+
+            # Assert that the status has not changed
+            self.assertEqual(application.status, DomainApplication.ApplicationStatus.IN_REVIEW)
+
+    def test_change_view_with_restricted_creator(self):
+        with less_console_noise():
+            # Create an instance of the model
+            application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                application.creator.status = User.RESTRICTED
+                application.creator.save()
+
+            with patch("django.contrib.messages.warning") as mock_warning:
+                # Create a request object with a superuser
+                request = self.factory.get("/admin/your_app/domainapplication/{}/change/".format(application.pk))
+                request.user = self.superuser
+
+                self.admin.display_restricted_warning(request, application)
+
+                # Assert that the error message was called with the correct argument
+                mock_warning.assert_called_once_with(
+                    request,
+                    "Cannot edit an application with a restricted creator.",
+                )
+
+    def trigger_saving_approved_to_another_state(self, domain_is_active, another_state, rejection_reason=None):
         """Helper method that triggers domain request state changes from approved to another state,
         with an associated domain that can be either active (READY) or not.
 
@@ -1037,6 +1355,8 @@ class TestDomainApplicationAdmin(MockEppLib):
                 stack.enter_context(patch.object(messages, "error"))
 
                 application.status = another_state
+                application.rejection_reason = rejection_reason
+
                 self.admin.save_model(request, application, None, True)
 
                 # Assert that the error message was called with the correct argument
@@ -1078,7 +1398,11 @@ class TestDomainApplicationAdmin(MockEppLib):
         self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.ACTION_NEEDED)
 
     def test_side_effects_when_saving_approved_to_rejected(self):
-        self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.REJECTED)
+        self.trigger_saving_approved_to_another_state(
+            False,
+            DomainApplication.ApplicationStatus.REJECTED,
+            DomainApplication.RejectionReasons.CONTACTS_OR_ORGANIZATION_LEGITIMACY,
+        )
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
         self.trigger_saving_approved_to_another_state(False, DomainApplication.ApplicationStatus.INELIGIBLE)
@@ -1101,6 +1425,7 @@ class TestDomainApplicationAdmin(MockEppLib):
                 "organization_type",
                 "federal_type",
                 DomainApplicationAdmin.ElectionOfficeFilter,
+                "rejection_reason",
                 DomainApplicationAdmin.InvestigatorFilter,
             )
 
@@ -1193,6 +1518,7 @@ class TestDomainApplicationAdmin(MockEppLib):
         It then retrieves the queryset for the 'investigator' dropdown from DomainApplicationAdmin
         and checks that it matches the expected queryset, which only includes staff users.
         """
+
         with less_console_noise():
             # Create a mock DomainApplication object, with a fake investigator
             application: DomainApplication = generic_domain_object("application", "SomeGuy")
@@ -1792,105 +2118,107 @@ class AuditedAdminTest(TestCase):
                     )
 
     def test_alphabetically_sorted_fk_fields_domain_information(self):
-        tested_fields = [
-            DomainInformation.authorizing_official.field,
-            DomainInformation.submitter.field,
-            # DomainInformation.creator.field,
-            (DomainInformation.domain.field, ["name"]),
-            (DomainInformation.domain_application.field, ["requested_domain__name"]),
-        ]
-        # Creates multiple domain applications - review status does not matter
-        applications = multiple_unalphabetical_domain_objects("information")
+        with less_console_noise():
+            tested_fields = [
+                DomainInformation.authorizing_official.field,
+                DomainInformation.submitter.field,
+                # DomainInformation.creator.field,
+                (DomainInformation.domain.field, ["name"]),
+                (DomainInformation.domain_application.field, ["requested_domain__name"]),
+            ]
+            # Creates multiple domain applications - review status does not matter
+            applications = multiple_unalphabetical_domain_objects("information")
 
-        # Create a mock request
-        request = self.factory.post("/admin/registrar/domaininformation/{}/change/".format(applications[0].pk))
+            # Create a mock request
+            request = self.factory.post("/admin/registrar/domaininformation/{}/change/".format(applications[0].pk))
 
-        model_admin = AuditedAdmin(DomainInformation, self.site)
+            model_admin = AuditedAdmin(DomainInformation, self.site)
 
-        sorted_fields = []
-        # Typically we wouldn't want two nested for fields,
-        # but both fields are of a fixed length.
-        # For test case purposes, this should be performant.
-        for field in tested_fields:
-            isOtherOrderfield: bool = isinstance(field, tuple)
-            field_obj = None
-            if isOtherOrderfield:
-                sorted_fields = field[1]
-                field_obj = field[0]
-            else:
-                sorted_fields = ["first_name", "last_name"]
-                field_obj = field
-            # We want both of these to be lists, as it is richer test wise.
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field_obj.name, *sorted_fields)
-            current_sort_order = list(model_admin.formfield_for_foreignkey(field_obj, request).queryset)
+            sorted_fields = []
+            # Typically we wouldn't want two nested for fields,
+            # but both fields are of a fixed length.
+            # For test case purposes, this should be performant.
+            for field in tested_fields:
+                isOtherOrderfield: bool = isinstance(field, tuple)
+                field_obj = None
+                if isOtherOrderfield:
+                    sorted_fields = field[1]
+                    field_obj = field[0]
+                else:
+                    sorted_fields = ["first_name", "last_name"]
+                    field_obj = field
+                # We want both of these to be lists, as it is richer test wise.
+                desired_order = self.order_by_desired_field_helper(model_admin, request, field_obj.name, *sorted_fields)
+                current_sort_order = list(model_admin.formfield_for_foreignkey(field_obj, request).queryset)
 
-            # Conforms to the same object structure as desired_order
-            current_sort_order_coerced_type = []
+                # Conforms to the same object structure as desired_order
+                current_sort_order_coerced_type = []
 
-            # This is necessary as .queryset and get_queryset
-            # return lists of different types/structures.
-            # We need to parse this data and coerce them into the same type.
-            for obj in current_sort_order:
-                last = None
-                if not isOtherOrderfield:
-                    first = obj.first_name
-                    last = obj.last_name
-                elif field_obj == DomainInformation.domain.field:
-                    first = obj.name
-                elif field_obj == DomainInformation.domain_application.field:
-                    first = obj.requested_domain.name
+                # This is necessary as .queryset and get_queryset
+                # return lists of different types/structures.
+                # We need to parse this data and coerce them into the same type.
+                for obj in current_sort_order:
+                    last = None
+                    if not isOtherOrderfield:
+                        first = obj.first_name
+                        last = obj.last_name
+                    elif field_obj == DomainInformation.domain.field:
+                        first = obj.name
+                    elif field_obj == DomainInformation.domain_application.field:
+                        first = obj.requested_domain.name
 
-                name_tuple = self.coerced_fk_field_helper(first, last, field_obj.name, ":")
-                if name_tuple is not None:
-                    current_sort_order_coerced_type.append(name_tuple)
+                    name_tuple = self.coerced_fk_field_helper(first, last, field_obj.name, ":")
+                    if name_tuple is not None:
+                        current_sort_order_coerced_type.append(name_tuple)
 
-            self.assertEqual(
-                desired_order,
-                current_sort_order_coerced_type,
-                "{} is not ordered alphabetically".format(field_obj.name),
-            )
+                self.assertEqual(
+                    desired_order,
+                    current_sort_order_coerced_type,
+                    "{} is not ordered alphabetically".format(field_obj.name),
+                )
 
     def test_alphabetically_sorted_fk_fields_domain_invitation(self):
-        tested_fields = [DomainInvitation.domain.field]
+        with less_console_noise():
+            tested_fields = [DomainInvitation.domain.field]
 
-        # Creates multiple domain applications - review status does not matter
-        applications = multiple_unalphabetical_domain_objects("invitation")
+            # Creates multiple domain applications - review status does not matter
+            applications = multiple_unalphabetical_domain_objects("invitation")
 
-        # Create a mock request
-        request = self.factory.post("/admin/registrar/domaininvitation/{}/change/".format(applications[0].pk))
+            # Create a mock request
+            request = self.factory.post("/admin/registrar/domaininvitation/{}/change/".format(applications[0].pk))
 
-        model_admin = AuditedAdmin(DomainInvitation, self.site)
+            model_admin = AuditedAdmin(DomainInvitation, self.site)
 
-        sorted_fields = []
-        # Typically we wouldn't want two nested for fields,
-        # but both fields are of a fixed length.
-        # For test case purposes, this should be performant.
-        for field in tested_fields:
-            sorted_fields = ["name"]
-            # We want both of these to be lists, as it is richer test wise.
+            sorted_fields = []
+            # Typically we wouldn't want two nested for fields,
+            # but both fields are of a fixed length.
+            # For test case purposes, this should be performant.
+            for field in tested_fields:
+                sorted_fields = ["name"]
+                # We want both of these to be lists, as it is richer test wise.
 
-            desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
-            current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
+                desired_order = self.order_by_desired_field_helper(model_admin, request, field.name, *sorted_fields)
+                current_sort_order = list(model_admin.formfield_for_foreignkey(field, request).queryset)
 
-            # Conforms to the same object structure as desired_order
-            current_sort_order_coerced_type = []
+                # Conforms to the same object structure as desired_order
+                current_sort_order_coerced_type = []
 
-            # This is necessary as .queryset and get_queryset
-            # return lists of different types/structures.
-            # We need to parse this data and coerce them into the same type.
-            for contact in current_sort_order:
-                first = contact.name
-                last = None
+                # This is necessary as .queryset and get_queryset
+                # return lists of different types/structures.
+                # We need to parse this data and coerce them into the same type.
+                for contact in current_sort_order:
+                    first = contact.name
+                    last = None
 
-                name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
-                if name_tuple is not None:
-                    current_sort_order_coerced_type.append(name_tuple)
+                    name_tuple = self.coerced_fk_field_helper(first, last, field.name, ":")
+                    if name_tuple is not None:
+                        current_sort_order_coerced_type.append(name_tuple)
 
-            self.assertEqual(
-                desired_order,
-                current_sort_order_coerced_type,
-                "{} is not ordered alphabetically".format(field.name),
-            )
+                self.assertEqual(
+                    desired_order,
+                    current_sort_order_coerced_type,
+                    "{} is not ordered alphabetically".format(field.name),
+                )
 
     def coerced_fk_field_helper(self, first_name, last_name, field_name, queryset_shorthand):
         """Handles edge cases for test cases"""

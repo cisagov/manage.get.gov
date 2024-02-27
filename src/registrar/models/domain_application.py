@@ -351,12 +351,34 @@ class DomainApplication(TimeStampedModel):
     ]
     AGENCY_CHOICES = [(v, v) for v in AGENCIES]
 
+    class RejectionReasons(models.TextChoices):
+        DOMAIN_PURPOSE = "purpose_not_met", "Purpose requirements not met"
+        REQUESTOR = "requestor_not_eligible", "Requestor not eligible to make request"
+        SECOND_DOMAIN_REASONING = (
+            "org_has_domain",
+            "Org already has a .gov domain",
+        )
+        CONTACTS_OR_ORGANIZATION_LEGITIMACY = (
+            "contacts_not_verified",
+            "Org contacts couldn't be verified",
+        )
+        ORGANIZATION_ELIGIBILITY = "org_not_eligible", "Org not eligible for a .gov domain"
+        NAMING_REQUIREMENTS = "naming_not_met", "Naming requirements not met"
+        OTHER = "other", "Other/Unspecified"
+
     # #### Internal fields about the application #####
     status = FSMField(
         choices=ApplicationStatus.choices,  # possible states as an array of constants
         default=ApplicationStatus.STARTED,  # sensible default
         protected=False,  # can change state directly, particularly in Django admin
     )
+
+    rejection_reason = models.TextField(
+        choices=RejectionReasons.choices,
+        null=True,
+        blank=True,
+    )
+
     # This is the application user who created this application. The contact
     # information that they gave is in the `submitter` field
     creator = models.ForeignKey(
@@ -364,6 +386,7 @@ class DomainApplication(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="applications_created",
     )
+
     investigator = models.ForeignKey(
         "registrar.User",
         null=True,
@@ -688,11 +711,16 @@ class DomainApplication(TimeStampedModel):
 
         This action is logged.
 
+        This action cleans up the rejection status if moving away from rejected.
+
         As side effects this will delete the domain and domain_information
         (will cascade) when they exist."""
 
         if self.status == self.ApplicationStatus.APPROVED:
             self.delete_and_clean_up_domain("in_review")
+
+        if self.status == self.ApplicationStatus.REJECTED:
+            self.rejection_reason = None
 
         literal = DomainApplication.ApplicationStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
@@ -715,11 +743,16 @@ class DomainApplication(TimeStampedModel):
 
         This action is logged.
 
+        This action cleans up the rejection status if moving away from rejected.
+
         As side effects this will delete the domain and domain_information
         (will cascade) when they exist."""
 
         if self.status == self.ApplicationStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
+
+        if self.status == self.ApplicationStatus.REJECTED:
+            self.rejection_reason = None
 
         literal = DomainApplication.ApplicationStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
@@ -738,6 +771,8 @@ class DomainApplication(TimeStampedModel):
     )
     def approve(self, send_email=True):
         """Approve an application that has been submitted.
+
+        This action cleans up the rejection status if moving away from rejected.
 
         This has substantial side-effects because it creates another database
         object for the approved Domain and makes the user who created the
@@ -760,6 +795,9 @@ class DomainApplication(TimeStampedModel):
         UserDomainRole.objects.get_or_create(
             user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
+
+        if self.status == self.ApplicationStatus.REJECTED:
+            self.rejection_reason = None
 
         self._send_status_update_email(
             "application approved",

@@ -574,6 +574,56 @@ class TestDomainApplication(TestCase):
                     with self.assertRaises(TransitionNotAllowed):
                         self.approved_application.reject_with_prejudice()
 
+    def test_approve_from_rejected_clears_rejection_reason(self):
+        """When transitioning from rejected to approved on a domain request,
+        the rejection_reason is cleared."""
+
+        with less_console_noise():
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
+            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+
+            # Approve
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                application.approve()
+
+            self.assertEqual(application.status, DomainApplication.ApplicationStatus.APPROVED)
+            self.assertEqual(application.rejection_reason, None)
+
+    def test_in_review_from_rejected_clears_rejection_reason(self):
+        """When transitioning from rejected to in_review on a domain request,
+        the rejection_reason is cleared."""
+
+        with less_console_noise():
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
+            application.domain_is_not_active = True
+            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+
+            # Approve
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                application.in_review()
+
+            self.assertEqual(application.status, DomainApplication.ApplicationStatus.IN_REVIEW)
+            self.assertEqual(application.rejection_reason, None)
+
+    def test_action_needed_from_rejected_clears_rejection_reason(self):
+        """When transitioning from rejected to action_needed on a domain request,
+        the rejection_reason is cleared."""
+
+        with less_console_noise():
+            # Create a sample application
+            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
+            application.domain_is_not_active = True
+            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+
+            # Approve
+            with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+                application.action_needed()
+
+            self.assertEqual(application.status, DomainApplication.ApplicationStatus.ACTION_NEEDED)
+            self.assertEqual(application.rejection_reason, None)
+
     def test_has_rationale_returns_true(self):
         """has_rationale() returns true when an application has no_other_contacts_rationale"""
         with less_console_noise():
