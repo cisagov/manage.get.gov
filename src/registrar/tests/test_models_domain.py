@@ -329,16 +329,16 @@ class TestDomainCreation(MockEppLib):
                 creator=user, requested_domain=draft_domain, investigator=investigator
             )
 
-                mock_client = MockSESClient()
-                with boto3_mocking.clients.handler_for("sesv2", mock_client):
-                    # skip using the submit method
-                    application.status = DomainApplication.ApplicationStatus.SUBMITTED
-                    # transition to approve state
-                    application.approve()
-                # should have information present for this domain
-                domain = Domain.objects.get(name="igorville.gov")
-                self.assertTrue(domain)
-                self.mockedSendFunction.assert_not_called()
+            mock_client = MockSESClient()
+            with boto3_mocking.clients.handler_for("sesv2", mock_client):
+                # skip using the submit method
+                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                # transition to approve state
+                application.approve()
+            # should have information present for this domain
+            domain = Domain.objects.get(name="igorville.gov")
+            self.assertTrue(domain)
+            self.mockedSendFunction.assert_not_called()
 
     def test_accessing_domain_properties_creates_domain_in_registry(self):
         """
