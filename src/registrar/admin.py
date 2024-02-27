@@ -838,13 +838,19 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             )
 
             # Annotate the full name and return a values list that lookups can use
-            privileged_users_annotated = privileged_users.annotate(
-                full_name=Coalesce(
-                    Concat("investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()),
-                    "investigator__email",
-                    output_field=CharField(),
+            privileged_users_annotated = (
+                privileged_users.annotate(
+                    full_name=Coalesce(
+                        Concat(
+                            "investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()
+                        ),
+                        "investigator__email",
+                        output_field=CharField(),
+                    )
                 )
-            ).values_list("investigator__id", "full_name").distinct()
+                .values_list("investigator__id", "full_name")
+                .distinct()
+            )
 
             return privileged_users_annotated
 
