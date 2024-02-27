@@ -844,7 +844,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     "investigator__email",
                     output_field=CharField(),
                 )
-            ).values_list("investigator__id", "full_name")
+            ).values_list("investigator__id", "full_name").distinct()
 
             return privileged_users_annotated
 
