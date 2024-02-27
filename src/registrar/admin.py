@@ -1070,8 +1070,20 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
-        # TODO - there is an existing bug in these in that they redirect
-        # to the table rather than back, on message display
+        """Custom save_model definition that handles edge cases"""
+        
+        # == Check that the obj is in a valid state == # 
+
+        # If obj is none, something went very wrong.
+        # The form should have blocked this, so lets forbid it.
+        if not obj:
+            logger.error(f"Invalid value for obj ({obj})")
+            messages.set_level(request, messages.ERROR)
+            messages.error(
+                request,
+                "Could not save DomainApplication. Something went wrong.",
+            )
+            return None
 
         # If the user is restricted or we're saving an invalid model,
         # forbid this action.
@@ -1086,86 +1098,122 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
             return None
 
-        if change:
-            # Get the original application from the database
-            original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+        # == Check if we're making a change or not == #
 
-            if (
-                obj
-                and original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED
-                and obj.status != models.DomainApplication.ApplicationStatus.APPROVED
-                and not obj.domain_is_not_active()
-            ):
-                # If an admin tried to set an approved application to
-                # another status and the related domain is already
-                # active, shortcut the action and throw a friendly
-                # error message. This action would still not go through
-                # shortcut or not as the rules are duplicated on the model,
-                # but the error would be an ugly Django error screen.
+        # If we're not making a change (adding a record), run save model as we do normally
+        if not change:
+            return super().save_model(request, obj, form, change)
 
-                # Clear the success message
-                messages.set_level(request, messages.ERROR)
+        # == Handle non-status changes == #
+        
+        # Get the original application from the database.
+        original_obj = models.DomainApplication.objects.get(pk=obj.pk)
+        if obj.status == original_obj.status:
+            # If the status hasn't changed, let the base function take care of it
+            return super().save_model(request, obj, form, change)
 
-                messages.error(
-                    request,
-                    "This action is not permitted. The domain is already active.",
+        # == Handle status changes == #
+
+        # Run some checks on the current object for invalid status changes
+        obj, should_save = self._handle_status_change(request, obj, original_obj)
+
+        # We should only save if we don't display any errors in the step above.
+        if should_save:
+            return super().save_model(request, obj, form, change)
+
+    def _handle_status_change(self, request, obj, original_obj):
+        """
+        Checks for various conditions when a status change is triggered.
+        In the event that it is valid, the status will be mapped to 
+        the appropriate method.
+
+        In the event that we should not status change, an error message
+        will be displayed.
+
+        Returns a tuple: (obj: DomainApplication, should_proceed: bool)
+        """
+
+        should_proceed = True
+        error_message = None
+
+        # Get the method that should be run given the status
+        selected_method = self.get_status_method_mapping(obj)
+        if selected_method is None:
+            logger.warning("Unknown status selected in django admin")
+
+            # If the status is not mapped properly, saving could cause
+            # weird issues down the line. Instead, we should block this.
+            should_proceed = False
+            return should_proceed
+
+        original_is_approved_and_current_is_not = (
+            original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED,
+            obj.status != models.DomainApplication.ApplicationStatus.APPROVED
+        )
+        if (original_is_approved_and_current_is_not and not obj.domain_is_not_active()):
+            # If an admin tried to set an approved application to
+            # another status and the related domain is already
+            # active, shortcut the action and throw a friendly
+            # error message. This action would still not go through
+            # shortcut or not as the rules are duplicated on the model,
+            # but the error would be an ugly Django error screen.
+            error_message = "This action is not permitted. The domain is already active."
+        elif (
+            obj.status == models.DomainApplication.ApplicationStatus.REJECTED
+            and not obj.rejection_reason
+        ):
+            # This condition should never be triggered.
+            # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
+            # because we clean up the rejection reason in the transition in the model.
+            error_message = "A rejection reason is required."
+        else:
+            # This is an fsm in model which will throw an error if the
+            # transition condition is violated, so we roll back the
+            # status to what it was before the admin user changed it and
+            # let the fsm method set it.
+            obj.status = original_obj.status
+
+            # Try to perform the status change.
+            # Catch ApplicationStatusError's and return the message,
+            # as these are typically user errors.
+            try:
+                selected_method()
+            except ApplicationStatusError as err:
+                logger.warning(
+                    f"User error encountered when trying to change status: {err}"
                 )
-                return None
-            elif (
-                obj
-                and obj.status == models.DomainApplication.ApplicationStatus.REJECTED
-                and not obj.rejection_reason
-            ):
-                # This condition should never be triggered.
-                # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
-                # because we clean up the rejection reason in the transition in the model.
+                error_message = err.message
 
-                # Clear the success message
-                messages.set_level(request, messages.ERROR)
+        if error_message is not None:
+            # Clear the success message
+            messages.set_level(request, messages.ERROR)
+            # Display the error
+            messages.error(
+                request,
+                error_message,
+            )
 
-                messages.error(
-                    request,
-                    "A rejection reason is required.",
-                )
-                return None
-            else:
-                if obj.status != original_obj.status:
-                    status_method_mapping = {
-                        models.DomainApplication.ApplicationStatus.STARTED: None,
-                        models.DomainApplication.ApplicationStatus.SUBMITTED: obj.submit,
-                        models.DomainApplication.ApplicationStatus.IN_REVIEW: obj.in_review,
-                        models.DomainApplication.ApplicationStatus.ACTION_NEEDED: obj.action_needed,
-                        models.DomainApplication.ApplicationStatus.APPROVED: obj.approve,
-                        models.DomainApplication.ApplicationStatus.WITHDRAWN: obj.withdraw,
-                        models.DomainApplication.ApplicationStatus.REJECTED: obj.reject,
-                        models.DomainApplication.ApplicationStatus.INELIGIBLE: (obj.reject_with_prejudice),
-                    }
-                    selected_method = status_method_mapping.get(obj.status)
-                    if selected_method is None:
-                        logger.warning("Unknown status selected in django admin")
-                    else:
-                        # This is an fsm in model which will throw an error if the
-                        # transition condition is violated, so we roll back the
-                        # status to what it was before the admin user changed it and
-                        # let the fsm method set it.
-                        obj.status = original_obj.status
+            # If an error message exists, we shouldn't proceed
+            should_proceed = False
 
-                        # Try to perform the status change.
-                        # Catch ApplicationStatusError's and return the message,
-                        # as these are typically user errors.
-                        try:
-                            selected_method()
-                        except ApplicationStatusError as err:
-                            # Clear the success message, if any
-                            messages.set_level(request, messages.ERROR)
+        return (obj, should_proceed)
 
-                            messages.error(
-                                request,
-                                err.message,
-                            )
-                            return None
+    def get_status_method_mapping(self, application):
+        """Returns what method should be ran given an application object"""
+        # Define a per-object mapping
+        status_method_mapping = {
+            models.DomainApplication.ApplicationStatus.STARTED: None,
+            models.DomainApplication.ApplicationStatus.SUBMITTED: application.submit,
+            models.DomainApplication.ApplicationStatus.IN_REVIEW: application.in_review,
+            models.DomainApplication.ApplicationStatus.ACTION_NEEDED: application.action_needed,
+            models.DomainApplication.ApplicationStatus.APPROVED: application.approve,
+            models.DomainApplication.ApplicationStatus.WITHDRAWN: application.withdraw,
+            models.DomainApplication.ApplicationStatus.REJECTED: application.reject,
+            models.DomainApplication.ApplicationStatus.INELIGIBLE: (application.reject_with_prejudice),
+        }
 
-        super().save_model(request, obj, form, change)
+        # Grab the method
+        return status_method_mapping.get(application.status, None)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
