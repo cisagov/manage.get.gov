@@ -112,7 +112,8 @@ html[data-theme="light"] {
     .change-list .usa-table thead th,
     body.dashboard,
     body.change-list,
-    body.change-form {
+    body.change-form,
+    .analytics {
         color: var(--body-fg);
     }
 }

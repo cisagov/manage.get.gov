@@ -1,12 +1,61 @@
 {% extends "admin/base_site.html" %}
 
-{% block content_title %}Registrar Analytics{% endblock %}
+
+
+{% block content_title %}<h1>Registrar Analytics</h1>{% endblock %}
 
 {% block content %}
-<ul>
-  <li>User Count: {{ data.user_count }}</li>
-  <li>Domain Count: {{ data.domain_count }}</li>
-  <li>Domain applications (last 30 days): {{ data.applications_last_30_days }}</li>
-  <li>Average approval time for applications (last 30 days): {{ data.average_application_approval_time_last_30_days }}</li>
-</ul>
+
+  {% block object-tools %}
+    <ul class="object-tools">
+      <li>
+          <a href="{% url 'admin:registrar_domain_export_data_type' %}" class="button">Export all domain metadata</a>
+      </li>
+      <li>
+          <a href="{% url 'admin:registrar_domain_export_data_full' %}" class="button">Export current-full.csv</a>
+      </li>
+      <li>
+          <a href="{% url 'admin:registrar_domain_export_data_federal' %}" class="button">Export current-federal.csv</a>
+      </li>
+    </ul>
+  {% endblock %}
+
+  <div id="content-main" class="analytics">
+    <div class="module">
+      <h2>At a glance</h2>
+      <div class="padding-2">
+        <ul>
+          <li>User Count: {{ data.user_count }}</li>
+          <li>Domain Count: {{ data.domain_count }}</li>
+          <li>Domain applications (last 30 days): {{ data.applications_last_30_days }}</li>
+          <li>Average approval time for applications (last 30 days): {{ data.average_application_approval_time_last_30_days }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module">
+      <h2>Domain growth</h2>
+      <div class="padding-2">
+        {% comment %} 
+            Inputs of type date suck for accessibility.
+            We'll need to replace those guys with a django form once we figure out how to hook one onto this page.
+            The challenge is in the path definition in urls. It does NOT like admin/export_data/
+      
+            See the commit "Review for ticket #999"
+        {% endcomment %}
+        <div class="display-flex flex-align-baseline flex-justify margin-y-1">
+            <div>
+                <label for="start">Start date:</label>
+                <input type="date" id="start" name="start" value="2018-07-22" min="2018-01-01" />
+            </div>
+            <div>
+                <label for="end">End date:</label>
+                <input type="date" id="end" name="end" value="2023-12-01" min="2023-12-01" />
+            </div>
+            <button id="exportLink" data-export-url="{% url 'admin_export_data' %}" type="button" class="button">Export</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 {% endblock %}
