@@ -902,7 +902,14 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     custom_election_board.short_description = "Election office"  # type: ignore
 
     # Filters
-    list_filter = ("status", "organization_type", "federal_type", ElectionOfficeFilter, "rejection_reason", InvestigatorFilter)
+    list_filter = (
+        "status",
+        "organization_type",
+        "federal_type",
+        ElectionOfficeFilter,
+        "rejection_reason",
+        InvestigatorFilter,
+    )
 
     # Search
     search_fields = [

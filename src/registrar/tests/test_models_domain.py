@@ -505,6 +505,7 @@ class TestDomainAvailable(MockEppLib):
             return MagicMock(
                 res_data=[responses.check.CheckDomainResultData(name="available.gov", avail=True, reason=None)],
             )
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
@@ -538,6 +539,7 @@ class TestDomainAvailable(MockEppLib):
             return MagicMock(
                 res_data=[responses.check.CheckDomainResultData(name="unavailable.gov", avail=False, reason="In Use")],
             )
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
@@ -588,6 +590,7 @@ class TestDomainAvailable(MockEppLib):
 
         def side_effect(_request, cleaned):
             raise RegistryError(code=ErrorCode.COMMAND_SYNTAX_ERROR)
+
         with less_console_noise():
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
