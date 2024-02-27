@@ -3,7 +3,7 @@ import logging
 
 from django import forms
 from django.db.models.functions import Concat, Coalesce
-from django.db.models import Value, CharField
+from django.db.models import Value, CharField, Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions
@@ -27,6 +27,7 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
 
+from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
 
@@ -838,6 +839,14 @@ class DomainInformationAdmin(ListHeaderAdmin):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     # Table ordering
     ordering = ["domain__name"]
 
@@ -881,13 +890,19 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             )
 
             # Annotate the full name and return a values list that lookups can use
-            privileged_users_annotated = privileged_users.annotate(
-                full_name=Coalesce(
-                    Concat("investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()),
-                    "investigator__email",
-                    output_field=CharField(),
+            privileged_users_annotated = (
+                privileged_users.annotate(
+                    full_name=Coalesce(
+                        Concat(
+                            "investigator__first_name", Value(" "), "investigator__last_name", output_field=CharField()
+                        ),
+                        "investigator__email",
+                        output_field=CharField(),
+                    )
                 )
-            ).values_list("investigator__id", "full_name")
+                .values_list("investigator__id", "full_name")
+                .distinct()
+            )
 
             return privileged_users_annotated
 
@@ -898,11 +913,35 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             else:
                 return queryset.filter(investigator__id__exact=self.value())
 
+    class ElectionOfficeFilter(admin.SimpleListFilter):
+        """Define a custom filter for is_election_board"""
+
+        title = _("election office")
+        parameter_name = "is_election_board"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            if self.value() == "1":
+                return queryset.filter(is_election_board=True)
+            if self.value() == "0":
+                return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
+
     # Columns
     list_display = [
         "requested_domain",
         "status",
         "organization_type",
+        "federal_type",
+        "federal_agency",
+        "organization_name",
+        "custom_election_board",
+        "city",
+        "state_territory",
         "created_at",
         "submitter",
         "investigator",
@@ -914,8 +953,21 @@ class DomainApplicationAdmin(ListHeaderAdmin):
         ("investigator", ["first_name", "last_name"]),
     ]
 
+    def custom_election_board(self, obj):
+        return "Yes" if obj.is_election_board else "No"
+
+    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
+
     # Filters
-    list_filter = ("status", "organization_type", InvestigatorFilter)
+    list_filter = (
+        "status",
+        "organization_type",
+        "federal_type",
+        ElectionOfficeFilter,
+        "rejection_reason",
+        InvestigatorFilter,
+    )
 
     # Search
     search_fields = [
@@ -927,7 +979,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     search_help_text = "Search by domain or submitter."
 
     fieldsets = [
-        (None, {"fields": ["status", "investigator", "creator", "approved_domain", "notes"]}),
+        (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
         (
             "Type of organization",
             {
@@ -1026,6 +1078,23 @@ class DomainApplicationAdmin(ListHeaderAdmin):
                     messages.error(
                         request,
                         "This action is not permitted. The domain is already active.",
+                    )
+
+                elif (
+                    obj
+                    and obj.status == models.DomainApplication.ApplicationStatus.REJECTED
+                    and not obj.rejection_reason
+                ):
+                    # This condition should never be triggered.
+                    # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
+                    # because we clean up the rejection reason in the transition in the model.
+
+                    # Clear the success message
+                    messages.set_level(request, messages.ERROR)
+
+                    messages.error(
+                        request,
+                        "A rejection reason is required.",
                     )
 
                 else:
@@ -1131,6 +1200,14 @@ class DomainInformationInline(admin.StackedInline):
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 
+    autocomplete_fields = [
+        "creator",
+        "domain_application",
+        "authorizing_official",
+        "domain",
+        "submitter",
+    ]
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
@@ -1160,12 +1237,37 @@ class DomainInformationInline(admin.StackedInline):
 class DomainAdmin(ListHeaderAdmin):
     """Custom domain admin class to add extra buttons."""
 
+    class ElectionOfficeFilter(admin.SimpleListFilter):
+        """Define a custom filter for is_election_board"""
+
+        title = _("election office")
+        parameter_name = "is_election_board"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            logger.debug(self.value())
+            if self.value() == "1":
+                return queryset.filter(domain_info__is_election_board=True)
+            if self.value() == "0":
+                return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
+
     inlines = [DomainInformationInline]
 
     # Columns
     list_display = [
         "name",
         "organization_type",
+        "federal_type",
+        "federal_agency",
+        "organization_name",
+        "custom_election_board",
+        "city",
+        "state_territory",
         "state",
         "expiration_date",
         "created_at",
@@ -1189,8 +1291,42 @@ class DomainAdmin(ListHeaderAdmin):
 
     organization_type.admin_order_field = "domain_info__organization_type"  # type: ignore
 
+    def federal_agency(self, obj):
+        return obj.domain_info.federal_agency if obj.domain_info else None
+
+    federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
+
+    def federal_type(self, obj):
+        return obj.domain_info.federal_type if obj.domain_info else None
+
+    federal_type.admin_order_field = "domain_info__federal_type"  # type: ignore
+
+    def organization_name(self, obj):
+        return obj.domain_info.organization_name if obj.domain_info else None
+
+    organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
+
+    def custom_election_board(self, obj):
+        domain_info = getattr(obj, "domain_info", None)
+        if domain_info:
+            return "Yes" if domain_info.is_election_board else "No"
+        return "No"
+
+    custom_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
+
+    def city(self, obj):
+        return obj.domain_info.city if obj.domain_info else None
+
+    city.admin_order_field = "domain_info__city"  # type: ignore
+
+    def state_territory(self, obj):
+        return obj.domain_info.state_territory if obj.domain_info else None
+
+    state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
+
     # Filters
-    list_filter = ["domain_info__organization_type", "state"]
+    list_filter = ["domain_info__organization_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
 
     search_fields = ["name"]
     search_help_text = "Search by domain name."
@@ -1210,7 +1346,14 @@ class DomainAdmin(ListHeaderAdmin):
         if object_id is not None:
             domain = Domain.objects.get(pk=object_id)
             years_to_extend_by = self._get_calculated_years_for_exp_date(domain)
-            curr_exp_date = domain.registry_expiration_date
+
+            try:
+                curr_exp_date = domain.registry_expiration_date
+            except KeyError:
+                # No expiration date was found. Return none.
+                extra_context["extended_expiration_date"] = None
+                return super().changeform_view(request, object_id, form_url, extra_context)
+
             if curr_exp_date < date.today():
                 extra_context["extended_expiration_date"] = date.today() + relativedelta(years=years_to_extend_by)
             else:

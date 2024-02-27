@@ -286,6 +286,7 @@ AWS_MAX_ATTEMPTS = 3
 BOTO_CONFIG = Config(retries={"mode": AWS_RETRY_MODE, "max_attempts": AWS_MAX_ATTEMPTS})
 
 # email address to use for various automated correspondence
+# also used as a default to and bcc email
 DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
 
 # connect to an (external) SMTP server for sending email
