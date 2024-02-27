@@ -1071,8 +1071,8 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
         """Custom save_model definition that handles edge cases"""
-        
-        # == Check that the obj is in a valid state == # 
+
+        # == Check that the obj is in a valid state == #
 
         # If obj is none, something went very wrong.
         # The form should have blocked this, so lets forbid it.
@@ -1105,7 +1105,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             return super().save_model(request, obj, form, change)
 
         # == Handle non-status changes == #
-        
+
         # Get the original application from the database.
         original_obj = models.DomainApplication.objects.get(pk=obj.pk)
         if obj.status == original_obj.status:
@@ -1124,7 +1124,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     def _handle_status_change(self, request, obj, original_obj):
         """
         Checks for various conditions when a status change is triggered.
-        In the event that it is valid, the status will be mapped to 
+        In the event that it is valid, the status will be mapped to
         the appropriate method.
 
         In the event that we should not status change, an error message
@@ -1148,9 +1148,9 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
         original_is_approved_and_current_is_not = (
             original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED,
-            obj.status != models.DomainApplication.ApplicationStatus.APPROVED
+            obj.status != models.DomainApplication.ApplicationStatus.APPROVED,
         )
-        if (original_is_approved_and_current_is_not and not obj.domain_is_not_active()):
+        if original_is_approved_and_current_is_not and not obj.domain_is_not_active():
             # If an admin tried to set an approved application to
             # another status and the related domain is already
             # active, shortcut the action and throw a friendly
@@ -1158,10 +1158,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             # shortcut or not as the rules are duplicated on the model,
             # but the error would be an ugly Django error screen.
             error_message = "This action is not permitted. The domain is already active."
-        elif (
-            obj.status == models.DomainApplication.ApplicationStatus.REJECTED
-            and not obj.rejection_reason
-        ):
+        elif obj.status == models.DomainApplication.ApplicationStatus.REJECTED and not obj.rejection_reason:
             # This condition should never be triggered.
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
             # because we clean up the rejection reason in the transition in the model.
@@ -1179,9 +1176,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             try:
                 selected_method()
             except ApplicationStatusError as err:
-                logger.warning(
-                    f"User error encountered when trying to change status: {err}"
-                )
+                logger.warning(f"An error encountered when trying to change status: {err}")
                 error_message = err.message
 
         if error_message is not None:
