@@ -1203,11 +1203,10 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             should_proceed = False
             return should_proceed
 
-        original_is_approved_and_current_is_not = (
-            original_obj.status == models.DomainApplication.ApplicationStatus.APPROVED,
-            obj.status != models.DomainApplication.ApplicationStatus.APPROVED,
+        application_is_not_approved = (
+            obj.status != models.DomainApplication.ApplicationStatus.APPROVED
         )
-        if original_is_approved_and_current_is_not and not obj.domain_is_not_active():
+        if application_is_not_approved and not obj.domain_is_not_active():
             # If an admin tried to set an approved application to
             # another status and the related domain is already
             # active, shortcut the action and throw a friendly
