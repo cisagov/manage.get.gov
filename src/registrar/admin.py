@@ -794,7 +794,6 @@ class DomainApplicationAdminForm(forms.ModelForm):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
         application = kwargs.get("instance")
         if application and application.pk:
@@ -833,6 +832,10 @@ class DomainApplicationAdminForm(forms.ModelForm):
                 yield meta.get_transition(curr_state)
 
     def clean(self):
+        """
+        Override of the default clean on the form.
+        This is so we can inject custom form-level error messages.
+        """
         # clean is called from clean_forms, which is called from is_valid
         # after clean_fields.  it is used to determine form level errors.
         # is_valid is typically called from view during a post
@@ -1027,23 +1030,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
 
     # Table ordering
     ordering = ["requested_domain__name"]
-
-    def get_form(self, request, obj=None, **kwargs):
-        """
-        Workaround to pass the request context to the underlying DomainApplicationAdminForm form object.
-        This is so we can do things like check the current user against a form value at submission.
-        """
-        # Call the superclass's get_form method to get the form class
-        da_form = super().get_form(request, obj, **kwargs)
-
-        # Define a wrapper class for the form that includes the request in its initialization.
-        # This is needed such that we can inject request without otherwise altering it.
-        class DomainApplicationFormWrapper(da_form):
-            def __new__(cls, *args, **form_kwargs):
-                form_kwargs["request"] = request
-                return da_form(*args, **form_kwargs)
-
-        return DomainApplicationFormWrapper
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
