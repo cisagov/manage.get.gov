@@ -1203,9 +1203,7 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             should_proceed = False
             return should_proceed
 
-        application_is_not_approved = (
-            obj.status != models.DomainApplication.ApplicationStatus.APPROVED
-        )
+        application_is_not_approved = obj.status != models.DomainApplication.ApplicationStatus.APPROVED
         if application_is_not_approved and not obj.domain_is_not_active():
             # If an admin tried to set an approved application to
             # another status and the related domain is already
