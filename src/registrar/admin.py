@@ -18,15 +18,92 @@ from registrar.models import Contact, Domain, DomainApplication, DraftDomain, Us
 from registrar.utility import csv_export
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
+from registrar.widgets import NoAutocompleteFilteredSelectMultiple
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
 from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
+from django.contrib.auth.forms import UserChangeForm, UsernameField
+
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
+
+
+class MyUserAdminForm(UserChangeForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs.
+
+    It inherits from UserChangeForm which has special handling for the password and username fields."""
+
+    class Meta:
+        model = models.User
+        fields = "__all__"
+        field_classes = {"username": UsernameField}
+        widgets = {
+            "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
+            "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
+        }
+
+
+class DomainInformationAdminForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.DomainInformation
+        fields = "__all__"
+        widgets = {
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+
+
+class DomainInformationInlineForm(forms.ModelForm):
+    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.DomainInformation
+        fields = "__all__"
+        widgets = {
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+
+
+class DomainApplicationAdminForm(forms.ModelForm):
+    """Custom form to limit transitions to available transitions.
+    This form utilizes the custom widget for its class's ManyToMany UIs."""
+
+    class Meta:
+        model = models.DomainApplication
+        fields = "__all__"
+        widgets = {
+            "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
+            "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        application = kwargs.get("instance")
+        if application and application.pk:
+            current_state = application.status
+
+            # first option in status transitions is current state
+            available_transitions = [(current_state, application.get_status_display())]
+
+            transitions = get_available_FIELD_transitions(
+                application, models.DomainApplication._meta.get_field("status")
+            )
+
+            for transition in transitions:
+                available_transitions.append((transition.target, transition.target.label))
+
+            # only set the available transitions if the user is not restricted
+            # from editing the domain application; otherwise, the form will be
+            # readonly and the status field will not have a widget
+            if not application.creator.is_restricted():
+                self.fields["status"].widget.choices = available_transitions
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -287,6 +364,8 @@ class UserContactInline(admin.StackedInline):
 
 class MyUserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
+
+    form = MyUserAdminForm
 
     class Meta:
         """Contains meta information about this class"""
@@ -673,6 +752,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
 class DomainInformationAdmin(ListHeaderAdmin):
     """Customize domain information admin class."""
 
+    form = DomainInformationAdminForm
+
     # Columns
     list_display = [
         "domain",
@@ -785,39 +866,10 @@ class DomainInformationAdmin(ListHeaderAdmin):
         return readonly_fields  # Read-only fields for analysts
 
 
-class DomainApplicationAdminForm(forms.ModelForm):
-    """Custom form to limit transitions to available transitions"""
-
-    class Meta:
-        model = models.DomainApplication
-        fields = "__all__"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
-
-            # first option in status transitions is current state
-            available_transitions = [(current_state, application.get_status_display())]
-
-            transitions = get_available_FIELD_transitions(
-                application, models.DomainApplication._meta.get_field("status")
-            )
-
-            for transition in transitions:
-                available_transitions.append((transition.target, transition.target.label))
-
-            # only set the available transitions if the user is not restricted
-            # from editing the domain application; otherwise, the form will be
-            # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
-                self.fields["status"].widget.choices = available_transitions
-
-
 class DomainApplicationAdmin(ListHeaderAdmin):
     """Custom domain applications admin class."""
+
+    form = DomainApplicationAdminForm
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -926,8 +978,6 @@ class DomainApplicationAdmin(ListHeaderAdmin):
     ]
     search_help_text = "Search by domain or submitter."
 
-    # Detail view
-    form = DomainApplicationAdminForm
     fieldsets = [
         (None, {"fields": ["status", "rejection_reason", "investigator", "creator", "approved_domain", "notes"]}),
         (
@@ -1139,6 +1189,8 @@ class DomainInformationInline(admin.StackedInline):
     and the source DomainInformationAdmin since these
     classes conflict, so we'll just pull what we need
     from DomainInformationAdmin"""
+
+    form = DomainInformationInlineForm
 
     model = models.DomainInformation
 
