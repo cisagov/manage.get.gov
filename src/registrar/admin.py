@@ -93,9 +93,14 @@ class DomainApplicationAdminForm(forms.ModelForm):
             # first option in status transitions is current state
             available_transitions = [(current_state, application.get_status_display())]
 
-            transitions = get_available_FIELD_transitions(
-                application, models.DomainApplication._meta.get_field("status")
-            )
+            if application.investigator is not None:
+                transitions = get_available_FIELD_transitions(
+                    application, models.DomainApplication._meta.get_field("status")
+                )
+            else:
+                transitions = self.get_custom_field_transitions(
+                    application, models.DomainApplication._meta.get_field("status")
+                )
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target.label))
@@ -105,6 +110,73 @@ class DomainApplicationAdminForm(forms.ModelForm):
             # readonly and the status field will not have a widget
             if not application.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
+
+    def get_custom_field_transitions(self, instance, field):
+        """Custom implementation of get_available_FIELD_transitions
+        in the FSM. Allows us to still display fields filtered out by a condition."""
+        curr_state = field.get_state(instance)
+        transitions = field.transitions[instance.__class__]
+
+        for name, transition in transitions.items():
+            meta = transition._django_fsm
+            if meta.has_transition(curr_state):
+                yield meta.get_transition(curr_state)
+
+    def clean(self):
+        """
+        Override of the default clean on the form.
+        This is so we can inject custom form-level error messages.
+        """
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+        investigator = cleaned_data.get("investigator")
+
+        # Get the old status
+        initial_status = self.initial.get("status", None)
+
+        # We only care about investigator when in these statuses
+        checked_statuses = [
+            DomainApplication.ApplicationStatus.APPROVED,
+            DomainApplication.ApplicationStatus.IN_REVIEW,
+            DomainApplication.ApplicationStatus.ACTION_NEEDED,
+            DomainApplication.ApplicationStatus.REJECTED,
+            DomainApplication.ApplicationStatus.INELIGIBLE,
+        ]
+
+        # If a status change occured, check for validity
+        if status != initial_status and status in checked_statuses:
+            # Checks the "investigators" field for validity.
+            # That field must obey certain conditions when an application is approved.
+            # Will call "add_error" if any issues are found.
+            self._check_for_valid_investigator(investigator)
+
+        return cleaned_data
+
+    def _check_for_valid_investigator(self, investigator) -> bool:
+        """
+        Checks if the investigator field is not none, and is staff.
+        Adds form errors on failure.
+        """
+
+        is_valid = False
+
+        # Check if an investigator is assigned. No approval is possible without one.
+        error_message = None
+        if investigator is None:
+            # Lets grab the error message from a common location
+            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+        elif not investigator.is_staff:
+            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("investigator", error_message)
+
+        return is_valid
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -865,108 +937,6 @@ class DomainInformationAdmin(ListHeaderAdmin):
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields  # Read-only fields for analysts
-
-
-class DomainApplicationAdminForm(forms.ModelForm):
-    """Custom form to limit transitions to available transitions"""
-
-    class Meta:
-        model = models.DomainApplication
-        fields = "__all__"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        application = kwargs.get("instance")
-        if application and application.pk:
-            current_state = application.status
-
-            # first option in status transitions is current state
-            available_transitions = [(current_state, application.get_status_display())]
-
-            if application.investigator is not None:
-                transitions = get_available_FIELD_transitions(
-                    application, models.DomainApplication._meta.get_field("status")
-                )
-            else:
-                transitions = self.get_custom_field_transitions(
-                    application, models.DomainApplication._meta.get_field("status")
-                )
-
-            for transition in transitions:
-                available_transitions.append((transition.target, transition.target.label))
-
-            # only set the available transitions if the user is not restricted
-            # from editing the domain application; otherwise, the form will be
-            # readonly and the status field will not have a widget
-            if not application.creator.is_restricted():
-                self.fields["status"].widget.choices = available_transitions
-
-    def get_custom_field_transitions(self, instance, field):
-        """Custom implementation of get_available_FIELD_transitions
-        in the FSM. Allows us to still display fields filtered out by a condition."""
-        curr_state = field.get_state(instance)
-        transitions = field.transitions[instance.__class__]
-
-        for name, transition in transitions.items():
-            meta = transition._django_fsm
-            if meta.has_transition(curr_state):
-                yield meta.get_transition(curr_state)
-
-    def clean(self):
-        """
-        Override of the default clean on the form.
-        This is so we can inject custom form-level error messages.
-        """
-        # clean is called from clean_forms, which is called from is_valid
-        # after clean_fields.  it is used to determine form level errors.
-        # is_valid is typically called from view during a post
-        cleaned_data = super().clean()
-        status = cleaned_data.get("status")
-        investigator = cleaned_data.get("investigator")
-
-        # Get the old status
-        initial_status = self.initial.get("status", None)
-
-        # We only care about investigator when in these statuses
-        checked_statuses = [
-            DomainApplication.ApplicationStatus.APPROVED,
-            DomainApplication.ApplicationStatus.IN_REVIEW,
-            DomainApplication.ApplicationStatus.ACTION_NEEDED,
-            DomainApplication.ApplicationStatus.REJECTED,
-            DomainApplication.ApplicationStatus.INELIGIBLE,
-        ]
-
-        # If a status change occured, check for validity
-        if status != initial_status and status in checked_statuses:
-            # Checks the "investigators" field for validity.
-            # That field must obey certain conditions when an application is approved.
-            # Will call "add_error" if any issues are found.
-            self._check_for_valid_investigator(investigator)
-
-        return cleaned_data
-
-    def _check_for_valid_investigator(self, investigator) -> bool:
-        """
-        Checks if the investigator field is not none, and is staff.
-        Adds form errors on failure.
-        """
-
-        is_valid = False
-
-        # Check if an investigator is assigned. No approval is possible without one.
-        error_message = None
-        if investigator is None:
-            # Lets grab the error message from a common location
-            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
-        elif not investigator.is_staff:
-            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
-        else:
-            is_valid = True
-
-        if error_message is not None:
-            self.add_error("investigator", error_message)
-
-        return is_valid
 
 
 class DomainApplicationAdmin(ListHeaderAdmin):
