@@ -167,9 +167,9 @@ def write_csv(
         max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
         update_columns_with_domain_managers(columns, max_dm_count)
 
+    rows = []
     for page_num in paginator.page_range:
         page = paginator.page(page_num)
-        rows = []
         for domain_info in page.object_list:
             try:
                 row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
