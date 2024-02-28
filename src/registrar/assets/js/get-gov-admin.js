@@ -29,7 +29,7 @@ function openInNewTab(el, removeAttribute = false){
 */
 (function (){
     function createPhantomModalFormButtons(){
-        let submitButtons = document.querySelectorAll('.usa-modal button[type="submit"]');
+        let submitButtons = document.querySelectorAll('.usa-modal button[type="submit"].dja-form-placeholder');
         form = document.querySelector("form")
         submitButtons.forEach((button) => {
 

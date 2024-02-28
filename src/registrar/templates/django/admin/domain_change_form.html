@@ -11,18 +11,15 @@
         </div>
         <div class="desktop:flex-align-self-end">
             {% if original.state != original.State.DELETED %}
-            <a
-            class="text-middle"
-            href="#toggle-extend-expiration-alert"
-            aria-controls="toggle-extend-expiration-alert"
-            data-open-modal
-            >
+            <a class="text-middle" href="#toggle-extend-expiration-alert" aria-controls="toggle-extend-expiration-alert" data-open-modal>
                 Extend expiration date
             </a>
             <span class="margin-left-05 margin-right-05 text-middle"> | </span>
             {% endif %}
             {% if original.state == original.State.READY %}
-            <input type="submit" value="Place hold" name="_place_client_hold" class="custom-link-button">
+            <a class="text-middle" href="#toggle-place-on-hold" aria-controls="toggle-place-on-hold" data-open-modal>
+                Place hold
+            </a>
             {% elif original.state == original.State.ON_HOLD %}
             <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
             {% endif %}
@@ -52,6 +49,8 @@
     In addition, the modal element MUST be placed low in the DOM. The script loads slower on DJA than on other portions
     of the application, so this means that it will briefly "populate", causing unintended visual effects.
     {% endcomment %}
+
+    {# Create a modal for the _extend_expiration_date button #}
     <div
     class="usa-modal"
     id="toggle-extend-expiration-alert"
@@ -78,7 +77,7 @@
                         {{test}}
                     </p>
                 </div>
-        
+
                 <div class="usa-modal__footer">
                     <ul class="usa-button-group">
                         <li class="usa-button-group__item">
@@ -114,5 +113,74 @@
             </button>
         </div>
     </div>
+
+    {# Create a modal for the _on_hold button #}
+    <div
+    class="usa-modal"
+    id="toggle-place-on-hold"
+    aria-labelledby="Are you sure you want to extend the expiration date?"
+    aria-describedby="This expiration date will be extended."
+    >
+        <div class="usa-modal__content">
+            <div class="usa-modal__main">
+                <h2 class="usa-modal__heading" id="modal-1-heading">
+                    Are you sure you want to place this domain on hold?
+                </h2>
+                <div class="usa-prose">
+                    <p>
+                        When a domain is on hold:
+                    </p>
+                    <ul>
+                        <li>The domain (and any subdomains) won’t resolve in DNS. Any infrastructure (like websites) will go offline.</li>
+                        <li>The domain will still appear in the registrar / admin.</li>
+                        <li>Domain managers won’t be able to edit the domain.</li>
+                    </ul>
+                    <p>
+                        This action can be reversed, if needed.
+                    </p>
+                    <p>
+                        {# Acts as a <br> #}
+                        <div class="display-inline"></div>
+                        Domain: <b>{{ original.name }}</b>
+                        New status: <b>{{ original.State.ON_HOLD }}</b>
+                    </p>
+                </div>
+
+                <div class="usa-modal__footer">
+                    <ul class="usa-button-group">
+                        <li class="usa-button-group__item">
+                            <button
+                            type="submit" 
+                            class="usa-button dja-form-placeholder" 
+                            name="_place_client_hold"
+                            >
+                                Yes, place hold
+                            </button>
+                        </li>
+                        <li class="usa-button-group__item">
+                            <button
+                            type="button"
+                            class="usa-button usa-button--unstyled padding-105 text-center"
+                            data-close-modal
+                            >
+                                Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+            >
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+            </button>
+        </div>
+    </div>
+    {# Create a modal for when a domain is marked as ineligible #}
 {{ block.super }}
 {% endblock %}
