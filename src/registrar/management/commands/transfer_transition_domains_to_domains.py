@@ -816,7 +816,14 @@ class Command(BaseCommand):
         Domain.objects.bulk_create(domains_to_create)
 
         # DomainInvitation.objects.bulk_create(domain_invitations_to_create)
+        domain_names = []
+        domain_dict = {}
+        for invitation in domain_invitations_to_create:
+            domain_names.append(invitation.domain.name)
 
+        domain_queryset = Domain.objects.filter(name__in=domain_names)
+        for domain in domain_queryset:
+            domain_dict[domain.name] = domain
         # TODO: this is to resolve an error where bulk_create
         # doesn't save to database in a way that invitation objects can
         # utilize.
@@ -825,10 +832,10 @@ class Command(BaseCommand):
             for invitation in domain_invitations_to_create:
                 if debug_on:
                     logger.info(f"Pairing invite to its domain...{invitation}")
-                existing_domain = Domain.objects.filter(name=invitation.domain.name)
+                existing_domain = invitation.domain.name
                 # Make sure the related Domain object is saved
-                if existing_domain.exists():
-                    invitation.domain = existing_domain.get()
+                if invitation.domain.name in domain_dict:
+                    invitation.domain = domain_dict[invitation.domain.name]
                 else:
                     # Raise an err for now
                     raise Exception(f"Domain {existing_domain} wants to be added" "but doesn't exist in the DB")
