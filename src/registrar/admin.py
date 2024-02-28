@@ -16,7 +16,7 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models import Contact, Domain, DomainApplication, DraftDomain, User, Website
 from registrar.utility import csv_export
-from registrar.utility.errors import ApplicationStatusError, FSMErrorCodes
+from registrar.utility.errors import FSMApplicationError, FSMErrorCodes
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -167,9 +167,9 @@ class DomainApplicationAdminForm(forms.ModelForm):
         error_message = None
         if investigator is None:
             # Lets grab the error message from a common location
-            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
         elif not investigator.is_staff:
-            error_message = ApplicationStatusError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+            error_message = FSMApplicationError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
         else:
             is_valid = True
 
@@ -1225,11 +1225,11 @@ class DomainApplicationAdmin(ListHeaderAdmin):
             obj.status = original_obj.status
 
             # Try to perform the status change.
-            # Catch ApplicationStatusError's and return the message,
+            # Catch FSMApplicationError's and return the message,
             # as these are typically user errors.
             try:
                 selected_method()
-            except ApplicationStatusError as err:
+            except FSMApplicationError as err:
                 logger.warning(f"An error encountered when trying to change status: {err}")
                 error_message = err.message
 

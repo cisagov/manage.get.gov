@@ -71,8 +71,6 @@ class GenericError(Exception):
         return self._error_mapping.get(code)
 
 
-# (Q for reviewers) What should this be called?
-# Not a fan of this name.
 class FSMErrorCodes(IntEnum):
     """Used when doing FSM transitions.
     Overview of generic error codes:
@@ -88,9 +86,7 @@ class FSMErrorCodes(IntEnum):
     INVESTIGATOR_NOT_SUBMITTER = 4
 
 
-# (Q for reviewers) What should this be called?
-# Not a fan of this name.
-class ApplicationStatusError(Exception):
+class FSMApplicationError(Exception):
     """
     Used to raise exceptions when doing FSM Transitions.
     Uses `FSMErrorCodes` as an enum.
