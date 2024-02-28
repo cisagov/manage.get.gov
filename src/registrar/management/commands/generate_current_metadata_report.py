@@ -2,10 +2,12 @@
 
 import logging
 import os
+import pyzipper
 
 from django.core.management import BaseCommand
 from registrar.utility import csv_export
 from registrar.utility.s3_bucket import S3ClientHelper
+from ...utility.email import send_templated_email, EmailSendingError
 
 
 logger = logging.getLogger(__name__)
@@ -59,9 +61,27 @@ class Command(BaseCommand):
         We want to make sure to upload to s3 for back up
         And now we also want to get the file and encrypt it so we can send it in an email
         """
-        # metadata_file = s3_client.get_file(file_name)
-        # metadata_file.encryptthisthingherewithpyzipper
-        # email.blasend_email(metadata_file)
+        unencrypted_metadata_input = s3_client.get_file(file_name)
 
+
+        # Encrypt metadata into a zip file
+
+        # pre-setting zip file name 
+        encrypted_metadata_output = 'encrypted_metadata.zip'
+        # set this to be an env var somewhere
+        password = b'somepasswordhere'
+        # encrypted_metadata is the encrypted output
+        encrypted_metadata = _encrypt_metadata(unencrypted_metadata_input, encrypted_metadata_output, password)
+        print("encrypted_metadata is:", encrypted_metadata)
+
+        # Send the metadata file that is zipped
+        # Q: Would we set the vars I set in email.py here to pass in to the helper function or best way to invoke
+        # send_templated_email(encrypted_metadata, attachment=True)
     
-        
+        def _encrypt_metadata(input_file, output_file, password):
+            with open(input_file, 'rb') as f_in:
+                with pyzipper.AESZipFile(output_file, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as f_out:
+                    f_out.setpassword(password)
+                    f_out.writestr(input_file, f_in.read())
+            return output_file
+
