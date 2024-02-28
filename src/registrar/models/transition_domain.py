@@ -17,13 +17,13 @@ class TransitionDomain(TimeStampedModel):
     # classes that import TransitionDomain
     StatusChoices = StatusChoices
 
-    username = models.TextField(
+    username = models.CharField(
         null=False,
         blank=False,
         verbose_name="Username",
         help_text="Username - this will be an email address",
     )
-    domain_name = models.TextField(
+    domain_name = models.CharField(
         null=True,
         blank=True,
         verbose_name="Domain name",
@@ -49,25 +49,25 @@ class TransitionDomain(TimeStampedModel):
         verbose_name="Processed",
         help_text="Indicates whether this TransitionDomain was already processed",
     )
-    organization_type = models.TextField(
+    organization_type = models.CharField(
         max_length=255,
         null=True,
         blank=True,
         help_text="Type of organization",
     )
-    organization_name = models.TextField(
+    organization_name = models.CharField(
         null=True,
         blank=True,
         help_text="Organization name",
         db_index=True,
     )
-    federal_type = models.TextField(
+    federal_type = models.CharField(
         max_length=50,
         null=True,
         blank=True,
         help_text="Federal government branch",
     )
-    federal_agency = models.TextField(
+    federal_agency = models.CharField(
         null=True,
         blank=True,
         help_text="Federal agency",
@@ -80,44 +80,44 @@ class TransitionDomain(TimeStampedModel):
         null=True,
         help_text=("Duplication of registry's expiration " "date saved for ease of reporting"),
     )
-    first_name = models.TextField(
+    first_name = models.CharField(
         null=True,
         blank=True,
         help_text="First name",
         verbose_name="first name / given name",
         db_index=True,
     )
-    middle_name = models.TextField(
+    middle_name = models.CharField(
         null=True,
         blank=True,
         help_text="Middle name (optional)",
     )
-    last_name = models.TextField(
+    last_name = models.CharField(
         null=True,
         blank=True,
         help_text="Last name",
     )
-    title = models.TextField(
+    title = models.CharField(
         null=True,
         blank=True,
         help_text="Title",
     )
-    email = models.TextField(
+    email = models.EmailField(
         null=True,
         blank=True,
         help_text="Email",
     )
-    phone = models.TextField(
+    phone = models.CharField(
         null=True,
         blank=True,
         help_text="Phone",
     )
-    address_line = models.TextField(
+    address_line = models.CharField(
         null=True,
         blank=True,
         help_text="Street address",
     )
-    city = models.TextField(
+    city = models.CharField(
         null=True,
         blank=True,
         help_text="City",
