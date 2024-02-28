@@ -18,7 +18,7 @@ from registrar.models.contact import Contact
 from registrar.models.domain_application import DomainApplication
 from registrar.models.domain_information import DomainInformation
 from registrar.models.user import User
-
+from django.db import transaction
 logger = logging.getLogger(__name__)
 
 
@@ -464,13 +464,13 @@ class Command(BaseCommand):
         agency_choices,
         fed_choices,
         org_choices,
+        domain_data,
+        domain_info_data,
         debug_on: bool,
     ):
         transition_domain_name = transition_domain.domain_name
 
-        # Get associated domain
-        domain_data = Domain.objects.filter(name=transition_domain.domain_name)
-        if not domain_data.exists():
+        if transition_domain.domain_name not in domain_data:
             logger.warn(
                 f"{TerminalColors.FAIL}"
                 f"WARNING: No Domain exists for:"
@@ -478,7 +478,7 @@ class Command(BaseCommand):
                 f"{TerminalColors.ENDC}\n"
             )
             return (None, None, False)
-        domain = domain_data.get()
+        domain = domain_data[transition_domain.domain_name]
         template_domain_information = self.create_new_domain_info(
             transition_domain,
             domain,
@@ -488,11 +488,11 @@ class Command(BaseCommand):
             debug_on,
         )
         target_domain_information = None
-        domain_information_exists = DomainInformation.objects.filter(domain__name=transition_domain_name).exists()
+        domain_information_exists = transition_domain_name in domain_info_data
         if domain_information_exists:
             try:
                 # get the existing domain information object
-                target_domain_information = DomainInformation.objects.get(domain__name=transition_domain_name)
+                target_domain_information = domain_info_data[transition_domain_name]
                 # DEBUG:
                 TerminalHelper.print_conditional(
                     debug_on,
@@ -560,74 +560,89 @@ class Command(BaseCommand):
         total_rows_parsed,
     ):
         changed_transition_domains = TransitionDomain.objects.filter(processed=False)
-        for transition_domain in changed_transition_domains:
-            (
-                target_domain_information,
-                associated_domain,
-                was_created,
-            ) = self.update_or_create_domain_information(
-                transition_domain,
-                valid_agency_choices,
-                valid_fed_choices,
-                valid_org_choices,
-                debug_on,
-            )
+        domain_names = changed_transition_domains.values_list("domain_name", flat=True)
+        domain_queryset = Domain.objects.filter(name__in=domain_names)
+        domain_data = {}
+        domain_info_data = {}
+        for domain in domain_queryset:
+            domain_data[domain.name] = domain
+        domain_info_queryset = DomainInformation.objects.filter(
+            domain__name__in=domain_names
+        )
+        for info in domain_info_queryset:
+            domain_info_data[info.domain.name] = info
 
-            debug_string = ""
-            if target_domain_information is None:
-                # ---------------- SKIPPED ----------------
-                skipped_domain_information_entries.append(target_domain_information)
-                debug_string = f"skipped domain information: {target_domain_information}"
-            elif was_created:
+        with transaction.atomic():
+            for transition_domain in changed_transition_domains:
+                (
+                    target_domain_information,
+                    associated_domain,
+                    was_created,
+                ) = self.update_or_create_domain_information(
+                    transition_domain,
+                    valid_agency_choices,
+                    valid_fed_choices,
+                    valid_org_choices,
+                    domain_data,
+                    domain_info_data,
+                    debug_on,
+                )
+
+                debug_string = ""
+                if target_domain_information is None:
+                    # ---------------- SKIPPED ----------------
+                    skipped_domain_information_entries.append(target_domain_information)
+                    debug_string = f"skipped domain information: {target_domain_information}"
+                elif was_created:
+                    # DEBUG:
+                    TerminalHelper.print_conditional(
+                        debug_on,
+                        (
+                            f"{TerminalColors.OKCYAN}"
+                            f"Checking duplicates for: {target_domain_information}"
+                            f"{TerminalColors.ENDC}"
+                        ),  # noqa
+                    )
+                    # ---------------- DUPLICATE ----------------
+                    # The unique key constraint does not allow multiple domain
+                    # information objects to share the same domain
+                    existing_domain_information_in_to_create = next(
+                        (x for x in domain_information_to_create if x.domain.name == target_domain_information.domain.name),
+                        None,
+                    )
+                    # TODO: this is redundant.
+                    # Currently debugging....
+                    # running into unique key constraint error....
+                    existing_domain_info = DomainInformation.objects.filter(
+                        domain__name=target_domain_information.domain.name
+                    ).exists()
+                    if existing_domain_information_in_to_create is not None or existing_domain_info:
+                        debug_string = f"""{TerminalColors.YELLOW}
+                            Duplicate Detected: {existing_domain_information_in_to_create}.
+                            Cannot add duplicate Domain Information object
+                            {TerminalColors.ENDC}"""
+                    else:
+                        # ---------------- CREATED ----------------
+                        domain_information_to_create.append(target_domain_information)
+                        debug_string = f"created domain information: {target_domain_information}"
+                elif not was_created:
+                    # ---------------- UPDATED ----------------
+                    updated_domain_information.append(target_domain_information)
+                    debug_string = f"updated domain information: {target_domain_information}"
+                else:
+                    debug_string = "domain information already exists and "
+                    f"matches incoming data (NO CHANGES MADE): {target_domain_information}"
+
                 # DEBUG:
                 TerminalHelper.print_conditional(
                     debug_on,
-                    (
-                        f"{TerminalColors.OKCYAN}"
-                        f"Checking duplicates for: {target_domain_information}"
-                        f"{TerminalColors.ENDC}"
-                    ),  # noqa
+                    (f"{TerminalColors.OKCYAN}{debug_string}{TerminalColors.ENDC}"),
                 )
-                # ---------------- DUPLICATE ----------------
-                # The unique key constraint does not allow multiple domain
-                # information objects to share the same domain
-                existing_domain_information_in_to_create = next(
-                    (x for x in domain_information_to_create if x.domain.name == target_domain_information.domain.name),
-                    None,
-                )
-                # TODO: this is redundant.
-                # Currently debugging....
-                # running into unique key constraint error....
-                existing_domain_info = DomainInformation.objects.filter(
-                    domain__name=target_domain_information.domain.name
-                ).exists()
-                if existing_domain_information_in_to_create is not None or existing_domain_info:
-                    debug_string = f"""{TerminalColors.YELLOW}
-                        Duplicate Detected: {existing_domain_information_in_to_create}.
-                        Cannot add duplicate Domain Information object
-                        {TerminalColors.ENDC}"""
-                else:
-                    # ---------------- CREATED ----------------
-                    domain_information_to_create.append(target_domain_information)
-                    debug_string = f"created domain information: {target_domain_information}"
-            elif not was_created:
-                # ---------------- UPDATED ----------------
-                updated_domain_information.append(target_domain_information)
-                debug_string = f"updated domain information: {target_domain_information}"
-            else:
-                debug_string = "domain information already exists and "
-                f"matches incoming data (NO CHANGES MADE): {target_domain_information}"
 
-            # DEBUG:
-            TerminalHelper.print_conditional(
-                debug_on,
-                (f"{TerminalColors.OKCYAN}{debug_string}{TerminalColors.ENDC}"),
-            )
-
-            # ------------------ Parse limit reached? ------------------
-            # Check parse limit and exit loop if parse limit has been reached
-            if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
-                break
+                # ------------------ Parse limit reached? ------------------
+                # Check parse limit and exit loop if parse limit has been reached
+                if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
+                    break
         return (
             skipped_domain_information_entries,
             domain_information_to_create,
@@ -646,85 +661,86 @@ class Command(BaseCommand):
         total_rows_parsed,
     ):
         changed_transition_domains = TransitionDomain.objects.filter(processed=False)
-        for transition_domain in changed_transition_domains:
-            # Create some local variables to make data tracing easier
-            transition_domain_name = transition_domain.domain_name
-            transition_domain_status = transition_domain.status
-            transition_domain_email = transition_domain.username
-            transition_domain_creation_date = transition_domain.epp_creation_date
-            transition_domain_expiration_date = transition_domain.epp_expiration_date
+        with transaction.atomic():
+            for transition_domain in changed_transition_domains:
+                # Create some local variables to make data tracing easier
+                transition_domain_name = transition_domain.domain_name
+                transition_domain_status = transition_domain.status
+                transition_domain_email = transition_domain.username
+                transition_domain_creation_date = transition_domain.epp_creation_date
+                transition_domain_expiration_date = transition_domain.epp_expiration_date
 
-            # DEBUG:
-            TerminalHelper.print_conditional(
-                debug_on,
-                f"{TerminalColors.OKCYAN}"
-                "Processing Transition Domain: "
-                f"{transition_domain_name},"
-                f" {transition_domain_status},"
-                f" {transition_domain_email}"
-                f", {transition_domain_creation_date}, "
-                f"{transition_domain_expiration_date}"
-                f"{TerminalColors.ENDC}",  # noqa
-            )
-
-            # ======================================================
-            # ====================== DOMAIN  =======================
-            target_domain, was_created = self.update_or_create_domain(transition_domain, debug_on)
-
-            debug_string = ""
-            if target_domain is None:
-                # ---------------- SKIPPED ----------------
-                skipped_domain_entries.append(transition_domain_name)
-                debug_string = f"skipped domain: {target_domain}"
-            elif was_created:
-                # ---------------- DUPLICATE ----------------
-                # The unique key constraint does not allow duplicate domain entries
-                # even if there are different users.
-                existing_domain_in_to_create = next(
-                    (x for x in domains_to_create if x.name == transition_domain_name),
-                    None,
-                )
-                if existing_domain_in_to_create is not None:
-                    debug_string = f"""{TerminalColors.YELLOW}
-                        Duplicate Detected: {transition_domain_name}.
-                        Cannot add duplicate entry for another username.
-                        Violates Unique Key constraint.
-                        {TerminalColors.ENDC}"""
-                else:
-                    # ---------------- CREATED ----------------
-                    domains_to_create.append(target_domain)
-                    debug_string = f"created domain: {target_domain}"
-            elif not was_created:
-                # ---------------- UPDATED ----------------
-                updated_domain_entries.append(transition_domain.domain_name)
-                debug_string = f"updated domain: {target_domain}"
-
-            # DEBUG:
-            TerminalHelper.print_conditional(
-                debug_on,
-                (f"{TerminalColors.OKCYAN} {debug_string} {TerminalColors.ENDC}"),
-            )
-
-            # ======================================================
-            # ================ DOMAIN INVITATIONS ==================
-            new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, target_domain)
-            if new_domain_invitation is None:
-                logger.info(
-                    f"{TerminalColors.YELLOW} ! No new e-mail detected !"  # noqa
-                    f"(SKIPPED ADDING DOMAIN INVITATION){TerminalColors.ENDC}"
-                )
-            else:
                 # DEBUG:
                 TerminalHelper.print_conditional(
                     debug_on,
-                    f"{TerminalColors.OKCYAN} Adding domain invitation: {new_domain_invitation} {TerminalColors.ENDC}",  # noqa
+                    f"{TerminalColors.OKCYAN}"
+                    "Processing Transition Domain: "
+                    f"{transition_domain_name},"
+                    f" {transition_domain_status},"
+                    f" {transition_domain_email}"
+                    f", {transition_domain_creation_date}, "
+                    f"{transition_domain_expiration_date}"
+                    f"{TerminalColors.ENDC}",  # noqa
                 )
-                domain_invitations_to_create.append(new_domain_invitation)
 
-            # ------------------ Parse limit reached? ------------------
-            # Check parse limit and exit loop if parse limit has been reached
-            if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
-                break
+                # ======================================================
+                # ====================== DOMAIN  =======================
+                target_domain, was_created = self.update_or_create_domain(transition_domain, debug_on)
+
+                debug_string = ""
+                if target_domain is None:
+                    # ---------------- SKIPPED ----------------
+                    skipped_domain_entries.append(transition_domain_name)
+                    debug_string = f"skipped domain: {target_domain}"
+                elif was_created:
+                    # ---------------- DUPLICATE ----------------
+                    # The unique key constraint does not allow duplicate domain entries
+                    # even if there are different users.
+                    existing_domain_in_to_create = next(
+                        (x for x in domains_to_create if x.name == transition_domain_name),
+                        None,
+                    )
+                    if existing_domain_in_to_create is not None:
+                        debug_string = f"""{TerminalColors.YELLOW}
+                            Duplicate Detected: {transition_domain_name}.
+                            Cannot add duplicate entry for another username.
+                            Violates Unique Key constraint.
+                            {TerminalColors.ENDC}"""
+                    else:
+                        # ---------------- CREATED ----------------
+                        domains_to_create.append(target_domain)
+                        debug_string = f"created domain: {target_domain}"
+                elif not was_created:
+                    # ---------------- UPDATED ----------------
+                    updated_domain_entries.append(transition_domain.domain_name)
+                    debug_string = f"updated domain: {target_domain}"
+
+                # DEBUG:
+                TerminalHelper.print_conditional(
+                    debug_on,
+                    (f"{TerminalColors.OKCYAN} {debug_string} {TerminalColors.ENDC}"),
+                )
+
+                # ======================================================
+                # ================ DOMAIN INVITATIONS ==================
+                new_domain_invitation = self.try_add_domain_invitation(transition_domain_email, target_domain)
+                if new_domain_invitation is None:
+                    logger.info(
+                        f"{TerminalColors.YELLOW} ! No new e-mail detected !"  # noqa
+                        f"(SKIPPED ADDING DOMAIN INVITATION){TerminalColors.ENDC}"
+                    )
+                else:
+                    # DEBUG:
+                    TerminalHelper.print_conditional(
+                        debug_on,
+                        f"{TerminalColors.OKCYAN} Adding domain invitation: {new_domain_invitation} {TerminalColors.ENDC}",  # noqa
+                    )
+                    domain_invitations_to_create.append(new_domain_invitation)
+
+                # ------------------ Parse limit reached? ------------------
+                # Check parse limit and exit loop if parse limit has been reached
+                if self.parse_limit_reached(debug_max_entries_to_parse, total_rows_parsed):
+                    break
         return (
             skipped_domain_entries,
             domains_to_create,
@@ -805,17 +821,18 @@ class Command(BaseCommand):
         # doesn't save to database in a way that invitation objects can
         # utilize.
         # Then, create DomainInvitation objects
-        for invitation in domain_invitations_to_create:
-            if debug_on:
-                logger.info(f"Pairing invite to its domain...{invitation}")
-            existing_domain = Domain.objects.filter(name=invitation.domain.name)
-            # Make sure the related Domain object is saved
-            if existing_domain.exists():
-                invitation.domain = existing_domain.get()
-            else:
-                # Raise an err for now
-                raise Exception(f"Domain {existing_domain} wants to be added" "but doesn't exist in the DB")
-            invitation.save()
+        with transaction.atomic():
+            for invitation in domain_invitations_to_create:
+                if debug_on:
+                    logger.info(f"Pairing invite to its domain...{invitation}")
+                existing_domain = Domain.objects.filter(name=invitation.domain.name)
+                # Make sure the related Domain object is saved
+                if existing_domain.exists():
+                    invitation.domain = existing_domain.get()
+                else:
+                    # Raise an err for now
+                    raise Exception(f"Domain {existing_domain} wants to be added" "but doesn't exist in the DB")
+                invitation.save()
 
         valid_org_choices = [(name, value) for name, value in DomainApplication.OrganizationChoices.choices]
         valid_fed_choices = [value for name, value in DomainApplication.BranchChoices.choices]
