@@ -108,7 +108,7 @@ class TransitionDomain(TimeStampedModel):
         blank=True,
         help_text="Email",
     )
-    phone = PhoneNumberField(
+    phone = models.CharField(
         null=True,
         blank=True,
         help_text="Phone",
