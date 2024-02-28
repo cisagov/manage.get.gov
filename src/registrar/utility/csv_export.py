@@ -167,9 +167,12 @@ def write_csv(
         max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
         update_columns_with_domain_managers(columns, max_dm_count)
 
+    if should_write_header:
+        write_header(writer, columns)
+
     for page_num in paginator.page_range:
-        page = paginator.page(page_num)
         rows = []
+        page = paginator.page(page_num)
         for domain_info in page.object_list:
             try:
                 row = parse_row(columns, domain_info, security_emails_dict, get_domain_managers)
@@ -180,10 +183,7 @@ def write_csv(
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
 
-    if should_write_header:
-        write_header(writer, columns)
-
-    writer.writerows(rows)
+        writer.writerows(rows)
 
 
 def export_data_type_to_csv(csv_file):
