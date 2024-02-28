@@ -134,6 +134,7 @@ def update_columns_with_domain_managers(columns, max_dm_count):
     """
     for i in range(1, max_dm_count + 1):
         columns.append(f"Domain manager email {i}")
+    return columns
 
 
 def write_csv(
@@ -165,10 +166,13 @@ def write_csv(
         # We want to get the max amont of domain managers an
         # account has to set the column header dynamically
         max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
-        update_columns_with_domain_managers(columns, max_dm_count)
+        columns = update_columns_with_domain_managers(columns, max_dm_count)
 
-    rows = []
+    if should_write_header:
+        write_header(writer, columns)
+
     for page_num in paginator.page_range:
+        rows = []
         page = paginator.page(page_num)
         for domain_info in page.object_list:
             try:
@@ -180,10 +184,7 @@ def write_csv(
                 logger.error("csv_export -> Error when parsing row, domain was None")
                 continue
 
-    if should_write_header:
-        write_header(writer, columns)
-
-    writer.writerows(rows)
+        writer.writerows(rows)
 
 
 def export_data_type_to_csv(csv_file):
