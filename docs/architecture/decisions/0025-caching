@@ -27,11 +27,38 @@ Caching static resources should pose little risk to our application's functional
 
 See ticket [#1371](https://github.com/cisagov/manage.get.gov/issues/1371)for more information. 
 
+**Option 2:** Leave things as-is (depending on what is found in cost/benefit analysis)
+
+
+## Cost/Benefit Analysis
+
+### Analysis Procedure
+
+STEP 1 - Preliminary Analysis: ____
+
+STEP 2 - Full Analysis:
+1- Add caching capability to a sandbox using the following steps
+2- Enable caching with Whitenoise (see ____)
+3- Take performance measurements before/after caching is enabled to determine cost-benefits of implementing caching. (NOTE: lighthouse <> might be useful for this)
+
+### Analysis Outcome
+Preliminary analysis suggest that implementing caching will result in negligible improvements to our application load time
+[CITE DATA] ____
+
+Attempting to implement a more thorough analysis (Step 2), incurred more overhead than expected, due to lack of information and lacking documentation. Therefore, we have shelved STEP 2 - Full Analysis, documenting what we understand thus far about implementation steps in case we wish to pick it up again in the future.
+
+We feel confident that our preliminary analysis has given us enough information to move forward with the following architectural decision;
+
 
 ## Decision
+At this time, we have decided not to move forward with a caching update.  Implementing caching using Whitenoise is not currently worth it for the following reasons;
+- Minimal gains:  We would only be caching static files (total load time gain estimated to be….)
+- Risks: Incurs risk of unforeseen loading issues (we can’t entirely rule out that we won’t run into issues like we did in our xx-xx-xx incident). Although we don’t think static files should pose a problem, due diligence would call us to monitor for any unforeseen issues that might arise, which adds cost to this project that doesn’t seem proportional to the gains.
+- Maintenance: We would have to provide custom settings in cloudfront (coordinated through Cameron) for any sandboxes and other environments where caching is enabled.  If we move down the route of utilizing CDN, it would be good for every environment to have this service enabled so our dev environments reflect stable settings.  This could possibly introduce some overhead and maintenance issues.  (Although further investigation might reveal these to be negligible.)
 
-(We are going to test whether using Whitenoise improves our performance significantly enough to move forward with it)
+Overall, it is recommended that we SHELVE this caching endeavor for a future scenario where we have exhausted other (likely more lucrative) options for performance improvements.  If we then still need to make improvements to our load times, perhaps we can revisit this and examine caching not only static files, but other resources as well (with caution).
+
 
 ## Consequences
 
-(TBD)
+We will continue to allow the minimal loading overhead by leaving caching off.
