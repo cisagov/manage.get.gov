@@ -5,8 +5,6 @@ from registrar.models.utility.domain_helper import DomainHelper
 from .domain_application import DomainApplication
 from .utility.time_stamped_model import TimeStampedModel
 
-from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
-
 import logging
 
 from django.db import models

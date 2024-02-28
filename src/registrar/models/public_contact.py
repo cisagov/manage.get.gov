@@ -10,6 +10,7 @@ from .utility.time_stamped_model import TimeStampedModel
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
+
 def get_id():
     """Generate a 16 character registry ID with a low probability of collision."""
     day = datetime.today().strftime("%A")[:2]
