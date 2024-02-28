@@ -134,7 +134,6 @@ def update_columns_with_domain_managers(columns, max_dm_count):
     """
     for i in range(1, max_dm_count + 1):
         columns.append(f"Domain manager email {i}")
-    return columns
 
 
 def write_csv(
@@ -166,7 +165,7 @@ def write_csv(
         # We want to get the max amont of domain managers an
         # account has to set the column header dynamically
         max_dm_count = max(len(domain_info.domain.permissions.all()) for domain_info in all_domain_infos)
-        columns = update_columns_with_domain_managers(columns, max_dm_count)
+        update_columns_with_domain_managers(columns, max_dm_count)
 
     if should_write_header:
         write_header(writer, columns)
