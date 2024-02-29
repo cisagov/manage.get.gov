@@ -322,23 +322,25 @@ function enableRelatedWidgetButtons(changeLink, deleteLink, viewLink, elementPk,
     // Default the value of the end date input field to the current date
     let endDateInput =document.getElementById('end');
 
-    let exportGrowthReportButton = document.getElementById('exportLink');
+    let exportButtons = document.querySelectorAll('.exportLink');
 
-    if (exportGrowthReportButton) {
+    if (exportButtons.length > 0) {
         startDateInput.value = currentDate;
         endDateInput.value = currentDate;
 
-        exportGrowthReportButton.addEventListener('click', function() {
-            // Get the selected start and end dates
-            let startDate = startDateInput.value;
-            let endDate = endDateInput.value;
-            let exportUrl = document.getElementById('exportLink').dataset.exportUrl;
+        exportButtons.forEach((btn) => {
+            btn.addEventListener('click', function() {
+                // Get the selected start and end dates
+                let startDate = startDateInput.value;
+                let endDate = endDateInput.value;
+                let exportUrl = btn.dataset.exportUrl;
 
-            // Build the URL with parameters
-            exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
-        
-            // Redirect to the export URL
-            window.location.href = exportUrl;
+                // Build the URL with parameters
+                exportUrl += "?start_date=" + startDate + "&end_date=" + endDate;
+            
+                // Redirect to the export URL
+                window.location.href = exportUrl;
+            });
         });
     }
 

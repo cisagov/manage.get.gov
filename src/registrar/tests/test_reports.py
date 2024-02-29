@@ -542,7 +542,7 @@ class ExportDataTest(MockEppLib):
         are pulled when the growth report conditions are applied to export_domains_to_writed.
         Test that ready domains are sorted by first_ready/deleted dates first, names second.
 
-        We considered testing export_data_growth_to_csv which calls write_body
+        We considered testing export_data_domain_growth_to_csv which calls write_body
         and would have been easy to set up, but expected_content would contain created_at dates
         which are hard to mock.
 

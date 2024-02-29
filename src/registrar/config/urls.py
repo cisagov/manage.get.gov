@@ -9,9 +9,8 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
-
-from registrar.views.admin_views import ExportData
-
+from registrar.admin import user_analytics
+from registrar.views.admin_views import ExportDataDomainGrowth, ExportDataFederal, ExportDataFull, ExportDataManagedVsUnmanaged, ExportDataRequests, ExportDataType
 
 from registrar.views.application import Step
 from registrar.views.utility import always_404
@@ -52,7 +51,42 @@ urlpatterns = [
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
     ),
-    path("export_data/", ExportData.as_view(), name="admin_export_data"),
+    path(
+        "admin/analytics/export_data_type/",
+        ExportDataType.as_view(),
+        name="export_data_type",
+    ),
+    path(
+        "admin/analytics/export_data_full/",
+        ExportDataFull.as_view(),
+        name="export_data_full",
+    ),
+    path(
+        "admin/analytics/export_data_federal/",
+        ExportDataFederal.as_view(),
+        name="export_data_federal",
+    ),
+    path(
+        "admin/analytics/export_domain_growth/",
+        ExportDataDomainGrowth.as_view(),
+        name="export_domain_growth",
+    ),
+    path(
+        "admin/analytics/export_managed_unmanaged/",
+        ExportDataManagedVsUnmanaged.as_view(),
+        name="export_managed_unmanaged",
+    ),
+    path(
+        "admin/analytics/export_requests/",
+        ExportDataRequests.as_view(),
+        name="export_requests",
+    ),
+    path(
+        "admin/analytics/",
+        admin.site.admin_view(user_analytics),
+        name="user_analytics",
+    ),
+    
     path("admin/", admin.site.urls),
     path(
         "application/<id>/edit/",

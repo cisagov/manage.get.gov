@@ -27,6 +27,7 @@ def handle_profile(sender, instance, **kwargs):
     last_name = getattr(instance, "last_name", "")
     email = getattr(instance, "email", "")
     phone = getattr(instance, "phone", "")
+    logger.info(f'in handle_profile first {instance}')
 
     is_new_user = kwargs.get("created", False)
 
@@ -36,6 +37,7 @@ def handle_profile(sender, instance, **kwargs):
         contacts = Contact.objects.filter(user=instance)
 
     if len(contacts) == 0:  # no matching contact
+        logger.info(f'inside no matching contacts for first {first_name} last {last_name} email {email}')
         Contact.objects.create(
             user=instance,
             first_name=first_name,

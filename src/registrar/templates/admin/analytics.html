@@ -1,24 +1,10 @@
 {% extends "admin/base_site.html" %}
-
+{% load static %}
 
 
 {% block content_title %}<h1>Registrar Analytics</h1>{% endblock %}
 
 {% block content %}
-
-  {% block object-tools %}
-    <ul class="object-tools">
-      <li>
-          <a href="{% url 'admin:registrar_domain_export_data_type' %}" class="button">Export all domain metadata</a>
-      </li>
-      <li>
-          <a href="{% url 'admin:registrar_domain_export_data_full' %}" class="button">Export current-full.csv</a>
-      </li>
-      <li>
-          <a href="{% url 'admin:registrar_domain_export_data_federal' %}" class="button">Export current-federal.csv</a>
-      </li>
-    </ul>
-  {% endblock %}
 
   <div id="content-main" class="analytics">
     <div class="module">
@@ -34,17 +20,46 @@
     </div>
 
     <div class="module">
-      <h2>Domain growth</h2>
+      <h2>Current domains</h2>
+      <div class="padding-2">
+        <ul class="usa-button-group">
+          <li class="usa-button-group__item">
+              <a href="{% url 'export_data_type' %}" class="button" role="button">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+                </svg><span class="margin-left-05">All domain metadata</span>
+              </a>
+          </li>
+          <li class="usa-button-group__item">
+            <a href="{% url 'export_data_full' %}" class="button" role="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+              </svg><span class="margin-left-05">Current full</span>
+            </a>
+          </li>
+          <li class="usa-button-group__item">
+              <a href="{% url 'export_data_federal' %}" class="button" role="button">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+                </svg><span class="margin-left-05">Current Federal</span>
+              </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module">
+      <h2>Growth reports</h2>
       <div class="padding-2">
         {% comment %} 
             Inputs of type date suck for accessibility.
             We'll need to replace those guys with a django form once we figure out how to hook one onto this page.
-            The challenge is in the path definition in urls. It does NOT like admin/export_data/
+            The challenge is in the path definition in urls. It does NOT like admin/export_domain_growth/
       
             See the commit "Review for ticket #999"
         {% endcomment %}
-        <div class="display-flex flex-align-baseline flex-justify margin-y-1">
-            <div>
+        <div class="display-flex flex-align-baseline margin-top-1 margin-bottom-2">
+            <div class="margin-right-1">
                 <label for="start">Start date:</label>
                 <input type="date" id="start" name="start" value="2018-07-22" min="2018-01-01" />
             </div>
@@ -52,8 +67,58 @@
                 <label for="end">End date:</label>
                 <input type="date" id="end" name="end" value="2023-12-01" min="2023-12-01" />
             </div>
-            <button id="exportLink" data-export-url="{% url 'admin_export_data' %}" type="button" class="button">Export</button>
         </div>
+
+        <ul class="usa-button-group">
+          <li class="usa-button-group__item">
+            <button class="button exportLink" data-export-url="{% url 'export_domain_growth' %}" type="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+              </svg><span class="margin-left-05">Domain growth</span>
+            </button>
+          </li>
+          <li class="usa-button-group__item">
+            <button class="button exportLink" data-export-url="{% url 'export_requests' %}" type="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+              </svg><span class="margin-left-05">Request Growth</span>
+            </button>
+          </li>
+          <li class="usa-button-group__item">
+            <button class="button exportLink" data-export-url="{% url 'export_managed_unmanaged' %}" type="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+              </svg><span class="margin-left-05">Managed vs unmanaged domain</span>
+            </button>
+          </li>
+          <li class="usa-button-group__item">
+            <button class="button exportLink" data-export-url="{% url 'user_analytics' %}" type="button">
+              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#assessment"></use>
+              </svg><span class="margin-left-05">Update charts</span>
+            </button>
+          </li>
+        </ul>
+
+        <div class="grid-row grid-gap-2 margin-y-2">
+          <div class="grid-col">
+            <canvas id="myChart" width="400" height="200" 
+              data-list-one="{{data.managed_domains_sliced_at_start_date}}"
+              data-list-two="{{data.unmanaged_domains_sliced_at_start_date}}"
+              data-list-three="{{data.managed_domains_sliced_at_end_date}}"
+              data-list-four="{{data.unmanaged_domains_sliced_at_end_date}}"
+            ></canvas>
+          </div>
+          <div class="grid-col">
+            <canvas id="myChart2" width="400" height="200" 
+              data-list-one="{{data.managed_domains_sliced_at_start_date}}"
+              data-list-two="{{data.unmanaged_domains_sliced_at_start_date}}"
+              data-list-three="{{data.managed_domains_sliced_at_end_date}}"
+              data-list-four="{{data.unmanaged_domains_sliced_at_end_date}}"
+            ></canvas>
+          </div>
+        </div>
+
       </div>
     </div>
 

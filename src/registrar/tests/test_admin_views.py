@@ -26,7 +26,7 @@ class TestViews(TestCase):
 
         # Construct the URL for the export data view with start_date and end_date parameters:
         # This stuff is currently done in JS
-        export_data_url = reverse("admin_export_data") + f"?start_date={start_date}&end_date={end_date}"
+        export_data_url = reverse("admin:admin_export_domain_growth") + f"?start_date={start_date}&end_date={end_date}"
 
         # Make a GET request to the export data page
         response = self.client.get(export_data_url)

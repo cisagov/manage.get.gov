@@ -27,6 +27,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
+from registrar.views.admin_views import ExportDataDomainGrowth, ExportDataFederal, ExportDataFull, ExportDataManagedVsUnmanaged, ExportDataRequests, ExportDataType
 
 from django.utils.translation import gettext_lazy as _
 
@@ -363,6 +364,75 @@ class UserContactInline(admin.StackedInline):
     model = models.Contact
 
 
+def user_analytics(request):
+
+        end_date = datetime.datetime.today()
+        start_date = datetime.datetime.today() - datetime.timedelta(days=30)
+
+        last_30_days_applications = models.DomainApplication.objects.filter(
+            created_at__gt=start_date
+        )
+        avg_approval_time = last_30_days_applications.annotate(
+            approval_time=F("approved_domain__created_at") - F("created_at")
+        ).aggregate(Avg("approval_time"))["approval_time__avg"]
+        # format the timedelta?
+        avg_approval_time = str(avg_approval_time)
+
+        start_date = request.GET.get("start_date", "")
+        end_date = request.GET.get("end_date", "")
+
+        start_date_formatted = csv_export.format_start_date(start_date)
+        end_date_formatted = csv_export.format_end_date(end_date)
+
+        filter_managed_domains_start_date = {
+            "domain__permissions__isnull": False,
+            "domain__created_at__lte": start_date_formatted,
+        }
+        managed_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_managed_domains_start_date)
+        managed_domains_sliced_at_start_date = [10, 20, 50, 0, 0, 12, 6, 5]
+        
+        logger.info(f"managed_domains_sliced_at_start_date {managed_domains_sliced_at_start_date}")
+        
+        filter_unmanaged_domains_start_date = {
+            "domain__permissions__isnull": True,
+            "domain__first_ready__lte": start_date_formatted,
+        }
+        unmanaged_domains_sliced_at_start_date = csv_export.get_sliced_domains(filter_unmanaged_domains_start_date)
+        unmanaged_domains_sliced_at_start_date = [15, 13, 60, 0, 2, 11, 6, 5]
+        filter_managed_domains_end_date = {
+            "domain__permissions__isnull": False,
+            "domain__first_ready__lte": end_date_formatted,
+        }
+        managed_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_managed_domains_end_date)
+        managed_domains_sliced_at_end_date = [12, 20, 60, 0, 0, 12, 6, 4]
+        filter_unmanaged_domains_end_date = {
+            "domain__permissions__isnull": True,
+            "domain__first_ready__lte": end_date_formatted,
+        }
+        unmanaged_domains_sliced_at_end_date = csv_export.get_sliced_domains(filter_unmanaged_domains_end_date)
+        unmanaged_domains_sliced_at_end_date = [5, 40, 55, 0, 0, 12, 6, 5]
+        
+        # get number of ready domains, counts by org type and election office
+        # add to context
+        
+        # get number of submitted request counts by org type and election office
+        # add to context
+
+        context = dict(
+            **admin.site.each_context(request),
+            data=dict(
+                user_count=models.User.objects.all().count(),
+                domain_count=models.Domain.objects.all().count(),
+                applications_last_30_days=last_30_days_applications.count(),
+                average_application_approval_time_last_30_days=avg_approval_time,
+                managed_domains_sliced_at_start_date=managed_domains_sliced_at_start_date,
+                unmanaged_domains_sliced_at_start_date=unmanaged_domains_sliced_at_start_date,
+                managed_domains_sliced_at_end_date=managed_domains_sliced_at_end_date,
+                unmanaged_domains_sliced_at_end_date=unmanaged_domains_sliced_at_end_date,
+            ),
+        )
+        return render(request, "admin/analytics.html", context)
+
 class MyUserAdmin(BaseUserAdmin):
     """Custom user admin class to use our inlines."""
 
@@ -464,79 +534,6 @@ class MyUserAdmin(BaseUserAdmin):
     # in autocomplete_fields for user
     ordering = ["first_name", "last_name", "email"]
 
-    def get_urls(self):
-        """Map a new page in admin for analytics."""
-        urlpatterns = super().get_urls()
-
-        # Used to extrapolate a path name, for instance
-        # name="{app_label}_{model_name}_export_data_type"
-        domain_path_meta = self.model._meta.app_label, models.Domain._meta.model_name
-
-        my_urls = [
-            path(
-                "analytics/",
-                self.admin_site.admin_view(self.user_analytics),
-                name="user_analytics",
-            ),
-            path(
-                "export_data_type/",
-                self.export_data_type,
-                name="%s_%s_export_data_type" % domain_path_meta,
-            ),
-            path(
-                "export_data_full/",
-                self.export_data_full,
-                name="%s_%s_export_data_full" % domain_path_meta,
-            ),
-            path(
-                "export_data_federal/",
-                self.export_data_federal,
-                name="%s_%s_export_data_federal" % domain_path_meta,
-            ),
-        ]
-
-        return my_urls + urlpatterns
-    
-    def export_data_type(self, request):
-        # match the CSV example with all the fields
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="domains-by-type.csv"'
-        csv_export.export_data_type_to_csv(response)
-        return response
-
-    def export_data_full(self, request):
-        # Smaller export based on 1
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-full.csv"'
-        csv_export.export_data_full_to_csv(response)
-        return response
-
-    def export_data_federal(self, request):
-        # Federal only
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="current-federal.csv"'
-        csv_export.export_data_federal_to_csv(response)
-        return response
-
-    def user_analytics(self, request):
-        last_30_days_applications = models.DomainApplication.objects.filter(
-            created_at__gt=datetime.datetime.today() - datetime.timedelta(days=30)
-        )
-        avg_approval_time = last_30_days_applications.annotate(
-            approval_time=F("approved_domain__created_at") - F("created_at")
-        ).aggregate(Avg("approval_time"))["approval_time__avg"]
-        # format the timedelta?
-        avg_approval_time = str(avg_approval_time)
-        context = dict(
-            **self.admin_site.each_context(request),
-            data=dict(
-                user_count=models.User.objects.all().count(),
-                domain_count=models.Domain.objects.all().count(),
-                applications_last_30_days=last_30_days_applications.count(),
-                average_application_approval_time_last_30_days=avg_approval_time,
-            ),
-        )
-        return render(request, "admin/analytics.html", context)
     def get_search_results(self, request, queryset, search_term):
         """
         Override for get_search_results. This affects any upstream model using autocomplete_fields,

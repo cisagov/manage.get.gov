@@ -303,3 +303,20 @@ input.admin-confirm-button {
         display: contents !important;
     }
 }
+
+.usa-button-group {
+    margin-left: -0.25rem!important;
+    padding-left: 0!important;
+    .usa-button-group__item {
+        list-style-type: none;
+        line-height: normal;
+    }
+    .button {
+        display: inline-block;
+        padding: 10px 8px;
+        line-height: normal;
+    }
+    .usa-icon {
+        top: 2px;
+    }
+}
