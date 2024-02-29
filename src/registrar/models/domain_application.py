@@ -17,7 +17,7 @@ from itertools import chain
 logger = logging.getLogger(__name__)
 
 
-class DomainApplication(TimeStampedModel):
+class DomainRequest(TimeStampedModel):
     """A registrant's application for a new domain."""
 
     # Constants for choice fields
@@ -512,7 +512,7 @@ class DomainApplication(TimeStampedModel):
         null=True,
         blank=True,
         help_text="The approved domain",
-        related_name="domain_application",
+        related_name="domain_request",
         on_delete=models.SET_NULL,
     )
 
@@ -521,7 +521,7 @@ class DomainApplication(TimeStampedModel):
         null=True,
         blank=True,
         help_text="The requested domain",
-        related_name="domain_application",
+        related_name="domain_request",
         on_delete=models.PROTECT,
     )
     alternative_domains = models.ManyToManyField(
@@ -722,7 +722,7 @@ class DomainApplication(TimeStampedModel):
         if self.status == self.ApplicationStatus.REJECTED:
             self.rejection_reason = None
 
-        literal = DomainApplication.ApplicationStatus.IN_REVIEW
+        literal = DomainRequest.ApplicationStatus.IN_REVIEW
         # Check if the tuple exists, then grab its value
         in_review = literal if literal is not None else "In Review"
         logger.info(f"A status change occurred. {self} was changed to '{in_review}'")
@@ -754,7 +754,7 @@ class DomainApplication(TimeStampedModel):
         if self.status == self.ApplicationStatus.REJECTED:
             self.rejection_reason = None
 
-        literal = DomainApplication.ApplicationStatus.ACTION_NEEDED
+        literal = DomainRequest.ApplicationStatus.ACTION_NEEDED
         # Check if the tuple is setup correctly, then grab its value
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
@@ -786,9 +786,9 @@ class DomainApplication(TimeStampedModel):
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
 
-        # copy the information from domainapplication into domaininformation
+        # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(domain_application=self, domain=created_domain)
+        DomainInformation.create_from_da(domain_request=self, domain=created_domain)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
@@ -875,12 +875,12 @@ class DomainApplication(TimeStampedModel):
     def show_organization_federal(self) -> bool:
         """Show this step if the answer to the first question was "federal"."""
         user_choice = self.organization_type
-        return user_choice == DomainApplication.OrganizationChoices.FEDERAL
+        return user_choice == DomainRequest.OrganizationChoices.FEDERAL
 
     def show_tribal_government(self) -> bool:
         """Show this step if the answer to the first question was "tribal"."""
         user_choice = self.organization_type
-        return user_choice == DomainApplication.OrganizationChoices.TRIBAL
+        return user_choice == DomainRequest.OrganizationChoices.TRIBAL
 
     def show_organization_election(self) -> bool:
         """Show this step if the answer to the first question implies it.
@@ -890,9 +890,9 @@ class DomainApplication(TimeStampedModel):
         """
         user_choice = self.organization_type
         excluded = [
-            DomainApplication.OrganizationChoices.FEDERAL,
-            DomainApplication.OrganizationChoices.INTERSTATE,
-            DomainApplication.OrganizationChoices.SCHOOL_DISTRICT,
+            DomainRequest.OrganizationChoices.FEDERAL,
+            DomainRequest.OrganizationChoices.INTERSTATE,
+            DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
         ]
         return bool(user_choice and user_choice not in excluded)
 
@@ -900,8 +900,8 @@ class DomainApplication(TimeStampedModel):
         """Show this step if this is a special district or interstate."""
         user_choice = self.organization_type
         return user_choice in [
-            DomainApplication.OrganizationChoices.SPECIAL_DISTRICT,
-            DomainApplication.OrganizationChoices.INTERSTATE,
+            DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
+            DomainRequest.OrganizationChoices.INTERSTATE,
         ]
 
     def has_rationale(self) -> bool:
@@ -920,7 +920,7 @@ class DomainApplication(TimeStampedModel):
         if not self.organization_type:
             # organization_type is either blank or None, can't answer
             return None
-        if self.organization_type == DomainApplication.OrganizationChoices.FEDERAL:
+        if self.organization_type == DomainRequest.OrganizationChoices.FEDERAL:
             return True
         return False
 

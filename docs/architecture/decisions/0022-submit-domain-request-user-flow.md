@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-Historically, the .gov vendor managed initial identity verification and organizational affiliation for users that request a .gov domain. With the new registrar, _any user with a valid Login.gov account_ will be able to make a request. As a primary layer of abuse prevention (i.e., DDoSing the registry program with illegitimate requests), we need a way to stop new users from submitting multiple domain requests before they are known to the .gov registry. In this case, "known" means they have at least one approved domain application or existing domain.
+Historically, the .gov vendor managed initial identity verification and organizational affiliation for users that request a .gov domain. With the new registrar, _any user with a valid Login.gov account_ will be able to make a request. As a primary layer of abuse prevention (i.e., DDoSing the registry program with illegitimate requests), we need a way to stop new users from submitting multiple domain requests before they are known to the .gov registry. In this case, "known" means they have at least one approved domain request or existing domain.
 
 ## Considered Options
 

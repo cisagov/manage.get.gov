@@ -2,7 +2,7 @@
 
 {% load custom_filters %}
 
-{% block title %}Domain request status | {{ domainapplication.requested_domain.name }} | {% endblock %}
+{% block title %}Domain request status | {{ DomainRequest.requested_domain.name }} | {% endblock %}
 {% load static url_helpers %}
 
 {% block content %}
@@ -17,7 +17,7 @@
       Back to manage your domains
       </p>
     </a>
-    <h1>Domain request for {{ domainapplication.requested_domain.name }}</h1>
+    <h1>Domain request for {{ DomainRequest.requested_domain.name }}</h1>
     <div
         class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
         role="region"
@@ -30,21 +30,21 @@
           <span class="text-bold text-primary-darker">
              Status:
           </span>
-          {% if domainapplication.status == 'approved' %} Approved 
-          {% elif domainapplication.status == 'in review' %} In review 
-          {% elif domainapplication.status == 'rejected' %} Rejected
-          {% elif domainapplication.status == 'submitted' %} Submitted
-          {% elif domainapplication.status == 'ineligible' %} Ineligible
+          {% if DomainRequest.status == 'approved' %} Approved 
+          {% elif DomainRequest.status == 'in review' %} In review 
+          {% elif DomainRequest.status == 'rejected' %} Rejected
+          {% elif DomainRequest.status == 'submitted' %} Submitted
+          {% elif DomainRequest.status == 'ineligible' %} Ineligible
           {% else %}ERROR Please contact technical support/dev
           {% endif %}
         </p>
       </div>
     </div>
     <br>
-    <p> <b class="review__step__name">Last updated:</b> {{domainapplication.updated_at|date:"F j, Y"}}<br>
-    <b class="review__step__name">Request #:</b> {{domainapplication.id}}</p>
-    <p>{% include "includes/domain_application.html" %}</p>
-    <p><a href="{% url 'application-withdraw-confirmation' pk=domainapplication.id %}" class="usa-button usa-button--outline withdraw_outline">
+    <p> <b class="review__step__name">Last updated:</b> {{DomainRequest.updated_at|date:"F j, Y"}}<br>
+    <b class="review__step__name">Request #:</b> {{DomainRequest.id}}</p>
+    <p>{% include "includes/domain_request.html" %}</p>
+    <p><a href="{% url 'application-withdraw-confirmation' pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
       Withdraw request</a>
     </p>
   </div>
@@ -52,72 +52,72 @@
   <div class="grid-col desktop:grid-offset-2 maxw-tablet">
     <h2 class="text-primary-darker"> Summary of your domain request </h2> 
     {% with heading_level='h3' %}
-    {% with org_type=domainapplication.get_organization_type_display %}
+    {% with org_type=DomainRequest.get_organization_type_display %}
       {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
     {% endwith %}
 
-    {% if domainapplication.tribe_name %}
-      {% include "includes/summary_item.html" with title='Tribal government' value=domainapplication.tribe_name heading_level=heading_level %}
+    {% if DomainRequest.tribe_name %}
+      {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name heading_level=heading_level %}
 
-      {% if domainapplication.federally_recognized_tribe %}
+      {% if DomainRequest.federally_recognized_tribe %}
         <p>Federally-recognized tribe</p>
       {% endif %}
       
-      {% if domainapplication.state_recognized_tribe %}
+      {% if DomainRequest.state_recognized_tribe %}
         <p>State-recognized tribe</p>
       {% endif %}
 
     {% endif %}
 
-    {% if domainapplication.get_federal_type_display %}
-      {% include "includes/summary_item.html" with title='Federal government branch' value=domainapplication.get_federal_type_display heading_level=heading_level %}
+    {% if DomainRequest.get_federal_type_display %}
+      {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.is_election_board %}
-      {% with value=domainapplication.is_election_board|yesno:"Yes,No,Incomplete" %}
+    {% if DomainRequest.is_election_board %}
+      {% with value=DomainRequest.is_election_board|yesno:"Yes,No,Incomplete" %}
         {% include "includes/summary_item.html" with title='Election office' value=value heading_level=heading_level %}
       {% endwith %}
     {% endif %}
 
-    {% if domainapplication.organization_name %}
-      {% include "includes/summary_item.html" with title='Organization name and mailing address' value=domainapplication  address='true' heading_level=heading_level %}
+    {% if DomainRequest.organization_name %}
+      {% include "includes/summary_item.html" with title='Organization name and mailing address' value=DomainRequest  address='true' heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.about_your_organization %}
-      {% include "includes/summary_item.html" with title='About your organization' value=domainapplication.about_your_organization heading_level=heading_level %}
+    {% if DomainRequest.about_your_organization %}
+      {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.authorizing_official %}
-      {% include "includes/summary_item.html" with title='Authorizing official' value=domainapplication.authorizing_official contact='true' heading_level=heading_level %}
+    {% if DomainRequest.authorizing_official %}
+      {% include "includes/summary_item.html" with title='Authorizing official' value=DomainRequest.authorizing_official contact='true' heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.current_websites.all %}
-      {% include "includes/summary_item.html" with title='Current websites' value=domainapplication.current_websites.all list='true' heading_level=heading_level %}
+    {% if DomainRequest.current_websites.all %}
+      {% include "includes/summary_item.html" with title='Current websites' value=DomainRequest.current_websites.all list='true' heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.requested_domain %}
-      {% include "includes/summary_item.html" with title='.gov domain' value=domainapplication.requested_domain heading_level=heading_level %}
+    {% if DomainRequest.requested_domain %}
+      {% include "includes/summary_item.html" with title='.gov domain' value=DomainRequest.requested_domain heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.alternative_domains.all %}
-      {% include "includes/summary_item.html" with title='Alternative domains' value=domainapplication.alternative_domains.all list='true' heading_level=heading_level %}
+    {% if DomainRequest.alternative_domains.all %}
+      {% include "includes/summary_item.html" with title='Alternative domains' value=DomainRequest.alternative_domains.all list='true' heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.purpose %}
-      {% include "includes/summary_item.html" with title='Purpose of your domain' value=domainapplication.purpose heading_level=heading_level %}
+    {% if DomainRequest.purpose %}
+      {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.submitter %}
-      {% include "includes/summary_item.html" with title='Your contact information' value=domainapplication.submitter contact='true' heading_level=heading_level %}
+    {% if DomainRequest.submitter %}
+      {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.submitter contact='true' heading_level=heading_level %}
     {% endif %}
 
-    {% if domainapplication.other_contacts.all %}
-      {% include "includes/summary_item.html" with title='Other employees from your organization' value=domainapplication.other_contacts.all contact='true' list='true' heading_level=heading_level %}
+    {% if DomainRequest.other_contacts.all %}
+      {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level %}
     {% else %}
-      {% include "includes/summary_item.html" with title='Other employees from your organization' value=domainapplication.no_other_contacts_rationale heading_level=heading_level %}
+      {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
     {% endif %}
     
-    {% include "includes/summary_item.html" with title='Anything else?' value=domainapplication.anything_else|default:"No" heading_level=heading_level %}
+    {% include "includes/summary_item.html" with title='Anything else?' value=DomainRequest.anything_else|default:"No" heading_level=heading_level %}
 
   {% endwith %}
   </div>

@@ -5,22 +5,22 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0004_domainapplication_federal_agency"),
+        ("registrar", "0004_DomainRequest_federal_agency"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="city",
             field=models.TextField(blank=True, help_text="City", null=True),
         ),
         migrations.AddField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="urbanization",
             field=models.TextField(blank=True, help_text="Urbanization", null=True),
         ),
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="federal_agency",
             field=models.TextField(blank=True, help_text="Top level federal agency", null=True),
         ),

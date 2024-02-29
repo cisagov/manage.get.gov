@@ -18,7 +18,7 @@ However, a significant portion of the user workflow had already been coded, so i
 
 ## Decision
 
-To maintain each page of the domain application as its own Django view class, inheriting common code from a parent class.
+To maintain each page of the domain request as its own Django view class, inheriting common code from a parent class.
 
 To maintain Django form and formset class in accordance with the Django models whose data they collect, independently of the pages on which they appear.
 

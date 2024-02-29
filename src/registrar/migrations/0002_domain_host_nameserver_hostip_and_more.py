@@ -142,14 +142,14 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="requested_domain",
             field=models.OneToOneField(
                 blank=True,
                 help_text="The requested domain",
                 null=True,
                 on_delete=django.db.models.deletion.PROTECT,
-                related_name="domain_application",
+                related_name="domain_request",
                 to="registrar.domain",
             ),
         ),

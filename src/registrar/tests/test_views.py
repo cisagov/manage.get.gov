@@ -5,7 +5,7 @@ from .common import MockEppLib  # type: ignore
 
 
 from registrar.models import (
-    DomainApplication,
+    DomainRequest,
     DomainInformation,
 )
 import logging
@@ -47,7 +47,7 @@ class TestWithUser(MockEppLib):
     def tearDown(self):
         # delete any applications too
         super().tearDown()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
         self.user.delete()
 

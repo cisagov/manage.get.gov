@@ -103,7 +103,7 @@
 
   <section class="section--outlined">
     <h2>Domain requests</h2>
-    {% if domain_applications %}
+    {% if domain_requests %}
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your domain requests</caption>
       <thead>
@@ -118,7 +118,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for application in domain_applications %}
+        {% for application in domain_requests %}
         <tr>
           <th th scope="row" role="rowheader" data-label="Domain name">
               {% if application.requested_domain is None %}

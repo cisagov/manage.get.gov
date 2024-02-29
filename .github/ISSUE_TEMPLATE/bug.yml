@@ -22,7 +22,7 @@ body:
     attributes:
       label: Expected Behavior
       description: "Please add a concise description of the behavior you would expect if this issue were not occurring"
-      placeholder: "Example: When submitting a new domain application, the request should be successful, OR if there is a problem with the user's application preventing submission, errors should be enumerated to the user"
+      placeholder: "Example: When submitting a new domain request, the request should be successful, OR if there is a problem with the user's application preventing submission, errors should be enumerated to the user"
     validations:
       required: true
   - type: textarea

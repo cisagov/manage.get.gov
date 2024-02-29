@@ -9,16 +9,16 @@ from django.views.generic import TemplateView
 from django.contrib import messages
 
 from registrar.forms import application_wizard as forms
-from registrar.models import DomainApplication
+from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
-from registrar.views.utility.permission_views import DomainApplicationPermissionDeleteView
+from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
 
 from .utility import (
-    DomainApplicationPermissionView,
-    DomainApplicationPermissionWithdrawView,
+    DomainRequestPermissionView,
+    DomainRequestPermissionWithdrawView,
     ApplicationWizardPermissionView,
 )
 
@@ -54,7 +54,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
     """
     A common set of methods and configuration.
 
-    The registrar's domain application is several pages of "steps".
+    The registrar's domain request is several pages of "steps".
     Together, these steps constitute a "wizard".
 
     This base class sets up a shared state (stored in the user's session)
@@ -111,7 +111,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         self._application = None  # for caching
 
     def has_pk(self):
-        """Does this wizard know about a DomainApplication database record?"""
+        """Does this wizard know about a DomainRequest database record?"""
         return "application_id" in self.storage
 
     @property
@@ -122,9 +122,9 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         return "wizard_application"
 
     @property
-    def application(self) -> DomainApplication:
+    def application(self) -> DomainRequest:
         """
-        Attempt to match the current wizard with a DomainApplication.
+        Attempt to match the current wizard with a DomainRequest.
 
         Will create an application if none exists.
         """
@@ -142,15 +142,15 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         if self.has_pk():
             id = self.storage["application_id"]
             try:
-                self._application = DomainApplication.objects.get(
+                self._application = DomainRequest.objects.get(
                     creator=creator,
                     pk=id,
                 )
                 return self._application
-            except DomainApplication.DoesNotExist:
-                logger.debug("Application id %s did not have a DomainApplication" % id)
+            except DomainRequest.DoesNotExist:
+                logger.debug("Application id %s did not have a DomainRequest" % id)
 
-        self._application = DomainApplication.objects.create(creator=self.request.user)
+        self._application = DomainRequest.objects.create(creator=self.request.user)
 
         self.storage["application_id"] = self._application.id
         return self._application
@@ -236,7 +236,7 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         context["forms"] = self.get_forms()
 
         # if pending requests exist and user does not have approved domains,
-        # present message that domain application cannot be submitted
+        # present message that domain request cannot be submitted
         pending_requests = self.pending_requests()
         if len(pending_requests) > 0:
             message_header = "You cannot submit this request yet"
@@ -310,8 +310,8 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
 
     def approved_applications_exist(self):
         """Checks if user is creator of applications with ApplicationStatus.APPROVED status"""
-        approved_application_count = DomainApplication.objects.filter(
-            creator=self.request.user, status=DomainApplication.ApplicationStatus.APPROVED
+        approved_application_count = DomainRequest.objects.filter(
+            creator=self.request.user, status=DomainRequest.ApplicationStatus.APPROVED
         ).count()
         return approved_application_count > 0
 
@@ -326,14 +326,14 @@ class ApplicationWizard(ApplicationWizardPermissionView, TemplateView):
         """Returns a List of user's applications with one of the following states:
         ApplicationStatus.SUBMITTED, ApplicationStatus.IN_REVIEW, ApplicationStatus.ACTION_NEEDED"""
         # if the current application has ApplicationStatus.ACTION_NEEDED status, this check should not be performed
-        if self.application.status == DomainApplication.ApplicationStatus.ACTION_NEEDED:
+        if self.application.status == DomainRequest.ApplicationStatus.ACTION_NEEDED:
             return []
         check_statuses = [
-            DomainApplication.ApplicationStatus.SUBMITTED,
-            DomainApplication.ApplicationStatus.IN_REVIEW,
-            DomainApplication.ApplicationStatus.ACTION_NEEDED,
+            DomainRequest.ApplicationStatus.SUBMITTED,
+            DomainRequest.ApplicationStatus.IN_REVIEW,
+            DomainRequest.ApplicationStatus.ACTION_NEEDED,
         ]
-        return DomainApplication.objects.filter(creator=self.request.user, status__in=check_statuses)
+        return DomainRequest.objects.filter(creator=self.request.user, status__in=check_statuses)
 
     def db_check_for_unlocking_steps(self):
         """Helper for get_context_data
@@ -635,21 +635,21 @@ class Finished(ApplicationWizard):
         return render(self.request, self.template_name, context)
 
 
-class ApplicationStatus(DomainApplicationPermissionView):
+class ApplicationStatus(DomainRequestPermissionView):
     template_name = "application_status.html"
 
 
-class ApplicationWithdrawConfirmation(DomainApplicationPermissionWithdrawView):
+class ApplicationWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
 
-    The DomainApplicationPermissionView restricts access so that only the
+    The DomainRequestPermissionView restricts access so that only the
     `creator` of the application may withdraw it.
     """
 
     template_name = "application_withdraw_confirmation.html"
 
 
-class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
+class ApplicationWithdrawn(DomainRequestPermissionWithdrawView):
     # this view renders no template
     template_name = ""
 
@@ -659,16 +659,16 @@ class ApplicationWithdrawn(DomainApplicationPermissionWithdrawView):
         If user click on withdraw confirm button, this view updates the status
         to withdraw and send back to homepage.
         """
-        application = DomainApplication.objects.get(id=self.kwargs["pk"])
+        application = DomainRequest.objects.get(id=self.kwargs["pk"])
         application.withdraw()
         application.save()
         return HttpResponseRedirect(reverse("home"))
 
 
-class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
-    """Delete view for home that allows the end user to delete DomainApplications"""
+class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
+    """Delete view for home that allows the end user to delete DomainRequests"""
 
-    object: DomainApplication  # workaround for type mismatch in DeleteView
+    object: DomainRequest  # workaround for type mismatch in DeleteView
 
     def has_permission(self):
         """Custom override for has_permission to exclude all statuses, except WITHDRAWN and STARTED"""
@@ -677,7 +677,7 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
             return False
 
         status = self.get_object().status
-        valid_statuses = [DomainApplication.ApplicationStatus.WITHDRAWN, DomainApplication.ApplicationStatus.STARTED]
+        valid_statuses = [DomainRequest.ApplicationStatus.WITHDRAWN, DomainRequest.ApplicationStatus.STARTED]
         if status not in valid_statuses:
             return False
 
@@ -689,10 +689,10 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
 
     def post(self, request, *args, **kwargs):
         # Grab all orphaned contacts
-        application: DomainApplication = self.get_object()
+        application: DomainRequest = self.get_object()
         contacts_to_delete, duplicates = self._get_orphaned_contacts(application)
 
-        # Delete the DomainApplication
+        # Delete the DomainRequest
         response = super().post(request, *args, **kwargs)
 
         # Delete orphaned contacts - but only for if they are not associated with a user
@@ -707,16 +707,16 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
 
         return response
 
-    def _get_orphaned_contacts(self, application: DomainApplication, check_db=False):
+    def _get_orphaned_contacts(self, application: DomainRequest, check_db=False):
         """
-        Collects all orphaned contacts associated with a given DomainApplication object.
+        Collects all orphaned contacts associated with a given DomainRequest object.
 
         An orphaned contact is defined as a contact that is associated with the application,
         but not with any other application. This includes the authorizing official, the submitter,
         and any other contacts linked to the application.
 
         Parameters:
-        application (DomainApplication): The DomainApplication object for which to find orphaned contacts.
+        application (DomainRequest): The DomainRequest object for which to find orphaned contacts.
         check_db (bool, optional): A flag indicating whether to check the database for the existence of the contacts.
                                 Defaults to False.
 
@@ -726,7 +726,7 @@ class DomainApplicationDeleteView(DomainApplicationPermissionDeleteView):
         """
         contacts_to_delete = []
 
-        # Get each contact object on the DomainApplication object
+        # Get each contact object on the DomainRequest object
         ao = application.authorizing_official
         submitter = application.submitter
         other_contacts = list(application.other_contacts.all())

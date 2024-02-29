@@ -5,12 +5,12 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0010_domainapplication_no_other_contacts_rationale"),
+        ("registrar", "0010_DomainRequest_no_other_contacts_rationale"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="security_email",
         ),
     ]

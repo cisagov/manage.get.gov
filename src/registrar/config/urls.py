@@ -139,7 +139,7 @@ urlpatterns = [
     ),
     path(
         "application/<int:pk>/delete",
-        views.DomainApplicationDeleteView.as_view(http_method_names=["post"]),
+        views.DomainRequestDeleteView.as_view(http_method_names=["post"]),
         name="application-delete",
     ),
     path(

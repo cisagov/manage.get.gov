@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from registrar.models import (
     Contact,
-    DomainApplication,
+    DomainRequest,
     DomainInformation,
     User,
     Website,
@@ -22,34 +22,34 @@ from django_fsm import TransitionNotAllowed
 
 
 # Test comment for push -- will remove
-# The DomainApplication submit method has a side effect of sending an email
+# The DomainRequest submit method has a side effect of sending an email
 # with AWS SES, so mock that out in all of these test cases
 @boto3_mocking.patching
-class TestDomainApplication(TestCase):
+class TestDomainRequest(TestCase):
     def setUp(self):
         self.started_application = completed_application(
-            status=DomainApplication.ApplicationStatus.STARTED, name="started.gov"
+            status=DomainRequest.ApplicationStatus.STARTED, name="started.gov"
         )
         self.submitted_application = completed_application(
-            status=DomainApplication.ApplicationStatus.SUBMITTED, name="submitted.gov"
+            status=DomainRequest.ApplicationStatus.SUBMITTED, name="submitted.gov"
         )
         self.in_review_application = completed_application(
-            status=DomainApplication.ApplicationStatus.IN_REVIEW, name="in-review.gov"
+            status=DomainRequest.ApplicationStatus.IN_REVIEW, name="in-review.gov"
         )
         self.action_needed_application = completed_application(
-            status=DomainApplication.ApplicationStatus.ACTION_NEEDED, name="action-needed.gov"
+            status=DomainRequest.ApplicationStatus.ACTION_NEEDED, name="action-needed.gov"
         )
         self.approved_application = completed_application(
-            status=DomainApplication.ApplicationStatus.APPROVED, name="approved.gov"
+            status=DomainRequest.ApplicationStatus.APPROVED, name="approved.gov"
         )
         self.withdrawn_application = completed_application(
-            status=DomainApplication.ApplicationStatus.WITHDRAWN, name="withdrawn.gov"
+            status=DomainRequest.ApplicationStatus.WITHDRAWN, name="withdrawn.gov"
         )
         self.rejected_application = completed_application(
-            status=DomainApplication.ApplicationStatus.REJECTED, name="rejected.gov"
+            status=DomainRequest.ApplicationStatus.REJECTED, name="rejected.gov"
         )
         self.ineligible_application = completed_application(
-            status=DomainApplication.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
+            status=DomainRequest.ApplicationStatus.INELIGIBLE, name="ineligible.gov"
         )
 
         self.mock_client = MockSESClient()
@@ -64,19 +64,19 @@ class TestDomainApplication(TestCase):
             return self.assertRaises(Exception, None, exception_type)
 
     def test_empty_create_fails(self):
-        """Can't create a completely empty domain application.
+        """Can't create a completely empty domain request.
         NOTE: something about theexception this test raises messes up with the
         atomic block in a custom tearDown method for the parent test class."""
         with less_console_noise():
             with self.assertRaisesRegex(IntegrityError, "creator"):
-                DomainApplication.objects.create()
+                DomainRequest.objects.create()
 
     def test_minimal_create(self):
         """Can create with just a creator."""
         with less_console_noise():
             user, _ = User.objects.get_or_create(username="testy")
-            application = DomainApplication.objects.create(creator=user)
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.STARTED)
+            application = DomainRequest.objects.create(creator=user)
+            self.assertEqual(application.status, DomainRequest.ApplicationStatus.STARTED)
 
     def test_full_create(self):
         """Can create with all fields."""
@@ -86,11 +86,11 @@ class TestDomainApplication(TestCase):
             com_website, _ = Website.objects.get_or_create(website="igorville.com")
             gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
             domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-            application = DomainApplication.objects.create(
+            application = DomainRequest.objects.create(
                 creator=user,
                 investigator=user,
-                organization_type=DomainApplication.OrganizationChoices.FEDERAL,
-                federal_type=DomainApplication.BranchChoices.EXECUTIVE,
+                organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+                federal_type=DomainRequest.BranchChoices.EXECUTIVE,
                 is_election_board=False,
                 organization_name="Test",
                 address_line1="100 Main St.",
@@ -140,7 +140,7 @@ class TestDomainApplication(TestCase):
     def test_status_fsm_submit_fail(self):
         with less_console_noise():
             user, _ = User.objects.get_or_create(username="testy")
-            application = DomainApplication.objects.create(creator=user)
+            application = DomainRequest.objects.create(creator=user)
 
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 with less_console_noise():
@@ -152,7 +152,7 @@ class TestDomainApplication(TestCase):
         with less_console_noise():
             user, _ = User.objects.get_or_create(username="testy")
             site = DraftDomain.objects.create(name="igorville.gov")
-            application = DomainApplication.objects.create(creator=user, requested_domain=site)
+            application = DomainRequest.objects.create(creator=user, requested_domain=site)
 
             # no submitter email so this emits a log warning
 
@@ -186,37 +186,37 @@ class TestDomainApplication(TestCase):
 
     def test_submit_from_withdrawn_sends_email(self):
         msg = "Create a withdrawn application and submit it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.WITHDRAWN)
+        application = completed_application(status=DomainRequest.ApplicationStatus.WITHDRAWN)
         self.check_email_sent(application, msg, "submit", 1)
 
     def test_submit_from_action_needed_does_not_send_email(self):
         msg = "Create an application with ACTION_NEEDED status and submit it, check if email was not sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.ACTION_NEEDED)
+        application = completed_application(status=DomainRequest.ApplicationStatus.ACTION_NEEDED)
         self.check_email_sent(application, msg, "submit", 0)
 
     def test_submit_from_in_review_does_not_send_email(self):
         msg = "Create a withdrawn application and submit it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
         self.check_email_sent(application, msg, "submit", 0)
 
     def test_approve_sends_email(self):
         msg = "Create an application and approve it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
         self.check_email_sent(application, msg, "approve", 1)
 
     def test_withdraw_sends_email(self):
         msg = "Create an application and withdraw it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.IN_REVIEW)
+        application = completed_application(status=DomainRequest.ApplicationStatus.IN_REVIEW)
         self.check_email_sent(application, msg, "withdraw", 1)
 
     def test_reject_sends_email(self):
         msg = "Create an application and reject it and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        application = completed_application(status=DomainRequest.ApplicationStatus.APPROVED)
         self.check_email_sent(application, msg, "reject", 1)
 
     def test_reject_with_prejudice_does_not_send_email(self):
         msg = "Create an application and reject it with prejudice and see if email was sent."
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED)
+        application = completed_application(status=DomainRequest.ApplicationStatus.APPROVED)
         self.check_email_sent(application, msg, "reject_with_prejudice", 0)
 
     def test_submit_transition_allowed(self):
@@ -580,14 +580,14 @@ class TestDomainApplication(TestCase):
 
         with less_console_noise():
             # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
-            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+            application = completed_application(status=DomainRequest.ApplicationStatus.REJECTED)
+            application.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
             # Approve
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 application.approve()
 
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.APPROVED)
+            self.assertEqual(application.status, DomainRequest.ApplicationStatus.APPROVED)
             self.assertEqual(application.rejection_reason, None)
 
     def test_in_review_from_rejected_clears_rejection_reason(self):
@@ -596,15 +596,15 @@ class TestDomainApplication(TestCase):
 
         with less_console_noise():
             # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
+            application = completed_application(status=DomainRequest.ApplicationStatus.REJECTED)
             application.domain_is_not_active = True
-            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+            application.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
             # Approve
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 application.in_review()
 
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.IN_REVIEW)
+            self.assertEqual(application.status, DomainRequest.ApplicationStatus.IN_REVIEW)
             self.assertEqual(application.rejection_reason, None)
 
     def test_action_needed_from_rejected_clears_rejection_reason(self):
@@ -613,15 +613,15 @@ class TestDomainApplication(TestCase):
 
         with less_console_noise():
             # Create a sample application
-            application = completed_application(status=DomainApplication.ApplicationStatus.REJECTED)
+            application = completed_application(status=DomainRequest.ApplicationStatus.REJECTED)
             application.domain_is_not_active = True
-            application.rejection_reason = DomainApplication.RejectionReasons.DOMAIN_PURPOSE
+            application.rejection_reason = DomainRequest.RejectionReasons.DOMAIN_PURPOSE
 
             # Approve
             with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
                 application.action_needed()
 
-            self.assertEqual(application.status, DomainApplication.ApplicationStatus.ACTION_NEEDED)
+            self.assertEqual(application.status, DomainRequest.ApplicationStatus.ACTION_NEEDED)
             self.assertEqual(application.rejection_reason, None)
 
     def test_has_rationale_returns_true(self):
@@ -646,7 +646,7 @@ class TestDomainApplication(TestCase):
         """has_other_contacts() returns false when an application has no other_contacts"""
         with less_console_noise():
             application = completed_application(
-                status=DomainApplication.ApplicationStatus.STARTED, name="no-others.gov", has_other_contacts=False
+                status=DomainRequest.ApplicationStatus.STARTED, name="no-others.gov", has_other_contacts=False
             )
             self.assertEquals(application.has_other_contacts(), False)
 
@@ -666,12 +666,12 @@ class TestPermissions(TestCase):
     def test_approval_creates_role(self):
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain)
+        application = DomainRequest.objects.create(creator=user, requested_domain=draft_domain)
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # skip using the submit method
-                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                application.status = DomainRequest.ApplicationStatus.SUBMITTED
                 application.approve()
 
         # should be a role for this user
@@ -691,7 +691,7 @@ class TestDomainInformation(TestCase):
         self.mock_client.EMAILS_SENT.clear()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         User.objects.all().delete()
         DraftDomain.objects.all().delete()
 
@@ -700,12 +700,12 @@ class TestDomainInformation(TestCase):
         self.maxDiff = None
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         user, _ = User.objects.get_or_create()
-        application = DomainApplication.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
+        application = DomainRequest.objects.create(creator=user, requested_domain=draft_domain, notes="test notes")
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
                 # skip using the submit method
-                application.status = DomainApplication.ApplicationStatus.SUBMITTED
+                application.status = DomainRequest.ApplicationStatus.SUBMITTED
                 application.approve()
 
         # should be an information present for this domain
@@ -719,7 +719,7 @@ class TestDomainInformation(TestCase):
             creator=user,
             domain=domain,
             notes="test notes",
-            domain_application=application,
+            domain_request=application,
         ).__dict__
 
         # Test the two records for consistency
@@ -852,11 +852,11 @@ class TestContact(TestCase):
         self.contact, _ = Contact.objects.get_or_create(user=self.user)
 
         self.contact_as_ao, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
-        self.application = DomainApplication.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
+        self.application = DomainRequest.objects.create(creator=self.user, authorizing_official=self.contact_as_ao)
 
     def tearDown(self):
         super().tearDown()
-        DomainApplication.objects.all().delete()
+        DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
 

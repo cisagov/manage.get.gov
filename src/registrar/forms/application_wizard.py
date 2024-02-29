@@ -10,7 +10,7 @@ from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 from django.db.models.fields.related import ForeignObjectRel
 
-from registrar.models import Contact, DomainApplication, DraftDomain, Domain
+from registrar.models import Contact, DomainRequest, DraftDomain, Domain
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 
@@ -21,7 +21,7 @@ class RegistrarForm(forms.Form):
     """
     A common set of methods and configuration.
 
-    The registrar's domain application is several pages of "steps".
+    The registrar's domain request is several pages of "steps".
     Each step is an HTML form containing one or more Django "forms".
 
     Subclass this class to create new forms.
@@ -33,7 +33,7 @@ class RegistrarForm(forms.Form):
         self.application = kwargs.pop("application", None)
         super(RegistrarForm, self).__init__(*args, **kwargs)
 
-    def to_database(self, obj: DomainApplication | Contact):
+    def to_database(self, obj: DomainRequest | Contact):
         """
         Adds this form's cleaned data to `obj` and saves `obj`.
 
@@ -46,7 +46,7 @@ class RegistrarForm(forms.Form):
         obj.save()
 
     @classmethod
-    def from_database(cls, obj: DomainApplication | Contact | None):
+    def from_database(cls, obj: DomainRequest | Contact | None):
         """Returns a dict of form field values gotten from `obj`."""
         if obj is None:
             return {}
@@ -85,7 +85,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         """Code to run before an item in the formset is created in the database."""
         return cleaned
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         """
         Adds this form's cleaned data to `obj` and saves `obj`.
 
@@ -97,7 +97,7 @@ class RegistrarFormSet(forms.BaseFormSet):
 
     def _to_database(
         self,
-        obj: DomainApplication,
+        obj: DomainRequest,
         join: str,
         should_delete: Callable,
         pre_update: Callable,
@@ -163,7 +163,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         return query.values()
 
     @classmethod
-    def from_database(cls, obj: DomainApplication, join: str, on_fetch: Callable):
+    def from_database(cls, obj: DomainRequest, join: str, on_fetch: Callable):
         """Returns a dict of form field values gotten from `obj`."""
         return on_fetch(getattr(obj, join).order_by("created_at"))  # order matters
 
@@ -171,7 +171,7 @@ class RegistrarFormSet(forms.BaseFormSet):
 class OrganizationTypeForm(RegistrarForm):
     organization_type = forms.ChoiceField(
         # use the long names in the application form
-        choices=DomainApplication.OrganizationChoicesVerbose.choices,
+        choices=DomainRequest.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,
         error_messages={"required": "Select the type of organization you represent."},
     )
@@ -215,7 +215,7 @@ class TribalGovernmentForm(RegistrarForm):
 
 class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
-        choices=DomainApplication.BranchChoices.choices,
+        choices=DomainRequest.BranchChoices.choices,
         widget=forms.RadioSelect,
         error_messages={"required": ("Select the part of the federal government your organization is in.")},
     )
@@ -251,7 +251,7 @@ class OrganizationContactForm(RegistrarForm):
         # it is a federal agency. Use clean to check programatically
         # if it has been filled in when required.
         required=False,
-        choices=[("", "--Select--")] + DomainApplication.AGENCY_CHOICES,
+        choices=[("", "--Select--")] + DomainRequest.AGENCY_CHOICES,
     )
     organization_name = forms.CharField(
         label="Organization name",
@@ -271,7 +271,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
-        choices=[("", "--Select--")] + DomainApplication.StateTerritoryChoices.choices,
+        choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
@@ -390,7 +390,7 @@ class BaseCurrentSitesFormSet(RegistrarFormSet):
         website = cleaned.get("website", "")
         return website.strip() == ""
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         # If we want to test against multiple joins for a website object, replace the empty array
         # and change the JOIN in the models to allow for reverse references
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
@@ -444,7 +444,7 @@ class BaseAlternativeDomainFormSet(RegistrarFormSet):
         else:
             return {}
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         # If we want to test against multiple joins for a website object, replace the empty array and
         # change the JOIN in the models to allow for reverse references
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
@@ -722,7 +722,7 @@ class BaseOtherContactsFormSet(RegistrarFormSet):
             cleaned.pop("DELETE")
         return cleaned
 
-    def to_database(self, obj: DomainApplication):
+    def to_database(self, obj: DomainRequest):
         self._to_database(obj, self.JOIN, self.should_delete, self.pre_update, self.pre_create)
 
     @classmethod

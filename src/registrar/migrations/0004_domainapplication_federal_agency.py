@@ -7,13 +7,13 @@ class Migration(migrations.Migration):
     dependencies = [
         (
             "registrar",
-            "0003_rename_is_election_office_domainapplication_is_election_board_and_more",
+            "0003_rename_is_election_office_DomainRequest_is_election_board_and_more",
         ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="federal_agency",
             field=models.TextField(help_text="Top level federal agency", null=True),
         ),

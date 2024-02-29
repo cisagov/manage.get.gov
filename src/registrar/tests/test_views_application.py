@@ -10,7 +10,7 @@ from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
 from registrar.models import (
-    DomainApplication,
+    DomainRequest,
     DraftDomain,
     Domain,
     DomainInformation,
@@ -29,8 +29,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DomainApplicationTests(TestWithUser, WebTest):
-    """Webtests for domain application to test filling and submitting."""
+class DomainRequestTests(TestWithUser, WebTest):
+    """Webtests for domain request to test filling and submitting."""
 
     # Doesn't work with CSRF checking
     # hypothesis is that CSRF_USE_SESSIONS is incompatible with WebTest
@@ -48,7 +48,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
     def test_application_form_intro_is_skipped_when_edit_access(self):
         """Tests that user is NOT presented with intro acknowledgement page when accessed through 'edit'"""
-        completed_application(status=DomainApplication.ApplicationStatus.STARTED, user=self.user)
+        completed_application(status=DomainRequest.ApplicationStatus.STARTED, user=self.user)
         home_page = self.app.get("/")
         self.assertContains(home_page, "city.gov")
         # click the "Edit" link
@@ -146,7 +146,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
         # should see results in db
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.organization_type, "federal")
         # the post request should return a redirect to the next form in
         # the application
@@ -166,7 +166,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         federal_result = federal_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.federal_type, "executive")
         # the post request should return a redirect to the next form in
         # the application
@@ -193,7 +193,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_result = org_contact_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.organization_name, "Testorg")
         self.assertEqual(application.address_line1, "address 1")
         self.assertEqual(application.address_line2, "address 2")
@@ -221,7 +221,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         ao_result = ao_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.authorizing_official.first_name, "Testy ATO")
         self.assertEqual(application.authorizing_official.last_name, "Tester ATO")
         self.assertEqual(application.authorizing_official.title, "Chief Tester")
@@ -243,7 +243,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         current_sites_result = current_sites_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(
             application.current_websites.filter(website="http://www.city.com").count(),
             1,
@@ -265,7 +265,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_result = dotgov_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.requested_domain.name, "city.gov")
         self.assertEqual(application.alternative_domains.filter(website="city1.gov").count(), 1)
         # the post request should return a redirect to the next form in
@@ -285,7 +285,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         purpose_result = purpose_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.purpose, "For all kinds of things.")
         # the post request should return a redirect to the next form in
         # the application
@@ -309,7 +309,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         your_contact_result = your_contact_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.submitter.first_name, "Testy you")
         self.assertEqual(application.submitter.last_name, "Tester you")
         self.assertEqual(application.submitter.title, "Admin Tester")
@@ -342,7 +342,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         other_contacts_result = other_contacts_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(
             application.other_contacts.filter(
                 first_name="Testy2",
@@ -371,7 +371,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         anything_else_result = anything_else_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.anything_else, "Nothing else.")
         # the post request should return a redirect to the next form in
         # the application
@@ -391,7 +391,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()
         # validate that data from this step are being saved
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(application.is_policy_acknowledged, True)
         # the post request should return a redirect to the next form in
         # the application
@@ -663,7 +663,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.INTERSTATE
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
 
@@ -708,7 +708,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.SPECIAL_DISTRICT
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.forms[0].submit()
         # follow first redirect
@@ -803,7 +803,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the no_other_contacts_rationale we saved earlier has been removed from the database
-        application = DomainApplication.objects.get()
+        application = DomainRequest.objects.get()
         self.assertEqual(
             application.other_contacts.count(),
             1,
@@ -845,7 +845,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the no_other_contacts_rationale we saved earlier has been removed from the database
-        application = DomainApplication.objects.get()
+        application = DomainRequest.objects.get()
         self.assertEqual(
             application.other_contacts.count(),
             0,
@@ -859,7 +859,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
     def test_submitting_no_other_contacts_rationale_removes_reference_other_contacts_when_joined(self):
         """When a user submits the Other Contacts form with no other contacts selected, the application's
         other contacts references get removed for other contacts that exist and are joined to other objects"""
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
@@ -883,7 +883,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(555) 555 5557",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -929,7 +929,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the no_other_contacts_rationale we saved earlier is no longer associated with the application
-        application = DomainApplication.objects.get()
+        application = DomainRequest.objects.get()
         self.assertEqual(
             application.other_contacts.count(),
             0,
@@ -986,7 +986,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
 
         This formset uses the DJANGO DELETE widget. We'll test that by setting 2 contacts on an application,
         loading the form and marking one contact up for deletion."""
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has 2 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
@@ -1017,7 +1017,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy3@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1061,13 +1061,13 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the first dude was deleted
-        application = DomainApplication.objects.get()
+        application = DomainRequest.objects.get()
         self.assertEqual(application.other_contacts.count(), 1)
         self.assertEqual(application.other_contacts.first().first_name, "Testy3")
 
     def test_delete_other_contact_does_not_allow_zero_contacts(self):
         """Delete Other Contact does not allow submission with zero contacts."""
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
@@ -1091,7 +1091,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1133,7 +1133,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the contact was not deleted
-        application = DomainApplication.objects.get()
+        application = DomainRequest.objects.get()
         self.assertEqual(application.other_contacts.count(), 1)
         self.assertEqual(application.other_contacts.first().first_name, "Testy2")
 
@@ -1144,7 +1144,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             3. then submit,
         The forms on page reload shows all the required fields and their errors."""
 
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch so we can reuse the other contact
         ao, _ = Contact.objects.get_or_create(
@@ -1168,7 +1168,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1220,7 +1220,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             2. then submit,
         The application is linked to the existing contact, and the existing contact updated."""
 
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has 1 "other contact" assigned to it
         # We'll do it from scratch
         ao, _ = Contact.objects.get_or_create(
@@ -1244,7 +1244,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(201) 555 5557",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1301,7 +1301,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             2. then submit,
         The application is linked to a new contact, and the new contact is updated."""
 
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has 1 "other contact" assigned to it, the other contact is also
         # the authorizing official initially
         # We'll do it from scratch
@@ -1319,7 +1319,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy-admin@town.com",
             phone="(201) 555 5556",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1381,7 +1381,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             2. then submit,
         The application is linked to the existing ao, and the ao updated."""
 
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has an authorizing_official (ao)
         # We'll do it from scratch
         ao, _ = Contact.objects.get_or_create(
@@ -1391,7 +1391,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1446,7 +1446,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             2. then submit,
         The application is linked to a new Contact, and the new Contact is updated."""
 
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has authorizing official assigned to it, the authorizing offical is also
         # an other contact initially
         # We'll do it from scratch
@@ -1457,7 +1457,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1518,7 +1518,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             2. then submit,
         The application is linked to the existing submitter, and the submitter updated."""
 
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has a submitter
         # We'll do it from scratch
         you, _ = Contact.objects.get_or_create(
@@ -1528,7 +1528,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1582,7 +1582,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             2. then submit,
         The application is linked to a new Contact, and the new Contact is updated."""
 
-        # Populate the database with a domain application that
+        # Populate the database with a domain request that
         # has submitter assigned to it, the submitter is also
         # an other contact initially
         # We'll do it from scratch
@@ -1593,7 +1593,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy@town.com",
             phone="(201) 555 5555",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -1667,7 +1667,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.INTERSTATE
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
         # follow first redirect
@@ -1695,7 +1695,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["organization_type-organization_type"] = DomainApplication.OrganizationChoices.TRIBAL
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.TRIBAL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
         # the tribal government page comes immediately afterwards
@@ -1900,7 +1900,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertEqual(value, "https://example.com")
         self.assertIn("current_sites-1-website", current_sites_form.fields)
         # and it is correctly referenced in the ManyToOne relationship
-        application = DomainApplication.objects.get()  # there's only one
+        application = DomainRequest.objects.get()  # there's only one
         self.assertEqual(
             application.current_websites.filter(website="https://example.com").count(),
             1,
@@ -1935,7 +1935,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
             email="testy2@town.com",
             phone="(555) 555 5557",
         )
-        application, _ = DomainApplication.objects.get_or_create(
+        application, _ = DomainRequest.objects.get_or_create(
             organization_type="federal",
             federal_type="executive",
             purpose="Purpose of the site",
@@ -2068,7 +2068,7 @@ class DomainApplicationTests(TestWithUser, WebTest):
         self.assertContains(review_page, "You are about to submit an incomplete request")
 
 
-class DomainApplicationTestDifferentStatuses(TestWithUser, WebTest):
+class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
@@ -2076,7 +2076,7 @@ class DomainApplicationTestDifferentStatuses(TestWithUser, WebTest):
 
     def test_application_status(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainRequest.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2096,7 +2096,7 @@ class DomainApplicationTestDifferentStatuses(TestWithUser, WebTest):
         self.user.status = "ineligible"
         self.user.save()
 
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainRequest.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2111,7 +2111,7 @@ class DomainApplicationTestDifferentStatuses(TestWithUser, WebTest):
 
     def test_application_withdraw(self):
         """Checking application status page"""
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainRequest.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2146,7 +2146,7 @@ class DomainApplicationTestDifferentStatuses(TestWithUser, WebTest):
         """Can't withdraw applications as a restricted user."""
         self.user.status = User.RESTRICTED
         self.user.save()
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainRequest.ApplicationStatus.SUBMITTED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2171,7 +2171,7 @@ class DomainApplicationTestDifferentStatuses(TestWithUser, WebTest):
 
     def test_application_status_no_permissions(self):
         """Can't access applications without being the creator."""
-        application = completed_application(status=DomainApplication.ApplicationStatus.SUBMITTED, user=self.user)
+        application = completed_application(status=DomainRequest.ApplicationStatus.SUBMITTED, user=self.user)
         other_user = User()
         other_user.save()
         application.creator = other_user
@@ -2191,7 +2191,7 @@ class DomainApplicationTestDifferentStatuses(TestWithUser, WebTest):
     def test_approved_application_not_in_active_requests(self):
         """An approved application is not shown in the Active
         Requests table on home.html."""
-        application = completed_application(status=DomainApplication.ApplicationStatus.APPROVED, user=self.user)
+        application = completed_application(status=DomainRequest.ApplicationStatus.APPROVED, user=self.user)
         application.save()
 
         home_page = self.app.get("/")
@@ -2222,7 +2222,7 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
     def test_unlocked_steps_full_application(self):
         """Test when all fields in the application are filled."""
 
-        completed_application(status=DomainApplication.ApplicationStatus.STARTED, user=self.user)
+        completed_application(status=DomainRequest.ApplicationStatus.STARTED, user=self.user)
         # Make a request to the home page
         home_page = self.app.get("/")
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -2280,10 +2280,10 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         contact_user, _ = Contact.objects.get_or_create(user=self.user)
 
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(
+        application = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
-            status=DomainApplication.ApplicationStatus.WITHDRAWN,
+            status=DomainRequest.ApplicationStatus.WITHDRAWN,
             authorizing_official=contact,
             submitter=contact_user,
         )
@@ -2341,11 +2341,11 @@ class HomeTests(TestWithUser):
         super().tearDown()
         Contact.objects.all().delete()
 
-    def test_home_lists_domain_applications(self):
+    def test_home_lists_domain_requests(self):
         response = self.client.get("/")
         self.assertNotContains(response, "igorville.gov")
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(creator=self.user, requested_domain=site)
+        application = DomainRequest.objects.create(creator=self.user, requested_domain=site)
         response = self.client.get("/")
 
         # count = 7 because of screenreader content
@@ -2464,12 +2464,12 @@ class HomeTests(TestWithUser):
         # Check that we have the right text content.
         self.assertContains(response, unknown_text, count=1)
 
-    def test_home_deletes_withdrawn_domain_application(self):
-        """Tests if the user can delete a DomainApplication in the 'withdrawn' status"""
+    def test_home_deletes_withdrawn_domain_request(self):
+        """Tests if the user can delete a DomainRequest in the 'withdrawn' status"""
 
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=self.user, requested_domain=site, status=DomainApplication.ApplicationStatus.WITHDRAWN
+        application = DomainRequest.objects.create(
+            creator=self.user, requested_domain=site, status=DomainRequest.ApplicationStatus.WITHDRAWN
         )
 
         # Ensure that igorville.gov exists on the page
@@ -2488,12 +2488,12 @@ class HomeTests(TestWithUser):
         # clean up
         application.delete()
 
-    def test_home_deletes_started_domain_application(self):
-        """Tests if the user can delete a DomainApplication in the 'started' status"""
+    def test_home_deletes_started_domain_request(self):
+        """Tests if the user can delete a DomainRequest in the 'started' status"""
 
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(
-            creator=self.user, requested_domain=site, status=DomainApplication.ApplicationStatus.STARTED
+        application = DomainRequest.objects.create(
+            creator=self.user, requested_domain=site, status=DomainRequest.ApplicationStatus.STARTED
         )
 
         # Ensure that igorville.gov exists on the page
@@ -2512,20 +2512,20 @@ class HomeTests(TestWithUser):
         # clean up
         application.delete()
 
-    def test_home_doesnt_delete_other_domain_applications(self):
+    def test_home_doesnt_delete_other_domain_requests(self):
         """Tests to ensure the user can't delete Applications not in the status of STARTED or WITHDRAWN"""
 
         # Given that we are including a subset of items that can be deleted while excluding the rest,
         # subTest is appropriate here as otherwise we would need many duplicate tests for the same reason.
         with less_console_noise():
             draft_domain = DraftDomain.objects.create(name="igorville.gov")
-            for status in DomainApplication.ApplicationStatus:
+            for status in DomainRequest.ApplicationStatus:
                 if status not in [
-                    DomainApplication.ApplicationStatus.STARTED,
-                    DomainApplication.ApplicationStatus.WITHDRAWN,
+                    DomainRequest.ApplicationStatus.STARTED,
+                    DomainRequest.ApplicationStatus.WITHDRAWN,
                 ]:
                     with self.subTest(status=status):
-                        application = DomainApplication.objects.create(
+                        application = DomainRequest.objects.create(
                             creator=self.user, requested_domain=draft_domain, status=status
                         )
 
@@ -2537,16 +2537,16 @@ class HomeTests(TestWithUser):
                         # Check for a 403 error - the end user should not be allowed to do this
                         self.assertEqual(response.status_code, 403)
 
-                        desired_application = DomainApplication.objects.filter(requested_domain=draft_domain)
+                        desired_application = DomainRequest.objects.filter(requested_domain=draft_domain)
 
-                        # Make sure the DomainApplication wasn't deleted
+                        # Make sure the DomainRequest wasn't deleted
                         self.assertEqual(desired_application.count(), 1)
 
                         # clean up
                         application.delete()
 
-    def test_home_deletes_domain_application_and_orphans(self):
-        """Tests if delete for DomainApplication deletes orphaned Contact objects"""
+    def test_home_deletes_domain_request_and_orphans(self):
+        """Tests if delete for DomainRequest deletes orphaned Contact objects"""
 
         # Create the site and contacts to delete (orphaned)
         contact = Contact.objects.create(
@@ -2568,10 +2568,10 @@ class HomeTests(TestWithUser):
         contact_user, _ = Contact.objects.get_or_create(user=self.user)
 
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(
+        application = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
-            status=DomainApplication.ApplicationStatus.WITHDRAWN,
+            status=DomainRequest.ApplicationStatus.WITHDRAWN,
             authorizing_official=contact,
             submitter=contact_user,
         )
@@ -2579,10 +2579,10 @@ class HomeTests(TestWithUser):
 
         # Create a second application to attach contacts to
         site_2 = DraftDomain.objects.create(name="teaville.gov")
-        application_2 = DomainApplication.objects.create(
+        application_2 = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site_2,
-            status=DomainApplication.ApplicationStatus.STARTED,
+            status=DomainRequest.ApplicationStatus.STARTED,
             authorizing_official=contact_2,
             submitter=contact_shared,
         )
@@ -2616,7 +2616,7 @@ class HomeTests(TestWithUser):
 
         self.assertEqual(edge_case, contact_2)
 
-    def test_home_deletes_domain_application_and_shared_orphans(self):
+    def test_home_deletes_domain_request_and_shared_orphans(self):
         """Test the edge case for an object that will become orphaned after a delete
         (but is not an orphan at the time of deletion)"""
 
@@ -2640,10 +2640,10 @@ class HomeTests(TestWithUser):
         contact_user, _ = Contact.objects.get_or_create(user=self.user)
 
         site = DraftDomain.objects.create(name="igorville.gov")
-        application = DomainApplication.objects.create(
+        application = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site,
-            status=DomainApplication.ApplicationStatus.WITHDRAWN,
+            status=DomainRequest.ApplicationStatus.WITHDRAWN,
             authorizing_official=contact,
             submitter=contact_user,
         )
@@ -2651,10 +2651,10 @@ class HomeTests(TestWithUser):
 
         # Create a second application to attach contacts to
         site_2 = DraftDomain.objects.create(name="teaville.gov")
-        application_2 = DomainApplication.objects.create(
+        application_2 = DomainRequest.objects.create(
             creator=self.user,
             requested_domain=site_2,
-            status=DomainApplication.ApplicationStatus.STARTED,
+            status=DomainRequest.ApplicationStatus.STARTED,
             authorizing_official=contact_2,
             submitter=contact_shared,
         )
@@ -2679,7 +2679,7 @@ class HomeTests(TestWithUser):
             "You’re about to start your .gov domain request.",
         )
 
-    def test_domain_application_form_with_ineligible_user(self):
+    def test_domain_request_form_with_ineligible_user(self):
         """Application form not accessible for an ineligible user.
         This test should be solid enough since all application wizard
         views share the same permissions class"""

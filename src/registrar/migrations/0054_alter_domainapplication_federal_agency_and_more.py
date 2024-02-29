@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="federal_agency",
             field=models.TextField(
                 blank=True,
@@ -317,7 +317,7 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="state_territory",
             field=models.CharField(
                 blank=True,

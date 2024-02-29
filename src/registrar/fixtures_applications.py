@@ -4,7 +4,7 @@ from faker import Faker
 
 from registrar.models import (
     User,
-    DomainApplication,
+    DomainRequest,
     DraftDomain,
     Contact,
     Website,
@@ -14,7 +14,7 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-class DomainApplicationFixture:
+class DomainRequestFixture:
     """
     Load domain applications into the database.
 
@@ -49,27 +49,27 @@ class DomainApplicationFixture:
     # },
     DA = [
         {
-            "status": DomainApplication.ApplicationStatus.STARTED,
+            "status": DomainRequest.ApplicationStatus.STARTED,
             "organization_name": "Example - Finished but not submitted",
         },
         {
-            "status": DomainApplication.ApplicationStatus.SUBMITTED,
+            "status": DomainRequest.ApplicationStatus.SUBMITTED,
             "organization_name": "Example - Submitted but pending investigation",
         },
         {
-            "status": DomainApplication.ApplicationStatus.IN_REVIEW,
+            "status": DomainRequest.ApplicationStatus.IN_REVIEW,
             "organization_name": "Example - In investigation",
         },
         {
-            "status": DomainApplication.ApplicationStatus.IN_REVIEW,
+            "status": DomainRequest.ApplicationStatus.IN_REVIEW,
             "organization_name": "Example - Approved",
         },
         {
-            "status": DomainApplication.ApplicationStatus.WITHDRAWN,
+            "status": DomainRequest.ApplicationStatus.WITHDRAWN,
             "organization_name": "Example - Withdrawn",
         },
         {
-            "status": DomainApplication.ApplicationStatus.ACTION_NEEDED,
+            "status": DomainRequest.ApplicationStatus.ACTION_NEEDED,
             "organization_name": "Example - Action needed",
         },
         {
@@ -94,7 +94,7 @@ class DomainApplicationFixture:
         return f"{fake.slug()}.gov"
 
     @classmethod
-    def _set_non_foreign_key_fields(cls, da: DomainApplication, app: dict):
+    def _set_non_foreign_key_fields(cls, da: DomainRequest, app: dict):
         """Helper method used by `load`."""
         da.status = app["status"] if "status" in app else "started"
         da.organization_type = app["organization_type"] if "organization_type" in app else "federal"
@@ -102,7 +102,7 @@ class DomainApplicationFixture:
             app["federal_agency"]
             if "federal_agency" in app
             # Random choice of agency for selects, used as placeholders for testing.
-            else random.choice(DomainApplication.AGENCIES)  # nosec
+            else random.choice(DomainRequest.AGENCIES)  # nosec
         )
         da.submission_date = fake.date()
         da.federal_type = (
@@ -121,7 +121,7 @@ class DomainApplicationFixture:
         da.is_policy_acknowledged = app["is_policy_acknowledged"] if "is_policy_acknowledged" in app else True
 
     @classmethod
-    def _set_foreign_key_fields(cls, da: DomainApplication, app: dict, user: User):
+    def _set_foreign_key_fields(cls, da: DomainRequest, app: dict, user: User):
         """Helper method used by `load`."""
         if not da.investigator:
             da.investigator = User.objects.get(username=user.username) if "investigator" in app else None
@@ -145,7 +145,7 @@ class DomainApplicationFixture:
                 da.requested_domain = DraftDomain.objects.create(name=cls.fake_dot_gov())
 
     @classmethod
-    def _set_many_to_many_relations(cls, da: DomainApplication, app: dict):
+    def _set_many_to_many_relations(cls, da: DomainRequest, app: dict):
         """Helper method used by `load`."""
         if "other_contacts" in app:
             for contact in app["other_contacts"]:
@@ -188,7 +188,7 @@ class DomainApplicationFixture:
             logger.debug("Loading domain applications for %s" % user)
             for app in cls.DA:
                 try:
-                    da, _ = DomainApplication.objects.get_or_create(
+                    da, _ = DomainRequest.objects.get_or_create(
                         creator=user,
                         organization_name=app["organization_name"],
                     )
@@ -200,7 +200,7 @@ class DomainApplicationFixture:
                     logger.warning(e)
 
 
-class DomainFixture(DomainApplicationFixture):
+class DomainFixture(DomainRequestFixture):
     """Create one domain and permissions on it for each user."""
 
     @classmethod
@@ -213,8 +213,8 @@ class DomainFixture(DomainApplicationFixture):
 
         for user in users:
             # approve one of each users in review status domains
-            application = DomainApplication.objects.filter(
-                creator=user, status=DomainApplication.ApplicationStatus.IN_REVIEW
+            application = DomainRequest.objects.filter(
+                creator=user, status=DomainRequest.ApplicationStatus.IN_REVIEW
             ).last()
             logger.debug(f"Approving {application} for {user}")
 

@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="rejection_reason",
             field=models.TextField(
                 blank=True,

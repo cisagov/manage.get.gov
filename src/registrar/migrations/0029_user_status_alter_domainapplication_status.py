@@ -6,7 +6,7 @@ import django_fsm
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0028_alter_domainapplication_status"),
+        ("registrar", "0028_alter_DomainRequest_status"),
     ]
 
     operations = [
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="status",
             field=django_fsm.FSMField(
                 choices=[

@@ -1,4 +1,4 @@
-# 15. Use Django-FSM library for domain application state
+# 15. Use Django-FSM library for domain request state
 
 Date: 2022-11-03
 
@@ -10,7 +10,7 @@ Accepted
 
 The applications that registrants submit for domains move through a variety of
 different states or stages as they are processed by CISA staff.  Traditionally,
-there would be a “domain application” data model with a “status” field. The
+there would be a “domain request” data model with a “status” field. The
 rules in the application code that control what changes are permitted to the
 statuses are called “domain logic”.
 

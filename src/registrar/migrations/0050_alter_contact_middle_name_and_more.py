@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0049_alter_domainapplication_current_websites_and_more"),
+        ("registrar", "0049_alter_DomainRequest_current_websites_and_more"),
     ]
 
     operations = [
@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             field=models.TextField(blank=True, help_text="Middle name (optional)", null=True),
         ),
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="address_line2",
             field=models.TextField(blank=True, help_text="Street address line 2 (optional)", null=True),
         ),

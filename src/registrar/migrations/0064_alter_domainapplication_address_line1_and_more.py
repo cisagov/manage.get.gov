@@ -10,12 +10,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="address_line1",
             field=models.TextField(blank=True, help_text="Street address", null=True, verbose_name="Address line 1"),
         ),
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="address_line2",
             field=models.TextField(
                 blank=True, help_text="Street address line 2 (optional)", null=True, verbose_name="Address line 2"

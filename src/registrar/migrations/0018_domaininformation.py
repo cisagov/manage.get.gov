@@ -7,7 +7,7 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0017_alter_domainapplication_status_and_more"),
+        ("registrar", "0017_alter_DomainRequest_status_and_more"),
     ]
 
     operations = [
@@ -229,14 +229,14 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "domain_application",
+                    "domain_request",
                     models.OneToOneField(
                         blank=True,
-                        help_text="Associated domain application",
+                        help_text="Associated domain request",
                         null=True,
                         on_delete=django.db.models.deletion.PROTECT,
-                        related_name="domainapplication_info",
-                        to="registrar.domainapplication",
+                        related_name="DomainRequest_info",
+                        to="registrar.DomainRequest",
                     ),
                 ),
                 (

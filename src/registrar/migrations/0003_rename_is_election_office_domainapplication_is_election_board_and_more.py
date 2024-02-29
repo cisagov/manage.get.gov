@@ -10,48 +10,48 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             old_name="is_election_office",
             new_name="is_election_board",
         ),
         migrations.RenameField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             old_name="acknowledged_policy",
             new_name="is_policy_acknowledged",
         ),
         migrations.RenameField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             old_name="zip_code",
             new_name="zipcode",
         ),
         migrations.RemoveField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="federal_branch",
         ),
         migrations.RemoveField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="street_address",
         ),
         migrations.RemoveField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="unit_number",
         ),
         migrations.RemoveField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="unit_type",
         ),
         migrations.AddField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="address_line1",
             field=models.TextField(blank=True, help_text="Address line 1", null=True),
         ),
         migrations.AddField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="address_line2",
             field=models.CharField(blank=True, help_text="Address line 2", max_length=15, null=True),
         ),
         migrations.AddField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="federal_type",
             field=models.CharField(
                 blank=True,
@@ -66,7 +66,7 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="domainapplication",
+            model_name="DomainRequest",
             name="organization_type",
             field=models.CharField(
                 blank=True,

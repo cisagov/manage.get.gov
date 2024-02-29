@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-from registrar.models import DomainApplication, Domain, UserDomainRole
+from registrar.models import DomainRequest, Domain, UserDomainRole
 
 
 def index(request):
@@ -10,7 +10,7 @@ def index(request):
         # Get all domain applications the user has access to
         applications, deletable_applications = _get_applications(request)
 
-        context["domain_applications"] = applications
+        context["domain_requests"] = applications
 
         # Get all domains the user has access to
         domains = _get_domains(request)
@@ -35,19 +35,19 @@ def index(request):
 
 def _get_applications(request):
     """Given the current request,
-    get all DomainApplications that are associated with the UserDomainRole object.
+    get all DomainRequests that are associated with the UserDomainRole object.
 
     Returns a tuple of all applications, and those that are deletable by the user.
     """
     # Let's exclude the approved applications since our
-    # domain_applications context will be used to populate
+    # domain_requests context will be used to populate
     # the active applications table
-    applications = DomainApplication.objects.filter(creator=request.user).exclude(
-        status=DomainApplication.ApplicationStatus.APPROVED
+    applications = DomainRequest.objects.filter(creator=request.user).exclude(
+        status=DomainRequest.ApplicationStatus.APPROVED
     )
 
     # Create a placeholder DraftDomain for each incomplete draft
-    valid_statuses = [DomainApplication.ApplicationStatus.STARTED, DomainApplication.ApplicationStatus.WITHDRAWN]
+    valid_statuses = [DomainRequest.ApplicationStatus.STARTED, DomainRequest.ApplicationStatus.WITHDRAWN]
     deletable_applications = applications.filter(status__in=valid_statuses)
 
     return (applications, deletable_applications)
