@@ -27,31 +27,22 @@ Caching static resources should pose little risk to our application's functional
 
 See ticket [#1371](https://github.com/cisagov/manage.get.gov/issues/1371)for more information. 
 
-**Option 2:** Leave things as-is (depending on what is found in cost/benefit analysis)
-
-
-## Cost/Benefit Analysis
-
-### Analysis Procedure
-
-STEP 1 - Preliminary Analysis: ____
-
-STEP 2 - Full Analysis:
-1- Add caching capability to a sandbox using the following steps
-2- Enable caching with Whitenoise (see ____)
-3- Take performance measurements before/after caching is enabled to determine cost-benefits of implementing caching. (NOTE: lighthouse <> might be useful for this)
-
-### Analysis Outcome
-Preliminary analysis suggest that implementing caching will result in negligible improvements to our application load time
-[CITE DATA] ____
-
-Attempting to implement a more thorough analysis (Step 2), incurred more overhead than expected, due to lack of information and lacking documentation. Therefore, we have shelved STEP 2 - Full Analysis, documenting what we understand thus far about implementation steps in case we wish to pick it up again in the future.
-
-We feel confident that our preliminary analysis has given us enough information to move forward with the following architectural decision;
+**Option 2:** Leave things as-is (we had some discussion on whether or not caching staic pages will make enough of a difference to be worth the effort)
 
 
 ## Decision
-At this time, we have decided not to move forward with a caching update.  Implementing caching using Whitenoise is not currently worth it for the following reasons;
+
+We decided on Option 2 - leave things as-is (for now).
+
+Preliminary analysis suggest that implementing caching on static pages will result in negligible improvements to our application load time.  A quick look at Kibana logs suggests most of these resources take less than 10ms to load...
+![Kibana RTR Logs](../doc-images/caching-rtr-logs.png)
+
+If we look at average load times in Kibana, it looks like we are doing great for load times in stable (using the rtr.response_time_ms metric), staying under 200ms (in the last 4 weeks) and usually hovering around 40-80ms. Some google searching suggests that "an ideal page load time is between 0-2 seconds, but 3 seconds is also considered to be an acceptable score. Anything above 3 seconds increases the likelihood of visitors leaving your site." (Quote shamelessly copied from Sematex)
+![Kibana Average Load Times Graph](../doc-images/caching-average-load-times.png)
+
+NOTE: While we considered implementing caching in a sandbox (See footnote) in order to examine risks and benefits of OPTION 1 in more detail, this incurred more overhead than expected (mainly due to poor documentation).  Therefore, we decided it was not worth the investment.
+
+Therefore, implementing caching using Whitenoise is not currently worth it for the following reasons;
 - Minimal gains:  We would only be caching static files (total load time gain estimated to be….)
 - Risks: Incurs risk of unforeseen loading issues (we can’t entirely rule out that we won’t run into issues like we did in our xx-xx-xx incident). Although we don’t think static files should pose a problem, due diligence would call us to monitor for any unforeseen issues that might arise, which adds cost to this project that doesn’t seem proportional to the gains.
 - Maintenance: We would have to provide custom settings in cloudfront (coordinated through Cameron) for any sandboxes and other environments where caching is enabled.  If we move down the route of utilizing CDN, it would be good for every environment to have this service enabled so our dev environments reflect stable settings.  This could possibly introduce some overhead and maintenance issues.  (Although further investigation might reveal these to be negligible.)
@@ -61,4 +52,20 @@ Overall, it is recommended that we SHELVE this caching endeavor for a future sce
 
 ## Consequences
 
-We will continue to allow the minimal loading overhead by leaving caching off.
+We will forgo (negligible) load-time improvements by leaving caching off.
+
+## (Footnote - How to implement caching)
+Here are notes for implementing caching using whitenoise should we decide to pick this up again in the future;
+1- Add caching capability to a sandbox using the following steps (or ![following documentation for command line](https://cloud.gov/docs/services/external-domain-service/))
+    - Log-in to the cloud.gov website
+    - Navigate to "Services" (https://dashboard.fr.cloud.gov/services).  Click "Add Service"...
+    - Choose "Marketplace Service"
+    - For the fields, select Cloud Foundry, Organization = "cisa-dotgov", Space = "[your sandbox. eg. "nl"]".  Click "Next"
+    - For the Service, select "External Domain".  Click "Next"
+    - For the Plan, select "domain-with-cdn" (here is ![documentation on CDN](https://cloud.gov/docs/management/custom-domains/))
+    - If you choose to bind the app, a JSON string will be required (we believe this should do it: {"domains": "example.gov"}, where "example.gov" is replaced with the domain name you want to use for this application)
+    Before you can continue, work with Cameron to setup the DNS in AWS (use the following documentation linked below):
+    https://cloud.gov/docs/services/external-domain-service/
+    - Once the DNS is setup, you *should* be able to continue.  We did not test this.
+2- Enable caching with Whitenoise (see https://whitenoise.readthedocs.io/en/latest/django.html#add-compression-and-caching-support)
+3- Take performance measurements before/after caching is enabled to determine cost-benefits of implementing caching. (NOTE: ![lighthouse](https://developer.chrome.com/blog/lighthouse-load-performance) might be useful for this)
